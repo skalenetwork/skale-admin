@@ -1,0 +1,70 @@
+.rmwc-data-table {
+  width: 100%;
+  border:none !important;
+}
+
+.rmwc-data-table__content {
+  width: 100%;
+  font-size: 1rem !important;
+
+}
+
+.rmwc-data-table__cell {
+  background-color: #F5F5F5 !important;
+
+}
+
+.rmwc-data-table__head-cell {
+  font-size: 0.85rem !important;
+
+}
+
+.rmwc-data-table__head {
+  border-bottom: 2px solid rgba(0, 0, 0, 0.12);
+}
+
+.rmwc-data-table__row {
+  height: 65px !important;
+}
+
+.input-group {
+  width:350px !important;
+}
+
+.schain-search-input {
+  //border-radius: 0px 10px 10px 0px !important;
+  border-radius: 10px 10px 10px 10px !important;
+}
+
+.mdc-linear-progress__bar-inner {
+  background-color: #1d87e5 !important;
+}
+
+.mdc-toolbar__row {
+  min-height: 65px !important;
+}
+
+.mdc-toolbar__section {
+  padding: 13px 0 !important;
+}
+
+// for flex test
+
+.flex-container {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+
+  display: -webkit-box;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+
+  -webkit-flex-flow: row wrap;
+  justify-content: space-around;
+}
+
+.flex-item {
+  text-align: center;
+}

@@ -1,0 +1,47 @@
+
+.skale-btn {
+  text-transform: none !important;
+}
+
+.skale-btn-sm {
+  padding: 0 20px !important;
+}
+
+.skale-btn-md {
+  padding: 0 25px !important;
+}
+
+.skale-btn-lg {
+  padding: 0 35px !important;
+  height: 45px;
+  font-size: 1rem !important;
+}
+
+.skale-btn-lg {
+  //background-color: #d9e021 !important;
+  //color: black !important;
+  box-shadow: none !important;
+  height: 50px !important;
+  border-radius: 0 !important;
+}
+
+.skale-btn-accent {
+  background-color: #1d87e4 !important;
+  color: white !important;
+}
+
+.skale-btn-transparent {
+  background-color: transparent !important;
+  color: #1d87e4 !important;
+}
+
+.dark-mode {
+  .skale-btn-accent {
+    background-color: #d9e021 !important;
+    color: black !important;
+  }
+  .skale-btn-transparent {
+    background-color: transparent !important;
+    color: #d9e021 !important;
+  }
+}

@@ -1,0 +1,9 @@
+
+.schain-search-input {
+  //border-radius: 0px 10px 10px 0px !important;
+  border-radius: 10px 10px 10px 10px !important;
+}
+
+.schain-search-input::placeholder {
+  font-family: FontAwesome, "Open Sans", Verdana, sans-serif !important;
+}

@@ -1,0 +1,5 @@
+import os
+from tools.config import CUSTOM_CONTRACTS_PATH
+
+ENDPOINT = os.environ['ENDPOINT']
+ABI_FILEPATH = CUSTOM_CONTRACTS_PATH

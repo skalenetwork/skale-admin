@@ -1,0 +1,101 @@
+
+h1, h2, h3, h4, h5, h6, p, span {
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.grey-800, .g-8{
+  color: #414141;
+}
+.grey-600, .g-6{
+  color: hsl(0, 0%, 29%);
+}
+.grey-400, .g-4{
+  color: hsl(0, 0%, 45%);
+}
+.grey-200, .g-2{
+  color: #b5b5b5;
+}
+
+.font-800, .fw-8{
+  font-weight: 800;
+}
+.font-600, .fw-6{
+  font-weight: 600;
+}
+.font-500, .fw-5{
+  font-weight: 500;
+}
+.font-400, .fw-4{
+  font-weight: 400;
+}
+.font-200, .fw-2{
+  font-weight: 200;
+}
+
+.size-1000, .fs-10{
+  font-size: 18pt;
+}
+.size-800, .fs-8{
+  font-size: 16pt;
+}
+.size-600, .fs-6{
+  font-size: 14pt;
+}
+.size-400, .fs-4{
+  font-size: 12pt;
+}
+.size-200, .fs-2{
+  font-size: 10pt;
+}
+
+
+.error-text{
+    color: #ff4747 !important;
+}
+
+
+.link{
+  color: #266ad0 !important;
+}
+
+.regular{
+  font-weight: 400;
+}
+
+.light{
+  font-weight: 200;
+}
+
+.uppercase{
+  text-transform: uppercase;
+}
+
+.undec{ text-decoration: none !important; }
+.inl{ display: inline !important; }
+
+
+.gr-text{
+  color: #7f7f7f !important;
+}
+
+.page-desc{
+  color: #7f7f7f !important;
+  font-size: 11pt !important;
+  font-weight: 400 !important;
+  margin-bottom: 0 !important;
+}
+
+.page-title{
+  color: #26383c !important;
+}
+
+.sb-p-text {
+  font-size: 11pt;
+  margin-bottom: 0px !important;
+}
+
+.like-old {
+  font-weight: 200;
+  color: #545454 !important;
+  font-size: 11pt;
+}

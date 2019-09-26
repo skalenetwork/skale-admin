@@ -1,0 +1,28 @@
+
+.gx-bage {
+    padding: 7px 15px;
+    background-color: #2c3346;
+    border-radius: 6px;
+    color: white;
+}
+
+.network-badge{
+    font-size: 8pt;
+    color: #c5c5c5;
+    font-weight: 500;
+    margin: 0;
+}
+
+.account-badge{
+    font-weight: 500;
+    font-size: 13px;
+    max-width: 150px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+
+.long-badge{
+    padding: 8px 25px !important;
+}

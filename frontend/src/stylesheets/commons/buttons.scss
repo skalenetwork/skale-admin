@@ -1,0 +1,73 @@
+.mdc-button{
+  //padding: 0 25px !important;
+  //text-transform: none !important;
+}
+
+.lite-btn {
+  background-color: rgb(208, 233, 255) !important;
+  color: #1d87e4 !important;
+}
+
+.border-btn {
+  background-color: transparent !important;
+  color: #1d87e4 !important;
+  border: 2px rgba(29, 135, 228, 0.53) solid !important;
+  line-height: calc(2.25rem - 4px) !important;
+}
+
+.link-btn {
+  background-color: transparent !important;
+  color: #1d87e4 !important;
+}
+
+.red-btn{
+  background-color: #e43e3e !important;
+}
+
+.green-btn{
+  background-color: #2bc570 !important
+}
+
+
+
+
+
+
+
+
+
+
+
+.btn-md{
+  font-size: 11pt !important;
+  color: white !important;
+  background-color: #3b5def !important;
+}
+
+.gx-btn{
+  text-transform: none !important;
+}
+
+.gx-btn-def{
+  color: #1d87e4 !important;
+  background-color: rgba(29, 135, 228, 0.11) !important;
+}
+
+.gx-btn-transp{
+  color: #1d87e4 !important;
+  background-color: transparent !important;
+}
+
+.gx-btn-accent{
+  background-color: #1d87e4 !important;
+  color: white !important;
+}
+
+.btn-icon{
+  margin-top: -3px;
+}
+
+.mdc-button--raised:disabled{
+      background-color: #c5c5c5 !important;
+}
+

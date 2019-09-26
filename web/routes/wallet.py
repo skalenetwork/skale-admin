@@ -1,0 +1,48 @@
+#   -*- coding: utf-8 -*-
+#
+#   This file is part of skale-node
+#
+#   Copyright (C) 2019 SKALE Labs
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
+from http import HTTPStatus
+
+from flask import Blueprint, request
+
+from web.helper import construct_ok_response, construct_response, login_required
+
+logger = logging.getLogger(__name__)
+
+
+def construct_wallet_bp(wallet):
+    wallet_bp = Blueprint('wallet', __name__)
+
+    @wallet_bp.route('/create-wallet', methods=['POST'])
+    @login_required
+    def create_wallet():
+        logger.debug(request)
+        res = wallet.get_or_generate()
+        return construct_response(HTTPStatus.CREATED, res)
+
+    @wallet_bp.route('/load-wallet', methods=['GET'])
+    @login_required
+    def load_wallet():
+        logger.debug(request)
+        wallet.get_or_generate()  # todo: tmp, remove later!
+        res = wallet.get_with_balance()
+        return construct_ok_response(res)
+
+    return wallet_bp

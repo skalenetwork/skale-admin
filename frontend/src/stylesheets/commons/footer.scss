@@ -1,0 +1,28 @@
+.footer {
+  background-color: #141b27;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 40px;
+  width: 100%;
+  overflow:hidden;
+}
+
+.footer-inner{
+  border-top: 1px rgba(218, 218, 218, 0.15) solid;
+  margin: 0 20px;
+  height: 100%;
+}
+
+.footer-text{
+  font-size: 9pt;
+  color: #929292;
+}
+
+.footer-link{
+  text-decoration: none;
+}
+
+.footer-company{
+  border-right: 1px rgba(218, 218, 218, 0.15) solid;
+}

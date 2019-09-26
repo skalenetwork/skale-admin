@@ -1,0 +1,33 @@
+
+
+.gx-search-input{
+  input{
+    background: 0;
+    border: 0;
+    outline: 0;
+    color: white;
+    font-weight: 600;
+  }
+
+  input::-webkit-input-placeholder { color: #abaaaa; }
+  input::-moz-placeholder { color: #abaaaa; }
+  input::-moz-placeholder {  color: #abaaaa;  }
+
+
+}
+
+.search-wrap{
+  background-color: #2d394c;
+  padding: 6px 9px;
+  border-radius: 4px;
+}
+
+.input-size-mchain{
+  height: 15px;
+  width: 300px;
+}
+
+.string-value{
+  white-space: inherit;
+  word-break: break-word;
+}

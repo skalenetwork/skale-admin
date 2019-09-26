@@ -1,0 +1,127 @@
+@import "variables";
+
+.gray-icon{
+  color: $gray-icon !important;
+}
+
+.info-icon{
+  color: rgba(51, 146, 230, 0.85) !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+// old
+
+
+$accent-color-gex: #1d87e4;
+$link-color-gex: #0d75d0;
+
+$lite-grey-gex: #f1f1f1;
+$line-color-gex: rgba(212,212,212,0.6);
+$grey-color-gex: #7f7f7f;
+$text-color-gex: #434343;
+
+$gex-red-bg: hsla(0, 54%, 49%, 0.84);
+$gex-green-bg: rgba(57, 192, 57, 0.7);
+$gex-yellow-bg: #ffd90b;
+$gex-orange-bg: #ffb612;
+$gex-orange-link: #F57F17;
+
+$gex-purple: #673AB7;
+$gex-green: #02a765;
+$gex-red: #ad1e04;
+
+.green-bg{  background-color: #4fbf4e !important;  }
+.gex-bg{  background-color: $accent-color-gex !important;  }
+.lite-gr-bg{  background-color: $grey-color-gex !important;  }
+
+
+.gx-text-col{ color: $accent-color-gex !important;}
+
+
+.header-gr-svg{ fill: #cecece !important; }
+.red-svg{  fill: rgba(216, 64, 64, 0.84) !important;  }
+.gex-svg{  fill: $accent-color-gex !important;  }
+.yellow-svg{  fill: $gex-yellow-bg !important;  }
+.orange-svg{  fill: $gex-orange-bg !important;  }
+.green-svg{  fill: #72d64f !important  }
+.dark-green-svg{  fill: #37d459 !important  }
+.purple-svg{  fill: $gex-purple !important;  }
+.gr-svg{  fill: $text-color-gex !important;  }
+.head-gr-svg{  fill: #434343 !important;  }
+.gx-gr-svg{  fill: #585858 !important;  }
+.lite-gr-svg{  fill: $grey-color-gex !important;  }
+.lt-gr-svg{  fill: #abaaaa !important;  }
+.white-svg{  fill: #fff !important;  }
+
+.lite-gr{  color: #cecece; }
+
+
+.white-text{  color: white !important; }
+.green-text{ color: $gex-green; }
+.red-text{ color: $gex-red; }
+
+
+
+:root {
+  --mdc-theme-primary: $accent-color-gex;
+}
+
+
+body{
+  //--mdc-theme-primary: #1d87e4 !important;
+}
+
+
+.mdc-button--raised{
+  //background-color: $accent-color-gex !important;
+  //background-color: $accent-color-gex !important;
+}
+
+
+
+
+.blue-col{
+  color: #0573fe !important;
+}
+
+.orange-col{
+  color: #fc920e !important;
+}
+
+.green-col{
+  color: #54df64 !important;
+}
+
+.purple-col{
+  color: #584dd6 !important;
+}
+
+.cyan-col{
+  color: #00BCD4 !important;
+}
+
+.lite-gr-col{
+  color: #8a8a8a !important;
+}
+.gr-col{
+  color: #424242 !important;
+}
+
+
+.accent-color{
+  color: #1d87e4 !important;
+}
+
+.icon-active{
+  //color: #5486b3 !important;
+  color: #8fa6c1 !important;
+}

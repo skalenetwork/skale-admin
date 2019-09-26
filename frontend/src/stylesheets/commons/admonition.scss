@@ -1,0 +1,18 @@
+.admonition{
+
+  box-shadow: 0 2px 6px 1px rgba(0, 0, 0, 0.1);
+
+  .admonition-title{
+    padding: 10px;
+  }
+
+  .warning{
+    border-left: 4px #ff9100 solid !important;
+  }
+  .warning-bg{
+    background-color: rgba(255,145,0,.1);
+    i{ color: #ff9100; }
+  }
+
+}
+

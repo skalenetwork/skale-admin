@@ -1,0 +1,28 @@
+
+.running-container {
+  background-color: rgb(203, 255, 214);
+  i {
+    color: rgb(10, 193, 77);
+  }
+}
+
+.error-container {
+  background-color: rgb(255, 203, 203);
+  i {
+    color: rgb(206, 97, 65);
+  }
+}
+
+.warning-container {
+  background-color: rgb(249, 244, 180);
+  i {
+    color: rgb(232, 191, 40);
+  }
+}
+
+.unknown-container {
+  background-color: rgb(220, 220, 220);
+  i {
+    color: rgb(130, 130, 130);
+  }
+}
