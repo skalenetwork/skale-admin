@@ -37,6 +37,7 @@ from tools.logger import init_admin_logger
 from tools.config_storage import ConfigStorage
 from tools.token_utils import TokenUtils
 from tools.dockertools import DockerManager
+from tools.docker_utils import DockerUtils
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT
 from web.user import User
@@ -61,6 +62,7 @@ skale = Skale(ENDPOINT, ABI_FILEPATH)
 wallet = LocalWallet(skale)
 config = ConfigStorage(NODE_CONFIG_FILEPATH)
 docker_manager = DockerManager(CONTAINERS_FILEPATH)
+docker_utils = DockerUtils()
 node = Node(skale, config, wallet, docker_manager)
 token_utils = TokenUtils()
 user_session = UserSession(session)
@@ -80,8 +82,8 @@ database = SqliteDatabase(DB_FILE)
 app = Flask(__name__)
 app.register_blueprint(construct_auth_bp(user_session, token))
 app.register_blueprint(web_logs)
-app.register_blueprint(construct_nodes_bp(skale, node))
-app.register_blueprint(construct_schains_bp(skale, wallet, containers, node))
+app.register_blueprint(construct_nodes_bp(skale, node, docker_utils))
+app.register_blueprint(construct_schains_bp(skale, wallet, docker_utils, node))
 app.register_blueprint(construct_wallet_bp(wallet))
 app.register_blueprint(construct_node_info_bp(skale, wallet))
 app.register_blueprint(construct_security_bp())

@@ -201,12 +201,6 @@ class DockerManager():
     def get_volume_config(self, name, mount_path):
         return {f'{name}': {'bind': mount_path, 'mode': 'rw'}}
 
-    def get_all_schain_containers(self, all=False):
-        return docker_client.containers.list(all=all, filters={'name': 'skale_schain_*'})
-
-    def get_all_skale_containers(self, all=False):
-        return docker_client.containers.list(all=all, filters={'name': 'skale_*'})
-
     def rm_vol(self, name):
         volume = docker_client.volumes.get(name)
         if volume:

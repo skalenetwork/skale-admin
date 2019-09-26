@@ -12,7 +12,7 @@ jobs:
   include:
     #- stage: test
     - stage: deploy
-      if: branch IN (develop, beta, stable, master, SKALE-1573-new-architecture)
+      if: branch IN (develop, beta, stable, master)
       script:
         - VERSION=$(BRANCH=$TRAVIS_BRANCH bash ./scripts/calculate_version.sh)
         - echo "Version $VERSION"
@@ -48,7 +48,6 @@ jobs:
               - master
               - develop
               - beta
-              - SKALE-1573-new-architecture
         - provider: script
           skip_cleanup: true
           script: RELEASE=true bash $TRAVIS_BUILD_DIR/scripts/publish.sh
@@ -64,4 +63,3 @@ jobs:
             branch:
               - develop
               - beta
-              - SKALE-1573-new-architecture
