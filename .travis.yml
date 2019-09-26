@@ -16,6 +16,7 @@ jobs:
       script:
         - VERSION=$(BRANCH=$TRAVIS_BRANCH bash ./scripts/calculate_version.sh)
         - echo "Version $VERSION"
+        - export VERSION=$VERSION
         - export RELEASE=true
         - bash ./scripts/build.sh
       before_deploy:
