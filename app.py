@@ -39,7 +39,7 @@ from tools.token_utils import TokenUtils
 from tools.dockertools import DockerManager
 from tools.docker_utils import DockerUtils
 
-from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT
+from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from web.user import User
 from web.user_session import UserSession
 
@@ -119,4 +119,4 @@ if __name__ == '__main__':
         User.create_table()
 
     app.secret_key = FLASK_SECRET_KEY_FILE
-    app.run(debug=True, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)
+    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)
