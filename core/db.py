@@ -1,7 +1,7 @@
 from peewee import BooleanField, CharField, CompositeKey, DateTimeField, IntegerField, Model, \
     MySQLDatabase, ForeignKeyField
 
-from tools.db_config import MYSQL_DB_HOST, MYSQL_DB_NAME, MYSQL_DB_PASSWORD, MYSQL_DB_PORT, \
+from tools.configs.db import MYSQL_DB_HOST, MYSQL_DB_NAME, MYSQL_DB_PASSWORD, MYSQL_DB_PORT, \
     MYSQL_DB_USER
 
 dbhandle = MySQLDatabase(

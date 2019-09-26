@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#import semver
 import docker
 import logging
 import copy
@@ -25,8 +24,7 @@ from docker import APIClient
 from docker.types import LogConfig
 
 from tools.config_storage import ConfigStorage
-from tools.config import DOCKER_USERNAME, DOCKER_PASSWORD, CONTAINER_NAME_PREFIX, \
-    DATA_DIR_CONTAINER_PATH
+from tools.config import DOCKER_USERNAME, DOCKER_PASSWORD, CONTAINER_NAME_PREFIX
 
 docker_client = docker.from_env()
 
@@ -88,58 +86,6 @@ class DockerManager():
             logger.warning(f'Can not get info - no such container: {container_id}')
             container_info['status'] = CONTAINER_NOT_FOUND
         return container_info
-
-    def pull(self, name):
-        logger.info(f'Pulling {name}')
-        docker_client.images.pull(name)
-
-    def pull_all(self):
-        logger.info('Pulling all images')
-        for name in self.config.config:
-            container_config = self.config[name]
-            full_name = self.construct_image_fullname(container_config['name'],
-                                                      container_config['version'])
-            logger.info(f'Pulling image: {name}')
-
-            if name != SCHAIN_CONTAINER:  # TODO! TODO! TODO! TODO! TODO! TODO! - tmp fix
-                self.pull(full_name)
-
-    def build_image(self, name, dockerfile_path, version='patch'):
-        container_config = self.config[name]
-        logger.info(f'Building container: {name}')
-        new_version = getattr(semver, f'bump_{version}')(container_config['version'])
-
-        logger.info(
-            f'Bumping {name} container version: {container_config["version"]} => {new_version}')
-        self.config.update_item_field(name, 'version', new_version)
-
-        tag = f'{container_config["name"]}:{container_config["version"]}'
-        latest_tag = f'{container_config["name"]}:latest'
-        logger.info(f'Building image: {tag}')
-        for line in cli.build(path=dockerfile_path, tag=tag):
-            # logger.debug(line)
-            logger.info(line)
-
-        logger.info(f'Build done: {tag}')
-        logger.info(f'Tagging latest')
-
-        image = docker_client.images.get(tag)
-        res = image.tag(latest_tag)
-
-        logger.info(f'Tagged as latest: {tag}, result: {res}')
-
-    def push_image(self, name):
-        container_config = self.config[name]
-        fullname = self.construct_image_fullname(container_config['name'],
-                                                 container_config['version'])
-        logger.info(f'Pushing {fullname}')
-        for line in cli.push(container_config['name'], tag=container_config['version'],
-                             stream=True):
-            logger.info(line)
-        logger.info(f'Push done: {fullname}')
-        for line in cli.push(container_config['name'], tag='latest', stream=True):
-            logger.info(line)
-        logger.info(f'Push done: {container_config["name"]}:latest')
 
     def run_container(self, image_name, container_name, run_args, volume_config=None,
                       cpu_limit=None, mem_limit=None):
@@ -217,20 +163,6 @@ class DockerManager():
         except docker.errors.APIError:
             logger.error(f'No such container: {container_name}')
 
-    def stop_base(self):
-        for name in self.config.config:
-            container_name = self.construct_container_name(name)
-            self.safe_stop(container_name)
-
-    def stop_schains(self, schain_names):
-        for schain in schain_names:
-            container_name = self.construct_schain_container_name(schain['name'])
-            self.safe_stop(container_name)
-
-    def stop_all(self, schain_names=[]):
-        self.stop_base()
-        self.stop_schains(schain_names)
-
     def safe_rm(self, container_name, **kwargs):
         logger.info(f'Removing container: {container_name}')
         try:
@@ -240,20 +172,6 @@ class DockerManager():
             return res
         except docker.errors.APIError:
             logger.error(f'No such container: {container_name}')
-
-    def rm_base(self):
-        for name in self.config.config:
-            container_name = self.construct_container_name(name)
-            self.safe_rm(container_name)
-
-    def rm_schains(self, schain_names):
-        for schain in schain_names:
-            container_name = self.construct_schain_container_name(schain['name'])
-            self.safe_rm(container_name)
-
-    def rm_all(self, schain_names=[]):
-        self.rm_base()
-        self.rm_schains(schain_names)
 
     def to_start_container(self, container_info):
         return container_info['status'] == CONTAINER_NOT_FOUND

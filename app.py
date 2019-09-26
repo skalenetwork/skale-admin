@@ -118,8 +118,5 @@ if __name__ == '__main__':
     if not User.table_exists():
         User.create_table()
 
-    #save_resource_allocation_config()
-    #init_lvm() todo
-
     app.secret_key = FLASK_SECRET_KEY_FILE
     app.run(debug=True, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)
