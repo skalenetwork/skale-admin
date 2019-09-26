@@ -28,7 +28,7 @@ from web.helper import construct_ok_response, construct_response, login_required
 logger = logging.getLogger(__name__)
 
 
-def construct_nodes_bp(skale, node, containers):
+def construct_nodes_bp(skale, node):
     nodes_bp = Blueprint('nodes', __name__)
 
     @nodes_bp.route('/node-info', methods=['GET'])
