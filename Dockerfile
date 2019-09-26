@@ -23,6 +23,6 @@ COPY . .
 
 ENV PYTHONPATH="/usr/src/admin"
 
-RUN cd frontend && npm run build
+RUN cd frontend && npm i && npm run build
 
 CMD [ "python3", "app.py" ]
