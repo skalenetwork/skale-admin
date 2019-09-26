@@ -17,19 +17,5 @@ then
     docker tag $IMAGE_NAME $LATEST_IMAGE_NAME
 fi
 
-
-if [[ ! -z "$PUBLISH" ]]
-then
-    : "${USERNAME?Need to set USERNAME}"
-    : "${PASSWORD?Need to set PASSWORD}"
-
-    echo "$PASSWORD" | docker login --username $USERNAME --password-stdin
-    docker push $IMAGE_NAME || exit $?
-    if [ "$RELEASE" = true ]
-    then
-        docker push $LATEST_IMAGE_NAME || exit $?
-    fi
-fi
-
 echo "========================================================================================="
 echo "Built $IMAGE_NAME"

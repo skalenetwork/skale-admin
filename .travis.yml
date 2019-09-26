@@ -1,0 +1,46 @@
+language: python
+python:
+  - '3.6'
+os: linux
+dist: bionic
+cache: pip
+#install:
+#  - pip install -r requirements.txt
+#before_script:
+#  - "flake8 ."
+jobs:
+  include:
+    #- stage: test
+    - stage: deploy
+      if: branch IN (develop, beta, stable, master)
+      script:
+        - VERSION=$(BRANCH=$TRAVIS_BRANCH bash ./scripts/calculate_version.sh)
+        - echo "Version $VERSION"
+        - export RELEASE=true
+        - bash ./scripts/build.sh
+      before_deploy:
+        # Set up git user name and tag this commit
+        - (
+          test ! $TRAVIS_TAG &&
+          git config --local user.name "skale-travis" &&
+          git config --local user.email "$GITHUB_EMAIL" &&
+          export TRAVIS_TAG=$VERSION &&
+          git tag "$TRAVIS_TAG" &&
+          git push https://$GITHUB_OAUTH_TOKEN@github.com/$TRAVIS_REPO_SLUG.git $TRAVIS_TAG
+          ) || true
+      deploy:
+        - provider: script
+          skip_cleanup: true
+          script: RELEASE=true bash $TRAVIS_BUILD_DIR/scripts/publish.sh
+          on:
+            repo: $TRAVIS_REPO_SLUG
+            branch:
+              - master
+        - provider: script
+          skip_cleanup: true
+          script: RELEASE=false bash $TRAVIS_BUILD_DIR/scripts/publish.sh
+          on:
+            repo: $TRAVIS_REPO_SLUG
+            branch:
+              - develop
+              - beta
