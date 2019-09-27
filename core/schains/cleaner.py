@@ -15,9 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class SChainsCleaner():
-    def __init__(self, skale, docker_manager, node_id):
+    def __init__(self, skale, docker_manager, docker_utils, node_id):
         self.skale = skale
         self.node_id = node_id
+        self.docker_utils = docker_utils
         self.docker_manager = docker_manager
         self.monitor = CustomThread('sChains cleaner monitor', self.schains_cleaner,
                                     interval=CLEANER_INTERVAL)
@@ -42,7 +43,7 @@ class SChainsCleaner():
         # get all schain dirs
         schain_dirs = os.listdir(SCHAINS_DIR_PATH)
         # get all schain containers
-        schain_containers = self.docker_manager.get_all_schain_containers(all=True)
+        schain_containers = self.docker_utils.get_all_schain_containers(all=True)
         schain_containers_names = []
         for container in schain_containers:
             schain_name = container.name.replace('skale_schain_', '', 1)

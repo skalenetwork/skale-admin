@@ -82,7 +82,7 @@ def construct_schains_bp(skale, wallet, docker_utils, node):
     def schains_containers_list():
         logger.debug(request)
         all = request.args.get('all') == 'True'
-        containers_list = docker_utils.get_all_schain_containers(all=all)
+        containers_list = docker_utils.get_all_schain_containers(all=all, format=True)
         return construct_ok_response(containers_list)
 
     @schains_bp.route('/schains/list', methods=['GET'])

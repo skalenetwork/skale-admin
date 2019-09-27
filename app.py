@@ -63,7 +63,7 @@ wallet = LocalWallet(skale)
 config = ConfigStorage(NODE_CONFIG_FILEPATH)
 docker_manager = DockerManager(CONTAINERS_FILEPATH)
 docker_utils = DockerUtils()
-node = Node(skale, config, wallet, docker_manager)
+node = Node(skale, config, wallet, docker_manager, docker_utils)
 token_utils = TokenUtils()
 user_session = UserSession(session)
 

@@ -13,7 +13,10 @@ logger = logging.getLogger(__name__)
 def format_containers(f):
     @wraps(f)
     def inner(*args, **kwargs):
+        format = kwargs.get('format', None)
         containers = f(*args, **kwargs)
+        if not format:
+            return containers
         res = []
         for container in containers:
             res.append({
@@ -58,9 +61,9 @@ class DockerUtils():
         return volume
 
     @format_containers
-    def get_all_skale_containers(self, all=False):
+    def get_all_skale_containers(self, all=False, format=False):
         return self.client.containers.list(all=all, filters={'name': 'skale_*'})
 
     @format_containers
-    def get_all_schain_containers(self, all=False):
+    def get_all_schain_containers(self, all=False, format=False):
         return self.client.containers.list(all=all, filters={'name': 'skale_schain_*'})
