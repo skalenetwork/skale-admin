@@ -21,10 +21,10 @@ from enum import Enum
 
 
 class NodeStatuses(Enum):
-  NOT_CREATED = 0
-  REQUESTED = 1
-  CREATED = 2
-  ERROR = 3
+    NOT_CREATED = 0
+    REQUESTED = 1
+    CREATED = 2
+    ERROR = 3
 
-  #def __str__(self):
-  #  return str(self.value)
+    # def __str__(self):
+    #  return str(self.value)
