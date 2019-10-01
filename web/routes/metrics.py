@@ -24,7 +24,7 @@ from flask import Blueprint, request
 
 from core.node_utils import get_node_id
 from web.helper import construct_ok_response, login_required
-from tools.config import DATETIME_FORMAT
+from tools.configs import DATETIME_FORMAT
 
 logger = logging.getLogger(__name__)
 

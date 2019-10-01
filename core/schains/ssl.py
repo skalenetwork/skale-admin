@@ -1,5 +1,5 @@
 import os
-from tools.config import SSL_CERTIFICATES_FILEPATH
+from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 
 def get_default_cert_location():

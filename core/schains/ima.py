@@ -2,8 +2,8 @@ from core.schains.helper import get_schain_data_dir, get_schain_config_filepath,
     get_schain_config, get_schain_dir_path, get_schain_proxy_file_path
 from core.schains.config import get_schain_ports
 
-from tools.configs.mta import MTA_ENDPOINT
-from tools.config import LOCAL_WALLET_FILEPATH, MAINNET_PROXY_PATH
+from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
+from tools.configs import LOCAL_WALLET_FILEPATH
 
 
 def get_node_http_endpoint(node_info, schain_name):
@@ -39,7 +39,7 @@ def get_ima_env(schain_name):
         "SCHAIN_PROXY_PATH": get_schain_proxy_file_path(schain_name),
 
         "SCHAIN_RPC_URL": get_node_http_endpoint(node_info, schain_name),
-        "MAINNET_RPC_URL": MTA_ENDPOINT,
+        "MAINNET_RPC_URL": IMA_ENDPOINT,
 
         "NODE_NUMBER": schain_index,
         "NODES_COUNT": len(schain_nodes['nodes'])

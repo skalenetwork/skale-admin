@@ -31,8 +31,9 @@ from core.node import Node
 from core.local_wallet import LocalWallet
 
 from tools.helper import get_sentry_env_name
-from tools.config import NODE_CONFIG_FILEPATH, DB_FILE, FLASK_SECRET_KEY_FILE
+from tools.configs import NODE_CONFIG_FILEPATH, FLASK_SECRET_KEY_FILE
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
+from tools.configs.db import DB_FILE
 from tools.logger import init_admin_logger
 from tools.config_storage import ConfigStorage
 from tools.token_utils import TokenUtils

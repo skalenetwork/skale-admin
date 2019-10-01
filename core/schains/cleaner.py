@@ -6,7 +6,7 @@ from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
 
 from tools.docker_utils import DockerUtils
-from tools.config import SCHAINS_DIR_PATH
+from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.custom_thread import CustomThread
 from tools.str_formatters import argumets_list_string
 from . import CLEANER_INTERVAL

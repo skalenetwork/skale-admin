@@ -22,7 +22,6 @@ import json
 import logging
 import subprocess
 from subprocess import PIPE
-from tools.config import PROJECT_DIR
 
 logger = logging.getLogger(__name__)
 

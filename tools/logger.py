@@ -20,17 +20,19 @@
 import os
 import sys
 import logging
-from logging import FileHandler, Formatter, StreamHandler
+from logging import Formatter, StreamHandler
 import logging.handlers as py_handlers
 
-from tools.config import ADMIN_LOG_PATH, BUILD_LOG_PATH, DEBUG_LOG_PATH, LOG_FILE_SIZE_BYTES, LOG_BACKUP_COUNT, LOG_FORMAT
+from tools.configs.logs import (ADMIN_LOG_PATH, DEBUG_LOG_PATH, LOG_FILE_SIZE_BYTES,
+                                LOG_BACKUP_COUNT, LOG_FORMAT)
 
 
 def init_logger(log_file_path, debug_file_path=None):
     handlers = []
 
     formatter = Formatter(LOG_FORMAT)
-    f_handler = py_handlers.RotatingFileHandler(log_file_path, maxBytes=LOG_FILE_SIZE_BYTES, backupCount=LOG_BACKUP_COUNT)
+    f_handler = py_handlers.RotatingFileHandler(log_file_path, maxBytes=LOG_FILE_SIZE_BYTES,
+                                                backupCount=LOG_BACKUP_COUNT)
 
     f_handler.setFormatter(formatter)
     f_handler.setLevel(logging.INFO)
@@ -42,17 +44,14 @@ def init_logger(log_file_path, debug_file_path=None):
     handlers.append(stream_handler)
 
     if debug_file_path:
-        f_handler_debug = py_handlers.RotatingFileHandler(debug_file_path, maxBytes=LOG_FILE_SIZE_BYTES,
+        f_handler_debug = py_handlers.RotatingFileHandler(debug_file_path,
+                                                          maxBytes=LOG_FILE_SIZE_BYTES,
                                                           backupCount=LOG_BACKUP_COUNT)
         f_handler_debug.setFormatter(formatter)
         f_handler_debug.setLevel(logging.DEBUG)
         handlers.append(f_handler_debug)
 
     logging.basicConfig(level=logging.DEBUG, handlers=handlers)
-
-
-def init_build_logger():
-    init_logger(BUILD_LOG_PATH)
 
 
 def init_admin_logger():

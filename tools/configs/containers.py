@@ -1,5 +1,5 @@
 import os
-from tools.config import CONFIG_FOLDER
+from tools.configs import CONFIG_FOLDER
 from tools.helper import read_json
 
 DATA_DIR_CONTAINER_PATH = '/data_dir'

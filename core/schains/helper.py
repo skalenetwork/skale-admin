@@ -24,10 +24,11 @@ from pathlib import Path
 
 from web3 import Web3
 
-from tools.config import SCHAINS_DIR_PATH, DATA_DIR_NAME, HEALTHCHECK_FILENAME, HEALTHCHECK_STATUSES, \
-    BASE_SCHAIN_CONFIG_FILEPATH, PROXY_ABI_FILENAME
+from tools.configs.schains import SCHAINS_DIR_PATH, DATA_DIR_NAME, BASE_SCHAIN_CONFIG_FILEPATH
+from tools.configs.ima import PROXY_ABI_FILENAME
 
 logger = logging.getLogger(__name__)
+
 
 def get_schain_dir_path(schain_name):
     return os.path.join(SCHAINS_DIR_PATH, schain_name)
@@ -58,27 +59,6 @@ def get_schain_config(schain_name):
     with open(config_filepath) as f:
         schain_config = json.load(f)
     return schain_config
-
-
-def get_healthcheck_file_path(schain_name):
-    schain_dir_path = get_schain_dir_path(schain_name)
-    return os.path.join(schain_dir_path, DATA_DIR_NAME, HEALTHCHECK_FILENAME)
-
-
-def get_healthcheck_value(schain_name):
-    file_path = get_healthcheck_file_path(schain_name)
-
-    if not os.path.isfile(file_path):
-        return -1
-
-    f = open(file_path, "r")
-    value = f.read()
-
-    return value.rstrip()
-
-
-def get_healthcheck_name(value):
-    return HEALTHCHECK_STATUSES.get(str(value), HEALTHCHECK_STATUSES['-2'])
 
 
 def get_schain_proxy_file_path(schain_name):
@@ -112,6 +92,7 @@ def get_schain_rpc_ports(schain_id):
     schain_config = get_schain_config(schain_id)
     node_info = schain_config["skaleConfig"]["nodeInfo"]
     return int(node_info["httpRpcPort"]), int(node_info["wsRpcPort"])
+
 
 def get_schain_ssl_rpc_ports(schain_id):
     schain_config = get_schain_config(schain_id)

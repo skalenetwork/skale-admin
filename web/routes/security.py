@@ -25,7 +25,7 @@ from flask import Blueprint, request
 from werkzeug.utils import secure_filename
 
 from web.helper import construct_ok_response, construct_err_response, login_required
-from tools.config import SSL_CERTIFICATES_FILEPATH
+from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 logger = logging.getLogger(__name__)
 
