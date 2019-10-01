@@ -6,7 +6,7 @@ from core.schains.runner import get_container_name
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 
 from tools.docker_utils import DockerUtils
-from tools.str_formatters import argumets_list_string
+from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()
@@ -75,5 +75,5 @@ class SChainChecks():
             failed_checks_str = ", ".join(failed_checks)
 
             logger.info(
-                argumets_list_string({'sChain name': self.name, 'Failed checks': failed_checks_str},
+                arguments_list_string({'sChain name': self.name, 'Failed checks': failed_checks_str},
                                      'Failed sChain checks', 'error'))

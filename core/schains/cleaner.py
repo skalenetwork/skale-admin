@@ -8,7 +8,7 @@ from core.schains.helper import get_schain_dir_path
 from tools.docker_utils import DockerUtils
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.custom_thread import CustomThread
-from tools.str_formatters import argumets_list_string
+from tools.str_formatters import arguments_list_string
 from . import CLEANER_INTERVAL
 
 from core.schains.runner import get_container_name
@@ -38,7 +38,7 @@ class SChainsCleaner():
             name = event['args']['name']
             if name in schains_on_node:
                 logger.info(
-                    argumets_list_string({'sChain name': name}, 'sChain deleted event found'))
+                    arguments_list_string({'sChain name': name}, 'sChain deleted event found'))
                 self.run_cleanup(name)
 
     def get_schains_on_node(self):

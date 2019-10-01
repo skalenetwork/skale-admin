@@ -4,7 +4,7 @@ from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_container_limits, get_schain_volume_config
 from tools.docker_utils import DockerUtils
-from tools.str_formatters import argumets_list_string
+from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
                                       IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
 
@@ -59,10 +59,10 @@ def run_container(type, schain, env, volume_config=None, cpu_limit=None, mem_lim
         run_args['mem_limit'] = mem_limit
     run_args['environment'] = env
 
-    logger.info(argumets_list_string({'Container name': container_name, 'Image name': image_name,
+    logger.info(arguments_list_string({'Container name': container_name, 'Image name': image_name,
                                       'Args': run_args}, 'Running container...'))
     cont = dutils.client.containers.run(image_name, name=container_name, detach=True, **run_args)
-    logger.info(argumets_list_string({'Container name': container_name, 'Container id': cont.id},
+    logger.info(arguments_list_string({'Container name': container_name, 'Container id': cont.id},
                                      'Container created', 'success'))
     return cont
 

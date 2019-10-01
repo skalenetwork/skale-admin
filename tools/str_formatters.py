@@ -14,7 +14,7 @@ PALETTE = {
 }
 
 
-def argumets_list_string(args, title=None, type='info'):
+def arguments_list_string(args, title=None, type='info'):
     s = f'\n{LONG_LINE}\n' if DISABLE_COLORS else cf.blue(f'\n{LONG_LINE}\n')
     if title:
         if DISABLE_COLORS:
