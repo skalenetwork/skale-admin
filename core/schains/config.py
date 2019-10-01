@@ -8,8 +8,7 @@ from core.schains.helper import read_base_config, add_to_allocation, \
     get_schain_config_filepath
 
 from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC
-from tools.config import DATA_DIR_CONTAINER_PATH
-
+from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -84,23 +83,21 @@ def get_schain_config(schain_name):
     return schain_config
 
 
-def construct_runtime_args(schain_name):
+def get_schain_env(schain_name):
     config_filepath = get_schain_config_filepath(schain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
     return {
-        "environment": {
-            "SSL_KEY_PATH": ssl_key,
-            "SSL_CERT_PATH": ssl_cert,
-            "HTTP_RPC_PORT": ports['http'],
-            "HTTPS_RPC_PORT": ports['https'],
-            "WS_RPC_PORT": ports['ws'],
-            "WSS_RPC_PORT": ports['wss'],
+        "SSL_KEY_PATH": ssl_key,
+        "SSL_CERT_PATH": ssl_cert,
+        "HTTP_RPC_PORT": ports['http'],
+        "HTTPS_RPC_PORT": ports['https'],
+        "WS_RPC_PORT": ports['ws'],
+        "WSS_RPC_PORT": ports['wss'],
 
-            "SCHAIN_ID": schain_name,
-            "CONFIG_FILE": config_filepath,
-            "DATA_DIR": DATA_DIR_CONTAINER_PATH
-        }
+        "SCHAIN_ID": schain_name,
+        "CONFIG_FILE": config_filepath,
+        "DATA_DIR": DATA_DIR_CONTAINER_PATH
     }
 
 

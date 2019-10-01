@@ -2,19 +2,20 @@ import os
 import logging
 
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
+from core.schains.runner import get_container_name
+from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 
 from tools.docker_utils import DockerUtils
-from tools.configs import LONG_LINE
-
+from tools.str_formatters import argumets_list_string
 
 logger = logging.getLogger(__name__)
-docker_utils = DockerUtils()
+dutils = DockerUtils()
+
 
 class SChainChecks():
-    def __init__(self, schain_name: str, node_id: int, docker_manager, log=False, failhook=None):
+    def __init__(self, schain_name: str, node_id: int, log=False, failhook=None):
         self.name = schain_name
         self.node_id = node_id
-        self.docker_manager = docker_manager
         self.failhook = failhook
         self.check_data_dir()
         self.check_config()
@@ -35,17 +36,17 @@ class SChainChecks():
         self._config = os.path.isfile(config_filepath)
 
     def check_volume(self):
-        self._volume = docker_utils.data_volume_exists(self.name)
+        self._volume = dutils.data_volume_exists(self.name)
 
     def check_container(self):
-        name = self.docker_manager.construct_schain_container_name(self.name)
-        info = self.docker_manager.get_info(name)
-        self._container = self.docker_manager.container_running(info)
+        name = get_container_name(SCHAIN_CONTAINER, self.name)
+        info = dutils.get_info(name)
+        self._container = dutils.container_running(info)
 
     def check_ima_container(self):
-        name = self.docker_manager.construct_mta_container_name(self.name)
-        info = self.docker_manager.get_info(name)
-        self._ima_container = self.docker_manager.container_running(info)
+        name = get_container_name(IMA_CONTAINER, self.name)
+        info = dutils.get_info(name)
+        self._ima_container = dutils.container_running(info)
 
     def is_healthy(self):
         checks = self.get_all()
@@ -72,5 +73,7 @@ class SChainChecks():
                 failed_checks.append(check)
         if len(failed_checks) != 0:
             failed_checks_str = ", ".join(failed_checks)
-            logger.warning(
-                f'\n{LONG_LINE}\n SOME CHECKS FOR SCHAIN {self.name} failed: \n {failed_checks_str} \n{LONG_LINE}')
+
+            logger.info(
+                argumets_list_string({'sChain name': self.name, 'Failed checks': failed_checks_str},
+                                     'Failed sChain checks', 'error'))

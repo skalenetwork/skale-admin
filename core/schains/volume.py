@@ -47,3 +47,7 @@ def get_allocation_option_name(schain):
 
 def get_resource_allocation_info():
     return read_json(RESOURCE_ALLOCATION_FILEPATH)
+
+
+def get_schain_volume_config(name, mount_path):
+    return {f'{name}': {'bind': mount_path, 'mode': 'rw'}}

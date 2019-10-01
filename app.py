@@ -31,12 +31,11 @@ from core.node import Node
 from core.local_wallet import LocalWallet
 
 from tools.helper import get_sentry_env_name
-from tools.config import NODE_CONFIG_FILEPATH, DB_FILE, FLASK_SECRET_KEY_FILE, CONTAINERS_FILEPATH
+from tools.config import NODE_CONFIG_FILEPATH, DB_FILE, FLASK_SECRET_KEY_FILE
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
 from tools.logger import init_admin_logger
 from tools.config_storage import ConfigStorage
 from tools.token_utils import TokenUtils
-from tools.dockertools import DockerManager
 from tools.docker_utils import DockerUtils
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
@@ -61,9 +60,8 @@ werkzeug_logger.setLevel(logging.WARNING)  # todo: remove
 skale = Skale(ENDPOINT, ABI_FILEPATH)
 wallet = LocalWallet(skale)
 config = ConfigStorage(NODE_CONFIG_FILEPATH)
-docker_manager = DockerManager(CONTAINERS_FILEPATH)
 docker_utils = DockerUtils()
-node = Node(skale, config, wallet, docker_manager, docker_utils)
+node = Node(skale, config, wallet)
 token_utils = TokenUtils()
 user_session = UserSession(session)
 

@@ -6,6 +6,7 @@ from functools import wraps
 from docker import APIClient
 
 from tools.configs.docker import DOCKER_USERNAME, DOCKER_PASSWORD
+from tools.configs.containers import CONTAINER_NOT_FOUND, RUNNING_STATUS
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +26,7 @@ def format_containers(f):
                 'state': container.attrs['State']
             })
         return res
+
     return inner
 
 
@@ -67,3 +69,38 @@ class DockerUtils():
     @format_containers
     def get_all_schain_containers(self, all=False, format=False):
         return self.client.containers.list(all=all, filters={'name': 'skale_schain_*'})
+
+    def get_info(self, container_id):
+        container_info = {}
+        try:
+            container = self.client.containers.get(container_id)
+            container_info['stats'] = container.stats(decode=True, stream=True)
+
+            container_info['stats'] = self.cli.inspect_container(container.id)
+            container_info['status'] = container.status
+        except docker.errors.NotFound:
+            logger.warning(f'Can not get info - no such container: {container_id}')
+            container_info['status'] = CONTAINER_NOT_FOUND
+        return container_info
+
+    def container_running(self, container_info):
+        return container_info['status'] == RUNNING_STATUS
+
+    def to_start_container(self, container_info):
+        return container_info['status'] == CONTAINER_NOT_FOUND
+
+    def rm_vol(self, name):
+        volume = self.client.volumes.get(name)
+        if volume:
+            logger.warning(f'Going to remove volume {name}')
+            volume.remove(force=True)
+
+    def safe_rm(self, container_name, **kwargs):
+        logger.info(f'Removing container: {container_name}')
+        try:
+            container = self.client.containers.get(container_name)
+            res = container.remove(**kwargs)
+            logger.info(f'Container removed: {container_name}')
+            return res
+        except docker.errors.APIError:
+            logger.error(f'No such container: {container_name}')

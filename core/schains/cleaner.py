@@ -5,21 +5,23 @@ import shutil
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
 
+from tools.docker_utils import DockerUtils
 from tools.config import SCHAINS_DIR_PATH
 from tools.custom_thread import CustomThread
-from tools.configs import LONG_LINE
+from tools.str_formatters import argumets_list_string
 from . import CLEANER_INTERVAL
 
+from core.schains.runner import get_container_name
+from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 
 logger = logging.getLogger(__name__)
+dutils = DockerUtils()
 
 
 class SChainsCleaner():
-    def __init__(self, skale, docker_manager, docker_utils, node_id):
+    def __init__(self, skale, node_id):
         self.skale = skale
         self.node_id = node_id
-        self.docker_utils = docker_utils
-        self.docker_manager = docker_manager
         self.monitor = CustomThread('sChains cleaner monitor', self.schains_cleaner,
                                     interval=CLEANER_INTERVAL)
         self.monitor.start()
@@ -35,15 +37,15 @@ class SChainsCleaner():
         for event in events:
             name = event['args']['name']
             if name in schains_on_node:
-                logger.warning(
-                    f'\n{LONG_LINE}\nFound SchainDeleted event for: {name}, going to run cleanup...\n{LONG_LINE}')
+                logger.info(
+                    argumets_list_string({'sChain name': name}, 'sChain deleted event found'))
                 self.run_cleanup(name)
 
     def get_schains_on_node(self):
         # get all schain dirs
         schain_dirs = os.listdir(SCHAINS_DIR_PATH)
         # get all schain containers
-        schain_containers = self.docker_utils.get_all_schain_containers(all=True)
+        schain_containers = dutils.get_all_schain_containers(all=True)
         schain_containers_names = []
         for container in schain_containers:
             schain_name = container.name.replace('skale_schain_', '', 1)
@@ -59,11 +61,11 @@ class SChainsCleaner():
         return ids
 
     def run_cleanup(self, schain_name):
-        checks = SChainChecks(schain_name, self.node_id, self.docker_manager).get_all()
+        checks = SChainChecks(schain_name, self.node_id).get_all()
         if checks['container']:
             logger.warning(f'Going to remove container and volume for {schain_name}...')
             self.remove_schain_container(schain_name)
-            self.docker_manager.rm_vol(schain_name)
+            dutils.rm_vol(schain_name)
         if checks['ima_container']:
             logger.warning(f'Going to remove IMA container for {schain_name}...')
             self.remove_ima_container(schain_name)
@@ -72,12 +74,12 @@ class SChainsCleaner():
             self.remove_config_folder(schain_name)
 
     def remove_schain_container(self, schain_name):
-        schain_container_name = self.docker_manager.construct_schain_container_name(schain_name)
-        return self.docker_manager.safe_rm(schain_container_name, v=True, force=True)
+        schain_container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
+        return dutils.safe_rm(schain_container_name, v=True, force=True)
 
     def remove_ima_container(self, schain_name):
-        ima_container_name = self.docker_manager.construct_mta_container_name(schain_name)
-        self.docker_manager.safe_rm(ima_container_name, v=True, force=True)
+        ima_container_name = get_container_name(IMA_CONTAINER, schain_name)
+        dutils.safe_rm(ima_container_name, v=True, force=True)
 
     def remove_config_folder(self, schain_name):
         schain_dir_path = get_schain_dir_path(schain_name)
