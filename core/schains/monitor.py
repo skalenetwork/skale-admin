@@ -57,8 +57,8 @@ class SchainsMonitor():
         if not checks['config']:
             self.init_schain_config(name)
         # init_bls(self.skale.web3, self.wallet, name)
-        #if not checks['volume']:
-        #    init_data_volume(schain)
+        if not checks['volume']:
+            init_data_volume(schain)
         if not checks['container']:
             self.monitor_schain_container(schain)
         if not checks['ima_container']:
