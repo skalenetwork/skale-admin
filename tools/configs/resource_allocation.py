@@ -1,5 +1,5 @@
 import os
-from tools.config import NODE_DATA_PATH
+from tools.configs import NODE_DATA_PATH
 
 MEDIUM_DIVIDER = 1
 SMALL_DIVIDER = 8

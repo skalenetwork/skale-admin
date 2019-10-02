@@ -29,17 +29,17 @@ from skale import Skale
 
 from core.node import Node
 from core.local_wallet import LocalWallet
-from core.containers import Containers
 
 from tools.helper import get_sentry_env_name
-from tools.config import NODE_CONFIG_FILEPATH, DB_FILE, FLASK_SECRET_KEY_FILE, CONTAINERS_FILEPATH
+from tools.configs import NODE_CONFIG_FILEPATH, FLASK_SECRET_KEY_FILE
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
+from tools.configs.db import DB_FILE
 from tools.logger import init_admin_logger
 from tools.config_storage import ConfigStorage
 from tools.token_utils import TokenUtils
-from tools.dockertools import DockerManager
+from tools.docker_utils import DockerUtils
 
-from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT
+from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from web.user import User
 from web.user_session import UserSession
 
@@ -61,9 +61,8 @@ werkzeug_logger.setLevel(logging.WARNING)  # todo: remove
 skale = Skale(ENDPOINT, ABI_FILEPATH)
 wallet = LocalWallet(skale)
 config = ConfigStorage(NODE_CONFIG_FILEPATH)
-docker_manager = DockerManager(CONTAINERS_FILEPATH)
-node = Node(skale, config, wallet, docker_manager)
-containers = Containers(skale, config)
+docker_utils = DockerUtils()
+node = Node(skale, config, wallet)
 token_utils = TokenUtils()
 user_session = UserSession(session)
 
@@ -82,8 +81,8 @@ database = SqliteDatabase(DB_FILE)
 app = Flask(__name__)
 app.register_blueprint(construct_auth_bp(user_session, token))
 app.register_blueprint(web_logs)
-app.register_blueprint(construct_nodes_bp(skale, node, containers))
-app.register_blueprint(construct_schains_bp(skale, wallet, containers, node))
+app.register_blueprint(construct_nodes_bp(skale, node, docker_utils))
+app.register_blueprint(construct_schains_bp(skale, wallet, docker_utils, node))
 app.register_blueprint(construct_wallet_bp(wallet))
 app.register_blueprint(construct_node_info_bp(skale, wallet))
 app.register_blueprint(construct_security_bp())
@@ -119,4 +118,4 @@ if __name__ == '__main__':
         User.create_table()
 
     app.secret_key = FLASK_SECRET_KEY_FILE
-    app.run(debug=True, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)
+    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)

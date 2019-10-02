@@ -23,7 +23,6 @@ from functools import wraps
 from http import HTTPStatus
 from flask import Response, session
 
-from tools.config import ALLOWED_SSL_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -60,10 +59,3 @@ def login_required(f):
 
     return inner
 
-
-def allowed_ssl_file(filename):
-    print('!#')
-    print(filename.rsplit('.', 1)[1].lower())
-
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_SSL_EXTENSIONS

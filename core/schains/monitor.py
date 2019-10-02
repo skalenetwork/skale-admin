@@ -1,37 +1,41 @@
 import os
 import logging
 from tools.custom_thread import CustomThread
-from tools.config import DATA_DIR_CONTAINER_PATH
+from tools.docker_utils import DockerUtils
 
 from sentry_sdk import capture_message
 
+from core.schains.runner import run_schain_container, run_ima_container
 from core.schains.helper import init_schain_dir, get_schain_config_filepath
-from core.schains.config import generate_schain_config, save_schain_config, \
-    construct_runtime_args
+from core.schains.config import generate_schain_config, save_schain_config, get_schain_env
 from core.schains.volume import init_data_volume, get_container_limits
 from core.schains.checks import SChainChecks
-from core.schains.ima import construct_ima_runtime_args
+from core.schains.ima import get_ima_env
 # from core.schains_core.dkg import init_bls
+
+from core.schains.runner import get_container_name
+from tools.configs.containers import SCHAIN_CONTAINER
+
 from . import MONITOR_INTERVAL
 
-from tools.config import MTA_CONFIG_NAME
-
 logger = logging.getLogger(__name__)
+dutils = DockerUtils()
 
 
 class SchainsMonitor():
-    def __init__(self, skale, wallet, docker_manager, node_id):
+    def __init__(self, skale, wallet, node_id):
         self.skale = skale
         self.node_id = node_id
         self.wallet = wallet
-        self.docker_manager = docker_manager
         self.monitor = CustomThread('sChains monitor', self.monitor_schains,
                                     interval=MONITOR_INTERVAL)
         self.monitor.start()
 
     def monitor_schains(self, opts):
         schains = self.skale.schains_data.get_schains_for_node(self.node_id)
-        logger.info(f'Monitoring sChains for node_id: {self.node_id}, sChains on this node: {len(schains)}')  # todo: change to debug!
+        schains_on_node = len(schains)
+        logger.info(
+            f'Monitoring sChains for node_id: {self.node_id}, sChains on this node: {schains_on_node}')  # todo: change to debug!
 
         threads = []
         for schain in schains:
@@ -46,8 +50,7 @@ class SchainsMonitor():
 
     def monitor_schain(self, schain):
         name = schain['name']
-        checks = SChainChecks(name, self.node_id, self.docker_manager, log=True,
-                              failhook=capture_message).get_all()
+        checks = SChainChecks(name, self.node_id, log=True, failhook=capture_message).get_all()
 
         if not checks['data_dir']:
             init_schain_dir(name)
@@ -57,9 +60,9 @@ class SchainsMonitor():
         if not checks['volume']:
             init_data_volume(schain)
         if not checks['container']:
-            self.monitor_schain_container(name)
+            self.monitor_schain_container(schain)
         if not checks['ima_container']:
-            self.monitor_ima_container(name)
+            self.monitor_ima_container(schain)
 
     def init_schain_config(self, schain_name):
         config_filepath = get_schain_config_filepath(schain_name)
@@ -69,31 +72,19 @@ class SchainsMonitor():
             save_schain_config(schain_config, schain_name)
 
     def check_container(self, schain_name, volume_required=False):
-        name = self.docker_manager.construct_schain_container_name(schain_name)
-        info = self.docker_manager.get_info(name)
-        if self.docker_manager.to_start_container(info):
+        name = get_container_name(SCHAIN_CONTAINER, schain_name)
+        info = dutils.get_info(name)
+        if dutils.to_start_container(info):
             logger.warning(f'sChain container: {name} not found, trying to create.')
-            if volume_required and not self.docker_manager.data_volume_exists(schain_name):
+            if volume_required and not dutils.data_volume_exists(schain_name):
                 logger.error(f'Cannot create sChain container without data volume - {schain_name}')
             return True
 
-    def monitor_schain_container(self, schain_name):
-        if self.check_container(schain_name, volume_required=True):
-            self.run_schain_container(schain_name)
+    def monitor_schain_container(self, schain):
+        if self.check_container(schain['name'], volume_required=True):
+            env = get_schain_env(schain['name'])
+            run_schain_container(schain, env)
 
-    def monitor_ima_container(self, schain_name):
-        self.run_ima_container(schain_name)
-
-    def run_schain_container(self, schain_name):
-        runtime_args = construct_runtime_args(schain_name)
-        schain = self.skale.schains_data.get_by_name(schain_name)
-        cpu_limit, mem_limit = get_container_limits(schain)
-        self.docker_manager.run_schain(schain_name, DATA_DIR_CONTAINER_PATH,
-                                       runtime_args=runtime_args, cpu_limit=cpu_limit,
-                                       mem_limit=mem_limit)
-
-    def run_ima_container(self, schain_name):
-        runtime_args = construct_ima_runtime_args(schain_name)
-        mta_name = self.docker_manager.construct_mta_container_name(schain_name)
-        self.docker_manager.run(MTA_CONFIG_NAME, container_name=mta_name,
-                                custom_args=runtime_args)
+    def monitor_ima_container(self, schain):
+        env = get_ima_env(schain['name'])
+        run_ima_container(schain, env)

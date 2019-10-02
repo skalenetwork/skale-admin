@@ -30,7 +30,7 @@ from web.helper import construct_ok_response, construct_err_response, construct_
 logger = logging.getLogger(__name__)
 
 
-def construct_schains_bp(skale, wallet, containers, node):
+def construct_schains_bp(skale, wallet, docker_utils, node):
     schains_bp = Blueprint('schains', __name__)
 
     @schains_bp.route('/get-owner-schains', methods=['GET'])
@@ -45,12 +45,6 @@ def construct_schains_bp(skale, wallet, containers, node):
             nodes = skale.schains_data.get_nodes_for_schain_config(schain['name'])
             schain['nodes'] = nodes
         return construct_ok_response(schains)
-
-    @schains_bp.route('/schains-info', methods=['GET']) # todo: replace with schains_containers_info
-    @login_required
-    def schains_info():
-        logger.debug(request)
-        return construct_ok_response({'containers_stats': containers.get_schains()})
 
     @schains_bp.route('/schain-config', methods=['GET'])
     @login_required
@@ -83,19 +77,12 @@ def construct_schains_bp(skale, wallet, containers, node):
         res = {'res': receipt['status']}
         return construct_response(HTTPStatus.CREATED, res)
 
-    @schains_bp.route('/containers-info', methods=['GET'])
-    @login_required
-    def containers_info():
-        logger.debug(request)
-        containers_info = containers.get_all()
-        return construct_ok_response(containers_info)
-
     @schains_bp.route('/containers/schains/list', methods=['GET'])
     @login_required
     def schains_containers_list():
         logger.debug(request)
         all = request.args.get('all') == 'True'
-        containers_list = containers.get_all_schains(all=all)
+        containers_list = docker_utils.get_all_schain_containers(all=all, format=True)
         return construct_ok_response(containers_list)
 
     @schains_bp.route('/schains/list', methods=['GET'])
@@ -109,5 +96,3 @@ def construct_schains_bp(skale, wallet, containers, node):
         return construct_ok_response(schains_list)
 
     return schains_bp
-
-

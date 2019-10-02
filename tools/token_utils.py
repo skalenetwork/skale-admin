@@ -21,7 +21,7 @@ import logging
 import secrets
 
 from tools.config_storage import ConfigStorage
-from tools.config import TOKENS_FILEPATH
+from tools.configs import TOKENS_FILEPATH
 
 logger = logging.getLogger(__name__)
 

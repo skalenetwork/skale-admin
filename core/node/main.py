@@ -21,7 +21,7 @@ import docker, logging
 
 from core.schains.monitor import SchainsMonitor
 from core.schains.cleaner import SChainsCleaner
-from core.node_statuses import NodeStatuses
+from core.node.statuses import NodeStatuses
 import skale.utils.helper as Helper
 
 docker_client = docker.from_env()
@@ -29,23 +29,21 @@ logger = logging.getLogger(__name__)
 
 
 class Node:
-    def __init__(self, skale, config, wallet, docker_manager):
+    def __init__(self, skale, config, wallet):
         self.skale = skale
         self.wallet = wallet
         self.config = config
-        self.docker_manager = docker_manager
 
         node_id = self.get_node_id()
-        if node_id:
+        if node_id is not None:
             self.run_schains_monitor(node_id)
 
         self.install_nonce = None
         self.install_address = None
 
     def run_schains_monitor(self, node_id):
-        self.schains_monitor = SchainsMonitor(self.skale, self.wallet, self.docker_manager,
-                                              node_id)
-        self.schains_cleaner = SChainsCleaner(self.skale, self.docker_manager, node_id)
+        self.schains_monitor = SchainsMonitor(self.skale, self.wallet, node_id)
+        self.schains_cleaner = SChainsCleaner(self.skale, node_id)
 
     def create(self, ip, public_ip, port, name):
         logger.info(f'create started: {ip}:{port}, public ip: {public_ip}')

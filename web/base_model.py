@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from peewee import Model, SqliteDatabase
-from tools.config import DB_FILE
+from tools.configs.db import DB_FILE
 
 database = SqliteDatabase(DB_FILE)
 

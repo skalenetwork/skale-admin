@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from tools.config import LOCAL_WALLET_FILEPATH
+from tools.configs import LOCAL_WALLET_FILEPATH
 from tools.config_storage import ConfigStorage
 
 logger = logging.getLogger(__name__)

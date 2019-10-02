@@ -22,7 +22,6 @@ import json
 import logging
 import subprocess
 from subprocess import PIPE
-from tools.config import PROJECT_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -41,13 +40,6 @@ def files(path):
     for file in os.listdir(path):
         if os.path.isfile(os.path.join(path, file)):
             yield file
-
-
-def get_js_package_version():  # todo: remove
-    js_lib_dir = os.path.join(PROJECT_DIR,
-                              'server/frontend/node_modules/@skale-labs/skale-api')  # todo: refactor
-    package_filepath = os.path.join(js_lib_dir, 'package.json')
-    return read_json(package_filepath)['version']
 
 
 def sanitize_filename(filename):
@@ -70,6 +62,7 @@ def run_cmd(cmd, env={}, shell=False):
 
 def format_output(res):
     return res.stdout.decode('UTF-8').rstrip(), res.stderr.decode('UTF-8').rstrip()
+
 
 def get_sentry_env_name(manager_address):
     return f'manager@{manager_address}'
