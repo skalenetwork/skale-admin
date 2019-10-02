@@ -21,7 +21,7 @@ import docker, logging
 
 from core.schains.monitor import SchainsMonitor
 from core.schains.cleaner import SChainsCleaner
-from core.node_statuses import NodeStatuses
+from core.node.statuses import NodeStatuses
 import skale.utils.helper as Helper
 
 docker_client = docker.from_env()
