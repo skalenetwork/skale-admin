@@ -23,6 +23,8 @@ import logging
 import subprocess
 from subprocess import PIPE
 
+from jinja2 import Environment
+
 logger = logging.getLogger(__name__)
 
 
@@ -66,3 +68,23 @@ def format_output(res):
 
 def get_sentry_env_name(manager_address):
     return f'manager@{manager_address}'
+
+
+def read_file(path):
+    file = open(path, 'r')
+    text = file.read()
+    file.close()
+    return text
+
+
+def process_template(source, destination, data):
+    """
+    :param source: j2 template source path
+    :param destination: out file path
+    :param data: dictionary with fields for template
+    :return: Nothing
+    """
+    template = read_file(source)
+    processed_template = Environment().from_string(template).render(data)
+    with open(destination, "w") as f:
+        f.write(processed_template)
