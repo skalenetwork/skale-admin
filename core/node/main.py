@@ -22,6 +22,10 @@ import docker, logging
 from core.schains.monitor import SchainsMonitor
 from core.schains.cleaner import SChainsCleaner
 from core.node.statuses import NodeStatuses
+from core.filebeat import run_filebeat_service
+
+from tools.str_formatters import arguments_list_string
+
 import skale.utils.helper as Helper
 
 docker_client = docker.from_env()
@@ -46,7 +50,8 @@ class Node:
         self.schains_cleaner = SChainsCleaner(self.skale, node_id)
 
     def create(self, ip, public_ip, port, name):
-        logger.info(f'create started: {ip}:{port}, public ip: {public_ip}')
+        log_params = {'IP': ip, 'Public IP': public_ip, 'Port': port, 'Name': name}
+        logger.info(arguments_list_string(log_params, 'Node create started'))
 
         node_id = self.get_node_id()
         if node_id:
@@ -71,23 +76,27 @@ class Node:
         self.install_address = local_wallet['address']
         receipt = Helper.await_receipt(self.skale.web3, res[
             'tx'])  # todo: return tx and wait for the receipt in async mode
-        logger.info(f'create_node receipt: {receipt}')
+
 
         if receipt['status'] != 1:
             err_msg = f'Transaction failed. TX: {res["tx"]}' # todo: convert to hex
-            logger.error(err_msg)
+            logger.error(arguments_list_string({'tx': res["tx"]}, 'Node creation failed', 'error'))
+            logger.error(f'create_node receipt: {receipt}')
             return {'status': 0, 'errors': [err_msg]}
+
+        logger.info(arguments_list_string(log_params, 'Node successfully created', 'success'))
 
         node_id = self.skale.nodes_data.node_name_to_index(name)
         self.config.update({'node_id': node_id})
         self.run_schains_monitor(node_id)
+        run_filebeat_service(public_ip, node_id)
         return {'status': 1, 'data': self.config.get()}
 
     def get_node_id(self):
         try:
             return self.config['node_id']
         except KeyError:
-            logger.info('get_node_id: No node installed on this machine.')
+            logger.debug('get_node_id: No node installed on this machine.')
             return None
 
     def get_node_info(self):

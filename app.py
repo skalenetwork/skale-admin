@@ -38,6 +38,7 @@ from tools.logger import init_admin_logger
 from tools.config_storage import ConfigStorage
 from tools.token_utils import TokenUtils
 from tools.docker_utils import DockerUtils
+from tools.str_formatters import arguments_list_string
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from web.user import User
@@ -109,13 +110,8 @@ def main():
 
 
 if __name__ == '__main__':
-    logger.info('Starting Flask server')
-    logger.info('=========================================')
-    logger.info(f'Root account token: {token}')
-    logger.info('=========================================')
-
+    logger.info(arguments_list_string({'Root account token': token}, 'Starting Flask server'))
     if not User.table_exists():
         User.create_table()
-
     app.secret_key = FLASK_SECRET_KEY_FILE
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)

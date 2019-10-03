@@ -71,7 +71,7 @@ class LocalWallet:  # todo: refactor
         eth_balance_wei = self.skale.web3.eth.getBalance(wallet['address'])
         skale_balance_wei = self.skale.token.get_balance(wallet['address'])
 
-        logging.info(f'get_with_balance raw info: address: {wallet["address"]}, eth_balance_wei: {eth_balance_wei}, skale_balance_wei: {skale_balance_wei}')
+        logging.debug(f'get_with_balance raw info: address: {wallet["address"]}, eth_balance_wei: {eth_balance_wei}, skale_balance_wei: {skale_balance_wei}')
 
         wallet['eth_balance_wei'] = str(eth_balance_wei)
         wallet['skale_balance_wei'] = str(skale_balance_wei)
