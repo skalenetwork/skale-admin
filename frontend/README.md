@@ -1,5 +1,3 @@
-
-
 ### React classes with skale-js library
 
 Every react class that's using `skale` object should implement `connected` method:
@@ -19,7 +17,6 @@ Adding new component to `App.js`:
 import LocalWallet from './LocalWallet';
 ```
 
-
 2) Add ref to this component
 
 In constructor:
@@ -38,7 +35,6 @@ In switch:
 ```
 
 3) Invoke `connected` method in `updateWeb3Connector`:
-
 
 ```javascript
 updateWeb3Connector(web3Connector) {
