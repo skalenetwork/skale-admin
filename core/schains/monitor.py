@@ -30,7 +30,7 @@ from core.schains.config import generate_schain_config, save_schain_config, get_
 from core.schains.volume import init_data_volume, get_container_limits
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_env
-# from core.schains_core.dkg import init_bls
+from core.schains.dkg import init_bls, FailedDKG
 
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER
@@ -75,7 +75,13 @@ class SchainsMonitor():
             init_schain_dir(name)
         if not checks['config']:
             self.init_schain_config(name)
-        # init_bls(self.skale.web3, self.wallet, name)
+
+        try:
+            init_bls(self.skale.web3, self.wallet, schain['name'])
+        except FailedDKG:
+            # clean up here
+            exit(1)
+
         if not checks['volume']:
             init_data_volume(schain)
         if not checks['container']:
