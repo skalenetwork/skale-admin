@@ -21,6 +21,7 @@ import os
 import logging
 from tools.custom_thread import CustomThread
 from tools.docker_utils import DockerUtils
+from tools.str_formatters import arguments_list_string
 
 from sentry_sdk import capture_message
 
@@ -52,13 +53,14 @@ class SchainsMonitor():
 
     def monitor_schains(self, opts):
         schains = self.skale.schains_data.get_schains_for_node(self.node_id)
-        schains_on_node = len(schains)
+        schains_on_node = sum(map(lambda schain: schain['active'] == True, schains))
+        schains_holes = len(schains) - schains_on_node
         logger.info(
-            f'Monitoring sChains for node_id: {self.node_id}, sChains on this node: {schains_on_node}')  # todo: change to debug!
-
+            arguments_list_string({'Node ID': self.node_id, 'sChains on node': schains_on_node,
+                                   'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
         threads = []
         for schain in schains:
-            if not schain.get('name') or schain['name'] == '': continue
+            if not schain['active']: continue
             schain_thread = CustomThread(f'sChain monitor: {schain["name"]}', self.monitor_schain,
                                          opts=schain, once=True)
             schain_thread.start()
