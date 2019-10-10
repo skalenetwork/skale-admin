@@ -177,8 +177,4 @@ def init_bls(web3, wallet, schain_name):
 
 
 def get_secret_key_share_filepath(schain_id):
-    return os.path.join(NODE_DATA_PATH, construct_secret_key_share_filename(schain_id))
-
-
-def construct_secret_key_share_filename(schain_id):
-    return f'schain_{schain_id}_secret_key.json'
+    return os.path.join(NODE_DATA_PATH, 'schains', schain_id, 'secret_key.json')
