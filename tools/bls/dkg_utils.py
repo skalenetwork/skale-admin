@@ -21,8 +21,7 @@ import coincurve
 import json
 from web3 import Web3
 
-from tools.config import CUSTOM_CONTRACTS_PATH
-
+from tools.configs.web3 import ABI_FILEPATH
 from tools.bls.dkg_client import DKGClient
 
 def init_dkg_client(schain_config_filepath, web3, wallet, n, t):
@@ -31,12 +30,21 @@ def init_dkg_client(schain_config_filepath, web3, wallet, n, t):
 
     node_id = config_file["skaleConfig"]["nodeInfo"]["nodeID"]
     public_keys = [0] * n
+    i = 0
+    node_ids = [0] * n
+    is_node_id_set = False
     for node in config_file["skaleConfig"]["sChain"]["nodes"]:
-        public_keys[node["nodeID"]] = coincurve.PublicKey(bytes.fromhex("04" + node["publicKey"]))
+        if node["nodeID"] == node_id and not is_node_id_set:
+            node_id = i
+            is_node_id_set = True
+
+        node_ids[i] = node["nodeID"]
+        public_keys[i] = coincurve.PublicKey(bytes.fromhex("04" + node["publicKey"]))
+        i += 1
 
     schain_name = config_file["skaleConfig"]["sChain"]["schainName"]
 
-    dkg_client = DKGClient(node_id, web3, wallet, t, n, schain_name, public_keys)
+    dkg_client = DKGClient(node_id, web3, wallet, t, n, schain_name, public_keys, node_ids)
     return dkg_client
 
 def broadcast(dkg_client, web3):
@@ -45,15 +53,46 @@ def broadcast(dkg_client, web3):
 def send_complaint(dkg_client, index, web3):
     dkg_client.SendComplaint(index, get_dkg_contract(web3))
 
-def response(dkg_client, web3):
-    dkg_client.Response(event["args"]["fromNodeIndex"], get_dkg_contract(web3))
+def response(dkg_client, fromNodeIndex, web3):
+    dkg_client.Response(get_dkg_contract(web3), fromNodeIndex)
 
 def send_allright(dkg_client, web3):
     dkg_client.Allright(get_dkg_contract(web3))
 
-def get_dkg_filter(web3):
+def get_dkg_broadcast_filter(web3, group_index):
     contract = get_dkg_contract(web3)
-    return contract.events.BroadcastAndKeyShare.createFilter(fromBlock = 1)
+    return contract.events.BroadcastAndKeyShare.createFilter(fromBlock = 653369, argument_filters={'groupIndex': group_index})
+
+def get_dkg_complaint_sent_filter(web3, group_index, to_node_index):
+    contract = get_dkg_contract(web3)
+    return contract.events.ComplaintSent.createFilter(fromBlock = 653369, argument_filters={'groupIndex': group_index, 'toNodeIndex': to_node_index})
+
+def get_dkg_all_complaints_filter(web3, group_index):
+    contract = get_dkg_contract(web3)
+    return contract.events.ComplaintSent.createFilter(fromBlock = 653369, argument_filters={'groupIndex': group_index})
+
+def get_dkg_successful_filter(web3, group_index):
+    contract = get_dkg_contract(web3)
+    return contract.events.SuccessfulDKG.createFilter(fromBlock = 653369, argument_filters={'groupIndex': group_index})
+
+def get_dkg_fail_filter(web3, group_index):
+    contract = get_dkg_contract(web3)
+    return contract.events.FailedDKG.createFilter(fromBlock = 653369, argument_filters={'groupIndex': group_index})
+
+def get_dkg_all_data_received_filter(web3, group_index):
+    contract = get_dkg_contract(web3)
+    return contract.events.AllDataReceived.createFilter(fromBlock = 653369, argument_filters={'groupIndex': group_index})
+
+def get_dkg_bad_guy_filter(web3):
+    contract = get_dkg_contract(web3)
+    return contract.events.BadGuy.createFilter(fromBlock = 653369)
+
+def get_schains_data_contract(web3):
+    custom_contracts_contracts_data = read_custom_contracts_data()
+    schains_data_contract_address = custom_contracts_contracts_data['schains_data_address']
+    schains_data_contract_abi = custom_contracts_contracts_data['schains_data_abi']
+
+    return web3.eth.contract(address=Web3.toChecksumAddress(schains_data_contract_address), abi = schains_data_contract_abi)
 
 def get_dkg_contract(web3):
     custom_contracts_contracts_data = read_custom_contracts_data()
@@ -63,5 +102,5 @@ def get_dkg_contract(web3):
     return web3.eth.contract(address=Web3.toChecksumAddress(dkg_contract_address), abi=dkg_contract_abi)
 
 def read_custom_contracts_data():
-    with open(CUSTOM_CONTRACTS_PATH, encoding='utf-8') as data_file:
+    with open(ABI_FILEPATH, encoding='utf-8') as data_file:
         return json.loads(data_file.read())
