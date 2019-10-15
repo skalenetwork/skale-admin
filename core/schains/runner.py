@@ -26,6 +26,7 @@ from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
                                       IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
+from tools.configs import NODE_DATA_PATH_HOST, NODE_DATA_PATH
 
 dutils = DockerUtils()
 logger = logging.getLogger(__name__)
@@ -66,6 +67,8 @@ def run_container(type, schain, env, volume_config=None, cpu_limit=None, mem_lim
     schain_name = schain['name']
     image_name, container_name, run_args, custom_args = get_container_info(type, schain_name)
 
+    add_config_volume(run_args)
+
     if custom_args.get('logs', None):
         run_args['log_config'] = get_logs_config(custom_args['logs'])
     if custom_args.get('ulimits_list', None):
@@ -79,10 +82,10 @@ def run_container(type, schain, env, volume_config=None, cpu_limit=None, mem_lim
     run_args['environment'] = env
 
     logger.info(arguments_list_string({'Container name': container_name, 'Image name': image_name,
-                                      'Args': run_args}, 'Running container...'))
+                                       'Args': run_args}, 'Running container...'))
     cont = dutils.client.containers.run(image_name, name=container_name, detach=True, **run_args)
     logger.info(arguments_list_string({'Container name': container_name, 'Container id': cont.id},
-                                     'Container created', 'success'))
+                                      'Container created', 'success'))
     return cont
 
 
@@ -94,3 +97,10 @@ def run_schain_container(schain, env):
 
 def run_ima_container(schain, env):
     run_container(IMA_CONTAINER, schain, env)
+
+
+def add_config_volume(run_args):
+    run_args['volumes'][NODE_DATA_PATH_HOST] = {
+        'bind': NODE_DATA_PATH,
+        "mode": "ro"
+    }
