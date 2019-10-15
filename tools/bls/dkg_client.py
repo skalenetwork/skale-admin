@@ -24,7 +24,6 @@ import coincurve
 
 from time import sleep
 from tools.configs import NODE_DATA_PATH
-#from web3.exceptions import TransactionNotFound
 
 sys.path.insert(0, NODE_DATA_PATH)
 from dkgpython import dkg
@@ -33,10 +32,7 @@ logger = logging.getLogger(__name__)
 
 # todo: remove this
 def get_receipt(web3, tx):
-    #try:
     return web3.eth.getTransactionReceipt(tx)
-    #except TransactionNotFound:
-        #print('No receipt yet')
 
 def await_receipt(web3, tx, retries=10, timeout=5):
     for _ in range(0, retries):
@@ -117,7 +113,7 @@ class DKGClient:
         self.node_ids = node_ids
         self.disposable_keys = ['0'] * n
         self.ecdh_keys = ['0'] * n
-        print("Node id is", self.node_ids[node_id])
+        logger.info(f'Node id is {self.node_ids[node_id]}')
 
     def GeneratePolynomial(self):
         return self.dkg_instance.GeneratePolynomial()
@@ -148,8 +144,16 @@ class DKGClient:
         secret_key_contribution = self.SecretKeyContribution(polynom)
         to_broadcast = dkg_contract.functions.broadcast(self.group_index, self.node_ids[self.node_id], verification_vector, secret_key_contribution)
         res = sign_and_send(self.node_web3, to_broadcast, 8000000, self.wallet)
-        await_receipt(self.node_web3, res.hex())
-        print("Everything is sent from", self.node_ids[self.node_id], "node")
+        receipt = await_receipt(self.node_web3, res.hex())
+        status = receipt["status"]
+        if status != 1:
+            to_broadcast = dkg_contract.functions.broadcast(self.group_index, self.node_ids[self.node_id], verification_vector, secret_key_contribution)
+            res = sign_and_send(self.node_web3, to_broadcast, 8000000, self.wallet)
+            receipt = await_receipt(self.node_web3, res.hex())
+            status = receipt["status"]
+            if status != 1:
+                raise ValueError("Transaction failed, see receipt", receipt)
+        logger.info(f'Everything is sent from {self.node_ids[self.node_id]} node')
 
     def RecieveVerificationVector(self, fromNode, event):
         input = binascii.hexlify(event['args']['verificationVector'])
@@ -194,27 +198,41 @@ class DKGClient:
         to_complaint = dkg_contract.functions.complaint(self.group_index, self.node_ids[self.node_id], self.node_ids[toNode])
         res = sign_and_send(self.node_web3, to_complaint, 1000000, self.wallet)
         await_receipt(self.node_web3, res.hex())
-        print(self.node_ids[self.node_id], " node sent a complaint on ", self.node_ids[toNode], " node")
+        logger.info(f'{self.node_ids[self.node_id]} node sent a complaint on {self.node_ids[toNode]} node')
 
-	# HERE SHOULD BE A RESPONSE FUNCTION
     def Response(self, dkg_contract, fromNodeIndex):
         value_to_send = convert_g2_point_to_hex(self.dkg_instance.ComputeVerificationValue(decrypt(self.sent_secret_key_contribution[fromNodeIndex][:32], self.ecdh_keys[fromNodeIndex])))
         to_response = dkg_contract.functions.response(self.group_index, self.node_ids[fromNodeIndex], self.disposable_keys[self.node_ids[fromNodeIndex]].to_int(), value_to_send)
         res = sign_and_send(self.node_web3, to_response, 8000000, self.wallet)
-        await_receipt(self.node_web3, res.hex())
-        print(fromNodeIndex, "node sent a response")
+        receipt = await_receipt(self.node_web3, res.hex())
+        status = receipt['status']
+        if status != 1:
+            to_response = dkg_contract.functions.response(self.group_index, self.node_ids[fromNodeIndex], self.disposable_keys[self.node_ids[fromNodeIndex]].to_int(), value_to_send)
+            res = sign_and_send(self.node_web3, to_response, 8000000, self.wallet)
+            receipt = await_receipt(self.node_web3, res.hex())
+            status = receipt['status']
+            if status != 1:
+                raise ValueError("Transaction failed, see receipt", receipt)
+        logger.info(f'{fromNodeIndex} node sent a response')
 
     def RecieveAll(self, fromNode, event):
         self.RecieveVerificationVector(self.node_ids[fromNode], event)
         self.RecieveSecretKeyContribution(self.node_ids[fromNode], event)
         if not self.Verification(self.node_ids[fromNode]):
-            # schain cannot be created if at least one node is corrupted
             raise DkgVerificationError("Fatal error : user " + str(fromNode + 1) + " hasn't passed verification by user " + str(self.node_id + 1))
         self.SecretKeyShareCreate()
-        print("All data was recieved and verified, secret key share was generated")
+        logger.info("All data was recieved and verified, secret key share was generated")
 
     def Allright(self, dkg_contract):
         allright = dkg_contract.functions.allright(self.group_index, self.node_ids[self.node_id])
         res = sign_and_send(self.node_web3, allright, 1000000, self.wallet)
-        await_receipt(self.node_web3, res.hex())
-        print(self.node_ids[self.node_id], "node sent an allright note")
+        receipt = await_receipt(self.node_web3, res.hex())
+        status = receipt['status']
+        if status != 1:
+            allright = dkg_contract.functions.allright(self.group_index, self.node_ids[self.node_id])
+            res = sign_and_send(self.node_web3, allright, 1000000, self.wallet)
+            receipt = await_receipt(self.node_web3, res.hex())
+            status = receipt['status']
+            if status != 1:
+                raise ValueError("Transaction failed, see receipt", receipt)
+        logger.info(f'{self.node_ids[self.node_id]} node sent an allright note')

@@ -19,6 +19,7 @@
 
 import os
 import json
+import logging
 import time
 from time import sleep
 
@@ -27,14 +28,15 @@ from tools.configs import NODE_DATA_PATH
 from tools.bls.dkg_utils import init_dkg_client, broadcast, get_dkg_broadcast_filter, get_dkg_contract, send_complaint, response, send_allright, get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_schains_data_contract, get_dkg_all_complaints_filter
 from tools.bls.dkg_client import DkgVerificationError
 
+logger = logging.getLogger(__name__)
+
 class FailedDKG(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 
 def init_bls(web3, wallet, schain_name):
     if len(get_dkg_successful_filter(web3, web3.sha3(text = schain_name)).get_all_entries()) > 0:
-        print("ALLREADY EXIST")
-        # Schain already exists
+        logger.info("Schain allready exists")
         return
 
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
@@ -48,7 +50,7 @@ def init_bls(web3, wallet, schain_name):
             config_file = json.load(infile)
 
         n = len(config_file["skaleConfig"]["sChain"]["nodes"])
-        t = (2 * n + 1) // 3  # default value
+        t = (2 * n + 1) // 3
 
         dkg_contract = get_dkg_contract(web3)
 
@@ -71,10 +73,8 @@ def init_bls(web3, wallet, schain_name):
             if time_gone > 600:
                 break
 
-            print(web3.eth.blockNumber)
             for event in dkg_broadcast_filter.get_all_entries():
                 from_node = event["args"]["fromNode"]
-                print(event)
 
                 if is_received[dkg_client.node_ids[from_node]] == False:
                     is_received[dkg_client.node_ids[from_node]] = True
@@ -85,10 +85,9 @@ def init_bls(web3, wallet, schain_name):
                     except DkgVerificationError:
                         continue
 
-                    print("Recieved by", dkg_client.node_ids[dkg_client.node_id])
+                    logger.info(f'Recieved by {dkg_client.node_ids[dkg_client.node_id]}')
             sleep(1)
 
-        # SEND A COMPLAINT HERE IF NOT ALL DATA WAS RECEIVED OR SOME DATA WAS NOT VERIFIED
         dkg_fail_filter = get_dkg_fail_filter(web3, dkg_client.group_index)
 
         is_comlaint_sent = False
@@ -102,22 +101,19 @@ def init_bls(web3, wallet, schain_name):
                 complainted_node_index = i
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
-            # TERMINATE DKG
-            raise FailedDKG("failed dut tot event FailedDKG")
+            raise FailedDKG("failed due to event FailedDKG")
 
         is_allright_sent_list = [False] * n
         start_time_allright = time.time()
         dkg_all_data_received_filter = get_dkg_all_data_received_filter(web3, dkg_client.group_index)
         dkg_successful_filter = get_dkg_successful_filter(web3, dkg_client.group_index)
         if not is_comlaint_sent:
-            is_allright_sent_list[dkg_client.node_id] = True
             send_allright(dkg_client, web3)
+            is_allright_sent_list[dkg_client.node_id] = True
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
-            # TERMINATE DKG
-            raise FailedDKG("failed dut tot event FailedDKG")
+            raise FailedDKG("failed due to event FailedDKG")
 
-        # LISTEN HERE TO COMPLAINTS ON THIS NODE
         is_complaint_received = False
         dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(web3, dkg_client.group_index, dkg_client.node_ids[dkg_client.node_id])
         for event in dkg_complaint_sent_filter.get_all_entries():
@@ -128,10 +124,8 @@ def init_bls(web3, wallet, schain_name):
             response(dkg_client, dkg_client.node_id, web3)
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
-            # TERMINATE DKG
-            raise FailedDKG("failed dut tot event FailedDKG")
+            raise FailedDKG("failed due to event FailedDKG")
 
-        # TIMEOUT
         dkg_complaint_sent_filter = get_dkg_all_complaints_filter(web3, dkg_client.group_index)
         if len(dkg_complaint_sent_filter.get_all_entries()) == 0:
             while False in is_allright_sent_list:
@@ -158,11 +152,8 @@ def init_bls(web3, wallet, schain_name):
                 continue
 
             if len(dkg_fail_filter.get_all_entries()) > 0:
-                # TERMINATE DKG
-                raise FailedDKG("failed dut tot event FailedDKG")
+                raise FailedDKG("failed due to event FailedDKG")
             else:
-                # ELSE SEND A COMPLAINT
-                print("COMPLAINT")
                 send_complaint(dkg_client, complainted_node_index, web3)
 
         if True in is_allright_sent_list:
