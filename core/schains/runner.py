@@ -100,6 +100,8 @@ def run_ima_container(schain, env):
 
 
 def add_config_volume(run_args):
+    if not run_args.get('volumes', None):
+        run_args['volumes'] = {}
     run_args['volumes'][NODE_DATA_PATH_HOST] = {
         'bind': NODE_DATA_PATH,
         "mode": "ro"
