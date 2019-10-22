@@ -49,7 +49,7 @@ def init_dkg_client(schain_config_filepath, web3, wallet, n, t):
 
     schain_name = config_file["skaleConfig"]["sChain"]["schainName"]
 
-    dkg_client = DKGClient(node_id, node_id_contract, web3, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract)
+    dkg_client = DKGClient(node_id_dkg, node_id_contract, web3, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract)
     return dkg_client
 
 def broadcast(dkg_client, web3):

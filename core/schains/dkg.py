@@ -35,10 +35,7 @@ class FailedDKG(Exception):
         super().__init__(msg)
 
 def init_bls(web3, wallet, schain_name):
-    if len(get_dkg_successful_filter(web3, web3.sha3(text = schain_name)).get_all_entries()) > 0:
-        logger.info("Schain allready exists")
-        return
-
+    
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
     config_filepath = get_schain_config_filepath(schain_name)
 
