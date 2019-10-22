@@ -22,6 +22,7 @@ import logging
 
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
+from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 
 from tools.docker_utils import DockerUtils
@@ -38,6 +39,7 @@ class SChainChecks():
         self.failhook = failhook
         self.check_data_dir()
         self.check_config()
+        self.check_dkg()
         self.check_volume()
         self.check_container()
         self.check_ima_container()
@@ -49,6 +51,10 @@ class SChainChecks():
     def check_data_dir(self):
         schain_dir_path = get_schain_dir_path(self.name)
         self._data_dir = os.path.isdir(schain_dir_path)
+
+    def check_dkg(self):
+        secret_key_share_filepath = get_secret_key_share_filepath(self.name)
+        self._dkg = os.path.isfile(secret_key_share_filepath)
 
     def check_config(self):
         config_filepath = get_schain_config_filepath(self.name)
@@ -77,6 +83,7 @@ class SChainChecks():
     def get_all(self):
         return {
             'data_dir': self._data_dir,
+            'dkg': self._dkg,
             'config': self._config,
             'volume': self._volume,
             'container': self._container,
