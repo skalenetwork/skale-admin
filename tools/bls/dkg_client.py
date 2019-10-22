@@ -98,10 +98,11 @@ def convert_g2_point_to_hex(data):
     return data_hexed
 
 class DKGClient:
-    def __init__(self, node_id, node_web3, wallet, t, n, schain_name, public_keys, node_ids):
+    def __init__(self, node_id_dkg, node_id_contract, node_web3, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contracts):
         self.schain_name = schain_name
         self.group_index = node_web3.sha3(text = self.schain_name)
-        self.node_id = node_id
+        self.node_id_contract = node_id_contract
+        self.node_id_dkg = node_id_dkg
         self.wallet = wallet
         self.node_web3 = node_web3
         self.t = t
@@ -110,24 +111,26 @@ class DKGClient:
         self.incoming_verification_vector = ['0'] * n
         self.incoming_secret_key_contribution = ['0'] * n
         self.public_keys = public_keys
-        self.node_ids = node_ids
+        self.node_ids_dkg = node_ids_dkg
+        self.node_ids_contracts = node_ids_contracts
         self.disposable_keys = ['0'] * n
         self.ecdh_keys = ['0'] * n
-        logger.info(f'Node id is {self.node_ids[node_id]}')
+        #logger.info(f'Node id is {self.node_ids[node_id]}')
+        logger.info(f'Node id is {self.node_id_dkg}')
 
     def GeneratePolynomial(self):
         return self.dkg_instance.GeneratePolynomial()
 
     def VerificationVector(self, polynom):
         verification_vector = self.dkg_instance.VerificationVector(polynom)
-        self.incoming_verification_vector[self.node_id] = verification_vector
+        self.incoming_verification_vector[self.node_id_dkg] = verification_vector
         verification_vector_hexed = convert_g2_points_to_hex(verification_vector)
         return verification_vector_hexed
 
     def SecretKeyContribution(self, polynom):
         self.sent_secret_key_contribution = self.dkg_instance.SecretKeyContribution(polynom)
         secret_key_contribution = self.sent_secret_key_contribution
-        self.incoming_secret_key_contribution[self.node_id] = secret_key_contribution[self.node_id]
+        self.incoming_secret_key_contribution[self.node_id_dkg] = secret_key_contribution[self.node_id_dkg]
         to_broadcast = bytes('', 'utf-8')
         for i in range(self.n):
             self.disposable_keys[i] = coincurve.keys.PrivateKey(coincurve.utils.get_valid_secret())
@@ -142,18 +145,18 @@ class DKGClient:
         polynom = self.GeneratePolynomial()
         verification_vector = self.VerificationVector(polynom)
         secret_key_contribution = self.SecretKeyContribution(polynom)
-        to_broadcast = dkg_contract.functions.broadcast(self.group_index, self.node_ids[self.node_id], verification_vector, secret_key_contribution)
+        to_broadcast = dkg_contract.functions.broadcast(self.group_index, self.node_id_contract, verification_vector, secret_key_contribution)
         res = sign_and_send(self.node_web3, to_broadcast, 8000000, self.wallet)
         receipt = await_receipt(self.node_web3, res.hex())
         status = receipt["status"]
         if status != 1:
-            to_broadcast = dkg_contract.functions.broadcast(self.group_index, self.node_ids[self.node_id], verification_vector, secret_key_contribution)
+            to_broadcast = dkg_contract.functions.broadcast(self.group_index, self.node_id_contract, verification_vector, secret_key_contribution)
             res = sign_and_send(self.node_web3, to_broadcast, 8000000, self.wallet)
             receipt = await_receipt(self.node_web3, res.hex())
             status = receipt["status"]
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)
-        logger.info(f'Everything is sent from {self.node_ids[self.node_id]} node')
+        logger.info(f'Everything is sent from {self.node_id_dkg} node')
 
     def RecieveVerificationVector(self, fromNode, event):
         input = binascii.hexlify(event['args']['verificationVector'])
@@ -183,26 +186,26 @@ class DKGClient:
             sent_public_keys.append(cur[-65:])
             cur = cur[:-65]
             incoming_secret_key_contribution.append(cur)
-        ecdh_key = coincurve.PublicKey(sent_public_keys[self.node_id]).multiply(coincurve.keys.PrivateKey.from_hex(self.wallet["private_key"][2:]).secret).format(compressed=False)[1:33]
-        incoming_secret_key_contribution[self.node_id] = decrypt(incoming_secret_key_contribution[self.node_id], ecdh_key)
-        self.incoming_secret_key_contribution[fromNode] = incoming_secret_key_contribution[self.node_id]
+        ecdh_key = coincurve.PublicKey(sent_public_keys[self.node_id_dkg]).multiply(coincurve.keys.PrivateKey.from_hex(self.wallet["private_key"][2:]).secret).format(compressed=False)[1:33]
+        incoming_secret_key_contribution[self.node_id_dkg] = decrypt(incoming_secret_key_contribution[self.node_id_dkg], ecdh_key)
+        self.incoming_secret_key_contribution[fromNode] = incoming_secret_key_contribution[self.node_id_dkg]
 
     def Verification(self, fromNode):
-        return self.dkg_instance.Verification(self.node_ids[self.node_id], self.incoming_secret_key_contribution[fromNode], self.incoming_verification_vector[fromNode])
+        return self.dkg_instance.Verification(self.node_id_dkg, self.incoming_secret_key_contribution[fromNode], self.incoming_verification_vector[fromNode])
 
     def SecretKeyShareCreate(self):
         self.secret_key_share = self.dkg_instance.SecretKeyShareCreate(self.incoming_secret_key_contribution)
         self.public_key = self.dkg_instance.GetPublicKeyFromSecretKey(self.secret_key_share)
 
     def SendComplaint(self, toNode, dkg_contract):
-        to_complaint = dkg_contract.functions.complaint(self.group_index, self.node_ids[self.node_id], self.node_ids[toNode])
+        to_complaint = dkg_contract.functions.complaint(self.group_index, self.node_id_contract, self.node_ids_dkg[toNode])
         res = sign_and_send(self.node_web3, to_complaint, 1000000, self.wallet)
         await_receipt(self.node_web3, res.hex())
-        logger.info(f'{self.node_ids[self.node_id]} node sent a complaint on {self.node_ids[toNode]} node')
+        logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
 
-    def Response(self, dkg_contract, fromNodeIndex):
+    def Response(self, dkg_contract):
         value_to_send = convert_g2_point_to_hex(self.dkg_instance.ComputeVerificationValue(decrypt(self.sent_secret_key_contribution[fromNodeIndex][:32], self.ecdh_keys[fromNodeIndex])))
-        to_response = dkg_contract.functions.response(self.group_index, self.node_ids[fromNodeIndex], self.disposable_keys[self.node_ids[fromNodeIndex]].to_int(), value_to_send)
+        to_response = dkg_contract.functions.response(self.group_index, self.node_id_contract, self.disposable_keys[self.node_id_dkg].to_int(), value_to_send)
         res = sign_and_send(self.node_web3, to_response, 8000000, self.wallet)
         receipt = await_receipt(self.node_web3, res.hex())
         status = receipt['status']
@@ -224,15 +227,15 @@ class DKGClient:
         logger.info("All data was recieved and verified, secret key share was generated")
 
     def Allright(self, dkg_contract):
-        allright = dkg_contract.functions.allright(self.group_index, self.node_ids[self.node_id])
+        allright = dkg_contract.functions.allright(self.group_index, self.node_id_contract)
         res = sign_and_send(self.node_web3, allright, 1000000, self.wallet)
         receipt = await_receipt(self.node_web3, res.hex())
         status = receipt['status']
         if status != 1:
-            allright = dkg_contract.functions.allright(self.group_index, self.node_ids[self.node_id])
+            allright = dkg_contract.functions.allright(self.group_index, self.node_id_contract)
             res = sign_and_send(self.node_web3, allright, 1000000, self.wallet)
             receipt = await_receipt(self.node_web3, res.hex())
             status = receipt['status']
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)
-        logger.info(f'{self.node_ids[self.node_id]} node sent an allright note')
+        logger.info(f'{self.node_id_dkg} node sent an allright note')

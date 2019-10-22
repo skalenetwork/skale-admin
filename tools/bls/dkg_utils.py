@@ -31,23 +31,28 @@ def init_dkg_client(schain_config_filepath, web3, wallet, n, t):
     with open(schain_config_filepath, 'r') as infile:
         config_file = json.load(infile)
 
-    node_id = config_file["skaleConfig"]["nodeInfo"]["nodeID"]
+    node_id_dkg = -1
+    node_id_contract = config_file["skaleConfig"]["nodeInfo"]["nodeID"]
     public_keys = [0] * n
     i = 0
-    node_ids = [0] * n
+    node_ids = dict()
     is_node_id_set = False
     for node in config_file["skaleConfig"]["sChain"]["nodes"]:
-        if node["nodeID"] == node_id and not is_node_id_set:
-            node_id = i
-            is_node_id_set = True
+        if node["nodeID"] == config_file["skaleConfig"]["nodeInfo"]["nodeID"]:
+            node_id_dkg = i
 
-        node_ids[i] = node["nodeID"]
+        node_ids_contract = dict()
+        node_ids_dkg = dict()
+
+        node_ids_contract[node["nodeID"]] = i
+        node_ids_dkg[i] = node["nodeID"]
+
         public_keys[i] = coincurve.PublicKey(bytes.fromhex("04" + node["publicKey"]))
         i += 1
 
     schain_name = config_file["skaleConfig"]["sChain"]["schainName"]
 
-    dkg_client = DKGClient(node_id, web3, wallet, t, n, schain_name, public_keys, node_ids)
+    dkg_client = DKGClient(node_id, node_id_contract, web3, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract)
     return dkg_client
 
 
@@ -58,9 +63,8 @@ def broadcast(dkg_client, web3):
 def send_complaint(dkg_client, index, web3):
     dkg_client.SendComplaint(index, get_dkg_contract(web3))
 
-
-def response(dkg_client, fromNodeIndex, web3):
-    dkg_client.Response(get_dkg_contract(web3), fromNodeIndex)
+def response(dkg_client, web3):
+    dkg_client.Response(get_dkg_contract(web3))
 
 
 def send_allright(dkg_client, web3):
@@ -107,7 +111,7 @@ def get_dkg_all_data_received_filter(web3, group_index):
 def get_dkg_bad_guy_filter(web3):
     contract = get_dkg_contract(web3)
     return contract.events.BadGuy.createFilter(fromBlock=0)
-
+  
 
 def get_schains_data_contract(web3):
     custom_contracts_contracts_data = read_custom_contracts_data()
@@ -130,7 +134,6 @@ def get_dkg_contract(web3):
 def read_custom_contracts_data():
     with open(ABI_FILEPATH, encoding='utf-8') as data_file:
         return json.loads(data_file.read())
-
 
 def get_secret_key_share_filepath(schain_id):
     return os.path.join(NODE_DATA_PATH, 'schains', schain_id, 'secret_key.json')
