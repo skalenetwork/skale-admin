@@ -10,14 +10,16 @@ dutils = DockerUtils()
 logger = logging.getLogger(__name__)
 
 
-def run_filebeat_service(node_ip, node_id):
+def run_filebeat_service(node_ip, node_id, skale):
+    contract_address = skale.manager.address
     template_data = {
         'ip': node_ip,
-        'id': node_id
+        'id': node_id,
+        'contract_address': contract_address
     }
-    logger.info(arguments_list_string({'Node ID': node_id, 'Node IP': node_ip},
-                                      'Processing Filebeat template'))
+    logger.info(arguments_list_string(
+        {'Node ID': node_id, 'Node IP': node_ip, 'Manager contract address': contract_address},
+        'Processing Filebeat template'))
     process_template(FILEBEAT_TEMPLATE_PATH, FILEBEAT_CONFIG_PATH, template_data)
     filebeat_container = dutils.client.containers.get(FILEBEAT_CONTAINER_NAME)
-    res =  filebeat_container.restart()
-    print(res)
+    filebeat_container.restart()
