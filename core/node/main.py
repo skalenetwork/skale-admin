@@ -89,7 +89,7 @@ class Node:
         node_id = self.skale.nodes_data.node_name_to_index(name)
         self.config.update({'node_id': node_id})
         self.run_schains_monitor(node_id)
-        run_filebeat_service(public_ip, node_id)
+        run_filebeat_service(public_ip, node_id, self.skale)
         return {'status': 1, 'data': self.config.get()}
 
     def get_node_id(self):
