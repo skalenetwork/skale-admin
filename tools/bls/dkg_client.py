@@ -98,7 +98,7 @@ def convert_g2_point_to_hex(data):
     return data_hexed
 
 class DKGClient:
-    def __init__(self, node_id_dkg, node_id_contract, node_web3, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contracts):
+    def __init__(self, node_id_dkg, node_id_contract, node_web3, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract):
         self.schain_name = schain_name
         self.group_index = node_web3.sha3(text = self.schain_name)
         self.node_id_contract = node_id_contract
@@ -112,7 +112,7 @@ class DKGClient:
         self.incoming_secret_key_contribution = ['0'] * n
         self.public_keys = public_keys
         self.node_ids_dkg = node_ids_dkg
-        self.node_ids_contracts = node_ids_contracts
+        self.node_ids_contract = node_ids_contract
         self.disposable_keys = ['0'] * n
         self.ecdh_keys = ['0'] * n
         #logger.info(f'Node id is {self.node_ids[node_id]}')
