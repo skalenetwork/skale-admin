@@ -112,7 +112,7 @@ def init_bls(web3, wallet, schain_name):
             raise FailedDKG("failed due to event FailedDKG")
 
         is_complaint_received = False
-        dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(web3, dkg_client.group_index, dkg_client.node_ids_contract)
+        dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(web3, dkg_client.group_index, dkg_client.node_id_contract)
         for event in dkg_complaint_sent_filter.get_all_entries():
             is_complaint_received = True
             response(dkg_client, web3)
