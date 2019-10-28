@@ -115,8 +115,7 @@ class DKGClient:
         self.node_ids_contract = node_ids_contract
         self.disposable_keys = ['0'] * n
         self.ecdh_keys = ['0'] * n
-        #logger.info(f'Node id is {self.node_ids[node_id]}')
-        logger.info(f'Node id is {self.node_id_dkg}')
+        logger.info(f'Node id on chain is {self.node_id_dkg} + "\n" Node id on contract is {self.node_id_contract}')
 
     def GeneratePolynomial(self):
         return self.dkg_instance.GeneratePolynomial()
@@ -219,10 +218,10 @@ class DKGClient:
         logger.info(f'{fromNodeIndex} node sent a response')
 
     def RecieveAll(self, fromNode, event):
-        self.RecieveVerificationVector(self.node_ids[fromNode], event)
-        self.RecieveSecretKeyContribution(self.node_ids[fromNode], event)
-        if not self.Verification(self.node_ids[fromNode]):
-            raise DkgVerificationError("Fatal error : user " + str(fromNode + 1) + " hasn't passed verification by user " + str(self.node_id + 1))
+        self.RecieveVerificationVector(self.node_ids_contract[fromNode], event)
+        self.RecieveSecretKeyContribution(self.node_ids_contract[fromNode], event)
+        if not self.Verification(self.node_ids_contract[fromNode]):
+            raise DkgVerificationError("Fatal error : user " + str(self.node_ids_contract[fromNode] + 1) + " hasn't passed verification by user " + str(self.node_id_dkg + 1))
         self.SecretKeyShareCreate()
         logger.info("All data was recieved and verified, secret key share was generated")
 
