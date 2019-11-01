@@ -89,6 +89,16 @@ class DockerUtils():
     def get_all_schain_containers(self, all=False, format=False):
         return self.client.containers.list(all=all, filters={'name': 'skale_schain_*'})
 
+    @format_containers
+    def get_base_skale_containers(self, all=False, format=False):
+        containers_list = self.client.containers.list(
+            all=all, filters={'name': 'skale_*'})
+        return list(filter(lambda container: self.is_base_container(container), containers_list))
+
+    def is_base_container(self, container):
+        name = container.attrs['Name']
+        return not name.startswith('/skale_schain') and not name.startswith('/skale_ima')
+
     def get_info(self, container_id):
         container_info = {}
         try:
@@ -98,7 +108,8 @@ class DockerUtils():
             container_info['stats'] = self.cli.inspect_container(container.id)
             container_info['status'] = container.status
         except docker.errors.NotFound:
-            logger.warning(f'Can not get info - no such container: {container_id}')
+            logger.warning(
+                f'Can not get info - no such container: {container_id}')
             container_info['status'] = CONTAINER_NOT_FOUND
         return container_info
 
