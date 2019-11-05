@@ -43,10 +43,12 @@ class SChainChecks():
         self.check_volume()
         self.check_container()
         self.check_ima_container()
-        if log: self.log_health_check()
-        if not self.is_healthy() and self.failhook: self.failhook(
-            f'sChain checks failed: {self.name}, {self.get_all()}, node_id: {node_id}',
-            level='warning')
+        if log:
+            self.log_health_check()
+        if not self.is_healthy() and self.failhook:
+            self.failhook(
+                f'sChain checks failed: {self.name}, {self.get_all()}, node_id: {node_id}',
+                level='warning')
 
     def check_data_dir(self):
         schain_dir_path = get_schain_dir_path(self.name)
@@ -102,4 +104,4 @@ class SChainChecks():
 
             logger.info(
                 arguments_list_string({'sChain name': self.name, 'Failed checks': failed_checks_str},
-                                     'Failed sChain checks', 'error'))
+                                      'Failed sChain checks', 'error'))

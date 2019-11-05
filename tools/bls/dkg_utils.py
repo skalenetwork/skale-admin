@@ -35,14 +35,12 @@ def init_dkg_client(schain_config_filepath, web3, wallet, n, t):
     node_id_contract = config_file["skaleConfig"]["nodeInfo"]["nodeID"]
     public_keys = [0] * n
     i = 0
-    node_ids = dict()
+    node_ids_contract = dict()
+    node_ids_dkg = dict()
     is_node_id_set = False
     for node in config_file["skaleConfig"]["sChain"]["nodes"]:
         if node["nodeID"] == config_file["skaleConfig"]["nodeInfo"]["nodeID"]:
             node_id_dkg = i
-
-        node_ids_contract = dict()
-        node_ids_dkg = dict()
 
         node_ids_contract[node["nodeID"]] = i
         node_ids_dkg[i] = node["nodeID"]

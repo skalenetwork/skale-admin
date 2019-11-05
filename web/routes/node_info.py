@@ -30,7 +30,7 @@ from tools.configs.web3 import ENDPOINT
 logger = logging.getLogger(__name__)
 
 
-def construct_node_info_bp(skale, wallet):
+def construct_node_info_bp(skale, wallet, docker_utils):
     node_info_bp = Blueprint('node_info', __name__)
 
     @node_info_bp.route('/get-rpc-credentials', methods=['GET'])
@@ -40,6 +40,14 @@ def construct_node_info_bp(skale, wallet):
             'endpoint': ENDPOINT
         }
         return construct_ok_response(rpc_credentials)
+
+    # todo: add option to disable all unauthorized requests
+    @node_info_bp.route('/healthchecks/containers', methods=['GET'])
+    def containers_healthcheck():
+        logger.debug(request)
+        base_containers_list = docker_utils.get_base_skale_containers(
+            all=True, format=True)
+        return construct_ok_response(base_containers_list)
 
     @node_info_bp.route('/about-node', methods=['GET'])
     @login_required
