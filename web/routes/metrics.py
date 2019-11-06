@@ -83,12 +83,13 @@ def construct_metrics_bp(skale, config, wallet):
                 [str(bounty.tx_dt), bounty.bounty, bounty.downtime, bounty.latency])
         return bounties_list
 
-    def get_bounty_from_events(start_date, end_date=None):
+    def get_bounty_from_events(start_date, end_date=None, is_limited=True):
         node_id = get_node_id(config)
         bounties = []
         start_block_number = find_block_for_tx_stamp(start_date)
         cur_block_number = skale.web3.eth.blockNumber
-        last_block_number = find_block_for_tx_stamp(end_date) if end_date is not None else cur_block_number
+        last_block_number = find_block_for_tx_stamp(end_date) if end_date is not None \
+            else cur_block_number
         while True and len(bounties) < FILTER_PERIOD:
             end_chunk_block_number = start_block_number + BLOCK_STEP - 1
             if end_chunk_block_number > last_block_number:
@@ -112,7 +113,7 @@ def construct_metrics_bp(skale, config, wallet):
                     args['averageDowntime'],
                     int(args['averageLatency'] / 1000)
                 ])
-                if len(bounties) >= FILTER_PERIOD:
+                if is_limited and len(bounties) >= FILTER_PERIOD:
                     break
             start_block_number = start_block_number + BLOCK_STEP
             if end_chunk_block_number >= last_block_number:
@@ -129,24 +130,39 @@ def construct_metrics_bp(skale, config, wallet):
     @metrics_bp.route('/first-bounties', methods=['GET'])
     @login_required
     def first_bounties():
-        node_start_date = datetime.utcfromtimestamp(get_start_date())
-        bounties_list = get_bounty_from_events(node_start_date)
+        force = request.args.get('force') == 'True'
+        if force:
+            node_start_date = datetime.utcfromtimestamp(get_start_date())
+            bounties_list = get_bounty_from_events(node_start_date)
+        else:
+            bounties_list = get_bounty_from_db(True, 12)
         return construct_ok_response({'bounties': bounties_list})
 
     @metrics_bp.route('/last-bounties', methods=['GET'])
     @login_required
     def last_bounties():
-        node_start_date = get_start_date()
-        last_reward_date = get_last_reward_date()
-        reward_period = skale.validators_data.get_reward_period()
-        start_date = datetime.utcfromtimestamp(max(last_reward_date - (reward_period * FILTER_PERIOD), node_start_date))
-        bounties_list = get_bounty_from_events(start_date)
+        force = request.args.get('force') == 'True'
+        if force:
+            node_start_date = get_start_date()
+            last_reward_date = get_last_reward_date()
+            reward_period = skale.validators_data.get_reward_period()
+            start_date = datetime.utcfromtimestamp(max(last_reward_date - (
+                    reward_period * (FILTER_PERIOD + 1)), node_start_date))
+            bounties_list = get_bounty_from_events(start_date)
+        else:
+            bounties_list = get_bounty_from_db(False, 12)
         return construct_ok_response({'bounties': bounties_list})
 
     @metrics_bp.route('/all-bounties', methods=['GET'])
     @login_required
     def all_bounties():
-        bounties_list = get_bounty_from_db()
+        force = request.args.get('force') == 'True'
+        if force:
+            node_start_date = datetime.utcfromtimestamp(get_start_date())
+            bounties_list = get_bounty_from_events(node_start_date, is_limited=False)
+        else:
+            bounties_list = get_bounty_from_db()
+
         return construct_ok_response({'bounties': bounties_list})
 
     @metrics_bp.route('/ash-id', methods=['GET'])
