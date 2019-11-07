@@ -26,7 +26,7 @@ from time import sleep
 from tools.configs import NODE_DATA_PATH
 
 sys.path.insert(0, NODE_DATA_PATH)
-# from dkgpython import dkg
+from dkgpython import dkg
 
 logger = logging.getLogger(__name__)
 
