@@ -24,7 +24,6 @@ from flask import Blueprint, request
 
 from core.db import BountyEvent
 from core.node.utils import get_node_id
-from tools.configs import DATETIME_FORMAT
 from web.helper import construct_ok_response, login_required
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,7 @@ BLOCK_STEP = 1000
 FILTER_PERIOD = 12
 
 
-def construct_metrics_bp(skale, config, wallet):
+def construct_metrics_bp(skale, config):
     metrics_bp = Blueprint('metrics', __name__)
 
     def get_start_date():
@@ -51,7 +50,6 @@ def construct_metrics_bp(skale, config, wallet):
             mid = (lo + hi) // 2
             block_data = skale.web3.eth.getBlock(mid)
             midval = datetime.utcfromtimestamp(block_data['timestamp'])
-            # print(f'block = {mid} - {midval}')
             if midval < tx_stamp:
                 lo = mid + 1
             elif midval > tx_stamp:
@@ -164,10 +162,5 @@ def construct_metrics_bp(skale, config, wallet):
             bounties_list = get_bounty_from_db()
 
         return construct_ok_response({'bounties': bounties_list})
-
-    @metrics_bp.route('/ash-id', methods=['GET'])
-    @login_required
-    def ash_id():
-        return str(get_node_id(config))
 
     return metrics_bp
