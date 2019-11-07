@@ -23,7 +23,7 @@ from http import HTTPStatus
 from flask import Blueprint, request
 from playhouse.shortcuts import model_to_dict
 from web.helper import construct_ok_response, login_required
-from core.db import BountyEvent, BountyReceipt
+from core.db import BountyEvent
 from tools.configs import DATETIME_FORMAT
 
 from core.node.utils import get_node_id
@@ -38,7 +38,8 @@ def construct_validators_bp(skale, config, wallet):
     @login_required
     def bounty_info():
         logger.debug(request)
-        events = BountyEvent.select(BountyEvent, BountyReceipt).join(BountyReceipt).execute()
+        # events = BountyEvent.select(BountyEvent, BountyReceipt).join(BountyReceipt).execute()
+        events = BountyEvent.select(BountyEvent).execute()
         events_list = []
         for event in events:
             event_dict = model_to_dict(event, backrefs=True)

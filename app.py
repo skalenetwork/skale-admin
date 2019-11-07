@@ -88,7 +88,7 @@ app.register_blueprint(construct_wallet_bp(wallet))
 app.register_blueprint(construct_node_info_bp(skale, wallet, docker_utils))
 app.register_blueprint(construct_security_bp())
 app.register_blueprint(construct_validators_bp(skale, config, wallet))
-app.register_blueprint(construct_metrics_bp(skale, config, wallet))
+app.register_blueprint(construct_metrics_bp(skale, config))
 
 wallet.get_or_generate()
 
