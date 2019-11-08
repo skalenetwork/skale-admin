@@ -26,7 +26,7 @@ from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
                                       IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
-from tools.configs import NODE_DATA_PATH_HOST, NODE_DATA_PATH
+from tools.configs import NODE_DATA_PATH_HOST, NODE_DATA_PATH, SKALE_DIR_HOST, SKALE_VOLUME_PATH
 
 dutils = DockerUtils()
 logger = logging.getLogger(__name__)
@@ -102,7 +102,13 @@ def run_ima_container(schain, env):
 def add_config_volume(run_args):
     if not run_args.get('volumes', None):
         run_args['volumes'] = {}
-    run_args['volumes'][NODE_DATA_PATH_HOST] = {
+    # mount /skale_node_data
+    run_args['volumes'][NODE_DATA_PATH_HOST] = { 
         'bind': NODE_DATA_PATH,
+        "mode": "ro"
+    }
+    # mount /skale_vol
+    run_args['volumes'][SKALE_DIR_HOST] = {
+        'bind': SKALE_VOLUME_PATH,
         "mode": "ro"
     }
