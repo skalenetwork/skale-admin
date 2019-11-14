@@ -53,6 +53,8 @@ def generate_schain_config(schain_name, node_id, skale):
     allocation = generate_allocation(schain_struct, schain_nodes)
     add_accounts_to_base_config(base_config, allocation)
 
+    add_chain_id(base_config, schain_name)
+
     logger.debug(base_config)
     return base_config
 
@@ -75,6 +77,12 @@ def generate_allocation(schain, schain_nodes):
                                                                     schain['name']))
     return allocation
 
+def add_chain_id(base_config, schain_name):
+    keccak_hash = keccak.new(digest_bits=256)
+    keccak_hash.update(schain_name.encode("utf-8"))
+    hash = keccak_hash.hexdigest()
+    hash = hash[:13]			# use 52 bits
+    base_config['params']['chainID'] = "0x" + hash
 
 def save_schain_config(schain_config, schain_name):
     schain_config_filepath = get_schain_config_filepath(schain_name)
