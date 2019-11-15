@@ -60,7 +60,8 @@ werkzeug_logger = logging.getLogger('werkzeug')  # todo: remove
 werkzeug_logger.setLevel(logging.WARNING)  # todo: remove
 
 skale = Skale(ENDPOINT, ABI_FILEPATH)
-wallet = LocalWallet(skale)
+web3_wallet = Web3Wallet(Web3(ENDPOINT), os.environ['PRIVATEKEY']) # todo: replace with rpc_wallet
+wallet = LocalWallet(skale, web3_wallet)
 config = ConfigStorage(NODE_CONFIG_FILEPATH)
 docker_utils = DockerUtils()
 node = Node(skale, config, wallet)
