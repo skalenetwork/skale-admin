@@ -27,7 +27,7 @@ from tools.configs.web3 import ABI_FILEPATH
 from tools.bls.dkg_client import DKGClient
 
 
-def init_dkg_client(schain_config_filepath, web3, wallet, n, t):
+def init_dkg_client(schain_config_filepath, web3, skale, wallet, n, t):
     with open(schain_config_filepath, 'r') as infile:
         config_file = json.load(infile)
 
@@ -50,7 +50,7 @@ def init_dkg_client(schain_config_filepath, web3, wallet, n, t):
 
     schain_name = config_file["skaleConfig"]["sChain"]["schainName"]
 
-    dkg_client = DKGClient(node_id_dkg, node_id_contract, web3, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract)
+    dkg_client = DKGClient(node_id_dkg, node_id_contract, web3, skale, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract)
     return dkg_client
 
 

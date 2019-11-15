@@ -75,14 +75,14 @@ def convert_g2_point_to_hex(data):
     return data_hexed
 
 class DKGClient:
-    def __init__(self, node_id_dkg, node_id_contract, node_web3, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract, skale):
+    def __init__(self, node_id_dkg, node_id_contract, node_web3, skale, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract):
         self.schain_name = schain_name
         self.group_index = node_web3.sha3(text = self.schain_name)
         self.node_id_contract = node_id_contract
         self.node_id_dkg = node_id_dkg
-        self.wallet = wallet
-        self.skale = skale
         self.node_web3 = node_web3
+        self.skale = skale
+        self.wallet = wallet
         self.t = t
         self.n = n
         self.dkg_instance = dkg(t, n)
@@ -119,7 +119,7 @@ class DKGClient:
         return to_broadcast
 
     # todo: change signature
-    def Broadcast(self, dkg_contract):
+    def Broadcast(self):
         polynom = self.GeneratePolynomial()
         verification_vector = self.VerificationVector(polynom)
         secret_key_contribution = self.SecretKeyContribution(polynom)

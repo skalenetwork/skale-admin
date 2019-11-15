@@ -25,7 +25,7 @@ from time import sleep
 
 from core.schains.helper import get_schain_config_filepath
 from tools.configs import NODE_DATA_PATH
-from tools.bls.dkg_utils import init_dkg_client, broadcast, get_dkg_broadcast_filter, get_dkg_contract, send_complaint, response, send_allright, get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_schains_data_contract, get_dkg_all_complaints_filter
+from tools.bls.dkg_utils import init_dkg_client, broadcast, get_dkg_broadcast_filter, send_complaint, response, send_allright, get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_schains_data_contract, get_dkg_all_complaints_filter
 from tools.bls.dkg_client import DkgVerificationError
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class FailedDKG(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 
-def init_bls(web3, wallet, schain_name):
+def init_bls(web3, skale, wallet, schain_name):
     
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
     config_filepath = get_schain_config_filepath(schain_name)
@@ -49,14 +49,13 @@ def init_bls(web3, wallet, schain_name):
         n = len(config_file["skaleConfig"]["sChain"]["nodes"])
         t = (2 * n + 1) // 3
 
-        dkg_contract = get_dkg_contract(web3)
-
         local_wallet = wallet.get_full()
 
-        dkg_client = init_dkg_client(config_filepath, web3, local_wallet, n, t)
+        #todo: remove local_wallet -> skale
+        dkg_client = init_dkg_client(config_filepath, web3, skale, local_wallet, n, t)
 
-        dkg_broadcast_filter = get_dkg_broadcast_filter(web3, dkg_client.group_index)
-        broadcast(dkg_client, web3)
+        dkg_broadcast_filter = get_dkg_broadcast_filter(skale, dkg_client.group_index)
+        broadcast(dkg_client)
 
         is_received = [False] * n
         is_received[dkg_client.node_id_dkg] = True
@@ -85,15 +84,15 @@ def init_bls(web3, wallet, schain_name):
                     logger.info(f'Recieved by {dkg_client.node_id_dkg}')
             sleep(1)
 
-        dkg_fail_filter = get_dkg_fail_filter(web3, dkg_client.group_index)
+        dkg_fail_filter = get_dkg_fail_filter(skale, dkg_client.group_index)
 
         is_comlaint_sent = False
         complainted_node_index = -1
         start_time_response = time.time()
         for i in range(n):
             if is_correct[i] == False or is_received[i] == False:
-                send_complaint(dkg_client, i, web3)
-                dkg_bad_guy_filter = get_dkg_bad_guy_filter(web3)
+                send_complaint(dkg_client, i)
+                dkg_bad_guy_filter = get_dkg_bad_guy_filter(skale)
                 is_comlaint_sent = True
                 complainted_node_index = i
 
@@ -102,25 +101,25 @@ def init_bls(web3, wallet, schain_name):
 
         is_allright_sent_list = [False] * n
         start_time_allright = time.time()
-        dkg_all_data_received_filter = get_dkg_all_data_received_filter(web3, dkg_client.group_index)
-        dkg_successful_filter = get_dkg_successful_filter(web3, dkg_client.group_index)
+        dkg_all_data_received_filter = get_dkg_all_data_received_filter(skale, dkg_client.group_index)
+        dkg_successful_filter = get_dkg_successful_filter(skale, dkg_client.group_index)
         if not is_comlaint_sent:
-            send_allright(dkg_client, web3)
+            send_allright(dkg_client)
             is_allright_sent_list[dkg_client.node_id_dkg] = True
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
             raise FailedDKG("failed due to event FailedDKG")
 
         is_complaint_received = False
-        dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(web3, dkg_client.group_index, dkg_client.node_id_contract)
+        dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(skale, dkg_client.group_index, dkg_client.node_id_contract)
         for event in dkg_complaint_sent_filter.get_all_entries():
             is_complaint_received = True
-            response(dkg_client, web3)
+            response(dkg_client)
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
             raise FailedDKG("failed due to event FailedDKG")
 
-        dkg_complaint_sent_filter = get_dkg_all_complaints_filter(web3, dkg_client.group_index)
+        dkg_complaint_sent_filter = get_dkg_all_complaints_filter(skale, dkg_client.group_index)
         if len(dkg_complaint_sent_filter.get_all_entries()) == 0:
             while False in is_allright_sent_list:
                 if time.time() - start_time_allright > 600:
@@ -131,7 +130,7 @@ def init_bls(web3, wallet, schain_name):
 
             for i in range(dkg_client.n):
                 if not is_allright_sent_list[i]:
-                    send_complaint(dkg_client, i, web3)
+                    send_complaint(dkg_client, i)
                     is_comlaint_sent = True
 
         is_comlaint_sent = len(dkg_complaint_sent_filter.get_all_entries())
@@ -145,7 +144,7 @@ def init_bls(web3, wallet, schain_name):
             if len(dkg_fail_filter.get_all_entries()) > 0:
                 raise FailedDKG("failed due to event FailedDKG")
             else:
-                send_complaint(dkg_client, complainted_node_index, web3)
+                send_complaint(dkg_client, complainted_node_index)
 
         if True in is_allright_sent_list:
             if len(dkg_successful_filter.get_all_entries()) > 0:
