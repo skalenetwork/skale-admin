@@ -20,11 +20,11 @@
 import os
 from sgx import SgxClient
 
-nek_config_item = 'NODE_ELASTIC_KEY_NAME'
+sgx_key_config_item = 'SGX_KEY_NAME'
 
 
 def generate_sgx_key(config):
-    if not os.environ.get('SGX_SERVER_URL', None) or config[nek_config_item]:
+    if not os.environ.get('SGX_SERVER_URL', None) or config[sgx_key_config_item]:
         return
     sgx = SgxClient(os.environ['SGX_SERVER_URL'])
     key_name = sgx.generate_key().keyName
@@ -32,5 +32,5 @@ def generate_sgx_key(config):
 
 
 def save_sgx_key(key_name, config):
-    config.update({nek_config_item: key_name})
+    config.update({sgx_key_config_item: key_name})
 
