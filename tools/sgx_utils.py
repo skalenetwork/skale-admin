@@ -20,11 +20,11 @@
 import os
 from sgx import SgxClient
 
-sgx_key_config_item = 'SGX_KEY_NAME'
+sgx_key_config_item = 'sgx_key_name'
 
 
 def generate_sgx_key(config):
-    if not os.environ.get('SGX_SERVER_URL', None) or config[sgx_key_config_item]:
+    if not os.environ.get('SGX_SERVER_URL') or config.safe_get(sgx_key_config_item):
         return
     sgx = SgxClient(os.environ['SGX_SERVER_URL'])
     key_name = sgx.generate_key().keyName
