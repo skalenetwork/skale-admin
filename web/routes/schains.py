@@ -71,8 +71,7 @@ def construct_schains_bp(skale, wallet, docker_utils, node):
         price_in_wei = skale.schains.get_schain_price(type_of_nodes, lifetime_seconds)
         name = Helper.generate_random_name()
 
-        res = skale.manager.create_schain(lifetime_seconds, type_of_nodes, price_in_wei, name,
-                                          wallet.get_full())
+        res = skale.manager.create_schain(lifetime_seconds, type_of_nodes, price_in_wei, name)
         receipt = Helper.await_receipt(skale.web3, res['tx'])
         res = {'res': receipt['status']}
         return construct_response(HTTPStatus.CREATED, res)

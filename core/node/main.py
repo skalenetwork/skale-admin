@@ -68,8 +68,8 @@ class Node:
             logger.error(required_balance_msg)
             return {'status': 0, 'errors': [err_msg, required_balance_msg]}
 
-        local_wallet = self.wallet.get_full()
-        res = self.skale.manager.create_node(ip, int(port), name, local_wallet, public_ip)
+        local_wallet = self.wallet.get()
+        res = self.skale.manager.create_node(ip, int(port), name, public_ip)
         logger.info(f'create_node res: {res}')
 
         self.install_nonce = res['nonce']

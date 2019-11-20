@@ -26,6 +26,7 @@ from peewee import SqliteDatabase
 import sentry_sdk
 
 from skale import Skale
+from skale.wallets import RPCWallet
 
 from core.node import Node
 from core.local_wallet import LocalWallet
@@ -39,6 +40,7 @@ from tools.config_storage import ConfigStorage
 from tools.token_utils import TokenUtils
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
+from tools.sgx_utils import generate_sgx_key
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from web.user import User
@@ -59,8 +61,9 @@ logger = logging.getLogger(__name__)
 werkzeug_logger = logging.getLogger('werkzeug')  # todo: remove
 werkzeug_logger.setLevel(logging.WARNING)  # todo: remove
 
-skale = Skale(ENDPOINT, ABI_FILEPATH)
-wallet = LocalWallet(skale)
+rpc_wallet = RPCWallet(os.environ['TM_URL'])
+skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+wallet = LocalWallet(skale, rpc_wallet)
 config = ConfigStorage(NODE_CONFIG_FILEPATH)
 docker_utils = DockerUtils()
 node = Node(skale, config, wallet)
@@ -113,5 +116,6 @@ if __name__ == '__main__':
     logger.info(arguments_list_string({'Root account token': token}, 'Starting Flask server'))
     if not User.table_exists():
         User.create_table()
+    generate_sgx_key(config)
     app.secret_key = FLASK_SECRET_KEY_FILE
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)

@@ -31,37 +31,23 @@ DEPOSIT_AMOUNT_SKL_WEI = DEPOSIT_AMOUNT_SKL * (10 ** 18)
 DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10 ** 18))
 
 class LocalWallet:  # todo: refactor
-    def __init__(self, skale):
+    def __init__(self, skale, wallet):
         self.skale = skale
+        self.wallet = wallet
         #self.skale.web3.eth.enable_unaudited_features()  # todo: deal with this
 
     def generate_local_wallet(self, password=None, extra_entropy=''):
-        logger.info('generating local wallet')
-        # todo: pass optional extra_entropy
-        account = self.skale.web3.eth.account.create()
-        private_key = account.privateKey.hex()
-        account_dict = {'address': account.address, 'private_key': private_key}
-
-        local_wallet_config = ConfigStorage(LOCAL_WALLET_FILEPATH)
-        local_wallet_config.update(account_dict)
-
-        logger.info(f'local wallet address: {account.address}')
-        return {'address': account.address}
+        return {'address': self.wallet.address}
 
     def get_or_generate(self):
-        wallet = self.get()
-        if not wallet.get('address', None):
-            wallet = self.generate_local_wallet()
-        return wallet
+        return self.generate_local_wallet()
 
     def get_full(self):
         local_wallet_config = ConfigStorage(LOCAL_WALLET_FILEPATH)
         return local_wallet_config.get()
 
     def get(self):
-        wallet = self.get_full()
-        wallet.pop('private_key', None)  # todo: refactor
-        return wallet
+        return self.generate_local_wallet()
 
     def get_with_balance(self):
         wallet = self.get()
