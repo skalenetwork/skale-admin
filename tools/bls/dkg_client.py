@@ -118,7 +118,6 @@ class DKGClient:
             to_broadcast = to_broadcast + secret_key_contribution[i] + self.disposable_keys[i].public_key.format(compressed=False)
         return to_broadcast
 
-    # todo: change signature
     def Broadcast(self):
         polynom = self.GeneratePolynomial()
         verification_vector = self.VerificationVector(polynom)
@@ -179,14 +178,12 @@ class DKGClient:
         self.secret_key_share = self.dkg_instance.SecretKeyShareCreate(self.incoming_secret_key_contribution)
         self.public_key = self.dkg_instance.GetPublicKeyFromSecretKey(self.secret_key_share)
 
-    # todo: change signature
-    def SendComplaint(self, toNode, dkg_contract):
+    def SendComplaint(self, toNode):
         res = self.skale.dkg.complaint(self.group_index, self.node_id_contract, self.node_ids_dkg[toNode])
         wait_receipt(self.node_web3, res.hex(), timeout=20)
         logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
 
-    # todo: change signature
-    def Response(self, dkg_contract):
+    def Response(self):
         value_to_send = convert_g2_point_to_hex(
             self.dkg_instance.ComputeVerificationValue(
                 decrypt(
@@ -221,8 +218,7 @@ class DKGClient:
         self.SecretKeyShareCreate()
         logger.info("All data was recieved and verified, secret key share was generated")
 
-    # todo: change signature
-    def Allright(self, dkg_contract):
+    def Allright(self):
         res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
         receipt = wait_receipt(self.node_web3, res.hex(), timeout=20)
         status = receipt['status']

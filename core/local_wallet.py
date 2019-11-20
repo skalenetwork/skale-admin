@@ -31,13 +31,13 @@ DEPOSIT_AMOUNT_SKL_WEI = DEPOSIT_AMOUNT_SKL * (10 ** 18)
 DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10 ** 18))
 
 class LocalWallet:  # todo: refactor
-    def __init__(self, skale, rpc_wallet):
+    def __init__(self, skale, wallet):
         self.skale = skale
-        self.rpc_wallet = rpc_wallet
+        self.wallet = wallet
         #self.skale.web3.eth.enable_unaudited_features()  # todo: deal with this
 
     def generate_local_wallet(self, password=None, extra_entropy=''):
-        return {'address': self.rpc_wallet.address}
+        return {'address': self.wallet.address}
 
     def get_or_generate(self):
         return self.generate_local_wallet()
