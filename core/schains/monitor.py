@@ -43,10 +43,11 @@ dutils = DockerUtils()
 
 
 class SchainsMonitor():
-    def __init__(self, skale, wallet, node_id):
+    def __init__(self, skale, wallet, node_id, sgx_key_name):
         self.skale = skale
         self.node_id = node_id
         self.wallet = wallet
+        self.sgx_key_name = sgx_key_name
         self.monitor = CustomThread('sChains monitor', self.monitor_schains,
                                     interval=MONITOR_INTERVAL)
         self.monitor.start()
@@ -79,7 +80,7 @@ class SchainsMonitor():
             self.init_schain_config(name)
         if not checks['dkg']:
             try:
-                init_bls(self.skale.web3, self.skale, schain['name'])
+                init_bls(self.skale.web3, self.skale, schain['name'], self.sgx_key_name)
             except FailedDKG:
                 # todo: clean up here
                 exit(1)

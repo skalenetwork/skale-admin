@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import coincurve
 import json
 from web3 import Web3
 
@@ -27,7 +26,7 @@ from tools.configs.web3 import ABI_FILEPATH
 from tools.bls.dkg_client import DKGClient
 
 
-def init_dkg_client(schain_config_filepath, web3, skale, wallet, n, t):
+def init_dkg_client(schain_config_filepath, web3, skale, wallet, n, t, sgx_eth_key_name):
     with open(schain_config_filepath, 'r') as infile:
         config_file = json.load(infile)
 
@@ -45,20 +44,20 @@ def init_dkg_client(schain_config_filepath, web3, skale, wallet, n, t):
         node_ids_contract[node["nodeID"]] = i
         node_ids_dkg[i] = node["nodeID"]
 
-        public_keys[i] = coincurve.PublicKey(bytes.fromhex("04" + node["publicKey"]))
+        public_keys[i] = node["publicKey"]
         i += 1
 
     schain_name = config_file["skaleConfig"]["sChain"]["schainName"]
 
-    dkg_client = DKGClient(node_id_dkg, node_id_contract, web3, skale, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract)
+    dkg_client = DKGClient(node_id_dkg, node_id_contract, web3, skale, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name)
     return dkg_client
 
 
 def generate_bls_key(dkg_client, bls_key_name):
     return dkg_client.GenerateKey(bls_key_name)
 
-def broadcast(dkg_client):
-    dkg_client.Broadcast()
+def broadcast(dkg_client, poly_name):
+    dkg_client.Broadcast(poly_name)
 
 
 def send_complaint(dkg_client, index):

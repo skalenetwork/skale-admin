@@ -46,7 +46,7 @@ class Node:
         self.install_address = None
 
     def run_schains_monitor(self, node_id):
-        self.schains_monitor = SchainsMonitor(self.skale, self.wallet, node_id)
+        self.schains_monitor = SchainsMonitor(self.skale, self.wallet, node_id, self.config.safe_get("sgx_key_name"))
         self.schains_cleaner = SChainsCleaner(self.skale, node_id)
 
     def create(self, ip, public_ip, port, name):

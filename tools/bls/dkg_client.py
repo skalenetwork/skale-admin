@@ -59,7 +59,7 @@ def convert_g2_point_to_hex(data):
     return data_hexed
 
 class DKGClient:
-    def __init__(self, node_id_dkg, node_id_contract, node_web3, skale, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract):
+    def __init__(self, node_id_dkg, node_id_contract, node_web3, skale, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract, eth_key_name):
         self.sgx = SgxClient(os.environ['SGX_SERVER_URL'])
         self.schain_name = schain_name
         self.group_index = node_web3.sha3(text = self.schain_name)
@@ -67,6 +67,7 @@ class DKGClient:
         self.node_id_dkg = node_id_dkg
         self.node_web3 = node_web3
         self.skale = skale
+        self.eth_key_name = eth_key_name
         self.t = t
         self.n = n
         self.incoming_verification_vector = ['0'] * n
@@ -94,7 +95,8 @@ class DKGClient:
     def Broadcast(self, poly_name):
         poly_success = self.GeneratePolynomial(poly_name)
         if not poly_success:
-            raise ValueError("SGX DKG POLYNOM GENERATION FAILED, TRY OTHER NAME OR ETC.")
+            raise ValueError("SGX DKG POLYNOM GENERATION FAILED")
+
         verification_vector = self.VerificationVector()
         secret_key_contribution = self.SecretKeyContribution()
         res = self.skale.dkg.broadcast(self.group_index,

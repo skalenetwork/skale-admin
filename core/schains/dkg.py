@@ -22,6 +22,7 @@ import json
 import logging
 import time
 from time import sleep
+import random
 
 from core.schains.helper import get_schain_config_filepath
 from tools.configs import NODE_DATA_PATH
@@ -34,12 +35,10 @@ class FailedDKG(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 
-def init_bls(web3, skale, schain_name):
+def init_bls(web3, skale, schain_name, sgx_key_name):
     
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
     config_filepath = get_schain_config_filepath(schain_name)
-
-    group_index = web3.sha3(text = schain_name)
 
     if not os.path.isfile(secret_key_share_filepath):
 
@@ -49,10 +48,12 @@ def init_bls(web3, skale, schain_name):
         n = len(config_file["skaleConfig"]["sChain"]["nodes"])
         t = (2 * n + 1) // 3
 
-        dkg_client = init_dkg_client(config_filepath, web3, skale, n, t)
+        dkg_client = init_dkg_client(config_filepath, web3, skale, n, t, sgx_key_name)
+        dkg_id = random.randint(0, 2**256)
+        poly_name = "POLY:SCHAIN_ID:" + dkg_client.group_index + ":NODE_ID:" str(dkg_client.node_id_dkg) + ":DKG_ID:" + str(dkg_id)
 
         dkg_broadcast_filter = get_dkg_broadcast_filter(skale, dkg_client.group_index)
-        broadcast(dkg_client)
+        broadcast(dkg_client, poly_name)
 
         is_received = [False] * n
         is_received[dkg_client.node_id_dkg] = True
@@ -101,9 +102,10 @@ def init_bls(web3, skale, schain_name):
         dkg_all_data_received_filter = get_dkg_all_data_received_filter(skale, dkg_client.group_index)
         dkg_successful_filter = get_dkg_successful_filter(skale, dkg_client.group_index)
         encrypted_bls_key = 0
+        bls_key_name = "BLS_KEY:SCHAIN_ID:" + dkg_client.group_index + ":NODE_ID:" + str(dkg_client.node_id_contract) + ":DKG_ID:" + str(dkg_id)
         if not is_comlaint_sent:
             send_allright(dkg_client)
-            encrypted_bls_key = generate_bls_key(dkg_client, key_name)
+            encrypted_bls_key = generate_bls_key(dkg_client, bls_key_name)
             is_allright_sent_list[dkg_client.node_id_dkg] = True
 
         logger.info(f'Node`s encrypted bls key  is : {encrypted_bls_key}')
