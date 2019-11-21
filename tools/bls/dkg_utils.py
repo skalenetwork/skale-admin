@@ -54,6 +54,9 @@ def init_dkg_client(schain_config_filepath, web3, skale, wallet, n, t):
     return dkg_client
 
 
+def generate_bls_key(dkg_client, bls_key_name):
+    return dkg_client.GenerateKey(bls_key_name)
+
 def broadcast(dkg_client):
     dkg_client.Broadcast()
 
@@ -62,8 +65,8 @@ def send_complaint(dkg_client, index):
     dkg_client.SendComplaint(index)
 
 
-def response(dkg_client):
-    dkg_client.Response()
+def response(dkg_client , from_node_index):
+    dkg_client.Response(from_node_index)
 
 
 def send_allright(dkg_client):

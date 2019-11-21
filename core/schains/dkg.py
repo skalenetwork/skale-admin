@@ -25,7 +25,7 @@ from time import sleep
 
 from core.schains.helper import get_schain_config_filepath
 from tools.configs import NODE_DATA_PATH
-from tools.bls.dkg_utils import init_dkg_client, broadcast, get_dkg_broadcast_filter, send_complaint, response, send_allright, get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_schains_data_contract, get_dkg_all_complaints_filter
+from tools.bls.dkg_utils import init_dkg_client, broadcast, get_dkg_broadcast_filter, send_complaint, response, send_allright, get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_schains_data_contract, get_dkg_all_complaints_filter, generate_bls_key
 from tools.bls.dkg_client import DkgVerificationError
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class FailedDKG(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 
-def init_bls(web3, skale, wallet, schain_name):
+def init_bls(web3, skale, schain_name):
     
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
     config_filepath = get_schain_config_filepath(schain_name)
@@ -49,10 +49,7 @@ def init_bls(web3, skale, wallet, schain_name):
         n = len(config_file["skaleConfig"]["sChain"]["nodes"])
         t = (2 * n + 1) // 3
 
-        local_wallet = wallet.get_full()
-
-        #todo: remove local_wallet -> skale
-        dkg_client = init_dkg_client(config_filepath, web3, skale, local_wallet, n, t)
+        dkg_client = init_dkg_client(config_filepath, web3, skale, n, t)
 
         dkg_broadcast_filter = get_dkg_broadcast_filter(skale, dkg_client.group_index)
         broadcast(dkg_client)
@@ -76,12 +73,12 @@ def init_bls(web3, skale, wallet, schain_name):
                     is_received[dkg_client.node_ids_contract[from_node]] = True
 
                     try:
-                        dkg_client.RecieveAll(from_node, event)
+                        dkg_client.RecieveFromNode(from_node, event)
                         is_correct[dkg_client.node_ids_contract[from_node]] = True
                     except DkgVerificationError:
                         continue
 
-                    logger.info(f'Recieved by {dkg_client.node_id_dkg}')
+                    logger.info(f'Recieved by {dkg_client.node_id_dkg} from {dkg_client.node_ids_contract[from_node]}')
             sleep(1)
 
         dkg_fail_filter = get_dkg_fail_filter(skale, dkg_client.group_index)
@@ -103,9 +100,13 @@ def init_bls(web3, skale, wallet, schain_name):
         start_time_allright = time.time()
         dkg_all_data_received_filter = get_dkg_all_data_received_filter(skale, dkg_client.group_index)
         dkg_successful_filter = get_dkg_successful_filter(skale, dkg_client.group_index)
+        encrypted_bls_key = 0
         if not is_comlaint_sent:
             send_allright(dkg_client)
+            encrypted_bls_key = generate_bls_key(dkg_client, key_name)
             is_allright_sent_list[dkg_client.node_id_dkg] = True
+
+        logger.info(f'Node`s encrypted bls key  is : {encrypted_bls_key}')
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
             raise FailedDKG("failed due to event FailedDKG")
@@ -114,7 +115,7 @@ def init_bls(web3, skale, wallet, schain_name):
         dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(skale, dkg_client.group_index, dkg_client.node_id_contract)
         for event in dkg_complaint_sent_filter.get_all_entries():
             is_complaint_received = True
-            response(dkg_client)
+            response(dkg_client, event["fromNodeIndex"])
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
             raise FailedDKG("failed due to event FailedDKG")
@@ -152,8 +153,7 @@ def init_bls(web3, skale, wallet, schain_name):
                 common_public_key = schains_data_contract.functions.getGroupsPublicKey(dkg_client.group_index).call()
 
                 with open(secret_key_share_filepath, 'w') as outfile:
-                    json.dump({"secret_key :": dkg_client.secret_key_share,
-                                "common_public_key :": common_public_key,
+                    json.dump({ "common_public_key :": common_public_key,
                                 "public_key :": dkg_client.public_key}, outfile)
 
 

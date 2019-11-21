@@ -79,7 +79,7 @@ class SchainsMonitor():
             self.init_schain_config(name)
         if not checks['dkg']:
             try:
-                init_bls(self.skale.web3, self.skale, self.wallet, schain['name'])
+                init_bls(self.skale.web3, self.skale, schain['name'])
             except FailedDKG:
                 # todo: clean up here
                 exit(1)
