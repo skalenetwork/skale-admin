@@ -151,7 +151,9 @@ class DKGClient:
         logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
 
     def Response(self, from_node_index):
-        share, dh_key = self.sgx.complaint_response(self.poly_name, self.n, self.t, from_node_index)
+        response = self.sgx.complaint_response(self.poly_name, self.n, self.t, from_node_index)
+        share, dh_key = response['share'], response['dh_key']
+        
         share = convert_g2_point_to_hex(share)
 
         res = self.skale.dkg.response(self.group_index,
