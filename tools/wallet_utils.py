@@ -29,8 +29,7 @@ DEPOSIT_AMOUNT_SKL_WEI = DEPOSIT_AMOUNT_SKL * (10 ** 18)
 DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10 ** 18))
 
 
-
-def wallet_with_balance(skale): # todo: move to the skale.py
+def wallet_with_balance(skale):  # todo: move to the skale.py
     address = skale.wallet.address
     eth_balance_wei = skale.web3.eth.getBalance(address)
     skale_balance_wei = skale.token.get_balance(address)
@@ -43,11 +42,11 @@ def wallet_with_balance(skale): # todo: move to the skale.py
     }
 
 
-def check_required_balance(skale): # todo: move to the skale.py
+def check_required_balance(skale):  # todo: move to the skale.py
     balances = wallet_with_balance(skale)
     return int(balances['eth_balance_wei']) >= DEPOSIT_AMOUNT_ETH_WEI and int(balances[
         'skale_balance_wei']) >= DEPOSIT_AMOUNT_SKL_WEI
 
 
-def get_required_balance(): # todo: move to the skale.py, request valuest from skale-manager
+def get_required_balance():  # todo: move to the skale.py, request valuest from skale-manager
     return {'eth_balance': DEPOSIT_AMOUNT_ETH, 'skale_balance': DEPOSIT_AMOUNT_SKL}

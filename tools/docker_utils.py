@@ -72,7 +72,7 @@ class DockerUtils():
     def create_data_volume(self, name, size=None):
         driver_opts = {'size': str(size)} if size else None
         logging.info(
-            f'Creating volume, driver: convoy, size: {size}, name: {name}, driver_opts: {driver_opts}')
+            f'Creating volume - size: {size}, name: {name}, driver_opts: {driver_opts}')
         volume = self.client.volumes.create(
             name=name,
             driver='convoy',

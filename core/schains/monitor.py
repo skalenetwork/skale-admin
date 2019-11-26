@@ -59,14 +59,15 @@ class SchainsMonitor():
 
     def monitor_schains(self, opts):
         schains = self.skale.schains_data.get_schains_for_node(self.node_id)
-        schains_on_node = sum(map(lambda schain: schain['active'] == True, schains))
+        schains_on_node = sum(map(lambda schain: schain['active'], schains))
         schains_holes = len(schains) - schains_on_node
         logger.info(
             arguments_list_string({'Node ID': self.node_id, 'sChains on node': schains_on_node,
                                    'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
         threads = []
         for schain in schains:
-            if not schain['active']: continue
+            if not schain['active']:
+                continue
             schain_thread = CustomThread(f'sChain monitor: {schain["name"]}', self.monitor_schain,
                                          opts=schain, once=True)
             schain_thread.start()
@@ -85,7 +86,7 @@ class SchainsMonitor():
             self.init_schain_config(name)
         if not checks['dkg']:
             try:
-                init_bls(self.skale.web3, self.skale, self.wallet, schain['name']) # todo!
+                init_bls(self.skale.web3, self.skale, self.wallet, schain['name'])  # todo!
             except FailedDKG:
                 # todo: clean up here
                 exit(1)

@@ -27,5 +27,3 @@ FLASK_APP_PORT = int(os.environ['FLASK_APP_PORT'])
 FLASK_DEBUG_MODE = os.environ['FLASK_DEBUG_MODE'] == 'True'
 
 SKALE_LIB_NAME = 'skale.py'
-
-

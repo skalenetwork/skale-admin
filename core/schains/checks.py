@@ -103,5 +103,8 @@ class SChainChecks():
             failed_checks_str = ", ".join(failed_checks)
 
             logger.info(
-                arguments_list_string({'sChain name': self.name, 'Failed checks': failed_checks_str},
-                                      'Failed sChain checks', 'error'))
+                arguments_list_string(
+                    {'sChain name': self.name, 'Failed checks': failed_checks_str},
+                    'Failed sChain checks', 'error'
+                )
+            )

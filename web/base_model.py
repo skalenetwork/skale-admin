@@ -25,5 +25,6 @@ database = SqliteDatabase(DB_FILE)
 
 class BaseModel(Model):
     database = database
+
     class Meta:
         database = database

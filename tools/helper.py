@@ -39,9 +39,11 @@ def write_json(path, content):
         json.dump(content, outfile, indent=4)
         outfile.close()
 
+
 def init_file(path, content=None):
     if not os.path.exists(path):
         write_json(path, content)
+
 
 def files(path):
     for file in os.listdir(path):

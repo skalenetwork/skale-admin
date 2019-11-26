@@ -22,14 +22,15 @@ import binascii
 import logging
 import coincurve
 
-from time import sleep
+from skale.utils.web3_utils import wait_receipt
+
 from tools.configs import NODE_DATA_PATH
 
 sys.path.insert(0, NODE_DATA_PATH)
-# from dkgpython import dkg
-from skale.utils.web3_utils import wait_receipt
+# from dkgpython import dkg # todo: uncomment
 
 logger = logging.getLogger(__name__)
+
 
 def bxor(b1, b2):
     parts = []
@@ -37,18 +38,22 @@ def bxor(b1, b2):
         parts.append(bytes([b1 ^ b2]))
     return b''.join(parts)
 
+
 def encrypt(plaintext, secret_key):
-    plaintext_in_bytes = bytearray(int(plaintext).to_bytes(32, byteorder ='big'))
+    plaintext_in_bytes = bytearray(int(plaintext).to_bytes(32, byteorder='big'))
     return bxor(plaintext_in_bytes, secret_key)
+
 
 def decrypt(ciphertext, secret_key):
     xor_val = bxor(ciphertext, secret_key)
     ret_val = binascii.hexlify(xor_val)
     return str(int(ret_val.decode(), 16))
 
+
 class DkgVerificationError(Exception):
     def __init__(self, msg):
         super().__init__(msg)
+
 
 def convert_g2_points_to_hex(data):
     data_hexed = "0x"
@@ -59,10 +64,11 @@ def convert_g2_points_to_hex(data):
                 temp = '0' + temp
             data_hexed += temp
             temp = hex(int(elem[1]))[2:]
-            while len(temp) < 64 :
+            while len(temp) < 64:
                 temp = '0' + temp
             data_hexed += temp
     return data_hexed
+
 
 def convert_g2_point_to_hex(data):
     data_hexed = "0x"
@@ -74,10 +80,12 @@ def convert_g2_point_to_hex(data):
             data_hexed += temp
     return data_hexed
 
+
 class DKGClient:
-    def __init__(self, node_id_dkg, node_id_contract, node_web3, skale, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract):
+    def __init__(self, node_id_dkg, node_id_contract, node_web3, skale, wallet, t, n,
+                    schain_name, public_keys, node_ids_dkg, node_ids_contract):
         self.schain_name = schain_name
-        self.group_index = node_web3.sha3(text = self.schain_name)
+        self.group_index = node_web3.sha3(text=self.schain_name)
         self.node_id_contract = node_id_contract
         self.node_id_dkg = node_id_dkg
         self.node_web3 = node_web3
