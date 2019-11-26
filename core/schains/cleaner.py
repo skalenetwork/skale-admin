@@ -20,27 +20,41 @@
 import os
 import logging
 import shutil
+from time import sleep
+
+from skale import Skale
 
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
+from core.schains.runner import get_container_name
+
 
 from tools.docker_utils import DockerUtils
-from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.custom_thread import CustomThread
 from tools.str_formatters import arguments_list_string
-from . import CLEANER_INTERVAL
-
-from core.schains.runner import get_container_name
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
+from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+
+from . import CLEANER_INTERVAL, MONITOR_INTERVAL
+
 
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 
 class SChainsCleaner():
-    def __init__(self, skale, node_id):
+    def __init__(self, skale, node_config):
         self.skale = skale
-        self.node_id = node_id
+        self.node_config = node_config
+        self.skale_events = Skale(ENDPOINT, ABI_FILEPATH)
+        CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
+
+    def wait_for_node_id(self, opts):
+        while not self.node_config.id:
+            logger.debug('Waiting for the node_id in sChains Cleaner...')
+            sleep(MONITOR_INTERVAL)
+        self.node_id = self.node_config.id
         self.monitor = CustomThread('sChains cleaner monitor', self.schains_cleaner,
                                     interval=CLEANER_INTERVAL)
         self.monitor.start()
@@ -49,7 +63,7 @@ class SChainsCleaner():
         schains_on_node = self.get_schains_on_node()
         schain_ids = self.schain_names_to_ids(schains_on_node)
 
-        event_filter = self.skale.schains.contract.events.SchainDeleted.createFilter(
+        event_filter = self.skale_events.schains.contract.events.SchainDeleted.createFilter(
             fromBlock=0, argument_filters={'schainId': schain_ids})
         events = event_filter.get_all_entries()
 

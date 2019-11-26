@@ -35,12 +35,11 @@ def construct_nodes_bp(skale, node, docker_utils):
     @login_required
     def node_info():
         logger.debug(request)
-        node_info = node.get_node_info()
-        return construct_ok_response(node_info)
+        return construct_ok_response(node.info)
 
     @nodes_bp.route('/create-node', methods=['POST'])
     @login_required
-    def create_node():
+    def register_node():
         logger.debug(request)
         if not request.json:
             abort(400)
@@ -62,7 +61,7 @@ def construct_nodes_bp(skale, node, docker_utils):
             logger.error(error_msg)
             return construct_err_response(HTTPStatus.BAD_REQUEST, [error_msg])
 
-        res = node.create(ip, public_ip, port, name)
+        res = node.register(ip, public_ip, port, name)
         if res['status'] != 1:
             return construct_err_response(HTTPStatus.INTERNAL_SERVER_ERROR, res['errors'])
         return construct_response(HTTPStatus.CREATED, res['data'])

@@ -44,7 +44,7 @@ def construct_auth_bp(user_session, token):
             'token'):
             return construct_err_response(400, [{'msg': 'Wrong data provided'}])
 
-        if request_data['token'] != token:  # todo: check token from file!
+        if request_data['token'] != token:
             return construct_err_response(400, [{'msg': 'Token not match'}])
 
         user, err = User.join(request_data['username'], request_data['password'], token)

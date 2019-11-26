@@ -25,18 +25,23 @@ from subprocess import PIPE
 
 from jinja2 import Environment
 
+
 logger = logging.getLogger(__name__)
 
 
-def read_json(path):
-    with open(path, encoding='utf-8') as data_file:
+def read_json(path, mode='r'):
+    with open(path, mode=mode, encoding='utf-8') as data_file:
         return json.loads(data_file.read())
 
 
 def write_json(path, content):
     with open(path, 'w') as outfile:
         json.dump(content, outfile, indent=4)
+        outfile.close()
 
+def init_file(path, content=None):
+    if not os.path.exists(path):
+        write_json(path, content)
 
 def files(path):
     for file in os.listdir(path):
@@ -64,10 +69,6 @@ def run_cmd(cmd, env={}, shell=False):
 
 def format_output(res):
     return res.stdout.decode('UTF-8').rstrip(), res.stderr.decode('UTF-8').rstrip()
-
-
-def get_sentry_env_name(manager_address):
-    return f'manager@{manager_address}'
 
 
 def read_file(path):

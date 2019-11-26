@@ -23,7 +23,6 @@ from datetime import datetime
 from flask import Blueprint, request
 
 from core.db import BountyEvent
-from core.node.utils import get_node_id
 from web.helper import construct_ok_response, login_required
 
 logger = logging.getLogger(__name__)
@@ -36,11 +35,11 @@ def construct_metrics_bp(skale, config):
     metrics_bp = Blueprint('metrics', __name__)
 
     def get_start_date():
-        node_id = get_node_id(config)
+        node_id = config.id
         return skale.nodes_data.get(node_id)['start_date']
 
     def get_last_reward_date():
-        node_id = get_node_id(config)
+        node_id = config.id
         return skale.nodes_data.get(node_id)['last_reward_date']
 
     def find_block_for_tx_stamp(tx_stamp, lo=0, hi=None):
@@ -82,7 +81,7 @@ def construct_metrics_bp(skale, config):
         return bounties_list
 
     def get_bounty_from_events(start_date, end_date=None, is_limited=True):
-        node_id = get_node_id(config)
+        node_id = config.id
         bounties = []
         start_block_number = find_block_for_tx_stamp(start_date)
         cur_block_number = skale.web3.eth.blockNumber

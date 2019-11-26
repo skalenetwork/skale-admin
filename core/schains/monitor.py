@@ -19,16 +19,16 @@
 
 import os
 import logging
+from time import sleep
+
 from tools.custom_thread import CustomThread
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
-from sentry_sdk import capture_message
-
 from core.schains.runner import run_schain_container, run_ima_container
 from core.schains.helper import init_schain_dir, get_schain_config_filepath
 from core.schains.config import generate_schain_config, save_schain_config, get_schain_env
-from core.schains.volume import init_data_volume, get_container_limits
+from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_env
 from core.schains.dkg import init_bls, FailedDKG
@@ -43,10 +43,16 @@ dutils = DockerUtils()
 
 
 class SchainsMonitor():
-    def __init__(self, skale, wallet, node_id):
+    def __init__(self, skale, node_config):
         self.skale = skale
-        self.node_id = node_id
-        self.wallet = wallet
+        self.node_config = node_config
+        CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
+
+    def wait_for_node_id(self, opts):
+        while not self.node_config.id:
+            logger.debug('Waiting for the node_id in sChains Monitor...')
+            sleep(MONITOR_INTERVAL)
+        self.node_id = self.node_config.id
         self.monitor = CustomThread('sChains monitor', self.monitor_schains,
                                     interval=MONITOR_INTERVAL)
         self.monitor.start()
@@ -71,7 +77,7 @@ class SchainsMonitor():
 
     def monitor_schain(self, schain):
         name = schain['name']
-        checks = SChainChecks(name, self.node_id, log=True, failhook=capture_message).get_all()
+        checks = SChainChecks(name, self.node_id, log=True).get_all()
 
         if not checks['data_dir']:
             init_schain_dir(name)
@@ -79,7 +85,7 @@ class SchainsMonitor():
             self.init_schain_config(name)
         if not checks['dkg']:
             try:
-                init_bls(self.skale.web3, self.skale, self.wallet, schain['name'])
+                init_bls(self.skale.web3, self.skale, self.wallet, schain['name']) # todo!
             except FailedDKG:
                 # todo: clean up here
                 exit(1)
