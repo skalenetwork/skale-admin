@@ -42,10 +42,10 @@ def generate_sgx_key(config):
         sgx = SgxClient(SGX_SERVER_URL)
         key_info = sgx.generate_key()
         logger.info(arguments_list_string({
-            'Name': key_info.key_name,
+            'Name': key_info.name,
             'Address': key_info.address
             }, 'Generated new SGX key'))
-        config.sgx_key_name = key_info.key_name
+        config.sgx_key_name = key_info.name
 
 
 def sgx_server_text():

@@ -51,7 +51,7 @@ class SChainsCleaner():
         CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
 
     def wait_for_node_id(self, opts):
-        while not self.node_config.id:
+        while self.node_config.id is None:
             logger.debug('Waiting for the node_id in sChains Cleaner...')
             sleep(MONITOR_INTERVAL)
         self.node_id = self.node_config.id

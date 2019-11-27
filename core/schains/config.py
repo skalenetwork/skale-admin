@@ -32,7 +32,7 @@ from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 logger = logging.getLogger(__name__)
 
 
-def generate_schain_config(schain_name, node_id, skale):
+def generate_schain_config(schain_name, schain_owner, node_id, skale):
     node_info = skale.schains_data.get_current_node_for_schain_config(schain_name, node_id)
 
     schain_struct = skale.schains_data.get_by_name(schain_name)
@@ -43,6 +43,7 @@ def generate_schain_config(schain_name, node_id, skale):
         "sChain": {
             "schainID": 1,  # todo!
             "schainName": schain_name,
+            "schainOwner": schain_owner,
             "nodes": schain_nodes
         }
     }

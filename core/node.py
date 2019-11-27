@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 class NodeStatuses(Enum):
+    """This class contains possible node statuses"""
     NOT_CREATED = 0
     REQUESTED = 1
     CREATED = 2
@@ -42,11 +43,24 @@ class NodeStatuses(Enum):
 
 
 class Node:
+    """This class contains node registration logic"""
     def __init__(self, skale, config):
         self.skale = skale
         self.config = config
 
     def register(self, ip, public_ip, port, name):
+        """
+        Main node registration function.
+
+        Parameters:
+        ip (str): P2P IP address that will be assigned to the node
+        public_ip (str): Public IP address that will be assigned to the node
+        port (int): Base port that will be used for sChains on the node
+        name (str): Node name
+
+        Returns:
+        dict: Execution status and node config
+        """
         self._log_node_info('Node create started', ip, public_ip, port, name)
         if self.config.id is not None:
             return self._node_already_exist()
