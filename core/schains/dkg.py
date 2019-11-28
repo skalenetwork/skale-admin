@@ -51,8 +51,16 @@ def init_bls(web3, skale, schain_name, sgx_key_name):
         t = (2 * n + 1) // 3
 
         dkg_client = init_dkg_client(config_filepath, web3, skale, n, t, sgx_key_name)
-        dkg_id = random.randint(0, 2**256)
-        poly_name = "POLY:SCHAIN_ID:" + dkg_client.group_index + ":NODE_ID:" + str(dkg_client.node_id_dkg) + ":DKG_ID:" + str(dkg_id)
+        dkg_id = random.randint(0, 10**50)
+        group_index_str = str(int(web3.toHex(dkg_client.group_index)[2:], 16))
+        poly_name = (
+            "POLY:SCHAIN_ID:"
+            f"{group_index_str}"
+            ":NODE_ID:"
+            f"{str(dkg_client.node_id_dkg)}"
+            ":DKG_ID:"
+            f"{str(dkg_id)}"
+        )
 
         dkg_broadcast_filter = get_dkg_broadcast_filter(skale, dkg_client.group_index)
         broadcast(dkg_client, poly_name)
@@ -104,7 +112,14 @@ def init_bls(web3, skale, schain_name, sgx_key_name):
         dkg_all_data_received_filter = get_dkg_all_data_received_filter(skale, dkg_client.group_index)
         dkg_successful_filter = get_dkg_successful_filter(skale, dkg_client.group_index)
         encrypted_bls_key = 0
-        bls_key_name = "BLS_KEY:SCHAIN_ID:" + dkg_client.group_index + ":NODE_ID:" + str(dkg_client.node_id_contract) + ":DKG_ID:" + str(dkg_id)
+        bls_key_name = (
+            "BLS_KEY:SCHAIN_ID:"
+            f"{group_index_str}"
+            ":NODE_ID:"
+            f"{str(dkg_client.node_id_dkg)}"
+            ":DKG_ID:"
+            f"{str(dkg_id)}"
+        )
         if not is_comlaint_sent:
             send_allright(dkg_client)
             encrypted_bls_key = generate_bls_key(dkg_client, bls_key_name)
