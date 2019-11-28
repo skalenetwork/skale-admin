@@ -46,7 +46,3 @@ def check_required_balance(skale):  # todo: move to the skale.py
     balances = wallet_with_balance(skale)
     return int(balances['eth_balance_wei']) >= DEPOSIT_AMOUNT_ETH_WEI and int(balances[
         'skale_balance_wei']) >= DEPOSIT_AMOUNT_SKL_WEI
-
-
-def get_required_balance():  # todo: move to the skale.py, request valuest from skale-manager
-    return {'eth_balance': DEPOSIT_AMOUNT_ETH, 'skale_balance': DEPOSIT_AMOUNT_SKL}
