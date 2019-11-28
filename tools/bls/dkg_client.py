@@ -68,7 +68,7 @@ def convert_g2_point_to_hex(data):
 
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, node_web3, skale, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract, eth_key_name):
-        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'])
+        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n, t)
         self.schain_name = schain_name
         self.group_index = node_web3.sha3(text=self.schain_name)
         self.node_id_contract = node_id_contract
@@ -78,7 +78,6 @@ class DKGClient:
         self.eth_key_name = eth_key_name
         self.t = t
         self.n = n
-        self.sgx.init_dkg(self.t, self.n)
         self.incoming_verification_vector = ['0'] * n
         self.incoming_secret_key_contribution = ['0'] * n
         self.public_keys = public_keys
