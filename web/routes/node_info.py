@@ -30,7 +30,7 @@ from tools.configs.web3 import ENDPOINT
 logger = logging.getLogger(__name__)
 
 
-def construct_node_info_bp(skale, wallet, docker_utils):
+def construct_node_info_bp(skale, docker_utils):
     node_info_bp = Blueprint('node_info', __name__)
 
     @node_info_bp.route('/get-rpc-credentials', methods=['GET'])
@@ -66,7 +66,6 @@ def construct_node_info_bp(skale, wallet, docker_utils):
             'network': {
                 'endpoint': ENDPOINT
             },
-            'local_wallet': wallet.get_with_balance()
         }
         return construct_ok_response(node_about)
 

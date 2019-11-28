@@ -18,19 +18,37 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import logging
+
 from sgx import SgxClient
 
-sgx_key_config_item = 'sgx_key_name'
+from tools.str_formatters import arguments_list_string
+
+
+logger = logging.getLogger(__name__)
+
+SGX_KEY_CONFIG_NAME = 'sgx_key_name'
+SGX_SERVER_URL = os.environ.get('SGX_SERVER_URL')
+
+
+class SGXConnecionError(Exception):
+    """Raised when admin couldn't establish connection with SGX server"""
 
 
 def generate_sgx_key(config):
-    if not os.environ.get('SGX_SERVER_URL') or config.safe_get(sgx_key_config_item):
-        return
-    sgx = SgxClient(os.environ['SGX_SERVER_URL'])
-    key_name = sgx.generate_key().keyName
-    save_sgx_key(key_name, config)
+    if not SGX_SERVER_URL:
+        raise SGXConnecionError('SGX server URL is not provided')
+    if not config.sgx_key_name:
+        sgx = SgxClient(SGX_SERVER_URL)
+        key_info = sgx.generate_key()
+        logger.info(arguments_list_string({
+            'Name': key_info.name,
+            'Address': key_info.address
+            }, 'Generated new SGX key'))
+        config.sgx_key_name = key_info.name
 
 
-def save_sgx_key(key_name, config):
-    config.update({sgx_key_config_item: key_name})
-
+def sgx_server_text():
+    if SGX_SERVER_URL:
+        return SGX_SERVER_URL
+    return 'Not connected'

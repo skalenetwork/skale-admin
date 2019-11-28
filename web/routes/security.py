@@ -63,7 +63,6 @@ def construct_security_bp():
 
                 return construct_ok_response(1)
 
-
     @security_bp.route('/certificates-info', methods=['GET'])
     @login_required
     def get_certificates_info():

@@ -65,7 +65,6 @@ class User(BaseModel):
         user_session.auth(user)
         return True, None
 
-
     def info(self):
         return {
             'username': self.username,
