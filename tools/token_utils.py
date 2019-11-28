@@ -17,29 +17,27 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import logging
 import secrets
 
-from tools.config_storage import ConfigStorage
+from tools.str_formatters import arguments_list_string
+from tools.helper import write_json, read_json
 from tools.configs import TOKENS_FILEPATH
 
 logger = logging.getLogger(__name__)
 
 
-class TokenUtils():
-    def __init__(self, filepath=TOKENS_FILEPATH):
-        self.filepath = filepath
-        self.token_storage = ConfigStorage(filepath)
+def init_user_token():
+    if not os.path.exists(TOKENS_FILEPATH):
+        token = generate_user_token()
+        logger.info(arguments_list_string({'Token': token}, 'Generated registration token'))
+        write_json(TOKENS_FILEPATH, {'token': token})
+        return token
+    else:
+        tokens = read_json(TOKENS_FILEPATH)
+        return tokens['token']
 
-    def add_token(self):
-        token = self.generate_new_token()
-        self.save_token(token)
 
-    def generate_new_token(self, len=40):
-        return secrets.token_hex(len)
-
-    def save_token(self, token):
-        self.token_storage.update({'token': token})
-
-    def get_token(self):
-        return self.token_storage.safe_get('token')
+def generate_user_token(token_len=40):
+    return secrets.token_hex(token_len)

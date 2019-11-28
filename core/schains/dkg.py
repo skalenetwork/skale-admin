@@ -31,12 +31,14 @@ from tools.bls.dkg_client import DkgVerificationError
 
 logger = logging.getLogger(__name__)
 
+
 class FailedDKG(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 
+
 def init_bls(web3, skale, schain_name, sgx_key_name):
-    
+
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
     config_filepath = get_schain_config_filepath(schain_name)
 
@@ -50,7 +52,7 @@ def init_bls(web3, skale, schain_name, sgx_key_name):
 
         dkg_client = init_dkg_client(config_filepath, web3, skale, n, t, sgx_key_name)
         dkg_id = random.randint(0, 2**256)
-        poly_name = "POLY:SCHAIN_ID:" + dkg_client.group_index + ":NODE_ID:" str(dkg_client.node_id_dkg) + ":DKG_ID:" + str(dkg_id)
+        poly_name = "POLY:SCHAIN_ID:" + dkg_client.group_index + ":NODE_ID:" + str(dkg_client.node_id_dkg) + ":DKG_ID:" + str(dkg_id)
 
         dkg_broadcast_filter = get_dkg_broadcast_filter(skale, dkg_client.group_index)
         broadcast(dkg_client, poly_name)
@@ -70,7 +72,7 @@ def init_bls(web3, skale, schain_name, sgx_key_name):
             for event in dkg_broadcast_filter.get_all_entries():
                 from_node = event["args"]["fromNode"]
 
-                if is_received[dkg_client.node_ids_contract[from_node]] == False:
+                if not is_received[dkg_client.node_ids_contract[from_node]]:
                     is_received[dkg_client.node_ids_contract[from_node]] = True
 
                     try:
@@ -88,7 +90,7 @@ def init_bls(web3, skale, schain_name, sgx_key_name):
         complainted_node_index = -1
         start_time_response = time.time()
         for i in range(n):
-            if is_correct[i] == False or is_received[i] == False:
+            if not is_correct[i] or not is_received[i]:
                 send_complaint(dkg_client, i)
                 dkg_bad_guy_filter = get_dkg_bad_guy_filter(skale)
                 is_comlaint_sent = True
@@ -155,7 +157,7 @@ def init_bls(web3, skale, schain_name, sgx_key_name):
                 common_public_key = schains_data_contract.functions.getGroupsPublicKey(dkg_client.group_index).call()
 
                 with open(secret_key_share_filepath, 'w') as outfile:
-                    json.dump({ "common_public_key :": common_public_key,
+                    json.dump({"common_public_key :": common_public_key,
                                 "public_key :": dkg_client.public_key}, outfile)
 
 

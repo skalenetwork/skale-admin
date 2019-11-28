@@ -17,22 +17,28 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import sys
 import binascii
 import logging
 
-from time import sleep
+from skale.utils.web3_utils import wait_receipt
+
 from tools.configs import NODE_DATA_PATH
 from sgx import SgxClient
 
 sys.path.insert(0, NODE_DATA_PATH)
-from skale.utils.web3_utils import wait_receipt
 
 logger = logging.getLogger(__name__)
+
+
+logger = logging.getLogger(__name__)
+
 
 class DkgVerificationError(Exception):
     def __init__(self, msg):
         super().__init__(msg)
+
 
 def convert_g2_points_to_hex(data):
     data_hexed = "0x"
@@ -43,10 +49,11 @@ def convert_g2_points_to_hex(data):
                 temp = '0' + temp
             data_hexed += temp
             temp = hex(int(elem[1]))[2:]
-            while len(temp) < 64 :
+            while len(temp) < 64:
                 temp = '0' + temp
             data_hexed += temp
     return data_hexed
+
 
 def convert_g2_point_to_hex(data):
     data_hexed = "0x"
@@ -58,11 +65,12 @@ def convert_g2_point_to_hex(data):
             data_hexed += temp
     return data_hexed
 
+
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, node_web3, skale, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract, eth_key_name):
         self.sgx = SgxClient(os.environ['SGX_SERVER_URL'])
         self.schain_name = schain_name
-        self.group_index = node_web3.sha3(text = self.schain_name)
+        self.group_index = node_web3.sha3(text=self.schain_name)
         self.node_id_contract = node_id_contract
         self.node_id_dkg = node_id_dkg
         self.node_web3 = node_web3
@@ -90,7 +98,7 @@ class DKGClient:
 
     def SecretKeyContribution(self):
         self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name, self.public_keys)
-        self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[self.node_id_dkg * 192 : (self.node_id_dkg + 1) * 192]
+        self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
         return self.sent_secret_key_contribution
 
     def Broadcast(self, poly_name):
@@ -120,7 +128,7 @@ class DKGClient:
     def RecieveVerificationVector(self, fromNode, event):
         input = binascii.hexlify(event['args']['verificationVector'])
         incoming_verification_vector = []
-        while len(input) > 0 :
+        while len(input) > 0:
             cur = input[:64]
             input = input[64:]
             while cur[0] == '0':
@@ -137,7 +145,7 @@ class DKGClient:
 
     def RecieveSecretKeyContribution(self, fromNode, event):
         input = event['args']['secretKeyContribution']
-        self.incoming_secret_key_contribution[fromNode] = input[self.node_id_dkg * 192 : (self.node_id_dkg + 1) * 192]
+        self.incoming_secret_key_contribution[fromNode] = input[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
 
     def Verification(self, fromNode):
         return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode], self.eth_key_name, self.incoming_secret_key_contribution[fromNode], self.node_id_dkg)
@@ -165,9 +173,9 @@ class DKGClient:
         status = receipt['status']
         if status != 1:
             res = self.skale.dkg.response(self.group_index,
-                                      self.node_id_contract,
-                                      dh_key,
-                                      share)
+                                    self.node_id_contract,
+                                    dh_key,
+                                    share)
             receipt = wait_receipt(self.node_web3, res.hex(), timeout=20)
             status = receipt['status']
             if status != 1:

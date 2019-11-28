@@ -1,20 +1,19 @@
 import os
-from tools.configs.flask import FLASK_DEBUG_MODE
 
 LONG_LINE = '=' * 100
 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+RUNNING_ON_HOST = os.environ.get('RUNNING_ON_HOST', False)
 SKALE_DIR_HOST = os.environ['SKALE_DIR_HOST']
 NODE_DATA_PATH_HOST = os.path.join(SKALE_DIR_HOST, 'node_data')
 
-if FLASK_DEBUG_MODE:
+if RUNNING_ON_HOST:
     SKALE_VOLUME_PATH = SKALE_DIR_HOST
     NODE_DATA_PATH = NODE_DATA_PATH_HOST
 else:
     SKALE_VOLUME_PATH = '/skale_vol'
     NODE_DATA_PATH = '/skale_node_data'
-
 
 
 CONFIG_FOLDER_NAME = 'config'

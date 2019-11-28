@@ -36,7 +36,6 @@ def init_dkg_client(schain_config_filepath, web3, skale, n, t, sgx_eth_key_name)
     i = 0
     node_ids_contract = dict()
     node_ids_dkg = dict()
-    is_node_id_set = False
     for node in config_file["skaleConfig"]["sChain"]["nodes"]:
         if node["nodeID"] == config_file["skaleConfig"]["nodeInfo"]["nodeID"]:
             node_id_dkg = i
@@ -49,12 +48,14 @@ def init_dkg_client(schain_config_filepath, web3, skale, n, t, sgx_eth_key_name)
 
     schain_name = config_file["skaleConfig"]["sChain"]["schainName"]
 
-    dkg_client = DKGClient(node_id_dkg, node_id_contract, web3, skale, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name)
+    dkg_client = DKGClient(node_id_dkg, node_id_contract, web3, skale, t, n, schain_name,
+                        public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name)
     return dkg_client
 
 
 def generate_bls_key(dkg_client, bls_key_name):
     return dkg_client.GenerateKey(bls_key_name)
+
 
 def broadcast(dkg_client, poly_name):
     dkg_client.Broadcast(poly_name)
@@ -64,7 +65,7 @@ def send_complaint(dkg_client, index):
     dkg_client.SendComplaint(index)
 
 
-def response(dkg_client , from_node_index):
+def response(dkg_client, from_node_index):
     dkg_client.Response(from_node_index)
 
 
@@ -112,7 +113,7 @@ def get_dkg_all_data_received_filter(skale, group_index):
 def get_dkg_bad_guy_filter(skale):
     contract = skale.dkg.contract
     return contract.events.BadGuy.createFilter(fromBlock=0)
-  
+
 
 def get_schains_data_contract(web3):
     custom_contracts_contracts_data = read_custom_contracts_data()

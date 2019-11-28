@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from http import HTTPStatus
 
 from flask import Blueprint, request
 from playhouse.shortcuts import model_to_dict
@@ -26,12 +25,11 @@ from web.helper import construct_ok_response, login_required
 from core.db import BountyEvent
 from tools.configs import DATETIME_FORMAT
 
-from core.node.utils import get_node_id
 
 logger = logging.getLogger(__name__)
 
 
-def construct_validators_bp(skale, config, wallet):
+def construct_validators_bp(skale, config):
     validators_bp = Blueprint('validators', __name__)
 
     @validators_bp.route('/bounty-info', methods=['GET'])
@@ -52,20 +50,12 @@ def construct_validators_bp(skale, config, wallet):
     @login_required
     def validators_info():
         logger.debug(request)
-
-        node_id = get_node_id(config)
-        # todo: handle no node_id
-
-        print(skale.validators_data.get_validated_array)
-
-        res = skale.validators_data.get_validated_array(node_id, wallet.get()['address'])
-        print(res)
-
+        # todo: handle no config.id
+        res = skale.validators_data.get_validated_array(config.id, skale.wallet.address)
         validators = {
             'validating': res,
-            'validated_by': 2
+            'validated_by': None
         }
-
         return construct_ok_response({'validators': validators})
 
     return validators_bp
