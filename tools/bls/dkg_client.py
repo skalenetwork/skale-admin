@@ -70,6 +70,7 @@ class DKGClient:
         self.eth_key_name = eth_key_name
         self.t = t
         self.n = n
+        self.sgx.init_dkg(self.t, self.n)
         self.incoming_verification_vector = ['0'] * n
         self.incoming_secret_key_contribution = ['0'] * n
         self.public_keys = public_keys
@@ -79,16 +80,16 @@ class DKGClient:
 
     def GeneratePolynomial(self, poly_name):
         self.poly_name = poly_name
-        return self.sgx.generate_dkg_poly(poly_name, self.t)
+        return self.sgx.generate_dkg_poly(poly_name)
 
     def VerificationVector(self):
-        verification_vector = self.sgx.get_verification_vector(self.poly_name, self.n, self.t)
+        verification_vector = self.sgx.get_verification_vector(self.poly_name)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
         verification_vector_hexed = convert_g2_points_to_hex(verification_vector)
         return verification_vector_hexed
 
     def SecretKeyContribution(self):
-        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name, self.public_keys, self.n, self.t)
+        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name, self.public_keys)
         self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[self.node_id_dkg * 192 : (self.node_id_dkg + 1) * 192]
         return self.sent_secret_key_contribution
 
@@ -139,10 +140,10 @@ class DKGClient:
         self.incoming_secret_key_contribution[fromNode] = input[self.node_id_dkg * 192 : (self.node_id_dkg + 1) * 192]
 
     def Verification(self, fromNode):
-        return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode], self.eth_key_name, self.incoming_secret_key_contribution[fromNode], self.n, self.t, self.node_id_dkg)
+        return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode], self.eth_key_name, self.incoming_secret_key_contribution[fromNode], self.node_id_dkg)
 
     def SecretKeyShareCreate(self, bls_key_name):
-        self.secret_key_share = self.sgx.create_bls_private_key(self.poly_name, bls_key_name, self.eth_key_name, self.incoming_secret_key_contribution, self.n, self.t)
+        self.secret_key_share = self.sgx.create_bls_private_key(self.poly_name, bls_key_name, self.eth_key_name, self.incoming_secret_key_contribution)
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
 
     def SendComplaint(self, toNode):
@@ -151,9 +152,9 @@ class DKGClient:
         logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
 
     def Response(self, from_node_index):
-        response = self.sgx.complaint_response(self.poly_name, self.n, self.t, from_node_index)
+        response = self.sgx.complaint_response(self.poly_name, from_node_index)
         share, dh_key = response['share'], response['dh_key']
-        
+
         share = convert_g2_point_to_hex(share)
 
         res = self.skale.dkg.response(self.group_index,
@@ -181,7 +182,7 @@ class DKGClient:
         logger.info(f'All data from {fromNode} was recieved and verified')
 
     def GenerateKey(self, bls_key_name):
-        return self.sgx.create_bls_private_key(bls_key_name, self.eth_key_name, self.poly_name, self.received_secret_key_contribution, self.n, self.t)
+        return self.sgx.create_bls_private_key(bls_key_name, self.eth_key_name, self.poly_name, self.received_secret_key_contribution)
 
     def Allright(self):
         res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
