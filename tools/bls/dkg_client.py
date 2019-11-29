@@ -40,29 +40,20 @@ class DkgVerificationError(Exception):
         super().__init__(msg)
 
 
-def convert_g2_points_to_hex(data):
-    data_hexed = "0x"
+def convert_g2_point_to_hex(data):
+    data_hexed = ""
     for coord in data:
-        for elem in coord:
-            temp = hex(int(elem[0]))[2:]
-            while (len(temp) < 64):
-                temp = '0' + temp
-            data_hexed += temp
-            temp = hex(int(elem[1]))[2:]
-            while len(temp) < 64:
-                temp = '0' + temp
-            data_hexed += temp
+        temp = hex(int(coord))[2:]
+        while (len(temp) < 64):
+            temp = '0' + temp
+        data_hexed += temp
     return data_hexed
 
 
-def convert_g2_point_to_hex(data):
-    data_hexed = "0x"
-    for coord in data:
-        for elem in coord:
-            temp = hex(int(elem[0]))[2:]
-            while (len(temp) < 64):
-                temp = '0' + temp
-            data_hexed += temp
+def convert_g2_points_to_hex(data):
+    data_hexed = ""
+    for point in data:
+        data_hexed += convert_g2_point_to_hex(point)
     return data_hexed
 
 
@@ -82,7 +73,7 @@ class DKGClient:
         self.public_keys = public_keys
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
-        logger.info(f'Node id on chain is {self.node_id_dkg} + "\n" Node id on contract is {self.node_id_contract}')
+        logger.info(f'Node id on chain is {self.node_id_dkg}; Node id on contract is {self.node_id_contract}')
 
     def GeneratePolynomial(self, poly_name):
         self.poly_name = poly_name
@@ -91,7 +82,7 @@ class DKGClient:
     def VerificationVector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
-        verification_vector_hexed = convert_g2_points_to_hex(verification_vector)
+        verification_vector_hexed = "0x" + convert_g2_points_to_hex(verification_vector)
         return verification_vector_hexed
 
     def SecretKeyContribution(self):
@@ -144,6 +135,7 @@ class DKGClient:
         self.incoming_secret_key_contribution[fromNode] = input[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
 
     def Verification(self, fromNode):
+        print("VV:", self.incoming_verification_vector[fromNode], type(self.incoming_verification_vector[fromNode]))
         return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode], self.eth_key_name, self.incoming_secret_key_contribution[fromNode], self.node_id_dkg)
 
     def SecretKeyShareCreate(self, bls_key_name):
