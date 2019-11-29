@@ -121,7 +121,6 @@ class DKGClient:
         self.incoming_secret_key_contribution[fromNode] = input[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
 
     def Verification(self, fromNode):
-        print("VV:", self.incoming_verification_vector[fromNode], type(self.incoming_verification_vector[fromNode]))
         return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode], self.eth_key_name, self.incoming_secret_key_contribution[fromNode], self.node_id_dkg)
 
     def SecretKeyShareCreate(self, bls_key_name):
@@ -164,7 +163,7 @@ class DKGClient:
         logger.info(f'All data from {self.node_ids_contract[fromNode]} was recieved and verified')
 
     def GenerateKey(self, bls_key_name):
-        return self.sgx.create_bls_private_key(bls_key_name, self.eth_key_name, self.poly_name, "".join(secret_key_contribution[j][192*self.node_id_dkg:192*(self.node_id_dkg + 1)] for j in range(self.sgx.n)))
+        return self.sgx.create_bls_private_key(bls_key_name, self.eth_key_name, self.poly_name, "".join(self.incoming_secret_key_contribution[j][192*self.node_id_dkg:192*(self.node_id_dkg + 1)] for j in range(self.sgx.n)))
 
     def Allright(self):
         res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
