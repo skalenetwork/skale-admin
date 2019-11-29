@@ -67,13 +67,12 @@ def convert_g2_point_to_hex(data):
 
 
 class DKGClient:
-    def __init__(self, node_id_dkg, node_id_contract, node_web3, skale, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract, eth_key_name):
+    def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract, eth_key_name):
         self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n, t)
         self.schain_name = schain_name
-        self.group_index = node_web3.sha3(text=self.schain_name)
+        self.group_index = skale.web3.sha3(text=self.schain_name)
         self.node_id_contract = node_id_contract
         self.node_id_dkg = node_id_dkg
-        self.node_web3 = node_web3
         self.skale = skale
         self.eth_key_name = eth_key_name
         self.t = t
@@ -111,14 +110,14 @@ class DKGClient:
                                        self.node_id_contract,
                                        verification_vector,
                                        secret_key_contribution)
-        receipt = wait_receipt(self.node_web3, res, timeout=20)
+        receipt = wait_receipt(self.skale.web3, res, timeout=20)
         status = receipt["status"]
         if status != 1:
             res = self.skale.dkg.broadcast(self.group_index,
                                            self.node_id_contract,
                                            verification_vector,
                                            secret_key_contribution)
-            receipt = wait_receipt(self.node_web3, res, timeout=20)
+            receipt = wait_receipt(self.skale.web3, res, timeout=20)
             status = receipt["status"]
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)
@@ -143,7 +142,7 @@ class DKGClient:
         self.incoming_verification_vector[fromNode] = to_verify
 
     def RecieveSecretKeyContribution(self, fromNode, event):
-        input = binascii.hexlify(event['args']['secretKeyContribution'])
+        input = binascii.hexlify(event['args']['secretKeyContribution']).decode()
         print("received secretKeyContribution:", input)
         self.incoming_secret_key_contribution[fromNode] = input[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
 
@@ -156,7 +155,7 @@ class DKGClient:
 
     def SendComplaint(self, toNode):
         res = self.skale.dkg.complaint(self.group_index, self.node_id_contract, self.node_ids_dkg[toNode])
-        wait_receipt(self.node_web3, res, timeout=20)
+        wait_receipt(self.skale.web3, res, timeout=20)
         logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
 
     def Response(self, from_node_index):
@@ -169,14 +168,14 @@ class DKGClient:
                                       self.node_id_contract,
                                       dh_key,
                                       share)
-        receipt = wait_receipt(self.node_web3, res, timeout=20)
+        receipt = wait_receipt(self.skale.web3, res, timeout=20)
         status = receipt['status']
         if status != 1:
             res = self.skale.dkg.response(self.group_index,
                                     self.node_id_contract,
                                     dh_key,
                                     share)
-            receipt = wait_receipt(self.node_web3, res, timeout=20)
+            receipt = wait_receipt(self.skale.web3, res, timeout=20)
             status = receipt['status']
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)
@@ -194,11 +193,11 @@ class DKGClient:
 
     def Allright(self):
         res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
-        receipt = wait_receipt(self.node_web3, res, timeout=20)
+        receipt = wait_receipt(self.skale.web3, res, timeout=20)
         status = receipt['status']
         if status != 1:
             res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
-            receipt = wait_receipt(self.node_web3, res, timeout=20)
+            receipt = wait_receipt(self.skale.web3, res, timeout=20)
             status = receipt['status']
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)

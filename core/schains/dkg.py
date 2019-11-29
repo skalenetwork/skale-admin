@@ -37,7 +37,7 @@ class FailedDKG(Exception):
         super().__init__(msg)
 
 
-def init_bls(web3, skale, schain_name, sgx_key_name):
+def init_bls(skale, schain_name, sgx_key_name):
 
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
     config_filepath = get_schain_config_filepath(schain_name)
@@ -50,9 +50,9 @@ def init_bls(web3, skale, schain_name, sgx_key_name):
         n = len(config_file["skaleConfig"]["sChain"]["nodes"])
         t = (2 * n + 1) // 3
 
-        dkg_client = init_dkg_client(config_filepath, web3, skale, n, t, sgx_key_name)
+        dkg_client = init_dkg_client(config_filepath, skale, n, t, sgx_key_name)
         dkg_id = random.randint(0, 10**50)
-        group_index_str = str(int(web3.toHex(dkg_client.group_index)[2:], 16))
+        group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
         poly_name = (
             "POLY:SCHAIN_ID:"
             f"{group_index_str}"
@@ -168,7 +168,7 @@ def init_bls(web3, skale, schain_name, sgx_key_name):
 
         if True in is_allright_sent_list:
             if len(dkg_successful_filter.get_all_entries()) > 0:
-                schains_data_contract = get_schains_data_contract(web3)
+                schains_data_contract = get_schains_data_contract(skale.web3)
                 common_public_key = schains_data_contract.functions.getGroupsPublicKey(dkg_client.group_index).call()
 
                 with open(secret_key_share_filepath, 'w') as outfile:
