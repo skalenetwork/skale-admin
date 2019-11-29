@@ -143,7 +143,8 @@ class DKGClient:
         self.incoming_verification_vector[fromNode] = to_verify
 
     def RecieveSecretKeyContribution(self, fromNode, event):
-        input = event['args']['secretKeyContribution']
+        input = binascii.hexlify(event['args']['secretKeyContribution'])
+        print("received secretKeyContribution:", input)
         self.incoming_secret_key_contribution[fromNode] = input[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
 
     def Verification(self, fromNode):
