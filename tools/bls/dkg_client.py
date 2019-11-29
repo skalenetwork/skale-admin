@@ -124,14 +124,12 @@ class DKGClient:
         logger.info(f'Everything is sent from {self.node_id_dkg} node')
 
     def RecieveVerificationVector(self, fromNode, event):
-        input = binascii.hexlify(event['args']['verificationVector'])
+        input = binascii.hexlify(event['args']['verificationVector']).decode()
         incoming_verification_vector = []
         while len(input) > 0:
             cur = input[:64]
             input = input[64:]
-            while cur[0] == '0':
-                cur = cur[1:]
-            incoming_verification_vector.append(str(int(cur, 16)))
+            incoming_verification_vector.append(cur)
         to_verify = []
         while len(incoming_verification_vector) > 0:
             smth = []
@@ -143,7 +141,6 @@ class DKGClient:
 
     def RecieveSecretKeyContribution(self, fromNode, event):
         input = binascii.hexlify(event['args']['secretKeyContribution']).decode()
-        print("received secretKeyContribution:", input)
         self.incoming_secret_key_contribution[fromNode] = input[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
 
     def Verification(self, fromNode):
