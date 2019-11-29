@@ -116,19 +116,7 @@ class DKGClient:
 
     def RecieveVerificationVector(self, fromNode, event):
         input = binascii.hexlify(event['args']['verificationVector']).decode()
-        incoming_verification_vector = []
-        while len(input) > 0:
-            cur = input[:64]
-            input = input[64:]
-            incoming_verification_vector.append(cur)
-        to_verify = []
-        while len(incoming_verification_vector) > 0:
-            smth = []
-            smth.append((incoming_verification_vector[0], incoming_verification_vector[1]))
-            smth.append((incoming_verification_vector[2], incoming_verification_vector[3]))
-            to_verify.append(smth)
-            incoming_verification_vector = incoming_verification_vector[4:]
-        self.incoming_verification_vector[fromNode] = to_verify
+        self.incoming_verification_vector[fromNode] = input
 
     def RecieveSecretKeyContribution(self, fromNode, event):
         input = binascii.hexlify(event['args']['secretKeyContribution']).decode()
