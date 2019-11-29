@@ -65,6 +65,8 @@ class DKGClient:
         self.node_id_contract = node_id_contract
         self.node_id_dkg = node_id_dkg
         self.skale = skale
+        self.t = t
+        self.n = n
         self.eth_key_name = eth_key_name
         self.incoming_verification_vector = ['0'] * n
         self.incoming_secret_key_contribution = ['0'] * n
@@ -163,7 +165,7 @@ class DKGClient:
         logger.info(f'All data from {self.node_ids_contract[fromNode]} was recieved and verified')
 
     def GenerateKey(self, bls_key_name):
-        return self.sgx.create_bls_private_key(bls_key_name, self.eth_key_name, self.poly_name, "".join(self.incoming_secret_key_contribution[j][192*self.node_id_dkg:192*(self.node_id_dkg + 1)] for j in range(self.sgx.n)))
+        return self.sgx.create_bls_private_key(self.poly_name, bls_key_name, self.eth_key_name, "".join(self.incoming_secret_key_contribution[j][192*self.node_id_dkg:192*(self.node_id_dkg + 1)] for j in range(self.sgx.n)))
 
     def Allright(self):
         res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
