@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import coincurve
 import json
 from web3 import Web3
 
@@ -27,43 +26,67 @@ from tools.configs.web3 import ABI_FILEPATH
 from tools.bls.dkg_client import DKGClient
 
 
-def init_dkg_client(schain_config_filepath, web3, skale, wallet, n, t):
+def init_dkg_client(schain_config_filepath, skale, n, t, sgx_eth_key_name):
     with open(schain_config_filepath, 'r') as infile:
         config_file = json.load(infile)
 
     node_id_dkg = -1
     node_id_contract = config_file["skaleConfig"]["nodeInfo"]["nodeID"]
     public_keys = [0] * n
-    i = 0
     node_ids_contract = dict()
     node_ids_dkg = dict()
-    is_node_id_set = False
-    for node in config_file["skaleConfig"]["sChain"]["nodes"]:
+    for i, node in enumerate(config_file["skaleConfig"]["sChain"]["nodes"]):
         if node["nodeID"] == config_file["skaleConfig"]["nodeInfo"]["nodeID"]:
             node_id_dkg = i
 
         node_ids_contract[node["nodeID"]] = i
         node_ids_dkg[i] = node["nodeID"]
 
-        public_keys[i] = coincurve.PublicKey(bytes.fromhex("04" + node["publicKey"]))
-        i += 1
+        public_keys[i] = node["publicKey"]
 
     schain_name = config_file["skaleConfig"]["sChain"]["schainName"]
 
-    dkg_client = DKGClient(node_id_dkg, node_id_contract, web3, skale, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract)
+    dkg_client = DKGClient(node_id_dkg, node_id_contract, skale, t, n, schain_name,
+                        public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name)
     return dkg_client
 
 
-def broadcast(dkg_client):
-    dkg_client.Broadcast()
+def generate_bls_key_name(group_index_str, node_id, dkg_id):
+    return (
+            "BLS_KEY:SCHAIN_ID:"
+            f"{group_index_str}"
+            ":NODE_ID:"
+            f"{str(node_id)}"
+            ":DKG_ID:"
+            f"{str(dkg_id)}"
+        )
+
+
+def generate_poly_name(group_index_str, node_id, dkg_id):
+    return (
+            "POLY:SCHAIN_ID:"
+            f"{group_index_str}"
+            ":NODE_ID:"
+            f"{str(node_id)}"
+            ":DKG_ID:"
+            f"{str(dkg_id)}"
+        )
+
+
+def generate_bls_key(dkg_client, bls_key_name):
+    return dkg_client.GenerateKey(bls_key_name)
+
+
+def broadcast(dkg_client, poly_name):
+    dkg_client.Broadcast(poly_name)
 
 
 def send_complaint(dkg_client, index):
     dkg_client.SendComplaint(index)
 
 
-def response(dkg_client):
-    dkg_client.Response()
+def response(dkg_client, from_node_index):
+    dkg_client.Response(from_node_index)
 
 
 def send_allright(dkg_client):
@@ -110,7 +133,7 @@ def get_dkg_all_data_received_filter(skale, group_index):
 def get_dkg_bad_guy_filter(skale):
     contract = skale.dkg.contract
     return contract.events.BadGuy.createFilter(fromBlock=0)
-  
+
 
 def get_schains_data_contract(web3):
     custom_contracts_contracts_data = read_custom_contracts_data()

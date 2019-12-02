@@ -85,12 +85,12 @@ class SchainsMonitor():
             init_schain_dir(name)
         if not checks['config']:
             self.init_schain_config(name, owner)
-        #if not checks['dkg']:
-        #    try:
-        #        init_bls(self.skale.web3, self.skale, schain['name'])  # todo!
-        #    except FailedDKG:
-        #        # todo: clean up here
-        #        exit(1)
+        if not checks['dkg']:
+            try:
+                init_bls(self.skale, schain['name'], self.node_config.sgx_key_name)
+            except FailedDKG:
+                # todo: clean up here
+                exit(1)
         if not checks['volume']:
             init_data_volume(schain)
         if not checks['container']:
