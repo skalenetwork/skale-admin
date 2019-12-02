@@ -22,17 +22,15 @@ import logging
 import shutil
 from time import sleep
 
-from skale import Skale
+from skale.manager_client import spawn_skale_lib
 
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name
 
-
 from tools.docker_utils import DockerUtils
 from tools.custom_thread import CustomThread
 from tools.str_formatters import arguments_list_string
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 
@@ -46,8 +44,8 @@ dutils = DockerUtils()
 class SChainsCleaner():
     def __init__(self, skale, node_config):
         self.skale = skale
+        self.skale_events = spawn_skale_lib(skale)
         self.node_config = node_config
-        self.skale_events = Skale(ENDPOINT, ABI_FILEPATH)
         CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
 
     def wait_for_node_id(self, opts):
@@ -89,8 +87,8 @@ class SChainsCleaner():
     def schain_names_to_ids(self, schain_names):
         ids = []
         for name in schain_names:
-            id = self.skale.schains_data.name_to_id(name)
-            ids.append(bytes.fromhex(id))
+            id_ = self.skale.schains_data.name_to_id(name)
+            ids.append(bytes.fromhex(id_))
         return ids
 
     def run_cleanup(self, schain_name):

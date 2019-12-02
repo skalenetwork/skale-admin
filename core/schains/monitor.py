@@ -21,6 +21,8 @@ import os
 import logging
 from time import sleep
 
+from skale.manager_client import spawn_skale_lib
+
 from tools.custom_thread import CustomThread
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -58,7 +60,8 @@ class SchainsMonitor():
         self.monitor.start()
 
     def monitor_schains(self, opts):
-        schains = self.skale.schains_data.get_schains_for_node(self.node_id)
+        skale = spawn_skale_lib(self.skale)
+        schains = skale.schains_data.get_schains_for_node(self.node_id)
         schains_on_node = sum(map(lambda schain: schain['active'], schains))
         schains_holes = len(schains) - schains_on_node
         logger.info(
@@ -77,17 +80,18 @@ class SchainsMonitor():
             thread.join()
 
     def monitor_schain(self, schain):
+        skale = spawn_skale_lib(self.skale)
         name = schain['name']
         owner = schain['owner']
         checks = SChainChecks(name, self.node_id, log=True).get_all()
-
+        
         if not checks['data_dir']:
             init_schain_dir(name)
         if not checks['config']:
-            self.init_schain_config(name, owner)
+            self.init_schain_config(skale, name, owner)
         if not checks['dkg']:
             try:
-                init_bls(self.skale, schain['name'], self.node_config.sgx_key_name)
+                init_bls(skale, schain['name'], self.node_config.sgx_key_name)
             except FailedDKG:
                 # todo: clean up here
                 exit(1)
@@ -98,11 +102,11 @@ class SchainsMonitor():
         if not checks['ima_container']:
             self.monitor_ima_container(schain)
 
-    def init_schain_config(self, schain_name, schain_owner):
+    def init_schain_config(self, skale, schain_name, schain_owner):
         config_filepath = get_schain_config_filepath(schain_name)
         if not os.path.isfile(config_filepath):
             logger.warning(f'sChain config not found: {config_filepath}, trying to create.')
-            schain_config = generate_schain_config(schain_name, schain_owner, self.node_id, self.skale)
+            schain_config = generate_schain_config(schain_name, schain_owner, self.node_id, skale)
             save_schain_config(schain_config, schain_name)
 
     def check_container(self, schain_name, volume_required=False):
