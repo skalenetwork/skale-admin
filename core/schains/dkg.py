@@ -26,7 +26,7 @@ import random
 
 from core.schains.helper import get_schain_config_filepath
 from tools.configs import NODE_DATA_PATH
-from tools.bls.dkg_utils import init_dkg_client, broadcast, get_dkg_broadcast_filter, send_complaint, response, send_allright, get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_schains_data_contract, get_dkg_all_complaints_filter, generate_bls_key
+from tools.bls.dkg_utils import init_dkg_client, broadcast, get_dkg_broadcast_filter, send_complaint, response, send_allright, get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_schains_data_contract, get_dkg_all_complaints_filter, generate_bls_key, generate_bls_key_name, generate_poly_name
 from tools.bls.dkg_client import DkgVerificationError
 
 logger = logging.getLogger(__name__)
@@ -53,14 +53,7 @@ def init_bls(skale, schain_name, sgx_key_name):
         dkg_client = init_dkg_client(config_filepath, skale, n, t, sgx_key_name)
         dkg_id = random.randint(0, 10**50)
         group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
-        poly_name = (
-            "POLY:SCHAIN_ID:"
-            f"{group_index_str}"
-            ":NODE_ID:"
-            f"{str(dkg_client.node_id_dkg)}"
-            ":DKG_ID:"
-            f"{str(dkg_id)}"
-        )
+        poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, dkg_id)
 
         dkg_broadcast_filter = get_dkg_broadcast_filter(skale, dkg_client.group_index)
         broadcast(dkg_client, poly_name)
@@ -112,20 +105,13 @@ def init_bls(skale, schain_name, sgx_key_name):
         dkg_all_data_received_filter = get_dkg_all_data_received_filter(skale, dkg_client.group_index)
         dkg_successful_filter = get_dkg_successful_filter(skale, dkg_client.group_index)
         encrypted_bls_key = 0
-        bls_key_name = (
-            "BLS_KEY:SCHAIN_ID:"
-            f"{group_index_str}"
-            ":NODE_ID:"
-            f"{str(dkg_client.node_id_dkg)}"
-            ":DKG_ID:"
-            f"{str(dkg_id)}"
-        )
+        bls_key_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, dkg_id)
         if not is_comlaint_sent:
             send_allright(dkg_client)
             encrypted_bls_key = generate_bls_key(dkg_client, bls_key_name)
             is_allright_sent_list[dkg_client.node_id_dkg] = True
 
-        logger.info(f'Node`s encrypted bls key  is : {encrypted_bls_key}')
+        logger.info(f'Node`s encrypted bls key is: {encrypted_bls_key}')
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
             raise FailedDKG("failed due to event FailedDKG")

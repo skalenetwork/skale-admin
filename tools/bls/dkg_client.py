@@ -21,6 +21,7 @@ import os
 import sys
 import binascii
 import logging
+import eth_utils
 
 from skale.utils.web3_utils import wait_receipt
 
@@ -36,6 +37,11 @@ logger = logging.getLogger(__name__)
 
 
 class DkgVerificationError(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
+
+
+class SgxDkgPolynomGenerationError(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 
@@ -82,7 +88,7 @@ class DKGClient:
     def VerificationVector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
-        verification_vector_hexed = "0x" + convert_g2_points_to_hex(verification_vector)
+        verification_vector_hexed = eth_utils.conversions.add_0x_prefix(convert_g2_points_to_hex(verification_vector))
         return verification_vector_hexed
 
     def SecretKeyContribution(self):
@@ -93,7 +99,7 @@ class DKGClient:
     def Broadcast(self, poly_name):
         poly_success = self.GeneratePolynomial(poly_name)
         if not poly_success:
-            raise ValueError("SGX DKG POLYNOM GENERATION FAILED")
+            raise SgxDkgPolynomGenerationError("SGX DKG POLYNOM GENERATION FAILED")
 
         verification_vector = self.VerificationVector()
         secret_key_contribution = self.SecretKeyContribution()
@@ -115,12 +121,12 @@ class DKGClient:
         logger.info(f'Everything is sent from {self.node_id_dkg} node')
 
     def RecieveVerificationVector(self, fromNode, event):
-        input = binascii.hexlify(event['args']['verificationVector']).decode()
-        self.incoming_verification_vector[fromNode] = input
+        input_ = binascii.hexlify(event['args']['verificationVector']).decode()
+        self.incoming_verification_vector[fromNode] = input_
 
     def RecieveSecretKeyContribution(self, fromNode, event):
-        input = binascii.hexlify(event['args']['secretKeyContribution']).decode()
-        self.incoming_secret_key_contribution[fromNode] = input[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
+        input_ = binascii.hexlify(event['args']['secretKeyContribution']).decode()
+        self.incoming_secret_key_contribution[fromNode] = input_[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
 
     def Verification(self, fromNode):
         return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode], self.eth_key_name, self.incoming_secret_key_contribution[fromNode], self.node_id_dkg)
@@ -161,7 +167,8 @@ class DKGClient:
         logger.info(f'All data from {self.node_ids_contract[fromNode]} was recieved and verified')
 
     def GenerateKey(self, bls_key_name):
-        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name, self.eth_key_name, "".join(self.incoming_secret_key_contribution[j][192*self.node_id_dkg:192*(self.node_id_dkg + 1)] for j in range(self.sgx.n)))
+        recieved_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j][192*self.node_id_dkg:192*(self.node_id_dkg + 1)] for j in range(self.sgx.n))
+        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name, self.eth_key_name, recieved_secret_key_contribution)
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
         return bls_private_key
 

@@ -33,10 +33,9 @@ def init_dkg_client(schain_config_filepath, skale, n, t, sgx_eth_key_name):
     node_id_dkg = -1
     node_id_contract = config_file["skaleConfig"]["nodeInfo"]["nodeID"]
     public_keys = [0] * n
-    i = 0
     node_ids_contract = dict()
     node_ids_dkg = dict()
-    for node in config_file["skaleConfig"]["sChain"]["nodes"]:
+    for i, node in enumerate(config_file["skaleConfig"]["sChain"]["nodes"]):
         if node["nodeID"] == config_file["skaleConfig"]["nodeInfo"]["nodeID"]:
             node_id_dkg = i
 
@@ -44,13 +43,34 @@ def init_dkg_client(schain_config_filepath, skale, n, t, sgx_eth_key_name):
         node_ids_dkg[i] = node["nodeID"]
 
         public_keys[i] = node["publicKey"]
-        i += 1
 
     schain_name = config_file["skaleConfig"]["sChain"]["schainName"]
 
     dkg_client = DKGClient(node_id_dkg, node_id_contract, skale, t, n, schain_name,
                         public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name)
     return dkg_client
+
+
+def generate_bls_key_name(group_index_str, node_id, dkg_id):
+    return (
+            "BLS_KEY:SCHAIN_ID:"
+            f"{group_index_str}"
+            ":NODE_ID:"
+            f"{str(node_id)}"
+            ":DKG_ID:"
+            f"{str(dkg_id)}"
+        )
+
+
+def generate_poly_name(group_index_str, node_id, dkg_id):
+    return (
+            "POLY:SCHAIN_ID:"
+            f"{group_index_str}"
+            ":NODE_ID:"
+            f"{str(node_id)}"
+            ":DKG_ID:"
+            f"{str(dkg_id)}"
+        )
 
 
 def generate_bls_key(dkg_client, bls_key_name):
