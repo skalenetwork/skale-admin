@@ -6,6 +6,10 @@ dist: bionic
 services:
   - docker
 cache: pip
+env:
+  global:
+    - NODE_OPTIONS="--max_old_space_size=4096"
+    - PYTHONPATH=.
 install:
   - pip install -r requirements.txt
   - pip install -r requirements-dev.txt
