@@ -47,11 +47,8 @@ def init_schain_dir(schain_name):
 
 def get_schain_config_filepath(schain_name):
     schain_dir_path = get_schain_dir_path(schain_name)
-    return os.path.join(schain_dir_path, construct_schain_config_filename(schain_name))
-
-
-def construct_schain_config_filename(schain_name):
-    return f'schain_{schain_name}.json'
+    return os.path.join(schain_dir_path,
+                        f'schain_{schain_name}.json')
 
 
 def get_schain_config(schain_name):

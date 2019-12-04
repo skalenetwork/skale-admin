@@ -3,14 +3,24 @@ python:
   - '3.6'
 os: linux
 dist: bionic
+services:
+  - docker
 cache: pip
-#install:
-#  - pip install -r requirements.txt
+install:
+  - pip install -r requirements.txt
+  - pip install -r requirements-dev.txt
 #before_script:
 #  - "flake8 ."
 jobs:
   include:
-    #- stage: test
+    - stage: test
+      script:
+        - git clone https://${CI_USER_TOKEN}@github.com/skalenetwork/skale-manager.git
+        - cd skale-manager/
+        - yarn install
+        - ENDPOINT=$ENDPOINT_HTTP PRIVATE_KEY=$SKALE_PY_TESTNET_PRIVATE_KEY npx truffle migrate --network SKALE_private_testnet
+        - cp data/SKALE_private_testnet.json ../test_abi.json && cd ..
+        - ./scripts/run-tests.sh
     - stage: deploy
       if: branch IN (develop, beta, stable, master)
       script:

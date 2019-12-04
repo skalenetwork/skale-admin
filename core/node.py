@@ -30,7 +30,6 @@ from skale.utils.web3_utils import wait_receipt, check_receipt
 from skale.utils.helper import ip_from_bytes
 from skale.wallets.web3_wallet import public_key_to_address
 
-docker_client = docker.from_env()
 logger = logging.getLogger(__name__)
 
 
