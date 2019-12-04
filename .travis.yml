@@ -24,7 +24,7 @@ jobs:
         - cd skale-manager/
         - yarn install
         - ENDPOINT=$ENDPOINT_HTTP PRIVATE_KEY=$TESTNET_PRIVATE_KEY npx truffle migrate --network SKALE_private_testnet
-        - cp data/SKALE_private_testnet.json ../test_abi.json && cd ..
+        - cp data/SKALE_private_testnet.json ../skale-admin/tests/test_abi.json && cd ..
         - ./scripts/run-tests.sh
     - stage: deploy
       if: branch IN (develop, beta, stable, master)
