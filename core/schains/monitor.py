@@ -95,8 +95,8 @@ class SchainsMonitor():
             except FailedDKG:
                 # todo: clean up here
                 exit(1)
-        # if not checks['volume']: # todo: uncomment before beta release
-        #     init_data_volume(schain)
+        if not checks['volume']: # todo: uncomment before beta release
+            init_data_volume(schain)
         if not checks['container']:
             self.monitor_schain_container(schain)
         if not checks['ima_container']:
