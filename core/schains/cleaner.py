@@ -56,10 +56,17 @@ class SChainsCleaner():
         self.monitor = CustomThread('sChains cleaner monitor', self.schains_cleaner,
                                     interval=CLEANER_INTERVAL)
         self.monitor.start()
+        logger.info(
+            arguments_list_string({'Node ID': self.node_config.id}, 'sChains cleaner started'))
+
+    def get_schain_names_from_contract(self):
+        schains_on_contract = self.skale.schains_data.get_schains_for_node(self.node_config.id)
+        return list(map(lambda schain: schain['name'], schains_on_contract))
 
     def schains_cleaner(self, opts):
         schains_on_node = self.get_schains_on_node()
         schain_ids = self.schain_names_to_ids(schains_on_node)
+        schain_names_on_contracts = self.get_schain_names_from_contract()
 
         event_filter = self.skale_events.schains.contract.events.SchainDeleted.createFilter(
             fromBlock=0, argument_filters={'schainId': schain_ids})
@@ -67,7 +74,7 @@ class SChainsCleaner():
 
         for event in events:
             name = event['args']['name']
-            if name in schains_on_node:
+            if name in schains_on_node and name not in schain_names_on_contracts:
                 logger.info(
                     arguments_list_string({'sChain name': name}, 'sChain deleted event found'))
                 self.run_cleanup(name)
