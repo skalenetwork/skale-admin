@@ -19,9 +19,6 @@
 
 import logging
 from enum import Enum
-import docker
-
-from core.filebeat import run_filebeat_service
 
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance

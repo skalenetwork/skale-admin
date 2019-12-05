@@ -2,7 +2,6 @@ import os
 
 import docker
 import pytest
-from skale.utils.web3_utils import wait_receipt, check_receipt
 
 from tools.docker_utils import DockerUtils
 from core.schains.runner import run_schain_container
