@@ -40,7 +40,8 @@ def test_register_info(node):
     port = 8080
 
     # Register new node and check that it successfully created on contracts
-    res = node.register(ip, public_ip, port, NODE_NAME)
+    with mock.patch('core.node.run_filebeat_service'):
+        res = node.register(ip, public_ip, port, NODE_NAME)
     assert res['status'] == 1
     res_data = res.get('data')
 

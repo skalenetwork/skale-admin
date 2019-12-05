@@ -20,12 +20,15 @@
 import logging
 from enum import Enum
 
+
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
 from skale.utils.web3_utils import wait_receipt, check_receipt
 from skale.utils.helper import ip_from_bytes
 from skale.wallets.web3_wallet import public_key_to_address
+
+from core.filebeat import run_filebeat_service
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +75,7 @@ class Node:
         self._log_node_info('Node successfully created', ip, public_ip, port, name)
         res = self.skale.nodes_data.node_name_to_index(name)
         self.config.id = self.skale.nodes_data.node_name_to_index(name)
-        # run_filebeat_service(public_ip, self.config.id, self.skale) # todo: uncomment!
+        run_filebeat_service(public_ip, self.config.id, self.skale)
         return {'status': 1, 'data': self.config.all()}
 
     def _insufficient_funds(self):
