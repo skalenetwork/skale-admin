@@ -20,25 +20,7 @@ SCHAIN_NAME = 'test'
 
 @pytest.fixture
 def client():
-    return DockerUtils()
-
-
-def manager_node_schains_init(skale_inst):
-    # Create first node
-    res = skale_inst.manager.create_node('1.1.1.2', 8081, 'node1', '4.4.3.3')
-    receipt = wait_receipt(skale_inst.web3, res['tx'])
-    check_receipt(receipt)
-
-    # Create second node
-    res = skale_inst.manager.create_node('2.2.5.5', 8082, 'node2', '4.4.5.5')
-    receipt = wait_receipt(skale_inst.web3, res['tx'])
-    check_receipt(receipt)
-
-    # Create schain
-    price_in_wei = skale_inst.schains.get_schain_price(4, 3600)
-    res = skale_inst.manager.create_schain(3600, 4, price_in_wei, SCHAIN_NAME)
-    receipt = wait_receipt(skale_inst.web3, res['tx'])
-    check_receipt(receipt)
+    return DockerUtils(volume_driver='local')
 
 
 def test_run_schain_container(client):
@@ -63,7 +45,7 @@ def test_run_schain_container(client):
                    'active': True}
 
     # Run schain container
-    run_schain_container(schain_data, env)
+    run_schain_container(schain_data, env, dutils=client)
 
     # Perform container checks
     assert client.data_volume_exists(SCHAIN_NAME)

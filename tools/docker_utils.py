@@ -50,9 +50,10 @@ def format_containers(f):
 
 
 class DockerUtils:
-    def __init__(self):
+    def __init__(self, volume_driver='convoy'):
         self.client = self.init_docker_client()
         self.cli = self.init_docker_cli()
+        self.volume_driver = volume_driver
 
     def init_docker_client(self):
         docker_client = docker.from_env()
@@ -69,14 +70,14 @@ class DockerUtils:
         except docker.errors.NotFound:
             return False
 
-    def create_data_volume(self, name, size=None, driver='local'):
-        if driver != 'local':
+    def create_data_volume(self, name, size=None):
+        if self.volume_driver != 'local':
             driver_opts = {'size': str(size)} if size else None
         logging.info(
             f'Creating volume - size: {size}, name: {name}, driver_opts: {driver_opts}')
         volume = self.client.volumes.create(
             name=name,
-            driver=driver,
+            driver=self.volume_driver,
             driver_opts=driver_opts,
             labels={"schain": name}
         )
