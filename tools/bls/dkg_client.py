@@ -126,10 +126,7 @@ class DKGClient:
 
     def RecieveSecretKeyContribution(self, fromNode, event):
         input_ = binascii.hexlify(event['args']['secretKeyContribution']).decode()
-        print("INPUT SKC:", input_)
         self.incoming_secret_key_contribution[fromNode] = input_[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
-        print("WRITTEN SKC:", self.incoming_secret_key_contribution[fromNode])
-        print("SKC LOOKS LIKE:", self.incoming_secret_key_contribution)
 
     def Verification(self, fromNode):
         return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode], self.eth_key_name, self.incoming_secret_key_contribution[fromNode], self.node_id_dkg)
@@ -170,10 +167,7 @@ class DKGClient:
         logger.info(f'All data from {self.node_ids_contract[fromNode]} was recieved and verified')
 
     def GenerateKey(self, bls_key_name):
-        print("SKC LOOKS LIKE:", self.incoming_secret_key_contribution)
-        print("N:", self.sgx.n)
-        print("NODE ID:", self.node_id_dkg)
-        recieved_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j][192*self.node_id_dkg:192*(self.node_id_dkg + 1)] for j in range(self.sgx.n))
+        recieved_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j] for j in range(self.sgx.n))
         print("RECIEVED SKC:", recieved_secret_key_contribution)
         logger.info(f'DKGClient is going to create BLS private key with name {bls_key_name} and data {recieved_secret_key_contribution}')
         bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name, self.eth_key_name, recieved_secret_key_contribution)
