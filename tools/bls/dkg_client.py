@@ -171,6 +171,8 @@ class DKGClient:
 
     def GenerateKey(self, bls_key_name):
         print("SKC LOOKS LIKE:", self.incoming_secret_key_contribution)
+        print("N:", self.sgx.n)
+        print("NODE ID:", self.node_id_dkg)
         recieved_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j][192*self.node_id_dkg:192*(self.node_id_dkg + 1)] for j in range(self.sgx.n))
         print("RECIEVED SKC:", recieved_secret_key_contribution)
         logger.info(f'DKGClient is going to create BLS private key with name {bls_key_name} and data {recieved_secret_key_contribution}')
