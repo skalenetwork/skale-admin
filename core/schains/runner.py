@@ -28,7 +28,7 @@ from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SC
                                       IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
 from tools.configs import NODE_DATA_PATH_HOST, NODE_DATA_PATH, SKALE_DIR_HOST, SKALE_VOLUME_PATH
 
-dutils = DockerUtils()
+docker_utils = DockerUtils()
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +63,10 @@ def get_ulimits_config(config):
                     Ulimit(name=ulimit['name'], soft=ulimit['soft'], hard=ulimit['hard']), config))
 
 
-def run_container(type, schain, env, volume_config=None, cpu_limit=None, mem_limit=None):
+def run_container(type, schain, env, volume_config=None,
+                  cpu_limit=None, mem_limit=None, dutils=None):
+    if not dutils:
+        dutils = docker_utils
     schain_name = schain['name']
     image_name, container_name, run_args, custom_args = get_container_info(type, schain_name)
 
@@ -89,14 +92,16 @@ def run_container(type, schain, env, volume_config=None, cpu_limit=None, mem_lim
     return cont
 
 
-def run_schain_container(schain, env):
+def run_schain_container(schain, env, dutils=None):
     cpu_limit, mem_limit = get_container_limits(schain)
-    volume_config = get_schain_volume_config(schain['name'], DATA_DIR_CONTAINER_PATH)
-    run_container(SCHAIN_CONTAINER, schain, env, volume_config, cpu_limit, mem_limit)
+    volume_config = get_schain_volume_config(schain['name'],
+                                             DATA_DIR_CONTAINER_PATH)
+    run_container(SCHAIN_CONTAINER, schain, env, volume_config, cpu_limit,
+                  mem_limit, dutils=dutils)
 
 
-def run_ima_container(schain, env):
-    run_container(IMA_CONTAINER, schain, env)
+def run_ima_container(schain, env, dutils=None):
+    run_container(IMA_CONTAINER, schain, env, dutils=dutils)
 
 
 def add_config_volume(run_args):
