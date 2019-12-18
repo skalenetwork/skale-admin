@@ -76,7 +76,7 @@ class Node:
         self._log_node_info('Node successfully created', ip, public_ip, port, name)
         res = self.skale.nodes_data.node_name_to_index(name)
         self.config.id = self.skale.nodes_data.node_name_to_index(name)
-        # run_filebeat_service(public_ip, self.config.id, self.skale) # todo: uncomment!
+        run_filebeat_service(public_ip, self.config.id, self.skale)
         return {'status': 1, 'data': self.config.all()}
 
     def _insufficient_funds(self):

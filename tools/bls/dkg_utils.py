@@ -18,25 +18,19 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import json
-from web3 import Web3
 
 from tools.configs import NODE_DATA_PATH
-from tools.configs.web3 import ABI_FILEPATH
 from tools.bls.dkg_client import DKGClient
 
 
-def init_dkg_client(schain_config_filepath, skale, n, t, sgx_eth_key_name):
-    with open(schain_config_filepath, 'r') as infile:
-        config_file = json.load(infile)
-
+def init_dkg_client(schain_config, skale, n, t, sgx_eth_key_name):
     node_id_dkg = -1
-    node_id_contract = config_file["skaleConfig"]["nodeInfo"]["nodeID"]
+    node_id_contract = schain_config["skaleConfig"]["nodeInfo"]["nodeID"]
     public_keys = [0] * n
     node_ids_contract = dict()
     node_ids_dkg = dict()
-    for i, node in enumerate(config_file["skaleConfig"]["sChain"]["nodes"]):
-        if node["nodeID"] == config_file["skaleConfig"]["nodeInfo"]["nodeID"]:
+    for i, node in enumerate(schain_config["skaleConfig"]["sChain"]["nodes"]):
+        if node["nodeID"] == schain_config["skaleConfig"]["nodeInfo"]["nodeID"]:
             node_id_dkg = i
 
         node_ids_contract[node["nodeID"]] = i
@@ -44,7 +38,7 @@ def init_dkg_client(schain_config_filepath, skale, n, t, sgx_eth_key_name):
 
         public_keys[i] = node["publicKey"]
 
-    schain_name = config_file["skaleConfig"]["sChain"]["schainName"]
+    schain_name = schain_config["skaleConfig"]["sChain"]["schainName"]
 
     dkg_client = DKGClient(node_id_dkg, node_id_contract, skale, t, n, schain_name,
                         public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name)
@@ -133,20 +127,6 @@ def get_dkg_all_data_received_filter(skale, group_index):
 def get_dkg_bad_guy_filter(skale):
     contract = skale.dkg.contract
     return contract.events.BadGuy.createFilter(fromBlock=0)
-
-
-def get_schains_data_contract(web3):
-    custom_contracts_contracts_data = read_custom_contracts_data()
-    schains_data_contract_address = custom_contracts_contracts_data['schains_data_address']
-    schains_data_contract_abi = custom_contracts_contracts_data['schains_data_abi']
-
-    return web3.eth.contract(address=Web3.toChecksumAddress(schains_data_contract_address),
-                             abi=schains_data_contract_abi)
-
-
-def read_custom_contracts_data():
-    with open(ABI_FILEPATH, encoding='utf-8') as data_file:
-        return json.loads(data_file.read())
 
 
 def get_secret_key_share_filepath(schain_id):
