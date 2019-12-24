@@ -84,18 +84,18 @@ class SchainsMonitor():
         name = schain['name']
         owner = schain['owner']
         checks = SChainChecks(name, self.node_id, log=True).get_all()
-        
+
         if not checks['data_dir']:
             init_schain_dir(name)
-        if not checks['config']:
-            self.init_schain_config(skale, name, owner)
         if not checks['dkg']:
             try:
-                init_bls(skale, schain['name'], self.node_config.sgx_key_name)
+                init_bls(skale, schain['name'], self.node_config.id, self.node_config.sgx_key_name)
             except FailedDKG:
                 # todo: clean up here
                 exit(1)
-        if not checks['volume']: # todo: uncomment before beta release
+        if not checks['config']:
+            self.init_schain_config(skale, name, owner)
+        if not checks['volume']:
             init_data_volume(schain)
         if not checks['container']:
             self.monitor_schain_container(schain)
@@ -106,7 +106,7 @@ class SchainsMonitor():
         config_filepath = get_schain_config_filepath(schain_name)
         if not os.path.isfile(config_filepath):
             logger.warning(f'sChain config not found: {config_filepath}, trying to create.')
-            schain_config = generate_schain_config(schain_name, schain_owner, self.node_id, skale)
+            schain_config = generate_schain_config(skale, schain_name, self.node_id)
             save_schain_config(schain_config, schain_name)
 
     def check_container(self, schain_name, volume_required=False):
