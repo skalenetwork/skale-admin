@@ -75,7 +75,7 @@ class DockerUtils():
             f'Creating volume - size: {size}, name: {name}, driver_opts: {driver_opts}')
         volume = self.client.volumes.create(
             name=name,
-            driver='convoy',
+            driver='lvmpy',
             driver_opts=driver_opts,
             labels={"schain": name}
         )
