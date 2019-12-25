@@ -19,25 +19,36 @@
 
 import os
 import logging
-import secrets
+
+from sgx import SgxClient
 
 from tools.str_formatters import arguments_list_string
-from tools.helper import write_json, read_json
-from tools.configs import TOKENS_FILEPATH
+
 
 logger = logging.getLogger(__name__)
 
-
-def init_user_token():
-    if not os.path.exists(TOKENS_FILEPATH):
-        token = generate_user_token()
-        logger.info(arguments_list_string({'Token': token}, 'Generated registration token'))
-        write_json(TOKENS_FILEPATH, {'token': token})
-        return token
-    else:
-        tokens = read_json(TOKENS_FILEPATH)
-        return tokens['token']
+SGX_KEY_CONFIG_NAME = 'sgx_key_name'
+SGX_SERVER_URL = os.environ.get('SGX_SERVER_URL')
 
 
-def generate_user_token(token_len=40):
-    return secrets.token_hex(token_len)
+class SGXConnecionError(Exception):
+    """Raised when admin couldn't establish connection with SGX server"""
+
+
+def generate_sgx_key(config):
+    if not SGX_SERVER_URL:
+        raise SGXConnecionError('SGX server URL is not provided')
+    if not config.sgx_key_name:
+        sgx = SgxClient(SGX_SERVER_URL)
+        key_info = sgx.generate_key()
+        logger.info(arguments_list_string({
+            'Name': key_info.name,
+            'Address': key_info.address
+            }, 'Generated new SGX key'))
+        config.sgx_key_name = key_info.name
+
+
+def sgx_server_text():
+    if SGX_SERVER_URL:
+        return SGX_SERVER_URL
+    return 'Not connected'

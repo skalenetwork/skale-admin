@@ -49,10 +49,11 @@ def format_containers(f):
     return inner
 
 
-class DockerUtils():
-    def __init__(self):
+class DockerUtils:
+    def __init__(self, volume_driver='convoy'):
         self.client = self.init_docker_client()
         self.cli = self.init_docker_cli()
+        self.volume_driver = volume_driver
 
     def init_docker_client(self):
         docker_client = docker.from_env()
@@ -70,12 +71,13 @@ class DockerUtils():
             return False
 
     def create_data_volume(self, name, size=None):
-        driver_opts = {'size': str(size)} if size else None
+        if self.volume_driver != 'local':
+            driver_opts = {'size': str(size)} if size else None
         logging.info(
-            f'Creating volume, driver: convoy, size: {size}, name: {name}, driver_opts: {driver_opts}')
+            f'Creating volume - size: {size}, name: {name}, driver_opts: {driver_opts}')
         volume = self.client.volumes.create(
             name=name,
-            driver='convoy',
+            driver=self.volume_driver,
             driver_opts=driver_opts,
             labels={"schain": name}
         )
@@ -88,16 +90,6 @@ class DockerUtils():
     @format_containers
     def get_all_schain_containers(self, all=False, format=False):
         return self.client.containers.list(all=all, filters={'name': 'skale_schain_*'})
-
-    @format_containers
-    def get_base_skale_containers(self, all=False, format=False):
-        containers_list = self.client.containers.list(
-            all=all, filters={'name': 'skale_*'})
-        return list(filter(lambda container: self.is_base_container(container), containers_list))
-
-    def is_base_container(self, container):
-        name = container.attrs['Name']
-        return not name.startswith('/skale_schain') and not name.startswith('/skale_ima')
 
     def get_info(self, container_id):
         container_info = {}

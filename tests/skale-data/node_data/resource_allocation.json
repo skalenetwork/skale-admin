@@ -1,0 +1,23 @@
+{
+    "cpu": {
+        "part_test4": 0.125,
+        "part_test": 0.125,
+        "part_small": 0.0078125,
+        "part_medium": 0.125,
+        "part_large": 1.0
+    },
+    "mem": {
+        "part_test4": 68619571,
+        "part_test": 68619571,
+        "part_small": 4288723,
+        "part_medium": 68619571,
+        "part_large": 548956569
+    },
+    "disk": {
+        "part_test4": 26843,
+        "part_test": 2000000,
+        "part_small": 167772160,
+        "part_medium": 2684354560,
+        "part_large": 21474836480
+    }
+}

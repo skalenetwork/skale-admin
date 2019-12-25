@@ -18,120 +18,116 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import coincurve
-import json
-from web3 import Web3
 
 from tools.configs import NODE_DATA_PATH
-from tools.configs.web3 import ABI_FILEPATH
 from tools.bls.dkg_client import DKGClient
 
 
-def init_dkg_client(schain_config_filepath, web3, wallet, n, t):
-    with open(schain_config_filepath, 'r') as infile:
-        config_file = json.load(infile)
-
+def init_dkg_client(schain_config, skale, n, t, sgx_eth_key_name):
     node_id_dkg = -1
-    node_id_contract = config_file["skaleConfig"]["nodeInfo"]["nodeID"]
+    node_id_contract = schain_config["skaleConfig"]["nodeInfo"]["nodeID"]
     public_keys = [0] * n
-    i = 0
     node_ids_contract = dict()
     node_ids_dkg = dict()
-    is_node_id_set = False
-    for node in config_file["skaleConfig"]["sChain"]["nodes"]:
-        if node["nodeID"] == config_file["skaleConfig"]["nodeInfo"]["nodeID"]:
+    for i, node in enumerate(schain_config["skaleConfig"]["sChain"]["nodes"]):
+        if node["nodeID"] == schain_config["skaleConfig"]["nodeInfo"]["nodeID"]:
             node_id_dkg = i
 
         node_ids_contract[node["nodeID"]] = i
         node_ids_dkg[i] = node["nodeID"]
 
-        public_keys[i] = coincurve.PublicKey(bytes.fromhex("04" + node["publicKey"]))
-        i += 1
+        public_keys[i] = node["publicKey"]
 
-    schain_name = config_file["skaleConfig"]["sChain"]["schainName"]
+    schain_name = schain_config["skaleConfig"]["sChain"]["schainName"]
 
-    dkg_client = DKGClient(node_id_dkg, node_id_contract, web3, wallet, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract)
+    dkg_client = DKGClient(node_id_dkg, node_id_contract, skale, t, n, schain_name,
+                        public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name)
     return dkg_client
 
 
-def broadcast(dkg_client, web3):
-    dkg_client.Broadcast(get_dkg_contract(web3))
+def generate_bls_key_name(group_index_str, node_id, dkg_id):
+    return (
+            "BLS_KEY:SCHAIN_ID:"
+            f"{group_index_str}"
+            ":NODE_ID:"
+            f"{str(node_id)}"
+            ":DKG_ID:"
+            f"{str(dkg_id)}"
+        )
 
 
-def send_complaint(dkg_client, index, web3):
-    dkg_client.SendComplaint(index, get_dkg_contract(web3))
+def generate_poly_name(group_index_str, node_id, dkg_id):
+    return (
+            "POLY:SCHAIN_ID:"
+            f"{group_index_str}"
+            ":NODE_ID:"
+            f"{str(node_id)}"
+            ":DKG_ID:"
+            f"{str(dkg_id)}"
+        )
 
-def response(dkg_client, web3):
-    dkg_client.Response(get_dkg_contract(web3))
+
+def generate_bls_key(dkg_client, bls_key_name):
+    return dkg_client.GenerateKey(bls_key_name)
 
 
-def send_allright(dkg_client, web3):
-    dkg_client.Allright(get_dkg_contract(web3))
+def broadcast(dkg_client, poly_name):
+    dkg_client.Broadcast(poly_name)
 
 
-def get_dkg_broadcast_filter(web3, group_index):
-    contract = get_dkg_contract(web3)
+def send_complaint(dkg_client, index):
+    dkg_client.SendComplaint(index)
+
+
+def response(dkg_client, from_node_index):
+    dkg_client.Response(from_node_index)
+
+
+def send_allright(dkg_client):
+    dkg_client.Allright()
+
+
+def get_dkg_broadcast_filter(skale, group_index):
+    contract = skale.dkg.contract
     return contract.events.BroadcastAndKeyShare.createFilter(fromBlock=0, argument_filters={
         'groupIndex': group_index})
 
 
-def get_dkg_complaint_sent_filter(web3, group_index, to_node_index):
-    contract = get_dkg_contract(web3)
+def get_dkg_complaint_sent_filter(skale, group_index, to_node_index):
+    contract = skale.dkg.contract
     return contract.events.ComplaintSent.createFilter(fromBlock=0,
                                                       argument_filters={'groupIndex': group_index,
                                                                         'toNodeIndex': to_node_index})
 
 
-def get_dkg_all_complaints_filter(web3, group_index):
-    contract = get_dkg_contract(web3)
+def get_dkg_all_complaints_filter(skale, group_index):
+    contract = skale.dkg.contract
     return contract.events.ComplaintSent.createFilter(fromBlock=0,
                                                       argument_filters={'groupIndex': group_index})
 
 
-def get_dkg_successful_filter(web3, group_index):
-    contract = get_dkg_contract(web3)
+def get_dkg_successful_filter(skale, group_index):
+    contract = skale.dkg.contract
     return contract.events.SuccessfulDKG.createFilter(fromBlock=0,
                                                       argument_filters={'groupIndex': group_index})
 
 
-def get_dkg_fail_filter(web3, group_index):
-    contract = get_dkg_contract(web3)
+def get_dkg_fail_filter(skale, group_index):
+    contract = skale.dkg.contract
     return contract.events.FailedDKG.createFilter(fromBlock=0,
                                                   argument_filters={'groupIndex': group_index})
 
 
-def get_dkg_all_data_received_filter(web3, group_index):
-    contract = get_dkg_contract(web3)
+def get_dkg_all_data_received_filter(skale, group_index):
+    contract = skale.dkg.contract
     return contract.events.AllDataReceived.createFilter(fromBlock=0, argument_filters={
         'groupIndex': group_index})
 
 
-def get_dkg_bad_guy_filter(web3):
-    contract = get_dkg_contract(web3)
+def get_dkg_bad_guy_filter(skale):
+    contract = skale.dkg.contract
     return contract.events.BadGuy.createFilter(fromBlock=0)
-  
 
-def get_schains_data_contract(web3):
-    custom_contracts_contracts_data = read_custom_contracts_data()
-    schains_data_contract_address = custom_contracts_contracts_data['schains_data_address']
-    schains_data_contract_abi = custom_contracts_contracts_data['schains_data_abi']
-
-    return web3.eth.contract(address=Web3.toChecksumAddress(schains_data_contract_address),
-                             abi=schains_data_contract_abi)
-
-
-def get_dkg_contract(web3):
-    custom_contracts_contracts_data = read_custom_contracts_data()
-    dkg_contract_address = custom_contracts_contracts_data['skale_dkg_address']
-    dkg_contract_abi = custom_contracts_contracts_data['skale_dkg_abi']
-
-    return web3.eth.contract(address=Web3.toChecksumAddress(dkg_contract_address),
-                             abi=dkg_contract_abi)
-
-
-def read_custom_contracts_data():
-    with open(ABI_FILEPATH, encoding='utf-8') as data_file:
-        return json.loads(data_file.read())
 
 def get_secret_key_share_filepath(schain_id):
     return os.path.join(NODE_DATA_PATH, 'schains', schain_id, 'secret_key.json')

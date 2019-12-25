@@ -22,8 +22,6 @@ import logging
 import json
 from pathlib import Path
 
-from web3 import Web3
-
 from tools.configs.schains import SCHAINS_DIR_PATH, DATA_DIR_NAME, BASE_SCHAIN_CONFIG_FILEPATH
 from tools.configs.ima import PROXY_ABI_FILENAME
 
@@ -47,11 +45,8 @@ def init_schain_dir(schain_name):
 
 def get_schain_config_filepath(schain_name):
     schain_dir_path = get_schain_dir_path(schain_name)
-    return os.path.join(schain_dir_path, construct_schain_config_filename(schain_name))
-
-
-def construct_schain_config_filename(schain_name):
-    return f'schain_{schain_name}.json'
+    return os.path.join(schain_dir_path,
+                        f'schain_{schain_name}.json')
 
 
 def get_schain_config(schain_name):
@@ -69,23 +64,6 @@ def get_schain_proxy_file_path(schain_name):
 def read_base_config():
     json_data = open(BASE_SCHAIN_CONFIG_FILEPATH).read()
     return json.loads(json_data)
-
-
-def add_accounts_to_base_config(base_config, allocation):
-    base_config['accounts'] = {**base_config['accounts'], **allocation}
-    return base_config
-
-
-def add_to_allocation(allocation, account, amount, code=None, storage={}, nonce=0):
-    assert type(code) is str or code is None
-    assert type(storage) is dict or storage is None
-    acc_fx = Web3.toChecksumAddress(account)
-    if str(acc_fx) not in allocation:
-        allocation[acc_fx] = {"balance": str(amount)}
-        if code:
-            allocation[acc_fx]['code'] = code
-            allocation[acc_fx]['storage'] = storage
-            allocation[acc_fx]['nonce'] = str(nonce)
 
 
 def get_schain_rpc_ports(schain_id):

@@ -18,31 +18,23 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from http import HTTPStatus
 
 from flask import Blueprint, request
 
-from web.helper import construct_ok_response, construct_response, login_required
+from web.helper import construct_ok_response, login_required
+from tools.wallet_utils import wallet_with_balance
 
 logger = logging.getLogger(__name__)
 
 
-def construct_wallet_bp(wallet):
+def construct_wallet_bp(skale):
     wallet_bp = Blueprint('wallet', __name__)
-
-    @wallet_bp.route('/create-wallet', methods=['POST'])
-    @login_required
-    def create_wallet():
-        logger.debug(request)
-        res = wallet.get_or_generate()
-        return construct_response(HTTPStatus.CREATED, res)
 
     @wallet_bp.route('/load-wallet', methods=['GET'])
     @login_required
     def load_wallet():
         logger.debug(request)
-        wallet.get_or_generate()  # todo: tmp, remove later!
-        res = wallet.get_with_balance()
+        res = wallet_with_balance(skale)
         return construct_ok_response(res)
 
     return wallet_bp

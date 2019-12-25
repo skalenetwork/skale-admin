@@ -19,16 +19,18 @@
 
 import os
 import logging
+from time import sleep
+
+from skale.manager_client import spawn_skale_lib
+
 from tools.custom_thread import CustomThread
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
-from sentry_sdk import capture_message
-
 from core.schains.runner import run_schain_container, run_ima_container
 from core.schains.helper import init_schain_dir, get_schain_config_filepath
 from core.schains.config import generate_schain_config, save_schain_config, get_schain_env
-from core.schains.volume import init_data_volume, get_container_limits
+from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_env
 from core.schains.dkg import init_bls, FailedDKG
@@ -43,24 +45,32 @@ dutils = DockerUtils()
 
 
 class SchainsMonitor():
-    def __init__(self, skale, wallet, node_id):
+    def __init__(self, skale, node_config):
         self.skale = skale
-        self.node_id = node_id
-        self.wallet = wallet
+        self.node_config = node_config
+        CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
+
+    def wait_for_node_id(self, opts):
+        while self.node_config.id is None:
+            logger.debug('Waiting for the node_id in sChains Monitor...')
+            sleep(MONITOR_INTERVAL)
+        self.node_id = self.node_config.id
         self.monitor = CustomThread('sChains monitor', self.monitor_schains,
                                     interval=MONITOR_INTERVAL)
         self.monitor.start()
 
     def monitor_schains(self, opts):
-        schains = self.skale.schains_data.get_schains_for_node(self.node_id)
-        schains_on_node = sum(map(lambda schain: schain['active'] == True, schains))
+        skale = spawn_skale_lib(self.skale)
+        schains = skale.schains_data.get_schains_for_node(self.node_id)
+        schains_on_node = sum(map(lambda schain: schain['active'], schains))
         schains_holes = len(schains) - schains_on_node
         logger.info(
             arguments_list_string({'Node ID': self.node_id, 'sChains on node': schains_on_node,
                                    'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
         threads = []
         for schain in schains:
-            if not schain['active']: continue
+            if not schain['active']:
+                continue
             schain_thread = CustomThread(f'sChain monitor: {schain["name"]}', self.monitor_schain,
                                          opts=schain, once=True)
             schain_thread.start()
@@ -70,19 +80,21 @@ class SchainsMonitor():
             thread.join()
 
     def monitor_schain(self, schain):
+        skale = spawn_skale_lib(self.skale)
         name = schain['name']
-        checks = SChainChecks(name, self.node_id, log=True, failhook=capture_message).get_all()
+        owner = schain['owner']
+        checks = SChainChecks(name, self.node_id, log=True).get_all()
 
         if not checks['data_dir']:
             init_schain_dir(name)
-        if not checks['config']:
-            self.init_schain_config(name)
         if not checks['dkg']:
             try:
-                init_bls(self.skale.web3, self.wallet, schain['name'])
+                init_bls(skale, schain['name'], self.node_config.id, self.node_config.sgx_key_name)
             except FailedDKG:
                 # todo: clean up here
                 exit(1)
+        if not checks['config']:
+            self.init_schain_config(skale, name, owner)
         if not checks['volume']:
             init_data_volume(schain)
         if not checks['container']:
@@ -90,11 +102,11 @@ class SchainsMonitor():
         if not checks['ima_container']:
             self.monitor_ima_container(schain)
 
-    def init_schain_config(self, schain_name):
+    def init_schain_config(self, skale, schain_name, schain_owner):
         config_filepath = get_schain_config_filepath(schain_name)
         if not os.path.isfile(config_filepath):
             logger.warning(f'sChain config not found: {config_filepath}, trying to create.')
-            schain_config = generate_schain_config(schain_name, self.node_id, self.skale)
+            schain_config = generate_schain_config(skale, schain_name, self.node_id)
             save_schain_config(schain_config, schain_name)
 
     def check_container(self, schain_name, volume_required=False):

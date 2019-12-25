@@ -17,28 +17,27 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import logging
 
 from flask import Flask, render_template, session, g
 from peewee import SqliteDatabase
 
-import sentry_sdk
-
 from skale import Skale
+from skale.wallets import RPCWallet
 
 from core.node import Node
-from core.local_wallet import LocalWallet
+from core.node_config import NodeConfig
+from core.schains.monitor import SchainsMonitor
+from core.schains.cleaner import SChainsCleaner
 
-from tools.helper import get_sentry_env_name
-from tools.configs import NODE_CONFIG_FILEPATH, FLASK_SECRET_KEY_FILE
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
+from tools.configs import FLASK_SECRET_KEY_FILE
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
 from tools.configs.db import DB_FILE
 from tools.logger import init_admin_logger
-from tools.config_storage import ConfigStorage
-from tools.token_utils import TokenUtils
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
+from tools.sgx_utils import generate_sgx_key, sgx_server_text
+from tools.token_utils import init_user_token
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from web.user import User
@@ -59,38 +58,31 @@ logger = logging.getLogger(__name__)
 werkzeug_logger = logging.getLogger('werkzeug')  # todo: remove
 werkzeug_logger.setLevel(logging.WARNING)  # todo: remove
 
-skale = Skale(ENDPOINT, ABI_FILEPATH)
-wallet = LocalWallet(skale)
-config = ConfigStorage(NODE_CONFIG_FILEPATH)
+rpc_wallet = RPCWallet(TM_URL)
+skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+
 docker_utils = DockerUtils()
-node = Node(skale, config, wallet)
-token_utils = TokenUtils()
 user_session = UserSession(session)
 
-SENTRY_URL = os.environ.get('SENTRY_URL', None)
-if SENTRY_URL:
-    sentry_env_name = get_sentry_env_name(skale.manager.address)
-    sentry_sdk.init(SENTRY_URL, environment=sentry_env_name)
+node_config = NodeConfig()
+node = Node(skale, node_config)
+schains_monitor = SchainsMonitor(skale, node_config)
+schains_cleaner = SChainsCleaner(skale, node_config)
 
-
-if not token_utils.get_token():
-    token_utils.add_token()
-token = token_utils.get_token()
-
+token = init_user_token()
 database = SqliteDatabase(DB_FILE)
 
 app = Flask(__name__)
 app.register_blueprint(construct_auth_bp(user_session, token))
 app.register_blueprint(web_logs)
 app.register_blueprint(construct_nodes_bp(skale, node, docker_utils))
-app.register_blueprint(construct_schains_bp(skale, wallet, docker_utils, node))
-app.register_blueprint(construct_wallet_bp(wallet))
-app.register_blueprint(construct_node_info_bp(skale, wallet, docker_utils))
+app.register_blueprint(construct_schains_bp(skale, node_config, docker_utils))
+app.register_blueprint(construct_wallet_bp(skale))
+app.register_blueprint(construct_node_info_bp(skale, docker_utils))
 app.register_blueprint(construct_security_bp())
-app.register_blueprint(construct_validators_bp(skale, config, wallet))
-app.register_blueprint(construct_metrics_bp(skale, config))
+app.register_blueprint(construct_validators_bp(skale, node_config))
+app.register_blueprint(construct_metrics_bp(skale, node_config))
 
-wallet.get_or_generate()
 
 @app.before_request
 def before_request():
@@ -110,8 +102,13 @@ def main():
 
 
 if __name__ == '__main__':
-    logger.info(arguments_list_string({'Root account token': token}, 'Starting Flask server'))
+    logger.info(arguments_list_string({
+        'Endpoint': ENDPOINT,
+        'Transaction manager': TM_URL,
+        'SGX Server': sgx_server_text()
+        }, 'Starting Flask server'))
     if not User.table_exists():
         User.create_table()
+    generate_sgx_key(node_config)
     app.secret_key = FLASK_SECRET_KEY_FILE
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)

@@ -20,42 +20,61 @@
 import os
 import logging
 import shutil
+from time import sleep
+
+from skale.manager_client import spawn_skale_lib
 
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
+from core.schains.runner import get_container_name
 
 from tools.docker_utils import DockerUtils
-from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.custom_thread import CustomThread
 from tools.str_formatters import arguments_list_string
-from . import CLEANER_INTERVAL
-
-from core.schains.runner import get_container_name
+from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+
+from . import CLEANER_INTERVAL, MONITOR_INTERVAL
+
 
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 
 class SChainsCleaner():
-    def __init__(self, skale, node_id):
+    def __init__(self, skale, node_config):
         self.skale = skale
-        self.node_id = node_id
+        self.skale_events = spawn_skale_lib(skale)
+        self.node_config = node_config
+        CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
+
+    def wait_for_node_id(self, opts):
+        while self.node_config.id is None:
+            logger.debug('Waiting for the node_id in sChains Cleaner...')
+            sleep(MONITOR_INTERVAL)
+        self.node_id = self.node_config.id
         self.monitor = CustomThread('sChains cleaner monitor', self.schains_cleaner,
                                     interval=CLEANER_INTERVAL)
         self.monitor.start()
+        logger.info(
+            arguments_list_string({'Node ID': self.node_config.id}, 'sChains cleaner started'))
+
+    def get_schain_names_from_contract(self):
+        schains_on_contract = self.skale.schains_data.get_schains_for_node(self.node_config.id)
+        return list(map(lambda schain: schain['name'], schains_on_contract))
 
     def schains_cleaner(self, opts):
         schains_on_node = self.get_schains_on_node()
         schain_ids = self.schain_names_to_ids(schains_on_node)
+        schain_names_on_contracts = self.get_schain_names_from_contract()
 
-        event_filter = self.skale.schains.contract.events.SchainDeleted.createFilter(
+        event_filter = self.skale_events.schains.contract.events.SchainDeleted.createFilter(
             fromBlock=0, argument_filters={'schainId': schain_ids})
         events = event_filter.get_all_entries()
 
         for event in events:
             name = event['args']['name']
-            if name in schains_on_node:
+            if name in schains_on_node and name not in schain_names_on_contracts:
                 logger.info(
                     arguments_list_string({'sChain name': name}, 'sChain deleted event found'))
                 self.run_cleanup(name)
@@ -75,8 +94,8 @@ class SChainsCleaner():
     def schain_names_to_ids(self, schain_names):
         ids = []
         for name in schain_names:
-            id = self.skale.schains_data.name_to_id(name)
-            ids.append(bytes.fromhex(id))
+            id_ = self.skale.schains_data.name_to_id(name)
+            ids.append(bytes.fromhex(id_))
         return ids
 
     def run_cleanup(self, schain_name):
