@@ -64,8 +64,9 @@ def convert_g2_points_to_hex(data):
 
 
 class DKGClient:
-    def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys, node_ids_dkg, node_ids_contract, eth_key_name):
-        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n, t)
+    def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
+                 node_ids_dkg, node_ids_contract, eth_key_name):
+        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t)
         self.schain_name = schain_name
         self.group_index = skale.web3.sha3(text=self.schain_name)
         self.node_id_contract = node_id_contract
@@ -79,7 +80,8 @@ class DKGClient:
         self.public_keys = public_keys
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
-        logger.info(f'Node id on chain is {self.node_id_dkg}; Node id on contract is {self.node_id_contract}')
+        logger.info(f'Node id on chain is {self.node_id_dkg}; \
+            Node id on contract is {self.node_id_contract}')
 
     def GeneratePolynomial(self, poly_name):
         self.poly_name = poly_name
