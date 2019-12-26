@@ -18,16 +18,20 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import json
 import logging
 import time
 from time import sleep
 import random
 
-from core.schains.helper import get_schain_config_filepath
-from tools.configs import NODE_DATA_PATH
-from tools.bls.dkg_utils import init_dkg_client, broadcast, get_dkg_broadcast_filter, send_complaint, response, send_allright, get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_schains_data_contract, get_dkg_all_complaints_filter, generate_bls_key, generate_bls_key_name, generate_poly_name
+from skale.schain_config import generate_skale_schain_config
+from tools.bls.dkg_utils import (
+    init_dkg_client, broadcast, get_dkg_broadcast_filter, send_complaint, response, send_allright,
+    get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, 
+    get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_dkg_all_complaints_filter,
+    generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath
+)
 from tools.bls.dkg_client import DkgVerificationError
+from tools.helper import write_json
 
 logger = logging.getLogger(__name__)
 
@@ -37,20 +41,14 @@ class FailedDKG(Exception):
         super().__init__(msg)
 
 
-def init_bls(skale, schain_name, sgx_key_name):
-
+def init_bls(skale, schain_name, node_id, sgx_key_name):
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
-    config_filepath = get_schain_config_filepath(schain_name)
-
     if not os.path.isfile(secret_key_share_filepath):
-
-        with open(config_filepath, 'r') as infile:
-            config_file = json.load(infile)
-
-        n = len(config_file["skaleConfig"]["sChain"]["nodes"])
+        schain_config = generate_skale_schain_config(skale, schain_name, node_id)
+        n = len(schain_config["skaleConfig"]["sChain"]["nodes"])
         t = (2 * n + 1) // 3
 
-        dkg_client = init_dkg_client(config_filepath, skale, n, t, sgx_key_name)
+        dkg_client = init_dkg_client(schain_config, skale, n, t, sgx_key_name)
         dkg_id = random.randint(0, 10**50)
         group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
         poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, dkg_id)
@@ -154,13 +152,24 @@ def init_bls(skale, schain_name, sgx_key_name):
 
         if True in is_allright_sent_list:
             if len(dkg_successful_filter.get_all_entries()) > 0:
-                schains_data_contract = get_schains_data_contract(skale.web3)
-                common_public_key = schains_data_contract.functions.getGroupsPublicKey(dkg_client.group_index).call()
+                common_public_key = skale.schains_data.get_groups_public_key(dkg_client.group_index)
+                save_dkg_results(
+                    common_public_key=common_public_key,
+                    public_key=dkg_client.public_key,
+                    t=t,
+                    n=n,
+                    key_share_name=bls_key_name,
+                    filepath=secret_key_share_filepath
+                )
 
-                with open(secret_key_share_filepath, 'w') as outfile:
-                    json.dump({"common_public_key :": common_public_key,
-                                "public_key :": dkg_client.public_key}, outfile)
 
-
-def get_secret_key_share_filepath(schain_id):
-    return os.path.join(NODE_DATA_PATH, 'schains', schain_id, 'secret_key.json')
+def save_dkg_results(common_public_key, public_key, t, n, key_share_name, filepath):
+    """Save DKG results to the JSON file on disk"""
+    results = {
+        'common_public_key': common_public_key,
+        'public_key': public_key,
+        't': t,
+        'n': n,
+        'key_share_name': key_share_name
+    }
+    write_json(filepath, results)

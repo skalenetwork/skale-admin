@@ -4,8 +4,8 @@ LONG_LINE = '=' * 100
 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-RUNNING_ON_HOST = os.environ.get('RUNNING_ON_HOST', False)
-SKALE_DIR_HOST = os.environ['SKALE_DIR_HOST']
+RUNNING_ON_HOST = os.getenv('RUNNING_ON_HOST', False)
+SKALE_DIR_HOST = os.getenv('SKALE_DIR_HOST')
 NODE_DATA_PATH_HOST = os.path.join(SKALE_DIR_HOST, 'node_data')
 
 if RUNNING_ON_HOST:
