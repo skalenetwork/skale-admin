@@ -50,7 +50,7 @@ def format_containers(f):
 
 
 class DockerUtils:
-    def __init__(self, volume_driver='convoy'):
+    def __init__(self, volume_driver='lvmpy'):
         self.client = self.init_docker_client()
         self.cli = self.init_docker_cli()
         self.volume_driver = volume_driver
