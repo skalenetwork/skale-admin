@@ -61,8 +61,8 @@ Form content:
 ```json
 {
     "force": "True/False",
-    "ssl_key": [KEY_FILE],
-    "ssl_cert": [CERT_FILE],
+    "ssl_key": "[KEY_FILE]",
+    "ssl_cert": "[CERT_FILE]",
 }
 ```
 
