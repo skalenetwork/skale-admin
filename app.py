@@ -96,11 +96,6 @@ def after_request(response):
     return response
 
 
-@app.route('/')
-def main():
-    return render_template('index.html')
-
-
 if __name__ == '__main__':
     logger.info(arguments_list_string({
         'Endpoint': ENDPOINT,
