@@ -35,6 +35,10 @@ def construct_response(status, data):
     )
 
 
+def construct_bad_req_response(error_msg):
+    return construct_response(HTTPStatus.BAD_REQUEST, {'res': 0, 'error_msg': error_msg})
+
+
 def construct_err_response(status, errors=[]):
     logger.warning(f'error response: {errors}, status: {status}')
     return construct_response(status, {'errors': errors})
