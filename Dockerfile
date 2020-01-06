@@ -18,7 +18,5 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN cd frontend && npm i && npm run build
-
 ENV PYTHONPATH="/usr/src/admin"
 CMD [ "python3", "app.py" ]
