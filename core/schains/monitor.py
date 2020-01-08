@@ -28,6 +28,7 @@ from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
 from core.schains.runner import run_schain_container, run_ima_container
+from core.schains.cleaner import remove_config_dir
 from core.schains.helper import init_schain_dir, get_schain_config_filepath
 from core.schains.config import generate_schain_config, save_schain_config, get_schain_env
 from core.schains.volume import init_data_volume
@@ -91,7 +92,7 @@ class SchainsMonitor():
             try:
                 init_bls(skale, schain['name'], self.node_config.id, self.node_config.sgx_key_name)
             except FailedDKG:
-                # todo: clean up here
+                remove_config_dir(schain['name'])
                 exit(1)
         if not checks['config']:
             self.init_schain_config(skale, name, owner)
