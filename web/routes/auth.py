@@ -21,7 +21,7 @@ import logging
 
 from flask import Blueprint, request
 
-from web.user import User
+from web.models.user import User
 from web.helper import construct_ok_response, construct_err_response
 
 logger = logging.getLogger(__name__)
