@@ -12,7 +12,7 @@ pyjwt==1.4.2
 simple-crypt==4.1.7
 pycryptodome==3.4.11
 
-skale.py==2.1.dev7
+skale.py==2.1.dev8
 
 PyYAML==5.1.2
 psutil==5.6.3
