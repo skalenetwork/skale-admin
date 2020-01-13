@@ -52,6 +52,7 @@ from web.routes.node_info import construct_node_info_bp
 from web.routes.security import construct_security_bp
 from web.routes.validators import construct_validators_bp
 from web.routes.metrics import construct_metrics_bp
+from web.routes.sgx import sgx_bp
 
 init_admin_logger()
 logger = logging.getLogger(__name__)
@@ -82,6 +83,7 @@ app.register_blueprint(construct_node_info_bp(skale, docker_utils))
 app.register_blueprint(construct_security_bp())
 app.register_blueprint(construct_validators_bp(skale, node_config))
 app.register_blueprint(construct_metrics_bp(skale, node_config))
+app.register_blueprint(sgx_bp)
 
 
 @app.before_request
