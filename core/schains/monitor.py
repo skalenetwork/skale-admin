@@ -30,8 +30,10 @@ from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
 from core.schains.runner import run_schain_container, run_ima_container
-from core.schains.helper import init_schain_dir, get_schain_config_filepath
-from core.schains.config import generate_schain_config, save_schain_config, get_schain_env
+from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
+                                 get_schain_config)
+from core.schains.config import (generate_schain_config, save_schain_config,
+                                 get_schain_env)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_env
@@ -39,6 +41,7 @@ from core.schains.dkg import init_bls, FailedDKG
 
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER
+from tools.iptables import add_rules as add_iptables_rules
 
 from . import MONITOR_INTERVAL
 
@@ -91,7 +94,7 @@ class SchainsMonitor():
             schain_record, _ = SChainRecord.add(name)
         else:
             schain_record = SChainRecord.get_by_name(name)
-            
+
         if not checks['data_dir']:
             init_schain_dir(name)
         if not checks['dkg']:
@@ -117,6 +120,16 @@ class SchainsMonitor():
             logger.warning(f'sChain config not found: {config_filepath}, trying to create.')
             schain_config = generate_schain_config(skale, schain_name, self.node_id)
             save_schain_config(schain_config, schain_name)
+
+    def add_firewall_rules(self, schain_name):
+        config = get_schain_config(schain_name)
+        ips, ports = self.get_consensus_ips_with_ports(config)
+        add_iptables_rules(ips, ports)
+
+    def get_consensus_ips_with_ports(self, config):
+        ips = [node_data['ip'] for node_data in config['schain_nodes']]
+        ports = [node_data['basePort'] for node_data in config['schain_nodes']]
+        return ips, ports
 
     def check_container(self, schain_name, volume_required=False):
         name = get_container_name(SCHAIN_CONTAINER, schain_name)
