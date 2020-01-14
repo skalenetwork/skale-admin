@@ -71,8 +71,9 @@ class DockerUtils:
             return False
 
     def create_data_volume(self, name, size=None):
-        if self.volume_driver != 'local':
-            driver_opts = {'size': str(size)} if size else None
+        driver_opts = None
+        if self.volume_driver != 'local' and size:
+            driver_opts = {'size': str(size)}
         logging.info(
             f'Creating volume - size: {size}, name: {name}, driver_opts: {driver_opts}')
         volume = self.client.volumes.create(
