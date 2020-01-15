@@ -85,14 +85,14 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
 
         dkg_fail_filter = get_dkg_fail_filter(skale, dkg_client.group_index)
 
-        is_comlaint_sent = False
+        is_complaint_sent = False
         complainted_node_index = -1
         start_time_response = time.time()
         for i in range(n):
             if not is_correct[i] or not is_received[i]:
                 send_complaint(dkg_client, i)
                 dkg_bad_guy_filter = get_dkg_bad_guy_filter(skale)
-                is_comlaint_sent = True
+                is_complaint_sent = True
                 complainted_node_index = i
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
@@ -104,7 +104,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
         dkg_successful_filter = get_dkg_successful_filter(skale, dkg_client.group_index)
         encrypted_bls_key = 0
         bls_key_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, dkg_id)
-        if not is_comlaint_sent:
+        if not is_complaint_sent:
             send_allright(dkg_client)
             encrypted_bls_key = generate_bls_key(dkg_client, bls_key_name)
             is_allright_sent_list[dkg_client.node_id_dkg] = True
@@ -135,10 +135,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
             for i in range(dkg_client.n):
                 if not is_allright_sent_list[i]:
                     send_complaint(dkg_client, i)
-                    is_comlaint_sent = True
+                    is_complaint_sent = True
 
-        is_comlaint_sent = len(dkg_complaint_sent_filter.get_all_entries())
-        if is_comlaint_sent or is_complaint_received:
+        is_complaint_sent = len(dkg_complaint_sent_filter.get_all_entries())
+        if is_complaint_sent or is_complaint_received:
             while len(dkg_fail_filter.get_all_entries()) == 0:
                 if time.time() - start_time_response > 600:
                     break
