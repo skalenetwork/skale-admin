@@ -4,7 +4,7 @@ import docker
 import pytest
 
 from tools.docker_utils import DockerUtils
-from core.schains.runner import run_schain_container
+from core.schains.runner import run_schain_container, run_ima_container
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -15,14 +15,24 @@ TEST_ABI_FILEPATH = os.path.join(DIR_PATH, 'test_abi.json')
 
 
 SCHAIN_NAME = 'test'
+SCHAIN = {
+    'name': SCHAIN_NAME,
+    'owner': '0x1213123091i230923123213123',
+    'indexInOwnerList': 0,
+    'partOfNode': 0,
+    'lifetime': 3600,
+    'startDate': 1575448438,
+    'deposit': 1000000000000000000,
+    'index': 0,
+    'active': True
+}
 
 
 @pytest.fixture
 def client():
     return DockerUtils(volume_driver='local')
 
-
-def test_run_schain_container(client):
+def run_test_schain_container(dutils):
     env = {
         "SSL_KEY_PATH": 'NULL',
         "SSL_CERT_PATH": 'NULL',
@@ -35,16 +45,17 @@ def test_run_schain_container(client):
         "CONFIG_FILE": os.path.join(TEST_SKALE_DATA_DIR, 'schain_config.json'),
         "DATA_DIR": '/data_dir'
     }
-
-    schain_data = {'name': SCHAIN_NAME,
-                   'owner': '0x1213123091i230923123213123',
-                   'indexInOwnerList': 0, 'partOfNode': 0,
-                   'lifetime': 3600, 'startDate': 1575448438,
-                   'deposit': 1000000000000000000, 'index': 0,
-                   'active': True}
-
     # Run schain container
-    run_schain_container(schain_data, env, dutils=client)
+    run_schain_container(SCHAIN, env, dutils=dutils)
+
+
+def run_test_ima_container(dutils):
+    run_ima_container(SCHAIN, {})
+
+
+def test_run_schain_container(client):
+    # Run schain container
+    run_test_schain_container(client)
 
     # Perform container checks
     assert client.data_volume_exists(SCHAIN_NAME)
