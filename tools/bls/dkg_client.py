@@ -122,11 +122,11 @@ class DKGClient:
                 raise ValueError("Transaction failed, see receipt", receipt)
         logger.info(f'Everything is sent from {self.node_id_dkg} node')
 
-    def RecieveVerificationVector(self, fromNode, event):
+    def ReceiveVerificationVector(self, fromNode, event):
         input_ = binascii.hexlify(event['args']['verificationVector']).decode()
         self.incoming_verification_vector[fromNode] = input_
 
-    def RecieveSecretKeyContribution(self, fromNode, event):
+    def ReceiveSecretKeyContribution(self, fromNode, event):
         input_ = binascii.hexlify(event['args']['secretKeyContribution']).decode()
         self.incoming_secret_key_contribution[fromNode] = input_[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
 
@@ -161,17 +161,17 @@ class DKGClient:
                 raise ValueError("Transaction failed, see receipt", receipt)
         logger.info(f'{from_node_index} node sent a response')
 
-    def RecieveFromNode(self, fromNode, event):
-        self.RecieveVerificationVector(self.node_ids_contract[fromNode], event)
-        self.RecieveSecretKeyContribution(self.node_ids_contract[fromNode], event)
+    def ReceiveFromNode(self, fromNode, event):
+        self.ReceiveVerificationVector(self.node_ids_contract[fromNode], event)
+        self.ReceiveSecretKeyContribution(self.node_ids_contract[fromNode], event)
         if not self.Verification(self.node_ids_contract[fromNode]):
             raise DkgVerificationError("Fatal error : user " + str(self.node_ids_contract[fromNode] + 1) + " hasn't passed verification by user " + str(self.node_id_dkg + 1))
-        logger.info(f'All data from {self.node_ids_contract[fromNode]} was recieved and verified')
+        logger.info(f'All data from {self.node_ids_contract[fromNode]} was received and verified')
 
     def GenerateKey(self, bls_key_name):
-        recieved_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j] for j in range(self.sgx.n))
+        received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j] for j in range(self.sgx.n))
         logger.info(f'DKGClient is going to create BLS private key with name {bls_key_name}')
-        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name, self.eth_key_name, recieved_secret_key_contribution)
+        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name, self.eth_key_name, received_secret_key_contribution)
         logger.info(f'DKGClient is going to fetch BLS public key with name {bls_key_name}')
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
         return bls_private_key
