@@ -17,11 +17,11 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from peewee import CharField, DateTimeField, IntegrityError
-from hashlib import md5
 import datetime
+from hashlib import md5
+from peewee import CharField, DateTimeField, IntegrityError
 
-from web.base_model import BaseModel
+from web.models.base import BaseModel
 
 
 class User(BaseModel):

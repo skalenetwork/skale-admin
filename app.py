@@ -40,7 +40,8 @@ from tools.sgx_utils import generate_sgx_key, sgx_server_text
 from tools.token_utils import init_user_token
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from web.user import User
+from web.models.user import User
+from web.models.schain import SChainRecord
 from web.user_session import UserSession
 
 from web.routes.auth import construct_auth_bp
@@ -52,6 +53,7 @@ from web.routes.node_info import construct_node_info_bp
 from web.routes.security import construct_security_bp
 from web.routes.validators import construct_validators_bp
 from web.routes.metrics import construct_metrics_bp
+from web.routes.sgx import sgx_bp
 
 init_admin_logger()
 logger = logging.getLogger(__name__)
@@ -82,6 +84,7 @@ app.register_blueprint(construct_node_info_bp(skale, docker_utils))
 app.register_blueprint(construct_security_bp())
 app.register_blueprint(construct_validators_bp(skale, node_config))
 app.register_blueprint(construct_metrics_bp(skale, node_config))
+app.register_blueprint(sgx_bp)
 
 
 @app.before_request
@@ -96,14 +99,20 @@ def after_request(response):
     return response
 
 
+def create_tables():
+    if not User.table_exists():
+        User.create_table()
+    if not SChainRecord.table_exists():
+        SChainRecord.create_table()
+
+
 if __name__ == '__main__':
     logger.info(arguments_list_string({
         'Endpoint': ENDPOINT,
         'Transaction manager': TM_URL,
         'SGX Server': sgx_server_text()
         }, 'Starting Flask server'))
-    if not User.table_exists():
-        User.create_table()
+    create_tables()
     generate_sgx_key(node_config)
     app.secret_key = FLASK_SECRET_KEY_FILE
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)

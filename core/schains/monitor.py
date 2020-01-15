@@ -23,11 +23,14 @@ from time import sleep
 
 from skale.manager_client import spawn_skale_lib
 
+from web.models.schain import SChainRecord
+
 from tools.custom_thread import CustomThread
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
 from core.schains.runner import run_schain_container, run_ima_container
+from core.schains.cleaner import remove_config_dir
 from core.schains.helper import init_schain_dir, get_schain_config_filepath
 from core.schains.config import generate_schain_config, save_schain_config, get_schain_env
 from core.schains.volume import init_data_volume
@@ -85,14 +88,22 @@ class SchainsMonitor():
         owner = schain['owner']
         checks = SChainChecks(name, self.node_id, log=True).get_all()
 
+        if not SChainRecord.added(name):
+            schain_record, _ = SChainRecord.add(name)
+        else:
+            schain_record = SChainRecord.get_by_name(name)
+            
         if not checks['data_dir']:
             init_schain_dir(name)
         if not checks['dkg']:
             try:
+                schain_record.dkg_started()
                 init_bls(skale, schain['name'], self.node_config.id, self.node_config.sgx_key_name)
             except FailedDKG:
-                # todo: clean up here
+                schain_record.dkg_failed()
+                remove_config_dir(schain['name'])
                 exit(1)
+            schain_record.dkg_done()
         if not checks['config']:
             self.init_schain_config(skale, name, owner)
         if not checks['volume']:

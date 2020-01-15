@@ -41,6 +41,33 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 
+def log_remove(component_name, schain_name):
+    logger.warning(f'Going to remove {component_name} for sChain {schain_name}')
+
+
+def remove_schain_volume(schain_name):
+    log_remove('volume', schain_name)
+    dutils.rm_vol(schain_name)
+
+
+def remove_schain_container(schain_name):
+    log_remove('container', schain_name)
+    schain_container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    return dutils.safe_rm(schain_container_name, v=True, force=True)
+
+
+def remove_ima_container(schain_name):
+    log_remove('IMA container', schain_name)
+    ima_container_name = get_container_name(IMA_CONTAINER, schain_name)
+    dutils.safe_rm(ima_container_name, v=True, force=True)
+
+
+def remove_config_dir(schain_name):
+    log_remove('config directory', schain_name)
+    schain_dir_path = get_schain_dir_path(schain_name)
+    shutil.rmtree(schain_dir_path)
+
+
 class SChainsCleaner():
     def __init__(self, skale, node_config):
         self.skale = skale
@@ -101,24 +128,10 @@ class SChainsCleaner():
     def run_cleanup(self, schain_name):
         checks = SChainChecks(schain_name, self.node_id).get_all()
         if checks['container']:
-            logger.warning(f'Going to remove container and volume for {schain_name}...')
-            self.remove_schain_container(schain_name)
-            dutils.rm_vol(schain_name)
+            remove_schain_container(schain_name)
+        if checks['volume']:
+            remove_schain_volume(schain_name)
         if checks['ima_container']:
-            logger.warning(f'Going to remove IMA container for {schain_name}...')
-            self.remove_ima_container(schain_name)
+            remove_ima_container(schain_name)
         if checks['data_dir']:
-            logger.warning(f'Going to remove config folder for {schain_name}...')
-            self.remove_config_folder(schain_name)
-
-    def remove_schain_container(self, schain_name):
-        schain_container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
-        return dutils.safe_rm(schain_container_name, v=True, force=True)
-
-    def remove_ima_container(self, schain_name):
-        ima_container_name = get_container_name(IMA_CONTAINER, schain_name)
-        dutils.safe_rm(ima_container_name, v=True, force=True)
-
-    def remove_config_folder(self, schain_name):
-        schain_dir_path = get_schain_dir_path(schain_name)
-        shutil.rmtree(schain_dir_path)
+            remove_config_dir(schain_name)
