@@ -1,12 +1,13 @@
 # SKALE Admin
 
 [![Build Status](https://travis-ci.com/skalenetwork/skale-admin.svg?token=tLesVRTSHvWZxoyqXdoA&branch=develop)](https://travis-ci.com/skalenetwork/skale-admin)
+[![Discord](https://img.shields.io/discord/534485763354787851.svg)](https://discord.gg/vvUtWJB)
 
 SKALE Admin is the container that manages all operations on the SKALE node.
 
 ## API Reference
 
-1. [SSL](#schains-ssl-api)
+1.  [SSL](#schains-ssl-api)
 
 ### sChains SSL API
 
@@ -14,9 +15,7 @@ SKALE Admin is the container that manages all operations on the SKALE node.
 
 > Login required
 
-```
-[GET] /api/ssl/status
-```
+    [GET] /api/ssl/status
 
 ##### Response
 
@@ -52,9 +51,7 @@ No certs:
 
 > Login required
 
-```
-[POST] /api/ssl/upload
-```
+    [POST] /api/ssl/upload
 
 Form content:
 
@@ -99,3 +96,11 @@ export BRANCH=$(git branch | grep -oP "^\*\s+\K\S+$")
 export VERSION=$(bash scripts/calculate_version.sh)
 bash scripts/build.sh
 ```
+
+## License
+
+[![License](https://img.shields.io/github/license/skalenetwork/skale-admin.svg)](LICENSE)
+
+All contributions to SKALE Admin are made under the [GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html). See [LICENSE](LICENSE).
+
+Copyright (C) 2019-Present SKALE Labs.

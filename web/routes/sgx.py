@@ -43,7 +43,7 @@ def sgx_status():
     sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
     try:
         status = sgx.get_server_status()
-    except Exception: # todo: catch specific error - edit sgx.py
+    except Exception:  # todo: catch specific error - edit sgx.py
         status = 1
     res = {
         'status': status,
