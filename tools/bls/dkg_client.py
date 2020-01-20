@@ -109,14 +109,14 @@ class DKGClient:
                                        self.node_id_contract,
                                        verification_vector,
                                        secret_key_contribution)
-        receipt = wait_receipt(self.skale.web3, res, timeout=20)
+        receipt = wait_receipt(self.skale.web3, res, timeout=35)
         status = receipt["status"]
         if status != 1:
             res = self.skale.dkg.broadcast(self.group_index,
                                            self.node_id_contract,
                                            verification_vector,
                                            secret_key_contribution)
-            receipt = wait_receipt(self.skale.web3, res, timeout=20)
+            receipt = wait_receipt(self.skale.web3, res, timeout=35)
             status = receipt["status"]
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)
@@ -135,7 +135,7 @@ class DKGClient:
 
     def SendComplaint(self, toNode):
         res = self.skale.dkg.complaint(self.group_index, self.node_id_contract, self.node_ids_dkg[toNode])
-        wait_receipt(self.skale.web3, res, timeout=20)
+        wait_receipt(self.skale.web3, res, timeout=35)
         logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
 
     def Response(self, from_node_index):
@@ -148,14 +148,14 @@ class DKGClient:
                                       self.node_id_contract,
                                       dh_key,
                                       share)
-        receipt = wait_receipt(self.skale.web3, res, timeout=20)
+        receipt = wait_receipt(self.skale.web3, res, timeout=35)
         status = receipt['status']
         if status != 1:
             res = self.skale.dkg.response(self.group_index,
                                     self.node_id_contract,
                                     dh_key,
                                     share)
-            receipt = wait_receipt(self.skale.web3, res, timeout=20)
+            receipt = wait_receipt(self.skale.web3, res, timeout=35)
             status = receipt['status']
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)
@@ -178,11 +178,11 @@ class DKGClient:
 
     def Allright(self):
         res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
-        receipt = wait_receipt(self.skale.web3, res, timeout=20)
+        receipt = wait_receipt(self.skale.web3, res, timeout=35)
         status = receipt['status']
         if status != 1:
             res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
-            receipt = wait_receipt(self.skale.web3, res, timeout=20)
+            receipt = wait_receipt(self.skale.web3, res, timeout=35)
             status = receipt['status']
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)
