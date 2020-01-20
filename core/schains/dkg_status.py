@@ -17,17 +17,11 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-from tools.configs import SSL_CERTIFICATES_FILEPATH
+from enum import Enum
 
 
-def is_ssl_folder_empty():
-    return len(os.listdir(SSL_CERTIFICATES_FILEPATH)) == 0
-
-
-def get_ssl_filepath():
-    if is_ssl_folder_empty():
-        return 'NULL', 'NULL'
-    else:
-        return os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key'),
-        os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+class DKGStatus(Enum):
+    NOT_STARTED = 1
+    IN_PROGRESS = 2
+    DONE = 3
+    FAILED = 3

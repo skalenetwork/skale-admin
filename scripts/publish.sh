@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-NAME=admin-v2
-REPO_NAME=skalelabshub/$NAME
+NAME=admin
+REPO_NAME=skalenetwork/$NAME
 IMAGE_NAME=$REPO_NAME:$VERSION
 LATEST_IMAGE_NAME=$REPO_NAME:latest
 

@@ -23,6 +23,7 @@ from http import HTTPStatus
 from flask import Blueprint, request
 
 from core.schains.helper import get_schain_config
+from web.models.schain import SChainRecord
 from web.helper import construct_ok_response, construct_err_response, login_required
 
 logger = logging.getLogger(__name__)
@@ -68,5 +69,12 @@ def construct_schains_bp(skale, config, docker_utils):
             return construct_err_response(HTTPStatus.BAD_REQUEST, ['No node installed'])
         schains_list = skale.schains_data.get_schains_for_node(node_id)
         return construct_ok_response(schains_list)
+
+    @schains_bp.route('/api/dkg/statuses', methods=['GET'])
+    @login_required
+    def dkg_status():
+        logger.debug(request)
+        dkg_statuses = SChainRecord.all()
+        return construct_ok_response(dkg_statuses)
 
     return schains_bp

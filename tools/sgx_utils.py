@@ -21,7 +21,7 @@ import os
 import logging
 
 from sgx import SgxClient
-
+from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.str_formatters import arguments_list_string
 
 
@@ -39,7 +39,7 @@ def generate_sgx_key(config):
     if not SGX_SERVER_URL:
         raise SGXConnecionError('SGX server URL is not provided')
     if not config.sgx_key_name:
-        sgx = SgxClient(SGX_SERVER_URL)
+        sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
         key_info = sgx.generate_key()
         logger.info(arguments_list_string({
             'Name': key_info.name,

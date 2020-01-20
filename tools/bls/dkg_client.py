@@ -25,7 +25,7 @@ import eth_utils
 
 from skale.utils.web3_utils import wait_receipt
 
-from tools.configs import NODE_DATA_PATH
+from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
 
 sys.path.insert(0, NODE_DATA_PATH)
@@ -66,7 +66,7 @@ def convert_g2_points_to_hex(data):
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
                  node_ids_dkg, node_ids_contract, eth_key_name):
-        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t)
+        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t, path_to_cert=SGX_CERTIFICATES_FOLDER)
         self.schain_name = schain_name
         self.group_index = skale.web3.sha3(text=self.schain_name)
         self.node_id_contract = node_id_contract
