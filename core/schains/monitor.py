@@ -31,10 +31,9 @@ from tools.str_formatters import arguments_list_string
 
 from core.schains.runner import run_schain_container, run_ima_container
 from core.schains.cleaner import remove_config_dir
-from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
-                                 get_schain_config)
+from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
 from core.schains.config import (generate_schain_config, save_schain_config,
-                                 get_schain_env)
+                                 get_schain_env, get_consensus_ips_with_ports)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_env
@@ -54,6 +53,7 @@ class SchainsMonitor():
     def __init__(self, skale, node_config):
         self.skale = skale
         self.node_config = node_config
+
         CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
 
     def wait_for_node_id(self, opts):
@@ -101,7 +101,8 @@ class SchainsMonitor():
         if not checks['dkg']:
             try:
                 schain_record.dkg_started()
-                init_bls(skale, schain['name'], self.node_config.id, self.node_config.sgx_key_name)
+                init_bls(skale, schain['name'], self.node_config.id,
+                         self.node_config.sgx_key_name)
             except FailedDKG:
                 schain_record.dkg_failed()
                 remove_config_dir(schain['name'])
@@ -111,6 +112,8 @@ class SchainsMonitor():
             self.init_schain_config(skale, name, owner)
         if not checks['volume']:
             init_data_volume(schain)
+        if not checks['firewall_rules']:
+            self.add_firewall_rules(schain)
         if not checks['container']:
             self.monitor_schain_container(schain)
         if not checks['ima_container']:
@@ -124,14 +127,10 @@ class SchainsMonitor():
             save_schain_config(schain_config, schain_name)
 
     def add_firewall_rules(self, schain_name):
-        config = get_schain_config(schain_name)
-        ips, ports = self.get_consensus_ips_with_ports(config)
-        add_iptables_rules(ips, ports)
-
-    def get_consensus_ips_with_ports(self, config):
-        ips = [node_data['ip'] for node_data in config['schain_nodes']]
-        ports = [node_data['basePort'] for node_data in config['schain_nodes']]
-        return ips, ports
+        ips_ports = get_consensus_ips_with_ports(schain_name,
+                                                 self.node_config.id)
+        logger.info(f'IVD ips_ports to add {ips_ports}')
+        add_iptables_rules(ips_ports)
 
     def check_container(self, schain_name, volume_required=False):
         name = get_container_name(SCHAIN_CONTAINER, schain_name)

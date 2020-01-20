@@ -19,7 +19,7 @@
 
 import logging
 
-from flask import Flask, render_template, session, g
+from flask import Flask, session, g
 from peewee import SqliteDatabase
 
 from skale import Skale
@@ -30,11 +30,10 @@ from core.node_config import NodeConfig
 from core.schains.monitor import SchainsMonitor
 from core.schains.cleaner import SChainsCleaner
 
-from tools.configs import FLASK_SECRET_KEY_FILE, SKALE_DIR_HOST
+from tools.configs import FLASK_SECRET_KEY_FILE
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
 from tools.configs.db import DB_FILE
 from tools.docker_utils import DockerUtils
-from tools.iptables import add_rule
 from tools.logger import init_admin_logger
 from tools.sgx_utils import generate_sgx_key, sgx_server_text
 from tools.str_formatters import arguments_list_string
@@ -114,7 +113,6 @@ if __name__ == '__main__':
         'SGX Server': sgx_server_text()
         }, 'Starting Flask server'))
     create_tables()
-    logger.info(f'IVD SKALE DIR HOST {SKALE_DIR_HOST}')
     generate_sgx_key(node_config)
     app.secret_key = FLASK_SECRET_KEY_FILE
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)

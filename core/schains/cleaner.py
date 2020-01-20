@@ -27,12 +27,14 @@ from skale.manager_client import spawn_skale_lib
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name
+from core.schains.config import get_consensus_ips_with_ports
 
 from tools.docker_utils import DockerUtils
 from tools.custom_thread import CustomThread
 from tools.str_formatters import arguments_list_string
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from tools.iptables import remove_rules as remove_iptables_rules
 
 from . import CLEANER_INTERVAL, MONITOR_INTERVAL
 
@@ -66,6 +68,13 @@ def remove_config_dir(schain_name):
     log_remove('config directory', schain_name)
     schain_dir_path = get_schain_dir_path(schain_name)
     shutil.rmtree(schain_dir_path)
+
+
+def add_firewall_rules(self, schain_name):
+    ips_ports = get_consensus_ips_with_ports(schain_name,
+                                             self.node_config.id)
+    logger.info(f'IVD ips_ports to remove {ips_ports}')
+    remove_iptables_rules(ips_ports)
 
 
 class SChainsCleaner():
@@ -131,6 +140,8 @@ class SChainsCleaner():
             remove_schain_container(schain_name)
         if checks['volume']:
             remove_schain_volume(schain_name)
+        if checks['firewall_rules']:
+            pass
         if checks['ima_container']:
             remove_ima_container(schain_name)
         if checks['data_dir']:

@@ -101,6 +101,20 @@ def get_schain_ports(schain_name):
     }
 
 
+def get_consensus_ips_with_ports(schain_name, node_id):
+    config = get_schain_config(schain_name)
+    return get_consensus_ips_with_ports_from_config(config)
+
+
+def get_consensus_ips_with_ports_from_config(config, node_id):
+    ips_ports = [
+        (node_data['ip'], node_data['basePort'])
+        for node_data in config['sChain']['nodes']
+        if node_data['nodeID'] != node_id
+    ]
+    return ips_ports
+
+
 def get_schain_config(schain_name):
     config_filepath = get_schain_config_filepath(schain_name)
     with open(config_filepath) as f:
