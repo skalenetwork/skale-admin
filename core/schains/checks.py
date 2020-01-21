@@ -79,8 +79,10 @@ class SChainChecks():
         self._ima_container = dutils.container_running(info)
 
     def check_firewall_rules(self):
-        ips_ports = get_consensus_ips_with_ports(self.name, self.node_id)
-        self._firewall_rules = len(has_iptables_rules(ips_ports)) == 0
+        self._firewall_rules = False
+        if self._config:
+            ips_ports = get_consensus_ips_with_ports(self.name, self.node_id)
+            self._firewall_rules = len(has_iptables_rules(ips_ports)) == 0
 
     def is_healthy(self):
         checks = self.get_all()

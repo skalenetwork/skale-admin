@@ -5,4 +5,5 @@ export SKALE_DIR_HOST=$PWD/tests/skale-data
 export RUNNING_ON_HOST=True
 export ENV=dev
 
-py.test tests/
+py.test tests/ --igore=tests/firewall
+

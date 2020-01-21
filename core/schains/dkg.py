@@ -26,7 +26,7 @@ import random
 from skale.schain_config import generate_skale_schain_config
 from tools.bls.dkg_utils import (
     init_dkg_client, broadcast, get_dkg_broadcast_filter, send_complaint, response, send_allright,
-    get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, 
+    get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter,
     get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_dkg_all_complaints_filter,
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath
 )
@@ -75,7 +75,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
                     is_received[dkg_client.node_ids_contract[from_node]] = True
 
                     try:
-                        dkg_client.RecieveFromNode(from_node, event)
+                        dkg_client.ReceiveFromNode(from_node, event)
                         is_correct[dkg_client.node_ids_contract[from_node]] = True
                     except DkgVerificationError:
                         continue

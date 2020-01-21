@@ -33,7 +33,7 @@ from core.schains.runner import run_schain_container, run_ima_container
 from core.schains.cleaner import remove_config_dir
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
 from core.schains.config import (generate_schain_config, save_schain_config,
-                                 get_schain_env, get_consensus_ips_with_ports)
+                                 get_schain_env, get_allowed_endpoints)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_env
@@ -113,7 +113,7 @@ class SchainsMonitor():
         if not checks['volume']:
             init_data_volume(schain)
         if not checks['firewall_rules']:
-            self.add_firewall_rules(schain)
+            self.add_firewall_rules(name)
         if not checks['container']:
             self.monitor_schain_container(schain)
         if not checks['ima_container']:
@@ -127,10 +127,9 @@ class SchainsMonitor():
             save_schain_config(schain_config, schain_name)
 
     def add_firewall_rules(self, schain_name):
-        ips_ports = get_consensus_ips_with_ports(schain_name,
-                                                 self.node_config.id)
-        logger.info(f'IVD ips_ports to add {ips_ports}')
-        add_iptables_rules(ips_ports)
+        endpoints = get_allowed_endpoints(schain_name)
+        logger.info(f'IVD endpoints to add {endpoints}')
+        add_iptables_rules(endpoints)
 
     def check_container(self, schain_name, volume_required=False):
         name = get_container_name(SCHAIN_CONTAINER, schain_name)
