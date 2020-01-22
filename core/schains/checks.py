@@ -25,7 +25,7 @@ from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
-from tools.iptables import has_rules as has_iptables_rules
+from tools.iptables import apsent_rules as apsent_iptables_rules
 
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -82,7 +82,7 @@ class SChainChecks():
         self._firewall_rules = False
         if self._config:
             ips_ports = get_consensus_ips_with_ports(self.name, self.node_id)
-            self._firewall_rules = len(has_iptables_rules(ips_ports)) == 0
+            self._firewall_rules = len(apsent_iptables_rules(ips_ports)) == 0
 
     def is_healthy(self):
         checks = self.get_all()
