@@ -19,8 +19,10 @@
 
 import json
 import logging
+from itertools import chain
 
 from skale.schain_config.generator import generate_skale_schain_config
+from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
 from core.schains.helper import read_base_config, get_schain_config_filepath
@@ -117,6 +119,7 @@ def get_skaled_rpc_endpoints_from_config(config):
 
 
 def get_snapshots_endpoints_from_config(config):
+    # TODO: Add this endpoints
     return []
 
 
@@ -129,11 +132,20 @@ def get_consensus_endpoints_from_config(config):
     node_id = config['skaleConfig']['nodeInfo']['nodeID']
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
 
-    node_endpoints = [
-        NodeEndpoint(node_data['ip'], node_data['basePort'])
+    node_endpoints = list(chain.from_iterable(
+        (
+            NodeEndpoint(node_data['ip'],
+                         node_data['basePort'] + SkaledPorts.PROPOSAL.value),
+            NodeEndpoint(node_data['ip'],
+                         node_data['basePort'] + SkaledPorts.CATCHUP.value),
+            NodeEndpoint(
+                node_data['ip'],
+                node_data['basePort'] + SkaledPorts.BINARY_CONSENSUS.value
+            )
+        )
         for node_data in schain_nodes_config
         if node_data['nodeID'] != node_id
-    ]
+    ))
     return node_endpoints
 
 

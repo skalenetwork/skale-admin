@@ -129,7 +129,6 @@ class SChainsCleaner():
 
     def remove_firewall_rules(self, schain_name):
         endpoints = get_allowed_endpoints(schain_name)
-        logger.info(f'IVD endpoints to remove {endpoints}')
         remove_iptables_rules(endpoints)
 
     def run_cleanup(self, schain_name):

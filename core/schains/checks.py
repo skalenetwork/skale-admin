@@ -20,7 +20,7 @@
 import os
 import logging
 
-from core.schains.config import (get_consensus_ips_with_ports)
+from core.schains.config import get_allowed_endpoints
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
@@ -81,7 +81,7 @@ class SChainChecks():
     def check_firewall_rules(self):
         self._firewall_rules = False
         if self._config:
-            ips_ports = get_consensus_ips_with_ports(self.name, self.node_id)
+            ips_ports = get_allowed_endpoints(self.name)
             self._firewall_rules = len(apsent_iptables_rules(ips_ports)) == 0
 
     def is_healthy(self):

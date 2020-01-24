@@ -128,7 +128,6 @@ class SchainsMonitor():
 
     def add_firewall_rules(self, schain_name):
         endpoints = get_allowed_endpoints(schain_name)
-        logger.info(f'IVD endpoints to add {endpoints}')
         add_iptables_rules(endpoints)
 
     def check_container(self, schain_name, volume_required=False):

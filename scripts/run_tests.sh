@@ -9,4 +9,3 @@ export ENV=dev
 py.test tests/ --ignore=tests/firewall
 find . -name \*.pyc -delete
 scripts/run_firewall_test.sh
-
