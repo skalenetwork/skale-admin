@@ -19,7 +19,7 @@
 
 import logging
 
-from flask import Flask, render_template, session, g
+from flask import Flask, session, g
 from peewee import SqliteDatabase
 
 from skale import Skale

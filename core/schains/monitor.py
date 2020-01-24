@@ -92,7 +92,7 @@ class SchainsMonitor():
             schain_record, _ = SChainRecord.add(name)
         else:
             schain_record = SChainRecord.get_by_name(name)
-            
+
         if not checks['data_dir']:
             init_schain_dir(name)
         if not checks['dkg']:

@@ -23,8 +23,6 @@ import binascii
 import logging
 import eth_utils
 
-from skale.utils.web3_utils import wait_receipt
-
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
 
@@ -66,7 +64,8 @@ def convert_g2_points_to_hex(data):
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
                  node_ids_dkg, node_ids_contract, eth_key_name):
-        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t, path_to_cert=SGX_CERTIFICATES_FOLDER)
+        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t,
+                             path_to_cert=SGX_CERTIFICATES_FOLDER)
         self.schain_name = schain_name
         self.group_index = skale.web3.sha3(text=self.schain_name)
         self.node_id_contract = node_id_contract
@@ -75,8 +74,8 @@ class DKGClient:
         self.t = t
         self.n = n
         self.eth_key_name = eth_key_name
-        self.incoming_verification_vector = ['0'] * n
-        self.incoming_secret_key_contribution = ['0'] * n
+        self.incoming_verification_vector = ['0' for _ in range(n)]
+        self.incoming_secret_key_contribution = ['0' for _ in range(n)]
         self.public_keys = public_keys
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
@@ -90,12 +89,17 @@ class DKGClient:
     def VerificationVector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
-        verification_vector_hexed = eth_utils.conversions.add_0x_prefix(convert_g2_points_to_hex(verification_vector))
+        verification_vector_hexed = eth_utils.conversions.add_0x_prefix(
+            convert_g2_points_to_hex(verification_vector)
+        )
         return verification_vector_hexed
 
     def SecretKeyContribution(self):
-        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name, self.public_keys)
-        self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
+        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
+                                                                                 self.public_keys)
+        self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
+            self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
+        ]
         return self.sent_secret_key_contribution
 
     def Broadcast(self, poly_name):
@@ -105,18 +109,18 @@ class DKGClient:
 
         verification_vector = self.VerificationVector()
         secret_key_contribution = self.SecretKeyContribution()
-        res = self.skale.dkg.broadcast(self.group_index,
-                                       self.node_id_contract,
-                                       verification_vector,
-                                       secret_key_contribution)
-        receipt = wait_receipt(self.skale.web3, res, timeout=20)
-        status = receipt["status"]
-        if status != 1:
-            res = self.skale.dkg.broadcast(self.group_index,
+        receipt = self.skale.dkg.broadcast(self.group_index,
                                            self.node_id_contract,
                                            verification_vector,
-                                           secret_key_contribution)
-            receipt = wait_receipt(self.skale.web3, res, timeout=20)
+                                           secret_key_contribution,
+                                           wait_for=True)
+        status = receipt["status"]
+        if status != 1:
+            receipt = self.skale.dkg.broadcast(self.group_index,
+                                               self.node_id_contract,
+                                               verification_vector,
+                                               secret_key_contribution,
+                                               wait_for=True)
             status = receipt["status"]
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)
@@ -128,14 +132,21 @@ class DKGClient:
 
     def ReceiveSecretKeyContribution(self, fromNode, event):
         input_ = binascii.hexlify(event['args']['secretKeyContribution']).decode()
-        self.incoming_secret_key_contribution[fromNode] = input_[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
+        self.incoming_secret_key_contribution[fromNode] = input_[
+            self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
+        ]
 
     def Verification(self, fromNode):
-        return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode], self.eth_key_name, self.incoming_secret_key_contribution[fromNode], self.node_id_dkg)
+        return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode],
+                                            self.eth_key_name,
+                                            self.incoming_secret_key_contribution[fromNode],
+                                            self.node_id_dkg)
 
     def SendComplaint(self, toNode):
-        res = self.skale.dkg.complaint(self.group_index, self.node_id_contract, self.node_ids_dkg[toNode])
-        wait_receipt(self.skale.web3, res, timeout=20)
+        self.skale.dkg.complaint(self.group_index,
+                                 self.node_id_contract,
+                                 self.node_ids_dkg[toNode],
+                                 wait_for=True)
         logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
 
     def Response(self, from_node_index):
@@ -144,18 +155,18 @@ class DKGClient:
 
         share = convert_g2_point_to_hex(share)
 
-        res = self.skale.dkg.response(self.group_index,
-                                      self.node_id_contract,
-                                      dh_key,
-                                      share)
-        receipt = wait_receipt(self.skale.web3, res, timeout=20)
+        receipt = self.skale.dkg.response(self.group_index,
+                                          self.node_id_contract,
+                                          dh_key,
+                                          share,
+                                          wait_for=True)
         status = receipt['status']
         if status != 1:
-            res = self.skale.dkg.response(self.group_index,
-                                    self.node_id_contract,
-                                    dh_key,
-                                    share)
-            receipt = wait_receipt(self.skale.web3, res, timeout=20)
+            receipt = self.skale.dkg.response(self.group_index,
+                                              self.node_id_contract,
+                                              dh_key,
+                                              share,
+                                              wait_for=True)
             status = receipt['status']
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)
@@ -165,24 +176,30 @@ class DKGClient:
         self.ReceiveVerificationVector(self.node_ids_contract[fromNode], event)
         self.ReceiveSecretKeyContribution(self.node_ids_contract[fromNode], event)
         if not self.Verification(self.node_ids_contract[fromNode]):
-            raise DkgVerificationError("Fatal error : user " + str(self.node_ids_contract[fromNode] + 1) + " hasn't passed verification by user " + str(self.node_id_dkg + 1))
+            raise DkgVerificationError(
+                f"Fatal error : user {str(self.node_ids_contract[fromNode] + 1)} "
+                f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
+            )
         logger.info(f'All data from {self.node_ids_contract[fromNode]} was received and verified')
 
     def GenerateKey(self, bls_key_name):
-        received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j] for j in range(self.sgx.n))
+        received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
+                                                   for j in range(self.sgx.n))
         logger.info(f'DKGClient is going to create BLS private key with name {bls_key_name}')
-        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name, self.eth_key_name, received_secret_key_contribution)
+        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name,
+                                                          self.eth_key_name,
+                                                          received_secret_key_contribution)
         logger.info(f'DKGClient is going to fetch BLS public key with name {bls_key_name}')
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
         return bls_private_key
 
     def Allright(self):
-        res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
-        receipt = wait_receipt(self.skale.web3, res, timeout=20)
+        receipt = self.skale.dkg.allright(self.group_index, self.node_id_contract,
+                                          wait_for=True)
         status = receipt['status']
         if status != 1:
-            res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
-            receipt = wait_receipt(self.skale.web3, res, timeout=20)
+            receipt = self.skale.dkg.allright(self.group_index, self.node_id_contract,
+                                              wait_for=True)
             status = receipt['status']
             if status != 1:
                 raise ValueError("Transaction failed, see receipt", receipt)

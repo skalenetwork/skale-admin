@@ -26,8 +26,8 @@ import random
 from skale.schain_config import generate_skale_schain_config
 from tools.bls.dkg_utils import (
     init_dkg_client, broadcast, get_dkg_broadcast_filter, send_complaint, response, send_allright,
-    get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter, 
-    get_dkg_bad_guy_filter, get_dkg_complaint_sent_filter, get_dkg_all_complaints_filter,
+    get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter,
+    get_dkg_complaint_sent_filter, get_dkg_all_complaints_filter,
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath
 )
 from tools.bls.dkg_client import DkgVerificationError
@@ -75,12 +75,15 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
                     is_received[dkg_client.node_ids_contract[from_node]] = True
 
                     try:
-                        dkg_client.RecieveFromNode(from_node, event)
+                        dkg_client.ReceiveFromNode(from_node, event)
                         is_correct[dkg_client.node_ids_contract[from_node]] = True
                     except DkgVerificationError:
                         continue
 
-                    logger.info(f'Recieved by {dkg_client.node_id_dkg} from {dkg_client.node_ids_contract[from_node]}')
+                    logger.info(
+                        f'Received by {dkg_client.node_id_dkg} from '
+                        f'{dkg_client.node_ids_contract[from_node]}'
+                    )
             sleep(1)
 
         dkg_fail_filter = get_dkg_fail_filter(skale, dkg_client.group_index)
@@ -91,7 +94,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
         for i in range(n):
             if not is_correct[i] or not is_received[i]:
                 send_complaint(dkg_client, i)
-                dkg_bad_guy_filter = get_dkg_bad_guy_filter(skale)
                 is_complaint_sent = True
                 complainted_node_index = i
 
@@ -100,7 +102,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
 
         is_allright_sent_list = [False] * n
         start_time_allright = time.time()
-        dkg_all_data_received_filter = get_dkg_all_data_received_filter(skale, dkg_client.group_index)
+        dkg_all_data_received_filter = get_dkg_all_data_received_filter(skale,
+                                                                        dkg_client.group_index)
         dkg_successful_filter = get_dkg_successful_filter(skale, dkg_client.group_index)
         encrypted_bls_key = 0
         bls_key_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, dkg_id)
@@ -115,7 +118,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
             raise FailedDKG("failed due to event FailedDKG")
 
         is_complaint_received = False
-        dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(skale, dkg_client.group_index, dkg_client.node_id_contract)
+        dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(skale,
+                                                                  dkg_client.group_index,
+                                                                  dkg_client.node_id_contract)
         for event in dkg_complaint_sent_filter.get_all_entries():
             is_complaint_received = True
             response(dkg_client, event["fromNodeIndex"])
@@ -129,7 +134,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
                 if time.time() - start_time_allright > 600:
                     break
                 for event in dkg_all_data_received_filter.get_all_entries():
-                    is_allright_sent_list[dkg_client.node_ids_contract[event["args"]["nodeIndex"]]] = True
+                    is_allright_sent_list[
+                        dkg_client.node_ids_contract[event["args"]["nodeIndex"]]
+                    ] = True
                 sleep(1)
 
             for i in range(dkg_client.n):

@@ -40,8 +40,10 @@ def init_dkg_client(schain_config, skale, n, t, sgx_eth_key_name):
 
     schain_name = schain_config["skaleConfig"]["sChain"]["schainName"]
 
-    dkg_client = DKGClient(node_id_dkg, node_id_contract, skale, t, n, schain_name,
-                        public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name)
+    dkg_client = DKGClient(
+        node_id_dkg, node_id_contract, skale, t, n, schain_name,
+        public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name
+    )
     return dkg_client
 
 
@@ -95,9 +97,10 @@ def get_dkg_broadcast_filter(skale, group_index):
 
 def get_dkg_complaint_sent_filter(skale, group_index, to_node_index):
     contract = skale.dkg.contract
-    return contract.events.ComplaintSent.createFilter(fromBlock=0,
-                                                      argument_filters={'groupIndex': group_index,
-                                                                        'toNodeIndex': to_node_index})
+    return contract.events.ComplaintSent.createFilter(
+        fromBlock=0,
+        argument_filters={'groupIndex': group_index, 'toNodeIndex': to_node_index}
+    )
 
 
 def get_dkg_all_complaints_filter(skale, group_index):
