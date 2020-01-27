@@ -20,18 +20,20 @@
 import logging
 
 from flask import Blueprint, request
+from tools.custom_thread import CustomThread
 from web.helper import construct_ok_response, login_required
 
 logger = logging.getLogger(__name__)
 
 
-def construct_node_exit_bp(skale):
+def construct_node_exit_bp(node):
     node_exit_bp = Blueprint('node_exit', __name__)
 
     @node_exit_bp.route('/api/exit/start', method=['POST'])
     @login_required
     def node_exit_start():
-        pass
+        exit_thread = CustomThread('Start node exit', node.exit, once=True)
+        exit_thread.start()
 
     @node_exit_bp.route('/api/exit/status', methods=['GET'])
     @login_required

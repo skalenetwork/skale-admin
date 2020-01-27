@@ -85,7 +85,7 @@ app.register_blueprint(construct_node_info_bp(skale, docker_utils))
 app.register_blueprint(construct_security_bp())
 app.register_blueprint(construct_validators_bp(skale, node_config))
 app.register_blueprint(construct_metrics_bp(skale, node_config))
-app.register_blueprint(construct_node_exit_bp(skale))
+app.register_blueprint(construct_node_exit_bp(node))
 app.register_blueprint(sgx_bp)
 
 
