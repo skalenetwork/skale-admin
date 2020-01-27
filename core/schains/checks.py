@@ -20,10 +20,12 @@
 import os
 import logging
 
+from core.schains.config import get_allowed_endpoints
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
+from tools.iptables import apsent_rules as apsent_iptables_rules
 
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -41,6 +43,7 @@ class SChainChecks():
         self.check_config()
         self.check_dkg()
         self.check_volume()
+        self.check_firewall_rules()
         self.check_container()
         self.check_ima_container()
         if log:
@@ -75,6 +78,12 @@ class SChainChecks():
         info = dutils.get_info(name)
         self._ima_container = dutils.container_running(info)
 
+    def check_firewall_rules(self):
+        self._firewall_rules = False
+        if self._config:
+            ips_ports = get_allowed_endpoints(self.name)
+            self._firewall_rules = len(apsent_iptables_rules(ips_ports)) == 0
+
     def is_healthy(self):
         checks = self.get_all()
         for check in checks:
@@ -90,6 +99,7 @@ class SChainChecks():
             'volume': self._volume,
             'container': self._container,
             'ima_container': self._ima_container,
+            'firewall_rules': self._firewall_rules
         }
 
     def log_health_check(self):

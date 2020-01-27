@@ -32,6 +32,7 @@ SCHAIN = {
 def client():
     return DockerUtils(volume_driver='local')
 
+
 def run_test_schain_container(dutils):
     env = {
         "SSL_KEY_PATH": 'NULL',
