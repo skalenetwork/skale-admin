@@ -19,8 +19,8 @@
 
 import logging
 
-from flask import Blueprint
-from web.helper import login_required
+from flask import Blueprint, request
+from web.helper import construct_ok_response, login_required
 
 logger = logging.getLogger(__name__)
 
@@ -28,17 +28,17 @@ logger = logging.getLogger(__name__)
 def construct_node_exit_bp(skale):
     node_exit_bp = Blueprint('node_exit', __name__)
 
-    @node_exit_bp.route('/api/exit/start')
+    @node_exit_bp.route('/api/exit/start', method=['POST'])
     @login_required
     def node_exit_start():
         pass
 
-    @node_exit_bp.route('/api/exit/status')
+    @node_exit_bp.route('/api/exit/status', methods=['GET'])
     @login_required
     def node_exit_status():
         pass
 
-    @node_exit_bp.route('/api/exit/finalize')
+    @node_exit_bp.route('/api/exit/finalize', method=['POST'])
     @login_required
     def node_exit_finalize():
         pass

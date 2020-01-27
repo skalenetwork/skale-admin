@@ -78,6 +78,28 @@ class Node:
         run_filebeat_service(public_ip, self.config.id, self.skale)
         return {'status': 1, 'data': self.config.all()}
 
+    def exit(self):
+        res = self.skale.manager.exitFromSchains(self.config.id)
+        receipt = wait_receipt(self.skale.web3, res['tx'])
+        try:
+            check_receipt(receipt)
+        except ValueError as err:
+            logger.error(arguments_list_string({'tx': res['tx']}, 'Node exit process failed', 'error'))
+            return {'status': 0, 'errors': [err]}
+        schains_list = self.skale.schains_data.get_schains_for_node(self.config.id)
+        for schain in schains_list:
+            self._rotate_node(schain)
+        return {'status': 1, 'data': self.config.all()}
+
+    def _rotate_node(self, schain):
+        res = self.skale.manager.rotateNode(self.config.id, schain)
+        receipt = wait_receipt(self.skale.web3, res['tx'])
+        try:
+            check_receipt(receipt)
+        except ValueError as err:
+            logger.error(arguments_list_string({'tx': res['tx']}, 'Node rotation failed', 'error'))
+            return {'status': 0, 'errors': [err]}
+
     def _insufficient_funds(self):
         err_msg = f'Insufficient funds, re-check your wallet'
         logger.error(err_msg)
