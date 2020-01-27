@@ -64,7 +64,7 @@ def construct_nodes_bp(skale, node, docker_utils):
         res = node.register(ip, public_ip, port, name)
         if res['status'] != 1:
             return construct_err_response(HTTPStatus.INTERNAL_SERVER_ERROR, res['errors'])
-        return construct_ok_response(HTTPStatus.CREATED, res['data'])
+        return construct_ok_response(res['data'])
 
     @nodes_bp.route('/uninstall-node', methods=['GET'])
     @login_required
