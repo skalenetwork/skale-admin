@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 from enum import Enum
 
 
@@ -39,6 +40,20 @@ class NodeStatuses(Enum):
     REQUESTED = 1
     CREATED = 2
     ERROR = 3
+
+
+class NodeExitStatuses(Enum):
+    """This class contains possible node exit statuses"""
+    DONE = 0
+    IN_PROGRESS = 1
+    FAILED = 2
+
+
+class SchainExitStatuses(Enum):
+    """This class contains possible schain exit statuses"""
+    EXITED = 0
+    ROTATED = 1
+    PENDING = 2
 
 
 class Node:
@@ -85,11 +100,30 @@ class Node:
             check_receipt(receipt)
         except ValueError as err:
             logger.error(arguments_list_string({'tx': res['tx']}, 'Node exit process failed', 'error'))
-            return {'status': 0, 'errors': [err]}
         schains_list = self.skale.schains_data.get_schains_for_node(self.config.id)
         for schain in schains_list:
             self._rotate_node(schain)
-        return {'status': 1, 'data': self.config.all()}
+
+    def get_exit_status(self):
+        rotated_schains = self.skale.manager.get_rotation_history(self.config.id)
+        pending_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
+        schain_statuses = []
+        rotated, finished = False
+        for schain in pending_schains:
+            schain_statuses.append({'name': schain[0], 'status': SchainExitStatuses.PENDING})
+        for schain in rotated_schains:
+            if time.time() > schain[1]:
+                finished = True
+                status = SchainExitStatuses.EXITED
+            else:
+                rotated = True
+                status = SchainExitStatuses.ROTATED
+            schain_statuses.append({'name': schain[0], 'status': status})
+        if rotated:
+            return {'status': NodeExitStatuses.IN_PROGRESS, 'data': schain_statuses}
+        if len(pending_schains):
+            return {'status': NodeExitStatuses.FAILED, 'data': schain_statuses}
+        return {'status': NodeExitStatuses.DONE, 'data': schain_statuses}
 
     def _rotate_node(self, schain):
         res = self.skale.manager.rotateNode(self.config.id, schain)
@@ -98,7 +132,6 @@ class Node:
             check_receipt(receipt)
         except ValueError as err:
             logger.error(arguments_list_string({'tx': res['tx']}, 'Node rotation failed', 'error'))
-            return {'status': 0, 'errors': [err]}
 
     def _insufficient_funds(self):
         err_msg = f'Insufficient funds, re-check your wallet'

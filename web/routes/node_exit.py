@@ -38,7 +38,8 @@ def construct_node_exit_bp(node):
     @node_exit_bp.route('/api/exit/status', methods=['GET'])
     @login_required
     def node_exit_status():
-        pass
+        exit_status_data = node.exit_status()
+        construct_ok_response(exit_status_data)
 
     @node_exit_bp.route('/api/exit/finalize', method=['POST'])
     @login_required
