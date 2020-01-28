@@ -82,11 +82,11 @@ class DKGClient:
         logger.info(f'Node id on chain is {self.node_id_dkg}; \
             Node id on contract is {self.node_id_contract}')
 
-    def GeneratePolynomial(self, poly_name):
+    def generate_polynomial(self, poly_name):
         self.poly_name = poly_name
         return self.sgx.generate_dkg_poly(poly_name)
 
-    def VerificationVector(self):
+    def verification_vector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
         verification_vector_hexed = eth_utils.conversions.add_0x_prefix(
@@ -94,7 +94,7 @@ class DKGClient:
         )
         return verification_vector_hexed
 
-    def SecretKeyContribution(self):
+    def secret_key_contribution(self):
         self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
                                                                                  self.public_keys)
         self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
@@ -102,13 +102,13 @@ class DKGClient:
         ]
         return self.sent_secret_key_contribution
 
-    def Broadcast(self, poly_name):
-        poly_success = self.GeneratePolynomial(poly_name)
+    def broadcast(self, poly_name):
+        poly_success = self.generate_polynomial(poly_name)
         if not poly_success:
             raise SgxDkgPolynomGenerationError("SGX DKG POLYNOM GENERATION FAILED")
 
-        verification_vector = self.VerificationVector()
-        secret_key_contribution = self.SecretKeyContribution()
+        verification_vector = self.verification_vector()
+        secret_key_contribution = self.secret_key_contribution()
         receipt = self.skale.dkg.broadcast(self.group_index,
                                            self.node_id_contract,
                                            verification_vector,
@@ -126,30 +126,30 @@ class DKGClient:
                 raise ValueError("Transaction failed, see receipt", receipt)
         logger.info(f'Everything is sent from {self.node_id_dkg} node')
 
-    def ReceiveVerificationVector(self, fromNode, event):
+    def receive_verification_vector(self, from_node, event):
         input_ = binascii.hexlify(event['args']['verificationVector']).decode()
-        self.incoming_verification_vector[fromNode] = input_
+        self.incoming_verification_vector[from_node] = input_
 
-    def ReceiveSecretKeyContribution(self, fromNode, event):
+    def receive_secret_key_contribution(self, from_node, event):
         input_ = binascii.hexlify(event['args']['secretKeyContribution']).decode()
-        self.incoming_secret_key_contribution[fromNode] = input_[
+        self.incoming_secret_key_contribution[from_node] = input_[
             self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
         ]
 
-    def Verification(self, fromNode):
-        return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode],
+    def verification(self, from_node):
+        return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
                                             self.eth_key_name,
-                                            self.incoming_secret_key_contribution[fromNode],
+                                            self.incoming_secret_key_contribution[from_node],
                                             self.node_id_dkg)
 
-    def SendComplaint(self, toNode):
+    def send_complaint(self, to_node):
         self.skale.dkg.complaint(self.group_index,
                                  self.node_id_contract,
-                                 self.node_ids_dkg[toNode],
+                                 self.node_ids_dkg[to_node],
                                  wait_for=True)
-        logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
+        logger.info(f'{self.node_id_dkg} node sent a complaint on {to_node} node')
 
-    def Response(self, from_node_index):
+    def response(self, from_node_index):
         response = self.sgx.complaint_response(self.poly_name, from_node_index)
         share, dh_key = response['share'], response['dh_key']
 
@@ -172,17 +172,17 @@ class DKGClient:
                 raise ValueError("Transaction failed, see receipt", receipt)
         logger.info(f'{from_node_index} node sent a response')
 
-    def ReceiveFromNode(self, fromNode, event):
-        self.ReceiveVerificationVector(self.node_ids_contract[fromNode], event)
-        self.ReceiveSecretKeyContribution(self.node_ids_contract[fromNode], event)
-        if not self.Verification(self.node_ids_contract[fromNode]):
+    def receive_from_node(self, from_node, event):
+        self.receive_verification_vector(self.node_ids_contract[from_node], event)
+        self.receive_secret_key_contribution(self.node_ids_contract[from_node], event)
+        if not self.verification(self.node_ids_contract[from_node]):
             raise DkgVerificationError(
-                f"Fatal error : user {str(self.node_ids_contract[fromNode] + 1)} "
+                f"Fatal error : user {str(self.node_ids_contract[from_node] + 1)} "
                 f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
             )
-        logger.info(f'All data from {self.node_ids_contract[fromNode]} was received and verified')
+        logger.info(f'All data from {self.node_ids_contract[from_node]} was received and verified')
 
-    def GenerateKey(self, bls_key_name):
+    def generate_key(self, bls_key_name):
         received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
                                                    for j in range(self.sgx.n))
         logger.info(f'DKGClient is going to create BLS private key with name {bls_key_name}')
@@ -193,7 +193,7 @@ class DKGClient:
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
         return bls_private_key
 
-    def Allright(self):
+    def allright(self):
         receipt = self.skale.dkg.allright(self.group_index, self.node_id_contract,
                                           wait_for=True)
         status = receipt['status']

@@ -56,10 +56,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
         dkg_broadcast_filter = get_dkg_broadcast_filter(skale, dkg_client.group_index)
         broadcast(dkg_client, poly_name)
 
-        is_received = [False] * n
+        is_received = [False for _ in range(n)]
         is_received[dkg_client.node_id_dkg] = True
 
-        is_correct = [False] * n
+        is_correct = [False for _ in range(n)]
         is_correct[dkg_client.node_id_dkg] = True
 
         start_time = time.time()
@@ -75,7 +75,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
                     is_received[dkg_client.node_ids_contract[from_node]] = True
 
                     try:
-                        dkg_client.ReceiveFromNode(from_node, event)
+                        dkg_client.receive_from_node(from_node, event)
                         is_correct[dkg_client.node_ids_contract[from_node]] = True
                     except DkgVerificationError:
                         continue
@@ -100,7 +100,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
         if len(dkg_fail_filter.get_all_entries()) > 0:
             raise FailedDKG("failed due to event FailedDKG")
 
-        is_allright_sent_list = [False] * n
+        is_allright_sent_list = [False for _ in range(n)]
         start_time_allright = time.time()
         dkg_all_data_received_filter = get_dkg_all_data_received_filter(skale,
                                                                         dkg_client.group_index)
