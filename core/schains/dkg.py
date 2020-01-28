@@ -41,7 +41,7 @@ class FailedDKG(Exception):
         super().__init__(msg)
 
 
-def init_bls(skale, schain_name, node_id, sgx_key_name):
+def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id):
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
     if not os.path.isfile(secret_key_share_filepath):
         schain_config = generate_skale_schain_config(skale, schain_name, node_id)
@@ -49,9 +49,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
         t = (2 * n + 1) // 3
 
         dkg_client = init_dkg_client(schain_config, skale, n, t, sgx_key_name)
-        dkg_id = random.randint(0, 10**50)
         group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
-        poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, dkg_id)
+        poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 
         dkg_broadcast_filter = get_dkg_broadcast_filter(skale, dkg_client.group_index)
         broadcast(dkg_client, poly_name)
@@ -103,7 +102,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
         dkg_all_data_received_filter = get_dkg_all_data_received_filter(skale, dkg_client.group_index)
         dkg_successful_filter = get_dkg_successful_filter(skale, dkg_client.group_index)
         encrypted_bls_key = 0
-        bls_key_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, dkg_id)
+        bls_key_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
         if not is_complaint_sent:
             send_allright(dkg_client)
             encrypted_bls_key = generate_bls_key(dkg_client, bls_key_name)

@@ -83,6 +83,9 @@ class DKGClient:
         logger.info(f'Node id on chain is {self.node_id_dkg}; \
             Node id on contract is {self.node_id_contract}')
 
+    def IsChannelOpened(self):
+        return self.skale.dkg.contract.functions.isChannelOpened.call(self.group_index)
+
     def GeneratePolynomial(self, poly_name):
         self.poly_name = poly_name
         return self.sgx.generate_dkg_poly(poly_name)
@@ -99,6 +102,11 @@ class DKGClient:
         return self.sent_secret_key_contribution
 
     def Broadcast(self, poly_name):
+        is_broadcast_possible = self.skale.dkg.contract.functions.isBroadcastPossible.call(self.group_index, self.node_id_contract)
+        if not is_broadcast_possible or not self.IsChannelOpened():
+            logger.info(f'Broadcast is already sent from {self.node_id_dkg} node')
+            return
+
         poly_success = self.GeneratePolynomial(poly_name)
         if not poly_success:
             raise SgxDkgPolynomGenerationError("SGX DKG POLYNOM GENERATION FAILED")
@@ -134,11 +142,21 @@ class DKGClient:
         return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode], self.eth_key_name, self.incoming_secret_key_contribution[fromNode], self.node_id_dkg)
 
     def SendComplaint(self, toNode):
+        is_complaint_possible = self.skale.dkg.contract.functions.isComplaintPossible.call(self.group_index, self.node_id_contract, toNode)
+        if not is_complaint_possible or not self.IsChannelOpened():
+            logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
+            return
+
         res = self.skale.dkg.complaint(self.group_index, self.node_id_contract, self.node_ids_dkg[toNode])
         wait_receipt(self.skale.web3, res, timeout=20)
         logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
 
     def Response(self, from_node_index):
+        is_response_possible = self.skale.dkg.contract.functions.isResponsePossible.call(self.group_index, self.node_id_contract)
+        if not is_response_possible or not self.IsChannelOpened():
+            logger.info(f'{from_node_index} node could not sent a response')
+            return
+
         response = self.sgx.complaint_response(self.poly_name, from_node_index)
         share, dh_key = response['share'], response['dh_key']
 
@@ -177,6 +195,11 @@ class DKGClient:
         return bls_private_key
 
     def Allright(self):
+        is_allright_possible = self.skale.dkg.contract.functions.isAlrightPossible.call(self.group_index, self.node_id_contract)
+        if not is_allright_possible or not self.IsChannelOpened():
+            logger.info(f'{self.node_id_dkg} node has already sent an allright note')
+            return
+
         res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
         receipt = wait_receipt(self.skale.web3, res, timeout=20)
         status = receipt['status']
