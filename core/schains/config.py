@@ -19,8 +19,10 @@
 
 import json
 import logging
+from itertools import chain
 
 from skale.schain_config.generator import generate_skale_schain_config
+from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
 from core.schains.helper import read_base_config, get_schain_config_filepath
@@ -28,8 +30,9 @@ from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
-from tools.helper import read_json
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
+from tools.iptables import NodeEndpoint
+from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
 
@@ -91,14 +94,68 @@ def save_schain_config(schain_config, schain_name):
 
 
 def get_schain_ports(schain_name):
-    schain_config = get_schain_config(schain_name)
-    node_info = schain_config["skaleConfig"]["nodeInfo"]
+    config = get_schain_config(schain_name)
+    return get_schain_ports_from_config(config)
+
+
+def get_schain_ports_from_config(config):
+    node_info = config["skaleConfig"]["nodeInfo"]
     return {
         'http': int(node_info["httpRpcPort"]),
         'ws': int(node_info["wsRpcPort"]),
         'https': int(node_info["httpsRpcPort"]),
         'wss': int(node_info["wssRpcPort"])
     }
+
+
+def get_skaled_rpc_endpoints_from_config(config):
+    node_info = config["skaleConfig"]["nodeInfo"]
+    return [
+        NodeEndpoint(ip=None, port=node_info['httpRpcPort']),
+        NodeEndpoint(ip=None, port=node_info['wsRpcPort']),
+        NodeEndpoint(ip=None, port=node_info['httpsRpcPort']),
+        NodeEndpoint(ip=None, port=node_info['wssRpcPort'])
+    ]
+
+
+def get_snapshots_endpoints_from_config(config):
+    # TODO: Add this endpoints
+    return []
+
+
+def get_consensus_ips_with_ports(schain_name, node_id):
+    config = get_schain_config(schain_name)
+    return get_consensus_endpoints_from_config(config)
+
+
+def get_consensus_endpoints_from_config(config):
+    node_id = config['skaleConfig']['nodeInfo']['nodeID']
+    schain_nodes_config = config['skaleConfig']['sChain']['nodes']
+
+    node_endpoints = list(chain.from_iterable(
+        (
+            NodeEndpoint(node_data['ip'],
+                         node_data['basePort'] + SkaledPorts.PROPOSAL.value),
+            NodeEndpoint(node_data['ip'],
+                         node_data['basePort'] + SkaledPorts.CATCHUP.value),
+            NodeEndpoint(
+                node_data['ip'],
+                node_data['basePort'] + SkaledPorts.BINARY_CONSENSUS.value
+            )
+        )
+        for node_data in schain_nodes_config
+        if node_data['nodeID'] != node_id
+    ))
+    return node_endpoints
+
+
+def get_allowed_endpoints(schain_name):
+    config = get_schain_config(schain_name)
+    return [
+        *get_consensus_endpoints_from_config(config),
+        *get_skaled_rpc_endpoints_from_config(config),
+        *get_snapshots_endpoints_from_config(config)
+    ]
 
 
 def get_schain_config(schain_name):
