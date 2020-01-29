@@ -31,8 +31,9 @@ from tools.str_formatters import arguments_list_string
 
 from core.schains.runner import run_schain_container, run_ima_container
 from core.schains.cleaner import remove_config_dir
-from core.schains.helper import init_schain_dir, get_schain_config_filepath
-from core.schains.config import generate_schain_config, save_schain_config, get_schain_env
+from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
+from core.schains.config import (generate_schain_config, save_schain_config,
+                                 get_schain_env, get_allowed_endpoints)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_env
@@ -40,6 +41,7 @@ from core.schains.dkg import init_bls, FailedDKG
 
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER
+from tools.iptables import add_rules as add_iptables_rules
 
 from . import MONITOR_INTERVAL
 
@@ -51,6 +53,7 @@ class SchainsMonitor():
     def __init__(self, skale, node_config):
         self.skale = skale
         self.node_config = node_config
+
         CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
 
     def wait_for_node_id(self, opts):
@@ -98,7 +101,8 @@ class SchainsMonitor():
         if not checks['dkg']:
             try:
                 schain_record.dkg_started()
-                init_bls(skale, schain['name'], self.node_config.id, self.node_config.sgx_key_name)
+                init_bls(skale, schain['name'], self.node_config.id,
+                         self.node_config.sgx_key_name)
             except FailedDKG:
                 schain_record.dkg_failed()
                 remove_config_dir(schain['name'])
@@ -108,6 +112,8 @@ class SchainsMonitor():
             self.init_schain_config(skale, name, owner)
         if not checks['volume']:
             init_data_volume(schain)
+        if not checks['firewall_rules']:
+            self.add_firewall_rules(name)
         if not checks['container']:
             self.monitor_schain_container(schain)
         if not checks['ima_container']:
@@ -119,6 +125,10 @@ class SchainsMonitor():
             logger.warning(f'sChain config not found: {config_filepath}, trying to create.')
             schain_config = generate_schain_config(skale, schain_name, self.node_id)
             save_schain_config(schain_config, schain_name)
+
+    def add_firewall_rules(self, schain_name):
+        endpoints = get_allowed_endpoints(schain_name)
+        add_iptables_rules(endpoints)
 
     def check_container(self, schain_name, volume_required=False):
         name = get_container_name(SCHAIN_CONTAINER, schain_name)

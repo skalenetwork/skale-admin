@@ -11,6 +11,7 @@ docker==4.0.2
 pyjwt==1.4.2
 simple-crypt==4.1.7
 pycryptodome==3.4.11
+python-iptables==0.14.0
 
 skale.py==2.1.dev15
 
