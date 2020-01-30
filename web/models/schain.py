@@ -52,7 +52,7 @@ class SChainRecord(BaseModel):
     @classmethod
     def added(cls, name):
         return cls.select().where(cls.name == name).exists()
-        
+
     @classmethod
     def all(cls):
         records = cls.select()
