@@ -24,6 +24,7 @@ from flask import Blueprint, request
 
 from core.db import BountyEvent
 from web.helper import construct_ok_response, login_required
+from tools.helper import SkaleFilter
 
 logger = logging.getLogger(__name__)
 
@@ -92,10 +93,12 @@ def construct_metrics_bp(skale, config):
             if end_chunk_block_number > last_block_number:
                 end_chunk_block_number = last_block_number
 
-            event_filter = skale.manager.contract.events.BountyGot().createFilter(
-                argument_filters={'nodeIndex': node_id},
+            event_filter = SkaleFilter(
+                skale.manager.contract.events.BountyGot(),
                 fromBlock=hex(start_block_number),
-                toBlock=hex(end_chunk_block_number))
+                argument_filters={'nodeIndex': node_id},
+                toBlock=hex(end_chunk_block_number)
+            )
             logs = event_filter.get_all_entries()
 
             for log in logs:
