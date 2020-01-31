@@ -19,7 +19,7 @@
 
 import logging
 
-from flask import Flask, session, g
+from flask import Flask, g
 from peewee import SqliteDatabase
 
 from skale import Skale
@@ -42,9 +42,7 @@ from tools.token_utils import init_user_token
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from web.models.user import User
 from web.models.schain import SChainRecord
-from web.user_session import UserSession
 
-from web.routes.auth import construct_auth_bp
 from web.routes.logs import web_logs
 from web.routes.nodes import construct_nodes_bp
 from web.routes.schains import construct_schains_bp
@@ -64,7 +62,6 @@ rpc_wallet = RPCWallet(TM_URL)
 skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
 
 docker_utils = DockerUtils()
-user_session = UserSession(session)
 
 node_config = NodeConfig()
 node = Node(skale, node_config)
@@ -75,7 +72,6 @@ token = init_user_token()
 database = SqliteDatabase(DB_FILE)
 
 app = Flask(__name__)
-app.register_blueprint(construct_auth_bp(user_session, token))
 app.register_blueprint(web_logs)
 app.register_blueprint(construct_nodes_bp(skale, node, docker_utils))
 app.register_blueprint(construct_schains_bp(skale, node_config, docker_utils))
@@ -115,4 +111,5 @@ if __name__ == '__main__':
     create_tables()
     generate_sgx_key(node_config)
     app.secret_key = FLASK_SECRET_KEY_FILE
-    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)
+    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST,
+            use_reloader=False)
