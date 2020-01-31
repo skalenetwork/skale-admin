@@ -7,8 +7,6 @@ export RUNNING_ON_HOST=True
 export PYTHONPATH=${PYTHONPATH}:.
 export ENV=dev
 
-py.test tests/test_skale_filter.py
-
-# py.test tests/ --ignore=tests/firewall
-# find . -name \*.pyc -delete
-# scripts/run_firewall_test.sh
+py.test tests/ --ignore=tests/firewall
+find . -name \*.pyc -delete
+scripts/run_firewall_test.sh
