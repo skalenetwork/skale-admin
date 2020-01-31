@@ -132,4 +132,4 @@ class SkaleFilter:
         if events is not None:
             return events
         else:
-            raise SkaleFilterError('Broken filter')
+            raise SkaleFilterError('Filter get_events timed out')
