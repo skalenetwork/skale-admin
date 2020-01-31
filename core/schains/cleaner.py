@@ -137,9 +137,9 @@ class SChainsCleaner():
             remove_schain_container(schain_name)
         if checks['volume']:
             remove_schain_volume(schain_name)
-        if checks['firewall_rules']:
-            self.remove_firewall_rules(schain_name)
         if checks['ima_container']:
             remove_ima_container(schain_name)
+        if checks['firewall_rules']:
+            self.remove_firewall_rules(schain_name)
         if checks['data_dir']:
             remove_config_dir(schain_name)
