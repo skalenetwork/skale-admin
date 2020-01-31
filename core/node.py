@@ -94,38 +94,28 @@ class Node:
         return {'status': 1, 'data': self.config.all()}
 
     def exit(self):
-        res = self.skale.manager.exit_from_schains(self.config.id)
-        receipt = wait_receipt(self.skale.web3, res['tx'])
-        try:
-            check_receipt(receipt)
-        except ValueError as err:
-            logger.error(arguments_list_string({'tx': res['tx']}, 'Node exit process failed', 'error'))
         schains_list = self.skale.schains_data.get_schains_for_node(self.config.id)
-        for schain in schains_list:
-            self._rotate_node(schain)
+        for _ in range(len(schains_list)):
+            receipt = self.skale.manager.node_exit(self.config.id, wait_for=True)
+            try:
+                check_receipt(receipt)
+            except ValueError as err:
+                logger.error(arguments_list_string({'receipt': receipt}, 'Node rotation failed', 'error'))
 
     def get_exit_status(self):
         node_status = self.skale.nodes_data.get_node_status(self.config.id)
         if node_status == NodeExitStatuses.ACTIVE or node_status == NodeExitStatuses.LEFT:
             return {'status': node_status, 'data': []}
-        rotated_schains = self.skale.manager.get_rotation_history(self.config.id)
+        rotated_schains = self.skale.schains_data.get_leaving_history(self.config.id)
         pending_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
         current_time = time.time()
         schain_statuses = []
         for schain in pending_schains:
-            schain_statuses.append({'name': schain[0], 'status': SchainExitStatuses.PENDING})
+            schain_statuses.append({'name': schain['name'], 'status': SchainExitStatuses.PENDING})
         for schain in rotated_schains:
             status = SchainExitStatuses.EXITED if current_time > schain[1] else SchainExitStatuses.ROTATED
             schain_statuses.append({'name': schain[0], 'status': status})
         return {'status': node_status, 'data': schain_statuses}
-
-    def _rotate_node(self, schain):
-        res = self.skale.manager.rotateNode(self.config.id, schain)
-        receipt = wait_receipt(self.skale.web3, res['tx'])
-        try:
-            check_receipt(receipt)
-        except ValueError as err:
-            logger.error(arguments_list_string({'tx': res['tx']}, 'Node rotation failed', 'error'))
 
     def _insufficient_funds(self):
         err_msg = f'Insufficient funds, re-check your wallet'
