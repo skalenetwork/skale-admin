@@ -100,10 +100,10 @@ class SChainsCleaner():
 
         event_filter = SkaleFilter(
             self.skale_events.schains.contract.events.SchainDeleted,
-            fromBlock=0,
+            from_block=0,
             argument_filters={'schainId': schain_ids}
         )
-        events = event_filter.get_all_entries()
+        events = event_filter.get_events()
 
         for event in events:
             name = event['args']['name']

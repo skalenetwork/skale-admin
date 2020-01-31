@@ -95,11 +95,11 @@ def construct_metrics_bp(skale, config):
 
             event_filter = SkaleFilter(
                 skale.manager.contract.events.BountyGot(),
-                fromBlock=hex(start_block_number),
+                from_block=hex(start_block_number),
                 argument_filters={'nodeIndex': node_id},
-                toBlock=hex(end_chunk_block_number)
+                to_block=hex(end_chunk_block_number)
             )
-            logs = event_filter.get_all_entries()
+            logs = event_filter.get_events()
 
             for log in logs:
                 args = log['args']
