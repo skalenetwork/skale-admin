@@ -19,9 +19,8 @@
 
 import logging
 import json
-from functools import wraps
 from http import HTTPStatus
-from flask import Response, session
+from flask import Response
 
 
 logger = logging.getLogger(__name__)
