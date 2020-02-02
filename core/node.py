@@ -103,7 +103,7 @@ class Node:
                 logger.error(arguments_list_string({'receipt': receipt}, 'Node rotation failed', 'error'))
 
     def get_exit_status(self):
-        node_status = self.skale.nodes_data.get_node_status(self.config.id)
+        node_status = NodeExitStatuses(self.skale.nodes_data.get_node_status(self.config.id))
         if node_status == NodeExitStatuses.ACTIVE or node_status == NodeExitStatuses.LEFT:
             return {'status': node_status, 'data': []}
         rotated_schains = self.skale.schains_data.get_leaving_history(self.config.id)
@@ -115,7 +115,7 @@ class Node:
         for schain in rotated_schains:
             status = SchainExitStatuses.EXITED if current_time > schain[1] else SchainExitStatuses.ROTATED
             schain_statuses.append({'name': schain[0], 'status': status})
-        return {'status': node_status, 'data': schain_statuses}
+        return {'status': node_status.value, 'data': schain_statuses}
 
     def _insufficient_funds(self):
         err_msg = f'Insufficient funds, re-check your wallet'
