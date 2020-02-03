@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 def construct_node_exit_bp(node):
     node_exit_bp = Blueprint('node_exit', __name__)
 
-    @node_exit_bp.route('/api/exit/start', method=['POST'])
+    @node_exit_bp.route('/api/exit/start', methods=['POST'])
     @login_required
     def node_exit_start():
         exit_thread = CustomThread('Start node exit', node.exit, once=True)
@@ -41,7 +41,9 @@ def construct_node_exit_bp(node):
         exit_status_data = node.exit_status()
         construct_ok_response(exit_status_data)
 
-    @node_exit_bp.route('/api/exit/finalize', method=['POST'])
+    @node_exit_bp.route('/api/exit/finalize', methods=['POST'])
     @login_required
     def node_exit_finalize():
         pass
+
+    return node_exit_bp
