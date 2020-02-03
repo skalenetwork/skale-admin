@@ -94,7 +94,7 @@ def construct_metrics_bp(skale, config):
                 end_chunk_block_number = last_block_number
 
             event_filter = SkaleFilter(
-                skale.manager.contract.events.BountyGot(),
+                skale.manager.contract.events.BountyGot,
                 from_block=hex(start_block_number),
                 argument_filters={'nodeIndex': node_id},
                 to_block=hex(end_chunk_block_number)
