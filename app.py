@@ -40,7 +40,6 @@ from tools.str_formatters import arguments_list_string
 from tools.token_utils import init_user_token
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from web.models.user import User
 from web.models.schain import SChainRecord
 
 from web.routes.logs import web_logs
@@ -96,8 +95,6 @@ def after_request(response):
 
 
 def create_tables():
-    if not User.table_exists():
-        User.create_table()
     if not SChainRecord.table_exists():
         SChainRecord.create_table()
 
@@ -108,6 +105,8 @@ if __name__ == '__main__':
         'Transaction manager': TM_URL,
         'SGX Server': sgx_server_text()
         }, 'Starting Flask server'))
+    from tools.configs.db import MYSQL_DB_PORT
+    logger.info(f'{MYSQL_DB_PORT}')
     create_tables()
     generate_sgx_key(node_config)
     app.secret_key = FLASK_SECRET_KEY_FILE

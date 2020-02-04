@@ -55,7 +55,7 @@ def construct_node_info_bp(skale, docker_utils):
         node_about = {
             'libraries': {
                 'javascript': 'N/A',  # get_js_package_version(),
-                'python': pkg_resources.get_distribution(SKALE_LIB_NAME).version
+                'skale.py': pkg_resources.get_distribution(SKALE_LIB_NAME).version
             },
             'contracts': {
                 'token': skale.token.address,
