@@ -104,17 +104,16 @@ class Node:
 
     def get_exit_status(self):
         node_status = NodeExitStatuses(self.skale.nodes_data.get_node_status(self.config.id))
-        if node_status == NodeExitStatuses.ACTIVE or node_status == NodeExitStatuses.LEFT:
-            return {'status': node_status.value, 'data': []}
-        rotated_schains = self.skale.schains_data.get_leaving_history(self.config.id)
-        pending_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
-        current_time = time.time()
         schain_statuses = []
-        for schain in pending_schains:
-            schain_statuses.append({'name': schain['name'], 'status': SchainExitStatuses.PENDING})
+        active_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
+        for schain in active_schains:
+            schain_statuses.append({'name': schain['name'], 'status': SchainExitStatuses.PENDING.value})
+        rotated_schains = self.skale.schains_data.get_leaving_history(self.config.id)
+        current_time = time.time()
         for schain in rotated_schains:
             status = SchainExitStatuses.EXITED if current_time > schain[1] else SchainExitStatuses.ROTATED
-            schain_statuses.append({'name': schain[0], 'status': status})
+            schain_name = self.skale.schains_data.get(schain[0])['name']
+            schain_statuses.append({'name': schain_name, 'status': status.value})
         return {'status': node_status.value, 'data': schain_statuses}
 
     def _insufficient_funds(self):
