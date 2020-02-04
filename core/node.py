@@ -93,7 +93,7 @@ class Node:
         run_filebeat_service(public_ip, self.config.id, self.skale)
         return {'status': 1, 'data': self.config.all()}
 
-    def exit(self):
+    def exit(self, opts):
         schains_list = self.skale.schains_data.get_schains_for_node(self.config.id)
         for _ in range(len(schains_list)):
             receipt = self.skale.manager.node_exit(self.config.id, wait_for=True)
@@ -105,7 +105,7 @@ class Node:
     def get_exit_status(self):
         node_status = NodeExitStatuses(self.skale.nodes_data.get_node_status(self.config.id))
         if node_status == NodeExitStatuses.ACTIVE or node_status == NodeExitStatuses.LEFT:
-            return {'status': node_status, 'data': []}
+            return {'status': node_status.value, 'data': []}
         rotated_schains = self.skale.schains_data.get_leaving_history(self.config.id)
         pending_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
         current_time = time.time()

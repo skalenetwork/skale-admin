@@ -34,12 +34,13 @@ def construct_node_exit_bp(node):
     def node_exit_start():
         exit_thread = CustomThread('Start node exit', node.exit, once=True)
         exit_thread.start()
+        return construct_ok_response()
 
     @node_exit_bp.route('/api/exit/status', methods=['GET'])
     @login_required
     def node_exit_status():
-        exit_status_data = node.exit_status()
-        construct_ok_response(exit_status_data)
+        exit_status_data = node.get_exit_status()
+        return construct_ok_response(exit_status_data)
 
     @node_exit_bp.route('/api/exit/finalize', methods=['POST'])
     @login_required
