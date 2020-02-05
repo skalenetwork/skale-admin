@@ -100,18 +100,25 @@ class Node:
             receipt = self.skale.manager.node_exit(self.config.id, wait_for=True)
             try:
                 check_receipt(receipt)
-            except ValueError as err:
-                logger.error(arguments_list_string({'receipt': receipt}, 'Node rotation failed', 'error'))
+            except ValueError:
+                logger.error(arguments_list_string({'receipt': receipt},
+                                                   'Node rotation failed', 'error'))
 
     def get_exit_status(self):
         schain_statuses = []
         active_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
         for schain in active_schains:
-            schain_statuses.append({'name': schain['name'], 'status': SchainExitStatuses.PENDING.value})
+            schain_statuses.append({
+                'name': schain['name'],
+                'status': SchainExitStatuses.PENDING.value
+            })
         rotated_schains = self.skale.schains_data.get_leaving_history(self.config.id)
         current_time = time.time()
         for schain in rotated_schains:
-            status = SchainExitStatuses.EXITED if current_time > schain[1] else SchainExitStatuses.ROTATED
+            if current_time > schain[1]:
+                status = SchainExitStatuses.EXITED
+            else:
+                status = SchainExitStatuses.ROTATED
             schain_name = self.skale.schains_data.get(schain[0])['name']
             schain_statuses.append({'name': schain_name, 'status': status.value})
         node_status = NodeExitStatuses(self.skale.nodes_data.get_node_status(self.config.id))

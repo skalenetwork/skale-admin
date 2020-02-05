@@ -19,7 +19,7 @@
 
 import logging
 
-from flask import Blueprint, request
+from flask import Blueprint
 from tools.custom_thread import CustomThread
 from web.helper import construct_ok_response, login_required
 
