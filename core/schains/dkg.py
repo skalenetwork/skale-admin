@@ -62,8 +62,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
         start_time = time.time()
         while False in is_received:
-            time_gone = time.time() - start_time
-            if time_gone > 600:
+            if time.time() - start_time > 1800:
                 break
 
             for event in dkg_broadcast_filter.get_all_entries():
@@ -129,7 +128,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         dkg_complaint_sent_filter = get_dkg_all_complaints_filter(skale, dkg_client.group_index)
         if len(dkg_complaint_sent_filter.get_all_entries()) == 0:
             while False in is_allright_sent_list:
-                if time.time() - start_time_allright > 600:
+                if time.time() - start_time_allright > 1800:
                     break
                 for event in dkg_all_data_received_filter.get_all_entries():
                     is_allright_sent_list[
@@ -145,7 +144,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         is_complaint_sent = len(dkg_complaint_sent_filter.get_all_entries())
         if is_complaint_sent or is_complaint_received:
             while len(dkg_fail_filter.get_all_entries()) == 0:
-                if time.time() - start_time_response > 600:
+                if time.time() - start_time_response > 1800:
                     break
                 sleep(1)
                 continue
