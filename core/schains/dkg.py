@@ -41,7 +41,7 @@ class FailedDKG(Exception):
         super().__init__(msg)
 
 
-def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id):
+def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
     if not os.path.isfile(secret_key_share_filepath):
         schain_config = generate_skale_schain_config(skale, schain_name, node_id)
