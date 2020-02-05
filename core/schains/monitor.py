@@ -49,7 +49,7 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 
-class SchainsMonitor():
+class SchainsMonitor:
     def __init__(self, skale, node_config):
         self.skale = skale
         self.node_config = node_config
@@ -89,16 +89,26 @@ class SchainsMonitor():
         skale = spawn_skale_lib(self.skale)
         name = schain['name']
         owner = schain['owner']
-        checks = SChainChecks(name, self.node_id, log=True).get_all()
+        checks = SChainChecks(skale, name, self.node_id, log=True).get_all()
 
         if not SChainRecord.added(name):
             schain_record, _ = SChainRecord.add(name)
         else:
             schain_record = SChainRecord.get_by_name(name)
 
-        if not checks['data_dir']:
+        rotation_in_progress = checks['rotation_in_progress']['result']
+        new_schain = checks['rotation_in_progress']['new_schain']
+
+        if rotation_in_progress and new_schain:
+            logger.info('Building new rotated schain')
+        elif rotation_in_progress and not new_schain:
+            logger.info('Schain was rotated. Containers are going to be restarted')
+        else:
+            logger.info('No rotation for schain')
+
+        if not checks['data_dir']['result']:
             init_schain_dir(name)
-        if not checks['dkg']:
+        if not checks['dkg']['result']:
             try:
                 schain_record.dkg_started()
                 init_bls(skale, schain['name'], self.node_config.id,
@@ -108,15 +118,15 @@ class SchainsMonitor():
                 remove_config_dir(schain['name'])
                 exit(1)
             schain_record.dkg_done()
-        if not checks['config']:
+        if not checks['config']['result']:
             self.init_schain_config(skale, name, owner)
-        if not checks['volume']:
+        if not checks['volume']['result']:
             init_data_volume(schain)
-        if not checks['firewall_rules']:
+        if not checks['firewall_rules']['result']:
             self.add_firewall_rules(name)
-        if not checks['container']:
+        if not checks['container']['result']:
             self.monitor_schain_container(schain)
-        if not checks['ima_container']:
+        if not checks['ima_container']['result']:
             self.monitor_ima_container(schain)
 
     def init_schain_config(self, skale, schain_name, schain_owner):

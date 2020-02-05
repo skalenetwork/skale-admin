@@ -19,6 +19,7 @@
 
 import os
 import logging
+import time
 
 from core.schains.config import get_allowed_endpoints
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
@@ -34,11 +35,13 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 
-class SChainChecks():
-    def __init__(self, schain_name: str, node_id: int, log=False, failhook=None):
+class SChainChecks:
+    def __init__(self, skale, schain_name: str, node_id: int, log=False, failhook=None):
         self.name = schain_name
         self.node_id = node_id
         self.failhook = failhook
+        self.skale = skale
+        self.check_for_rotation()
         self.check_data_dir()
         self.check_config()
         self.check_dkg()
@@ -55,34 +58,44 @@ class SChainChecks():
 
     def check_data_dir(self):
         schain_dir_path = get_schain_dir_path(self.name)
-        self._data_dir = os.path.isdir(schain_dir_path)
+        self._data_dir = {'result': os.path.isdir(schain_dir_path)}
 
     def check_dkg(self):
         secret_key_share_filepath = get_secret_key_share_filepath(self.name)
-        self._dkg = os.path.isfile(secret_key_share_filepath)
+        self._dkg = {'result': os.path.isfile(secret_key_share_filepath)}
 
     def check_config(self):
         config_filepath = get_schain_config_filepath(self.name)
-        self._config = os.path.isfile(config_filepath)
+        self._config = {'result': os.path.isfile(config_filepath)}
 
     def check_volume(self):
-        self._volume = dutils.data_volume_exists(self.name)
+        self._volume = {'result': dutils.data_volume_exists(self.name)}
 
     def check_container(self):
         name = get_container_name(SCHAIN_CONTAINER, self.name)
         info = dutils.get_info(name)
-        self._container = dutils.container_running(info)
+        self._container = {'result': dutils.container_running(info)}
 
     def check_ima_container(self):
         name = get_container_name(IMA_CONTAINER, self.name)
         info = dutils.get_info(name)
-        self._ima_container = dutils.container_running(info)
+        self._ima_container = {'result': dutils.container_running(info)}
 
     def check_firewall_rules(self):
-        self._firewall_rules = False
-        if self._config:
+        self._firewall_rules = {'result': False}
+        if self._config['result']:
             ips_ports = get_allowed_endpoints(self.name)
-            self._firewall_rules = len(apsent_iptables_rules(ips_ports)) == 0
+            self._firewall_rules['result'] = len(apsent_iptables_rules(ips_ports)) == 0
+
+    def check_for_rotation(self):
+        ts = time.time()
+        rotation_data = self.skale.schains_data.get_rotation(self.name)
+        rotation_in_progress = rotation_data['finish_ts'] > ts
+        new_schain = rotation_data['new_node'] == self.node_id
+        self._rotation_in_progress = {
+            'result': rotation_in_progress,
+            'new_schain': new_schain
+        }
 
     def is_healthy(self):
         checks = self.get_all()
@@ -93,6 +106,7 @@ class SChainChecks():
 
     def get_all(self):
         return {
+            'rotation_in_progress': self._rotation_in_progress,
             'data_dir': self._data_dir,
             'dkg': self._dkg,
             'config': self._config,
@@ -111,7 +125,6 @@ class SChainChecks():
                 failed_checks.append(check)
         if len(failed_checks) != 0:
             failed_checks_str = ", ".join(failed_checks)
-
             logger.info(
                 arguments_list_string(
                     {'sChain name': self.name, 'Failed checks': failed_checks_str},

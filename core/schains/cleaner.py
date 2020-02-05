@@ -70,9 +70,9 @@ def remove_config_dir(schain_name):
     shutil.rmtree(schain_dir_path)
 
 
-class SChainsCleaner():
+class SChainsCleaner:
     def __init__(self, skale, node_config):
-        self.skale = skale
+        self.skale = spawn_skale_lib(skale)
         self.skale_events = spawn_skale_lib(skale)
         self.node_config = node_config
         CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
@@ -132,14 +132,14 @@ class SChainsCleaner():
         remove_iptables_rules(endpoints)
 
     def run_cleanup(self, schain_name):
-        checks = SChainChecks(schain_name, self.node_id).get_all()
-        if checks['container']:
+        checks = SChainChecks(self.skale, schain_name, self.node_id).get_all()
+        if checks['container']['result']:
             remove_schain_container(schain_name)
-        if checks['volume']:
+        if checks['volume']['result']:
             remove_schain_volume(schain_name)
-        if checks['firewall_rules']:
+        if checks['firewall_rules']['result']:
             self.remove_firewall_rules(schain_name)
-        if checks['ima_container']:
+        if checks['ima_container']['result']:
             remove_ima_container(schain_name)
-        if checks['data_dir']:
+        if checks['data_dir']['result']:
             remove_config_dir(schain_name)

@@ -13,7 +13,7 @@ simple-crypt==4.1.7
 pycryptodome==3.4.11
 python-iptables==0.14.0
 
-skale.py==2.1.dev15
+# skale.py==2.1.dev15
 
 PyYAML==5.1.2
 psutil==5.6.3
@@ -24,3 +24,4 @@ filelock==3.0.12
 
 pyOpenSSL==19.1.0
 python-dateutil==2.8.1
+git+git://github.com/skalenetwork/skale.py.git@feature/SKALE-2052-node-rotation#egg=skale.py
