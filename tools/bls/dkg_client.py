@@ -79,11 +79,12 @@ class DKGClient:
         self.public_keys = public_keys
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
+        self.dkg_contract_functions = self.skale.dkg.contract.functions
         logger.info(f'Node id on chain is {self.node_id_dkg}; \
             Node id on contract is {self.node_id_contract}')
 
     def is_channel_opened(self):
-        return self.skale.dkg.contract.functions.isChannelOpened.call(self.group_index)
+        return self.dkg_contract_functions.isChannelOpened.call(self.group_index)
 
     def generate_polynomial(self, poly_name):
         self.poly_name = poly_name
@@ -106,7 +107,9 @@ class DKGClient:
         return self.sent_secret_key_contribution
 
     def broadcast(self, poly_name):
-        is_broadcast_possible = self.skale.dkg.contract.functions.isBroadcastPossible.call(self.group_index, self.node_id_contract)
+        is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
+        is_broadcast_possible = is_broadcast_possible_function.call(self.group_index,
+                                                                    self.node_id_contract)
         if not is_broadcast_possible or not self.is_channel_opened():
             logger.info(f'Broadcast is already sent from {self.node_id_dkg} node')
             return
@@ -150,9 +153,11 @@ class DKGClient:
                                             self.node_id_dkg)
 
     def send_complaint(self, to_node):
-        is_complaint_possible = self.skale.dkg.contract.functions.isComplaintPossible.call(self.group_index, self.node_id_contract, toNode)
-        if not is_complaint_possible or not self.IsChannelOpened():
-            logger.info(f'{self.node_id_dkg} node could not sent a complaint on {toNode} node')
+        is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
+        is_complaint_possible = is_complaint_possible_function.call(self.group_index,
+                                                                    self.node_id_contract, to_node)
+        if not is_complaint_possible or not self.is_channel_opened():
+            logger.info(f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
             return
         self.skale.dkg.complaint(self.group_index,
                                  self.node_id_contract,
@@ -161,7 +166,9 @@ class DKGClient:
         logger.info(f'{self.node_id_dkg} node sent a complaint on {to_node} node')
 
     def response(self, from_node_index):
-        is_response_possible = self.skale.dkg.contract.functions.isResponsePossible.call(self.group_index, self.node_id_contract)
+        is_response_possible_function = self.dkg_contract_functions.isResponsePossible
+        is_response_possible = is_response_possible_function.call(self.group_index,
+                                                                  self.node_id_contract)
         if not is_response_possible or not self.is_channel_opened():
             logger.info(f'{from_node_index} node could not sent a response')
             return
@@ -209,7 +216,9 @@ class DKGClient:
         return bls_private_key
 
     def allright(self):
-        is_allright_possible = self.skale.dkg.contract.functions.isAlrightPossible.call(self.group_index, self.node_id_contract)
+        is_allright_possible_function = self.dkg_contract_functions.isAlrightPossible
+        is_allright_possible = is_allright_possible_function.call(self.group_index,
+                                                                  self.node_id_contract)
         if not is_allright_possible or not self.is_channel_opened():
             logger.info(f'{self.node_id_dkg} node has already sent an allright note')
             return

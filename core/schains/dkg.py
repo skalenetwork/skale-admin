@@ -21,7 +21,6 @@ import os
 import logging
 import time
 from time import sleep
-import random
 
 from skale.schain_config import generate_skale_schain_config
 from tools.bls.dkg_utils import (
