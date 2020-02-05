@@ -19,7 +19,7 @@
 
 import logging
 
-from flask import Flask, render_template, session, g
+from flask import Flask, session, g
 from peewee import SqliteDatabase
 
 from skale import Skale
@@ -33,10 +33,10 @@ from core.schains.cleaner import SChainsCleaner
 from tools.configs import FLASK_SECRET_KEY_FILE
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
 from tools.configs.db import DB_FILE
-from tools.logger import init_admin_logger
 from tools.docker_utils import DockerUtils
-from tools.str_formatters import arguments_list_string
+from tools.logger import init_admin_logger
 from tools.sgx_utils import generate_sgx_key, sgx_server_text
+from tools.str_formatters import arguments_list_string
 from tools.token_utils import init_user_token
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
