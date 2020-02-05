@@ -45,8 +45,9 @@ class NodeStatuses(Enum):
 class NodeExitStatuses(Enum):
     """This class contains possible node exit statuses"""
     ACTIVE = 0
-    LEAVING = 1
-    LEFT = 2
+    IN_PROGRESS = 1
+    WAIT_FOR_ROTATIONS = 2
+    COMPLETED = 3
 
 
 class SchainExitStatuses(Enum):
@@ -103,7 +104,6 @@ class Node:
                 logger.error(arguments_list_string({'receipt': receipt}, 'Node rotation failed', 'error'))
 
     def get_exit_status(self):
-        node_status = NodeExitStatuses(self.skale.nodes_data.get_node_status(self.config.id))
         schain_statuses = []
         active_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
         for schain in active_schains:
@@ -114,7 +114,11 @@ class Node:
             status = SchainExitStatuses.EXITED if current_time > schain[1] else SchainExitStatuses.ROTATED
             schain_name = self.skale.schains_data.get(schain[0])['name']
             schain_statuses.append({'name': schain_name, 'status': status.value})
-        return {'status': node_status.value, 'data': schain_statuses}
+        node_status = NodeExitStatuses(self.skale.nodes_data.get_node_status(self.config.id))
+        exit_time = self.skale.nodes_data.get_node_finish_time(self.config.id)
+        if node_status == NodeExitStatuses.WAIT_FOR_ROTATIONS and current_time >= exit_time:
+            node_status = NodeExitStatuses.COMPLETED
+        return {'status': node_status.value, 'data': schain_statuses, 'exit_time': exit_time}
 
     def _insufficient_funds(self):
         err_msg = f'Insufficient funds, re-check your wallet'
