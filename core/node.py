@@ -105,13 +105,14 @@ class Node:
                                                    'Node rotation failed', 'error'))
 
     def get_exit_status(self):
-        schain_statuses = []
         active_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
-        for schain in active_schains:
-            schain_statuses.append({
+        schain_statuses = [
+            {
                 'name': schain['name'],
                 'status': SchainExitStatuses.PENDING.value
-            })
+            }
+            for schain in active_schains
+        ]
         rotated_schains = self.skale.schains_data.get_leaving_history(self.config.id)
         current_time = time.time()
         for schain in rotated_schains:
@@ -120,6 +121,8 @@ class Node:
             else:
                 status = SchainExitStatuses.ROTATED
             schain_name = self.skale.schains_data.get(schain[0])['name']
+            if not schain_name:
+                schain_name = '[REMOVED]'
             schain_statuses.append({'name': schain_name, 'status': status.value})
         node_status = NodeExitStatuses(self.skale.nodes_data.get_node_status(self.config.id))
         exit_time = self.skale.nodes_data.get_node_finish_time(self.config.id)
