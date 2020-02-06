@@ -19,9 +19,8 @@
 
 import logging
 import json
-from functools import wraps
 from http import HTTPStatus
-from flask import Response, session
+from flask import Response
 
 
 logger = logging.getLogger(__name__)
@@ -52,13 +51,3 @@ def construct_key_error_response(keys):
 
 def construct_ok_response(data=None):
     return construct_response(HTTPStatus.OK, {'res': 1, 'data': data})
-
-
-def login_required(f):
-    @wraps(f)
-    def inner(*args, **kwargs):
-        if not session.get('logged_in'):
-            return construct_err_response(401, [{'msg': 'Unauthorized request', 'code': 401}])
-        return f(*args, **kwargs)
-
-    return inner

@@ -22,7 +22,7 @@ import pkg_resources
 
 from flask import Blueprint, request
 
-from web.helper import construct_ok_response, login_required
+from web.helper import construct_ok_response
 from tools.configs.flask import SKALE_LIB_NAME
 
 from tools.configs.web3 import ENDPOINT
@@ -49,14 +49,13 @@ def construct_node_info_bp(skale, docker_utils):
         return construct_ok_response(containers_list)
 
     @node_info_bp.route('/about-node', methods=['GET'])
-    @login_required
     def about_node():
         logger.debug(request)
 
         node_about = {
             'libraries': {
                 'javascript': 'N/A',  # get_js_package_version(),
-                'python': pkg_resources.get_distribution(SKALE_LIB_NAME).version
+                'skale.py': pkg_resources.get_distribution(SKALE_LIB_NAME).version
             },
             'contracts': {
                 'token': skale.token.address,
