@@ -135,7 +135,7 @@ def construct_metrics_bp(skale, config):
             node_start_date = datetime.utcfromtimestamp(get_start_date())
             bounties_list = get_bounty_from_events(node_start_date)
         else:
-            bounties_list = get_bounty_from_db(True, 12)
+            bounties_list = get_bounty_from_db(True, FILTER_PERIOD)
         return construct_ok_response({'bounties': bounties_list})
 
     @metrics_bp.route('/last-bounties', methods=['GET'])
@@ -149,7 +149,7 @@ def construct_metrics_bp(skale, config):
                     reward_period * (FILTER_PERIOD)), node_start_date))
             bounties_list = get_bounty_from_events(start_date)
         else:
-            bounties_list = get_bounty_from_db(False, 12)
+            bounties_list = get_bounty_from_db(False, FILTER_PERIOD)
         return construct_ok_response({'bounties': bounties_list})
 
     @metrics_bp.route('/all-bounties', methods=['GET'])
