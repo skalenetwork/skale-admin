@@ -20,7 +20,11 @@
 import os
 
 from tools.configs import NODE_DATA_PATH
-from tools.bls.dkg_client import DKGClient
+from tools.bls.dkg_client import DKGClient, DkgError
+
+
+class DkgFailedError(DkgError):
+    pass
 
 
 def init_dkg_client(schain_config, skale, n, t, sgx_eth_key_name):

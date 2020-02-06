@@ -28,17 +28,15 @@ from tools.bls.dkg_utils import (
     init_dkg_client, broadcast, get_dkg_broadcast_filter, send_complaint, response, send_allright,
     get_dkg_successful_filter, get_dkg_fail_filter, get_dkg_all_data_received_filter,
     get_dkg_complaint_sent_filter, get_dkg_all_complaints_filter,
-    generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath
+    generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
+    DkgFailedError
 )
 from tools.bls.dkg_client import DkgVerificationError
 from tools.helper import write_json
 
 logger = logging.getLogger(__name__)
 
-
-class FailedDKG(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
+RECEIVE_TIMEOUT = 600
 
 
 def init_bls(skale, schain_name, node_id, sgx_key_name):
@@ -65,7 +63,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
         start_time = time.time()
         while False in is_received:
             time_gone = time.time() - start_time
-            if time_gone > 600:
+            if time_gone > RECEIVE_TIMEOUT:
                 break
 
             for event in dkg_broadcast_filter.get_all_entries():
@@ -81,7 +79,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
                         continue
 
                     logger.info(
-                        f'Received by {dkg_client.node_id_dkg} from '
+                        f'Schain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
                         f'{dkg_client.node_ids_contract[from_node]}'
                     )
             sleep(1)
@@ -98,7 +96,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
                 complainted_node_index = i
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
-            raise FailedDKG("failed due to event FailedDKG")
+            raise DkgFailedError(f'Schain: {schain_name}. Dkg failed due to event FailedDKG')
 
         is_allright_sent_list = [False for _ in range(n)]
         start_time_allright = time.time()
@@ -112,10 +110,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
             encrypted_bls_key = generate_bls_key(dkg_client, bls_key_name)
             is_allright_sent_list[dkg_client.node_id_dkg] = True
 
-        logger.info(f'Node`s encrypted bls key is: {encrypted_bls_key}')
+        logger.info(f'Schain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
-            raise FailedDKG("failed due to event FailedDKG")
+            raise DkgFailedError(f'Schain: {schain_name}. Dkg failed due to event FailedDKG')
 
         is_complaint_received = False
         dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(skale,
@@ -126,12 +124,12 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
             response(dkg_client, event["fromNodeIndex"])
 
         if len(dkg_fail_filter.get_all_entries()) > 0:
-            raise FailedDKG("failed due to event FailedDKG")
+            raise DkgFailedError(f'Schain: {schain_name}. Dkg failed due to event FailedDKG')
 
         dkg_complaint_sent_filter = get_dkg_all_complaints_filter(skale, dkg_client.group_index)
         if len(dkg_complaint_sent_filter.get_all_entries()) == 0:
             while False in is_allright_sent_list:
-                if time.time() - start_time_allright > 600:
+                if time.time() - start_time_allright > RECEIVE_TIMEOUT:
                     break
                 for event in dkg_all_data_received_filter.get_all_entries():
                     is_allright_sent_list[
@@ -147,13 +145,13 @@ def init_bls(skale, schain_name, node_id, sgx_key_name):
         is_complaint_sent = len(dkg_complaint_sent_filter.get_all_entries())
         if is_complaint_sent or is_complaint_received:
             while len(dkg_fail_filter.get_all_entries()) == 0:
-                if time.time() - start_time_response > 600:
+                if time.time() - start_time_response > RECEIVE_TIMEOUT:
                     break
                 sleep(1)
                 continue
 
             if len(dkg_fail_filter.get_all_entries()) > 0:
-                raise FailedDKG("failed due to event FailedDKG")
+                raise DkgFailedError(f'Schain: {schain_name}. Dkg failed due to event FailedDKG')
             else:
                 send_complaint(dkg_client, complainted_node_index)
 

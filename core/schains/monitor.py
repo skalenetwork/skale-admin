@@ -25,6 +25,7 @@ from skale.manager_client import spawn_skale_lib
 
 from web.models.schain import SChainRecord
 
+from tools.bls.dkg_utils import DkgFailedError
 from tools.custom_thread import CustomThread
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -37,7 +38,7 @@ from core.schains.config import (generate_schain_config, save_schain_config,
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_env
-from core.schains.dkg import init_bls, FailedDKG
+from core.schains.dkg import init_bls
 
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER
@@ -49,7 +50,7 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 
-class SchainsMonitor():
+class SchainsMonitor:
     def __init__(self, skale, node_config):
         self.skale = skale
         self.node_config = node_config
@@ -103,7 +104,8 @@ class SchainsMonitor():
                 schain_record.dkg_started()
                 init_bls(skale, schain['name'], self.node_config.id,
                          self.node_config.sgx_key_name)
-            except FailedDKG:
+            except DkgFailedError as err:
+                logger.info(f'Schain {name} Dkg procedure failed with {err}')
                 schain_record.dkg_failed()
                 remove_config_dir(schain['name'])
                 exit(1)
@@ -122,7 +124,10 @@ class SchainsMonitor():
     def init_schain_config(self, skale, schain_name, schain_owner):
         config_filepath = get_schain_config_filepath(schain_name)
         if not os.path.isfile(config_filepath):
-            logger.warning(f'sChain config not found: {config_filepath}, trying to create.')
+            logger.warning(
+                f'Schain {schain_name}: sChain config not found: '
+                f'{config_filepath}, trying to create.'
+            )
             schain_config = generate_schain_config(skale, schain_name, self.node_id)
             save_schain_config(schain_config, schain_name)
 
@@ -134,9 +139,12 @@ class SchainsMonitor():
         name = get_container_name(SCHAIN_CONTAINER, schain_name)
         info = dutils.get_info(name)
         if dutils.to_start_container(info):
-            logger.warning(f'sChain container: {name} not found, trying to create.')
+            logger.warning(f'Schain: {schain_name}. '
+                           f'sChain container: {name} not found, trying to create.')
             if volume_required and not dutils.data_volume_exists(schain_name):
-                logger.error(f'Cannot create sChain container without data volume - {schain_name}')
+                logger.error(
+                    f'Schain: {schain_name}. Cannot create sChain container without data volume'
+                )
             return True
 
     def monitor_schain_container(self, schain):

@@ -84,6 +84,9 @@ class SChainChecks():
             ips_ports = get_allowed_endpoints(self.name)
             self._firewall_rules = len(apsent_iptables_rules(ips_ports)) == 0
 
+    def check_rotation(self):
+        self.skale.schains_data.get_rotation(self.schain_name)
+
     def is_healthy(self):
         checks = self.get_all()
         for check in checks:
