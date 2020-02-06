@@ -27,7 +27,7 @@ from OpenSSL import crypto
 from flask import Blueprint, request
 
 from core.schains.ssl import is_ssl_folder_empty
-from web.helper import construct_ok_response, construct_bad_req_response, login_required
+from web.helper import construct_ok_response, construct_bad_req_response
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,6 @@ def construct_security_bp():
     security_bp = Blueprint('security', __name__)
 
     @security_bp.route('/api/ssl/status', methods=['GET'])
-    @login_required
     def status():
         logger.debug(request)
         if is_ssl_folder_empty():
@@ -63,7 +62,6 @@ def construct_security_bp():
         })
 
     @security_bp.route('/api/ssl/upload', methods=['POST'])
-    @login_required
     def upload():
         request_json = json.loads(request.form['json'])
         force = request_json.get('force') is True
