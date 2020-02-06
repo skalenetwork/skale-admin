@@ -87,7 +87,7 @@ def construct_metrics_bp(skale, config):
         cur_block_number = skale.web3.eth.blockNumber
         last_block_number = find_block_for_tx_stamp(end_date) if end_date is not None \
             else cur_block_number
-        while True and len(bounties) < FILTER_PERIOD:
+        while not is_limited or len(bounties) < FILTER_PERIOD:
             end_chunk_block_number = start_block_number + BLOCK_STEP - 1
             if end_chunk_block_number > last_block_number:
                 end_chunk_block_number = last_block_number
