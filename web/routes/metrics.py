@@ -77,7 +77,10 @@ def construct_metrics_bp(skale, config):
         bounties_list = []
         for bounty in bounties:
             bounties_list.append(
-                [str(bounty.tx_dt), bounty.bounty, bounty.downtime, bounty.latency])
+                [str(bounty.tx_dt),
+                 bounty.bounty,
+                 bounty.downtime,
+                 round(bounty.latency / 1000, 1)])
         return bounties_list
 
     def get_bounty_from_events(start_date, end_date=None, is_limited=True):
@@ -110,7 +113,7 @@ def construct_metrics_bp(skale, config):
                     block_timestamp,
                     args['bounty'],
                     args['averageDowntime'],
-                    int(args['averageLatency'] / 1000)
+                    round(args['averageLatency'] / 1000, 1)
                 ])
                 if is_limited and len(bounties) >= FILTER_PERIOD:
                     break
