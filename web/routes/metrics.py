@@ -23,7 +23,7 @@ from datetime import datetime
 from flask import Blueprint, request
 
 from core.db import BountyEvent
-from web.helper import construct_ok_response, login_required
+from web.helper import construct_ok_response
 
 logger = logging.getLogger(__name__)
 
@@ -118,14 +118,12 @@ def construct_metrics_bp(skale, config):
         return bounties
 
     @metrics_bp.route('/last-bounty', methods=['GET'])
-    @login_required
     def bounty():
         last_reward_date = datetime.utcfromtimestamp(get_last_reward_date())
         bounties_list = get_bounty_from_events(last_reward_date)
         return construct_ok_response({'bounties': bounties_list})
 
     @metrics_bp.route('/first-bounties', methods=['GET'])
-    @login_required
     def first_bounties():
         force = request.args.get('force') == 'True'
         if force:
@@ -136,7 +134,6 @@ def construct_metrics_bp(skale, config):
         return construct_ok_response({'bounties': bounties_list})
 
     @metrics_bp.route('/last-bounties', methods=['GET'])
-    @login_required
     def last_bounties():
         force = request.args.get('force') == 'True'
         if force:
@@ -151,7 +148,6 @@ def construct_metrics_bp(skale, config):
         return construct_ok_response({'bounties': bounties_list})
 
     @metrics_bp.route('/all-bounties', methods=['GET'])
-    @login_required
     def all_bounties():
         force = request.args.get('force') == 'True'
         if force:

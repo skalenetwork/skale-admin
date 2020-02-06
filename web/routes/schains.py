@@ -24,7 +24,7 @@ from flask import Blueprint, request
 
 from core.schains.helper import get_schain_config
 from web.models.schain import SChainRecord
-from web.helper import construct_ok_response, construct_err_response, login_required
+from web.helper import construct_ok_response, construct_err_response
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,6 @@ def construct_schains_bp(skale, config, docker_utils):
     schains_bp = Blueprint('schains', __name__)
 
     @schains_bp.route('/get-owner-schains', methods=['GET'])
-    @login_required
     def owner_schains():
         logger.debug(request)
         schains = skale.schains_data.get_schains_for_owner(skale.wallet.address)
@@ -43,7 +42,6 @@ def construct_schains_bp(skale, config, docker_utils):
         return construct_ok_response(schains)
 
     @schains_bp.route('/schain-config', methods=['GET'])
-    @login_required
     def get_schain_config_route():
         logger.debug(request)
         schain_name = request.args.get('schain-name')
@@ -53,7 +51,6 @@ def construct_schains_bp(skale, config, docker_utils):
         return construct_ok_response(skale_schain_config)
 
     @schains_bp.route('/containers/schains/list', methods=['GET'])
-    @login_required
     def schains_containers_list():
         logger.debug(request)
         _all = request.args.get('all') == 'True'
@@ -61,7 +58,6 @@ def construct_schains_bp(skale, config, docker_utils):
         return construct_ok_response(containers_list)
 
     @schains_bp.route('/schains/list', methods=['GET'])
-    @login_required
     def node_schains_list():
         logger.debug(request)
         node_id = config.id
@@ -71,7 +67,6 @@ def construct_schains_bp(skale, config, docker_utils):
         return construct_ok_response(schains_list)
 
     @schains_bp.route('/api/dkg/statuses', methods=['GET'])
-    @login_required
     def dkg_status():
         logger.debug(request)
         dkg_statuses = SChainRecord.all()

@@ -21,7 +21,7 @@ import logging
 
 from flask import Blueprint, request
 
-from web.helper import construct_ok_response, login_required
+from web.helper import construct_ok_response
 from tools.wallet_utils import wallet_with_balance
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,6 @@ def construct_wallet_bp(skale):
     wallet_bp = Blueprint('wallet', __name__)
 
     @wallet_bp.route('/load-wallet', methods=['GET'])
-    @login_required
     def load_wallet():
         logger.debug(request)
         res = wallet_with_balance(skale)
