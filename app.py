@@ -19,7 +19,7 @@
 
 import logging
 
-from flask import Flask, session, g
+from flask import Flask, g
 from peewee import SqliteDatabase
 
 from skale import Skale
@@ -40,11 +40,8 @@ from tools.str_formatters import arguments_list_string
 from tools.token_utils import init_user_token
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from web.models.user import User
 from web.models.schain import SChainRecord
-from web.user_session import UserSession
 
-from web.routes.auth import construct_auth_bp
 from web.routes.logs import web_logs
 from web.routes.nodes import construct_nodes_bp
 from web.routes.schains import construct_schains_bp
@@ -53,6 +50,7 @@ from web.routes.node_info import construct_node_info_bp
 from web.routes.security import construct_security_bp
 from web.routes.validators import construct_validators_bp
 from web.routes.metrics import construct_metrics_bp
+from web.routes.node_exit import construct_node_exit_bp
 from web.routes.sgx import sgx_bp
 
 init_admin_logger()
@@ -64,7 +62,6 @@ rpc_wallet = RPCWallet(TM_URL)
 skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
 
 docker_utils = DockerUtils()
-user_session = UserSession(session)
 
 node_config = NodeConfig()
 node = Node(skale, node_config)
@@ -75,7 +72,6 @@ token = init_user_token()
 database = SqliteDatabase(DB_FILE)
 
 app = Flask(__name__)
-app.register_blueprint(construct_auth_bp(user_session, token))
 app.register_blueprint(web_logs)
 app.register_blueprint(construct_nodes_bp(skale, node, docker_utils))
 app.register_blueprint(construct_schains_bp(skale, node_config, docker_utils))
@@ -84,6 +80,7 @@ app.register_blueprint(construct_node_info_bp(skale, docker_utils))
 app.register_blueprint(construct_security_bp())
 app.register_blueprint(construct_validators_bp(skale, node_config))
 app.register_blueprint(construct_metrics_bp(skale, node_config))
+app.register_blueprint(construct_node_exit_bp(node))
 app.register_blueprint(sgx_bp)
 
 
@@ -100,8 +97,6 @@ def after_request(response):
 
 
 def create_tables():
-    if not User.table_exists():
-        User.create_table()
     if not SChainRecord.table_exists():
         SChainRecord.create_table()
 
@@ -112,7 +107,10 @@ if __name__ == '__main__':
         'Transaction manager': TM_URL,
         'SGX Server': sgx_server_text()
         }, 'Starting Flask server'))
+    from tools.configs.db import MYSQL_DB_PORT
+    logger.info(f'{MYSQL_DB_PORT}')
     create_tables()
     generate_sgx_key(node_config)
     app.secret_key = FLASK_SECRET_KEY_FILE
-    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)
+    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST,
+            use_reloader=False)

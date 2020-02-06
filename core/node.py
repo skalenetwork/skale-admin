@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 from enum import Enum
 
 
@@ -39,6 +40,21 @@ class NodeStatuses(Enum):
     REQUESTED = 1
     CREATED = 2
     ERROR = 3
+
+
+class NodeExitStatuses(Enum):
+    """This class contains possible node exit statuses"""
+    ACTIVE = 0
+    IN_PROGRESS = 1
+    WAIT_FOR_ROTATIONS = 2
+    COMPLETED = 3
+
+
+class SchainExitStatuses(Enum):
+    """This class contains possible schain exit statuses"""
+    ACTIVE = 0
+    LEAVING = 1
+    LEFT = 2
 
 
 class Node:
@@ -77,6 +93,43 @@ class Node:
         self.config.id = self.skale.nodes_data.node_name_to_index(name)
         run_filebeat_service(public_ip, self.config.id, self.skale)
         return {'status': 1, 'data': self.config.all()}
+
+    def exit(self, opts):
+        schains_list = self.skale.schains_data.get_schains_for_node(self.config.id)
+        exit_count = len(schains_list) if len(schains_list) else 1
+        for _ in range(exit_count):
+            receipt = self.skale.manager.node_exit(self.config.id, wait_for=True)
+            try:
+                check_receipt(receipt)
+            except ValueError:
+                logger.error(arguments_list_string({'receipt': receipt},
+                                                   'Node rotation failed', 'error'))
+
+    def get_exit_status(self):
+        active_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
+        schain_statuses = [
+            {
+                'name': schain['name'],
+                'status': SchainExitStatuses.ACTIVE.name
+            }
+            for schain in active_schains
+        ]
+        rotated_schains = self.skale.schains_data.get_leaving_history(self.config.id)
+        current_time = time.time()
+        for schain in rotated_schains:
+            if current_time > schain[1]:
+                status = SchainExitStatuses.LEFT
+            else:
+                status = SchainExitStatuses.LEAVING
+            schain_name = self.skale.schains_data.get(schain[0])['name']
+            if not schain_name:
+                schain_name = '[REMOVED]'
+            schain_statuses.append({'name': schain_name, 'status': status.name})
+        node_status = NodeExitStatuses(self.skale.nodes_data.get_node_status(self.config.id))
+        exit_time = self.skale.nodes_data.get_node_finish_time(self.config.id)
+        if node_status == NodeExitStatuses.WAIT_FOR_ROTATIONS and current_time >= exit_time:
+            node_status = NodeExitStatuses.COMPLETED
+        return {'status': node_status.name, 'data': schain_statuses, 'exit_time': exit_time}
 
     def _insufficient_funds(self):
         err_msg = f'Insufficient funds, re-check your wallet'

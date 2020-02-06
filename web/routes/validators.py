@@ -21,7 +21,7 @@ import logging
 
 from flask import Blueprint, request
 from playhouse.shortcuts import model_to_dict
-from web.helper import construct_ok_response, login_required
+from web.helper import construct_ok_response
 from core.db import BountyEvent
 from tools.configs import DATETIME_FORMAT
 
@@ -33,7 +33,6 @@ def construct_validators_bp(skale, config):
     validators_bp = Blueprint('validators', __name__)
 
     @validators_bp.route('/bounty-info', methods=['GET'])
-    @login_required
     def bounty_info():
         logger.debug(request)
         # events = BountyEvent.select(BountyEvent, BountyReceipt).join(BountyReceipt).execute()
@@ -47,7 +46,6 @@ def construct_validators_bp(skale, config):
         return construct_ok_response({'events': events_list})
 
     @validators_bp.route('/validators-info', methods=['GET'])
-    @login_required
     def validators_info():
         logger.debug(request)
         # todo: handle no config.id

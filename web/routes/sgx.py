@@ -23,7 +23,7 @@ from enum import Enum
 from flask import Blueprint, request
 from sgx import SgxClient
 
-from web.helper import construct_ok_response, login_required
+from web.helper import construct_ok_response
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs import SGX_CERTIFICATES_FOLDER
 
@@ -37,7 +37,6 @@ class SGXStatus(Enum):
 
 
 @sgx_bp.route('/api/sgx/status', methods=['GET'])
-@login_required
 def sgx_status():
     logger.debug(request)
     sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)

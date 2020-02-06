@@ -18,36 +18,30 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import json
-from http import HTTPStatus
-from flask import Response
 
+from flask import Blueprint
+from tools.custom_thread import CustomThread
+from web.helper import construct_ok_response
 
 logger = logging.getLogger(__name__)
 
 
-def construct_response(status, data):
-    return Response(
-        response=json.dumps(data),
-        status=status,
-        mimetype='application/json'
-    )
+def construct_node_exit_bp(node):
+    node_exit_bp = Blueprint('node_exit', __name__)
 
+    @node_exit_bp.route('/api/exit/start', methods=['POST'])
+    def node_exit_start():
+        exit_thread = CustomThread('Start node exit', node.exit, once=True)
+        exit_thread.start()
+        return construct_ok_response()
 
-def construct_bad_req_response(error_msg):
-    return construct_response(HTTPStatus.BAD_REQUEST, {'res': 0, 'error_msg': error_msg})
+    @node_exit_bp.route('/api/exit/status', methods=['GET'])
+    def node_exit_status():
+        exit_status_data = node.get_exit_status()
+        return construct_ok_response(exit_status_data)
 
+    @node_exit_bp.route('/api/exit/finalize', methods=['POST'])
+    def node_exit_finalize():
+        pass
 
-def construct_err_response(status, errors=[]):
-    logger.warning(f'error response: {errors}, status: {status}')
-    return construct_response(status, {'errors': errors})
-
-
-def construct_key_error_response(keys):
-    keys_str = ', '.join(keys)
-    err = f'Required arguments: {keys_str}'
-    return construct_err_response(400, [err])
-
-
-def construct_ok_response(data=None):
-    return construct_response(HTTPStatus.OK, {'res': 1, 'data': data})
+    return node_exit_bp
