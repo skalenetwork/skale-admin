@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, request
 
@@ -140,10 +140,10 @@ def construct_metrics_bp(skale, config):
         force = request.args.get('force') == 'True'
         if force:
             node_start_date = get_start_date()
-            last_reward_date = get_last_reward_date()
+            now = int(datetime.utcnow().replace(tzinfo=timezone.utc).timestamp())
             reward_period = skale.validators_data.get_reward_period()
-            start_date = datetime.utcfromtimestamp(max(last_reward_date - (
-                    reward_period * (FILTER_PERIOD + 1)), node_start_date))
+            start_date = datetime.utcfromtimestamp(max(now - (
+                    reward_period * (FILTER_PERIOD)), node_start_date))
             bounties_list = get_bounty_from_events(start_date)
         else:
             bounties_list = get_bounty_from_db(False, 12)
