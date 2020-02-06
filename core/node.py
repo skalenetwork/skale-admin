@@ -96,7 +96,8 @@ class Node:
 
     def exit(self, opts):
         schains_list = self.skale.schains_data.get_schains_for_node(self.config.id)
-        for _ in range(len(schains_list)):
+        exit_count = len(schains_list) if len(schains_list) else 1
+        for _ in range(exit_count):
             receipt = self.skale.manager.node_exit(self.config.id, wait_for=True)
             try:
                 check_receipt(receipt)
