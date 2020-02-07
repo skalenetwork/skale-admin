@@ -20,8 +20,9 @@ jobs:
   include:
     - stage: test
       script:
+        - flake8 .
         - bash ./scripts/deploy_manager.sh
-        - bash ./scripts/run_tests.sh
+        - bash ./scripts/run-tests.sh
     - stage: deploy
       if: branch IN (develop, beta, stable, master)
       script:

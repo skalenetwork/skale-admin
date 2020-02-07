@@ -17,10 +17,18 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 
 from tools.configs import NODE_DATA_PATH
-from tools.bls.dkg_client import DKGClient
+from tools.bls.dkg_client import DKGClient, DkgError
+from tools.helper import SkaleFilter
+
+logger = logging.getLogger(__name__)
+
+
+class DkgFailedError(DkgError):
+    pass
 
 
 def init_dkg_client(schain_config, skale, n, t, sgx_eth_key_name):
@@ -40,8 +48,10 @@ def init_dkg_client(schain_config, skale, n, t, sgx_eth_key_name):
 
     schain_name = schain_config["skaleConfig"]["sChain"]["schainName"]
 
-    dkg_client = DKGClient(node_id_dkg, node_id_contract, skale, t, n, schain_name,
-                        public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name)
+    dkg_client = DKGClient(
+        node_id_dkg, node_id_contract, skale, t, n, schain_name,
+        public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name
+    )
     return dkg_client
 
 
@@ -68,65 +78,88 @@ def generate_poly_name(group_index_str, node_id, dkg_id):
 
 
 def generate_bls_key(dkg_client, bls_key_name):
-    return dkg_client.GenerateKey(bls_key_name)
+    return dkg_client.generate_key(bls_key_name)
 
 
 def broadcast(dkg_client, poly_name):
-    dkg_client.Broadcast(poly_name)
+    dkg_client.broadcast(poly_name)
 
 
 def send_complaint(dkg_client, index):
-    dkg_client.SendComplaint(index)
+    dkg_client.send_complaint(index)
 
 
 def response(dkg_client, from_node_index):
-    dkg_client.Response(from_node_index)
+    dkg_client.response(from_node_index)
 
 
 def send_allright(dkg_client):
-    dkg_client.Allright()
+    dkg_client.allright()
 
 
 def get_dkg_broadcast_filter(skale, group_index):
-    contract = skale.dkg.contract
-    return contract.events.BroadcastAndKeyShare.createFilter(fromBlock=0, argument_filters={
-        'groupIndex': group_index})
+    return SkaleFilter(
+        skale.dkg.contract.events.BroadcastAndKeyShare,
+        from_block=0,
+        argument_filters={
+            'groupIndex': group_index
+        }
+    )
 
 
 def get_dkg_complaint_sent_filter(skale, group_index, to_node_index):
-    contract = skale.dkg.contract
-    return contract.events.ComplaintSent.createFilter(fromBlock=0,
-                                                      argument_filters={'groupIndex': group_index,
-                                                                        'toNodeIndex': to_node_index})
+    return SkaleFilter(
+        skale.dkg.contract.events.ComplaintSent,
+        from_block=0,
+        argument_filters={
+            'groupIndex': group_index, 'toNodeIndex': to_node_index
+        }
+
+    )
 
 
 def get_dkg_all_complaints_filter(skale, group_index):
-    contract = skale.dkg.contract
-    return contract.events.ComplaintSent.createFilter(fromBlock=0,
-                                                      argument_filters={'groupIndex': group_index})
+    return SkaleFilter(
+        skale.dkg.contract.events.ComplaintSent,
+        from_block=0,
+        argument_filters={'groupIndex': group_index}
+
+    )
 
 
 def get_dkg_successful_filter(skale, group_index):
-    contract = skale.dkg.contract
-    return contract.events.SuccessfulDKG.createFilter(fromBlock=0,
-                                                      argument_filters={'groupIndex': group_index})
+    return SkaleFilter(
+        skale.dkg.contract.events.SuccessfulDKG,
+        from_block=0,
+        argument_filters={'groupIndex': group_index}
+
+    )
 
 
 def get_dkg_fail_filter(skale, group_index):
-    contract = skale.dkg.contract
-    return contract.events.FailedDKG.createFilter(fromBlock=0,
-                                                  argument_filters={'groupIndex': group_index})
+    return SkaleFilter(
+        skale.dkg.contract.events.FailedDKG,
+        from_block=0,
+        argument_filters={'groupIndex': group_index}
+
+    )
 
 
 def get_dkg_all_data_received_filter(skale, group_index):
-    contract = skale.dkg.contract
-    return contract.events.AllDataReceived.createFilter(fromBlock=0, argument_filters={
-        'groupIndex': group_index})
+    return SkaleFilter(
+        skale.dkg.contract.events.AllDataReceived,
+        from_block=0,
+        argument_filters={'groupIndex': group_index}
+
+    )
 
 
 def get_dkg_bad_guy_filter(skale):
-    contract = skale.dkg.contract
-    return contract.events.BadGuy.createFilter(fromBlock=0)
+    return SkaleFilter(
+        skale.dkg.contract.events.BadGuy,
+        from_block=0,
+        argument_filters={}
+    )
 
 
 def get_secret_key_share_filepath(schain_id):

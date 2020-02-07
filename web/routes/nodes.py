@@ -22,8 +22,8 @@ from http import HTTPStatus
 
 from flask import Blueprint, request, abort
 
-from web.helper import construct_ok_response, login_required, \
-    construct_err_response
+from web.helper import construct_ok_response, construct_err_response
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,13 +32,11 @@ def construct_nodes_bp(skale, node, docker_utils):
     nodes_bp = Blueprint('nodes', __name__)
 
     @nodes_bp.route('/node-info', methods=['GET'])
-    @login_required
     def node_info():
         logger.debug(request)
         return construct_ok_response(node.info)
 
     @nodes_bp.route('/create-node', methods=['POST'])
-    @login_required
     def register_node():
         logger.debug(request)
         if not request.json:
@@ -67,14 +65,12 @@ def construct_nodes_bp(skale, node, docker_utils):
         return construct_ok_response(res['data'])
 
     @nodes_bp.route('/uninstall-node', methods=['GET'])
-    @login_required
     def uninstall_node():
         logger.debug(request)
         res = node.uninstall()
         return construct_ok_response(res)
 
     @nodes_bp.route('/check-node-name', methods=['GET'])
-    @login_required
     def check_node_name():
         logger.debug(request)
         node_name = request.args.get('nodeName')
@@ -82,7 +78,6 @@ def construct_nodes_bp(skale, node, docker_utils):
         return construct_ok_response(res)
 
     @nodes_bp.route('/check-node-ip', methods=['GET'])
-    @login_required
     def check_node_ip():
         logger.debug(request)
         node_ip = request.args.get('nodeIp')
@@ -90,7 +85,6 @@ def construct_nodes_bp(skale, node, docker_utils):
         return construct_ok_response(res)
 
     @nodes_bp.route('/containers/list', methods=['GET'])
-    @login_required
     def skale_containers_list():
         logger.debug(request)
         all = request.args.get('all') == 'True'

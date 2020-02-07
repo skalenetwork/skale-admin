@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class CustomThread(threading.Thread):
 
     def __init__(self, name, func, opts=None, interval=1.0, once=False):
-        """ constructor, setting initial variables """
+        """ Setting initial variables """
         self._stopevent = threading.Event()
         self._sleepperiod = interval
         self.func = func
@@ -36,15 +36,19 @@ class CustomThread(threading.Thread):
         threading.Thread.__init__(self, name=name)
 
     def run(self):
-        """ main control loop """
+        """ Main control loop """
         logger.debug(f'{self.getName()} thread starts')
 
         if self.once:
             self.safe_run_func()
         else:
+            running_counter = 0
             while not self._stopevent.isSet():
+                logger.info(f'Running function from thread '
+                            f'{self.getName()}, try: {running_counter}')
                 self.safe_run_func()
                 self._stopevent.wait(self._sleepperiod)
+                running_counter += 1
 
         logger.debug(f'{self.getName()} thread ends')
 

@@ -27,12 +27,15 @@ from skale.manager_client import spawn_skale_lib
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name
+from core.schains.config import get_allowed_endpoints
 
+from tools.helper import SkaleFilter
 from tools.docker_utils import DockerUtils
 from tools.custom_thread import CustomThread
 from tools.str_formatters import arguments_list_string
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from tools.iptables import remove_rules as remove_iptables_rules
 
 from . import CLEANER_INTERVAL, MONITOR_INTERVAL
 
@@ -95,9 +98,12 @@ class SChainsCleaner():
         schain_ids = self.schain_names_to_ids(schains_on_node)
         schain_names_on_contracts = self.get_schain_names_from_contract()
 
-        event_filter = self.skale_events.schains.contract.events.SchainDeleted.createFilter(
-            fromBlock=0, argument_filters={'schainId': schain_ids})
-        events = event_filter.get_all_entries()
+        event_filter = SkaleFilter(
+            self.skale_events.schains.contract.events.SchainDeleted,
+            from_block=0,
+            argument_filters={'schainId': schain_ids}
+        )
+        events = event_filter.get_events()
 
         for event in events:
             name = event['args']['name']
@@ -125,12 +131,18 @@ class SChainsCleaner():
             ids.append(bytes.fromhex(id_))
         return ids
 
+    def remove_firewall_rules(self, schain_name):
+        endpoints = get_allowed_endpoints(schain_name)
+        remove_iptables_rules(endpoints)
+
     def run_cleanup(self, schain_name):
         checks = SChainChecks(schain_name, self.node_id).get_all()
         if checks['container']:
             remove_schain_container(schain_name)
         if checks['volume']:
             remove_schain_volume(schain_name)
+        if checks['firewall_rules']:
+            self.remove_firewall_rules(schain_name)
         if checks['ima_container']:
             remove_ima_container(schain_name)
         if checks['data_dir']:

@@ -23,8 +23,6 @@ import binascii
 import logging
 import eth_utils
 
-from skale.utils.web3_utils import wait_receipt
-
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
 
@@ -33,21 +31,24 @@ sys.path.insert(0, NODE_DATA_PATH)
 logger = logging.getLogger(__name__)
 
 
-logger = logging.getLogger(__name__)
+class DkgError(Exception):
+    pass
 
 
-class DkgVerificationError(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
+class DkgTransactionError(DkgError):
+    pass
 
 
-class SgxDkgPolynomGenerationError(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
+class DkgVerificationError(DkgError):
+    pass
+
+
+class SgxDkgPolynomGenerationError(DkgError):
+    pass
 
 
 def convert_g2_point_to_hex(data):
-    data_hexed = ""
+    data_hexed = ''
     for coord in data:
         temp = hex(int(coord))[2:]
         while (len(temp) < 64):
@@ -66,7 +67,8 @@ def convert_g2_points_to_hex(data):
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
                  node_ids_dkg, node_ids_contract, eth_key_name):
-        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t, path_to_cert=SGX_CERTIFICATES_FOLDER)
+        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t,
+                             path_to_cert=SGX_CERTIFICATES_FOLDER)
         self.schain_name = schain_name
         self.group_index = skale.web3.sha3(text=self.schain_name)
         self.node_id_contract = node_id_contract
@@ -75,115 +77,186 @@ class DKGClient:
         self.t = t
         self.n = n
         self.eth_key_name = eth_key_name
-        self.incoming_verification_vector = ['0'] * n
-        self.incoming_secret_key_contribution = ['0'] * n
+        self.incoming_verification_vector = ['0' for _ in range(n)]
+        self.incoming_secret_key_contribution = ['0' for _ in range(n)]
         self.public_keys = public_keys
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
-        logger.info(f'Node id on chain is {self.node_id_dkg}; \
-            Node id on contract is {self.node_id_contract}')
+        self.dkg_contract_functions = self.skale.dkg.contract.functions
+        logger.info(
+            f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
+            f'Node id on contract is {self.node_id_contract}')
 
-    def GeneratePolynomial(self, poly_name):
+    def is_channel_opened(self):
+        return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
+
+    def generate_polynomial(self, poly_name):
         self.poly_name = poly_name
         return self.sgx.generate_dkg_poly(poly_name)
 
-    def VerificationVector(self):
+    def verification_vector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
-        verification_vector_hexed = eth_utils.conversions.add_0x_prefix(convert_g2_points_to_hex(verification_vector))
+        verification_vector_hexed = eth_utils.conversions.add_0x_prefix(
+            convert_g2_points_to_hex(verification_vector)
+        )
         return verification_vector_hexed
 
-    def SecretKeyContribution(self):
-        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name, self.public_keys)
-        self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
+    def secret_key_contribution(self):
+        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
+                                                                                 self.public_keys)
+        self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
+            self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
+        ]
         return self.sent_secret_key_contribution
 
-    def Broadcast(self, poly_name):
-        poly_success = self.GeneratePolynomial(poly_name)
-        if not poly_success:
-            raise SgxDkgPolynomGenerationError("SGX DKG POLYNOM GENERATION FAILED")
+    def broadcast(self, poly_name):
+        is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
+        is_broadcast_possible = is_broadcast_possible_function(
+            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
-        verification_vector = self.VerificationVector()
-        secret_key_contribution = self.SecretKeyContribution()
-        res = self.skale.dkg.broadcast(self.group_index,
-                                       self.node_id_contract,
-                                       verification_vector,
-                                       secret_key_contribution)
-        receipt = wait_receipt(self.skale.web3, res, timeout=35)
-        status = receipt["status"]
-        if status != 1:
-            res = self.skale.dkg.broadcast(self.group_index,
+        channel_opened = self.is_channel_opened()
+        if not is_broadcast_possible or not channel_opened:
+            logger.info(f'sChain: {self.schain_name}. '
+                        f'Broadcast is already sent from {self.node_id_dkg} node')
+            return
+        poly_success = self.generate_polynomial(poly_name)
+        if not poly_success:
+            raise SgxDkgPolynomGenerationError(
+                f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
+            )
+
+        verification_vector = self.verification_vector()
+        secret_key_contribution = self.secret_key_contribution()
+        receipt = self.skale.dkg.broadcast(self.group_index,
                                            self.node_id_contract,
                                            verification_vector,
-                                           secret_key_contribution)
-            receipt = wait_receipt(self.skale.web3, res, timeout=35)
+                                           secret_key_contribution,
+                                           wait_for=True)
+        status = receipt["status"]
+        if status != 1:
+            receipt = self.skale.dkg.broadcast(self.group_index,
+                                               self.node_id_contract,
+                                               verification_vector,
+                                               secret_key_contribution,
+                                               wait_for=True)
             status = receipt["status"]
             if status != 1:
-                raise ValueError("Transaction failed, see receipt", receipt)
-        logger.info(f'Everything is sent from {self.node_id_dkg} node')
+                raise DkgTransactionError(f'sChain: {self.schain_name}. '
+                                          f'Broadcast transaction failed, see receipt',
+                                          receipt)
+        logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
-    def RecieveVerificationVector(self, fromNode, event):
+    def receive_verification_vector(self, from_node, event):
         input_ = binascii.hexlify(event['args']['verificationVector']).decode()
-        self.incoming_verification_vector[fromNode] = input_
+        self.incoming_verification_vector[from_node] = input_
 
-    def RecieveSecretKeyContribution(self, fromNode, event):
+    def receive_secret_key_contribution(self, from_node, event):
         input_ = binascii.hexlify(event['args']['secretKeyContribution']).decode()
-        self.incoming_secret_key_contribution[fromNode] = input_[self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192]
+        self.incoming_secret_key_contribution[from_node] = input_[
+            self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
+        ]
 
-    def Verification(self, fromNode):
-        return self.sgx.verify_secret_share(self.incoming_verification_vector[fromNode], self.eth_key_name, self.incoming_secret_key_contribution[fromNode], self.node_id_dkg)
+    def verification(self, from_node):
+        return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
+                                            self.eth_key_name,
+                                            self.incoming_secret_key_contribution[from_node],
+                                            self.node_id_dkg)
 
-    def SendComplaint(self, toNode):
-        res = self.skale.dkg.complaint(self.group_index, self.node_id_contract, self.node_ids_dkg[toNode])
-        wait_receipt(self.skale.web3, res, timeout=35)
-        logger.info(f'{self.node_id_dkg} node sent a complaint on {toNode} node')
+    def send_complaint(self, to_node):
+        is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
+        is_complaint_possible = is_complaint_possible_function(
+            self.group_index, self.node_id_contract, to_node).call(
+                {'from': self.skale.wallet.address})
 
-    def Response(self, from_node_index):
+        if not is_complaint_possible or not self.is_channel_opened():
+            logger.info(f'sChain: {self.schain_name}. '
+                        f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
+            return
+        self.skale.dkg.complaint(self.group_index,
+                                 self.node_id_contract,
+                                 self.node_ids_dkg[to_node],
+                                 wait_for=True)
+        logger.info(f'sChain: {self.schain_name}. '
+                    f'{self.node_id_dkg} node sent a complaint on {to_node} node')
+
+    def response(self, from_node_index):
+        is_response_possible_function = self.dkg_contract_functions.isResponsePossible
+        is_response_possible = is_response_possible_function(
+            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+
+        if not is_response_possible or not self.is_channel_opened():
+            logger.info(f'sChain: {self.schain_name}. '
+                        f'{from_node_index} node could not sent a response')
+            return
         response = self.sgx.complaint_response(self.poly_name, from_node_index)
         share, dh_key = response['share'], response['dh_key']
 
         share = convert_g2_point_to_hex(share)
 
-        res = self.skale.dkg.response(self.group_index,
-                                      self.node_id_contract,
-                                      dh_key,
-                                      share)
-        receipt = wait_receipt(self.skale.web3, res, timeout=35)
+        receipt = self.skale.dkg.response(self.group_index,
+                                          self.node_id_contract,
+                                          dh_key,
+                                          share,
+                                          wait_for=True)
         status = receipt['status']
         if status != 1:
-            res = self.skale.dkg.response(self.group_index,
-                                    self.node_id_contract,
-                                    dh_key,
-                                    share)
-            receipt = wait_receipt(self.skale.web3, res, timeout=35)
+            receipt = self.skale.dkg.response(self.group_index,
+                                              self.node_id_contract,
+                                              dh_key,
+                                              share,
+                                              wait_for=True)
             status = receipt['status']
             if status != 1:
-                raise ValueError("Transaction failed, see receipt", receipt)
-        logger.info(f'{from_node_index} node sent a response')
+                raise DkgTransactionError(
+                    f"sChain: {self.schain_name}. "
+                    "Response transaction failed, see receipt", receipt)
+        logger.info(f'sChain: {self.schain_name}. {from_node_index} node sent a response')
 
-    def RecieveFromNode(self, fromNode, event):
-        self.RecieveVerificationVector(self.node_ids_contract[fromNode], event)
-        self.RecieveSecretKeyContribution(self.node_ids_contract[fromNode], event)
-        if not self.Verification(self.node_ids_contract[fromNode]):
-            raise DkgVerificationError("Fatal error : user " + str(self.node_ids_contract[fromNode] + 1) + " hasn't passed verification by user " + str(self.node_id_dkg + 1))
-        logger.info(f'All data from {self.node_ids_contract[fromNode]} was recieved and verified')
+    def receive_from_node(self, from_node, event):
+        self.receive_verification_vector(self.node_ids_contract[from_node], event)
+        self.receive_secret_key_contribution(self.node_ids_contract[from_node], event)
+        if not self.verification(self.node_ids_contract[from_node]):
+            raise DkgVerificationError(
+                f"sChain: {self.schain_name}. "
+                f"Fatal error : user {str(self.node_ids_contract[from_node] + 1)} "
+                f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
+            )
+        logger.info(f'sChain: {self.schain_name}. '
+                    f'All data from {self.node_ids_contract[from_node]} was received and verified')
 
-    def GenerateKey(self, bls_key_name):
-        recieved_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j] for j in range(self.sgx.n))
-        logger.info(f'DKGClient is going to create BLS private key with name {bls_key_name}')
-        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name, self.eth_key_name, recieved_secret_key_contribution)
-        logger.info(f'DKGClient is going to fetch BLS public key with name {bls_key_name}')
+    def generate_key(self, bls_key_name):
+        received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
+                                                   for j in range(self.sgx.n))
+        logger.info(f'sChain: {self.schain_name}. '
+                    f'DKGClient is going to create BLS private key with name {bls_key_name}')
+        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name,
+                                                          self.eth_key_name,
+                                                          received_secret_key_contribution)
+        logger.info(f'sChain: {self.schain_name}. '
+                    'DKGClient is going to fetch BLS public key with name {bls_key_name}')
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
         return bls_private_key
 
-    def Allright(self):
-        res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
-        receipt = wait_receipt(self.skale.web3, res, timeout=35)
+    def allright(self):
+        is_allright_possible_function = self.dkg_contract_functions.isAlrightPossible
+        is_allright_possible = is_allright_possible_function(
+            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+
+        if not is_allright_possible or not self.is_channel_opened():
+            logger.info(f'sChain: {self.schain_name}. '
+                        f'{self.node_id_dkg} node has already sent an allright note')
+            return
+        receipt = self.skale.dkg.allright(self.group_index, self.node_id_contract,
+                                          wait_for=True)
         status = receipt['status']
         if status != 1:
-            res = self.skale.dkg.allright(self.group_index, self.node_id_contract)
-            receipt = wait_receipt(self.skale.web3, res, timeout=35)
+            receipt = self.skale.dkg.allright(self.group_index, self.node_id_contract,
+                                              wait_for=True)
             status = receipt['status']
             if status != 1:
-                raise ValueError("Transaction failed, see receipt", receipt)
-        logger.info(f'{self.node_id_dkg} node sent an allright note')
+                raise DkgTransactionError(
+                    f'sChain: {self.schain_name}. '
+                    f'Allright transaction failed, see receipt', receipt
+                )
+        logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an allright note')
