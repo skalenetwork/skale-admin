@@ -76,7 +76,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                         continue
 
                     logger.info(
-                        f'Schain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
+                        f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
                         f'{dkg_client.node_ids_contract[from_node]}'
                     )
             sleep(1)
@@ -93,7 +93,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 complainted_node_index = i
 
         if len(dkg_fail_filter.get_events()) > 0:
-            raise DkgFailedError(f'Schain: {schain_name}. Dkg failed due to event FailedDKG')
+            raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
         is_allright_sent_list = [False for _ in range(n)]
         start_time_allright = time.time()
@@ -107,10 +107,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             encrypted_bls_key = generate_bls_key(dkg_client, bls_key_name)
             is_allright_sent_list[dkg_client.node_id_dkg] = True
 
-        logger.info(f'Schain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
+        logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
 
         if len(dkg_fail_filter.get_events()) > 0:
-            raise DkgFailedError(f'Schain: {schain_name}. Dkg failed due to event FailedDKG')
+            raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
         is_complaint_received = False
         dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(skale,
@@ -121,7 +121,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             response(dkg_client, event["fromNodeIndex"])
 
         if len(dkg_fail_filter.get_events()) > 0:
-            raise DkgFailedError(f'Schain: {schain_name}. Dkg failed due to event FailedDKG')
+            raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
         dkg_complaint_sent_filter = get_dkg_all_complaints_filter(skale, dkg_client.group_index)
         if len(dkg_complaint_sent_filter.get_events()) == 0:
@@ -148,7 +148,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 continue
 
             if len(dkg_fail_filter.get_events()) > 0:
-                raise DkgFailedError(f'Schain: {schain_name}. Dkg failed due to event FailedDKG')
+                raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
             else:
                 send_complaint(dkg_client, complainted_node_index)
 

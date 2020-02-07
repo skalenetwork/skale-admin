@@ -84,7 +84,7 @@ class DKGClient:
         self.node_ids_contract = node_ids_contract
         self.dkg_contract_functions = self.skale.dkg.contract.functions
         logger.info(
-            f'Schain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
+            f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
             f'Node id on contract is {self.node_id_contract}')
 
     def is_channel_opened(self):
@@ -117,13 +117,13 @@ class DKGClient:
 
         channel_opened = self.is_channel_opened()
         if not is_broadcast_possible or not channel_opened:
-            logger.info(f'Schain: {self.schain_name}. '
+            logger.info(f'sChain: {self.schain_name}. '
                         f'Broadcast is already sent from {self.node_id_dkg} node')
             return
         poly_success = self.generate_polynomial(poly_name)
         if not poly_success:
             raise SgxDkgPolynomGenerationError(
-                f'Schain: {self.schain_name}. Sgx dkg polynom generation failed'
+                f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
 
         verification_vector = self.verification_vector()
@@ -142,10 +142,10 @@ class DKGClient:
                                                wait_for=True)
             status = receipt["status"]
             if status != 1:
-                raise DkgTransactionError(f'Schain: {self.schain_name}. '
+                raise DkgTransactionError(f'sChain: {self.schain_name}. '
                                           f'Broadcast transaction failed, see receipt',
                                           receipt)
-        logger.info(f'Schain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
+        logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
     def receive_verification_vector(self, from_node, event):
         input_ = binascii.hexlify(event['args']['verificationVector']).decode()
@@ -170,14 +170,14 @@ class DKGClient:
                 {'from': self.skale.wallet.address})
 
         if not is_complaint_possible or not self.is_channel_opened():
-            logger.info(f'Schain: {self.schain_name}. '
+            logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
             return
         self.skale.dkg.complaint(self.group_index,
                                  self.node_id_contract,
                                  self.node_ids_dkg[to_node],
                                  wait_for=True)
-        logger.info(f'Schain: {self.schain_name}. '
+        logger.info(f'sChain: {self.schain_name}. '
                     f'{self.node_id_dkg} node sent a complaint on {to_node} node')
 
     def response(self, from_node_index):
@@ -186,7 +186,7 @@ class DKGClient:
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
         if not is_response_possible or not self.is_channel_opened():
-            logger.info(f'Schain: {self.schain_name}. '
+            logger.info(f'sChain: {self.schain_name}. '
                         f'{from_node_index} node could not sent a response')
             return
         response = self.sgx.complaint_response(self.poly_name, from_node_index)
@@ -209,31 +209,31 @@ class DKGClient:
             status = receipt['status']
             if status != 1:
                 raise DkgTransactionError(
-                    f"Schain: {self.schain_name}. "
+                    f"sChain: {self.schain_name}. "
                     "Response transaction failed, see receipt", receipt)
-        logger.info(f'Schain: {self.schain_name}. {from_node_index} node sent a response')
+        logger.info(f'sChain: {self.schain_name}. {from_node_index} node sent a response')
 
     def receive_from_node(self, from_node, event):
         self.receive_verification_vector(self.node_ids_contract[from_node], event)
         self.receive_secret_key_contribution(self.node_ids_contract[from_node], event)
         if not self.verification(self.node_ids_contract[from_node]):
             raise DkgVerificationError(
-                f"Schain: {self.schain_name}. "
+                f"sChain: {self.schain_name}. "
                 f"Fatal error : user {str(self.node_ids_contract[from_node] + 1)} "
                 f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
             )
-        logger.info(f'Schain: {self.schain_name}. '
+        logger.info(f'sChain: {self.schain_name}. '
                     f'All data from {self.node_ids_contract[from_node]} was received and verified')
 
     def generate_key(self, bls_key_name):
         received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
                                                    for j in range(self.sgx.n))
-        logger.info(f'Schain: {self.schain_name}. '
+        logger.info(f'sChain: {self.schain_name}. '
                     f'DKGClient is going to create BLS private key with name {bls_key_name}')
         bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name,
                                                           self.eth_key_name,
                                                           received_secret_key_contribution)
-        logger.info(f'Schain: {self.schain_name}. '
+        logger.info(f'sChain: {self.schain_name}. '
                     'DKGClient is going to fetch BLS public key with name {bls_key_name}')
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
         return bls_private_key
@@ -244,7 +244,7 @@ class DKGClient:
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
         if not is_allright_possible or not self.is_channel_opened():
-            logger.info(f'Schain: {self.schain_name}. '
+            logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node has already sent an allright note')
             return
         receipt = self.skale.dkg.allright(self.group_index, self.node_id_contract,
@@ -256,7 +256,7 @@ class DKGClient:
             status = receipt['status']
             if status != 1:
                 raise DkgTransactionError(
-                    f'Schain: {self.schain_name}. '
+                    f'sChain: {self.schain_name}. '
                     f'Allright transaction failed, see receipt', receipt
                 )
-        logger.info(f'Schain: {self.schain_name}. {self.node_id_dkg} node sent an allright note')
+        logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an allright note')

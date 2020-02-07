@@ -25,7 +25,7 @@ from skale.manager_client import spawn_skale_lib
 
 from web.models.schain import SChainRecord
 
-from tools.bls.dkg_utils import DkgFailedError
+from tools.bls.dkg_client import DkgError
 from tools.custom_thread import CustomThread
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -106,8 +106,8 @@ class SchainsMonitor:
                 schain_record.dkg_started()
                 init_bls(skale, schain['name'], self.node_config.id,
                          self.node_config.sgx_key_name)
-            except DkgFailedError as err:
-                logger.info(f'Schain {name} Dkg procedure failed with {err}')
+            except DkgError as err:
+                logger.info(f'sChain {name} Dkg procedure failed with {err}')
                 schain_record.dkg_failed()
                 remove_config_dir(schain['name'])
                 exit(1)
@@ -128,7 +128,7 @@ class SchainsMonitor:
         config_filepath = get_schain_config_filepath(schain_name)
         if not os.path.isfile(config_filepath):
             logger.warning(
-                f'Schain {schain_name}: sChain config not found: '
+                f'sChain {schain_name}: sChain config not found: '
                 f'{config_filepath}, trying to create.'
             )
             schain_config = generate_schain_config(skale, schain_name, self.node_id)
@@ -142,11 +142,11 @@ class SchainsMonitor:
         name = get_container_name(SCHAIN_CONTAINER, schain_name)
         info = dutils.get_info(name)
         if dutils.to_start_container(info):
-            logger.warning(f'Schain: {schain_name}. '
+            logger.warning(f'sChain: {schain_name}. '
                            f'sChain container: {name} not found, trying to create.')
             if volume_required and not dutils.data_volume_exists(schain_name):
                 logger.error(
-                    f'Schain: {schain_name}. Cannot create sChain container without data volume'
+                    f'sChain: {schain_name}. Cannot create sChain container without data volume'
                 )
             return True
 
