@@ -21,10 +21,14 @@ import logging
 import os
 
 from tools.configs import NODE_DATA_PATH
+from tools.bls.dkg_client import DKGClient, DkgError
 from tools.helper import SkaleFilter
-from tools.bls.dkg_client import DKGClient
 
 logger = logging.getLogger(__name__)
+
+
+class DkgFailedError(DkgError):
+    pass
 
 
 def init_dkg_client(schain_config, skale, n, t, sgx_eth_key_name):

@@ -123,10 +123,10 @@ class SkaleFilter:
             try:
                 events = self.web3_filter.get_all_entries()
             except Exception as err:
-                self.create_filter()
+                self.web3_filter = self.create_filter()
                 time.sleep(self.timeout)
                 logger.error(
-                    f'Retrieving events from filter failed with {err}'
+                    f'Retreiving events from filter failed with {err}'
                 )
             else:
                 break
