@@ -88,7 +88,7 @@ class DKGClient:
             f'Node id on contract is {self.node_id_contract}')
 
     def is_channel_opened(self):
-        return self.dkg_contract_functions.isChannelOpened.call(self.group_index)
+        return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
 
     def generate_polynomial(self, poly_name):
         self.poly_name = poly_name
@@ -112,10 +112,13 @@ class DKGClient:
 
     def broadcast(self, poly_name):
         is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
-        is_broadcast_possible = is_broadcast_possible_function.call(self.group_index,
-                                                                    self.node_id_contract)
-        if not is_broadcast_possible or not self.is_channel_opened():
-            logger.info(f'Broadcast is already sent from {self.node_id_dkg} node')
+        is_broadcast_possible = is_broadcast_possible_function(
+            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+
+        channel_opened = self.is_channel_opened()
+        if not is_broadcast_possible or not channel_opened:
+            logger.info(f'Schain: {self.schain_name}. '
+                        f'Broadcast is already sent from {self.node_id_dkg} node')
             return
         poly_success = self.generate_polynomial(poly_name)
         if not poly_success:
@@ -162,10 +165,13 @@ class DKGClient:
 
     def send_complaint(self, to_node):
         is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
-        is_complaint_possible = is_complaint_possible_function.call(self.group_index,
-                                                                    self.node_id_contract, to_node)
+        is_complaint_possible = is_complaint_possible_function(
+            self.group_index, self.node_id_contract, to_node).call(
+                {'from': self.skale.wallet.address})
+
         if not is_complaint_possible or not self.is_channel_opened():
-            logger.info(f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
+            logger.info(f'Schain: {self.schain_name}. '
+                        f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
             return
         self.skale.dkg.complaint(self.group_index,
                                  self.node_id_contract,
@@ -176,10 +182,12 @@ class DKGClient:
 
     def response(self, from_node_index):
         is_response_possible_function = self.dkg_contract_functions.isResponsePossible
-        is_response_possible = is_response_possible_function.call(self.group_index,
-                                                                  self.node_id_contract)
+        is_response_possible = is_response_possible_function(
+            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+
         if not is_response_possible or not self.is_channel_opened():
-            logger.info(f'{from_node_index} node could not sent a response')
+            logger.info(f'Schain: {self.schain_name}. '
+                        f'{from_node_index} node could not sent a response')
             return
         response = self.sgx.complaint_response(self.poly_name, from_node_index)
         share, dh_key = response['share'], response['dh_key']
@@ -232,10 +240,12 @@ class DKGClient:
 
     def allright(self):
         is_allright_possible_function = self.dkg_contract_functions.isAlrightPossible
-        is_allright_possible = is_allright_possible_function.call(self.group_index,
-                                                                  self.node_id_contract)
+        is_allright_possible = is_allright_possible_function(
+            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+
         if not is_allright_possible or not self.is_channel_opened():
-            logger.info(f'{self.node_id_dkg} node has already sent an allright note')
+            logger.info(f'Schain: {self.schain_name}. '
+                        f'{self.node_id_dkg} node has already sent an allright note')
             return
         receipt = self.skale.dkg.allright(self.group_index, self.node_id_contract,
                                           wait_for=True)

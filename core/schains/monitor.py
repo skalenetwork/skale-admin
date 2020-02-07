@@ -49,6 +49,8 @@ from . import MONITOR_INTERVAL
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
+CONTAINERS_DELAY = 20
+
 
 class SchainsMonitor:
     def __init__(self, skale, node_config):
@@ -118,6 +120,7 @@ class SchainsMonitor:
             self.add_firewall_rules(name)
         if not checks['container']:
             self.monitor_schain_container(schain)
+        sleep(CONTAINERS_DELAY)
         if not checks['ima_container']:
             self.monitor_ima_container(schain)
 
