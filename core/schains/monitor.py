@@ -32,7 +32,7 @@ from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
 from core.schains.runner import run_schain_container, run_ima_container
-from core.schains.cleaner import remove_config_dir, SChainsCleaner
+from core.schains.cleaner import remove_config_dir, run_cleanup
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
 from core.schains.config import (generate_schain_config, save_schain_config,
                                  get_schain_env, get_allowed_endpoints)
@@ -106,8 +106,7 @@ class SchainsMonitor:
         if exiting_node and rotation_in_progress:
             logger.info('Node is exiting. Schain is stopping')
             finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
-            cleaner = SChainsCleaner(self.skale, self.node_config)
-            self.scheduler.add_job(cleaner.run_cleanup, 'date', run_date=finish_time, args=[name])
+            self.scheduler.add_job(run_cleanup, 'date', run_date=finish_time, args=[self.skale, name, self.node_id])
             return
 
         if rotation_in_progress and new_schain:
