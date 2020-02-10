@@ -20,6 +20,8 @@
 import os
 import logging
 from time import sleep
+from datetime import datetime
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from skale.manager_client import spawn_skale_lib
 
@@ -30,7 +32,7 @@ from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
 from core.schains.runner import run_schain_container, run_ima_container
-from core.schains.cleaner import remove_config_dir
+from core.schains.cleaner import remove_config_dir, SChainsCleaner
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
 from core.schains.config import (generate_schain_config, save_schain_config,
                                  get_schain_env, get_allowed_endpoints)
@@ -53,7 +55,8 @@ class SchainsMonitor:
     def __init__(self, skale, node_config):
         self.skale = skale
         self.node_config = node_config
-
+        self.scheduler = BackgroundScheduler()
+        self.scheduler.start()
         CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
 
     def wait_for_node_id(self, opts):
@@ -102,6 +105,10 @@ class SchainsMonitor:
 
         if exiting_node and rotation_in_progress:
             logger.info('Node is exiting. Schain is stopping')
+            finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
+            cleaner = SChainsCleaner(self.skale, self.node_config)
+            self.scheduler.add_job(cleaner.run_cleanup, 'date', run_date=finish_time, args=[name])
+            return
 
         if rotation_in_progress and new_schain:
             logger.info('Building new rotated schain')
