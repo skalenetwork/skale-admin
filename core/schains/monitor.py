@@ -98,6 +98,10 @@ class SchainsMonitor:
 
         rotation_in_progress = checks['rotation_in_progress']['result']
         new_schain = checks['rotation_in_progress']['new_schain']
+        exiting_node = checks['rotation_in_progress']['exiting_node']
+
+        if exiting_node and rotation_in_progress:
+            logger.info('Node is exiting. Schain is stopping')
 
         if rotation_in_progress and new_schain:
             logger.info('Building new rotated schain')
