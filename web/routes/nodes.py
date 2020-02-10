@@ -24,6 +24,7 @@ from flask import Blueprint, request, abort
 
 from web.helper import construct_ok_response, construct_err_response
 
+
 logger = logging.getLogger(__name__)
 
 

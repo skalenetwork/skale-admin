@@ -29,6 +29,7 @@ from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name
 from core.schains.config import get_allowed_endpoints
 
+from tools.helper import SkaleFilter
 from tools.docker_utils import DockerUtils
 from tools.custom_thread import CustomThread
 from tools.str_formatters import arguments_list_string
@@ -115,9 +116,12 @@ class SChainsCleaner:
         schain_ids = self.schain_names_to_ids(schains_on_node)
         schain_names_on_contracts = self.get_schain_names_from_contract()
 
-        event_filter = self.skale_events.schains.contract.events.SchainDeleted.createFilter(
-            fromBlock=0, argument_filters={'schainId': schain_ids})
-        events = event_filter.get_all_entries()
+        event_filter = SkaleFilter(
+            self.skale_events.schains.contract.events.SchainDeleted,
+            from_block=0,
+            argument_filters={'schainId': schain_ids}
+        )
+        events = event_filter.get_events()
 
         for event in events:
             name = event['args']['name']
