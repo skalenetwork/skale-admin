@@ -111,6 +111,12 @@ class DKGClient:
         return self.sent_secret_key_contribution
 
     def broadcast(self, poly_name):
+        poly_success = self.generate_polynomial(poly_name)
+        if not poly_success:
+            raise SgxDkgPolynomGenerationError(
+                f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
+            )
+        
         is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
         is_broadcast_possible = is_broadcast_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
@@ -120,11 +126,6 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'Broadcast is already sent from {self.node_id_dkg} node')
             return
-        poly_success = self.generate_polynomial(poly_name)
-        if not poly_success:
-            raise SgxDkgPolynomGenerationError(
-                f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
-            )
 
         verification_vector = self.verification_vector()
         secret_key_contribution = self.secret_key_contribution()
