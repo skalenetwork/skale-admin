@@ -103,8 +103,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         encrypted_bls_key = 0
         bls_key_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
         if not is_complaint_sent:
-            send_allright(dkg_client)
             encrypted_bls_key = generate_bls_key(dkg_client, bls_key_name)
+            send_allright(dkg_client)
             is_allright_sent_list[dkg_client.node_id_dkg] = True
 
         logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
