@@ -19,7 +19,7 @@
 
 import os
 import logging
-from time import sleep
+from time import sleep, time
 from datetime import datetime
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -74,6 +74,12 @@ class SchainsMonitor:
     def monitor_schains(self, opts):
         skale = spawn_skale_lib(self.skale)
         schains = skale.schains_data.get_schains_for_node(self.node_id)
+        leaving_history = self.skale.schains_data.get_leaving_history(self.node_id)
+        for history in leaving_history:
+            schain = self.skale.schains_data.get(history[0])
+            if schain['name']:
+                schain['active'] = True
+                schains.append(schain)
         schains_on_node = sum(map(lambda schain: schain['active'], schains))
         schains_holes = len(schains) - schains_on_node
         logger.info(
@@ -107,9 +113,13 @@ class SchainsMonitor:
         exiting_node = checks['rotation_in_progress']['exiting_node']
 
         if exiting_node and rotation_in_progress:
-            logger.info('Node is exiting. Schain is stopping')
+            logger.info('Node is exiting. sChain is stopping')
             finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
-            self.scheduler.add_job(run_cleanup, 'date', run_date=finish_time, args=[self.skale, name, self.node_id])
+            jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
+            if not jobs:
+                self.scheduler.add_job(run_cleanup, 'date', run_date=finish_time,
+                                       name=name, args=[self.skale, name, self.node_id])
+            logger.info(f'sChain will be stoped at {finish_time}')
             return
 
         if rotation_in_progress and new_schain:
