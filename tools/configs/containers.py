@@ -24,6 +24,7 @@ from tools.helper import read_json
 DATA_DIR_CONTAINER_PATH = '/data_dir'
 
 SCHAIN_CONTAINER = 'schain'
+SYNC_SCHAIN_CONTAINER = 'sync_schain'
 IMA_CONTAINER = 'ima'
 
 CONTAINER_NAME_PREFIX = 'skale'

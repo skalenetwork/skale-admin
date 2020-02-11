@@ -4,7 +4,8 @@ import docker
 import pytest
 
 from tools.docker_utils import DockerUtils
-from core.schains.runner import run_schain_container, run_ima_container
+from core.schains.runner import (run_schain_container, run_ima_container,
+                                 run_schain_container_in_sync_mode)
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -48,6 +49,23 @@ def run_test_schain_container(dutils):
     }
     # Run schain container
     run_schain_container(SCHAIN, env, dutils=dutils)
+
+
+def test_run_schain_container_in_sync_mode(dutils):
+    env = {
+        "SSL_KEY_PATH": 'NULL',
+        "SSL_CERT_PATH": 'NULL',
+        "HTTP_RPC_PORT": 10002,
+        "HTTPS_RPC_PORT": 10007,
+        "WS_RPC_PORT": 10003,
+        "WSS_RPC_PORT": 10008,
+
+        "SCHAIN_ID": SCHAIN_NAME,
+        "CONFIG_FILE": os.path.join(TEST_SKALE_DATA_DIR, 'schain_config.json'),
+        "DATA_DIR": '/data_dir'
+    }
+    # Run schain container
+    run_schain_container_in_sync_mode(SCHAIN, env, dutils=dutils)
 
 
 def run_test_ima_container(dutils):

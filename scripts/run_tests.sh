@@ -6,6 +6,6 @@ export SKALE_DIR_HOST=$PWD/tests/skale-data
 export RUNNING_ON_HOST=True
 export ENV=dev
 
-py.test tests/ --ignore=tests/firewall
-find . -name \*.pyc -delete
-scripts/run_firewall_test.sh
+py.test tests/docker_utils_test.py --ignore=tests/firewall
+# find . -name \*.pyc -delete
+# scripts/run_firewall_test.sh

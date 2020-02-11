@@ -123,7 +123,23 @@ def get_snapshots_endpoints_from_config(config):
     return []
 
 
-def get_consensus_ips_with_ports(schain_name, node_id):
+def get_skaled_http_snapshot_address(schain_name):
+    config = get_schain_config(schain_name)
+    return get_skaled_http_snapshot_address_from_config(config)
+
+
+def get_skaled_http_snapshot_address_from_config(config):
+    node_id = config['skaleConfig']['nodeInfo']['nodeID']
+    schain_nodes_config = config['skaleConfig']['sChain']['nodes']
+    from_node = None
+    for node_data in schain_nodes_config:
+        if node_data['nodeID'] != node_id:
+            from_node = node_data
+
+    return NodeEndpoint(from_node['ip'], from_node['basePort'] + SkaledPorts.HTTP_JSON)
+
+
+def get_consensus_ips_with_ports(schain_name):
     config = get_schain_config(schain_name)
     return get_consensus_endpoints_from_config(config)
 
