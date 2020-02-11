@@ -77,7 +77,7 @@ class SchainsMonitor:
         leaving_history = self.skale.schains_data.get_leaving_history(self.node_id)
         for history in leaving_history:
             schain = self.skale.schains_data.get(history[0])
-            if schain['name']:
+            if time() < schain[1] and schain['name']:
                 schain['active'] = True
                 schains.append(schain)
         schains_on_node = sum(map(lambda schain: schain['active'], schains))
