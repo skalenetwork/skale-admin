@@ -75,6 +75,7 @@ def remove_firewall_rules(schain_name):
     endpoints = get_allowed_endpoints(schain_name)
     remove_iptables_rules(endpoints)
 
+
 def run_cleanup(skale, schain_name, node_id):
     checks = SChainChecks(skale, schain_name, node_id).get_all()
     if checks['container']['result']:
@@ -148,4 +149,3 @@ class SChainsCleaner:
             id_ = self.skale.schains_data.name_to_id(name)
             ids.append(bytes.fromhex(id_))
         return ids
-
