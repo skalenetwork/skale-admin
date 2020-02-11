@@ -2,10 +2,7 @@ import functools
 from filelock import FileLock
 
 from tools.helper import read_json, write_json, init_file
-from tools.configs import NODE_CONFIG_FILEPATH
-
-
-LOCK_PATH = '/tmp/skale_node_config.lock'
+from tools.configs import NODE_CONFIG_FILEPATH, LOCK_PATH
 
 
 def config_setter(func):

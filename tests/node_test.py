@@ -67,13 +67,6 @@ def test_register_info(node):
 
 
 def test_start_exit(node):
-    ip = '1.1.1.1'
-    public_ip = '2.2.2.2'
-    port = 8080
-
-    with mock.patch('core.node.run_filebeat_service'):
-        node.register(ip, public_ip, port, NODE_NAME)
-
     node.exit({})
     status = NodeExitStatuses(node.skale.nodes_data.get_node_status(node.config.id))
 
