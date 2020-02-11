@@ -55,10 +55,10 @@ class CustomThread(threading.Thread):
     def safe_run_func(self):
         try:
             self.func(self.opts)
-        except Exception:
+        except Exception as err:
             logger.exception(
-                f'Error was occurred during the function execution: {self.func.__name__}. \
-                    See full stacktrace below.')
+                f'Error was occurred during the execution. Function: {self.func.__name__}. '
+                f'Error {err}.')
             # raise e todo: handle
 
     def join(self, timeout=None):
