@@ -116,7 +116,7 @@ class DKGClient:
             raise SgxDkgPolynomGenerationError(
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
-        
+
         is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
         is_broadcast_possible = is_broadcast_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
