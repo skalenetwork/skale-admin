@@ -47,6 +47,6 @@ if SGX_CERTIFICATES_FOLDER_NAME:
 else:
     SGX_CERTIFICATES_FOLDER = None
 
-LOCK_PATH = os.getenv('LOCK_PATH')
-if not LOCK_PATH:
-    LOCK_PATH = '/tmp/skale_node_config.lock'
+NODE_CONFIG_LOCK_PATH = os.getenv('LOCK_PATH')
+if not NODE_CONFIG_LOCK_PATH:
+    NODE_CONFIG_LOCK_PATH = '/tmp/skale_node_config.lock'

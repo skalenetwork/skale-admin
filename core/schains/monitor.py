@@ -77,7 +77,7 @@ class SchainsMonitor:
         leaving_history = self.skale.schains_data.get_leaving_history(self.node_id)
         for history in leaving_history:
             schain = self.skale.schains_data.get(history[0])
-            if time() < schain[1] and schain['name']:
+            if time() < history[1] and schain['name']:
                 schain['active'] = True
                 schains.append(schain)
         schains_on_node = sum(map(lambda schain: schain['active'], schains))
@@ -116,7 +116,7 @@ class SchainsMonitor:
             logger.info('Node is exiting. sChain is stopping')
             finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
             jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
-            if not jobs:
+            if jobs == 0:
                 self.scheduler.add_job(run_cleanup, 'date', run_date=finish_time,
                                        name=name, args=[self.skale, name, self.node_id])
             logger.info(f'sChain will be stoped at {finish_time}')
