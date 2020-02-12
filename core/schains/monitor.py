@@ -113,14 +113,13 @@ class SchainsMonitor:
         exiting_node = checks['rotation_in_progress']['exiting_node']
 
         if exiting_node and rotation_in_progress:
-            logger.info('Node is exiting. sChain is stopping')
             finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
+            logger.info(f'Node is exiting. sChain will be stoped at {finish_time}')
             jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
             if jobs == 0:
                 self.scheduler.add_job(run_cleanup, 'date', run_date=finish_time,
                                        name=name, args=[self.skale, name, self.node_id])
-            logger.info(f'sChain will be stoped at {finish_time}')
-            return
+                return
 
         if rotation_in_progress and new_schain:
             logger.info('Building new rotated schain')
