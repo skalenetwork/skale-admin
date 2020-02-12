@@ -19,25 +19,28 @@
 
 import os
 import logging
-from time import sleep
+from time import sleep, time
+from datetime import datetime
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from skale.manager_client import spawn_skale_lib
 
 from web.models.schain import SChainRecord
 
+from tools.bls.dkg_client import DkgError
 from tools.custom_thread import CustomThread
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
 from core.schains.runner import run_schain_container, run_ima_container
-from core.schains.cleaner import remove_config_dir
+from core.schains.cleaner import remove_config_dir, run_cleanup
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
 from core.schains.config import (generate_schain_config, save_schain_config,
                                  get_schain_env, get_allowed_endpoints)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_env
-from core.schains.dkg import init_bls, FailedDKG
+from core.schains.dkg import init_bls
 
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER
@@ -48,12 +51,15 @@ from . import MONITOR_INTERVAL
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
+CONTAINERS_DELAY = 20
+
 
 class SchainsMonitor:
     def __init__(self, skale, node_config):
         self.skale = skale
         self.node_config = node_config
-
+        self.scheduler = BackgroundScheduler()
+        self.scheduler.start()
         CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
 
     def wait_for_node_id(self, opts):
@@ -68,6 +74,12 @@ class SchainsMonitor:
     def monitor_schains(self, opts):
         skale = spawn_skale_lib(self.skale)
         schains = skale.schains_data.get_schains_for_node(self.node_id)
+        leaving_history = self.skale.schains_data.get_leaving_history(self.node_id)
+        for history in leaving_history:
+            schain = self.skale.schains_data.get(history[0])
+            if time() < history[1] and schain['name']:
+                schain['active'] = True
+                schains.append(schain)
         schains_on_node = sum(map(lambda schain: schain['active'], schains))
         schains_holes = len(schains) - schains_on_node
         logger.info(
@@ -98,6 +110,16 @@ class SchainsMonitor:
 
         rotation_in_progress = checks['rotation_in_progress']['result']
         new_schain = checks['rotation_in_progress']['new_schain']
+        exiting_node = checks['rotation_in_progress']['exiting_node']
+
+        if exiting_node and rotation_in_progress:
+            finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
+            logger.info(f'Node is exiting. sChain will be stoped at {finish_time}')
+            jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
+            if jobs == 0:
+                self.scheduler.add_job(run_cleanup, 'date', run_date=finish_time,
+                                       name=name, args=[self.skale, name, self.node_id])
+                return
 
         if rotation_in_progress and new_schain:
             logger.info('Building new rotated schain')
@@ -113,7 +135,8 @@ class SchainsMonitor:
                 schain_record.dkg_started()
                 init_bls(skale, schain['name'], self.node_config.id,
                          self.node_config.sgx_key_name)
-            except FailedDKG:
+            except DkgError as err:
+                logger.info(f'sChain {name} Dkg procedure failed with {err}')
                 schain_record.dkg_failed()
                 remove_config_dir(schain['name'])
                 exit(1)
@@ -126,13 +149,17 @@ class SchainsMonitor:
             self.add_firewall_rules(name)
         if not checks['container']['result']:
             self.monitor_schain_container(schain)
+        sleep(CONTAINERS_DELAY)
         if not checks['ima_container']['result']:
             self.monitor_ima_container(schain)
 
     def init_schain_config(self, skale, schain_name, schain_owner):
         config_filepath = get_schain_config_filepath(schain_name)
         if not os.path.isfile(config_filepath):
-            logger.warning(f'sChain config not found: {config_filepath}, trying to create.')
+            logger.warning(
+                f'sChain {schain_name}: sChain config not found: '
+                f'{config_filepath}, trying to create.'
+            )
             schain_config = generate_schain_config(skale, schain_name, self.node_id)
             save_schain_config(schain_config, schain_name)
 
@@ -144,9 +171,12 @@ class SchainsMonitor:
         name = get_container_name(SCHAIN_CONTAINER, schain_name)
         info = dutils.get_info(name)
         if dutils.to_start_container(info):
-            logger.warning(f'sChain container: {name} not found, trying to create.')
+            logger.warning(f'sChain: {schain_name}. '
+                           f'sChain container: {name} not found, trying to create.')
             if volume_required and not dutils.data_volume_exists(schain_name):
-                logger.error(f'Cannot create sChain container without data volume - {schain_name}')
+                logger.error(
+                    f'sChain: {schain_name}. Cannot create sChain container without data volume'
+                )
             return True
 
     def monitor_schain_container(self, schain):

@@ -3,7 +3,7 @@ import os
 import mock
 import pytest
 
-from core.node import Node
+from core.node import Node, NodeExitStatuses
 from core.node_config import NodeConfig
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -64,3 +64,10 @@ def test_register_info(node):
     assert info['port'] == int(port)
     assert info['id'] == node.config.id
     assert info['publicKey'] == node.skale.wallet.public_key
+
+
+def test_start_exit(node):
+    node.exit({})
+    status = NodeExitStatuses(node.skale.nodes_data.get_node_status(node.config.id))
+
+    assert status != NodeExitStatuses.ACTIVE

@@ -29,6 +29,7 @@ from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name
 from core.schains.config import get_allowed_endpoints
 
+from tools.helper import SkaleFilter
 from tools.docker_utils import DockerUtils
 from tools.custom_thread import CustomThread
 from tools.str_formatters import arguments_list_string
@@ -70,6 +71,25 @@ def remove_config_dir(schain_name):
     shutil.rmtree(schain_dir_path)
 
 
+def remove_firewall_rules(schain_name):
+    endpoints = get_allowed_endpoints(schain_name)
+    remove_iptables_rules(endpoints)
+
+
+def run_cleanup(skale, schain_name, node_id):
+    checks = SChainChecks(skale, schain_name, node_id).get_all()
+    if checks['container']['result']:
+        remove_schain_container(schain_name)
+    if checks['volume']['result']:
+        remove_schain_volume(schain_name)
+    if checks['firewall_rules']['result']:
+        remove_firewall_rules(schain_name)
+    if checks['ima_container']['result']:
+        remove_ima_container(schain_name)
+    if checks['data_dir']['result']:
+        remove_config_dir(schain_name)
+
+
 class SChainsCleaner:
     def __init__(self, skale, node_config):
         self.skale = spawn_skale_lib(skale)
@@ -97,16 +117,19 @@ class SChainsCleaner:
         schain_ids = self.schain_names_to_ids(schains_on_node)
         schain_names_on_contracts = self.get_schain_names_from_contract()
 
-        event_filter = self.skale_events.schains.contract.events.SchainDeleted.createFilter(
-            fromBlock=0, argument_filters={'schainId': schain_ids})
-        events = event_filter.get_all_entries()
+        event_filter = SkaleFilter(
+            self.skale_events.schains.contract.events.SchainDeleted,
+            from_block=0,
+            argument_filters={'schainId': schain_ids}
+        )
+        events = event_filter.get_events()
 
         for event in events:
             name = event['args']['name']
             if name in schains_on_node and name not in schain_names_on_contracts:
                 logger.info(
                     arguments_list_string({'sChain name': name}, 'sChain deleted event found'))
-                self.run_cleanup(name)
+                run_cleanup(self.skale, name, self.node_id)
 
     def get_schains_on_node(self):
         # get all schain dirs
@@ -126,20 +149,3 @@ class SChainsCleaner:
             id_ = self.skale.schains_data.name_to_id(name)
             ids.append(bytes.fromhex(id_))
         return ids
-
-    def remove_firewall_rules(self, schain_name):
-        endpoints = get_allowed_endpoints(schain_name)
-        remove_iptables_rules(endpoints)
-
-    def run_cleanup(self, schain_name):
-        checks = SChainChecks(self.skale, schain_name, self.node_id).get_all()
-        if checks['container']['result']:
-            remove_schain_container(schain_name)
-        if checks['volume']['result']:
-            remove_schain_volume(schain_name)
-        if checks['firewall_rules']['result']:
-            self.remove_firewall_rules(schain_name)
-        if checks['ima_container']['result']:
-            remove_ima_container(schain_name)
-        if checks['data_dir']['result']:
-            remove_config_dir(schain_name)

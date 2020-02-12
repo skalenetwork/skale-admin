@@ -4,6 +4,7 @@ rm tests/skale-data/node_data/node_config.json
 set -e
 export SKALE_DIR_HOST=$PWD/tests/skale-data
 export RUNNING_ON_HOST=True
+export PYTHONPATH=${PYTHONPATH}:.
 export ENV=dev
 
 py.test tests/ --ignore=tests/firewall
