@@ -111,9 +111,10 @@ class SchainsMonitor:
         rotation_in_progress = checks['rotation_in_progress']['result']
         new_schain = checks['rotation_in_progress']['new_schain']
         exiting_node = checks['rotation_in_progress']['exiting_node']
+        if rotation_in_progress:
+            finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
 
         if exiting_node and rotation_in_progress:
-            finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
             logger.info(f'Node is exiting. sChain will be stoped at {finish_time}')
             jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
             if jobs == 0:
@@ -124,12 +125,12 @@ class SchainsMonitor:
         if rotation_in_progress and new_schain:
             logger.info('Building new rotated schain')
         elif rotation_in_progress and not new_schain:
-            logger.info('Schain was rotated. Regenerating config')
-            schain_config = generate_schain_config(skale, schain['name'], self.node_id)
-            save_schain_config(schain_config, schain['name'])
-            logger.info('Containers are going to be restarted')
-            restart_container(SCHAIN_CONTAINER, schain)
-            restart_container(IMA_CONTAINER, schain)
+            logger.info('Schain was rotated. Rotation in progress')
+            jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
+            if jobs == 0:
+                self.scheduler.add_job(self.restart_containers, 'date', run_date=finish_time,
+                                       name=name, args=[self.skale, schain])
+            logger.info(f'sChain will be restarted at {finish_time}')
         else:
             logger.info('No rotation for schain')
 
@@ -192,3 +193,11 @@ class SchainsMonitor:
     def monitor_ima_container(self, schain):
         env = get_ima_env(schain['name'])
         run_ima_container(schain, env)
+
+    def restart_containers(self, skale, schain):
+        logger.info('Schain was rotated. Regenerating config')
+        schain_config = generate_schain_config(skale, schain['name'], self.node_id)
+        save_schain_config(schain_config, schain['name'])
+        logger.info('Containers are going to be restarted')
+        restart_container(SCHAIN_CONTAINER, schain)
+        restart_container(IMA_CONTAINER, schain)
