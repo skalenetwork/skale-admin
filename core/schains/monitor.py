@@ -32,7 +32,7 @@ from tools.custom_thread import CustomThread
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
-from core.schains.runner import run_schain_container, run_ima_container
+from core.schains.runner import run_schain_container, run_ima_container, restart_container
 from core.schains.cleaner import remove_config_dir, run_cleanup
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
 from core.schains.config import (generate_schain_config, save_schain_config,
@@ -43,7 +43,7 @@ from core.schains.ima import get_ima_env
 from core.schains.dkg import init_bls
 
 from core.schains.runner import get_container_name
-from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.iptables import add_rules as add_iptables_rules
 
 from . import MONITOR_INTERVAL
@@ -125,6 +125,8 @@ class SchainsMonitor:
             logger.info('Building new rotated schain')
         elif rotation_in_progress and not new_schain:
             logger.info('Schain was rotated. Containers are going to be restarted')
+            restart_container(SCHAIN_CONTAINER, schain)
+            restart_container(IMA_CONTAINER, schain)
         else:
             logger.info('No rotation for schain')
 
