@@ -124,7 +124,10 @@ class SchainsMonitor:
         if rotation_in_progress and new_schain:
             logger.info('Building new rotated schain')
         elif rotation_in_progress and not new_schain:
-            logger.info('Schain was rotated. Containers are going to be restarted')
+            logger.info('Schain was rotated. Regenerating config')
+            schain_config = generate_schain_config(skale, schain['name'], self.node_id)
+            save_schain_config(schain_config, schain['name'])
+            logger.info('Containers are going to be restarted')
             restart_container(SCHAIN_CONTAINER, schain)
             restart_container(IMA_CONTAINER, schain)
         else:
