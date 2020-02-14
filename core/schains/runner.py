@@ -92,6 +92,16 @@ def run_container(type, schain, env, volume_config=None,
     return cont
 
 
+def restart_container(type, schain):
+    schain_name = schain['name']
+    container_name = get_container_name(type, schain_name)
+
+    logger.info(arguments_list_string({'Container name': container_name},
+                                      'Restarting container...'))
+    cont = docker_utils.restart(container_name)
+    return cont
+
+
 def run_schain_container(schain, env, dutils=None):
     cpu_limit, mem_limit = get_container_limits(schain)
     volume_config = get_schain_volume_config(schain['name'],
