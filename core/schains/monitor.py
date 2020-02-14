@@ -128,7 +128,7 @@ class SchainsMonitor:
             logger.info('Schain was rotated. Rotation in progress')
             jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
             if jobs == 0:
-                self.scheduler.add_job(self.restart_containers, 'date', run_date=finish_time,
+                self.scheduler.add_job(self.rotate_schain, 'date', run_date=finish_time,
                                        name=name, args=[self.skale, schain])
             logger.info(f'sChain will be restarted at {finish_time}')
         else:
@@ -194,7 +194,7 @@ class SchainsMonitor:
         env = get_ima_env(schain['name'])
         run_ima_container(schain, env)
 
-    def restart_containers(self, skale, schain):
+    def rotate_schain(self, skale, schain):
         logger.info('Schain was rotated. Regenerating config')
         schain_config = generate_schain_config(skale, schain['name'], self.node_id)
         save_schain_config(schain_config, schain['name'])
