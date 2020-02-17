@@ -26,7 +26,7 @@ from core.schains.config import get_skaled_http_snapshot_address
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
-                                      SYNC_SCHAIN_CONTAINER, IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
+                                      IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
 from tools.configs import NODE_DATA_PATH_HOST, NODE_DATA_PATH, SKALE_DIR_HOST, SKALE_VOLUME_PATH
 
 docker_utils = DockerUtils()
@@ -110,7 +110,7 @@ def run_schain_container_in_sync_mode(schain, env, dutils=None):
     cpu_limit, mem_limit = get_container_limits(schain)
     volume_config = get_schain_volume_config(schain_name,
                                              DATA_DIR_CONTAINER_PATH)
-    run_container(SYNC_SCHAIN_CONTAINER, schain, env, volume_config, cpu_limit,
+    run_container(SCHAIN_CONTAINER, schain, env, volume_config, cpu_limit,
                   mem_limit, dutils=dutils)
 
 

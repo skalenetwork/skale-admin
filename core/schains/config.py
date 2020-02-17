@@ -136,7 +136,8 @@ def get_skaled_http_snapshot_address_from_config(config):
         if node_data['nodeID'] != node_id:
             from_node = node_data
 
-    return NodeEndpoint(from_node['ip'], from_node['basePort'] + SkaledPorts.HTTP_JSON)
+    return NodeEndpoint(from_node['ip'], from_node['basePort'] +
+                        SkaledPorts.HTTP_JSON.value)
 
 
 def get_consensus_ips_with_ports(schain_name):
