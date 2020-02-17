@@ -5,6 +5,7 @@ from tools.docker_utils import DockerUtils
 from core.schains.runner import get_container_name, get_image_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 import mock
+import time
 
 
 @pytest.fixture
@@ -33,6 +34,15 @@ SCHAIN = {
     'index': 0,
     'active': True
 }
+CHECK_MOCK = {
+    'data_dir': True,
+    'dkg': True,
+    'config': True,
+    'volume': True,
+    'container': True,
+    'ima_container': True,
+    'firewall_rules': True
+}
 
 
 def test_rotate_schain(monitor, dutils):
@@ -52,3 +62,25 @@ def test_rotate_schain(monitor, dutils):
     assert schain_cont.attrs['State']['StartedAt'] != restarted_schain.attrs['State']['StartedAt']
     assert ima_cont.attrs['State']['StartedAt'] != restarted_ima.attrs['State']['StartedAt']
     monitor.scheduler.shutdown()
+
+
+def test_exiting_monitor(monitor, dutils):
+    rotation_info = {
+        'result': True,
+        'new_schain': True,
+        'exiting_node': True,
+        'finish_ts': time.time()
+    }
+    CHECK_MOCK['rotation_in_progress'] = rotation_info
+    with mock.patch('core.schains.monitor.SChainRecord'),\
+            mock.patch('core.schains.monitor.SChainChecks.get_all',
+                       new=mock.Mock(return_value=CHECK_MOCK)):
+        with mock.patch('core.schains.monitor.run_cleanup',
+                        new=mock.Mock(return_value=True)):
+            monitor.monitor_schain(SCHAIN)
+            assert len(monitor.scheduler.get_jobs()) == 1
+            assert monitor.scheduler.get_jobs()[0].name == SCHAIN_NAME
+
+
+def test_rotating_monitor(monitor, dutils):
+    pass
