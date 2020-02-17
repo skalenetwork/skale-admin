@@ -16,7 +16,7 @@ python-iptables==0.14.0
 skale.py==2.1.dev17
 
 PyYAML==5.1.2
-psutil==5.6.3
+psutil==5.6.7
 
 colorful==0.5.4
 
