@@ -129,23 +129,18 @@ class DKGClient:
 
         verification_vector = self.verification_vector()
         secret_key_contribution = self.secret_key_contribution()
-        receipt = self.skale.dkg.broadcast(self.group_index,
-                                           self.node_id_contract,
-                                           verification_vector,
-                                           secret_key_contribution,
-                                           wait_for=True)
-        status = receipt["status"]
-        if status != 1:
-            receipt = self.skale.dkg.broadcast(self.group_index,
-                                               self.node_id_contract,
-                                               verification_vector,
-                                               secret_key_contribution,
-                                               wait_for=True)
-            status = receipt["status"]
-            if status != 1:
-                raise DkgTransactionError(f'sChain: {self.schain_name}. '
-                                          f'Broadcast transaction failed, see receipt',
-                                          receipt)
+        try:
+            self.skale.dkg.broadcast(
+                self.group_index,
+                self.node_id_contract,
+                verification_vector,
+                secret_key_contribution,
+                wait_for=True,
+                retries=2
+            )
+        except TransactionFailedError as e:
+            logger.error(f'DKG broadcast failed: sChain {self.schain_name}')
+            raise DkgTransactionError(e)
         logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
     def receive_verification_vector(self, from_node, event):
@@ -194,24 +189,18 @@ class DKGClient:
         share, dh_key = response['share'], response['dh_key']
 
         share = convert_g2_point_to_hex(share)
-
-        tx_res = self.skale.dkg.response(self.group_index,
-                                          self.node_id_contract,
-                                          dh_key,
-                                          share,
-                                          wait_for=True)
-        status = tx_res.receipt['status']
-        if status != 1:
-            tx_res = self.skale.dkg.response(self.group_index,
-                                              self.node_id_contract,
-                                              dh_key,
-                                              share,
-                                              wait_for=True)
-            status = tx_res.receipt['status']
-            if status != 1:
-                raise DkgTransactionError(
-                    f"sChain: {self.schain_name}. "
-                    "Response transaction failed, see receipt", receipt)
+        try:
+            self.skale.dkg.response(
+                self.group_index,
+                self.node_id_contract,
+                dh_key,
+                share,
+                wait_for=True,
+                retries=2
+            )
+        except TransactionFailedError as e:
+            logger.error(f'DKG response failed: sChain {self.schain_name}')
+            raise DkgTransactionError(e)
         logger.info(f'sChain: {self.schain_name}. {from_node_index} node sent a response')
 
     def receive_from_node(self, from_node, event):
@@ -248,16 +237,14 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node has already sent an allright note')
             return
-        receipt = self.skale.dkg.allright(self.group_index, self.node_id_contract,
-                                          wait_for=True)
-        status = tx_res.receipt['status']
-        if status != 1:
-            tx_res = self.skale.dkg.allright(self.group_index, self.node_id_contract,
-                                              wait_for=True)
-            status = tx_res.receipt['status']
-            if status != 1:
-                raise DkgTransactionError(
-                    f'sChain: {self.schain_name}. '
-                    f'Allright transaction failed, see receipt', receipt
-                )
+        try:
+            self.skale.dkg.allright(
+                self.group_index,
+                self.node_id_contract,
+                wait_for=True,
+                retries=2
+            )
+        except TransactionFailedError as e:
+            logger.error(f'DKG allright failed: sChain {self.schain_name}')
+            raise DkgTransactionError(e)
         logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an allright note')
