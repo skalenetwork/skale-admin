@@ -228,23 +228,23 @@ class DKGClient:
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
         return bls_private_key
 
-    def allright(self):
-        is_allright_possible_function = self.dkg_contract_functions.isAlrightPossible
-        is_allright_possible = is_allright_possible_function(
+    def alright(self):
+        is_alright_possible_function = self.dkg_contract_functions.isAlrightPossible
+        is_alright_possible = is_alright_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
-        if not is_allright_possible or not self.is_channel_opened():
+        if not is_alright_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_dkg} node has already sent an allright note')
+                        f'{self.node_id_dkg} node has already sent an alright note')
             return
         try:
-            self.skale.dkg.allright(
+            self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,
                 wait_for=True,
                 retries=2
             )
         except TransactionFailedError as e:
-            logger.error(f'DKG allright failed: sChain {self.schain_name}')
+            logger.error(f'DKG alright failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
-        logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an allright note')
+        logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
