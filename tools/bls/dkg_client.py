@@ -23,6 +23,7 @@ import binascii
 import logging
 import eth_utils
 
+from skale.utils.web3_utils import TransactionFailedError
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
 
@@ -194,19 +195,19 @@ class DKGClient:
 
         share = convert_g2_point_to_hex(share)
 
-        receipt = self.skale.dkg.response(self.group_index,
+        tx_res = self.skale.dkg.response(self.group_index,
                                           self.node_id_contract,
                                           dh_key,
                                           share,
                                           wait_for=True)
-        status = receipt['status']
+        status = tx_res.receipt['status']
         if status != 1:
-            receipt = self.skale.dkg.response(self.group_index,
+            tx_res = self.skale.dkg.response(self.group_index,
                                               self.node_id_contract,
                                               dh_key,
                                               share,
                                               wait_for=True)
-            status = receipt['status']
+            status = tx_res.receipt['status']
             if status != 1:
                 raise DkgTransactionError(
                     f"sChain: {self.schain_name}. "
@@ -249,11 +250,11 @@ class DKGClient:
             return
         receipt = self.skale.dkg.allright(self.group_index, self.node_id_contract,
                                           wait_for=True)
-        status = receipt['status']
+        status = tx_res.receipt['status']
         if status != 1:
-            receipt = self.skale.dkg.allright(self.group_index, self.node_id_contract,
+            tx_res = self.skale.dkg.allright(self.group_index, self.node_id_contract,
                                               wait_for=True)
-            status = receipt['status']
+            status = tx_res.receipt['status']
             if status != 1:
                 raise DkgTransactionError(
                     f'sChain: {self.schain_name}. '
