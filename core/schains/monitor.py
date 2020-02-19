@@ -167,7 +167,8 @@ class SchainsMonitor:
                 f'sChain {schain_name}: sChain config not found: '
                 f'{config_filepath}, trying to create.'
             )
-            schain_config = generate_schain_config(skale, schain_name, self.node_id)
+            rotation_id = self.skale.schains_data.get_last_rotation_id(schain_name)
+            schain_config = generate_schain_config(skale, schain_name, self.node_id, rotation_id)
             save_schain_config(schain_config, schain_name)
 
     def add_firewall_rules(self, schain_name):
