@@ -46,3 +46,7 @@ venv/
 
 # dkg binary
 dkgpython.so
+
+# test files
+tests/test_abi.json
+tests/skale-data/node_data/node_config.json
