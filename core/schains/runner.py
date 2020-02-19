@@ -65,7 +65,7 @@ def get_ulimits_config(config):
 
 
 def run_container(type, schain, env, volume_config=None,
-                  cpu_limit=None, mem_limit=None, dutils=None, command=None):
+                  cpu_limit=None, mem_limit=None, dutils=None):
     if not dutils:
         dutils = docker_utils
     schain_name = schain['name']

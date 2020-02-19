@@ -34,7 +34,7 @@ def client():
     return DockerUtils(volume_driver='local')
 
 
-def run_test_schain_container(dutils):
+def run_simple_schain_container(dutils):
     env = {
         "SSL_KEY_PATH": 'NULL',
         "SSL_CERT_PATH": 'NULL',
@@ -51,7 +51,7 @@ def run_test_schain_container(dutils):
     run_schain_container(SCHAIN, env, dutils=dutils)
 
 
-def run_test_schain_container_in_sync_mode(dutils):
+def run_simple_schain_container_in_sync_mode(dutils):
     env = {
         "SSL_KEY_PATH": 'NULL',
         "SSL_CERT_PATH": 'NULL',
@@ -96,7 +96,7 @@ def remove_schain_container(client):
 
 def test_run_schain_container(client):
     # Run schain container
-    run_test_schain_container(client)
+    run_simple_schain_container(client)
 
     # Perform container checks
     check_schain_container(client)
@@ -107,7 +107,7 @@ def test_run_schain_container(client):
 
 def test_run_schain_container_in_sync_mode(client):
     # Run schain container
-    run_test_schain_container_in_sync_mode(client)
+    run_simple_schain_container_in_sync_mode(client)
 
     # Perform container checks
     check_schain_container(client)
