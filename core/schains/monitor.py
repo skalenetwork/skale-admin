@@ -129,6 +129,16 @@ class SchainsMonitor:
             logger.info('Schain was rotated. Rotation in progress')
             jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
             if jobs == 0:
+                schain_record.dkg_started()
+                try:
+                    init_bls(skale, schain['name'], self.node_config.id,
+                             self.node_config.sgx_key_name)
+                except DkgError as err:
+                    logger.info(f'sChain {name} Dkg procedure failed with {err}')
+                    schain_record.dkg_failed()
+                    remove_config_dir(schain['name'])
+                    return
+                schain_record.dkg_done()
                 self.scheduler.add_job(self.rotate_schain, 'date', run_date=finish_time,
                                        name=name, args=[schain, rotation_id])
             logger.info(f'sChain will be restarted at {finish_time}')
@@ -146,7 +156,7 @@ class SchainsMonitor:
                 logger.info(f'sChain {name} Dkg procedure failed with {err}')
                 schain_record.dkg_failed()
                 remove_config_dir(schain['name'])
-                exit(1)
+                return
             schain_record.dkg_done()
         if not checks['config']['result']:
             self.init_schain_config(skale, name, owner)
