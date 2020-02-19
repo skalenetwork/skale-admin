@@ -41,13 +41,13 @@ SCHAIN = {
     'active': True
 }
 CHECK_MOCK = {
-    'data_dir': True,
-    'dkg': True,
-    'config': True,
-    'volume': True,
-    'container': True,
-    'ima_container': True,
-    'firewall_rules': True
+    'data_dir': {'result': True},
+    'dkg': {'result': True},
+    'config': {'result': True},
+    'volume': {'result': True},
+    'container': {'result': True},
+    'ima_container': {'result': True},
+    'firewall_rules': {'result': True}
 }
 
 
@@ -89,6 +89,8 @@ def test_exiting_monitor(monitor):
             monitor.monitor_schain(SCHAIN)
             assert len(monitor.scheduler.get_jobs()) == 1
             assert monitor.scheduler.get_jobs()[0].name == SCHAIN_NAME
+            monitor.monitor_schain(SCHAIN)
+            assert len(monitor.scheduler.get_jobs()) <= 1
             time.sleep(delta_time)
             assert not os.path.exists(FILENAME)
 
