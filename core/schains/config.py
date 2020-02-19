@@ -61,8 +61,8 @@ def get_mp_addresses():
     return ima_mp_schain, ima_mp_mainnet
 
 
-def generate_wallets_config(schain_name):
-    secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
+def generate_wallets_config(schain_name, rotation_id):
+    secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
     secret_key_share_config = read_json(secret_key_share_filepath)
     wallets = {
         'ima': {

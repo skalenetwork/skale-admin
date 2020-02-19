@@ -61,7 +61,8 @@ class SChainChecks:
         self._data_dir = {'result': os.path.isdir(schain_dir_path)}
 
     def check_dkg(self):
-        secret_key_share_filepath = get_secret_key_share_filepath(self.name)
+        rotation_id = self.skale.schains_data.get_last_rotation_id(self.name)
+        secret_key_share_filepath = get_secret_key_share_filepath(self.name, rotation_id)
         self._dkg = {'result': os.path.isfile(secret_key_share_filepath)}
 
     def check_config(self):

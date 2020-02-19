@@ -162,5 +162,5 @@ def get_dkg_bad_guy_filter(skale):
     )
 
 
-def get_secret_key_share_filepath(schain_id):
-    return os.path.join(NODE_DATA_PATH, 'schains', schain_id, 'secret_key.json')
+def get_secret_key_share_filepath(schain_id, rotation_id):
+    return os.path.join(NODE_DATA_PATH, 'schains', schain_id, f'secret_key_{rotation_id}.json')

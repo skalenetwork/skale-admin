@@ -111,6 +111,7 @@ class SchainsMonitor:
         rotation_in_progress = checks['rotation_in_progress']['result']
         new_schain = checks['rotation_in_progress']['new_schain']
         exiting_node = checks['rotation_in_progress']['exiting_node']
+        rotation_id = checks['rotation_in_progress']['rotation_id']
         if rotation_in_progress:
             finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
 
@@ -194,7 +195,7 @@ class SchainsMonitor:
         env = get_ima_env(schain['name'])
         run_ima_container(schain, env)
 
-    def rotate_schain(self, schain):
+    def rotate_schain(self, schain, rotation_id):
         logger.info('Schain was rotated. Regenerating config')
         schain_config = generate_schain_config(self.skale, schain['name'], self.node_id)
         save_schain_config(schain_config, schain['name'])

@@ -39,7 +39,7 @@ RECEIVE_TIMEOUT = 1800
 
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
-    secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
+    secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
     if not os.path.isfile(secret_key_share_filepath):
         schain_config = generate_skale_schain_config(skale, schain_name, node_id)
         n = len(schain_config["skaleConfig"]["sChain"]["nodes"])
