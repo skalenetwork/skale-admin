@@ -1,6 +1,6 @@
 import pytest
 from core.node_config import NodeConfig
-from core.schains.monitor import SchainsMonitor, get_containers_delay
+from core.schains.monitor import SchainsMonitor
 from tools.docker_utils import DockerUtils
 from core.schains.runner import get_container_name, get_image_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
@@ -84,19 +84,19 @@ def test_exiting_monitor(monitor):
     }
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     open(FILENAME, 'w').close()
-    with mock.patch('core.schains.monitor.SChainRecord'),\
-         mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0),\
-         mock.patch('core.schains.monitor.SChainChecks.get_all',
-                    new=mock.Mock(return_value=CHECK_MOCK)),\
-         mock.patch('core.schains.monitor.run_cleanup',
-                    new=run_cleanup_mock):
-            monitor.monitor_schain(SCHAIN)
-            assert len(monitor.scheduler.get_jobs()) == 1
-            assert monitor.scheduler.get_jobs()[0].name == SCHAIN_NAME
-            monitor.monitor_schain(SCHAIN)
-            assert len(monitor.scheduler.get_jobs()) <= 1
-            time.sleep(delta_time)
-            assert not os.path.exists(FILENAME)
+    with mock.patch('core.schains.monitor.SChainRecord'), \
+        mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0),\
+        mock.patch('core.schains.monitor.SChainChecks.get_all',
+                   new=mock.Mock(return_value=CHECK_MOCK)),\
+        mock.patch('core.schains.monitor.run_cleanup',
+                   new=run_cleanup_mock):
+        monitor.monitor_schain(SCHAIN)
+        assert len(monitor.scheduler.get_jobs()) == 1
+        assert monitor.scheduler.get_jobs()[0].name == SCHAIN_NAME
+        monitor.monitor_schain(SCHAIN)
+        assert len(monitor.scheduler.get_jobs()) <= 1
+        time.sleep(delta_time)
+        assert not os.path.exists(FILENAME)
 
 
 def test_rotating_monitor(monitor):
@@ -110,16 +110,15 @@ def test_rotating_monitor(monitor):
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     open(FILENAME, 'w').close()
     with mock.patch('core.schains.monitor.SChainRecord'), \
-         mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0),\
-         mock.patch('core.schains.monitor.SChainChecks.get_all',
-                    new=mock.Mock(return_value=CHECK_MOCK)),\
-         mock.patch('core.schains.monitor.SchainsMonitor.rotate_schain',
-                    new=rotate_schain_mock):
-            monitor.monitor_schain(SCHAIN)
-            print(monitor.scheduler.get_jobs())
-            assert len(monitor.scheduler.get_jobs()) == 1
-            assert monitor.scheduler.get_jobs()[0].name == SCHAIN_NAME
-            monitor.monitor_schain(SCHAIN)
-            assert len(monitor.scheduler.get_jobs()) <= 1
-            time.sleep(delta_time)
-            assert not os.path.exists(FILENAME)
+        mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0),\
+        mock.patch('core.schains.monitor.SChainChecks.get_all',
+                   new=mock.Mock(return_value=CHECK_MOCK)),\
+        mock.patch('core.schains.monitor.SchainsMonitor.rotate_schain',
+                   new=rotate_schain_mock):
+        monitor.monitor_schain(SCHAIN)
+        assert len(monitor.scheduler.get_jobs()) == 1
+        assert monitor.scheduler.get_jobs()[0].name == SCHAIN_NAME
+        monitor.monitor_schain(SCHAIN)
+        assert len(monitor.scheduler.get_jobs()) <= 1
+        time.sleep(delta_time)
+        assert not os.path.exists(FILENAME)
