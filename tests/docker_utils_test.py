@@ -68,7 +68,7 @@ def run_simple_schain_container_in_sync_mode(dutils):
     run_schain_container_in_sync_mode(SCHAIN, env, dutils=dutils)
 
 
-def run_test_ima_container(dutils):
+def run_simple_ima_container(dutils):
     run_ima_container(SCHAIN, {})
 
 
