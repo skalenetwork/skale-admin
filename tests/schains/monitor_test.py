@@ -27,7 +27,7 @@ def run_cleanup_mock(skale, schain_name, node_id):
     os.remove(FILENAME)
 
 
-def rotate_schain_mock(self, schain):
+def rotate_schain_mock(self, schain, rotation_id):
     os.remove(FILENAME)
 
 
