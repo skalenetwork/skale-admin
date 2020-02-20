@@ -8,7 +8,7 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 
 from tools.docker_utils import DockerUtils
 
-from tests.docker_utils_test import run_test_schain_container, run_test_ima_container, SCHAIN
+from tests.docker_utils_test import run_simple_schain_container, run_simple_ima_container, SCHAIN
 
 
 SCHAIN_CONFIG_DIR = os.path.join(SCHAINS_DIR_PATH, SCHAIN['name'])
@@ -41,14 +41,14 @@ def test_remove_schain_volume(dutils):
 
 
 def test_remove_schain_container(dutils):
-    run_test_schain_container(dutils)
+    run_simple_schain_container(dutils)
     assert container_running(dutils, SCHAIN_CONTAINER_NAME)
     remove_schain_container(SCHAIN['name'])
     assert not container_running(dutils, SCHAIN_CONTAINER_NAME)
 
 
 def test_remove_ima_container(dutils):
-    run_test_ima_container(dutils)
+    run_simple_ima_container(dutils)
     assert container_running(dutils, IMA_CONTAINER_NAME)
     remove_ima_container(SCHAIN['name'])
     assert not container_running(dutils, IMA_CONTAINER_NAME)
