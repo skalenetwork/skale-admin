@@ -27,7 +27,7 @@ def run_cleanup_mock(skale, schain_name, node_id):
     os.remove(FILENAME)
 
 
-def rotate_schain_mock(self, schain):
+def rotate_schain_mock(self, schain, rotation_id):
     os.remove(FILENAME)
 
 
@@ -66,7 +66,7 @@ def test_rotate_schain(monitor, dutils):
     ima_cont = dutils.client.containers.get(ima_container_name)
     with mock.patch('core.schains.monitor.generate_schain_config'), \
             mock.patch('core.schains.monitor.save_schain_config'):
-        monitor.rotate_schain(SCHAIN)
+        monitor.rotate_schain(SCHAIN, 0)
     restarted_schain = dutils.client.containers.get(schain_container_name)
     restarted_ima = dutils.client.containers.get(ima_container_name)
     assert schain_cont.attrs['State']['StartedAt'] != restarted_schain.attrs['State']['StartedAt']
@@ -80,7 +80,8 @@ def test_exiting_monitor(monitor):
         'result': True,
         'new_schain': True,
         'exiting_node': True,
-        'finish_ts': time.time() + delta_time
+        'finish_ts': time.time() + delta_time,
+        'rotation_id': 0
     }
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     open(FILENAME, 'w').close()
@@ -105,11 +106,13 @@ def test_rotating_monitor(monitor):
         'result': True,
         'new_schain': False,
         'exiting_node': False,
-        'finish_ts': time.time() + delta_time
+        'finish_ts': time.time() + delta_time,
+        'rotation_id': 0
     }
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     open(FILENAME, 'w').close()
-    with mock.patch('core.schains.monitor.SChainRecord'), \
+    with mock.patch('core.schains.monitor.SChainRecord'),\
+        mock.patch('core.schains.monitor.init_bls'), \
         mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0),\
         mock.patch('core.schains.monitor.SChainChecks.get_all',
                    new=mock.Mock(return_value=CHECK_MOCK)),\

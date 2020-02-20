@@ -111,6 +111,7 @@ class SchainsMonitor:
         rotation_in_progress = checks['rotation_in_progress']['result']
         new_schain = checks['rotation_in_progress']['new_schain']
         exiting_node = checks['rotation_in_progress']['exiting_node']
+        rotation_id = checks['rotation_in_progress']['rotation_id']
         if rotation_in_progress:
             finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
 
@@ -128,8 +129,18 @@ class SchainsMonitor:
             logger.info('Schain was rotated. Rotation in progress')
             jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
             if jobs == 0:
+                schain_record.dkg_started()
+                try:
+                    init_bls(skale, schain['name'], self.node_config.id,
+                             self.node_config.sgx_key_name)
+                except DkgError as err:
+                    logger.info(f'sChain {name} Dkg procedure failed with {err}')
+                    schain_record.dkg_failed()
+                    remove_config_dir(schain['name'])
+                    return
+                schain_record.dkg_done()
                 self.scheduler.add_job(self.rotate_schain, 'date', run_date=finish_time,
-                                       name=name, args=[schain])
+                                       name=name, args=[schain, rotation_id])
             logger.info(f'sChain will be restarted at {finish_time}')
         else:
             logger.info('No rotation for schain')
@@ -145,7 +156,7 @@ class SchainsMonitor:
                 logger.info(f'sChain {name} Dkg procedure failed with {err}')
                 schain_record.dkg_failed()
                 remove_config_dir(schain['name'])
-                exit(1)
+                return
             schain_record.dkg_done()
         if not checks['config']['result']:
             self.init_schain_config(skale, name, owner)
@@ -166,7 +177,8 @@ class SchainsMonitor:
                 f'sChain {schain_name}: sChain config not found: '
                 f'{config_filepath}, trying to create.'
             )
-            schain_config = generate_schain_config(skale, schain_name, self.node_id)
+            rotation_id = self.skale.schains_data.get_last_rotation_id(schain_name)
+            schain_config = generate_schain_config(skale, schain_name, self.node_id, rotation_id)
             save_schain_config(schain_config, schain_name)
 
     def add_firewall_rules(self, schain_name):
@@ -194,9 +206,10 @@ class SchainsMonitor:
         env = get_ima_env(schain['name'])
         run_ima_container(schain, env)
 
-    def rotate_schain(self, schain):
+    def rotate_schain(self, schain, rotation_id):
         logger.info('Schain was rotated. Regenerating config')
-        schain_config = generate_schain_config(self.skale, schain['name'], self.node_id)
+        schain_config = generate_schain_config(self.skale, schain['name'],
+                                               self.node_id, rotation_id)
         save_schain_config(schain_config, schain['name'])
         logger.info('Containers are going to be restarted')
         restart_container(SCHAIN_CONTAINER, schain)

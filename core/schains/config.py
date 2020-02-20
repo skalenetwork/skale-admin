@@ -37,9 +37,9 @@ from tools.helper import read_json
 logger = logging.getLogger(__name__)
 
 
-def generate_schain_config(skale, schain_name, node_id):
+def generate_schain_config(skale, schain_name, node_id, rotation_id):
     base_config = read_base_config()
-    wallets = generate_wallets_config(schain_name)
+    wallets = generate_wallets_config(schain_name, rotation_id)
     ima_mainnet_url = IMA_ENDPOINT
     ima_mp_schain, ima_mp_mainnet = get_mp_addresses()
     return generate_skale_schain_config(
@@ -61,8 +61,8 @@ def get_mp_addresses():
     return ima_mp_schain, ima_mp_mainnet
 
 
-def generate_wallets_config(schain_name):
-    secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
+def generate_wallets_config(schain_name, rotation_id):
+    secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
     secret_key_share_config = read_json(secret_key_share_filepath)
     wallets = {
         'ima': {
