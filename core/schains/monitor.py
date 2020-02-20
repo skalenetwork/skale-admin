@@ -138,6 +138,9 @@ class SchainsMonitor:
                     remove_config_dir(schain['name'])
                     return
                 schain_record.dkg_done()
+                schain_config = generate_schain_config(self.skale, schain['name'],
+                                                       self.node_id, rotation_id)
+                save_schain_config(schain_config, schain['name'])
                 self.monitor_schain_container(schain, sync=True)
 
         elif rotation_in_progress and not new_schain:
