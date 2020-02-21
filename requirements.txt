@@ -13,7 +13,8 @@ simple-crypt==4.1.7
 pycryptodome==3.6.6
 python-iptables==0.14.0
 
-skale.py==3.0.dev3
+skale.py==3.0.dev5
+sgx.py==0.4dev3
 
 PyYAML==5.1.2
 psutil==5.6.3

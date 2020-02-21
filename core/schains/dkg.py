@@ -118,7 +118,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                                                                   dkg_client.node_id_contract)
         for event in dkg_complaint_sent_filter.get_events():
             is_complaint_received = True
-            response(dkg_client, event["fromNodeIndex"])
+            logger.debug(f'dkg_complaint_sent_filter event: {event}')
+            response(dkg_client, event.args.fromNodeIndex)
 
         if len(dkg_fail_filter.get_events()) > 0:
             raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
@@ -155,14 +156,22 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         if True in is_alright_sent_list:
             if len(dkg_successful_filter.get_events()) > 0:
                 common_public_key = skale.schains_data.get_groups_public_key(dkg_client.group_index)
-                save_dkg_results(
-                    common_public_key=common_public_key,
-                    public_key=dkg_client.public_key,
-                    t=t,
-                    n=n,
-                    key_share_name=bls_key_name,
-                    filepath=secret_key_share_filepath
-                )
+                return {
+                    'common_public_key': common_public_key,
+                    'public_key': dkg_client.public_key,
+                    't': t,
+                    'n': n,
+                    'key_share_name': bls_key_name,
+                    'filepath': secret_key_share_filepath,
+                }
+                # save_dkg_results(
+                #     common_public_key=common_public_key,
+                #     public_key=dkg_client.public_key,
+                #     t=t,
+                #     n=n,
+                #     key_share_name=bls_key_name,
+                #     filepath=secret_key_share_filepath
+                # )
 
 
 def save_dkg_results(common_public_key, public_key, t, n, key_share_name, filepath):
