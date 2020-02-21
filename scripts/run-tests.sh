@@ -8,6 +8,8 @@ export RUNNING_ON_HOST=True
 export PYTHONPATH=${PYTHONPATH}:.
 export ENV=dev
 
+bash scripts/run_sgx_simulator.sh
+
 python tests/prepare_data.py
 
 py.test tests/ --ignore=tests/firewall

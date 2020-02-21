@@ -1,3 +1,9 @@
+"""
+Test for dkg procedure using SGX keys
+
+Usage:
+SCHAIN_TYPE=test2/test4/tiny SGX_CERTIFICATES_FOLDER=./tests/dkg_test/ SGX_SERVER_URL=[SGX_SERVER_URL] ENDPOINT=[ENDPOINT] RUNNING_ON_HOST=True SKALE_DIR_HOST=~/.skale python tests/dkg_test/main_test.py
+"""
 import logging
 from time import sleep
 
@@ -10,7 +16,7 @@ from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.custom_thread import CustomThread
 
 from tests.conftest import skale as skale_fixture
-from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT
+from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import generate_random_node_data, generate_random_schain_data
 
 
@@ -75,16 +81,26 @@ def cleanup_contracts(skale):
 
 
 def run_dkg_all(skale, schain_name, nodes_data):
+    results = []
+    dkg_threads = []
     for i, node_data in enumerate(nodes_data):
         opts = {
             'index': i,
             'skale': skale,
             'schain_name': schain_name,
             'node_id': node_data['node_id'],
-            'wallet': node_data['wallet']
+            'wallet': node_data['wallet'],
+            'results': results
         }
-        CustomThread(
-            f'DKG for {node_data["wallet"].address}', run_dkg, opts=opts, once=True).start()
+        dkg_thread = CustomThread(
+            f'DKG for {node_data["wallet"].address}', run_dkg, opts=opts, once=True)
+        dkg_thread.start()
+        dkg_threads.append(dkg_thread)
+    for dkg_thread in dkg_threads:
+        dkg_thread.join()
+
+    assert len(results) == N_OF_NODES
+    # todo: add some additional checks that dkg is finished successfully
 
 
 def run_dkg(opts):
@@ -95,15 +111,19 @@ def run_dkg(opts):
     skale.wallet = opts['wallet']
     sgx_key_name = skale.wallet._key_name
     dkg_results = init_bls(skale, opts['schain_name'], opts['node_id'], sgx_key_name)
+    opts['results'].append({
+        'node_id': opts["node_id"],
+        'dkg_results': dkg_results
+    })
     print(f'=========================\nDKG DONE: node_id: {opts["node_id"]} {dkg_results}')
 
 
 def create_schain(skale):
-    type_of_nodes, lifetime_seconds, name = generate_random_schain_data()
-    price_in_wei = skale.schains.get_schain_price(type_of_nodes, lifetime_seconds)
+    _, lifetime_seconds, name = generate_random_schain_data()
+    price_in_wei = skale.schains.get_schain_price(TYPE_OF_NODES, lifetime_seconds)
     skale.manager.create_schain(
         lifetime_seconds,
-        type_of_nodes,
+        TYPE_OF_NODES,
         price_in_wei,
         name,
         wait_for=True
@@ -112,6 +132,7 @@ def create_schain(skale):
 
 
 def test_init_bls(skale):
+    cleanup_contracts(skale)
     wallets = generate_sgx_wallets(skale, N_OF_NODES)
     transfer_eth_to_wallets(skale, wallets)
     link_addresses_to_validator(skale, wallets)
@@ -123,5 +144,4 @@ def test_init_bls(skale):
 if __name__ == "__main__":
     init_default_logger()
     skale = skale_fixture()
-    cleanup_contracts(skale)
     test_init_bls(skale)
