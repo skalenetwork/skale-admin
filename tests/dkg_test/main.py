@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 
 from skale.wallets import SgxWallet
 from skale.utils.helper import init_default_logger
@@ -74,22 +75,27 @@ def cleanup_contracts(skale):
 
 
 def run_dkg_all(skale, schain_name, nodes_data):
-    for node_data in nodes_data:
+    for i, node_data in enumerate(nodes_data):
         opts = {
+            'index': i,
             'skale': skale,
             'schain_name': schain_name,
             'node_id': node_data['node_id'],
             'wallet': node_data['wallet']
         }
-        CustomThread(f'DKG for {node_data["wallet"].address}', run_dkg, opts=opts, once=True).start()
+        CustomThread(
+            f'DKG for {node_data["wallet"].address}', run_dkg, opts=opts, once=True).start()
 
 
 def run_dkg(opts):
+    timeout = opts['index'] * 5  # diversify start time for all nodes
+    logger.info(f'Node {opts["node_id"]} going to sleep {timeout} seconds')
+    sleep(timeout)
     skale = skale_fixture()
     skale.wallet = opts['wallet']
     sgx_key_name = skale.wallet._key_name
-    res = init_bls(skale, opts['schain_name'], opts['node_id'], sgx_key_name)
-    print(f'DKG DONE: node_id: {opts["node_id"]} {res}')
+    dkg_results = init_bls(skale, opts['schain_name'], opts['node_id'], sgx_key_name)
+    print(f'=========================\nDKG DONE: node_id: {opts["node_id"]} {dkg_results}')
 
 
 def create_schain(skale):
@@ -103,6 +109,7 @@ def create_schain(skale):
         wait_for=True
     )
     return name
+
 
 def test_init_bls(skale):
     wallets = generate_sgx_wallets(skale, N_OF_NODES)

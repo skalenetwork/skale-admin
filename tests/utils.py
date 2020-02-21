@@ -23,5 +23,5 @@ def generate_random_node_data():
 
 def generate_random_schain_data():
     lifetime_seconds = 3600  # 1 hour
-    type_of_nodes = 5
+    type_of_nodes = 1
     return type_of_nodes, lifetime_seconds, generate_random_name()

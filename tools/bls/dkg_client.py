@@ -186,7 +186,10 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'{from_node_index} node could not sent a response')
             return
-        response = self.sgx.complaint_response(self.poly_name, self.node_ids_contract[from_node_index])
+        response = self.sgx.complaint_response(
+            self.poly_name,
+            self.node_ids_contract[from_node_index]
+        )
         share, dh_key = response['share'], response['dh_key']
 
         share = share.split(':')
