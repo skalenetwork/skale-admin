@@ -27,8 +27,6 @@ from skale.wallets import RPCWallet
 
 from core.node import Node
 from core.node_config import NodeConfig
-from core.schains.monitor import SchainsMonitor
-from core.schains.cleaner import SChainsCleaner
 
 from tools.configs import FLASK_SECRET_KEY_FILE
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
@@ -64,8 +62,6 @@ docker_utils = DockerUtils()
 
 node_config = NodeConfig()
 node = Node(skale, node_config)
-schains_monitor = SchainsMonitor(skale, node_config)
-schains_cleaner = SChainsCleaner(skale, node_config)
 
 token = init_user_token()
 database = SqliteDatabase(DB_FILE)
@@ -105,8 +101,6 @@ if __name__ == '__main__':
         'Transaction manager': TM_URL,
         'SGX Server': sgx_server_text()
         }, 'Starting Flask server'))
-    from tools.configs.db import MYSQL_DB_PORT
-    logger.info(f'{MYSQL_DB_PORT}')
     create_tables()
     generate_sgx_key(node_config)
     app.secret_key = FLASK_SECRET_KEY_FILE

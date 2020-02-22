@@ -101,7 +101,7 @@ class SkaleFilterError(Exception):
 class SkaleFilter:
     def __init__(self, event_class, from_block, argument_filters,
                  to_block='latest',
-                 timeout=1, retries=10):
+                 timeout=1, retries=1):
         self.event_class = event_class
         self.from_block = from_block
         self.argument_filters = argument_filters
@@ -125,9 +125,8 @@ class SkaleFilter:
             except Exception as err:
                 self.web3_filter = self.create_filter()
                 time.sleep(self.timeout)
-                logger.error(
-                    f'Retreiving events from filter failed with {err}'
-                )
+                logger.error('Retreiving events from filter failed',
+                             exc_info=err)
             else:
                 break
 
