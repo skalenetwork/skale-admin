@@ -141,6 +141,10 @@ def get_consensus_endpoints_from_config(config):
             NodeEndpoint(
                 node_data['ip'],
                 node_data['basePort'] + SkaledPorts.BINARY_CONSENSUS.value
+            ),
+            NodeEndpoint(
+                node_data['ip'],
+                node_data['basePort'] + SkaledPorts.ZMQ_BROADCAST.value
             )
         )
         for node_data in schain_nodes_config
