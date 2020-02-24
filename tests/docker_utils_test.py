@@ -4,7 +4,8 @@ import docker
 import pytest
 
 from tools.docker_utils import DockerUtils
-from core.schains.runner import run_schain_container, run_ima_container, get_container_name
+from core.schains.runner import (run_schain_container, run_ima_container,
+                                 get_container_name, get_image_name)
 from tools.configs.containers import SCHAIN_CONTAINER
 
 
@@ -93,18 +94,17 @@ def test_not_existed_docker_objects(client):
 
 def test_restart_all_schains(client):
     schain_names = ['test1', 'test2', 'test3']
+    schain_image = get_image_name(SCHAIN_CONTAINER)
+    cont_names = [get_container_name(SCHAIN_CONTAINER, name) for name in schain_names]
     start_time = {}
-    global SCHAIN_NAME
 
-    def get_schain_time(schain_name):
-        cont_name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    def get_schain_time(cont_name):
         cont = client.client.containers.get(cont_name)
         return cont.attrs['State']['StartedAt']
 
-    for name in schain_names:
-        SCHAIN_NAME = name
-        run_test_schain_container(client)
-        start_time[name] = get_schain_time(name)
+    for cont_name in cont_names:
+        client.client.containers.run(schain_image, name=cont_name, detach=True)
+        start_time[cont_name] = get_schain_time(cont_name)
     client.restart_all_schains()
-    for name in schain_names:
-        assert get_schain_time(name) != start_time[name]
+    for cont_name in cont_names:
+        assert get_schain_time(cont_name) != start_time[cont_name]
