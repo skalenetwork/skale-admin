@@ -4,7 +4,8 @@ import docker
 import pytest
 
 from tools.docker_utils import DockerUtils
-from core.schains.runner import run_schain_container, run_ima_container
+from core.schains.runner import run_schain_container, run_ima_container, get_container_name
+from tools.configs.containers import SCHAIN_CONTAINER
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -88,3 +89,21 @@ def test_not_existed_docker_objects(client):
     assert info['status'] == 'not_found'
     assert client.to_start_container(info)
     client.safe_rm('random_name')
+
+
+def test_restart_all_schains(client):
+    schain_names = ['test', 'test1', 'test2']
+    start_time = {}
+
+    def get_schain_time(schain_name):
+        cont_name = get_container_name(SCHAIN_CONTAINER, schain_name)
+        return client.containers.get(cont_name).attrs['State']['StartedAt']
+
+    for name in schain_names:
+        global SCHAIN_NAME
+        SCHAIN_NAME = name
+        run_test_schain_container(client)
+        start_time[name] = get_schain_time(name)
+    client.restart_all_schains()
+    for name in schain_names:
+        assert get_schain_time(name) != start_time[name]
