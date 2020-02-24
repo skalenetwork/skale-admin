@@ -92,15 +92,16 @@ def test_not_existed_docker_objects(client):
 
 
 def test_restart_all_schains(client):
-    schain_names = ['test', 'test1', 'test2']
+    schain_names = ['test1', 'test2', 'test3']
     start_time = {}
+    global SCHAIN_NAME
 
     def get_schain_time(schain_name):
         cont_name = get_container_name(SCHAIN_CONTAINER, schain_name)
-        return client.containers.get(cont_name).attrs['State']['StartedAt']
+        cont = client.client.containers.get(cont_name)
+        return cont.attrs['State']['StartedAt']
 
     for name in schain_names:
-        global SCHAIN_NAME
         SCHAIN_NAME = name
         run_test_schain_container(client)
         start_time[name] = get_schain_time(name)
