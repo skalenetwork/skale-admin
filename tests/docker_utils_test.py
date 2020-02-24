@@ -1,4 +1,5 @@
 import os
+from functools import partial
 
 import docker
 import pytest
@@ -28,6 +29,16 @@ SCHAIN = {
     'index': 0,
     'active': True
 }
+
+
+@pytest.fixture
+def mocked_client():
+    dutils = DockerUtils(volume_driver='local')
+    dutils.get_all_schain_containers = partial(
+        dutils.get_all_schain_containers,
+        all=True
+    )
+    return dutils
 
 
 @pytest.fixture
@@ -92,19 +103,19 @@ def test_not_existed_docker_objects(client):
     client.safe_rm('random_name')
 
 
-def test_restart_all_schains(client):
+def test_restart_all_schains(mocked_client):
     schain_names = ['test1', 'test2', 'test3']
     schain_image = get_image_name(SCHAIN_CONTAINER)
     cont_names = [get_container_name(SCHAIN_CONTAINER, name) for name in schain_names]
     start_time = {}
 
     def get_schain_time(cont_name):
-        cont = client.client.containers.get(cont_name)
+        cont = mocked_client.client.containers.get(cont_name)
         return cont.attrs['State']['StartedAt']
 
     for cont_name in cont_names:
-        client.client.containers.run(schain_image, name=cont_name, detach=True)
+        mocked_client.client.containers.run(schain_image, name=cont_name, detach=True)
         start_time[cont_name] = get_schain_time(cont_name)
-    client.restart_all_schains()
+    mocked_client.restart_all_schains()
     for cont_name in cont_names:
         assert get_schain_time(cont_name) != start_time[cont_name]
