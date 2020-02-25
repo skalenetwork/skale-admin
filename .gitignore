@@ -46,3 +46,9 @@ venv/
 
 # dkg binary
 dkgpython.so
+
+# tests
+test_abi.json
+*.crt
+*.csr
+*.key
