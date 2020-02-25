@@ -76,6 +76,7 @@ def remove_config_dir(schain_name):
 
 
 def monitor(skale, node_config):
+    logger.info('Cleaner procedure started.')
     schains_on_node = get_schains_on_node()
     schain_ids = schain_names_to_ids(skale, schains_on_node)
     schain_names_on_contracts = get_schain_names_from_contract(skale,
@@ -95,6 +96,7 @@ def monitor(skale, node_config):
             logger.info(
                 arguments_list_string({'sChain name': name}, 'sChain deleted event found'))
             cleanup_schain(node_config.id, name)
+    logger.info('Cleanup procedure finished.')
 
 
 def get_schain_names_from_contract(skale, node_id):

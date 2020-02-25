@@ -59,6 +59,7 @@ def run_creator(skale, node_config):
 
 
 def monitor(skale, node_config):
+    logger.info('Creator procedure started')
     skale = spawn_skale_lib(skale)
     node_id = node_config.id
     schains = skale.schains_data.get_schains_for_node(node_id)
@@ -67,12 +68,13 @@ def monitor(skale, node_config):
     logger.info(
         arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
                                'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
         futures = [executor.submit(monitor_schain, skale, node_config.id,
                                    node_config.sgx_key_name, schain)
                    for schain in schains if schain['active']]
         for future in futures:
             future.result()
+    logger.info('Creator procedure finished')
 
 
 def monitor_schain(skale, node_id, sgx_key_name, schain):
