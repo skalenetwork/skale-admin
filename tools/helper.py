@@ -101,7 +101,7 @@ class SkaleFilterError(Exception):
 class SkaleFilter:
     def __init__(self, event_class, from_block, argument_filters,
                  to_block='latest',
-                 timeout=1, retries=1):
+                 timeout=4, retries=35):
         self.event_class = event_class
         self.from_block = from_block
         self.argument_filters = argument_filters
