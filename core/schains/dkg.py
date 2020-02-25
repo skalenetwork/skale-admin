@@ -35,7 +35,7 @@ from tools.helper import write_json
 
 logger = logging.getLogger(__name__)
 
-RECEIVE_TIMEOUT = 3
+RECEIVE_TIMEOUT = 1800
 
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):

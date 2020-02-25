@@ -19,5 +19,3 @@ RUN pip3 install --no-cache-dir -r requirements-dev.txt
 COPY . .
 
 ENV PYTHONPATH="/usr/src/admin"
-# CMD [ "mprof", "run", "-o", "memory-profile.dat", "--multiprocess", "python3", "app.py" ]
-# CMD [ "python3", "app.py" ]
