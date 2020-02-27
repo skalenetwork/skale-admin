@@ -15,14 +15,24 @@ def skale_bp(skale):
     config = NodeConfig()
     dutils = DockerUtils(volume_driver='local')
     app.register_blueprint(construct_schains_bp(skale, config, dutils))
-    return app.test_client()
-
-
-def test_dks_status(skale_bp):
     SChainRecord.create_table()
+    yield app.test_client()
+    SChainRecord.drop_table()
+
+
+def get_bp_data(bp, request, params=None):
+    data = bp.get(request, query_string=params).data
+    return json.loads(data.decode('utf-8'))['data']
+
+
+def test_dkg_status(skale_bp):
     SChainRecord.add("test1")
     SChainRecord.add("test2")
     SChainRecord.add("test3")
-    data = skale_bp.get('/api/dkg/statuses').data
-    data = json.loads(data.decode('utf-8'))['data']
+    data = get_bp_data(skale_bp, '/api/dkg/statuses')
+    assert len(data) == 3
+    SChainRecord.get_by_name("test3").set_deleted()
+    data = get_bp_data(skale_bp, '/api/dkg/statuses')
+    assert len(data) == 2
+    data = get_bp_data(skale_bp, '/api/dkg/statuses', {'all': True})
     assert len(data) == 3
