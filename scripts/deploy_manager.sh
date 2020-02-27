@@ -23,4 +23,4 @@ docker run \
     skalenetwork/skale-manager:$MANAGER_BRANCH-latest \
     npx truffle migrate --network unique
 
-cp $DIR/contracts_data/unique.json $DIR/../test_abi.json
+cp $DIR/contracts_data/unique.json $DIR/../tests/test_abi.json
