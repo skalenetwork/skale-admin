@@ -130,21 +130,18 @@ def get_consensus_ips_with_ports(schain_name, node_id):
 
 def get_consensus_endpoints_from_config(config):
     node_id = config['skaleConfig']['nodeInfo']['nodeID']
+    base_port = config['skaleConfig']['nodeInfo']['basePort']
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
 
     node_endpoints = list(chain.from_iterable(
         (
-            NodeEndpoint(node_data['ip'],
-                         node_data['basePort'] + SkaledPorts.PROPOSAL.value),
-            NodeEndpoint(node_data['ip'],
-                         node_data['basePort'] + SkaledPorts.CATCHUP.value),
+            NodeEndpoint(node_data['ip'], base_port + SkaledPorts.PROPOSAL.value),
+            NodeEndpoint(node_data['ip'], base_port + SkaledPorts.CATCHUP.value),
             NodeEndpoint(
-                node_data['ip'],
-                node_data['basePort'] + SkaledPorts.BINARY_CONSENSUS.value
+                node_data['ip'], base_port + SkaledPorts.BINARY_CONSENSUS.value
             ),
             NodeEndpoint(
-                node_data['ip'],
-                node_data['basePort'] + SkaledPorts.ZMQ_BROADCAST.value
+                node_data['ip'], base_port + SkaledPorts.ZMQ_BROADCAST.value
             )
         )
         for node_data in schain_nodes_config

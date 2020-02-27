@@ -40,18 +40,24 @@ def apsent_rules(endpoints):
 
 
 def add_rules(endpoints):
-    logger.info('Adding iptables rules')
+    logger.info(f'Such endpoints would be added to iptables rules {endpoints}')
     for endpoint in endpoints:
         rule_d = rule_d_from_endpoint(endpoint)
         with lock:
             if not iptc.easy.has_rule(TABLE, CHAIN, rule_d):
                 iptc.easy.insert_rule(TABLE, CHAIN, rule_d)
+            else:
+                logger.warning(f'Rule {rule_d} is already in iptables rules')
+    logger.info('Endpoints successfully added')
 
 
 def remove_rules(endpoints):
-    logger.info('Removing iptables rules')
+    logger.info(f'Such endpoints would be removed from iptables rules {endpoints}')
     for endpoint in endpoints:
         rule_d = rule_d_from_endpoint(endpoint)
         with lock:
             if iptc.easy.has_rule(TABLE, CHAIN, rule_d):
                 iptc.easy.delete_rule(TABLE, CHAIN, rule_d)
+            else:
+                logger.warning(f'Rule {rule_d} hasn\'t beed added to iptables rules')
+    logger.info('Endpoints successfully removed')

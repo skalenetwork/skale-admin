@@ -11,6 +11,7 @@ env:
     - NODE_OPTIONS="--max_old_space_size=4096"
     - PYTHONPATH=.
     - ETH_PRIVATE_KEY=$TESTNET_PRIVATE_KEY
+    - MANAGER_BRANCH=beta
 install:
   - pip install -r requirements.txt
   - pip install -r requirements-dev.txt
