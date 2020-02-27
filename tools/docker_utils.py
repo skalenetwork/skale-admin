@@ -127,3 +127,18 @@ class DockerUtils:
             return res
         except docker.errors.APIError:
             logger.error(f'No such container: {container_name}')
+
+    def restart(self, container_name, **kwargs):
+        logger.info(f'Restarting container: {container_name}')
+        try:
+            container = self.client.containers.get(container_name)
+            res = container.restart(**kwargs)
+            logger.info(f'Container restarted: {container_name}')
+            return res
+        except docker.errors.APIError:
+            logger.error(f'No such container: {container_name}')
+
+    def restart_all_schains(self):
+        containers = self.get_all_schain_containers()
+        for container in containers:
+            self.restart(container.name)
