@@ -1,17 +1,16 @@
 name: Build and publish
-on: [push, pull_request]
-# on:
-#   pull_request:
-#     types: [closed]
-#     branches:
-#       - master
-#       - develop
-#       - beta
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+      - develop
+      - beta
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # if: github.event.pull_request.merged
+    if: github.event.pull_request.merged
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
