@@ -80,7 +80,8 @@ def test_get_consensus_endpoints_from_config():
     assert get_consensus_endpoints_from_config(CONFIG) == [
         NodeEndpoint(ip='127.0.0.1', port=10011),
         NodeEndpoint(ip='127.0.0.1', port=10012),
-        NodeEndpoint(ip='127.0.0.1', port=10015)
+        NodeEndpoint(ip='127.0.0.1', port=10015),
+        NodeEndpoint(ip='127.0.0.1', port=10016)
     ]
 
 
