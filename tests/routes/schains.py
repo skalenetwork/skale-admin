@@ -36,3 +36,4 @@ def test_dkg_status(skale_bp):
     assert len(data) == 2
     data = get_bp_data(skale_bp, '/api/dkg/statuses', {'all': True})
     assert len(data) == 3
+    assert data[2]['is_deleted'] is True

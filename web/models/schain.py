@@ -59,7 +59,7 @@ class SChainRecord(BaseModel):
         if all:
             records = cls.select()
         else:
-            records = cls.select().where(cls.is_deleted == False)
+            records = cls.select().where(cls.is_deleted == False)  # noqa: E712
         dkg_statuses = []
         for record in records:
             dkg_statuses.append(cls.to_dict(record))
