@@ -1,6 +1,7 @@
 # SKALE Admin
 
-[![Build Status](https://travis-ci.com/skalenetwork/skale-admin.svg?token=tLesVRTSHvWZxoyqXdoA&branch=develop)](https://travis-ci.com/skalenetwork/skale-admin)
+![Test](https://github.com/skalenetwork/skale-admin/workflows/Test/badge.svg)
+![Build and publish](https://github.com/skalenetwork/skale-admin/workflows/Build%20and%20publish/badge.svg)
 [![Discord](https://img.shields.io/discord/534485763354787851.svg)](https://discord.gg/vvUtWJB)
 
 SKALE Admin is the container that manages all operations on the SKALE node.
