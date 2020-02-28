@@ -93,8 +93,8 @@ def response(dkg_client, from_node_index):
     dkg_client.response(from_node_index)
 
 
-def send_allright(dkg_client):
-    dkg_client.allright()
+def send_alright(dkg_client):
+    dkg_client.alright()
 
 
 def get_dkg_broadcast_filter(skale, group_index):

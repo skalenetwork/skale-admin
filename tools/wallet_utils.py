@@ -22,10 +22,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # todo: move to smart contracts
-DEPOSIT_AMOUNT_SKL = 100
 DEPOSIT_AMOUNT_ETH = 0.2
-
-DEPOSIT_AMOUNT_SKL_WEI = DEPOSIT_AMOUNT_SKL * (10 ** 18)
 DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10 ** 18))
 
 
@@ -44,5 +41,4 @@ def wallet_with_balance(skale):  # todo: move to the skale.py
 
 def check_required_balance(skale):  # todo: move to the skale.py
     balances = wallet_with_balance(skale)
-    return int(balances['eth_balance_wei']) >= DEPOSIT_AMOUNT_ETH_WEI and int(balances[
-        'skale_balance_wei']) >= DEPOSIT_AMOUNT_SKL_WEI
+    return int(balances['eth_balance_wei']) >= DEPOSIT_AMOUNT_ETH_WEI
