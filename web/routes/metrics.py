@@ -22,7 +22,7 @@ from datetime import datetime
 
 from flask import Blueprint, request
 
-from core.db import BountyEvent
+from core.db import select_bounty_records_from_db, get_bounty_sum
 from web.helper import construct_ok_response
 from tools.helper import SkaleFilter
 logger = logging.getLogger(__name__)
@@ -37,11 +37,11 @@ def construct_metrics_bp(skale, config):
         node_id = config.id
         return skale.nodes_data.get(node_id)['start_date']
 
-    def yy_mm_dd_to_date(date_str):
+    def convert_to_date(date_str):
         if date_str is None:
             return None
         else:
-            format_str = '%Y-%m-%d'
+            format_str = '%Y-%m-%d %H:%M:%S'
             return datetime.strptime(date_str, format_str)
 
     def find_block_for_tx_stamp(tx_stamp, lo=0, hi=None):
@@ -57,35 +57,32 @@ def construct_metrics_bp(skale, config):
                 hi = mid
             else:
                 return mid
+            count += 1
         return lo - 1
 
-    def get_metrics_from_db(is_from_begin=True, limit=None):
-        if limit is None:
-            bounties = BountyEvent.select(BountyEvent.tx_dt, BountyEvent.bounty,
-                                          BountyEvent.downtime,
-                                          BountyEvent.latency)
-        else:
-            if is_from_begin:
-                bounties = BountyEvent.select(BountyEvent.tx_dt, BountyEvent.bounty,
-                                              BountyEvent.downtime,
-                                              BountyEvent.latency).limit(limit)
-            else:
-                bounties = BountyEvent.select(BountyEvent.tx_dt, BountyEvent.bounty,
-                                              BountyEvent.downtime,
-                                              BountyEvent.latency).order_by(
-                    BountyEvent.tx_dt.desc()).limit(
-                    limit)
+    def get_metrics_from_db(start_date=None, end_date=None, limit=None, wei=None):
+        if start_date is None:
+            start_date = datetime.utcfromtimestamp(get_start_date())
+        if end_date is None:
+            end_date = datetime.now()
+        metrics = select_bounty_records_from_db(start_date, end_date, limit)
 
-        bounties_list = []
-        for bounty in bounties:
-            bounties_list.append(
-                [str(bounty.tx_dt), bounty.bounty, bounty.downtime, bounty.latency])
-        return bounties_list
+        total_bounty = int(get_bounty_sum(start_date, end_date))
+        if not wei:
+            total_bounty = to_skl(total_bounty)
+
+        metrics_list = []
+        for metric in metrics:
+            bounty = int(metric.bounty)
+            if not wei:
+                bounty = to_skl(bounty)
+            metrics_list.append(
+                [str(metric.tx_dt), bounty, metric.downtime, metric.latency])
+        return metrics_list, total_bounty
 
     def get_start_end_block_numbers(start_date=None, end_date=None):
         if start_date is None:
             start_date = datetime.utcfromtimestamp(get_start_date())
-
         start_block_number = find_block_for_tx_stamp(start_date)
         cur_block_number = skale.web3.eth.blockNumber
         last_block_number = find_block_for_tx_stamp(end_date) if end_date is not None \
@@ -102,7 +99,7 @@ def construct_metrics_bp(skale, config):
             return int(limit)
 
     def get_metrics_from_events(start_date=None, end_date=None,
-                                limit=None):
+                                limit=None, wei=None):
         metrics_rows = []
         total_bounty = 0
         limit = format_limit(limit)
@@ -125,8 +122,11 @@ def construct_metrics_bp(skale, config):
                 tx_block_number = log['blockNumber']
                 block_data = skale.web3.eth.getBlock(tx_block_number)
                 block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
+                bounty = args['bounty']
+                if not wei:
+                    bounty = to_skl(bounty)
                 metrics_row = [str(block_timestamp),
-                               to_skl(args['bounty']),
+                               bounty,
                                args['averageDowntime'],
                                round(args['averageLatency'] / 1000, 1)]
                 total_bounty += metrics_row[1]
@@ -139,11 +139,16 @@ def construct_metrics_bp(skale, config):
         return metrics_rows, total_bounty
 
     @metrics_bp.route('/metrics', methods=['GET'])
-    def all_bounties():
-        since = yy_mm_dd_to_date(request.args.get('since'))
-        till = yy_mm_dd_to_date(request.args.get('till'))
+    def get_metrics():
+        since = convert_to_date(request.args.get('since'))
+        till = convert_to_date(request.args.get('till'))
         limit = request.args.get('limit')
-        metrics, total_bounty = get_metrics_from_events(since, till, limit)
+        fast = request.args.get('fast') == 'True'
+        wei = request.args.get('wei') == 'True'
+        if fast:
+            metrics, total_bounty = get_metrics_from_db(since, till, limit, wei)
+        else:
+            metrics, total_bounty = get_metrics_from_events(since, till, limit, wei)
         return construct_ok_response({'metrics': metrics, 'total': total_bounty})
 
     return metrics_bp
