@@ -17,8 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from peewee import BooleanField, CharField, CompositeKey, DateTimeField, IntegerField, Model, \
-    MySQLDatabase
+from peewee import (BooleanField, CharField, CompositeKey, DateTimeField, IntegerField, Model,
+                    MySQLDatabase, fn)
 
 from tools.configs.db import MYSQL_DB_HOST, MYSQL_DB_NAME, MYSQL_DB_PASSWORD, MYSQL_DB_PORT, \
     MYSQL_DB_USER
@@ -66,7 +66,6 @@ class ReportEvent(BaseModel):
     downtime = IntegerField()
     latency = IntegerField()
     gas_used = IntegerField()
-    # stamp = DateTimeField()
 
     class Meta:
         db_table = 'report_event'
@@ -82,3 +81,29 @@ class BountyStats(BaseModel):
     class Meta:
         db_table = 'bounty_stats'
         primary_key = CompositeKey('tx_hash')
+
+
+@dbhandle.connection_context()
+def select_bounty_records_from_db(start_date, end_date, limit):
+    if limit is None:
+        metrics = BountyEvent.select(BountyEvent.tx_dt, BountyEvent.bounty,
+                                     BountyEvent.downtime,
+                                     BountyEvent.latency).where(
+            (BountyEvent.tx_dt >= start_date) & (BountyEvent.tx_dt <= end_date))
+    else:
+        metrics = BountyEvent.select(BountyEvent.tx_dt, BountyEvent.bounty,
+                                     BountyEvent.downtime,
+                                     BountyEvent.latency).where(
+            (BountyEvent.tx_dt >= start_date) &
+            (BountyEvent.tx_dt <= end_date)).limit(int(limit))
+    return metrics
+
+
+@dbhandle.connection_context()
+def get_bounty_sum(start_date, end_date):
+    bounty_sum = BountyEvent.select(
+        fn.SUM(
+            BountyEvent.bounty).alias('sum')).where(
+        (BountyEvent.tx_dt >= start_date) & (BountyEvent.tx_dt <= end_date)).scalar()
+    return bounty_sum
+
