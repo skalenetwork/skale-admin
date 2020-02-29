@@ -20,8 +20,8 @@
 from peewee import (BooleanField, CharField, CompositeKey, DateTimeField, IntegerField, Model,
                     MySQLDatabase, fn)
 
-from tools.configs.db import MYSQL_DB_HOST, MYSQL_DB_NAME, MYSQL_DB_PASSWORD, MYSQL_DB_PORT, \
-    MYSQL_DB_USER
+from tools.configs.db import (MYSQL_DB_HOST, MYSQL_DB_NAME, MYSQL_DB_PASSWORD, MYSQL_DB_PORT,
+                              MYSQL_DB_USER)
 
 dbhandle = MySQLDatabase(
     MYSQL_DB_NAME, user=MYSQL_DB_USER,
