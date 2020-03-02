@@ -57,7 +57,6 @@ def construct_metrics_bp(skale, config):
                 hi = mid
             else:
                 return mid
-            count += 1
         return lo - 1
 
     def get_metrics_from_db(start_date=None, end_date=None, limit=None, wei=None):

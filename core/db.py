@@ -106,4 +106,3 @@ def get_bounty_sum(start_date, end_date):
             BountyEvent.bounty).alias('sum')).where(
         (BountyEvent.tx_dt >= start_date) & (BountyEvent.tx_dt <= end_date)).scalar()
     return bounty_sum
-
