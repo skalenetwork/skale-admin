@@ -2,6 +2,7 @@ import os
 
 import docker
 import pytest
+import time
 
 from tools.docker_utils import DockerUtils
 from core.schains.runner import (run_schain_container, run_ima_container,
@@ -64,8 +65,10 @@ def run_simple_schain_container_in_sync_mode(dutils):
         "CONFIG_FILE": os.path.join(TEST_SKALE_DATA_DIR, 'schain_config.json'),
         "DATA_DIR": '/data_dir'
     }
+    public_key = "1:1:1:1"
+    timestamp = time.time()
     # Run schain container
-    run_schain_container_in_sync_mode(SCHAIN, env, dutils=dutils)
+    run_schain_container_in_sync_mode(SCHAIN, env, public_key, timestamp, dutils=dutils)
 
 
 def run_simple_ima_container(dutils):
