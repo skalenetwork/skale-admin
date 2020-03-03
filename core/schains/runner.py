@@ -115,8 +115,8 @@ def run_schain_container_in_sync_mode(schain, env, public_key, start_ts, dutils=
     schain_name = schain['name']
     endpoint = get_skaled_http_snapshot_address(schain_name)
     url = f'http://{endpoint.ip}:{endpoint.port}'
-    env['DOWNLOAD_SNAPSHOT_OPTION'] = (f'--download-snapshot {url}'
-                                       f'--public-key {public_key}'
+    env['DOWNLOAD_SNAPSHOT_OPTION'] = (f'--download-snapshot {url} '
+                                       f'--public-key {public_key} '
                                        f'--start-timestamp {start_ts}')
 
     cpu_limit, mem_limit = get_container_limits(schain)
