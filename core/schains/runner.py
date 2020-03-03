@@ -111,11 +111,13 @@ def run_schain_container(schain, env, dutils=None):
                   mem_limit, dutils=dutils)
 
 
-def run_schain_container_in_sync_mode(schain, env, dutils=None):
+def run_schain_container_in_sync_mode(schain, env, public_key, start_ts, dutils=None):
     schain_name = schain['name']
     endpoint = get_skaled_http_snapshot_address(schain_name)
     url = f'http://{endpoint.ip}:{endpoint.port}'
-    env['DOWNLOAD_SNAPSHOT_OPTION'] = f'--download-snapshot {url}'
+    env['DOWNLOAD_SNAPSHOT_OPTION'] = (f'--download-snapshot {url}'
+                                       f'--public-key {public_key}'
+                                       f'--start-timestamp {start_ts}')
 
     cpu_limit, mem_limit = get_container_limits(schain)
     volume_config = get_schain_volume_config(schain_name,

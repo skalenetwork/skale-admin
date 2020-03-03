@@ -141,7 +141,7 @@ class SchainsMonitor:
                 schain_config = generate_schain_config(self.skale, schain['name'],
                                                        self.node_id, rotation_id)
                 save_schain_config(schain_config, schain['name'])
-                self.monitor_schain_container(schain, sync=True)
+                self.monitor_sync_schain_container(schain, finish_time)
 
         elif rotation_in_progress and not new_schain:
             logger.info('Schain was rotated. Rotation in progress')
@@ -215,13 +215,24 @@ class SchainsMonitor:
                 )
             return True
 
-    def monitor_schain_container(self, schain, sync=False):
+    def monitor_schain_container(self, schain):
         if self.check_container(schain['name'], volume_required=True):
             env = get_schain_env(schain['name'])
-            if sync:
-                run_schain_container_in_sync_mode(schain, env)
-            else:
-                run_schain_container(schain, env)
+            run_schain_container(schain, env)
+
+    def monitor_sync_schain_container(self, schain, start_ts):
+        def get_previous_schain_public_key(schain_name):
+            group_idx = self.skale.web3.sha3(text=schain_name)
+            raw_public_key = self.skale.schains_data.get_previous_groups_public_key(group_idx)
+            return ':'.join(map(str, raw_public_key))
+
+        if self.check_container(schain['name'], volume_required=True):
+            env = get_schain_env(schain['name'])
+            public_key = get_previous_schain_public_key(schain['name'])
+            run_schain_container_in_sync_mode(schain,
+                                              env,
+                                              start_ts=start_ts,
+                                              public_key=public_key)
 
     def monitor_ima_container(self, schain):
         env = get_ima_env(schain['name'])
