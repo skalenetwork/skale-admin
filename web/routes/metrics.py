@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2019-2020 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -22,13 +22,12 @@ from datetime import datetime
 
 from flask import Blueprint, request
 
-from core.db import BountyEvent
+from core.db import select_bounty_records_from_db, get_bounty_sum
 from web.helper import construct_ok_response
 from tools.helper import SkaleFilter
 logger = logging.getLogger(__name__)
 
-BLOCK_STEP = 1000
-FILTER_PERIOD = 12
+BLOCK_CHUNK_SIZE = 1000
 
 
 def construct_metrics_bp(skale, config):
@@ -38,9 +37,12 @@ def construct_metrics_bp(skale, config):
         node_id = config.id
         return skale.nodes_data.get(node_id)['start_date']
 
-    def get_last_reward_date():
-        node_id = config.id
-        return skale.nodes_data.get(node_id)['last_reward_date']
+    def convert_to_date(date_str):
+        if date_str is None:
+            return None
+        else:
+            format_str = '%Y-%m-%d %H:%M:%S'
+            return datetime.strptime(date_str, format_str)
 
     def find_block_for_tx_stamp(tx_stamp, lo=0, hi=None):
         if hi is None:
@@ -57,107 +59,95 @@ def construct_metrics_bp(skale, config):
                 return mid
         return lo - 1
 
-    def get_bounty_from_db(is_from_begin=True, limit=None):
-        if limit is None:
-            bounties = BountyEvent.select(BountyEvent.tx_dt, BountyEvent.bounty,
-                                          BountyEvent.downtime,
-                                          BountyEvent.latency)
-        else:
-            if is_from_begin:
-                bounties = BountyEvent.select(BountyEvent.tx_dt, BountyEvent.bounty,
-                                              BountyEvent.downtime,
-                                              BountyEvent.latency).limit(limit)
-            else:
-                bounties = BountyEvent.select(BountyEvent.tx_dt, BountyEvent.bounty,
-                                              BountyEvent.downtime,
-                                              BountyEvent.latency).order_by(
-                    BountyEvent.tx_dt.desc()).limit(
-                    limit)
+    def get_metrics_from_db(start_date=None, end_date=None, limit=None, wei=None):
+        if start_date is None:
+            start_date = datetime.utcfromtimestamp(get_start_date())
+        if end_date is None:
+            end_date = datetime.now()
+        metrics = select_bounty_records_from_db(start_date, end_date, limit)
 
-        bounties_list = []
-        for bounty in bounties:
-            bounties_list.append(
-                [str(bounty.tx_dt), bounty.bounty, bounty.downtime, bounty.latency])
-        return bounties_list
+        total_bounty = int(get_bounty_sum(start_date, end_date))
+        if not wei:
+            total_bounty = to_skl(total_bounty)
 
-    def get_bounty_from_events(start_date, end_date=None, is_limited=True):
-        node_id = config.id
-        bounties = []
+        metrics_list = []
+        for metric in metrics:
+            bounty = int(metric.bounty)
+            if not wei:
+                bounty = to_skl(bounty)
+            metrics_list.append(
+                [str(metric.tx_dt), bounty, metric.downtime, metric.latency])
+        return metrics_list, total_bounty
+
+    def get_start_end_block_numbers(start_date=None, end_date=None):
+        if start_date is None:
+            start_date = datetime.utcfromtimestamp(get_start_date())
         start_block_number = find_block_for_tx_stamp(start_date)
         cur_block_number = skale.web3.eth.blockNumber
         last_block_number = find_block_for_tx_stamp(end_date) if end_date is not None \
             else cur_block_number
-        while True and len(bounties) < FILTER_PERIOD:
-            end_chunk_block_number = start_block_number + BLOCK_STEP - 1
+        return start_block_number, last_block_number
+
+    def to_skl(digits):  # convert to SKL
+        return digits / (10 ** 18)
+
+    def format_limit(limit):
+        if limit is None:
+            return float('inf')
+        else:
+            return int(limit)
+
+    def get_metrics_from_events(start_date=None, end_date=None,
+                                limit=None, wei=None):
+        metrics_rows = []
+        total_bounty = 0
+        limit = format_limit(limit)
+        start_block_number, last_block_number = get_start_end_block_numbers(start_date, end_date)
+        start_chunk_block_number = start_block_number
+        while len(metrics_rows) < limit:
+            end_chunk_block_number = start_chunk_block_number + BLOCK_CHUNK_SIZE - 1
             if end_chunk_block_number > last_block_number:
                 end_chunk_block_number = last_block_number
 
             event_filter = SkaleFilter(
                 skale.manager.contract.events.BountyGot,
-                from_block=hex(start_block_number),
-                argument_filters={'nodeIndex': node_id},
+                from_block=hex(start_chunk_block_number),
+                argument_filters={'nodeIndex': config.id},
                 to_block=hex(end_chunk_block_number)
             )
             logs = event_filter.get_events()
-
             for log in logs:
                 args = log['args']
-
                 tx_block_number = log['blockNumber']
                 block_data = skale.web3.eth.getBlock(tx_block_number)
-                block_timestamp = str(datetime.utcfromtimestamp(block_data['timestamp']))
-                bounties.append([
-                    block_timestamp,
-                    args['bounty'],
-                    args['averageDowntime'],
-                    int(args['averageLatency'] / 1000)
-                ])
-                if is_limited and len(bounties) >= FILTER_PERIOD:
+                block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
+                bounty = args['bounty']
+                if not wei:
+                    bounty = to_skl(bounty)
+                metrics_row = [str(block_timestamp),
+                               bounty,
+                               args['averageDowntime'],
+                               round(args['averageLatency'] / 1000, 1)]
+                total_bounty += metrics_row[1]
+                metrics_rows.append(metrics_row)
+                if len(metrics_rows) >= limit:
                     break
-            start_block_number = start_block_number + BLOCK_STEP
+            start_chunk_block_number = start_chunk_block_number + BLOCK_CHUNK_SIZE
             if end_chunk_block_number >= last_block_number:
                 break
-        return bounties
+        return metrics_rows, total_bounty
 
-    @metrics_bp.route('/last-bounty', methods=['GET'])
-    def bounty():
-        last_reward_date = datetime.utcfromtimestamp(get_last_reward_date())
-        bounties_list = get_bounty_from_events(last_reward_date)
-        return construct_ok_response({'bounties': bounties_list})
-
-    @metrics_bp.route('/first-bounties', methods=['GET'])
-    def first_bounties():
-        force = request.args.get('force') == 'True'
-        if force:
-            node_start_date = datetime.utcfromtimestamp(get_start_date())
-            bounties_list = get_bounty_from_events(node_start_date)
+    @metrics_bp.route('/metrics', methods=['GET'])
+    def get_metrics():
+        since = convert_to_date(request.args.get('since'))
+        till = convert_to_date(request.args.get('till'))
+        limit = request.args.get('limit')
+        fast = request.args.get('fast') == 'True'
+        wei = request.args.get('wei') == 'True'
+        if fast:
+            metrics, total_bounty = get_metrics_from_db(since, till, limit, wei)
         else:
-            bounties_list = get_bounty_from_db(True, 12)
-        return construct_ok_response({'bounties': bounties_list})
-
-    @metrics_bp.route('/last-bounties', methods=['GET'])
-    def last_bounties():
-        force = request.args.get('force') == 'True'
-        if force:
-            node_start_date = get_start_date()
-            last_reward_date = get_last_reward_date()
-            reward_period = skale.validators_data.get_reward_period()
-            start_date = datetime.utcfromtimestamp(max(last_reward_date - (
-                    reward_period * (FILTER_PERIOD + 1)), node_start_date))
-            bounties_list = get_bounty_from_events(start_date)
-        else:
-            bounties_list = get_bounty_from_db(False, 12)
-        return construct_ok_response({'bounties': bounties_list})
-
-    @metrics_bp.route('/all-bounties', methods=['GET'])
-    def all_bounties():
-        force = request.args.get('force') == 'True'
-        if force:
-            node_start_date = datetime.utcfromtimestamp(get_start_date())
-            bounties_list = get_bounty_from_events(node_start_date, is_limited=False)
-        else:
-            bounties_list = get_bounty_from_db()
-
-        return construct_ok_response({'bounties': bounties_list})
+            metrics, total_bounty = get_metrics_from_events(since, till, limit, wei)
+        return construct_ok_response({'metrics': metrics, 'total': total_bounty})
 
     return metrics_bp
