@@ -8,7 +8,7 @@ export RUNNING_ON_HOST=True
 export PYTHONPATH=${PYTHONPATH}:.
 export ENV=dev
 export SGX_CERTIFICATES_FOLDER=$PWD/tests/dkg_test/
-export SGX_SERVER_URL=http://localhost:1026
+export SGX_SERVER_URL=https://localhost:1026
 export ENDPOINT=http://localhost:8545
 
 bash scripts/run_sgx_simulator.sh
