@@ -73,19 +73,6 @@ def register_nodes(skale, wallets):
     return nodes_data
 
 
-def cleanup_contracts(skale):
-    for schain_id in skale.schains_data.get_all_schains_ids():
-        schain_data = skale.schains_data.get(schain_id)
-        schain_name = schain_data.get('name', None)
-        if schain_name is not None:
-            skale.manager.delete_schain(schain_name, wait_for=True)
-
-    active_node_ids = skale.nodes_data.get_active_node_ids()
-    logger.info(f'Removing {len(active_node_ids)} nodes from contracts')
-    for node_id in active_node_ids:
-        skale.manager.delete_node_by_root(node_id, wait_for=True)
-
-
 def run_dkg_all(skale, schain_name, nodes_data):
     results = []
     dkg_threads = []
@@ -138,7 +125,6 @@ def create_schain(skale):
 
 
 def test_init_bls(skale):
-    cleanup_contracts(skale)
     wallets = generate_sgx_wallets(skale, N_OF_NODES)
     transfer_eth_to_wallets(skale, wallets)
     link_addresses_to_validator(skale, wallets)

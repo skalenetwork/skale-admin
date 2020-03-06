@@ -3,6 +3,8 @@ rm tests/skale-data/node_data/node_config.json
 
 set -e
 
+: "${SCHAIN_TYPE?Need to set SCHAIN_TYPE - test2, test4 or tiny}"
+
 export SKALE_DIR_HOST=$PWD/tests/skale-data
 export RUNNING_ON_HOST=True
 export PYTHONPATH=${PYTHONPATH}:.
@@ -18,3 +20,5 @@ python tests/prepare_data.py
 py.test tests/ --ignore=tests/firewall
 find . -name \*.pyc -delete
 scripts/run_firewall_test.sh
+
+docker rm -f skale_schain_test1 skale_schain_test2 skale_schain_test3 || true

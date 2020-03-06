@@ -56,9 +56,7 @@ class DockerUtils:
         self.volume_driver = volume_driver
 
     def init_docker_client(self):
-        docker_client = docker.from_env()
-        docker_client.login(username=DOCKER_USERNAME, password=DOCKER_PASSWORD)
-        return docker_client
+        return docker.from_env()
 
     def init_docker_cli(self):
         return APIClient()
