@@ -48,6 +48,7 @@ venv/
 dkgpython.so
 
 # tests
+node_config.json
 unique.json
 test_abi.json
 *.key
