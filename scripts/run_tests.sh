@@ -13,6 +13,9 @@ export SGX_CERTIFICATES_FOLDER=$PWD/tests/dkg_test/
 export SGX_SERVER_URL=https://localhost:1026
 export ENDPOINT=http://localhost:8545
 
+docker rm -f skale_schain_test1 skale_schain_test2 skale_schain_test3 || true
+rm -rf $PWD/tests/dkg_test/sgx.*
+
 bash scripts/run_sgx_simulator.sh
 
 python tests/prepare_data.py
@@ -20,5 +23,3 @@ python tests/prepare_data.py
 py.test tests/ --ignore=tests/firewall
 find . -name \*.pyc -delete
 scripts/run_firewall_test.sh
-
-docker rm -f skale_schain_test1 skale_schain_test2 skale_schain_test3 || true

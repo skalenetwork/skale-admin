@@ -18,6 +18,7 @@ from tools.custom_thread import CustomThread
 from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import generate_random_node_data, generate_random_schain_data
+from tests.prepare_data import cleanup_contracts
 
 
 logger = logging.getLogger(__name__)
@@ -125,6 +126,7 @@ def create_schain(skale):
 
 
 def test_init_bls(skale):
+    cleanup_contracts(skale)
     wallets = generate_sgx_wallets(skale, N_OF_NODES)
     transfer_eth_to_wallets(skale, wallets)
     link_addresses_to_validator(skale, wallets)

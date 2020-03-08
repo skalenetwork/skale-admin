@@ -24,7 +24,6 @@ from functools import wraps
 
 from docker import APIClient
 
-from tools.configs.docker import DOCKER_USERNAME, DOCKER_PASSWORD
 from tools.configs.containers import CONTAINER_NOT_FOUND, RUNNING_STATUS
 
 logger = logging.getLogger(__name__)

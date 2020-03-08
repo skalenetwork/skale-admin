@@ -3,6 +3,7 @@ import mock
 from tools.helper import SkaleFilter, SkaleFilterError
 
 
+@pytest.mark.skip(reason="covered in dkg test")
 def test_skale_filter(skale):
     sfilter = SkaleFilter(
         skale.dkg.contract.events.BroadcastAndKeyShare,

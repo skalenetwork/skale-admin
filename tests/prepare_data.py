@@ -27,4 +27,4 @@ if __name__ == "__main__":
     skale_lib = skale()
     cleanup_contracts(skale_lib)
     setup_validator(skale_lib)
-    _skip_evm_time(skale.web3, MONTH_IN_SECONDS)
+    _skip_evm_time(skale_lib.web3, MONTH_IN_SECONDS)
