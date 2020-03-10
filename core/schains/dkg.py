@@ -40,6 +40,9 @@ RECEIVE_TIMEOUT = 1800
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     schain_config = generate_skale_schain_config(skale, schain_name, node_id)
+    schain = skale.schains_data.get_by_name(schain_name)
+    schain_start_block = schain['startBlock']
+
     n = len(schain_config["skaleConfig"]["sChain"]["nodes"])
     t = (2 * n + 1) // 3
 
@@ -47,7 +50,11 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 
-    dkg_broadcast_filter = get_dkg_broadcast_filter(skale, dkg_client.group_index)
+    dkg_broadcast_filter = get_dkg_broadcast_filter(
+        skale=skale,
+        group_index=dkg_client.group_index,
+        from_block=schain_start_block
+    )
     broadcast(dkg_client, poly_name)
 
     is_received = [False for _ in range(n)]
@@ -79,7 +86,11 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 )
         sleep(1)
 
-    dkg_fail_filter = get_dkg_fail_filter(skale, dkg_client.group_index)
+    dkg_fail_filter = get_dkg_fail_filter(
+        skale=skale,
+        group_index=dkg_client.group_index,
+        from_block=schain_start_block
+    )
 
     is_complaint_sent = False
     complainted_node_index = -1
@@ -95,9 +106,16 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     is_alright_sent_list = [False for _ in range(n)]
     start_time_alright = time.time()
-    dkg_all_data_received_filter = get_dkg_all_data_received_filter(skale,
-                                                                    dkg_client.group_index)
-    dkg_successful_filter = get_dkg_successful_filter(skale, dkg_client.group_index)
+    dkg_all_data_received_filter = get_dkg_all_data_received_filter(
+        skale=skale,
+        group_index=dkg_client.group_index,
+        from_block=schain_start_block
+    )
+    dkg_successful_filter = get_dkg_successful_filter(
+        skale=skale,
+        group_index=dkg_client.group_index,
+        from_block=schain_start_block
+    )
     encrypted_bls_key = 0
     bls_key_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
     if not is_complaint_sent:
@@ -112,9 +130,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     is_complaint_received = False
     dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(
-        skale,
-        dkg_client.group_index,
-        dkg_client.node_id_contract
+        skale=skale,
+        group_index=dkg_client.group_index,
+        to_node_index=dkg_client.node_id_contract,
+        from_block=schain_start_block
     )
     for event in dkg_complaint_sent_filter.get_events():
         is_complaint_received = True
@@ -124,7 +143,11 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     if len(dkg_fail_filter.get_events()) > 0:
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
-    dkg_complaint_sent_filter = get_dkg_all_complaints_filter(skale, dkg_client.group_index)
+    dkg_complaint_sent_filter = get_dkg_all_complaints_filter(
+        skale=skale,
+        group_index=dkg_client.group_index,
+        from_block=schain_start_block
+    )
     if len(dkg_complaint_sent_filter.get_events()) == 0:
         while False in is_alright_sent_list:
             if time.time() - start_time_alright > RECEIVE_TIMEOUT:

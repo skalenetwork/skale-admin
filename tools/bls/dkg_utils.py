@@ -97,20 +97,20 @@ def send_alright(dkg_client):
     dkg_client.alright()
 
 
-def get_dkg_broadcast_filter(skale, group_index):
+def get_dkg_broadcast_filter(skale, group_index, from_block=0):
     return SkaleFilter(
         skale.dkg.contract.events.BroadcastAndKeyShare,
-        from_block=0,
+        from_block=from_block,
         argument_filters={
             'groupIndex': group_index
         }
     )
 
 
-def get_dkg_complaint_sent_filter(skale, group_index, to_node_index):
+def get_dkg_complaint_sent_filter(skale, group_index, to_node_index, from_block=0):
     return SkaleFilter(
         skale.dkg.contract.events.ComplaintSent,
-        from_block=0,
+        from_block=from_block,
         argument_filters={
             'groupIndex': group_index, 'toNodeIndex': to_node_index
         }
@@ -118,46 +118,45 @@ def get_dkg_complaint_sent_filter(skale, group_index, to_node_index):
     )
 
 
-def get_dkg_all_complaints_filter(skale, group_index):
+def get_dkg_all_complaints_filter(skale, group_index, from_block=0):
     return SkaleFilter(
         skale.dkg.contract.events.ComplaintSent,
-        from_block=0,
+        from_block=from_block,
         argument_filters={'groupIndex': group_index}
 
     )
 
 
-def get_dkg_successful_filter(skale, group_index):
+def get_dkg_successful_filter(skale, group_index, from_block=0):
     return SkaleFilter(
         skale.dkg.contract.events.SuccessfulDKG,
-        from_block=0,
+        from_block=from_block,
         argument_filters={'groupIndex': group_index}
 
     )
 
 
-def get_dkg_fail_filter(skale, group_index):
+def get_dkg_fail_filter(skale, group_index, from_block=0):
     return SkaleFilter(
         skale.dkg.contract.events.FailedDKG,
-        from_block=0,
+        from_block=from_block,
         argument_filters={'groupIndex': group_index}
 
     )
 
 
-def get_dkg_all_data_received_filter(skale, group_index):
+def get_dkg_all_data_received_filter(skale, group_index, from_block=0):
     return SkaleFilter(
         skale.dkg.contract.events.AllDataReceived,
-        from_block=0,
+        from_block=from_block,
         argument_filters={'groupIndex': group_index}
-
     )
 
 
-def get_dkg_bad_guy_filter(skale):
+def get_dkg_bad_guy_filter(skale, from_block=0):
     return SkaleFilter(
         skale.dkg.contract.events.BadGuy,
-        from_block=0,
+        from_block=from_block,
         argument_filters={}
     )
 
