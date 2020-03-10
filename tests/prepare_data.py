@@ -1,91 +1,30 @@
 """ SKALE data prep for testing """
 
+import logging
+
+from skale.utils.contracts_provision.main import setup_validator, _skip_evm_time
+from skale.utils.contracts_provision import MONTH_IN_SECONDS
+
 from tests.conftest import skale
-from tests.constants import (D_VALIDATOR_MIN_DEL, D_VALIDATOR_ID, D_DELEGATION_PERIOD,
-                             D_DELEGATION_INFO, D_VALIDATOR_NAME, D_VALIDATOR_DESC,
-                             D_VALIDATOR_FEE)
+
+logger = logging.getLogger(__name__)
 
 
-def validator_exist(skale):
-    return skale.validator_service.number_of_validators() > 0
+def cleanup_contracts(skale):
+    for schain_id in skale.schains_data.get_all_schains_ids():
+        schain_data = skale.schains_data.get(schain_id)
+        schain_name = schain_data.get('name', None)
+        if schain_name is not None:
+            skale.manager.delete_schain(schain_name, wait_for=True)
 
-
-def setup_validator(skale):
-    """Create and activate a validator"""
-    if not validator_exist(skale):
-        create_validator(skale)
-        enable_validator(skale)
-    delegation_id = len(skale.delegation_service.get_all_delegations_by_validator(
-        skale.wallet.address))
-    set_test_msr(skale)
-    delegate_to_validator(skale)
-    accept_pending_delegation(skale, delegation_id)
-    skip_delegation_delay(skale, delegation_id)
-
-
-def link_address_to_validator(skale):
-    print('Linking address to validator')
-    skale.delegation_service.link_node_address(
-        node_address=skale.wallet.address,
-        wait_for=True
-    )
-
-
-def skip_delegation_delay(skale, delegation_id):
-    print(f'Activating delegation with ID {delegation_id}')
-    skale.token_state._skip_transition_delay(
-        delegation_id,
-        wait_for=True
-    )
-
-
-def accept_pending_delegation(skale, delegation_id):
-    print(f'Accepting delegation with ID: {delegation_id}')
-    skale.delegation_service.accept_pending_delegation(
-        delegation_id=delegation_id,
-        wait_for=True
-    )
-
-
-def get_test_delegation_amount(skale):
-    msr = skale.constants_holder.msr()
-    return msr * 10
-
-
-def set_test_msr(skale):
-    skale.constants_holder._set_msr(
-        new_msr=D_VALIDATOR_MIN_DEL,
-        wait_for=True
-    )
-
-
-def delegate_to_validator(skale):
-    print(f'Delegating tokens to validator ID: {D_VALIDATOR_ID}')
-    skale.delegation_service.delegate(
-        validator_id=D_VALIDATOR_ID,
-        amount=get_test_delegation_amount(skale),
-        delegation_period=D_DELEGATION_PERIOD,
-        info=D_DELEGATION_INFO,
-        wait_for=True
-    )
-
-
-def enable_validator(skale):
-    print(f'Enabling validator ID: {D_VALIDATOR_ID}')
-    skale.validator_service._enable_validator(D_VALIDATOR_ID, wait_for=True)
-
-
-def create_validator(skale):
-    print('Creating default validator')
-    skale.delegation_service.register_validator(
-        name=D_VALIDATOR_NAME,
-        description=D_VALIDATOR_DESC,
-        fee_rate=D_VALIDATOR_FEE,
-        min_delegation_amount=D_VALIDATOR_MIN_DEL,
-        wait_for=True
-    )
+    active_node_ids = skale.nodes_data.get_active_node_ids()
+    logger.info(f'Removing {len(active_node_ids)} nodes from contracts')
+    for node_id in active_node_ids:
+        skale.manager.delete_node_by_root(node_id, wait_for=True)
 
 
 if __name__ == "__main__":
     skale_lib = skale()
+    cleanup_contracts(skale_lib)
     setup_validator(skale_lib)
+    _skip_evm_time(skale_lib.web3, MONTH_IN_SECONDS)
