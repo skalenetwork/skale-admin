@@ -39,7 +39,7 @@ SSL_KEY_NAME = 'ssl_key'
 SSL_CRT_NAME = 'ssl_cert'
 
 
-def construct_security_bp():
+def construct_security_bp(docker_utils):
     security_bp = Blueprint('security', __name__)
 
     @security_bp.route('/api/ssl/status', methods=['GET'])
@@ -75,6 +75,8 @@ def construct_security_bp():
         ssl_cert = request.files[SSL_CRT_NAME]
         ssl_key.save(os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_KEY_NAME))
         ssl_cert.save(os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_CRT_NAME))
+
+        docker_utils.restart_all_schains()
 
         return construct_ok_response()
 
