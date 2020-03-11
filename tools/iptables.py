@@ -40,7 +40,7 @@ def apsent_rules(endpoints):
 
 
 def add_rules(endpoints):
-    logger.info(f'Such endpoints would be added to iptables rules {endpoints}')
+    logger.info(f'Such endpoints will be added to iptables rules {endpoints}')
     for endpoint in endpoints:
         rule_d = rule_d_from_endpoint(endpoint)
         with lock:

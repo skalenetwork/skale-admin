@@ -30,6 +30,7 @@ from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
+from tools.configs.containers import CONTAINERS_INFO
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.iptables import NodeEndpoint
 from tools.helper import read_json
@@ -42,6 +43,7 @@ def generate_schain_config(skale, schain_name, node_id):
     wallets = generate_wallets_config(schain_name)
     ima_mainnet_url = IMA_ENDPOINT
     ima_mp_schain, ima_mp_mainnet = get_mp_addresses()
+    rotate_after_block = CONTAINERS_INFO['schain']['config_options']['rotateAfterBlock']
     return generate_skale_schain_config(
         skale=skale,
         schain_name=schain_name,
@@ -50,7 +52,8 @@ def generate_schain_config(skale, schain_name, node_id):
         ima_mainnet=ima_mainnet_url,
         ima_mp_schain=ima_mp_schain,
         ima_mp_mainnet=ima_mp_mainnet,
-        wallets=wallets
+        wallets=wallets,
+        rotate_after_block=rotate_after_block
     )
 
 
