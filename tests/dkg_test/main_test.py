@@ -45,7 +45,7 @@ def transfer_eth_to_wallets(skale, wallets):
 def link_addresses_to_validator(skale, wallets):
     logger.info(f'Linking addresses to validator')
     for wallet in wallets:
-        skale.delegation_service.link_node_address(
+        skale.validator_service.link_node_address(
             node_address=wallet.address,
             wait_for=True
         )
