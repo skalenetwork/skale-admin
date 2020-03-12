@@ -183,5 +183,6 @@ def get_schain_env(schain_name):
 
         "SCHAIN_ID": schain_name,
         "CONFIG_FILE": config_filepath,
-        "DATA_DIR": DATA_DIR_CONTAINER_PATH
+        "DATA_DIR": DATA_DIR_CONTAINER_PATH,
+        "SEGFAULT_SIGNALS": 'all'
     }
