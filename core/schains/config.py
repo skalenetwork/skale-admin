@@ -30,6 +30,7 @@ from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
+from tools.configs.containers import CONTAINERS_INFO
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.iptables import NodeEndpoint
 from tools.helper import read_json
@@ -42,6 +43,7 @@ def generate_schain_config(skale, schain_name, node_id):
     wallets = generate_wallets_config(schain_name)
     ima_mainnet_url = IMA_ENDPOINT
     ima_mp_schain, ima_mp_mainnet = get_mp_addresses()
+    rotate_after_block = CONTAINERS_INFO['schain']['config_options']['rotateAfterBlock']
     return generate_skale_schain_config(
         skale=skale,
         schain_name=schain_name,
@@ -50,7 +52,8 @@ def generate_schain_config(skale, schain_name, node_id):
         ima_mainnet=ima_mainnet_url,
         ima_mp_schain=ima_mp_schain,
         ima_mp_mainnet=ima_mp_mainnet,
-        wallets=wallets
+        wallets=wallets,
+        rotate_after_block=rotate_after_block
     )
 
 
@@ -130,17 +133,18 @@ def get_consensus_ips_with_ports(schain_name, node_id):
 
 def get_consensus_endpoints_from_config(config):
     node_id = config['skaleConfig']['nodeInfo']['nodeID']
+    base_port = config['skaleConfig']['nodeInfo']['basePort']
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
 
     node_endpoints = list(chain.from_iterable(
         (
-            NodeEndpoint(node_data['ip'],
-                         node_data['basePort'] + SkaledPorts.PROPOSAL.value),
-            NodeEndpoint(node_data['ip'],
-                         node_data['basePort'] + SkaledPorts.CATCHUP.value),
+            NodeEndpoint(node_data['ip'], base_port + SkaledPorts.PROPOSAL.value),
+            NodeEndpoint(node_data['ip'], base_port + SkaledPorts.CATCHUP.value),
             NodeEndpoint(
-                node_data['ip'],
-                node_data['basePort'] + SkaledPorts.BINARY_CONSENSUS.value
+                node_data['ip'], base_port + SkaledPorts.BINARY_CONSENSUS.value
+            ),
+            NodeEndpoint(
+                node_data['ip'], base_port + SkaledPorts.ZMQ_BROADCAST.value
             )
         )
         for node_data in schain_nodes_config
@@ -179,5 +183,6 @@ def get_schain_env(schain_name):
 
         "SCHAIN_ID": schain_name,
         "CONFIG_FILE": config_filepath,
-        "DATA_DIR": DATA_DIR_CONTAINER_PATH
+        "DATA_DIR": DATA_DIR_CONTAINER_PATH,
+        "SEGFAULT_SIGNALS": 'all'
     }

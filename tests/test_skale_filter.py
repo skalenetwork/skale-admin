@@ -9,7 +9,7 @@ def test_skale_filter(skale):
         from_block=0,
         argument_filters={}
     )
-    assert sfilter.get_events() == []
+    assert isinstance(sfilter.get_events(), list)
 
 
 def test_skale_filter_with_events(skale):
@@ -52,7 +52,8 @@ def test_skale_filter_with_exception(skale):
         sfilter = SkaleFilter(
             skale.dkg.contract.events.BroadcastAndKeyShare,
             from_block=0,
-            argument_filters={}
+            argument_filters={},
+            retries=2
         )
 
         with pytest.raises(SkaleFilterError):

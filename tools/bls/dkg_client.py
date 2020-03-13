@@ -117,6 +117,7 @@ class DKGClient:
             raise SgxDkgPolynomGenerationError(
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
+
         is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
         is_broadcast_possible = is_broadcast_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
@@ -162,7 +163,7 @@ class DKGClient:
     def send_complaint(self, to_node):
         is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
         is_complaint_possible = is_complaint_possible_function(
-            self.group_index, self.node_id_contract, to_node).call(
+            self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]).call(
                 {'from': self.skale.wallet.address})
 
         if not is_complaint_possible or not self.is_channel_opened():
@@ -185,16 +186,21 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'{from_node_index} node could not sent a response')
             return
-        response = self.sgx.complaint_response(self.poly_name, from_node_index)
+        response = self.sgx.complaint_response(
+            self.poly_name,
+            self.node_ids_contract[from_node_index]
+        )
         share, dh_key = response['share'], response['dh_key']
+
+        share = share.split(':')
 
         share = convert_g2_point_to_hex(share)
         try:
             self.skale.dkg.response(
                 self.group_index,
                 self.node_id_contract,
-                dh_key,
-                share,
+                int(dh_key, 16),
+                eth_utils.conversions.add_0x_prefix(share),
                 wait_for=True,
                 retries=2
             )
