@@ -25,7 +25,7 @@ from enum import Enum
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
-from skale.utils.web3_utils import wait_receipt, check_receipt
+from skale.utils.web3_utils import TransactionFailedError
 from skale.utils.helper import ip_from_bytes
 from skale.wallets.web3_wallet import public_key_to_address
 
@@ -81,15 +81,16 @@ class Node:
             return self._node_already_exist()
         if not check_required_balance(self.skale):
             return self._insufficient_funds()
-        res = self.skale.manager.create_node(ip, int(port), name, public_ip)
-        receipt = wait_receipt(self.skale.web3, res['tx'])
         try:
-            check_receipt(receipt)
-        except ValueError as err:
-            logger.error(arguments_list_string({'tx': res['tx']}, 'Node creation failed', 'error'))
-            return {'status': 0, 'errors': [err]}
+            tx_res = self.skale.manager.create_node(ip, int(port), name, public_ip, wait_for=True)
+        except TransactionFailedError:
+            logger.error(arguments_list_string(
+                {'tx': tx_res.hash},
+                'Node creation failed',
+                'error'
+            ))
+            return {'status': 0, 'errors': [str(tx_res.receipt)]}
         self._log_node_info('Node successfully created', ip, public_ip, port, name)
-        res = self.skale.nodes_data.node_name_to_index(name)
         self.config.id = self.skale.nodes_data.node_name_to_index(name)
         run_filebeat_service(public_ip, self.config.id, self.skale)
         return {'status': 1, 'data': self.config.all()}

@@ -24,7 +24,6 @@ from functools import wraps
 
 from docker import APIClient
 
-from tools.configs.docker import DOCKER_USERNAME, DOCKER_PASSWORD
 from tools.configs.containers import CONTAINER_NOT_FOUND, RUNNING_STATUS
 
 logger = logging.getLogger(__name__)
@@ -56,9 +55,7 @@ class DockerUtils:
         self.volume_driver = volume_driver
 
     def init_docker_client(self):
-        docker_client = docker.from_env()
-        docker_client.login(username=DOCKER_USERNAME, password=DOCKER_PASSWORD)
-        return docker_client
+        return docker.from_env()
 
     def init_docker_cli(self):
         return APIClient()
@@ -137,3 +134,8 @@ class DockerUtils:
             return res
         except docker.errors.APIError:
             logger.error(f'No such container: {container_name}')
+
+    def restart_all_schains(self):
+        containers = self.get_all_schain_containers()
+        for container in containers:
+            self.restart(container.name)

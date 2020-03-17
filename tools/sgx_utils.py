@@ -17,18 +17,14 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import logging
 
 from sgx import SgxClient
-from tools.configs import SGX_CERTIFICATES_FOLDER
+from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
 
 
 logger = logging.getLogger(__name__)
-
-SGX_KEY_CONFIG_NAME = 'sgx_key_name'
-SGX_SERVER_URL = os.environ.get('SGX_SERVER_URL')
 
 
 class SGXConnecionError(Exception):

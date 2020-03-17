@@ -1,0 +1,1 @@
+""" SKALE test constants """

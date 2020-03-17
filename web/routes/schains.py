@@ -69,7 +69,8 @@ def construct_schains_bp(skale, config, docker_utils):
     @schains_bp.route('/api/dkg/statuses', methods=['GET'])
     def dkg_status():
         logger.debug(request)
-        dkg_statuses = SChainRecord.all()
+        _all = request.args.get('all') == 'True'
+        dkg_statuses = SChainRecord.get_statuses(_all)
         return construct_ok_response(dkg_statuses)
 
     return schains_bp
