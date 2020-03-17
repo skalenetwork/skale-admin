@@ -12,6 +12,9 @@ export ENV=dev
 export SGX_CERTIFICATES_FOLDER=$PWD/tests/dkg_test/
 export SGX_SERVER_URL=https://localhost:1026
 export ENDPOINT=http://localhost:8545
+export DB_USER=user
+export DB_PASSWORD=pass
+export DB_PORT=3307
 
 docker rm -f skale_schain_test1 skale_schain_test2 skale_schain_test3 || true
 rm -rf $PWD/tests/dkg_test/sgx.*
