@@ -130,8 +130,8 @@ class SchainsMonitor:
             if jobs == 0:
                 schain_record.dkg_started()
                 try:
-                    init_bls(skale, schain['name'], self.node_config.id,
-                             self.node_config.sgx_key_name)
+                    run_dkg(skale, schain['name'], self.node_config.id,
+                            self.node_config.sgx_key_name)
                 except DkgError as err:
                     logger.info(f'sChain {name} Dkg procedure failed with {err}')
                     schain_record.dkg_failed()
@@ -149,8 +149,8 @@ class SchainsMonitor:
             if jobs == 0:
                 schain_record.dkg_started()
                 try:
-                    init_bls(skale, schain['name'], self.node_config.id,
-                             self.node_config.sgx_key_name)
+                    run_dkg(skale, schain['name'], self.node_config.id,
+                            self.node_config.sgx_key_name)
                 except DkgError as err:
                     logger.info(f'sChain {name} Dkg procedure failed with {err}')
                     schain_record.dkg_failed()
