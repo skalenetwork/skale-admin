@@ -2,8 +2,8 @@
 
 set -e
 
-NAME=admin-v2
-REPO_NAME=skalelabshub/$NAME
+NAME=admin
+REPO_NAME=skalenetwork/$NAME
 IMAGE_NAME=$REPO_NAME:$VERSION
 LATEST_IMAGE_NAME=$REPO_NAME:latest
 
@@ -15,20 +15,6 @@ docker build -t $IMAGE_NAME . || exit $?
 if [ "$RELEASE" = true ]
 then
     docker tag $IMAGE_NAME $LATEST_IMAGE_NAME
-fi
-
-
-if [[ ! -z "$PUBLISH" ]]
-then
-    : "${USERNAME?Need to set USERNAME}"
-    : "${PASSWORD?Need to set PASSWORD}"
-
-    echo "$PASSWORD" | docker login --username $USERNAME --password-stdin
-    docker push $IMAGE_NAME || exit $?
-    if [ "$RELEASE" = true ]
-    then
-        docker push $LATEST_IMAGE_NAME || exit $?
-    fi
 fi
 
 echo "========================================================================================="

@@ -11,11 +11,16 @@ docker==4.0.2
 pyjwt==1.4.2
 simple-crypt==4.1.7
 pycryptodome==3.4.11
-coincurve==12.0.0
+python-iptables==0.14.0
 
-skale-py==0.86.0
+skale.py==2.1b6
 
-PyYAML==5.1
+PyYAML==5.1.2
 psutil==5.6.3
 
-sentry-sdk==0.11.2
+colorful==0.5.4
+
+filelock==3.0.12
+
+pyOpenSSL==19.1.0
+python-dateutil==2.8.1

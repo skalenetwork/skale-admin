@@ -1,20 +1,20 @@
 #   -*- coding: utf-8 -*-
 #
-#   This file is part of skale-node
+#   This file is part of SKALE Admin
 #
 #   Copyright (C) 2019 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
+#   it under the terms of the GNU Affero General Public License as published by
 #   the Free Software Foundation, either version 3 of the License, or
 #   (at your option) any later version.
 #
 #   This program is distributed in the hope that it will be useful,
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
+#   GNU Affero General Public License for more details.
 #
-#   You should have received a copy of the GNU General Public License
+#   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
@@ -22,25 +22,22 @@ from http import HTTPStatus
 
 from flask import Blueprint, request, abort
 
-from web.helper import construct_ok_response, construct_response, login_required, \
-    construct_err_response
+from web.helper import construct_ok_response, construct_err_response
+
 
 logger = logging.getLogger(__name__)
 
 
-def construct_nodes_bp(skale, node, containers):
+def construct_nodes_bp(skale, node, docker_utils):
     nodes_bp = Blueprint('nodes', __name__)
 
     @nodes_bp.route('/node-info', methods=['GET'])
-    @login_required
     def node_info():
         logger.debug(request)
-        node_info = node.get_node_info()
-        return construct_ok_response(node_info)
+        return construct_ok_response(node.info)
 
     @nodes_bp.route('/create-node', methods=['POST'])
-    @login_required
-    def create_node():
+    def register_node():
         logger.debug(request)
         if not request.json:
             abort(400)
@@ -62,20 +59,18 @@ def construct_nodes_bp(skale, node, containers):
             logger.error(error_msg)
             return construct_err_response(HTTPStatus.BAD_REQUEST, [error_msg])
 
-        res = node.create(ip, public_ip, port, name)
+        res = node.register(ip, public_ip, port, name)
         if res['status'] != 1:
             return construct_err_response(HTTPStatus.INTERNAL_SERVER_ERROR, res['errors'])
-        return construct_response(HTTPStatus.CREATED, res['data'])
+        return construct_ok_response(res['data'])
 
     @nodes_bp.route('/uninstall-node', methods=['GET'])
-    @login_required
     def uninstall_node():
         logger.debug(request)
         res = node.uninstall()
         return construct_ok_response(res)
 
     @nodes_bp.route('/check-node-name', methods=['GET'])
-    @login_required
     def check_node_name():
         logger.debug(request)
         node_name = request.args.get('nodeName')
@@ -83,7 +78,6 @@ def construct_nodes_bp(skale, node, containers):
         return construct_ok_response(res)
 
     @nodes_bp.route('/check-node-ip', methods=['GET'])
-    @login_required
     def check_node_ip():
         logger.debug(request)
         node_ip = request.args.get('nodeIp')
@@ -91,11 +85,10 @@ def construct_nodes_bp(skale, node, containers):
         return construct_ok_response(res)
 
     @nodes_bp.route('/containers/list', methods=['GET'])
-    @login_required
     def skale_containers_list():
         logger.debug(request)
         all = request.args.get('all') == 'True'
-        containers_list = containers.get_all_skale_containers(all=all)
+        containers_list = docker_utils.get_all_skale_containers(all=all, format=True)
         return construct_ok_response(containers_list)
 
     return nodes_bp
