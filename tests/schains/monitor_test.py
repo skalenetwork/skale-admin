@@ -112,7 +112,7 @@ def test_rotating_monitor(monitor):
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     open(FILENAME, 'w').close()
     with mock.patch('core.schains.monitor.SChainRecord'),\
-        mock.patch('core.schains.monitor.init_bls'), \
+        mock.patch('core.schains.monitor.run_dkg'), \
         mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0),\
         mock.patch('core.schains.monitor.SChainChecks.get_all',
                    new=mock.Mock(return_value=CHECK_MOCK)),\

@@ -15,6 +15,7 @@ export ENDPOINT=http://localhost:8545
 export DB_USER=user
 export DB_PASSWORD=pass
 export DB_PORT=3307
+export IMA_ENDPOINT=http://localhost:1000
 
 docker rm -f skale_schain_test1 skale_schain_test2 skale_schain_test3 || true
 rm -rf $PWD/tests/dkg_test/sgx.*

@@ -90,6 +90,31 @@ Certificates are already uploaded/Wrong form content:
 
 ## Development
 
+
+### Run tests locally
+
+1) Run local ganache, download and deploy SKALE Manager contracts to it
+
+```bash
+ETH_PRIVATE_KEY=[..] MANAGER_BRANCH=[..] bash ./scripts/deploy_manager.sh
+```
+
+- `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
+- `MANAGER_BRANCH` - tag of the SKALE Manager image to use (`$MANAGER_BRANCH-latest` will be used)
+- `SGX_WALLET_TAG` - tag of the SGX simulator to use (optional, `latest` will be used by default)
+
+List of the available SM tags: https://hub.docker.com/r/skalenetwork/skale-manager/tags  
+List of the available SGX tags: https://hub.docker.com/r/skalenetwork/sgxwalletsim/tags
+
+2) Run SGX wallet simulator and all tests after it
+
+```bash
+ETH_PRIVATE_KEY=[...] SCHAIN_TYPE=[...] bash ./scripts/run_tests.sh
+```
+
+- `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
+- `SCHAIN_TYPE` - type of the chain for the DKG test (could be `test2` - 2 nodes, `test4` - 4 nodes, `tiny` - 16 nodes)
+
 Test build:
 
 ```bash
