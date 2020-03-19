@@ -92,6 +92,7 @@ class SChainChecks:
         ts = time.time()
         rotation_data = self.skale.schains_data.get_rotation(self.name)
         finish_ts = rotation_data['finish_ts']
+        rotation_id = rotation_data['rotation_id']
         rotation_in_progress = finish_ts > ts
         new_schain = rotation_data['new_node'] == self.node_id
         exiting_node = rotation_data['leaving_node'] == self.node_id
@@ -99,7 +100,8 @@ class SChainChecks:
             'result': rotation_in_progress,
             'new_schain': new_schain,
             'exiting_node': exiting_node,
-            'finish_ts': finish_ts
+            'finish_ts': finish_ts,
+            'rotation_id': rotation_id
         }
 
     def is_healthy(self):
