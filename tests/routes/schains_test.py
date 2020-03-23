@@ -8,6 +8,9 @@ from flask import Flask
 
 from web.models.schain import SChainRecord
 from skale.contracts.data.schains_data import FIELDS
+from tools.docker_utils import DockerUtils
+from core.schains.runner import get_image_name
+from tools.configs.containers import SCHAIN_CONTAINER
 
 
 @pytest.fixture
@@ -41,7 +44,30 @@ def test_dkg_status(skale_bp):
     assert data[2]['is_deleted'] is True
 
 
-def test_owner_schains(skale_bp, skale):
+def test_node_schains_list(skale_bp, skale):
     data = get_bp_data(skale_bp, '/schains/list')
     assert len(data) == 1
     assert len(data[0]) == len(FIELDS) + 1
+
+
+# def test_schain_config(skale_bp, skale):
+#     sid = skale.schains_data.get_all_schains_ids()[-1]
+#     name = skale.schains_data.get(sid).get('name')
+#     data = get_bp_data(skale_bp, '/schain-config', {'schain-name': name})
+#     assert data == 1
+
+
+def test_schains_containers_list(skale_bp, skale):
+    dutils = DockerUtils(volume_driver='local')
+    schain_image = get_image_name(SCHAIN_CONTAINER)
+    # name_run = 'skale_schain_TEST_LIST1'
+    # name_stop = 'skale_schain_TEST_LIST2'
+    cont1 = dutils.client.containers.run(schain_image, name='skale_schain_TEST_LIST', detach=True)
+    # cont2 = dutils.client.containers.run(schain_image, name='skale_schain_TEST_LIST2', detach=True)
+    # cont2.stop()
+    # data = get_bp_data(skale_bp, '/containers/schains/list')
+    # assert data == 2
+    data = get_bp_data(skale_bp, '/containers/schains/list', {'all': True})
+    assert sum(map(lambda cont: cont['name'] == cont1.name, data)) == 1
+    cont1.remove(force=True)
+
