@@ -7,12 +7,14 @@ from tools.docker_utils import DockerUtils
 from flask import Flask
 
 from web.models.schain import SChainRecord
+from skale.contracts.data.schains_data import FIELDS
 
 
 @pytest.fixture
 def skale_bp(skale):
     app = Flask(__name__)
     config = NodeConfig()
+    config.id = skale.nodes_data.get_active_node_ids()[0]
     dutils = DockerUtils(volume_driver='local')
     app.register_blueprint(construct_schains_bp(skale, config, dutils))
     SChainRecord.create_table()
@@ -37,3 +39,9 @@ def test_dkg_status(skale_bp):
     data = get_bp_data(skale_bp, '/api/dkg/statuses', {'all': True})
     assert len(data) == 3
     assert data[2]['is_deleted'] is True
+
+
+def test_owner_schains(skale_bp, skale):
+    data = get_bp_data(skale_bp, '/schains/list')
+    assert len(data) == 1
+    assert len(data[0]) == len(FIELDS) + 1
