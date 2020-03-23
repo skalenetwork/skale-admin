@@ -114,7 +114,8 @@ class SchainsMonitor:
         exiting_node = checks['rotation_in_progress']['exiting_node']
         rotation_id = checks['rotation_in_progress']['rotation_id']
         if rotation_in_progress:
-            finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
+            finish_time_ts = checks['rotation_in_progress']['finish_ts']
+            finish_time = datetime.fromtimestamp(finish_time_ts)
 
         if exiting_node and rotation_in_progress:
             logger.info(f'Node is exiting. sChain will be stoped at {finish_time}')
@@ -141,7 +142,7 @@ class SchainsMonitor:
                 schain_config = generate_schain_config(self.skale, schain['name'],
                                                        self.node_id, rotation_id)
                 save_schain_config(schain_config, schain['name'])
-                self.monitor_sync_schain_container(schain, finish_time)
+                self.monitor_sync_schain_container(schain, finish_time_ts)
 
         elif rotation_in_progress and not new_schain:
             logger.info('Schain was rotated. Rotation in progress')
