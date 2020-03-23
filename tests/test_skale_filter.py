@@ -2,7 +2,9 @@ import pytest
 import mock
 from tools.helper import SkaleFilter, SkaleFilterError
 
-from skale.utils.contracts_provision.utils import generate_random_schain_data
+from skale.utils.contracts_provision.utils import (
+    generate_random_node_data, generate_random_schain_data
+)
 
 
 def test_skale_filter(skale):
@@ -15,6 +17,10 @@ def test_skale_filter(skale):
 
 
 def test_remove_schain_filter(skale):
+    for _ in range(0, 1):
+        ip, _, port, name = generate_random_node_data()
+        skale.manager.create_node(ip, port, name, wait_for=True)
+
     sfilter = SkaleFilter(
         skale.schains.contract.events.SchainCreated,
         from_block=0,
