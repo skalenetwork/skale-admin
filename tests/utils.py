@@ -2,6 +2,7 @@
 
 import random
 import string
+import json
 
 
 def generate_random_ip():
@@ -25,3 +26,8 @@ def generate_random_schain_data():
     lifetime_seconds = 3600  # 1 hour
     type_of_nodes = 1
     return type_of_nodes, lifetime_seconds, generate_random_name()
+
+
+def get_bp_data(bp, request, params=None):
+    data = bp.get(request, query_string=params).data
+    return json.loads(data.decode('utf-8'))['data']

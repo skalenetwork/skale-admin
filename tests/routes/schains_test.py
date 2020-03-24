@@ -1,6 +1,6 @@
 import pytest
-import json
 
+from tests.utils import get_bp_data
 from web.routes.schains import construct_schains_bp
 from core.node_config import NodeConfig
 from tools.docker_utils import DockerUtils
@@ -8,7 +8,6 @@ from flask import Flask
 
 from web.models.schain import SChainRecord
 from skale.contracts.data.schains_data import FIELDS
-from tools.docker_utils import DockerUtils
 from core.schains.runner import get_image_name
 from tools.configs.containers import SCHAIN_CONTAINER
 
@@ -23,11 +22,6 @@ def skale_bp(skale):
     SChainRecord.create_table()
     yield app.test_client()
     SChainRecord.drop_table()
-
-
-def get_bp_data(bp, request, params=None):
-    data = bp.get(request, query_string=params).data
-    return json.loads(data.decode('utf-8'))['data']
 
 
 def test_dkg_status(skale_bp):
@@ -60,14 +54,11 @@ def test_node_schains_list(skale_bp, skale):
 def test_schains_containers_list(skale_bp, skale):
     dutils = DockerUtils(volume_driver='local')
     schain_image = get_image_name(SCHAIN_CONTAINER)
-    # name_run = 'skale_schain_TEST_LIST1'
-    # name_stop = 'skale_schain_TEST_LIST2'
-    cont1 = dutils.client.containers.run(schain_image, name='skale_schain_TEST_LIST', detach=True)
-    # cont2 = dutils.client.containers.run(schain_image, name='skale_schain_TEST_LIST2', detach=True)
-    # cont2.stop()
-    # data = get_bp_data(skale_bp, '/containers/schains/list')
-    # assert data == 2
+    cont1 = dutils.client.containers.run(schain_image, name='skale_schain_test_list', detach=True)
     data = get_bp_data(skale_bp, '/containers/schains/list', {'all': True})
     assert sum(map(lambda cont: cont['name'] == cont1.name, data)) == 1
     cont1.remove(force=True)
 
+
+def test_owner_schains(skale_bp, skale):
+    pass
