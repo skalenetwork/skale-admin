@@ -1,4 +1,6 @@
 import pytest
+import json
+import os
 
 from tests.utils import get_bp_data
 from web.routes.schains import construct_schains_bp
@@ -9,6 +11,7 @@ from flask import Flask
 from web.models.schain import SChainRecord
 from skale.contracts.data.schains_data import FIELDS
 from core.schains.runner import get_image_name
+from core.schains.config import get_schain_config_filepath
 from tools.configs.containers import SCHAIN_CONTAINER
 
 
@@ -44,11 +47,18 @@ def test_node_schains_list(skale_bp, skale):
     assert len(data[0]) == len(FIELDS) + 1
 
 
-# def test_schain_config(skale_bp, skale):
-#     sid = skale.schains_data.get_all_schains_ids()[-1]
-#     name = skale.schains_data.get(sid).get('name')
-#     data = get_bp_data(skale_bp, '/schain-config', {'schain-name': name})
-#     assert data == 1
+def test_schain_config(skale_bp, skale):
+    sid = skale.schains_data.get_all_schains_ids()[-1]
+    name = skale.schains_data.get(sid).get('name')
+    filename = get_schain_config_filepath(name)
+    os.makedirs(os.path.dirname(filename))
+    with open(filename, 'w') as f:
+        text = {'skaleConfig': True}
+        f.write(json.dumps(text))
+    data = get_bp_data(skale_bp, '/schain-config', {'schain-name': name})
+    assert data is True
+    os.remove(filename)
+    os.rmdir(os.path.dirname(filename))
 
 
 def test_schains_containers_list(skale_bp, skale):
