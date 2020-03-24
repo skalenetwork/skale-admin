@@ -13,6 +13,6 @@ def skale_bp(skale):
     return app.test_client()
 
 
-def test_sgx_status(skale_bp, skale):
+def test_load_wallet(skale_bp, skale):
     data = get_bp_data(skale_bp, '/load-wallet')
     assert data == wallet_with_balance(skale)
