@@ -23,8 +23,16 @@ def cleanup_contracts(skale):
         skale.manager.delete_node_by_root(node_id, wait_for=True)
 
 
+def link_node_address(skale):
+    skale.validator_service.link_node_address(
+        node_address=skale.wallet.address,
+        wait_for=True
+    )
+
+
 if __name__ == "__main__":
     skale_lib = skale()
     cleanup_contracts(skale_lib)
     setup_validator(skale_lib)
+    link_node_address(skale_lib)
     _skip_evm_time(skale_lib.web3, MONTH_IN_SECONDS)
