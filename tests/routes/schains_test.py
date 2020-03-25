@@ -14,8 +14,6 @@ from core.schains.runner import get_image_name
 from core.schains.config import get_schain_config_filepath
 from tools.configs.containers import SCHAIN_CONTAINER
 
-from skale.utils.contracts_provision.utils import generate_random_node_data
-
 
 @pytest.fixture
 def skale_bp(skale):
@@ -25,12 +23,8 @@ def skale_bp(skale):
     dutils = DockerUtils(volume_driver='local')
     app.register_blueprint(construct_schains_bp(skale, config, dutils))
     SChainRecord.create_table()
-    ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name, wait_for=True)
     yield app.test_client()
     SChainRecord.drop_table()
-    node_idx = skale.nodes_data.node_name_to_index(name)
-    skale.manager.delete_node_by_root(node_idx, wait_for=True)
 
 
 def test_dkg_status(skale_bp):
@@ -77,4 +71,9 @@ def test_schains_containers_list(skale_bp, skale):
 
 
 def test_owner_schains(skale_bp, skale):
-    pass
+    data = get_bp_data(skale_bp, '/get-owner-schains')
+    assert len(data)
+    assert len(data[0]['nodes'])
+    schain_data = data[0].copy()
+    schain_data.pop('nodes')
+    assert schain_data == skale.schains_data.get_schains_for_owner(skale.wallet.address)[0]
