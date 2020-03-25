@@ -132,7 +132,7 @@ class SchainsMonitor:
                 schain_record.dkg_started()
                 try:
                     run_dkg(skale, schain['name'], self.node_config.id,
-                            self.node_config.sgx_key_name)
+                            self.node_config.sgx_key_name, rotation_id)
                 except DkgError as err:
                     logger.info(f'sChain {name} Dkg procedure failed with {err}')
                     schain_record.dkg_failed()
