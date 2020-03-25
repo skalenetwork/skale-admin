@@ -28,8 +28,10 @@ def generate_random_schain_data():
     return type_of_nodes, lifetime_seconds, generate_random_name()
 
 
-def get_bp_data(bp, request, params=None):
-    data = bp.get(request, query_string=params).data
+def get_bp_data(bp, request, params=None, full_data=False, **kwargs):
+    data = bp.get(request, query_string=params, **kwargs).data
+    if full_data:
+        return data
     return json.loads(data.decode('utf-8'))['data']
 
 
