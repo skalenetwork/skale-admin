@@ -32,7 +32,7 @@ from tools.configs import FLASK_SECRET_KEY_FILE
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
 from tools.configs.db import DB_FILE
 from tools.docker_utils import DockerUtils
-from tools.logger import init_admin_logger
+from tools.logger import init_api_logger
 from tools.sgx_utils import generate_sgx_key, sgx_server_text
 from tools.str_formatters import arguments_list_string
 from tools.token_utils import init_user_token
@@ -50,7 +50,7 @@ from web.routes.validators import construct_validators_bp
 from web.routes.metrics import construct_metrics_bp
 from web.routes.sgx import sgx_bp
 
-init_admin_logger()
+init_api_logger()
 logger = logging.getLogger(__name__)
 werkzeug_logger = logging.getLogger('werkzeug')  # todo: remove
 werkzeug_logger.setLevel(logging.WARNING)  # todo: remove

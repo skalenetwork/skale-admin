@@ -28,10 +28,10 @@ from core.schains.creator import run_creator
 from core.schains.cleaner import run_cleaner
 
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
-from tools.logger import init_admin_monitor_logger
+from tools.logger import init_admin_logger
 
 
-init_admin_monitor_logger()
+init_admin_logger()
 logger = logging.getLogger(__name__)
 
 SLEEP_INTERVAL = 50
