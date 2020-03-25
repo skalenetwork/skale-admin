@@ -33,6 +33,8 @@ def get_bp_data(bp, request, params=None):
     return json.loads(data.decode('utf-8'))['data']
 
 
-def post_bp_data(bp, request, params=None):
+def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
     data = bp.post(request, json=params).data
+    if full_response:
+        return json.loads(data.decode('utf-8'))
     return json.loads(data.decode('utf-8'))['data']
