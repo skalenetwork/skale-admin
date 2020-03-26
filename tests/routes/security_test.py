@@ -17,7 +17,8 @@ def skale_bp(skale):
     dutils = DockerUtils(volume_driver='local')
     os.makedirs(SSL_CERTIFICATES_FILEPATH)
     cert_file = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    open(cert_file, 'w').close()
+    with open(cert_file, 'w'):
+        pass
     app.register_blueprint(construct_security_bp(dutils))
     yield app.test_client()
     os.remove(cert_file)

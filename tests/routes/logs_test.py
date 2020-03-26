@@ -3,9 +3,13 @@ import os
 import tarfile
 from flask import Flask
 
+from core.schains.runner import get_image_name
+from tools.configs.containers import SCHAIN_CONTAINER
+
 from tools.configs import NODE_DATA_PATH
 from tests.utils import get_bp_data
 from web.routes.logs import web_logs
+from tools.docker_utils import DockerUtils
 
 
 @pytest.fixture
@@ -16,11 +20,15 @@ def skale_bp(skale):
 
 
 def test_get_logs(skale_bp):
-    name = 'test1'
-    data = get_bp_data(skale_bp, '/logs/dump', {'container_name': name}, full_data=True)
+    cont_name = 'logs_test'
+    dutils = DockerUtils(volume_driver='local')
+    schain_image = get_image_name(SCHAIN_CONTAINER)
+    dutils.client.containers.run(schain_image, name=cont_name, detach=True)
+    data = get_bp_data(skale_bp, '/logs/dump', {'container_name': cont_name}, full_data=True)
     schain_log_path = os.path.join(NODE_DATA_PATH, 'logs.tar.gz')
     with open(schain_log_path, 'wb') as f:
         f.write(data)
     tar = tarfile.open(schain_log_path, "r:gz")
-    assert f'skale_schain_{name}.log' in tar.getnames()
+    assert f'{cont_name}.log' in tar.getnames()
     os.remove(schain_log_path)
+    dutils.safe_rm(cont_name, force=True)
