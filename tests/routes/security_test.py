@@ -1,12 +1,10 @@
 import pytest
-import os
 import mock
 import json
 
 from flask import Flask
 from tests.utils import get_bp_data, post_bp_data
 
-from tools.configs import SSL_CERTIFICATES_FILEPATH
 from tools.docker_utils import DockerUtils
 from web.routes.security import construct_security_bp
 
@@ -15,14 +13,8 @@ from web.routes.security import construct_security_bp
 def skale_bp(skale):
     app = Flask(__name__)
     dutils = DockerUtils(volume_driver='local')
-    os.makedirs(SSL_CERTIFICATES_FILEPATH)
-    cert_file = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    with open(cert_file, 'w'):
-        pass
     app.register_blueprint(construct_security_bp(dutils))
     yield app.test_client()
-    os.remove(cert_file)
-    os.rmdir(SSL_CERTIFICATES_FILEPATH)
 
 
 def load_certificate_mock(type, buffer):
