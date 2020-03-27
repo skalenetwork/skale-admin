@@ -30,4 +30,4 @@ def get_ssl_filepath():
         return 'NULL', 'NULL'
     else:
         return os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key'), \
-        os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+            os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
