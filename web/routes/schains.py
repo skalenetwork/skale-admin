@@ -23,6 +23,8 @@ from http import HTTPStatus
 from flask import Blueprint, request
 
 from skale.schain_config.generator import get_nodes_for_schain_config
+
+from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_config
 from web.models.schain import SChainRecord
 from web.helper import construct_ok_response, construct_err_response
@@ -73,5 +75,22 @@ def construct_schains_bp(skale, config, docker_utils):
         _all = request.args.get('all') == 'True'
         dkg_statuses = SChainRecord.get_statuses(_all)
         return construct_ok_response(dkg_statuses)
+
+
+    @schains_bp.route('/api/schains/healthchecks', methods=['GET'])
+    def schains_status():
+        logger.debug(request)
+        node_id = config.id
+        if node_id is None:
+            return construct_err_response(HTTPStatus.BAD_REQUEST, ['No node installed'])
+        schains = skale.schains_data.get_schains_for_node(node_id)
+        checks = [
+            {
+                'name': schain['name'],
+                'healthchecks': SChainChecks(schain['name'], 10, log=True).get_all()
+            }
+            for schain in schains
+        ]
+        return construct_ok_response(checks)
 
     return schains_bp
