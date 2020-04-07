@@ -53,7 +53,7 @@ def construct_schains_bp(skale, config, docker_utils):
             schain_config = get_schain_config(schain_name)
         except FileNotFoundError:
             return construct_err_response(
-                HTTPStatus.BAD_REQUEST, 
+                HTTPStatus.BAD_REQUEST,
                 [f'sChain config not found: {schain_name}']
             )
         skale_schain_config = schain_config['skaleConfig']
