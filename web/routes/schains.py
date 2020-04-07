@@ -76,9 +76,8 @@ def construct_schains_bp(skale, config, docker_utils):
         dkg_statuses = SChainRecord.get_statuses(_all)
         return construct_ok_response(dkg_statuses)
 
-
     @schains_bp.route('/api/schains/healthchecks', methods=['GET'])
-    def schains_status():
+    def schains_healthchecks():
         logger.debug(request)
         node_id = config.id
         if node_id is None:
