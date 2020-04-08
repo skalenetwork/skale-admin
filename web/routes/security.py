@@ -51,7 +51,7 @@ def construct_security_bp(docker_utils):
         cert_filepath = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
         with open(cert_filepath) as cert_file:
             cert = crypto.load_certificate(
-                crypto.FILETYPE_PEM, open(cert_file).read())
+                crypto.FILETYPE_PEM, cert_file.read())
 
             subject = cert.get_subject()
             issued_to = subject.CN
