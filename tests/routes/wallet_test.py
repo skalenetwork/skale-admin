@@ -15,4 +15,9 @@ def skale_bp(skale):
 
 def test_load_wallet(skale_bp, skale):
     data = get_bp_data(skale_bp, '/load-wallet')
-    assert data == wallet_with_balance(skale)
+    assert data == {
+        'status': 'ok',
+        'payload': {
+            **wallet_with_balance(skale)
+        }
+    }

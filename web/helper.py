@@ -34,20 +34,16 @@ def construct_response(status, data):
     )
 
 
-def construct_bad_req_response(error_msg):
-    return construct_response(HTTPStatus.BAD_REQUEST, {'res': 0, 'error_msg': error_msg})
+def construct_ok_response(data={}):
+    print(data)
+    return construct_response(HTTPStatus.OK, {'status': 'ok', 'payload': data})
 
 
-def construct_err_response(status, errors=[]):
-    logger.warning(f'error response: {errors}, status: {status}')
-    return construct_response(status, {'errors': errors})
+def construct_err_response(msg={}, status_code=HTTPStatus.BAD_REQUEST):
+    return construct_response(status_code, {'status': 'error', 'payload': msg})
 
 
-def construct_key_error_response(keys):
-    keys_str = ', '.join(keys)
-    err = f'Required arguments: {keys_str}'
-    return construct_err_response(400, [err])
-
-
-def construct_ok_response(data=None):
-    return construct_response(HTTPStatus.OK, {'res': 1, 'data': data})
+def construct_key_error_response(absent_keys):
+    keys_str = ', '.join(absent_keys)
+    msg = f'Required arguments: {keys_str}'
+    return construct_err_response(msg=msg)

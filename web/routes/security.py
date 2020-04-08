@@ -27,7 +27,7 @@ from OpenSSL import crypto
 from flask import Blueprint, request
 
 from core.schains.ssl import is_ssl_folder_empty
-from web.helper import construct_ok_response, construct_bad_req_response
+from web.helper import construct_ok_response, construct_err_response
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 logger = logging.getLogger(__name__)
@@ -46,20 +46,23 @@ def construct_security_bp(docker_utils):
     def status():
         logger.debug(request)
         if is_ssl_folder_empty():
-            return construct_ok_response({'status': 0})
+            return construct_ok_response(data={'is_empty': True})
 
-        cert_file = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-        cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_file).read())
+        cert_filepath = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+        with open(cert_filepath) as cert_file:
+            cert = crypto.load_certificate(
+                crypto.FILETYPE_PEM, open(cert_file).read())
 
-        subject = cert.get_subject()
-        issued_to = subject.CN
-        expiration_date_raw = cert.get_notAfter()
-        expiration_date = parser.parse(expiration_date_raw).strftime('%Y-%m-%dT%H:%M:%S')
-        return construct_ok_response({
-            'issued_to': issued_to,
-            'expiration_date': expiration_date,
-            'status': 1
-        })
+            subject = cert.get_subject()
+            issued_to = subject.CN
+            expiration_date_raw = cert.get_notAfter()
+            expiration_date = parser.parse(
+                expiration_date_raw).strftime('%Y-%m-%dT%H:%M:%S')
+            return construct_ok_response(data={
+                'issued_to': issued_to,
+                'expiration_date': expiration_date,
+                'status': 1
+            })
 
     @security_bp.route('/api/ssl/upload', methods=['POST'])
     def upload():
@@ -67,9 +70,9 @@ def construct_security_bp(docker_utils):
         force = request_json.get('force') is True
 
         if not is_ssl_folder_empty() and not force:
-            return construct_bad_req_response(CERTS_UPLOADED_ERR_MSG)
+            return construct_err_response(msg=CERTS_UPLOADED_ERR_MSG)
         if SSL_KEY_NAME not in request.files or SSL_CRT_NAME not in request.files:
-            return construct_bad_req_response(NO_REQUIRED_FILES_ERR_MSG)
+            return construct_err_response(msg=NO_REQUIRED_FILES_ERR_MSG)
 
         ssl_key = request.files[SSL_KEY_NAME]
         ssl_cert = request.files[SSL_CRT_NAME]
