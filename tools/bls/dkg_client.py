@@ -136,6 +136,7 @@ class DKGClient:
                 self.node_id_contract,
                 verification_vector,
                 secret_key_contribution,
+                gas_price=self.skale.dkg.gas_price(),
                 wait_for=True,
                 retries=2
             )
@@ -174,6 +175,7 @@ class DKGClient:
         self.skale.dkg.complaint(self.group_index,
                                  self.node_id_contract,
                                  self.node_ids_dkg[to_node],
+                                 gas_price=self.skale.dkg.gas_price(),
                                  wait_for=True)
         logger.info(f'sChain: {self.schain_name}. '
                     f'{self.node_id_dkg} node sent a complaint on {to_node} node')
@@ -202,6 +204,7 @@ class DKGClient:
                 self.node_id_contract,
                 int(dh_key, 16),
                 eth_utils.conversions.add_0x_prefix(share),
+                gas_price=self.skale.dkg.gas_price(),
                 wait_for=True,
                 retries=2
             )
@@ -249,6 +252,7 @@ class DKGClient:
             tx_res = self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,
+                gas_price=self.skale.dkg.gas_price(),
                 wait_for=True,
                 retries=2
             )
