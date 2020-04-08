@@ -27,7 +27,7 @@ from skale.schain_config.generator import get_nodes_for_schain_config
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_config
 from web.models.schain import SChainRecord
-from web.helper import construct_ok_response, construct_err_response
+from web.helper import construct_ok_response, construct_err_response, construct_key_error_response
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +47,17 @@ def construct_schains_bp(skale, config, docker_utils):
     @schains_bp.route('/schain-config', methods=['GET'])
     def get_schain_config_route():
         logger.debug(request)
-        schain_name = request.args.get('schain-name')
-        # todo: handle - if schain name is empty or invalid
-        schain_config = get_schain_config(schain_name)
+        key = 'schain-name'
+        schain_name = request.args.get(key)
+        if not schain_name:
+            return construct_key_error_response([key])
+        try:
+            schain_config = get_schain_config(schain_name)
+        except FileNotFoundError:
+            return construct_err_response(
+                HTTPStatus.BAD_REQUEST,
+                [f'sChain config not found: {schain_name}']
+            )
         skale_schain_config = schain_config['skaleConfig']
         return construct_ok_response(skale_schain_config)
 
