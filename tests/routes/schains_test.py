@@ -82,10 +82,7 @@ def test_owner_schains(skale_bp, skale):
 def test_schains_healthchecks(skale_bp, skale):
     data = get_bp_data(skale_bp, '/api/schains/healthchecks')
 
-    test_schain_data = data[0]
-    test_schain_checks = test_schain_data['healthchecks']
-
-    assert test_schain_data['name'] == 'test_schain'
+    test_schain_checks = data[0]['healthchecks']
     assert test_schain_checks == {
         'data_dir': False,
         'dkg': False,
