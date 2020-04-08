@@ -67,6 +67,7 @@ class Node:
             return self._insufficient_funds()
         try:
             tx_res = self.skale.manager.create_node(ip, int(port), name, public_ip, wait_for=True)
+            tx_res.raise_for_status()
         except TransactionFailedError:
             logger.error(arguments_list_string(
                 {'tx': tx_res.hash},

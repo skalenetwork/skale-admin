@@ -131,7 +131,7 @@ class DKGClient:
         verification_vector = self.verification_vector()
         secret_key_contribution = self.secret_key_contribution()
         try:
-            self.skale.dkg.broadcast(
+            tx_res = self.skale.dkg.broadcast(
                 self.group_index,
                 self.node_id_contract,
                 verification_vector,
@@ -139,6 +139,7 @@ class DKGClient:
                 wait_for=True,
                 retries=2
             )
+            tx_res.raise_for_status()
         except TransactionFailedError as e:
             logger.error(f'DKG broadcast failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
@@ -196,7 +197,7 @@ class DKGClient:
 
         share = convert_g2_point_to_hex(share)
         try:
-            self.skale.dkg.response(
+            tx_res = self.skale.dkg.response(
                 self.group_index,
                 self.node_id_contract,
                 int(dh_key, 16),
@@ -204,6 +205,7 @@ class DKGClient:
                 wait_for=True,
                 retries=2
             )
+            tx_res.raise_for_status()
         except TransactionFailedError as e:
             logger.error(f'DKG response failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
@@ -244,12 +246,13 @@ class DKGClient:
                         f'{self.node_id_dkg} node has already sent an alright note')
             return
         try:
-            self.skale.dkg.alright(
+            tx_res = self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,
                 wait_for=True,
                 retries=2
             )
+            tx_res.raise_for_status()
         except TransactionFailedError as e:
             logger.error(f'DKG alright failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
