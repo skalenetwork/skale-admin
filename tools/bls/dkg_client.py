@@ -23,7 +23,7 @@ import binascii
 import logging
 import eth_utils
 
-from skale.utils.web3_utils import TransactionFailedError
+from skale.dataclasses.tx_res import TransactionFailedError
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
 

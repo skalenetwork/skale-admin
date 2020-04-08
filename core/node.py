@@ -24,7 +24,7 @@ from enum import Enum
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
-from skale.utils.web3_utils import TransactionFailedError
+from skale.dataclasses.tx_res import TransactionFailedError
 from skale.utils.helper import ip_from_bytes
 from skale.wallets.web3_wallet import public_key_to_address
 
