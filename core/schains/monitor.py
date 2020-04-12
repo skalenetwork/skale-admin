@@ -38,7 +38,7 @@ from core.schains.config import (generate_schain_config, save_schain_config,
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_env
-from core.schains.dkg import init_bls
+from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER
@@ -104,8 +104,8 @@ class SchainsMonitor:
         if not checks['dkg']:
             try:
                 schain_record.dkg_started()
-                init_bls(skale, schain['name'], self.node_config.id,
-                         self.node_config.sgx_key_name)
+                run_dkg(skale, schain['name'], self.node_config.id,
+                        self.node_config.sgx_key_name)
             except DkgError as err:
                 logger.info(f'sChain {name} Dkg procedure failed with {err}')
                 schain_record.dkg_failed()

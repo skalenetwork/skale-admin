@@ -19,7 +19,7 @@
 
 import logging
 import datetime
-from peewee import CharField, DateTimeField, IntegrityError, IntegerField
+from peewee import CharField, DateTimeField, IntegrityError, IntegerField, BooleanField
 
 from core.schains.dkg_status import DKGStatus
 from web.models.base import BaseModel
@@ -31,6 +31,7 @@ class SChainRecord(BaseModel):
     name = CharField(unique=True)
     added_at = DateTimeField()
     dkg_status = IntegerField()
+    is_deleted = BooleanField(default=False)
 
     @classmethod
     def add(cls, name):
@@ -54,8 +55,11 @@ class SChainRecord(BaseModel):
         return cls.select().where(cls.name == name).exists()
 
     @classmethod
-    def all(cls):
-        records = cls.select()
+    def get_statuses(cls, all=False):
+        if all:
+            records = cls.select()
+        else:
+            records = cls.select().where(cls.is_deleted == False)  # noqa: E712
         dkg_statuses = []
         for record in records:
             dkg_statuses.append(cls.to_dict(record))
@@ -68,6 +72,7 @@ class SChainRecord(BaseModel):
             'added_at': record.added_at.timestamp(),
             'dkg_status': record.dkg_status,
             'dkg_status_name': DKGStatus(record.dkg_status).name,
+            'is_deleted': record.is_deleted,
         }
 
     def dkg_started(self):
@@ -82,4 +87,8 @@ class SChainRecord(BaseModel):
     def set_dkg_status(self, val):
         logger.info(f'Changing DKG status for {self.name} to {val.name}')
         self.dkg_status = val.value
+        self.save()
+
+    def set_deleted(self):
+        self.is_deleted = True
         self.save()
