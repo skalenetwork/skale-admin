@@ -64,12 +64,6 @@ def construct_nodes_bp(skale, node, docker_utils):
             return construct_err_response(HTTPStatus.INTERNAL_SERVER_ERROR, res['errors'])
         return construct_ok_response(res['data'])
 
-    @nodes_bp.route('/uninstall-node', methods=['GET'])
-    def uninstall_node():
-        logger.debug(request)
-        res = node.uninstall()
-        return construct_ok_response(res)
-
     @nodes_bp.route('/check-node-name', methods=['GET'])
     def check_node_name():
         logger.debug(request)
