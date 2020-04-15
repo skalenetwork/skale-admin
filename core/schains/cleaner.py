@@ -73,7 +73,7 @@ def remove_config_dir(schain_name):
 
 class SChainsCleaner():
     def __init__(self, skale, node_config):
-        self.skale = skale
+        self.skale = spawn_skale_lib(skale)
         self.skale_events = spawn_skale_lib(skale)
         self.node_config = node_config
         CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
