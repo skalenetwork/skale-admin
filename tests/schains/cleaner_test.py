@@ -55,8 +55,10 @@ def test_remove_ima_container(dutils):
 
 
 def test_remove_schain_record():
+    SChainRecord.create_table()
     name = "test"
     SChainRecord.add(name)
     remove_schain_record(name)
     record = SChainRecord.get_by_name(name)
     assert record["is_deleted"]
+    SChainRecord.drop_table()
