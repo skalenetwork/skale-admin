@@ -2,14 +2,14 @@ import os
 import pytest
 
 from core.schains.cleaner import (remove_config_dir, remove_schain_volume, remove_schain_container,
-                                  remove_ima_container)
+                                  remove_ima_container, remove_schain_record)
 from core.schains.helper import init_schain_dir
 from tools.configs.schains import SCHAINS_DIR_PATH
 
 from tools.docker_utils import DockerUtils
 
 from tests.docker_utils_test import run_test_schain_container, run_test_ima_container, SCHAIN
-
+from web.models.schain import SChainRecord
 
 SCHAIN_CONFIG_DIR = os.path.join(SCHAINS_DIR_PATH, SCHAIN['name'])
 SCHAIN_CONTAINER_NAME = 'skale_schain_test'
@@ -52,3 +52,11 @@ def test_remove_ima_container(dutils):
     assert container_running(dutils, IMA_CONTAINER_NAME)
     remove_ima_container(SCHAIN['name'])
     assert not container_running(dutils, IMA_CONTAINER_NAME)
+
+
+def test_remove_schain_record():
+    name = "test"
+    SChainRecord.add(name)
+    remove_schain_record(name)
+    record = SChainRecord.get_by_name(name)
+    assert record["is_deleted"]
