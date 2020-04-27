@@ -59,6 +59,6 @@ def test_remove_schain_record():
     name = "test"
     SChainRecord.add(name)
     remove_schain_record(name)
-    record = SChainRecord.get_by_name(name)
+    record = SChainRecord.to_dict(SChainRecord.get_by_name(name))
     assert record["is_deleted"]
     SChainRecord.drop_table()
