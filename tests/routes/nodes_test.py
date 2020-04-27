@@ -1,7 +1,10 @@
 import pytest
 from mock import patch
 
+from eth_account import messages
 from flask import Flask
+from web3 import Web3
+
 
 from tools.docker_utils import DockerUtils
 from core.node import Node
@@ -81,3 +84,18 @@ def test_node_create(skale_bp, node_config):
     }
     data = post_bp_data(skale_bp, '/create-node', json_data)
     assert data == 1
+
+
+def get_expected_signature(skale, validator_id):
+    unsigned_hash = Web3.soliditySha3(['uint256'], [validator_id])
+    signed_hash = skale.wallet.sign_hash(unsigned_hash.hex())
+    return signed_hash.signature.hex()
+
+
+def test_node_signature(skale_bp, skale):
+    validator_id = 1
+    json_data = {'validator_id': validator_id}
+    data = get_bp_data(skale_bp, 'node-signature', json_data)
+    expected_signature = get_expected_signature(skale, validator_id)
+    assert data == {'status': 'ok', 'payload': {
+        'signature': expected_signature}}
