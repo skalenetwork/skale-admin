@@ -1,7 +1,6 @@
 import pytest
 from mock import patch
 
-from eth_account import messages
 from flask import Flask
 from web3 import Web3
 
