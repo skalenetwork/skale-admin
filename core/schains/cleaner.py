@@ -36,6 +36,7 @@ from tools.str_formatters import arguments_list_string
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.iptables import remove_rules as remove_iptables_rules
+from web.models.schain import SChainRecord
 
 from . import CLEANER_INTERVAL, MONITOR_INTERVAL
 
@@ -69,6 +70,12 @@ def remove_config_dir(schain_name):
     log_remove('config directory', schain_name)
     schain_dir_path = get_schain_dir_path(schain_name)
     shutil.rmtree(schain_dir_path)
+
+
+def remove_schain_record(schain_name):
+    if SChainRecord.added(schain_name):
+        schain_record = SChainRecord.get_by_name(schain_name)
+        schain_record.set_deleted()
 
 
 class SChainsCleaner():
@@ -147,3 +154,4 @@ class SChainsCleaner():
             remove_ima_container(schain_name)
         if checks['data_dir']:
             remove_config_dir(schain_name)
+        remove_schain_record(schain_name)
