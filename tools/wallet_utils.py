@@ -19,13 +19,12 @@
 
 import logging
 
+from skale.wallets.web3_wallet import to_checksum_address
+
 logger = logging.getLogger(__name__)
 
 # todo: move to smart contracts
-DEPOSIT_AMOUNT_SKL = 100
 DEPOSIT_AMOUNT_ETH = 0.2
-
-DEPOSIT_AMOUNT_SKL_WEI = DEPOSIT_AMOUNT_SKL * (10 ** 18)
 DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10 ** 18))
 
 
@@ -34,7 +33,7 @@ def wallet_with_balance(skale):  # todo: move to the skale.py
     eth_balance_wei = skale.web3.eth.getBalance(address)
     skale_balance_wei = skale.token.get_balance(address)
     return {
-        'address': address,
+        'address': to_checksum_address(address),
         'eth_balance_wei': eth_balance_wei,
         'skale_balance_wei': skale_balance_wei,
         'eth_balance': str(skale.web3.fromWei(eth_balance_wei, 'ether')),
@@ -44,5 +43,4 @@ def wallet_with_balance(skale):  # todo: move to the skale.py
 
 def check_required_balance(skale):  # todo: move to the skale.py
     balances = wallet_with_balance(skale)
-    return int(balances['eth_balance_wei']) >= DEPOSIT_AMOUNT_ETH_WEI and int(balances[
-        'skale_balance_wei']) >= DEPOSIT_AMOUNT_SKL_WEI
+    return int(balances['eth_balance_wei']) >= DEPOSIT_AMOUNT_ETH_WEI
