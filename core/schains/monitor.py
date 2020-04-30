@@ -142,7 +142,14 @@ class SchainsMonitor:
                 schain_config = generate_schain_config(self.skale, schain['name'],
                                                        self.node_id, rotation_id)
                 save_schain_config(schain_config, schain['name'])
+                init_data_volume(schain)
+                self.add_firewall_rules(name)
+                sleep(CONTAINERS_DELAY)
                 self.monitor_sync_schain_container(schain, finish_time_ts)
+                self.monitor_ima_container(schain)
+                # TODO: remove
+                self.scheduler.add_job(print, 'date', run_date=finish_time,
+                                       name=name)
 
         elif rotation_in_progress and not new_schain:
             logger.info('Schain was rotated. Rotation in progress')
@@ -151,7 +158,7 @@ class SchainsMonitor:
                 schain_record.dkg_started()
                 try:
                     run_dkg(skale, schain['name'], self.node_config.id,
-                            self.node_config.sgx_key_name)
+                            self.node_config.sgx_key_name, rotation_id)
                 except DkgError as err:
                     logger.info(f'sChain {name} Dkg procedure failed with {err}')
                     schain_record.dkg_failed()
