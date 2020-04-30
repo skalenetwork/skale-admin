@@ -36,6 +36,22 @@ def generate_sgx_wallets(skale, n_of_keys):
     ]
 
 
+def link_node_address(skale, wallet):
+    validator_id = skale.validator_service.validator_id_by_address(
+        skale.wallet.address)
+    main_wallet = skale.wallet
+    skale.wallet = wallet
+    signature = skale.validator_service.get_link_node_signature(
+        validator_id=validator_id
+    )
+    skale.wallet = main_wallet
+    skale.validator_service.link_node_address(
+        node_address=wallet.address,
+        signature=signature,
+        wait_for=True
+    )
+
+
 def transfer_eth_to_wallets(skale, wallets):
     logger.info(f'Transfering {TEST_ETH_AMOUNT} ETH to {len(wallets)} test wallets')
     for wallet in wallets:
@@ -45,10 +61,7 @@ def transfer_eth_to_wallets(skale, wallets):
 def link_addresses_to_validator(skale, wallets):
     logger.info(f'Linking addresses to validator')
     for wallet in wallets:
-        skale.validator_service.link_node_address(
-            node_address=wallet.address,
-            wait_for=True
-        )
+        link_node_address(skale, wallet)
 
 
 def register_node(skale, wallet):

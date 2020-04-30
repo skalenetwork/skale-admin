@@ -36,6 +36,7 @@ from tools.str_formatters import arguments_list_string
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.iptables import remove_rules as remove_iptables_rules
+from web.models.schain import SChainRecord
 
 from . import CLEANER_INTERVAL, MONITOR_INTERVAL
 
@@ -76,6 +77,12 @@ def remove_firewall_rules(schain_name):
     remove_iptables_rules(endpoints)
 
 
+def remove_schain_record(schain_name):
+    if SChainRecord.added(schain_name):
+        schain_record = SChainRecord.get_by_name(schain_name)
+        schain_record.set_deleted()
+
+
 def run_cleanup(skale, schain_name, node_id):
     checks = SChainChecks(skale, schain_name, node_id).get_all()
     if checks['container']['result']:
@@ -88,9 +95,10 @@ def run_cleanup(skale, schain_name, node_id):
         remove_ima_container(schain_name)
     if checks['data_dir']['result']:
         remove_config_dir(schain_name)
+    remove_schain_record(schain_name)
 
 
-class SChainsCleaner:
+class SChainsCleaner():
     def __init__(self, skale, node_config):
         self.skale = spawn_skale_lib(skale)
         self.skale_events = spawn_skale_lib(skale)
