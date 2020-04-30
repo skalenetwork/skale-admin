@@ -1,11 +1,14 @@
 import os
+from functools import partial
 
 import docker
 import pytest
 
 from tools.docker_utils import DockerUtils
 from core.schains.runner import (run_schain_container, run_ima_container,
+                                 get_container_name, get_image_name,
                                  run_schain_container_in_sync_mode)
+from tools.configs.containers import SCHAIN_CONTAINER
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -27,6 +30,16 @@ SCHAIN = {
     'index': 0,
     'active': True
 }
+
+
+@pytest.fixture
+def mocked_client():
+    dutils = DockerUtils(volume_driver='local')
+    dutils.get_all_schain_containers = partial(
+        dutils.get_all_schain_containers,
+        all=True
+    )
+    return dutils
 
 
 @pytest.fixture
@@ -127,3 +140,21 @@ def test_not_existed_docker_objects(client):
     assert info['status'] == 'not_found'
     assert client.to_start_container(info)
     client.safe_rm('random_name')
+
+
+def test_restart_all_schains(mocked_client):
+    schain_names = ['test1', 'test2', 'test3']
+    schain_image = get_image_name(SCHAIN_CONTAINER)
+    cont_names = [get_container_name(SCHAIN_CONTAINER, name) for name in schain_names]
+    start_time = {}
+
+    def get_schain_time(cont_name):
+        cont = mocked_client.client.containers.get(cont_name)
+        return cont.attrs['State']['StartedAt']
+
+    for cont_name in cont_names:
+        mocked_client.client.containers.run(schain_image, name=cont_name, detach=True)
+        start_time[cont_name] = get_schain_time(cont_name)
+    mocked_client.restart_all_schains()
+    for cont_name in cont_names:
+        assert get_schain_time(cont_name) != start_time[cont_name]
