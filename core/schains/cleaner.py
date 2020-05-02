@@ -36,6 +36,7 @@ from tools.str_formatters import arguments_list_string
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.iptables import remove_rules as remove_iptables_rules
+from web.models.schain import SChainRecord
 
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,12 @@ def run_cleaner(skale, node_config):
 
 def log_remove(component_name, schain_name):
     logger.warning(f'Going to remove {component_name} for sChain {schain_name}')
+
+
+def mark_schain_deleted(schain_name):
+    if SChainRecord.added(schain_name):
+        schain_record = SChainRecord.get_by_name(schain_name)
+        schain_record.set_deleted()
 
 
 def remove_schain_volume(schain_name):
@@ -142,3 +149,4 @@ def cleanup_schain(node_id, schain_name):
         remove_ima_container(schain_name)
     if checks['data_dir']:
         remove_config_dir(schain_name)
+    mark_schain_deleted(schain_name)

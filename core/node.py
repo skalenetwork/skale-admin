@@ -66,9 +66,8 @@ class Node:
         if not check_required_balance(self.skale):
             return self._insufficient_funds()
         try:
-            tx_res = self.skale.manager.create_node(ip, int(port), name,
-                                                    public_ip, wait_for=True)
-            tx_res.raise_for_status()
+            self.skale.manager.create_node(ip, int(port), name,
+                                           public_ip, wait_for=True)
         except TransactionFailedError as err:
             logger.error('Node creation failed', exc_info=err)
             return {'status': 0, 'errors': [f'node creation failed']}
