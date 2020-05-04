@@ -1,8 +1,8 @@
 import pytest
 from flask import Flask
+from skale.wallets.web3_wallet import to_checksum_address
 
 from tests.utils import get_bp_data
-from tools.wallet_utils import wallet_with_balance
 from web.routes.wallet import construct_wallet_bp
 
 
@@ -15,9 +15,17 @@ def skale_bp(skale):
 
 def test_load_wallet(skale_bp, skale):
     data = get_bp_data(skale_bp, '/load-wallet')
-    assert data == {
+    address = skale.wallet.address
+    eth_balance_wei = skale.web3.eth.getBalance(address)
+    skale_balance_wei = skale.token.get_balance(address)
+    expected_data = {
         'status': 'ok',
         'payload': {
-            **wallet_with_balance(skale)
+            'address': to_checksum_address(address),
+            'eth_balance_wei': eth_balance_wei,
+            'skale_balance_wei': skale_balance_wei,
+            'eth_balance': str(skale.web3.fromWei(eth_balance_wei, 'ether')),
+            'skale_balance': str(skale.web3.fromWei(skale_balance_wei, 'ether'))
         }
     }
+    assert data == expected_data

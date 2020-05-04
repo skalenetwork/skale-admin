@@ -66,6 +66,17 @@ def construct_nodes_bp(skale, node, docker_utils):
                                           status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
         return construct_ok_response({'node_data': res['data']})
 
+    @nodes_bp.route('/node-signature', methods=['GET'])
+    def node_signature():
+        logger.debug(request)
+
+        validator_id = int(request.args.get('validator_id'))
+
+        signature = skale.validator_service.get_link_node_signature(
+            validator_id)
+        return construct_ok_response(data={"status": "ok",
+                                           "payload": {"signature": signature}})
+
     @nodes_bp.route('/check-node-name', methods=['GET'])
     def check_node_name():
         logger.debug(request)
@@ -87,5 +98,4 @@ def construct_nodes_bp(skale, node, docker_utils):
         containers_list = docker_utils.get_all_skale_containers(
             all=all, format=True)
         return construct_ok_response(data={'containers': containers_list})
-
     return nodes_bp
