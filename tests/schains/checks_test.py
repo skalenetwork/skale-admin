@@ -48,7 +48,7 @@ def test_get_all_checks():
     assert checks['container']
     assert not checks['ima_container']
     assert checks['firewall_rules']
-    assert checks['rpc']
+    assert not checks['rpc']
     cleanup_schain(dutils)
 
 
