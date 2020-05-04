@@ -20,6 +20,7 @@
 import logging
 
 from flask import Blueprint, request
+from http import HTTPStatus
 
 from skale.schain_config.generator import get_nodes_for_schain_config
 
