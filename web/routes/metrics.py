@@ -63,7 +63,7 @@ def construct_metrics_bp(skale, config):
 
     def get_metrics_from_db(start_date=None, end_date=None, limit=None, wei=None):
         if start_date is None:
-            start_date = datetime.utcfromtimestamp(get_start_date())
+            start_date = datetime.utcfromtimestamp(0)
         if end_date is None:
             end_date = datetime.now()
         metrics = select_bounty_records_from_db(start_date, end_date, limit)
