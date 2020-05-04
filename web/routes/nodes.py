@@ -74,8 +74,7 @@ def construct_nodes_bp(skale, node, docker_utils):
 
         signature = skale.validator_service.get_link_node_signature(
             validator_id)
-        return construct_ok_response(data={"status": "ok",
-                                           "payload": {"signature": signature}})
+        return construct_ok_response(data={'signature': signature})
 
     @nodes_bp.route('/check-node-name', methods=['GET'])
     def check_node_name():
