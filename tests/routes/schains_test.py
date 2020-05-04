@@ -2,6 +2,7 @@ import json
 import os
 
 import docker
+import mock
 import pytest
 from flask import Flask
 
@@ -100,15 +101,39 @@ def test_owner_schains(skale_bp, skale):
 
 
 def test_schains_healthchecks(skale_bp, skale):
-    data = get_bp_data(skale_bp, '/api/schains/healthchecks')
+    class SChainChecksMock:
+        def __init__(self, name, node_id, log=False, failhook=None):
+            pass
 
-    test_schain_checks = data[0]['healthchecks']
-    assert test_schain_checks == {
-        'data_dir': False,
-        'dkg': False,
-        'config': False,
-        'volume': False,
-        'container': False,
-        'ima_container': False,
-        'firewall_rules': False
-    }
+        def get_all(self):
+            return {
+                'data_dir': False,
+                'dkg': False,
+                'config': True,
+                'volume': False,
+                'container': True,
+                'ima_container': False,
+                'firewall_rules': True
+            }
+
+    def get_schains_for_node_mock(node_id):
+        return [{
+            'name': 'test-schain'
+        }]
+
+    with mock.patch('web.routes.schains.SChainChecks', SChainChecksMock):
+        with mock.patch.object(skale.schains_data, 'get_schains_for_node',
+                               get_schains_for_node_mock):
+            data = get_bp_data(skale_bp, '/api/schains/healthchecks')
+            assert data['status'] == 'ok'
+            payload = data['payload']
+            test_schain_checks = payload[0]['healthchecks']
+            assert test_schain_checks == {
+                'data_dir': False,
+                'dkg': False,
+                'config': True,
+                'volume': False,
+                'container': True,
+                'ima_container': False,
+                'firewall_rules': True
+            }
