@@ -97,14 +97,16 @@ def send_alright(dkg_client):
     dkg_client.alright()
 
 
-def get_dkg_broadcast_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.BroadcastAndKeyShare,
-        from_block=from_block,
-        argument_filters={
-            'groupIndex': group_index
-        }
-    )
+def get_broadcasted_data(dkg_client, from_node):
+    return dkg_client.get_broadcasted_data(from_node)
+
+
+def is_all_data_received(dkg_client, from_node):
+    return dkg_client.is_all_data_received(from_node)
+
+
+def get_complaint_data(dkg_client):
+    return dkg_client.get_complaint_data()
 
 
 def get_dkg_complaint_sent_filter(skale, group_index, to_node_index, from_block=0):
@@ -142,14 +144,6 @@ def get_dkg_fail_filter(skale, group_index, from_block=0):
         from_block=from_block,
         argument_filters={'groupIndex': group_index}
 
-    )
-
-
-def get_dkg_all_data_received_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.AllDataReceived,
-        from_block=from_block,
-        argument_filters={'groupIndex': group_index}
     )
 
 

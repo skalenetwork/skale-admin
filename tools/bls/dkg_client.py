@@ -214,17 +214,29 @@ class DKGClient:
             raise DkgTransactionError(e)
         logger.info(f'sChain: {self.schain_name}. {from_node_index} node sent a response')
 
+    def get_broadcasted_data(self, from_node):
+        get_broadcasted_data_function = self.dkg_contract_functions.getBroadcastedData
+        return get_broadcasted_data_function(self.group_index, from_node)
+
+    def is_all_data_received(self, from_node):
+        is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
+        return is_all_data_received_function(self.group_index, from_node)
+
+    def get_complaint_data(self):
+        get_complaint_data_function = self.dkg_contract_functions.getComplaintData
+        return get_complaint_data_function(self.group_index)
+
     def receive_from_node(self, from_node, event):
-        self.receive_verification_vector(self.node_ids_contract[from_node], event)
-        self.receive_secret_key_contribution(self.node_ids_contract[from_node], event)
-        if not self.verification(self.node_ids_contract[from_node]):
+        self.receive_verification_vector(from_node, event)
+        self.receive_secret_key_contribution(from_node, event)
+        if not self.verification(from_node):
             raise DkgVerificationError(
                 f"sChain: {self.schain_name}. "
-                f"Fatal error : user {str(self.node_ids_contract[from_node] + 1)} "
+                f"Fatal error : user {str(from_node + 1)} "
                 f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
             )
         logger.info(f'sChain: {self.schain_name}. '
-                    f'All data from {self.node_ids_contract[from_node]} was received and verified')
+                    f'All data from {from_node} was received and verified')
 
     def generate_key(self, bls_key_name):
         received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
