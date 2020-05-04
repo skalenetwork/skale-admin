@@ -18,19 +18,23 @@ def check_firewall_rules_mock(self):
     self._firewall_rules = True
 
 
+def cleanup_schain(dutils):
+    dutils.safe_rm('skale_schain_test', force=True)
+    if dutils.data_volume_exists(SCHAIN_NAME):
+        dutils.rm_vol(SCHAIN_NAME)
+
+
 def test_init_checks():
-    checks = SChainChecks(SCHAIN_NAME, TEST_NODE_ID)
+    with mock.patch('core.schains.checks.SChainChecks.check_firewall_rules',
+                    new=check_firewall_rules_mock):
+        checks = SChainChecks(SCHAIN_NAME, TEST_NODE_ID)
     assert checks.name == SCHAIN_NAME
     assert checks.node_id == TEST_NODE_ID
 
 
 def test_get_all_checks():
     dutils = DockerUtils(volume_driver='local')
-    dutils.safe_rm('skale_schain_test', force=True)
-
-    if dutils.data_volume_exists(SCHAIN_NAME):
-        dutils.rm_vol(SCHAIN_NAME)
-
+    cleanup_schain(dutils)
     run_test_schain_container(dutils)
     sleep(SKALED_INIT_TIMEOUT)
 
@@ -45,6 +49,7 @@ def test_get_all_checks():
     assert not checks['ima_container']
     assert checks['firewall_rules']
     assert checks['rpc']
+    cleanup_schain(dutils)
 
 
 def test_get_all_false_checks():
