@@ -19,7 +19,7 @@ def test_sgx_status(skale_bp, skale):
         'payload': {
             'sgx_server_url': SGX_SERVER_URL,
             'status': 0,
-            'status_name': 'NOT_CONNECTED'
+            'status_name': 'CONNECTED'
         },
         'status': 'ok'
     }
