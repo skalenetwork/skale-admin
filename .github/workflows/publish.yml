@@ -20,7 +20,7 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    - name: Build container
+    - name: Build and publish container
       run: |
         export BRANCH=${GITHUB_REF##*/}
         echo "Branch $BRANCH"
@@ -29,10 +29,7 @@ jobs:
         echo "Version $VERSION"
         export RELEASE=true
         echo "::set-env name=RELEASE::$RELEASE"
-        bash ./scripts/build.sh
-    - name: Publish container
-      run: |
-        RELEASE=false bash ./scripts/publish.sh
+        bash ./scripts/build_and_publish.sh
     - name: Checkout code
       uses: actions/checkout@master
     - name: Create Release

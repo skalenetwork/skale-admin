@@ -24,7 +24,7 @@ from enum import Enum
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
-from skale.utils.web3_utils import TransactionFailedError
+from skale.dataclasses.tx_res import TransactionFailedError
 from skale.utils.helper import ip_from_bytes
 from skale.wallets.web3_wallet import public_key_to_address
 
@@ -66,7 +66,10 @@ class Node:
         if not check_required_balance(self.skale):
             return self._insufficient_funds()
         try:
-            tx_res = self.skale.manager.create_node(ip, int(port), name, public_ip, wait_for=True)
+            tx_res = self.skale.manager.create_node(ip, int(port), name, public_ip,
+                                                    wait_for=True,
+                                                    raise_for_status=False)
+            tx_res.raise_for_status()
         except TransactionFailedError:
             logger.error(arguments_list_string(
                 {'tx': tx_res.hash},
