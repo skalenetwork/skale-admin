@@ -35,10 +35,6 @@ BLOCK_CHUNK_SIZE = 1000
 def construct_metrics_bp(skale, config):
     metrics_bp = Blueprint('metrics', __name__)
 
-    def get_start_date():
-        node_id = config.id
-        return skale.nodes_data.get(node_id)['start_date']
-
     def get_start_block():
         node_id = config.id
         return skale.nodes_data.get(node_id)['start_block']
