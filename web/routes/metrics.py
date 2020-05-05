@@ -95,7 +95,7 @@ def construct_metrics_bp(skale, config):
         return start_block_number, last_block_number
 
     def to_skl(wei):  # convert to SKL
-        return Web3.fromWei(wei, 'ether')
+        return float(Web3.fromWei(wei, 'ether'))
 
     def format_limit(limit):
         if limit is None:
