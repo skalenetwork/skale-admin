@@ -22,7 +22,10 @@ import logging
 from logging import Formatter, StreamHandler
 import logging.handlers as py_handlers
 
-from tools.configs.logs import (ADMIN_LOG_PATH, DEBUG_LOG_PATH, LOG_FILE_SIZE_BYTES,
+from tools.configs.logs import (ADMIN_LOG_PATH,
+                                API_LOG_PATH,
+                                DEBUG_LOG_PATH,
+                                LOG_FILE_SIZE_BYTES,
                                 LOG_BACKUP_COUNT, LOG_FORMAT)
 
 
@@ -55,3 +58,7 @@ def init_logger(log_file_path, debug_file_path=None):
 
 def init_admin_logger():
     init_logger(ADMIN_LOG_PATH, DEBUG_LOG_PATH)
+
+
+def init_api_logger():
+    init_logger(API_LOG_PATH)
