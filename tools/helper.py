@@ -134,9 +134,8 @@ class SkaleFilter:
             except Exception as err:
                 self.web3_filter = self.create_filter()
                 time.sleep(self.timeout)
-                logger.error(
-                    f'Retreiving events from filter failed with {err}'
-                )
+                logger.error('Retreiving events from filter failed',
+                             exc_info=err)
             else:
                 break
 
