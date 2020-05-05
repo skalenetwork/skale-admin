@@ -21,10 +21,12 @@ import logging
 from datetime import datetime
 
 from flask import Blueprint, request
+from web3 import Web3
 
-from core.db import select_bounty_records_from_db, get_bounty_sum
-from web.helper import construct_ok_response
+from core.db import get_bounty_sum, select_bounty_records_from_db
 from tools.helper import SkaleFilter
+from web.helper import construct_ok_response
+
 logger = logging.getLogger(__name__)
 
 BLOCK_CHUNK_SIZE = 1000
@@ -33,9 +35,9 @@ BLOCK_CHUNK_SIZE = 1000
 def construct_metrics_bp(skale, config):
     metrics_bp = Blueprint('metrics', __name__)
 
-    def get_start_date():
+    def get_start_block():
         node_id = config.id
-        return skale.nodes_data.get(node_id)['start_date']
+        return skale.nodes_data.get(node_id)['start_block']
 
     def convert_to_date(date_str):
         if date_str is None:
@@ -61,7 +63,7 @@ def construct_metrics_bp(skale, config):
 
     def get_metrics_from_db(start_date=None, end_date=None, limit=None, wei=None):
         if start_date is None:
-            start_date = datetime.utcfromtimestamp(get_start_date())
+            start_date = datetime.utcfromtimestamp(0)
         if end_date is None:
             end_date = datetime.now()
         metrics = select_bounty_records_from_db(start_date, end_date, limit)
@@ -81,15 +83,19 @@ def construct_metrics_bp(skale, config):
 
     def get_start_end_block_numbers(start_date=None, end_date=None):
         if start_date is None:
-            start_date = datetime.utcfromtimestamp(get_start_date())
-        start_block_number = find_block_for_tx_stamp(start_date)
-        cur_block_number = skale.web3.eth.blockNumber
-        last_block_number = find_block_for_tx_stamp(end_date) if end_date is not None \
-            else cur_block_number
+            start_block_number = get_start_block()
+        else:
+            start_block_number = find_block_for_tx_stamp(start_date)
+
+        if end_date is None:
+            last_block_number = skale.web3.eth.blockNumber
+        else:
+            last_block_number = find_block_for_tx_stamp(end_date)
+
         return start_block_number, last_block_number
 
-    def to_skl(digits):  # convert to SKL
-        return digits / (10 ** 18)
+    def to_skl(wei):  # convert to SKL
+        return float(Web3.fromWei(wei, 'ether'))
 
     def format_limit(limit):
         if limit is None:
