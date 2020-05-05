@@ -26,7 +26,6 @@ from skale.schain_config import generate_skale_schain_config
 from tools.bls.dkg_utils import (
     init_dkg_client, broadcast, send_complaint, response, send_alright,
     get_dkg_successful_filter, get_dkg_fail_filter,
-    get_dkg_complaint_sent_filter, get_dkg_all_complaints_filter,
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
     get_broadcasted_data, is_all_data_received, get_complaint_data, DkgFailedError
 )
@@ -118,26 +117,15 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
     is_complaint_received = False
-    dkg_complaint_sent_filter = get_dkg_complaint_sent_filter(
-        skale=skale,
-        group_index=dkg_client.group_index,
-        to_node_index=dkg_client.node_id_contract,
-        from_block=schain_start_block
-    )
-    for event in dkg_complaint_sent_filter.get_events():
+    complaint_data = get_complaint_data(dkg_client)
+    if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id:
         is_complaint_received = True
-        logger.debug(f'dkg_complaint_sent_filter event: {event}')
-        response(dkg_client, event.args.fromNodeIndex)
-
+        response(dkg_client, complaint_data[0])
     if len(dkg_fail_filter.get_events()) > 0:
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
-    dkg_complaint_sent_filter = get_dkg_all_complaints_filter(
-        skale=skale,
-        group_index=dkg_client.group_index,
-        from_block=schain_start_block
-    )
-    if len(dkg_complaint_sent_filter.get_events()) == 0:
+    complaint_data = get_complaint_data(dkg_client)
+    if complaint_data[0] == complaint_data[1] and complaint_data[0] == 0:
         while False in is_alright_sent_list:
             if time.time() - start_time_alright > RECEIVE_TIMEOUT:
                 break
@@ -150,7 +138,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 send_complaint(dkg_client, i)
                 is_complaint_sent = True
 
-    is_complaint_sent = len(dkg_complaint_sent_filter.get_events())
+    complaint_data = get_complaint_data(dkg_client)
+    is_complaint_sent = complaint_data[0] != complaint_data[1]
     if is_complaint_sent or is_complaint_received:
         while len(dkg_fail_filter.get_events()) == 0:
             if time.time() - start_time_response > RECEIVE_TIMEOUT:

@@ -216,7 +216,7 @@ class DKGClient:
 
     def get_broadcasted_data(self, from_node):
         get_broadcasted_data_function = self.dkg_contract_functions.getBroadcastedData
-        return get_broadcasted_data_function(self.group_index, from_node)
+        return get_broadcasted_data_function(self.group_index, self.node_ids_dkg[from_node])
 
     def is_all_data_received(self, from_node):
         is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
