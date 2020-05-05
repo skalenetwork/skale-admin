@@ -34,12 +34,15 @@ def construct_response(status, data):
     )
 
 
-def construct_ok_response(data={}):
-    print(data)
+def construct_ok_response(data=None):
+    if data is None:
+        data = {}
     return construct_response(HTTPStatus.OK, {'status': 'ok', 'payload': data})
 
 
-def construct_err_response(msg={}, status_code=HTTPStatus.BAD_REQUEST):
+def construct_err_response(msg=None, status_code=HTTPStatus.BAD_REQUEST):
+    if msg is None:
+        msg = {}
     return construct_response(status_code, {'status': 'error', 'payload': msg})
 
 
