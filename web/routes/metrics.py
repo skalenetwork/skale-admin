@@ -108,7 +108,8 @@ def construct_metrics_bp(skale, config):
         metrics_rows = []
         total_bounty = 0
         limit = format_limit(limit)
-        start_block_number, last_block_number = get_start_end_block_numbers(start_date, end_date)
+        start_block_number, last_block_number = get_start_end_block_numbers(
+            start_date, end_date)
         start_chunk_block_number = start_block_number
         while len(metrics_rows) < limit:
             end_chunk_block_number = start_chunk_block_number + BLOCK_CHUNK_SIZE - 1
@@ -126,7 +127,8 @@ def construct_metrics_bp(skale, config):
                 args = log['args']
                 tx_block_number = log['blockNumber']
                 block_data = skale.web3.eth.getBlock(tx_block_number)
-                block_timestamp = datetime.utcfromtimestamp(block_data['timestamp'])
+                block_timestamp = datetime.utcfromtimestamp(
+                    block_data['timestamp'])
                 bounty = args['bounty']
                 if not wei:
                     bounty = to_skl(bounty)
@@ -151,9 +153,11 @@ def construct_metrics_bp(skale, config):
         fast = request.args.get('fast') == 'True'
         wei = request.args.get('wei') == 'True'
         if fast:
-            metrics, total_bounty = get_metrics_from_db(since, till, limit, wei)
+            metrics, total_bounty = get_metrics_from_db(
+                since, till, limit, wei)
         else:
-            metrics, total_bounty = get_metrics_from_events(since, till, limit, wei)
-        return construct_ok_response({'metrics': metrics, 'total': total_bounty})
+            metrics, total_bounty = get_metrics_from_events(
+                since, till, limit, wei)
+        return construct_ok_response(data={'metrics': metrics, 'total': total_bounty})
 
     return metrics_bp

@@ -48,7 +48,7 @@ def dump():
     container_name = request.args.get('container_name')
     archive_path, archive_name = logs.get_containers_logs(container_name)
     if not archive_path or not os.path.isfile(archive_path):
-        return construct_err_response(400, ['File not exist'])
+        return construct_err_response(msg='File not exist')
     return send_file(archive_path,
                      attachment_filename=archive_name,
                      as_attachment=True)

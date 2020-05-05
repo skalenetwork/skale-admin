@@ -18,9 +18,9 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from http import HTTPStatus
 
 from flask import Blueprint, request
+from http import HTTPStatus
 
 from skale.schain_config.generator import get_nodes_for_schain_config
 
@@ -38,7 +38,8 @@ def construct_schains_bp(skale, config, docker_utils):
     @schains_bp.route('/get-owner-schains', methods=['GET'])
     def owner_schains():
         logger.debug(request)
-        schains = skale.schains_data.get_schains_for_owner(skale.wallet.address)
+        schains = skale.schains_data.get_schains_for_owner(
+            skale.wallet.address)
         for schain in schains:
             nodes = get_nodes_for_schain_config(skale, schain['name'])
             schain['nodes'] = nodes
@@ -55,8 +56,7 @@ def construct_schains_bp(skale, config, docker_utils):
             schain_config = get_schain_config(schain_name)
         except FileNotFoundError:
             return construct_err_response(
-                HTTPStatus.BAD_REQUEST,
-                [f'sChain config not found: {schain_name}']
+                msg=f'sChain config not found: {schain_name}'
             )
         skale_schain_config = schain_config['skaleConfig']
         return construct_ok_response(skale_schain_config)
@@ -65,7 +65,8 @@ def construct_schains_bp(skale, config, docker_utils):
     def schains_containers_list():
         logger.debug(request)
         _all = request.args.get('all') == 'True'
-        containers_list = docker_utils.get_all_schain_containers(all=_all, format=True)
+        containers_list = docker_utils.get_all_schain_containers(
+            all=_all, format=True)
         return construct_ok_response(containers_list)
 
     @schains_bp.route('/schains/list', methods=['GET'])
@@ -73,7 +74,7 @@ def construct_schains_bp(skale, config, docker_utils):
         logger.debug(request)
         node_id = config.id
         if node_id is None:
-            return construct_err_response(HTTPStatus.BAD_REQUEST, ['No node installed'])
+            return construct_err_response(msg='No node installed')
         schains_list = skale.schains_data.get_schains_for_node(node_id)
         return construct_ok_response(schains_list)
 
