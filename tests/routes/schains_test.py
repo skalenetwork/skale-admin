@@ -113,7 +113,8 @@ def test_schains_healthchecks(skale_bp, skale):
                 'volume': False,
                 'container': True,
                 'ima_container': False,
-                'firewall_rules': True
+                'firewall_rules': True,
+                'rpc': False
             }
 
     def get_schains_for_node_mock(node_id):
@@ -135,5 +136,6 @@ def test_schains_healthchecks(skale_bp, skale):
                 'volume': False,
                 'container': True,
                 'ima_container': False,
-                'firewall_rules': True
+                'firewall_rules': True,
+                'rpc': False
             }
