@@ -46,7 +46,7 @@
         "sChain": {
             "schainID": 1,
             "schainName": "test-chain",
-            "schainOwner": "0x312321313221321312312",
+            "schainOwner": "0x3483A10F7d6fDeE0b0C1E9ad39cbCE13BD094b12",
             "nodes": [
                 {
                     "nodeID": 1,

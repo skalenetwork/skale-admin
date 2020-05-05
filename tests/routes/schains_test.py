@@ -90,5 +90,6 @@ def test_schains_healthchecks(skale_bp, skale):
         'volume': False,
         'container': False,
         'ima_container': False,
-        'firewall_rules': False
+        'firewall_rules': False,
+        'rpc': False
     }
