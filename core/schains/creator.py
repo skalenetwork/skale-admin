@@ -88,6 +88,11 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
     else:
         schain_record = SChainRecord.get_by_name(name)
 
+    if not schain_record.first_run:
+        # todo: send failed checks to tg
+        pass
+    schain_record.set_first_run(False)
+
     if not checks['data_dir']:
         init_schain_dir(name)
     if not checks['dkg']:
