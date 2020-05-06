@@ -222,6 +222,10 @@ class DKGClient:
         is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
         return is_all_data_received_function(self.group_index, from_node)
 
+    def is_group_failed_dkg(self):
+        is_group_failed_dkg_function = self.dkg_contract_functions.isGroupFailedDKG
+        return is_group_failed_dkg_function(self.group_index)
+
     def get_complaint_data(self):
         get_complaint_data_function = self.dkg_contract_functions.getComplaintData
         return get_complaint_data_function(self.group_index)

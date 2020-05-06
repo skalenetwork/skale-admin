@@ -25,9 +25,9 @@ from time import sleep
 from skale.schain_config import generate_skale_schain_config
 from tools.bls.dkg_utils import (
     init_dkg_client, broadcast, send_complaint, response, send_alright,
-    get_dkg_successful_filter, get_dkg_fail_filter,
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
-    get_broadcasted_data, is_all_data_received, get_complaint_data, DkgFailedError
+    get_broadcasted_data, is_all_data_received, get_complaint_data, is_group_failed_dkg,
+    DkgFailedError
 )
 from tools.bls.dkg_client import DkgVerificationError
 from tools.helper import write_json
@@ -39,9 +39,6 @@ RECEIVE_TIMEOUT = 1800
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     schain_config = generate_skale_schain_config(skale, schain_name, node_id)
-    schain = skale.schains_data.get_by_name(schain_name)
-    schain_start_block = schain['startBlock']
-
     n = len(schain_config["skaleConfig"]["sChain"]["nodes"])
     t = (2 * n + 1) // 3
 
@@ -79,12 +76,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 )
         sleep(1)
 
-    dkg_fail_filter = get_dkg_fail_filter(
-        skale=skale,
-        group_index=dkg_client.group_index,
-        from_block=schain_start_block
-    )
-
     is_complaint_sent = False
     complainted_node_index = -1
     start_time_response = time.time()
@@ -94,16 +85,11 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             is_complaint_sent = True
             complainted_node_index = i
 
-    if len(dkg_fail_filter.get_events()) > 0:
+    if is_group_failed_dkg(dkg_client):
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
     is_alright_sent_list = [False for _ in range(n)]
     start_time_alright = time.time()
-    dkg_successful_filter = get_dkg_successful_filter(
-        skale=skale,
-        group_index=dkg_client.group_index,
-        from_block=schain_start_block
-    )
     encrypted_bls_key = 0
     bls_key_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
     if not is_complaint_sent:
@@ -113,7 +99,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
 
-    if len(dkg_fail_filter.get_events()) > 0:
+    if is_group_failed_dkg(dkg_client):
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
     is_complaint_received = False
@@ -121,7 +107,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id:
         is_complaint_received = True
         response(dkg_client, complaint_data[0])
-    if len(dkg_fail_filter.get_events()) > 0:
+    if is_group_failed_dkg(dkg_client):
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
     complaint_data = get_complaint_data(dkg_client)
@@ -141,19 +127,19 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     complaint_data = get_complaint_data(dkg_client)
     is_complaint_sent = complaint_data[0] != complaint_data[1]
     if is_complaint_sent or is_complaint_received:
-        while len(dkg_fail_filter.get_events()) == 0:
+        while not is_group_failed_dkg(dkg_client):
             if time.time() - start_time_response > RECEIVE_TIMEOUT:
                 break
             sleep(1)
             continue
 
-        if len(dkg_fail_filter.get_events()) > 0:
+        if is_group_failed_dkg(dkg_client):
             raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
         else:
             send_complaint(dkg_client, complainted_node_index)
 
     if True in is_alright_sent_list:
-        if len(dkg_successful_filter.get_events()) > 0:
+        if not is_group_failed_dkg(dkg_client):
             common_public_key = skale.schains_data.get_groups_public_key(dkg_client.group_index)
             return {
                 'common_public_key': common_public_key,
