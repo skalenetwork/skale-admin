@@ -18,12 +18,13 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from http import HTTPStatus
 
 from flask import Blueprint, request
+from http import HTTPStatus
 
 from skale.schain_config.generator import get_nodes_for_schain_config
 from core.schains.config import get_allowed_endpoints
+from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_config
 from tools.iptables import add_rules as add_iptables_rules
 from tools.iptables import remove_rules as remove_iptables_rules
@@ -57,8 +58,7 @@ def construct_schains_bp(skale, config, docker_utils):
             schain_config = get_schain_config(schain_name)
         except FileNotFoundError:
             return construct_err_response(
-                HTTPStatus.BAD_REQUEST,
-                [f'sChain config not found: {schain_name}']
+                msg=f'sChain config not found: {schain_name}'
             )
         skale_schain_config = schain_config['skaleConfig']
         return construct_ok_response(skale_schain_config)
@@ -76,7 +76,7 @@ def construct_schains_bp(skale, config, docker_utils):
         logger.debug(request)
         node_id = config.id
         if node_id is None:
-            return construct_err_response(HTTPStatus.BAD_REQUEST, ['No node installed'])
+            return construct_err_response(msg='No node installed')
         schains_list = skale.schains_data.get_schains_for_node(node_id)
         return construct_ok_response(schains_list)
 
@@ -111,5 +111,21 @@ def construct_schains_bp(skale, config, docker_utils):
         endpoints = get_allowed_endpoints(schain)
         remove_iptables_rules(endpoints)
         return construct_ok_response({'status': 'ok'})
+
+    @schains_bp.route('/api/schains/healthchecks', methods=['GET'])
+    def schains_healthchecks():
+        logger.debug(request)
+        node_id = config.id
+        if node_id is None:
+            return construct_err_response(HTTPStatus.BAD_REQUEST, ['No node installed'])
+        schains = skale.schains_data.get_schains_for_node(node_id)
+        checks = [
+            {
+                'name': schain['name'],
+                'healthchecks': SChainChecks(schain['name'], node_id, log=True).get_all()
+            }
+            for schain in schains
+        ]
+        return construct_ok_response(checks)
 
     return schains_bp
