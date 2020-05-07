@@ -92,9 +92,7 @@ def construct_schains_bp(skale, config, docker_utils):
         logger.debug(request)
         schain = request.args.get('schain')
         endpoints = [e._asdict() for e in get_allowed_endpoints(schain)]
-        return construct_ok_response(
-            {'status': 'ok', 'payload': {'endpoints': endpoints}}
-        )
+        return construct_ok_response({'endpoints': endpoints})
 
     @schains_bp.route('/api/schains/firewall/on', methods=['POST'])
     def turn_on_schain_firewall_rules():
@@ -102,7 +100,7 @@ def construct_schains_bp(skale, config, docker_utils):
         schain = request.args.get('schain')
         endpoints = get_allowed_endpoints(schain)
         add_iptables_rules(endpoints)
-        return construct_ok_response({'status': 'ok'})
+        return construct_ok_response()
 
     @schains_bp.route('/api/schains/firewall/off', methods=['POST'])
     def turn_off_schain_firewall_rules():
@@ -110,7 +108,7 @@ def construct_schains_bp(skale, config, docker_utils):
         schain = request.args.get('schain')
         endpoints = get_allowed_endpoints(schain)
         remove_iptables_rules(endpoints)
-        return construct_ok_response({'status': 'ok'})
+        return construct_ok_response()
 
     @schains_bp.route('/api/schains/healthchecks', methods=['GET'])
     def schains_healthchecks():

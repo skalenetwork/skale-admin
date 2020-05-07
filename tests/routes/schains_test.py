@@ -113,7 +113,7 @@ def get_allowed_endpoints_mock(schain):
     ]
 
 
-def test_firewall_rules_show(skale_bp):
+def test_get_firewall_rules(skale_bp):
     with mock.patch('web.routes.schains.get_allowed_endpoints',
                     get_allowed_endpoints_mock):
         data = get_bp_data(skale_bp, '/api/schains/firewall/show')
@@ -133,7 +133,7 @@ def test_firewall_rules_on(skale_bp):
                     get_allowed_endpoints_mock):
         with mock.patch('web.routes.schains.add_iptables_rules'):
             data = post_bp_data(skale_bp, '/api/schains/firewall/on')
-            assert data == {'status': 'ok'}
+            assert data == {'status': 'ok', 'payload': {}}
 
 
 def test_firewall_rules_off(skale_bp):
@@ -141,7 +141,7 @@ def test_firewall_rules_off(skale_bp):
                     get_allowed_endpoints_mock):
         with mock.patch('web.routes.schains.remove_iptables_rules'):
             data = post_bp_data(skale_bp, '/api/schains/firewall/off')
-            assert data == {'status': 'ok'}
+            assert data == {'status': 'ok', 'payload': {}}
 
 
 def test_schains_healthchecks(skale_bp, skale):
