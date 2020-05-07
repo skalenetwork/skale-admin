@@ -22,7 +22,6 @@ import os
 
 from tools.configs import NODE_DATA_PATH
 from tools.bls.dkg_client import DKGClient, DkgError
-from tools.helper import SkaleFilter
 
 logger = logging.getLogger(__name__)
 
@@ -105,21 +104,8 @@ def is_all_data_received(dkg_client, from_node):
     return dkg_client.is_all_data_received(from_node)
 
 
-def is_group_failed_dkg(dkg_client):
-    return dkg_client.is_group_failed_dkg()
-
-
 def get_complaint_data(dkg_client):
     return dkg_client.get_complaint_data()
-
-
-def get_dkg_successful_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.SuccessfulDKG,
-        from_block=from_block,
-        argument_filters={'groupIndex': group_index}
-
-    )
 
 
 def get_secret_key_share_filepath(schain_id):

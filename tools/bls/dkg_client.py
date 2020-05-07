@@ -145,12 +145,12 @@ class DKGClient:
             raise DkgTransactionError(e)
         logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
-    def receive_verification_vector(self, from_node, event):
-        input_ = binascii.hexlify(event['args']['verificationVector']).decode()
+    def receive_verification_vector(self, from_node, broadcasted_data):
+        input_ = binascii.hexlify(broadcasted_data[0]).decode()
         self.incoming_verification_vector[from_node] = input_
 
-    def receive_secret_key_contribution(self, from_node, event):
-        input_ = binascii.hexlify(event['args']['secretKeyContribution']).decode()
+    def receive_secret_key_contribution(self, from_node, broadcasted_data):
+        input_ = binascii.hexlify(broadcasted_data[1]).decode()
         self.incoming_secret_key_contribution[from_node] = input_[
             self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
         ]
@@ -214,23 +214,25 @@ class DKGClient:
 
     def get_broadcasted_data(self, from_node):
         get_broadcasted_data_function = self.dkg_contract_functions.getBroadcastedData
-        return get_broadcasted_data_function(self.group_index, self.node_ids_dkg[from_node])
+        return get_broadcasted_data_function(self.group_index, self.node_ids_dkg[from_node]).call(
+            {'from': self.skale.wallet.address}
+        )
 
     def is_all_data_received(self, from_node):
         is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
-        return is_all_data_received_function(self.group_index, from_node)
-
-    def is_group_failed_dkg(self):
-        is_group_failed_dkg_function = self.dkg_contract_functions.isGroupFailedDKG
-        return is_group_failed_dkg_function(self.group_index)
+        return is_all_data_received_function(self.group_index, from_node).call(
+            {'from': self.skale.wallet.address}
+        )
 
     def get_complaint_data(self):
         get_complaint_data_function = self.dkg_contract_functions.getComplaintData
-        return get_complaint_data_function(self.group_index)
+        return get_complaint_data_function(self.group_index).call(
+            {'from': self.skale.wallet.address}
+        )
 
-    def receive_from_node(self, from_node, event):
-        self.receive_verification_vector(from_node, event)
-        self.receive_secret_key_contribution(from_node, event)
+    def receive_from_node(self, from_node, broadcasted_data):
+        self.receive_verification_vector(from_node, broadcasted_data)
+        self.receive_secret_key_contribution(from_node, broadcasted_data)
         if not self.verification(from_node):
             raise DkgVerificationError(
                 f"sChain: {self.schain_name}. "
