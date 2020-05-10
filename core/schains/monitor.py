@@ -113,9 +113,8 @@ class SchainsMonitor:
         new_schain = checks['rotation_in_progress']['new_schain']
         exiting_node = checks['rotation_in_progress']['exiting_node']
         rotation_id = checks['rotation_in_progress']['rotation_id']
-        if rotation_in_progress:
-            finish_time_ts = checks['rotation_in_progress']['finish_ts']
-            finish_time = datetime.fromtimestamp(finish_time_ts)
+        finish_time_ts = checks['rotation_in_progress']['finish_ts']
+        finish_time = datetime.fromtimestamp(finish_time_ts)
 
         if exiting_node and rotation_in_progress:
             logger.info(f'Node is exiting. sChain will be stoped at {finish_time}')
@@ -230,7 +229,7 @@ class SchainsMonitor:
 
     def monitor_sync_schain_container(self, schain, start_ts):
         def get_previous_schain_public_key(schain_name):
-            group_idx = self.skale.web3.sha3(text=schain_name)
+            group_idx = self.skale.schains_data.name_to_id(schain_name)
             raw_public_key = self.skale.schains_data.get_previous_groups_public_key(group_idx)
             return ':'.join(map(str, raw_public_key))
 
