@@ -84,11 +84,12 @@ def run_simple_schain_container_in_sync_mode(dutils):
 
     class SnapshotAddressMock():
         def __init__(self):
-            self.ip='0.0.0.0'
-            self.port='8080'
+            self.ip = '0.0.0.0'
+            self.port = '8080'
 
     # Run schain container
-    with mock.patch('core.schains.runner.get_skaled_http_snapshot_address', return_value=SnapshotAddressMock()):
+    with mock.patch('core.schains.runner.get_skaled_http_snapshot_address',
+                    return_value=SnapshotAddressMock()):
         run_schain_container_in_sync_mode(SCHAIN, env, public_key, timestamp, dutils=dutils)
 
 
