@@ -96,7 +96,7 @@ def monitor(skale, node_config):
 def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
     skale = spawn_skale_lib(skale)
     name = schain['name']
-    checks = SChainChecks(name, node_id, log=True).get_all()
+    checks = SChainChecks(skale, name, node_id, log=True).get_all()
 
     if not SChainRecord.added(name):
         schain_record, _ = SChainRecord.add(name)
@@ -193,7 +193,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         add_firewall_rules(name)
     if not checks['container']:
         monitor_schain_container(schain)
-    time.sleep(CONTAINERS_DELAY)
+        time.sleep(CONTAINERS_DELAY)
     if not checks['ima_container']:
         monitor_ima_container(schain)
 

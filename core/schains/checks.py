@@ -61,29 +61,29 @@ class SChainChecks:
 
     def check_data_dir(self):
         schain_dir_path = get_schain_dir_path(self.name)
-        self._data_dir = {'result': os.path.isdir(schain_dir_path)}
+        self._data_dir = os.path.isdir(schain_dir_path)
 
     def check_dkg(self):
         rotation_id = self.skale.schains_data.get_last_rotation_id(self.name)
         secret_key_share_filepath = get_secret_key_share_filepath(self.name, rotation_id)
-        self._dkg = {'result': os.path.isfile(secret_key_share_filepath)}
+        self._dkg = os.path.isfile(secret_key_share_filepath)
 
     def check_config(self):
         config_filepath = get_schain_config_filepath(self.name)
-        self._config = {'result': os.path.isfile(config_filepath)}
+        self._config = os.path.isfile(config_filepath)
 
     def check_volume(self):
-        self._volume = {'result': dutils.data_volume_exists(self.name)}
+        self._volume = dutils.data_volume_exists(self.name)
 
     def check_container(self):
         name = get_container_name(SCHAIN_CONTAINER, self.name)
         info = dutils.get_info(name)
-        self._container = {'result': dutils.container_running(info)}
+        self._container = dutils.container_running(info)
 
     def check_ima_container(self):
         name = get_container_name(IMA_CONTAINER, self.name)
         info = dutils.get_info(name)
-        self._ima_container = {'result': dutils.container_running(info)}
+        self._ima_container = dutils.container_running(info)
 
     def check_rpc(self):
         self._rpc = False
@@ -102,10 +102,10 @@ class SChainChecks:
         return False
 
     def check_firewall_rules(self):
-        self._firewall_rules = {'result': False}
-        if self._config['result']:
+        self._firewall_rules = False
+        if self._config:
             ips_ports = get_allowed_endpoints(self.name)
-            self._firewall_rules['result'] = len(apsent_iptables_rules(ips_ports)) == 0
+            self._firewall_rules = len(apsent_iptables_rules(ips_ports)) == 0
 
     def check_for_rotation(self):
         ts = time.time()
