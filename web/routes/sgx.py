@@ -49,4 +49,4 @@ def sgx_status():
         'status_name': SGXStatus(status).name,
         'sgx_server_url': SGX_SERVER_URL
     }
-    return construct_ok_response(res)
+    return construct_ok_response(data=res)

@@ -170,3 +170,5 @@ def test_restart_all_schains(mocked_client):
     mocked_client.restart_all_schains()
     for cont_name in cont_names:
         assert get_schain_time(cont_name) != start_time[cont_name]
+    for cont_name in cont_names:
+        mocked_client.client.containers.get(cont_name).remove(force=True)

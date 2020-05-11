@@ -49,12 +49,17 @@ class RequestMock:
 @mock.patch('web.routes.security.crypto.load_certificate', new=load_certificate_mock)
 def test_status(skale_bp):
     data = get_bp_data(skale_bp, '/api/ssl/status')
-    assert data['expiration_date'] == '2020-01-01T00:00:00'
-    assert data['status'] == 1
-    assert data['issued_to'] == 1
+    assert data == {
+        'status': 'ok',
+        'payload': {
+            'expiration_date': '2020-01-01T00:00:00',
+            'issued_to': 1,
+            'status': 1
+        }
+    }, data
 
 
 @mock.patch('web.routes.security.request', new=RequestMock())
 def test_upload(skale_bp):
-    data = post_bp_data(skale_bp, '/api/ssl/upload', full_response=True)
-    assert data['res'] == 1
+    response = post_bp_data(skale_bp, '/api/ssl/upload', full_response=True)
+    assert response == {'status': 'ok', 'payload': {}}
