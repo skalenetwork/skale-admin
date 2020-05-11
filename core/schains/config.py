@@ -43,10 +43,16 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
     wallets = generate_wallets_config(schain_name, rotation_id)
     ima_mainnet_url = IMA_ENDPOINT
     ima_mp_schain, ima_mp_mainnet = get_mp_addresses()
-    rotate_after_block = CONTAINERS_INFO['schain']['config_options']['rotateAfterBlock']
-    snapshot_interval_ms = CONTAINERS_INFO['schain']['config_options']['snapshotIntervalMs']
-    storage_limit = CONTAINERS_INFO['schain']['config_options']['storageLimit']
-    empty_block_interval_ms = CONTAINERS_INFO['schain']['config_options']['emptyBlockIntervalMs']
+    options = CONTAINERS_INFO['schain']['config_options']
+    config_opts = dict()
+    if options.get('storageLimit'):
+        config_opts['storage_limit'] = options.get('storageLimit')
+    if options.get('rotateAfterBlock'):
+        config_opts['rotate_after_block'] = options.get('rotateAfterBlock')
+    if options.get('snapshotIntervalMs'):
+        config_opts['snapshot_interval_ms'] = options.get('snapshotIntervalMs')
+    if options.get('emptyBlockIntervalMs'):
+        config_opts['empty_block_interval_ms'] = options.get('emptyBlockIntervalMs')
     return generate_skale_schain_config(
         skale=skale,
         schain_name=schain_name,
@@ -56,10 +62,7 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
         ima_mp_schain=ima_mp_schain,
         ima_mp_mainnet=ima_mp_mainnet,
         wallets=wallets,
-        rotate_after_block=rotate_after_block,
-        snapshot_interval_ms=snapshot_interval_ms,
-        storage_limit=storage_limit,
-        empty_block_interval_ms=empty_block_interval_ms
+        **config_opts
     )
 
 

@@ -32,7 +32,8 @@ from tools.custom_thread import CustomThread
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
-from core.schains.runner import run_schain_container, run_ima_container, restart_container
+from core.schains.runner import (run_schain_container, run_ima_container,
+                                 restart_container, run_schain_container_in_sync_mode)
 from core.schains.cleaner import remove_config_dir, run_cleanup
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
 from core.schains.config import (generate_schain_config, save_schain_config,
@@ -112,8 +113,8 @@ class SchainsMonitor:
         new_schain = checks['rotation_in_progress']['new_schain']
         exiting_node = checks['rotation_in_progress']['exiting_node']
         rotation_id = checks['rotation_in_progress']['rotation_id']
-        if rotation_in_progress:
-            finish_time = datetime.fromtimestamp(checks['rotation_in_progress']['finish_ts'])
+        finish_time_ts = checks['rotation_in_progress']['finish_ts']
+        finish_time = datetime.fromtimestamp(finish_time_ts)
 
         if exiting_node and rotation_in_progress:
             logger.info(f'Node is exiting. sChain will be stoped at {finish_time}')
@@ -125,6 +126,30 @@ class SchainsMonitor:
 
         if rotation_in_progress and new_schain:
             logger.info('Building new rotated schain')
+            jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
+            if jobs == 0:
+                schain_record.dkg_started()
+                try:
+                    run_dkg(skale, schain['name'], self.node_config.id,
+                            self.node_config.sgx_key_name, rotation_id)
+                except DkgError as err:
+                    logger.info(f'sChain {name} Dkg procedure failed with {err}')
+                    schain_record.dkg_failed()
+                    remove_config_dir(schain['name'])
+                    return
+                schain_record.dkg_done()
+                schain_config = generate_schain_config(self.skale, schain['name'],
+                                                       self.node_id, rotation_id)
+                save_schain_config(schain_config, schain['name'])
+                init_data_volume(schain)
+                self.add_firewall_rules(name)
+                sleep(CONTAINERS_DELAY)
+                self.monitor_sync_schain_container(schain, finish_time_ts)
+                self.monitor_ima_container(schain)
+                # TODO: remove
+                self.scheduler.add_job(print, 'date', run_date=finish_time,
+                                       name=name)
+
         elif rotation_in_progress and not new_schain:
             logger.info('Schain was rotated. Rotation in progress')
             jobs = sum(map(lambda job: job.name == name, self.scheduler.get_jobs()))
@@ -132,7 +157,7 @@ class SchainsMonitor:
                 schain_record.dkg_started()
                 try:
                     run_dkg(skale, schain['name'], self.node_config.id,
-                            self.node_config.sgx_key_name)
+                            self.node_config.sgx_key_name, rotation_id)
                 except DkgError as err:
                     logger.info(f'sChain {name} Dkg procedure failed with {err}')
                     schain_record.dkg_failed()
@@ -151,7 +176,7 @@ class SchainsMonitor:
             try:
                 schain_record.dkg_started()
                 run_dkg(skale, schain['name'], self.node_config.id,
-                        self.node_config.sgx_key_name)
+                        self.node_config.sgx_key_name, rotation_id)
             except DkgError as err:
                 logger.info(f'sChain {name} Dkg procedure failed with {err}')
                 schain_record.dkg_failed()
@@ -201,6 +226,20 @@ class SchainsMonitor:
         if self.check_container(schain['name'], volume_required=True):
             env = get_schain_env(schain['name'])
             run_schain_container(schain, env)
+
+    def monitor_sync_schain_container(self, schain, start_ts):
+        def get_previous_schain_public_key(schain_name):
+            group_idx = self.skale.schains_data.name_to_id(schain_name)
+            raw_public_key = self.skale.schains_data.get_previous_groups_public_key(group_idx)
+            return ':'.join(map(str, raw_public_key))
+
+        if self.check_container(schain['name'], volume_required=True):
+            env = get_schain_env(schain['name'])
+            public_key = get_previous_schain_public_key(schain['name'])
+            run_schain_container_in_sync_mode(schain,
+                                              env,
+                                              start_ts=start_ts,
+                                              public_key=public_key)
 
     def monitor_ima_container(self, schain):
         env = get_ima_env(schain['name'])
