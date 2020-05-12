@@ -70,7 +70,7 @@ def exiting_node(skale):
     ip, public_ip, port, _ = generate_random_node_data()
     skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
     config = NodeConfig()
-    node.config.id = skale.nodes_data.node_name_to_index(name)
+    config.id = skale.nodes_data.node_name_to_index(name)
     yield Node(skale, config)
 
 
