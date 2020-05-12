@@ -43,6 +43,15 @@ class SChainChecks:
         self.node_id = node_id
         self.failhook = failhook
         self.skale = skale
+        self.run_checks()
+        if log:
+            self.log_health_check()
+        if not self.is_healthy() and self.failhook:
+            self.failhook(
+                f'sChain checks failed: {self.name}, {self.get_all()}, node_id: {node_id}',
+                level='warning')
+
+    def run_checks(self):
         self.check_for_rotation()
         self.check_data_dir()
         self.check_config()
@@ -52,12 +61,6 @@ class SChainChecks:
         self.check_container()
         self.check_ima_container()
         self.check_rpc()
-        if log:
-            self.log_health_check()
-        if not self.is_healthy() and self.failhook:
-            self.failhook(
-                f'sChain checks failed: {self.name}, {self.get_all()}, node_id: {node_id}',
-                level='warning')
 
     def check_data_dir(self):
         schain_dir_path = get_schain_dir_path(self.name)
