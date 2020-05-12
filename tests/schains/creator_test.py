@@ -1,6 +1,6 @@
 import pytest
 from core.node_config import NodeConfig
-from core.schains.monitor import SchainsMonitor
+from core.schains.creator import rotate_schain
 from tools.docker_utils import DockerUtils
 from core.schains.runner import get_container_name, get_image_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
@@ -10,12 +10,9 @@ import os
 
 
 @pytest.fixture
-def monitor(skale):
+def node_id(skale):
     config = NodeConfig()
-    with mock.patch('core.schains.monitor.SchainsMonitor.wait_for_node_id'):
-        monitor = SchainsMonitor(skale, config)
-        monitor.node_id = 1
-        return monitor
+    return config.id
 
 
 @pytest.fixture
@@ -55,7 +52,7 @@ CHECK_MOCK = {
 }
 
 
-def test_rotate_schain(monitor, dutils):
+def test_rotate_schain(skale, node_id, dutils):
     ima_container_name = get_container_name(IMA_CONTAINER, SCHAIN_NAME)
     schain_container_name = get_container_name(SCHAIN_CONTAINER, SCHAIN_NAME)
     ima_image = get_image_name(IMA_CONTAINER)
@@ -64,14 +61,13 @@ def test_rotate_schain(monitor, dutils):
     dutils.client.containers.run(ima_image, name=ima_container_name, detach=True)
     schain_cont = dutils.client.containers.get(schain_container_name)
     ima_cont = dutils.client.containers.get(ima_container_name)
-    with mock.patch('core.schains.monitor.generate_schain_config'), \
-            mock.patch('core.schains.monitor.save_schain_config'):
-        monitor.rotate_schain(SCHAIN, 0)
+    with mock.patch('core.schains.creator.generate_schain_config'), \
+            mock.patch('core.schains.creator.save_schain_config'):
+        rotate_schain(skale, node_id, SCHAIN, 0)
     restarted_schain = dutils.client.containers.get(schain_container_name)
     restarted_ima = dutils.client.containers.get(ima_container_name)
     assert schain_cont.attrs['State']['StartedAt'] != restarted_schain.attrs['State']['StartedAt']
     assert ima_cont.attrs['State']['StartedAt'] != restarted_ima.attrs['State']['StartedAt']
-    monitor.scheduler.shutdown()
 
 
 def test_exiting_monitor(monitor):
