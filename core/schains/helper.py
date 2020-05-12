@@ -22,7 +22,8 @@ import logging
 import json
 from pathlib import Path
 
-from tools.configs.schains import SCHAINS_DIR_PATH, DATA_DIR_NAME, BASE_SCHAIN_CONFIG_FILEPATH
+from tools.configs.schains import (SCHAINS_DIR_PATH, DATA_DIR_NAME, BASE_SCHAIN_CONFIG_FILEPATH,
+                                   IMA_DATA_FILEPATH)
 from tools.configs.ima import PROXY_ABI_FILENAME
 
 logger = logging.getLogger(__name__)
@@ -64,6 +65,11 @@ def get_schain_proxy_file_path(schain_name):
 def read_base_config():
     json_data = open(BASE_SCHAIN_CONFIG_FILEPATH).read()
     return json.loads(json_data)
+
+
+def read_ima_data():
+    with open(IMA_DATA_FILEPATH) as f:
+        return json.load(f)
 
 
 def get_schain_rpc_ports(schain_id):
