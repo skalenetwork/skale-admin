@@ -95,16 +95,12 @@ class Node:
 
     def exit(self, opts):
         schains_list = self.skale.schains_data.get_schains_for_node(self.config.id)
-        exit_count = len(schains_list) if len(schains_list) else 1
+        exit_count = len(schains_list) or 1
         for _ in range(exit_count):
             try:
-                tx_res = self.skale.manager.node_exit(self.config.id, wait_for=True)
-            except TransactionFailedError:
-                logger.error(arguments_list_string(
-                    {'tx': tx_res.hash},
-                    'Node rotation failed',
-                    'error'
-                ))
+                self.skale.manager.node_exit(self.config.id, wait_for=True)
+            except TransactionFailedError as err:
+                logger.error('Node rotation failed', exc_info=err)
 
     def get_exit_status(self):
         active_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
