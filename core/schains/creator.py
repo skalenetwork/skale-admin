@@ -120,7 +120,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         jobs = sum(map(lambda job: job.name == name, scheduler.get_jobs()))
         if jobs == 0:
             scheduler.add_job(cleanup_schain, 'date', run_date=finish_time,
-                              name=name, args=[skale, name, node_id])
+                              name=name, args=[skale, node_id, name])
         return
 
     if rotation_in_progress and new_schain:
@@ -143,7 +143,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
             init_data_volume(schain)
             add_firewall_rules(name)
             time.sleep(CONTAINERS_DELAY)
-            monitor_sync_schain_container(schain, finish_time_ts)
+            monitor_sync_schain_container(skale, schain, finish_time_ts)
             monitor_ima_container(schain)
             # TODO: remove
             scheduler.add_job(print, 'date', run_date=finish_time,
@@ -164,9 +164,10 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
                 remove_config_dir(schain['name'])
             else:
                 schain_record.dkg_done()
-                scheduler.add_job(rotate_schain,
-                                  'date', run_date=finish_time,
-                                  name=name, args=[schain, rotation_id])
+                scheduler.add_job(rotate_schain, 'date',
+                                  run_date=finish_time,
+                                  name=name,
+                                  args=[skale, node_id, schain, rotation_id])
         logger.info(f'sChain will be restarted at {finish_time}')
         return
     else:
@@ -205,7 +206,8 @@ def init_schain_config(skale, node_id, schain_name):
             f'sChain {schain_name}: sChain config not found: '
             f'{config_filepath}, trying to create.'
         )
-        schain_config = generate_schain_config(skale, schain_name, node_id)
+        rotation_id = skale.schains_data.get_last_rotation_id(schain_name)
+        schain_config = generate_schain_config(skale, schain_name, node_id, rotation_id)
         save_schain_config(schain_config, schain_name)
 
 
