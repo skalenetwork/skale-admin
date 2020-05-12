@@ -4,7 +4,7 @@ from time import sleep
 from core.schains.checks import SChainChecks
 from tools.docker_utils import DockerUtils
 
-from tests.docker_utils_test import run_test_schain_container
+from tests.docker_utils_test import run_simple_schain_container
 
 
 SCHAIN_NAME = 'test'
@@ -35,7 +35,7 @@ def test_init_checks():
 def test_get_all_checks():
     dutils = DockerUtils(volume_driver='local')
     cleanup_schain(dutils)
-    run_test_schain_container(dutils)
+    run_simple_schain_container(dutils)
     sleep(SKALED_INIT_TIMEOUT)
 
     with mock.patch('core.schains.checks.SChainChecks.check_firewall_rules',
