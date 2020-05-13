@@ -115,8 +115,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     if not dkg_client.is_channel_opened() and skale.schains_data.is_group_failed_dkg(dkg_client.group_index):
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
+    pow2 = 115792089237316195423570985008687907853269984665640564039457584007913129639931
     complaint_data = get_complaint_data(dkg_client)
-    if complaint_data[0] == complaint_data[1] and complaint_data[0] == 0:
+    if complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2:
         while False in is_alright_sent_list:
             if time.time() - start_time_alright > RECEIVE_TIMEOUT:
                 break
