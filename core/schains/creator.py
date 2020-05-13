@@ -130,7 +130,14 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         logger.info('Building new rotated schain')
         jobs = sum(map(lambda job: job.name == name, scheduler.get_jobs()))
         if jobs == 0:
-            monitor_dkg(skale, name, node_id, sgx_key_name, rotation_id, schain_record)
+            monitor_dkg(
+                skale=skale,
+                schain_name=name,
+                node_id=node_id,
+                sgx_key_name=sgx_key_name,
+                rotation_id=rotation_id,
+                schain_record=schain_record
+            )
             if SChainRecord.to_dict(schain_record)['dkg_status'] == DKGStatus.FAILED:
                 remove_config_dir(name)
                 return
@@ -151,7 +158,14 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         logger.info('Schain was rotated. Rotation in progress')
         jobs = sum(map(lambda job: job.name == name, scheduler.get_jobs()))
         if jobs == 0:
-            monitor_dkg(skale, name, node_id, sgx_key_name, rotation_id, schain_record)
+            monitor_dkg(
+                skale=skale,
+                schain_name=name,
+                node_id=node_id,
+                sgx_key_name=sgx_key_name,
+                rotation_id=rotation_id,
+                schain_record=schain_record
+            )
             if SChainRecord.to_dict(schain_record)['dkg_status'] == DKGStatus.FAILED:
                 remove_config_dir(name)
                 return
@@ -167,7 +181,14 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
     if not checks['data_dir']:
         init_schain_dir(name)
     if not checks['dkg']:
-        monitor_dkg(skale, name, node_id, sgx_key_name, rotation_id, schain_record)
+        monitor_dkg(
+            skale=skale,
+            schain_name=name,
+            node_id=node_id,
+            sgx_key_name=sgx_key_name,
+            rotation_id=rotation_id,
+            schain_record=schain_record
+        )
         if SChainRecord.to_dict(schain_record)['dkg_status'] == DKGStatus.FAILED:
             remove_config_dir(name)
             return
