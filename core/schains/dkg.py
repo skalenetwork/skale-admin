@@ -90,7 +90,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             is_complaint_sent = True
             complainted_node_index = i
 
-    if not dkg_client.is_channel_opened() and skale.schains_data.is_group_failed_dkg(dkg_client.group_index):
+    is_group_opened = dkg_client.is_channel_opened()
+    is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+    if not is_group_opened and is_group_failed:
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
     is_alright_sent_list = [False for _ in range(n)]
@@ -104,7 +106,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
 
-    if not dkg_client.is_channel_opened() and skale.schains_data.is_group_failed_dkg(dkg_client.group_index):
+    is_group_opened = dkg_client.is_channel_opened()
+    is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+    if not is_group_opened and is_group_failed:
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
     is_complaint_received = False
@@ -112,7 +116,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
         is_complaint_received = True
         response(dkg_client, complaint_data[0])
-    if not dkg_client.is_channel_opened() and skale.schains_data.is_group_failed_dkg(dkg_client.group_index):
+    is_group_opened = dkg_client.is_channel_opened()
+    is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+    if not is_group_opened and is_group_failed:
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
     pow2 = 115792089237316195423570985008687907853269984665640564039457584007913129639931
@@ -139,7 +145,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             sleep(1)
             continue
 
-        if not dkg_client.is_channel_opened() and skale.schains_data.is_group_failed_dkg(dkg_client.group_index):
+        is_group_opened = dkg_client.is_channel_opened()
+        is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+        if not is_group_opened and is_group_failed:
             raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
         else:
             send_complaint(dkg_client, complainted_node_index)
