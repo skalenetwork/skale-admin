@@ -3,9 +3,13 @@ import threading
 
 from collections import namedtuple
 
-import iptc
-
 logger = logging.getLogger(__name__)
+
+try:
+    import iptc
+except FileNotFoundError:
+    logger.warning('Unable to import iptc')
+
 
 TABLE = 'filter'
 CHAIN = 'INPUT'

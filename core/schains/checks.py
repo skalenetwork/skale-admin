@@ -22,11 +22,13 @@ import logging
 import time
 
 from core.schains.config import get_allowed_endpoints
-from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
+from core.schains.helper import (get_schain_dir_path, get_schain_config_filepath,
+                                 get_schain_rpc_ports)
 from core.schains.runner import get_container_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.iptables import apsent_rules as apsent_iptables_rules
+from tools.helper import post_request
 
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -41,6 +43,15 @@ class SChainChecks:
         self.node_id = node_id
         self.failhook = failhook
         self.skale = skale
+        self.run_checks()
+        if log:
+            self.log_health_check()
+        if not self.is_healthy() and self.failhook:
+            self.failhook(
+                f'sChain checks failed: {self.name}, {self.get_all()}, node_id: {node_id}',
+                level='warning')
+
+    def run_checks(self):
         self.check_for_rotation()
         self.check_data_dir()
         self.check_config()
@@ -49,44 +60,55 @@ class SChainChecks:
         self.check_firewall_rules()
         self.check_container()
         self.check_ima_container()
-        if log:
-            self.log_health_check()
-        if not self.is_healthy() and self.failhook:
-            self.failhook(
-                f'sChain checks failed: {self.name}, {self.get_all()}, node_id: {node_id}',
-                level='warning')
+        self.check_rpc()
 
     def check_data_dir(self):
         schain_dir_path = get_schain_dir_path(self.name)
-        self._data_dir = {'result': os.path.isdir(schain_dir_path)}
+        self._data_dir = os.path.isdir(schain_dir_path)
 
     def check_dkg(self):
         rotation_id = self.skale.schains_data.get_last_rotation_id(self.name)
         secret_key_share_filepath = get_secret_key_share_filepath(self.name, rotation_id)
-        self._dkg = {'result': os.path.isfile(secret_key_share_filepath)}
+        self._dkg = os.path.isfile(secret_key_share_filepath)
 
     def check_config(self):
         config_filepath = get_schain_config_filepath(self.name)
-        self._config = {'result': os.path.isfile(config_filepath)}
+        self._config = os.path.isfile(config_filepath)
 
     def check_volume(self):
-        self._volume = {'result': dutils.data_volume_exists(self.name)}
+        self._volume = dutils.data_volume_exists(self.name)
 
     def check_container(self):
         name = get_container_name(SCHAIN_CONTAINER, self.name)
         info = dutils.get_info(name)
-        self._container = {'result': dutils.container_running(info)}
+        self._container = dutils.container_running(info)
 
     def check_ima_container(self):
         name = get_container_name(IMA_CONTAINER, self.name)
         info = dutils.get_info(name)
-        self._ima_container = {'result': dutils.container_running(info)}
+        self._ima_container = dutils.container_running(info)
+
+    def check_rpc(self):
+        self._rpc = False
+        if self._config:
+            http_port, _ = get_schain_rpc_ports(self.name)
+            http_endpoint = f'http://127.0.0.1:{http_port}'
+            self._rpc = self.__check_endpoint_alive(http_endpoint)
+
+    def __check_endpoint_alive(self, http_endpoint):
+        res = post_request(
+            http_endpoint,
+            json={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1}
+        )
+        if res and res.status_code == 200:
+            return True
+        return False
 
     def check_firewall_rules(self):
-        self._firewall_rules = {'result': False}
-        if self._config['result']:
+        self._firewall_rules = False
+        if self._config:
             ips_ports = get_allowed_endpoints(self.name)
-            self._firewall_rules['result'] = len(apsent_iptables_rules(ips_ports)) == 0
+            self._firewall_rules = len(apsent_iptables_rules(ips_ports)) == 0
 
     def check_for_rotation(self):
         ts = time.time()
@@ -120,7 +142,8 @@ class SChainChecks:
             'volume': self._volume,
             'container': self._container,
             'ima_container': self._ima_container,
-            'firewall_rules': self._firewall_rules
+            'firewall_rules': self._firewall_rules,
+            'rpc': self._rpc
         }
 
     def log_health_check(self):

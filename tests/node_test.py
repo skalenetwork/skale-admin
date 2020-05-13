@@ -64,8 +64,18 @@ def test_register_info(node):
     assert info['publicKey'] == node.skale.wallet.public_key
 
 
-def test_start_exit(node):
-    node.exit({})
-    status = NodeExitStatuses(node.skale.nodes_data.get_node_status(node.config.id))
+@pytest.fixture
+def exiting_node(skale):
+    name = 'exit_test'
+    ip, public_ip, port, _ = generate_random_node_data()
+    skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
+    config = NodeConfig()
+    config.id = skale.nodes_data.node_name_to_index(name)
+    yield Node(skale, config)
+
+
+def test_start_exit(exiting_node):
+    exiting_node.exit({})
+    status = NodeExitStatuses(exiting_node.skale.nodes_data.get_node_status(exiting_node.config.id))
 
     assert status != NodeExitStatuses.ACTIVE

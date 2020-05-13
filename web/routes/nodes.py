@@ -34,7 +34,8 @@ def construct_nodes_bp(skale, node, docker_utils):
     @nodes_bp.route('/node-info', methods=['GET'])
     def node_info():
         logger.debug(request)
-        return construct_ok_response(node.info)
+        data = {'node_info': node.info}
+        return construct_ok_response(data=data)
 
     @nodes_bp.route('/create-node', methods=['POST'])
     def register_node():
@@ -51,18 +52,19 @@ def construct_nodes_bp(skale, node, docker_utils):
         if not is_node_name_available:
             error_msg = f'Node name is already taken: {name}'
             logger.error(error_msg)
-            return construct_err_response(HTTPStatus.BAD_REQUEST, [error_msg])
+            return construct_err_response(msg=error_msg)
 
         is_node_ip_available = skale.nodes_data.is_node_ip_available(ip)
         if not is_node_ip_available:
             error_msg = f'Node IP is already taken: {ip}'
             logger.error(error_msg)
-            return construct_err_response(HTTPStatus.BAD_REQUEST, [error_msg])
+            return construct_err_response(error_msg)
 
         res = node.register(ip, public_ip, port, name)
         if res['status'] != 1:
-            return construct_err_response(HTTPStatus.INTERNAL_SERVER_ERROR, res['errors'])
-        return construct_ok_response(res['data'])
+            return construct_err_response(msg=res['errors'],
+                                          status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+        return construct_ok_response({'node_data': res['data']})
 
     @nodes_bp.route('/node-signature', methods=['GET'])
     def node_signature():
@@ -72,22 +74,21 @@ def construct_nodes_bp(skale, node, docker_utils):
 
         signature = skale.validator_service.get_link_node_signature(
             validator_id)
-        return construct_ok_response(data={"status": "ok",
-                                           "payload": {"signature": signature}})
+        return construct_ok_response(data={'signature': signature})
 
     @nodes_bp.route('/check-node-name', methods=['GET'])
     def check_node_name():
         logger.debug(request)
         node_name = request.args.get('nodeName')
         res = skale.nodes_data.is_node_name_available(node_name)
-        return construct_ok_response(res)
+        return construct_ok_response(data={'name_available': res})
 
     @nodes_bp.route('/check-node-ip', methods=['GET'])
     def check_node_ip():
         logger.debug(request)
         node_ip = request.args.get('nodeIp')
         res = skale.nodes_data.is_node_ip_available(node_ip)
-        return construct_ok_response(res)
+        return construct_ok_response(data={'ip_available': res})
 
     @nodes_bp.route('/containers/list', methods=['GET'])
     def skale_containers_list():
@@ -95,6 +96,6 @@ def construct_nodes_bp(skale, node, docker_utils):
         all = request.args.get('all') == 'True'
         containers_list = docker_utils.get_all_skale_containers(
             all=all, format=True)
-        return construct_ok_response(containers_list)
+        return construct_ok_response(data={'containers': containers_list})
 
     return nodes_bp

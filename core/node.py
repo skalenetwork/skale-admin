@@ -82,17 +82,12 @@ class Node:
         if not check_required_balance(self.skale):
             return self._insufficient_funds()
         try:
-            tx_res = self.skale.manager.create_node(ip, int(port), name, public_ip,
-                                                    wait_for=True,
-                                                    raise_for_status=False)
-            tx_res.raise_for_status()
-        except TransactionFailedError:
-            logger.error(arguments_list_string(
-                {'tx': tx_res.hash},
-                'Node creation failed',
-                'error'
-            ))
-            return {'status': 0, 'errors': [str(tx_res.receipt)]}
+            self.skale.manager.create_node(ip, int(port), name,
+                                           public_ip, wait_for=True)
+        except TransactionFailedError as err:
+            logger.error('Node creation failed', exc_info=err)
+            return {'status': 0, 'errors': [f'node creation failed']}
+
         self._log_node_info('Node successfully created', ip, public_ip, port, name)
         self.config.id = self.skale.nodes_data.node_name_to_index(name)
         run_filebeat_service(public_ip, self.config.id, self.skale)
@@ -100,16 +95,12 @@ class Node:
 
     def exit(self, opts):
         schains_list = self.skale.schains_data.get_schains_for_node(self.config.id)
-        exit_count = len(schains_list) if len(schains_list) else 1
+        exit_count = len(schains_list) or 1
         for _ in range(exit_count):
             try:
-                tx_res = self.skale.manager.node_exit(self.config.id, wait_for=True)
-            except TransactionFailedError:
-                logger.error(arguments_list_string(
-                    {'tx': tx_res.hash},
-                    'Node rotation failed',
-                    'error'
-                ))
+                self.skale.manager.node_exit(self.config.id, wait_for=True)
+            except TransactionFailedError as err:
+                logger.error('Node rotation failed', exc_info=err)
 
     def get_exit_status(self):
         active_schains = self.skale.schains_data.get_schains_for_node(self.config.id)

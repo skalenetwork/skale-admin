@@ -2,7 +2,7 @@ import os
 import pytest
 
 from core.schains.cleaner import (remove_config_dir, remove_schain_volume, remove_schain_container,
-                                  remove_ima_container, remove_schain_record)
+                                  remove_ima_container, mark_schain_deleted)
 from core.schains.helper import init_schain_dir
 from tools.configs.schains import SCHAINS_DIR_PATH
 
@@ -58,7 +58,7 @@ def test_remove_schain_record():
     SChainRecord.create_table()
     name = "test"
     SChainRecord.add(name)
-    remove_schain_record(name)
+    mark_schain_deleted(name)
     record = SChainRecord.to_dict(SChainRecord.get_by_name(name))
     assert record["is_deleted"]
     SChainRecord.drop_table()
