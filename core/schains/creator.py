@@ -282,7 +282,8 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         if sync:
             finish_time_ts = checks['rotation_in_progress']['finish_ts']
             monitor_sync_schain_container(skale, schain, finish_time_ts)
-        monitor_schain_container(schain)
+        else:
+            monitor_schain_container(schain)
         time.sleep(CONTAINERS_DELAY)
     if not checks['ima_container']:
         monitor_ima_container(schain)

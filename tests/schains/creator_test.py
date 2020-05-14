@@ -133,3 +133,27 @@ def test_rotating_monitor(skale, node_id, scheduler):
         assert len(scheduler.get_jobs()) <= 1
         time.sleep(delta_time)
         assert not os.path.exists(FILENAME)
+
+
+def test_new_schain_monitor(skale, scheduler):
+    rotation_info = {
+        'result': True,
+        'new_schain': True,
+        'exiting_node': False,
+        'finish_ts': time.time(),
+        'rotation_id': 0
+    }
+    CHECK_MOCK['rotation_in_progress'] = rotation_info
+    CHECK_MOCK['container'] = False
+    with mock.patch('core.schains.creator.SChainRecord'), \
+        mock.patch('core.schains.creator.run_dkg'), \
+        mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
+        mock.patch('core.schains.creator.SChainChecks.run_checks'), \
+        mock.patch('core.schains.creator.SChainChecks.get_all',
+                   new=mock.Mock(return_value=CHECK_MOCK)), \
+        mock.patch('core.schains.creator.monitor_sync_schain_container',
+                   new=mock.Mock()) as sync:
+        monitor_schain(skale, node_id, 'test', SCHAIN, scheduler)
+        args, kwargs = sync.call_args
+        assert args[1] == SCHAIN
+        assert args[2] == rotation_info['finish_ts']
