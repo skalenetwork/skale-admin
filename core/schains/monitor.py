@@ -45,7 +45,8 @@ from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
-from tools.iptables import add_rules as add_iptables_rules
+from tools.iptables import (add_rules as add_iptables_rules,
+                            remove_rules as remove_iptables_rules)
 
 from . import MONITOR_INTERVAL
 
@@ -246,10 +247,13 @@ class SchainsMonitor:
         run_ima_container(schain, env)
 
     def rotate_schain(self, schain, rotation_id):
+        name = schain['name']
+        remove_iptables_rules(name)
         logger.info('Schain was rotated. Regenerating config')
-        schain_config = generate_schain_config(self.skale, schain['name'],
+        schain_config = generate_schain_config(self.skale, name,
                                                self.node_id, rotation_id)
-        save_schain_config(schain_config, schain['name'])
+        save_schain_config(schain_config, name)
+        add_iptables_rules(name)
         logger.info('Containers are going to be restarted')
         restart_container(SCHAIN_CONTAINER, schain)
         restart_container(IMA_CONTAINER, schain)

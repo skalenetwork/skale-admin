@@ -38,6 +38,7 @@ from core.schains.runner import (run_schain_container, run_ima_container,
 from core.schains.cleaner import cleanup_schain, remove_config_dir
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
 from core.schains.config import (generate_schain_config, save_schain_config,
+                                 update_schain_config,
                                  get_schain_env, get_allowed_endpoints)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
@@ -46,7 +47,8 @@ from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
-from tools.iptables import add_rules as add_iptables_rules
+from tools.iptables import (add_rules as add_iptables_rules,
+                            remove_rules as remove_iptables_rules)
 
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import Process
@@ -197,6 +199,11 @@ def add_firewall_rules(schain_name):
     add_iptables_rules(endpoints)
 
 
+def remove_firewall_rules(schain_name):
+    endpoints = get_allowed_endpoints(schain_name)
+    remove_iptables_rules(endpoints)
+
+
 def check_container(schain_name, volume_required=False):
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
     info = dutils.get_info(name)
@@ -236,13 +243,19 @@ def monitor_sync_schain_container(skale, schain, start_ts):
                                           public_key=public_key)
 
 
-# TODO: Add firewall rules restart
 def rotate_schain(skale, node_id, schain, rotation_id):
-    logger.info('Schain was rotated. Regenerating config')
-    schain_config = generate_schain_config(skale, schain['name'],
+    name = schain['name']
+    logger.info(f'Schain {name} was rotated. Removing firewall rules')
+    add_firewall_rules(name)
+
+    logger.info(f'Updating {name} schain config')
+    schain_config = generate_schain_config(skale, name,
                                            node_id, rotation_id)
-    save_schain_config(schain_config, schain['name'])
-    logger.info('Containers are going to be restarted')
+    update_schain_config(schain_config, name)
+
+    logger.info(f'Adding new firewall rules for {name}')
+    remove_firewall_rules(name)
+    logger.info(f'Containers for {name} are going to be restarted')
     restart_container(SCHAIN_CONTAINER, schain)
     restart_container(IMA_CONTAINER, schain)
 
