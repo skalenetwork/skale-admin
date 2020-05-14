@@ -68,6 +68,12 @@ def monitor(skale, node_config):
     skale = spawn_skale_lib(skale)
     node_id = node_config.id
     schains = skale.schains_data.get_schains_for_node(node_id)
+    leaving_history = skale.schains_data.get_leaving_history(node_id)
+    for history in leaving_history:
+        schain = skale.schains_data.get(history[0])
+        if time.time() < history[1] and schain['name']:
+            schain['active'] = True
+            schains.append(schain)
     schains_on_node = sum(map(lambda schain: schain['active'], schains))
     schains_holes = len(schains) - schains_on_node
     logger.info(
@@ -230,6 +236,7 @@ def monitor_sync_schain_container(skale, schain, start_ts):
                                           public_key=public_key)
 
 
+# TODO: Add firewall rules restart
 def rotate_schain(skale, node_id, schain, rotation_id):
     logger.info('Schain was rotated. Regenerating config')
     schain_config = generate_schain_config(skale, schain['name'],
