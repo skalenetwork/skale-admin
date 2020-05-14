@@ -121,7 +121,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     if not is_group_opened and is_group_failed:
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
-    pow2 = 115792089237316195423570985008687907853269984665640564039457584007913129639931
+    pow2 = 115792089237316195423570985008687907853269984665640564039457584007913129639935
     complaint_data = get_complaint_data(dkg_client)
     if complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2:
         while False in is_alright_sent_list:
@@ -130,7 +130,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             for from_node in range(dkg_client.n):
                 is_alright_sent_list[from_node] = is_all_data_received(dkg_client, from_node)
             complaint_data = get_complaint_data(dkg_client)
-            if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
+            if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
                 is_complaint_received = True
                 response(dkg_client, complaint_data[0])
             sleep(1)
@@ -143,19 +143,22 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     complaint_data = get_complaint_data(dkg_client)
     is_complaint_sent = complaint_data[0] != complaint_data[1]
     if is_complaint_sent or is_complaint_received:
-        while not skale.schains_data.is_group_failed_dkg(dkg_client.group_index) or dkg_client.is_channel_opened():
+        is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+        is_channel_opened = dkg_client.is_channel_opened()
+        while not is_group_failed or is_channel_opened:
             if time.time() - start_time_response > RECEIVE_TIMEOUT:
                 break
+            is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+            is_channel_opened = dkg_client.is_channel_opened()
             sleep(1)
-            continue
 
         is_group_opened = dkg_client.is_channel_opened()
         is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
         if is_group_opened or not is_group_failed:
-            send_complaint(dkg_client, complainted_node_index) 
+            send_complaint(dkg_client, complainted_node_index)
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
-    if not False in is_alright_sent_list:
+    if False not in is_alright_sent_list:
         if not skale.schains_data.is_group_failed_dkg(dkg_client.group_index):
             common_public_key = skale.schains_data.get_groups_public_key(dkg_client.group_index)
             return {
