@@ -152,12 +152,12 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
                 schain_record=schain_record
             )
             if is_dkg_done:
-                remove_config_dir(name)
-            else:
                 scheduler.add_job(rotate_schain, 'date',
                                   run_date=finish_time,
                                   name=name,
                                   args=[skale, node_id, schain, rotation_id])
+            else:
+                remove_config_dir(name)
         logger.info(f'sChain will be restarted at {finish_time}')
         return
     else:
@@ -268,7 +268,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             rotation_id=rotation_id,
             schain_record=schain_record
         )
-        if is_dkg_done:
+        if not is_dkg_done:
             remove_config_dir(name)
             return
 
