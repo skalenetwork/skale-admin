@@ -106,9 +106,11 @@ class DKGClient:
     def secret_key_contribution(self):
         self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
                                                                                  self.public_keys)
+        logger.info(f'SENT SKC: {self.sent_secret_key_contribution}')
         self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
             self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
         ]
+        print(f'SKC FOR MYSELF: {self.incoming_secret_key_contribution[self.node_id_dkg]}')
         return self.sent_secret_key_contribution
 
     def broadcast(self, poly_name):
@@ -220,7 +222,7 @@ class DKGClient:
 
     def is_all_data_received(self, from_node):
         is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
-        return is_all_data_received_function(self.group_index, from_node).call(
+        return is_all_data_received_function(self.group_index, self.node_ids_dkg[from_node]).call(
             {'from': self.skale.wallet.address}
         )
 
@@ -245,6 +247,7 @@ class DKGClient:
     def generate_key(self, bls_key_name):
         received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
                                                    for j in range(self.sgx.n))
+        logger.info(f'RECEIVED SKC: {received_secret_key_contribution}')
         logger.info(f'sChain: {self.schain_name}. '
                     f'DKGClient is going to create BLS private key with name {bls_key_name}')
         bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name,
