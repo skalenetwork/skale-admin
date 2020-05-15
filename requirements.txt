@@ -26,3 +26,4 @@ pyOpenSSL==19.1.0
 python-dateutil==2.8.1
 git+git://github.com/skalenetwork/skale.py.git@feature/SKALE-2052-node-rotation#egg=skale.py
 apscheduler==3.6.3
+redis==3.5.2

@@ -22,8 +22,6 @@ import os
 import time
 from datetime import datetime
 
-from apscheduler.schedulers.background import BackgroundScheduler
-
 from skale.manager_client import spawn_skale_lib
 
 
@@ -59,13 +57,13 @@ dutils = DockerUtils()
 CONTAINERS_DELAY = 20
 
 
-def run_creator(skale, node_config):
-    process = Process(target=monitor, args=(skale, node_config))
+def run_creator(skale, node_config, scheduler):
+    process = Process(target=monitor, args=(skale, node_config, scheduler))
     process.start()
     process.join()
 
 
-def monitor(skale, node_config):
+def monitor(skale, node_config, scheduler):
     logger.info('Creator procedure started')
     skale = spawn_skale_lib(skale)
     node_id = node_config.id
@@ -82,8 +80,6 @@ def monitor(skale, node_config):
         arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
                                'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
 
-    scheduler = BackgroundScheduler()
-    scheduler.start()
     with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
         futures = [
             executor.submit(

@@ -21,7 +21,6 @@ import os
 import logging
 from time import sleep, time
 from datetime import datetime
-from apscheduler.schedulers.background import BackgroundScheduler
 
 from skale.manager_client import spawn_skale_lib
 
