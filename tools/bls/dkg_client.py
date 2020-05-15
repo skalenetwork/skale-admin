@@ -260,13 +260,17 @@ class DKGClient:
         is_alright_possible = is_alright_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
+        return_status = 0
         if not is_alright_possible:
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node has already sent an alright note')
-            return
+            return_status += 1
 
         if not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. channel is not opened')
+            return_status += 1
+        
+        if return_status > 0:
             return
         try:
             tx_res = self.skale.dkg.alright(
