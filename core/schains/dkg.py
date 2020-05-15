@@ -97,14 +97,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     is_alright_sent_list = [False for _ in range(n)]
     start_time_alright = time.time()
-    encrypted_bls_key = 0
-    bls_key_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
     if not is_complaint_sent:
-        encrypted_bls_key = generate_bls_key(dkg_client, bls_key_name)
         send_alright(dkg_client)
         is_alright_sent_list[dkg_client.node_id_dkg] = True
-
-    logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
 
     is_group_opened = dkg_client.is_channel_opened()
     is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
@@ -160,6 +155,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     if False not in is_alright_sent_list:
         if not skale.schains_data.is_group_failed_dkg(dkg_client.group_index):
+            encrypted_bls_key = 0
+            bls_key_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
+            encrypted_bls_key = generate_bls_key(dkg_client, bls_key_name)
+            logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
             common_public_key = skale.schains_data.get_groups_public_key(dkg_client.group_index)
             return {
                 'common_public_key': common_public_key,
