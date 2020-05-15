@@ -165,7 +165,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 'public_key': dkg_client.public_key,
                 't': t,
                 'n': n,
-                'key_share_name': bls_key_name
+                'key_share_name': bls_name
             }
 
 
