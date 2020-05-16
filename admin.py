@@ -51,19 +51,20 @@ def alarm(time):
     logger.info(f'IVD Alarm! This alarm was scheduled at {time}')
 
 
-def debug_job(scheduler):
-    alarm_time = datetime.now() + timedelta(seconds=10)
+def add_debug_job(scheduler):
+    alarm_time = datetime.now() + timedelta(seconds=60)
     scheduler.add_job(alarm, 'date', run_date=alarm_time, args=[datetime.now()])
 
 
 def monitor(skale, node_config):
     scheduler = init_scheduler()
-    scheduler.start()
+    # scheduler.start()
     while True:
+#        add_debug_job(scheduler)
         run_creator(skale, node_config, scheduler)
         time.sleep(MONITOR_INTERVAL)
-        run_cleaner(skale, node_config)
-        time.sleep(MONITOR_INTERVAL)
+        # run_cleaner(skale, node_config)
+        # time.sleep(MONITOR_INTERVAL)
 
 
 def main():

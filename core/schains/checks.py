@@ -38,11 +38,11 @@ dutils = DockerUtils()
 
 
 class SChainChecks:
-    def __init__(self, skale, schain_name: str, node_id: int, log=False, failhook=None):
+    def __init__(self, schain_name: str, node_id: int, rotation_id=0, log=False, failhook=None):
         self.name = schain_name
         self.node_id = node_id
         self.failhook = failhook
-        self.skale = skale
+        self.rotation_id = rotation_id
         self.run_checks()
         if log:
             self.log_health_check()

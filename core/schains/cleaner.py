@@ -102,7 +102,7 @@ def monitor(skale, node_config):
         if name in schains_on_node and name not in schain_names_on_contracts:
             logger.info(
                 arguments_list_string({'sChain name': name}, 'sChain deleted event found'))
-            cleanup_schain(monitor_skale, node_config.id, name)
+            cleanup_schain(node_config.id, name)
     logger.info('Cleanup procedure finished.')
 
 
@@ -137,8 +137,8 @@ def remove_firewall_rules(schain_name):
     remove_iptables_rules(endpoints)
 
 
-def cleanup_schain(skale, node_id, schain_name):
-    checks = SChainChecks(skale, schain_name, node_id).get_all()
+def cleanup_schain(node_id, schain_name, rotation_id=0):
+    checks = SChainChecks(schain_name, node_id, rotation_id).get_all()
     if checks['container']:
         remove_schain_container(schain_name)
     if checks['volume']:
