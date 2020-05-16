@@ -154,7 +154,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         logger.info('Schain was rotated. Rotation in progress')
         jobs = sum(map(lambda job: job.name == name, scheduler.get_jobs()))
         if jobs == 0:
-            is_dkg_done = True or safe_run_dkg(
+            is_dkg_done = safe_run_dkg(
                 skale=skale,
                 schain_name=name,
                 node_id=node_id,
@@ -163,7 +163,6 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
                 schain_record=schain_record
             )
             if is_dkg_done:
-
                 schain_config = generate_schain_config(skale, name,
                                                        node_id, rotation_id)
                 scheduler.add_job(rotate_schain, 'date',
