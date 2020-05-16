@@ -39,7 +39,7 @@ from core.schains.config import (generate_schain_config, save_schain_config,
                                  update_schain_config,
                                  get_schain_env, get_allowed_endpoints)
 from core.schains.volume import init_data_volume
-from core.schains.checks import SChainChecks
+from core.schains.checks import SChainChecks, check_for_rotation
 from core.schains.ima import get_ima_env
 from core.schains.dkg import run_dkg
 
@@ -104,7 +104,17 @@ def monitor(skale, node_config, scheduler):
 def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
     skale = spawn_skale_lib(skale)
     name = schain['name']
-    checks = SChainChecks(skale, name, node_id, log=True).get_all()
+    print('JOBS', scheduler.get_jobs())
+    rotation = check_for_rotation(skale, name, node_id)
+
+    rotation_in_progress = rotation['result']
+    new_schain = rotation['new_schain']
+    exiting_node = rotation['exiting_node']
+    rotation_id = rotation['rotation_id']
+    finish_time_ts = rotation['finish_ts']
+    finish_time = datetime.fromtimestamp(finish_time_ts)
+
+    checks = SChainChecks(name, node_id, rotation_id=rotation_id, log=True).get_all()
 
     if not SChainRecord.added(name):
         schain_record, _ = SChainRecord.add(name)
@@ -114,15 +124,8 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
     if not schain_record.first_run:
         # todo: send failed checks to tg
         pass
+
     schain_record.set_first_run(False)
-
-    rotation_in_progress = checks['rotation_in_progress']['result']
-    new_schain = checks['rotation_in_progress']['new_schain']
-    exiting_node = checks['rotation_in_progress']['exiting_node']
-    rotation_id = checks['rotation_in_progress']['rotation_id']
-    finish_time_ts = checks['rotation_in_progress']['finish_ts']
-    finish_time = datetime.fromtimestamp(finish_time_ts)
-
     if exiting_node and rotation_in_progress:
         logger.info(f'Node is exiting. sChain will be stoped at {finish_time}')
         jobs = sum(map(lambda job: job.name == name, scheduler.get_jobs()))
@@ -141,7 +144,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
             checks=checks,
             node_id=node_id,
             sgx_key_name=sgx_key_name,
-            rotation_id=rotation_id,
+            rotation=rotation,
             schain_record=schain_record,
             sync=True
         )
@@ -180,7 +183,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         checks=checks,
         node_id=node_id,
         sgx_key_name=sgx_key_name,
-        rotation_id=rotation_id,
+        rotation=rotation,
         schain_record=schain_record
     )
 
@@ -276,7 +279,7 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
 
 
 def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
-                   rotation_id, schain_record, sync=False):
+                   rotation, schain_record, sync=False):
     name = schain['name']
     if not checks['data_dir']:
         init_schain_dir(name)
@@ -286,7 +289,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             schain_name=name,
             node_id=node_id,
             sgx_key_name=sgx_key_name,
-            rotation_id=rotation_id,
+            rotation_id=rotation['rotation_id'],
             schain_record=schain_record
         )
         if not is_dkg_done:
@@ -301,7 +304,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         add_firewall_rules(name)
     if not checks['container']:
         if sync:
-            finish_time_ts = checks['rotation_in_progress']['finish_ts']
+            finish_time_ts = rotation['finish_ts']
             monitor_sync_schain_container(skale, schain, finish_time_ts)
         else:
             monitor_schain_container(schain)

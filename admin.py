@@ -58,13 +58,12 @@ def add_debug_job(scheduler):
 
 def monitor(skale, node_config):
     scheduler = init_scheduler()
-    # scheduler.start()
+    scheduler.start()
     while True:
-#        add_debug_job(scheduler)
         run_creator(skale, node_config, scheduler)
         time.sleep(MONITOR_INTERVAL)
-        # run_cleaner(skale, node_config)
-        # time.sleep(MONITOR_INTERVAL)
+        run_cleaner(skale, node_config)
+        time.sleep(MONITOR_INTERVAL)
 
 
 def main():
