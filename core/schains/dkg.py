@@ -131,9 +131,14 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             sleep(1)
 
         for i in range(dkg_client.n):
-            if not is_alright_sent_list[i]:
+            if not is_alright_sent_list[i] and i != dkg_client.node_id_dkg:
                 send_complaint(dkg_client, i)
                 is_complaint_sent = True
+    
+    complaint_data = get_complaint_data(dkg_client)
+    if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
+        is_complaint_received = True
+        response(dkg_client, complaint_data[0])
 
     complaint_data = get_complaint_data(dkg_client)
     is_complaint_sent = complaint_data[0] != complaint_data[1]
