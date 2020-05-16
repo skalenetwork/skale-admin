@@ -19,7 +19,6 @@
 
 import logging
 import time
-from datetime import datetime, timedelta
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from skale import Skale
@@ -45,15 +44,6 @@ def init_scheduler():
     scheduler.add_jobstore('redis', jobs_key='skale_monitor.jobs',
                            run_times_key='skale_monitor.run_times')
     return scheduler
-
-
-def alarm(time):
-    logger.info(f'IVD Alarm! This alarm was scheduled at {time}')
-
-
-def add_debug_job(scheduler):
-    alarm_time = datetime.now() + timedelta(seconds=60)
-    scheduler.add_job(alarm, 'date', run_date=alarm_time, args=[datetime.now()])
 
 
 def monitor(skale, node_config):
