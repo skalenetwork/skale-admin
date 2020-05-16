@@ -12,9 +12,9 @@ import os
 
 
 @pytest.fixture
-def node_id(skale):
+def config(skale):
     config = NodeConfig()
-    return config.id
+    return config
 
 
 @pytest.fixture
@@ -62,7 +62,7 @@ CHECK_MOCK = {
 }
 
 
-def test_rotate_schain(skale, node_id, dutils):
+def test_rotate_schain(skale, config, dutils):
     ima_container_name = get_container_name(IMA_CONTAINER, SCHAIN_NAME)
     schain_container_name = get_container_name(SCHAIN_CONTAINER, SCHAIN_NAME)
     ima_image = get_image_name(IMA_CONTAINER)
@@ -73,14 +73,15 @@ def test_rotate_schain(skale, node_id, dutils):
     ima_cont = dutils.client.containers.get(ima_container_name)
     with mock.patch('core.schains.creator.generate_schain_config'), \
             mock.patch('core.schains.creator.save_schain_config'):
-        rotate_schain(skale, node_id, SCHAIN, 0)
+        rotate_schain(SCHAIN, config)
     restarted_schain = dutils.client.containers.get(schain_container_name)
     restarted_ima = dutils.client.containers.get(ima_container_name)
     assert schain_cont.attrs['State']['StartedAt'] != restarted_schain.attrs['State']['StartedAt']
     assert ima_cont.attrs['State']['StartedAt'] != restarted_ima.attrs['State']['StartedAt']
 
 
-def test_exiting_monitor(skale, scheduler):
+def test_exiting_monitor(skale, config, scheduler):
+    node_id = config.id
     delta_time = 10
     rotation_info = {
         'result': True,
@@ -107,7 +108,8 @@ def test_exiting_monitor(skale, scheduler):
         assert not os.path.exists(FILENAME)
 
 
-def test_rotating_monitor(skale, node_id, scheduler):
+def test_rotating_monitor(skale, config, scheduler):
+    node_id = config.id
     delta_time = 20
     rotation_info = {
         'result': True,
@@ -135,7 +137,8 @@ def test_rotating_monitor(skale, node_id, scheduler):
         assert not os.path.exists(FILENAME)
 
 
-def test_new_schain_monitor(skale, scheduler):
+def test_new_schain_monitor(skale, config, scheduler):
+    node_id = config.id
     rotation_info = {
         'result': True,
         'new_schain': True,
