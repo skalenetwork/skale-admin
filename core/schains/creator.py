@@ -104,7 +104,6 @@ def monitor(skale, node_config, scheduler):
 def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
     skale = spawn_skale_lib(skale)
     name = schain['name']
-    print('JOBS', scheduler.get_jobs())
     rotation = check_for_rotation(skale, name, node_id)
 
     rotation_in_progress = rotation['result']
@@ -282,7 +281,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
     name = schain['name']
     if not checks['data_dir']:
         init_schain_dir(name)
-    if not checks['dkg'] and not sync:
+    if not checks['dkg']:
         is_dkg_done = safe_run_dkg(
             skale=skale,
             schain_name=name,
