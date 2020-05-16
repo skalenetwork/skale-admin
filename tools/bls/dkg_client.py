@@ -118,6 +118,9 @@ class DKGClient:
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
 
+        verification_vector = self.verification_vector()
+        secret_key_contribution = self.secret_key_contribution()
+
         is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
         is_broadcast_possible = is_broadcast_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
@@ -128,8 +131,6 @@ class DKGClient:
                         f'Broadcast is already sent from {self.node_id_dkg} node')
             return
 
-        verification_vector = self.verification_vector()
-        secret_key_contribution = self.secret_key_contribution()
         try:
             tx_res = self.skale.dkg.broadcast(
                 self.group_index,
@@ -260,17 +261,9 @@ class DKGClient:
         is_alright_possible = is_alright_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
-        return_status = 0
-        if not is_alright_possible:
+        if not is_alright_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node has already sent an alright note')
-            return_status += 1
-
-        if not self.is_channel_opened():
-            logger.info(f'sChain: {self.schain_name}. channel is not opened')
-            return_status += 1
-        
-        if return_status > 0:
             return
         try:
             tx_res = self.skale.dkg.alright(
