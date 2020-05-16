@@ -58,12 +58,6 @@ CONTAINERS_DELAY = 20
 
 
 def run_creator(skale, node_config, scheduler):
-    logger.info('IVD Darova')
-    skale = spawn_skale_lib(skale)
-    logger.info('IVD Spawned new skale lib')
-
-    schains = skale.schains_data.get_schains_for_node(1)
-    logger.info(f'IVD schains for node {schains}')
     process = Process(target=monitor, args=(skale, node_config, scheduler))
     process.start()
     process.join()
@@ -71,7 +65,7 @@ def run_creator(skale, node_config, scheduler):
 
 def monitor(skale, node_config, scheduler):
     logger.info('Creator procedure started')
-    # skale = spawn_skale_lib(skale)
+    skale = spawn_skale_lib(skale)
     logger.info('Spawned new skale lib')
     node_id = node_config.id
     logger.info('Fetching schains ...')
