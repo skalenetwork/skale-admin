@@ -26,6 +26,7 @@ import eth_utils
 from skale.dataclasses.tx_res import TransactionFailedError
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
+from sgx.sgx_rpc_handler import DkgPolyStatus
 
 sys.path.insert(0, NODE_DATA_PATH)
 
@@ -113,12 +114,12 @@ class DKGClient:
 
     def broadcast(self, poly_name):
         poly_success = self.generate_polynomial(poly_name)
-        if poly_success == self.sgx.DkgPolyStatus.FAIL:
+        if poly_success == DkgPolyStatus.FAIL:
             raise SgxDkgPolynomGenerationError(
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
         
-        if poly_success == self.sgx.DkgPolyStatus.PREEXISTING:
+        if poly_success == DkgPolyStatus.PREEXISTING:
             secret_key_contribution, verification_vector = self.get_broadcasted_data(self.node_id_contract)
             broadcasted_data = [verification_vector, secret_key_contribution]
             self.receive_secret_key_contribution(self.node_id_dkg, broadcasted_data)
