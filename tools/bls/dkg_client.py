@@ -118,9 +118,11 @@ class DKGClient:
             raise SgxDkgPolynomGenerationError(
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
-        
+
         if poly_success == DkgPolyStatus.PREEXISTING:
-            secret_key_contribution, verification_vector = self.get_broadcasted_data(self.node_id_contract)
+            secret_key_contribution, verification_vector = self.get_broadcasted_data(
+                self.node_id_contract
+            )
             broadcasted_data = [verification_vector, secret_key_contribution]
             self.receive_secret_key_contribution(self.node_id_dkg, broadcasted_data)
             self.receive_verification_vector(self.node_id_dkg, broadcasted_data)
