@@ -74,7 +74,6 @@ def monitor(skale, node_config, scheduler):
     leaving_history = skale.schains_data.get_leaving_history(node_id)
     for history in leaving_history:
         schain = skale.schains_data.get(history[0])
-        logger.info(f'IVD schain {schain}')
         if time.time() < history[1] and schain['name']:
             schain['active'] = True
             schains.append(schain)
@@ -105,6 +104,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
     skale = spawn_skale_lib(skale)
     name = schain['name']
     rotation = check_for_rotation(skale, name, node_id)
+    logger.info(f'Rotation for {name}: {rotation}')
 
     rotation_in_progress = rotation['result']
     new_schain = rotation['new_schain']
