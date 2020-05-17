@@ -121,7 +121,6 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         # todo: send failed checks to tg
         pass
 
-    # todo: Update logic after scheduling
     schain_record.set_first_run(False)
     if exiting_node and rotation_in_progress:
         logger.info(f'Node is exiting. sChain will be stoped at {finish_time}')
@@ -131,6 +130,13 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
                               run_date=finish_time,
                               name=name,
                               args=[node_id, name, rotation_id])
+
+        # ensure containers are working after update
+        if not checks['container']:
+            monitor_schain_container(schain)
+            time.sleep(CONTAINERS_DELAY)
+        if not checks['ima_container']:
+            monitor_ima_container(schain)
         return
 
     if rotation_in_progress and new_schain:
@@ -147,7 +153,6 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         )
         return
 
-    # todo: Update logic after scheduling
     elif rotation_in_progress and not new_schain:
         logger.info('Schain was rotated. Rotation in progress')
         jobs = sum(map(lambda job: job.name == name, scheduler.get_jobs()))
@@ -167,9 +172,14 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
                                   run_date=finish_time,
                                   name=name,
                                   args=[schain, schain_config])
-            else:
-                remove_config_dir(name)
         logger.info(f'sChain will be restarted at {finish_time}')
+
+        # ensure containers are working after update
+        if not checks['container']:
+            monitor_schain_container(schain)
+            time.sleep(CONTAINERS_DELAY)
+        if not checks['ima_container']:
+            monitor_ima_container(schain)
         return
     else:
         logger.info('No rotation for schain')
