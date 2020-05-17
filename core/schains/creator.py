@@ -49,7 +49,6 @@ from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 
 from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import Process
 
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()
@@ -58,9 +57,7 @@ CONTAINERS_DELAY = 20
 
 
 def run_creator(skale, node_config, scheduler):
-    process = Process(target=monitor, args=(skale, node_config, scheduler))
-    process.start()
-    process.join()
+    monitor(skale, node_config, scheduler)
 
 
 def monitor(skale, node_config, scheduler):
@@ -124,6 +121,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         # todo: send failed checks to tg
         pass
 
+    # todo: Update logic after scheduling
     schain_record.set_first_run(False)
     if exiting_node and rotation_in_progress:
         logger.info(f'Node is exiting. sChain will be stoped at {finish_time}')
@@ -149,6 +147,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         )
         return
 
+    # todo: Update logic after scheduling
     elif rotation_in_progress and not new_schain:
         logger.info('Schain was rotated. Rotation in progress')
         jobs = sum(map(lambda job: job.name == name, scheduler.get_jobs()))
