@@ -44,9 +44,10 @@ dutils = DockerUtils()
 
 
 def run_cleaner(skale, node_config):
-    process = Process(target=monitor, args=(skale, node_config))
-    process.start()
-    process.join()
+    monitor(skale, node_config)
+    # process = Process(target=monitor, args=(skale, node_config))
+    # process.start()
+    # process.join()
 
 
 def log_remove(component_name, schain_name):

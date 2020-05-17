@@ -53,9 +53,10 @@ CONTAINERS_DELAY = 20
 
 
 def run_creator(skale, node_config):
-    process = Process(target=monitor, args=(skale, node_config))
-    process.start()
-    process.join()
+    monitor(skale, node_config)
+    # process = Process(target=monitor, args=(skale, node_config))
+    # process.start()
+    # process.join()
 
 
 def monitor(skale, node_config):
