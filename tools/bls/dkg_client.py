@@ -113,13 +113,16 @@ class DKGClient:
 
     def broadcast(self, poly_name):
         poly_success = self.generate_polynomial(poly_name)
-        if not poly_success:
+        if poly_success == self.sgx.DkgPolyStatus.FAIL:
             raise SgxDkgPolynomGenerationError(
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
-
-        verification_vector = self.verification_vector()
-        secret_key_contribution = self.secret_key_contribution()
+        
+        if poly_success == self.sgx.DkgPolyStatus.PREEXISTING:
+            secret_key_contribution, verification_vector = self.get_broadcasted_data(self.node_id_contract)
+            broadcasted_data = [verification_vector, secret_key_contribution]
+            self.receive_secret_key_contribution(self.node_id_dkg, broadcasted_data)
+            self.receive_verification_vector(self.node_id_dkg, broadcasted_data)
 
         is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
         is_broadcast_possible = is_broadcast_possible_function(
@@ -131,6 +134,8 @@ class DKGClient:
                         f'Broadcast is already sent from {self.node_id_dkg} node')
             return
 
+        verification_vector = self.verification_vector()
+        secret_key_contribution = self.secret_key_contribution()
         try:
             tx_res = self.skale.dkg.broadcast(
                 self.group_index,
