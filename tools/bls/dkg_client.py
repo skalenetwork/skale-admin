@@ -145,8 +145,7 @@ class DKGClient:
                 self.node_id_contract,
                 verification_vector,
                 secret_key_contribution,
-                gas_price=self.skale.dkg.gas_price(),
-                wait_for=True
+                gas_price=self.skale.dkg.gas_price()
             )
             tx_res.raise_for_status()
         except TransactionFailedError as e:
@@ -212,8 +211,7 @@ class DKGClient:
                 self.node_id_contract,
                 int(dh_key, 16),
                 eth_utils.conversions.add_0x_prefix(share),
-                gas_price=self.skale.dkg.gas_price(),
-                wait_for=True
+                gas_price=self.skale.dkg.gas_price()
             )
             tx_res.raise_for_status()
         except TransactionFailedError as e:
@@ -277,8 +275,7 @@ class DKGClient:
             tx_res = self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,
-                gas_price=self.skale.dkg.gas_price(),
-                wait_for=True
+                gas_price=self.skale.dkg.gas_price()
             )
             tx_res.raise_for_status()
         except TransactionFailedError as e:
