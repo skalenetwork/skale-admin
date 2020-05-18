@@ -44,7 +44,7 @@ from tools.configs.containers import SCHAIN_CONTAINER
 from tools.iptables import add_rules as add_iptables_rules
 
 from concurrent.futures import ThreadPoolExecutor
-from multiprocessing import Process
+# from multiprocessing import Process
 
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()

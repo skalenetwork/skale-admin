@@ -21,7 +21,7 @@ import os
 import logging
 import shutil
 
-from multiprocessing import Process
+# from multiprocessing import Process
 
 from skale.manager_client import spawn_skale_lib
 
