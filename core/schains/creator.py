@@ -259,13 +259,13 @@ def monitor_sync_schain_container(skale, schain, start_ts):
 def rotate_schain(schain, schain_config):
     name = schain['name']
     logger.info(f'Schain {name} was rotated. Removing firewall rules')
-    add_firewall_rules(name)
+    remove_firewall_rules(name)
 
     logger.info(f'Updating {name} schain config')
     update_schain_config(schain_config, name)
 
     logger.info(f'Adding new firewall rules for {name}')
-    remove_firewall_rules(name)
+    add_firewall_rules(name)
     logger.info(f'Containers for {name} are going to be restarted')
     restart_container(SCHAIN_CONTAINER, schain)
     restart_container(IMA_CONTAINER, schain)
