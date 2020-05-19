@@ -19,13 +19,15 @@
 
 import json
 import logging
+import shutil
 from itertools import chain
 
 from skale.schain_config.generator import generate_skale_schain_config
 from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
-from core.schains.helper import read_base_config, get_schain_config_filepath
+from core.schains.helper import (read_base_config, get_schain_config_filepath,
+                                 get_tmp_schain_config_filepath)
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
@@ -103,6 +105,14 @@ def save_schain_config(schain_config, schain_name):
         json.dump(schain_config, outfile, indent=4)
 
     return schain_config_filepath
+
+
+def update_schain_config(schain_config, schain_name):
+    tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
+    with open(tmp_config_filepath, 'w') as outfile:
+        json.dump(schain_config, outfile, indent=4)
+    config_filepath = get_schain_config_filepath(schain_name)
+    shutil.move(tmp_config_filepath, config_filepath)
 
 
 def get_schain_ports(schain_name):

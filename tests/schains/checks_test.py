@@ -27,7 +27,7 @@ def cleanup_schain(dutils):
 def test_init_checks(skale):
     with mock.patch('core.schains.checks.SChainChecks.check_firewall_rules',
                     new=check_firewall_rules_mock):
-        checks = SChainChecks(skale, SCHAIN_NAME, TEST_NODE_ID)
+        checks = SChainChecks(SCHAIN_NAME, TEST_NODE_ID)
     assert checks.name == SCHAIN_NAME
     assert checks.node_id == TEST_NODE_ID
 
@@ -40,7 +40,7 @@ def test_get_all_checks(skale):
 
     with mock.patch('core.schains.checks.SChainChecks.check_firewall_rules',
                     new=check_firewall_rules_mock):
-        checks = SChainChecks(skale, SCHAIN_NAME, TEST_NODE_ID, log=True).get_all()
+        checks = SChainChecks(SCHAIN_NAME, TEST_NODE_ID, log=True).get_all()
 
     assert checks['data_dir']
     assert checks['dkg']
@@ -53,7 +53,7 @@ def test_get_all_checks(skale):
 
 
 def test_get_all_false_checks(skale):
-    checks = SChainChecks(skale, NOT_EXISTS_SCHAIN_NAME, TEST_NODE_ID, log=True).get_all()
+    checks = SChainChecks(NOT_EXISTS_SCHAIN_NAME, TEST_NODE_ID, log=True).get_all()
     assert not checks['data_dir']
     assert not checks['dkg']
     assert not checks['config']

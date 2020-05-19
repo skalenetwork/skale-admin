@@ -12,9 +12,9 @@ import os
 
 
 @pytest.fixture
-def node_id(skale):
+def config(skale):
     config = NodeConfig()
-    return config.id
+    return config
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def cleanup_schain_mock(skale, schain_name, node_id):
     os.remove(FILENAME)
 
 
-def rotate_schain_mock(self, node_id, schain, rotation_id):
+def rotate_schain_mock(schain, schain_config):
     os.remove(FILENAME)
 
 
@@ -62,7 +62,7 @@ CHECK_MOCK = {
 }
 
 
-def test_rotate_schain(skale, node_id, dutils):
+def test_rotate_schain(skale, config, dutils):
     ima_container_name = get_container_name(IMA_CONTAINER, SCHAIN_NAME)
     schain_container_name = get_container_name(SCHAIN_CONTAINER, SCHAIN_NAME)
     ima_image = get_image_name(IMA_CONTAINER)
@@ -71,16 +71,18 @@ def test_rotate_schain(skale, node_id, dutils):
     dutils.client.containers.run(ima_image, name=ima_container_name, detach=True)
     schain_cont = dutils.client.containers.get(schain_container_name)
     ima_cont = dutils.client.containers.get(ima_container_name)
-    with mock.patch('core.schains.creator.generate_schain_config'), \
-            mock.patch('core.schains.creator.save_schain_config'):
-        rotate_schain(skale, node_id, SCHAIN, 0)
+    with mock.patch('core.schains.creator.update_schain_config'), \
+            mock.patch('core.schains.creator.add_firewall_rules'), \
+            mock.patch('core.schains.creator.remove_firewall_rules'):
+        rotate_schain(SCHAIN, config)
     restarted_schain = dutils.client.containers.get(schain_container_name)
     restarted_ima = dutils.client.containers.get(ima_container_name)
     assert schain_cont.attrs['State']['StartedAt'] != restarted_schain.attrs['State']['StartedAt']
     assert ima_cont.attrs['State']['StartedAt'] != restarted_ima.attrs['State']['StartedAt']
 
 
-def test_exiting_monitor(skale, scheduler):
+def test_exiting_monitor(skale, config, scheduler):
+    node_id = config.id
     delta_time = 10
     rotation_info = {
         'result': True,
@@ -92,12 +94,14 @@ def test_exiting_monitor(skale, scheduler):
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     open(FILENAME, 'w').close()
     with mock.patch('core.schains.creator.SChainRecord'), \
-        mock.patch('core.schains.creator.CONTAINERS_DELAY', 0),\
-        mock.patch('core.schains.creator.SChainChecks.run_checks'), \
-        mock.patch('core.schains.creator.SChainChecks.get_all',
-                   new=mock.Mock(return_value=CHECK_MOCK)),\
-        mock.patch('core.schains.creator.cleanup_schain',
-                   new=cleanup_schain_mock):
+            mock.patch('core.schains.creator.CONTAINERS_DELAY', 0),\
+            mock.patch('core.schains.creator.SChainChecks.run_checks'), \
+            mock.patch('core.schains.creator.SChainChecks.get_all',
+                       new=mock.Mock(return_value=CHECK_MOCK)),\
+            mock.patch('core.schains.creator.check_for_rotation',
+                       new=mock.Mock(return_value=rotation_info)), \
+            mock.patch('core.schains.creator.cleanup_schain',
+                       new=cleanup_schain_mock):
         monitor_schain(skale, node_id, 'test', SCHAIN, scheduler)
         assert len(scheduler.get_jobs()) == 1
         assert scheduler.get_jobs()[0].name == SCHAIN_NAME
@@ -107,7 +111,8 @@ def test_exiting_monitor(skale, scheduler):
         assert not os.path.exists(FILENAME)
 
 
-def test_rotating_monitor(skale, node_id, scheduler):
+def test_rotating_monitor(skale, config, scheduler):
+    node_id = config.id
     delta_time = 20
     rotation_info = {
         'result': True,
@@ -119,13 +124,16 @@ def test_rotating_monitor(skale, node_id, scheduler):
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     open(FILENAME, 'w').close()
     with mock.patch('core.schains.creator.SChainRecord'),\
-        mock.patch('core.schains.creator.run_dkg'), \
-        mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
-        mock.patch('core.schains.creator.SChainChecks.run_checks'), \
-        mock.patch('core.schains.creator.SChainChecks.get_all',
-                   new=mock.Mock(return_value=CHECK_MOCK)),\
-        mock.patch('core.schains.creator.rotate_schain',
-                   new=rotate_schain_mock):
+            mock.patch('core.schains.creator.run_dkg'), \
+            mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
+            mock.patch('core.schains.creator.SChainChecks.run_checks'), \
+            mock.patch('core.schains.creator.generate_schain_config'), \
+            mock.patch('core.schains.creator.SChainChecks.get_all',
+                       new=mock.Mock(return_value=CHECK_MOCK)), \
+            mock.patch('core.schains.creator.check_for_rotation',
+                       new=mock.Mock(return_value=rotation_info)), \
+            mock.patch('core.schains.creator.rotate_schain',
+                       new=rotate_schain_mock):
         monitor_schain(skale, node_id, 'test', SCHAIN, scheduler)
         assert len(scheduler.get_jobs()) == 1
         assert scheduler.get_jobs()[0].name == SCHAIN_NAME
@@ -133,3 +141,30 @@ def test_rotating_monitor(skale, node_id, scheduler):
         assert len(scheduler.get_jobs()) <= 1
         time.sleep(delta_time)
         assert not os.path.exists(FILENAME)
+
+
+def test_new_schain_monitor(skale, config, scheduler):
+    node_id = config.id
+    rotation_info = {
+        'result': True,
+        'new_schain': True,
+        'exiting_node': False,
+        'finish_ts': time.time(),
+        'rotation_id': 0
+    }
+    CHECK_MOCK['rotation_in_progress'] = rotation_info
+    CHECK_MOCK['container'] = False
+    with mock.patch('core.schains.creator.SChainRecord'), \
+            mock.patch('core.schains.creator.run_dkg'), \
+            mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
+            mock.patch('core.schains.creator.SChainChecks.run_checks'), \
+            mock.patch('core.schains.creator.SChainChecks.get_all',
+                       new=mock.Mock(return_value=CHECK_MOCK)), \
+            mock.patch('core.schains.creator.check_for_rotation',
+                       new=mock.Mock(return_value=rotation_info)), \
+            mock.patch('core.schains.creator.monitor_sync_schain_container',
+                       new=mock.Mock()) as sync:
+        monitor_schain(skale, node_id, 'test', SCHAIN, scheduler)
+        args, kwargs = sync.call_args
+        assert args[1] == SCHAIN
+        assert args[2] == rotation_info['finish_ts']

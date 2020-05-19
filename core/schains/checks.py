@@ -38,11 +38,11 @@ dutils = DockerUtils()
 
 
 class SChainChecks:
-    def __init__(self, skale, schain_name: str, node_id: int, log=False, failhook=None):
+    def __init__(self, schain_name: str, node_id: int, rotation_id=0, log=False, failhook=None):
         self.name = schain_name
         self.node_id = node_id
         self.failhook = failhook
-        self.skale = skale
+        self.rotation_id = rotation_id
         self.run_checks()
         if log:
             self.log_health_check()
@@ -52,7 +52,6 @@ class SChainChecks:
                 level='warning')
 
     def run_checks(self):
-        self.check_for_rotation()
         self.check_data_dir()
         self.check_config()
         self.check_dkg()
@@ -67,8 +66,7 @@ class SChainChecks:
         self._data_dir = os.path.isdir(schain_dir_path)
 
     def check_dkg(self):
-        rotation_id = self.skale.schains_data.get_last_rotation_id(self.name)
-        secret_key_share_filepath = get_secret_key_share_filepath(self.name, rotation_id)
+        secret_key_share_filepath = get_secret_key_share_filepath(self.name, self.rotation_id)
         self._dkg = os.path.isfile(secret_key_share_filepath)
 
     def check_config(self):
@@ -110,22 +108,6 @@ class SChainChecks:
             ips_ports = get_allowed_endpoints(self.name)
             self._firewall_rules = len(apsent_iptables_rules(ips_ports)) == 0
 
-    def check_for_rotation(self):
-        ts = time.time()
-        rotation_data = self.skale.schains_data.get_rotation(self.name)
-        finish_ts = rotation_data['finish_ts']
-        rotation_id = rotation_data['rotation_id']
-        rotation_in_progress = finish_ts > ts
-        new_schain = rotation_data['new_node'] == self.node_id
-        exiting_node = rotation_data['leaving_node'] == self.node_id
-        self._rotation_in_progress = {
-            'result': rotation_in_progress,
-            'new_schain': new_schain,
-            'exiting_node': exiting_node,
-            'finish_ts': finish_ts,
-            'rotation_id': rotation_id
-        }
-
     def is_healthy(self):
         checks = self.get_all()
         for check in checks:
@@ -135,7 +117,6 @@ class SChainChecks:
 
     def get_all(self):
         return {
-            'rotation_in_progress': self._rotation_in_progress,
             'data_dir': self._data_dir,
             'dkg': self._dkg,
             'config': self._config,
@@ -161,3 +142,20 @@ class SChainChecks:
                     'Failed sChain checks', 'error'
                 )
             )
+
+
+def check_for_rotation(skale, schain_name, node_id):
+    ts = time.time()
+    rotation_data = skale.schains_data.get_rotation(schain_name)
+    finish_ts = rotation_data['finish_ts']
+    rotation_id = rotation_data['rotation_id']
+    rotation_in_progress = finish_ts > ts
+    new_schain = rotation_data['new_node'] == node_id
+    exiting_node = rotation_data['leaving_node'] == node_id
+    return {
+        'result': rotation_in_progress,
+        'new_schain': new_schain,
+        'exiting_node': exiting_node,
+        'finish_ts': finish_ts,
+        'rotation_id': rotation_id
+    }

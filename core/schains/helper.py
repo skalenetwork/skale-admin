@@ -49,6 +49,12 @@ def get_schain_config_filepath(schain_name):
                         f'schain_{schain_name}.json')
 
 
+def get_tmp_schain_config_filepath(schain_name):
+    schain_dir_path = get_schain_dir_path(schain_name)
+    return os.path.join(schain_dir_path,
+                        f'tmp_schain_{schain_name}.json')
+
+
 def get_schain_config(schain_name):
     config_filepath = get_schain_config_filepath(schain_name)
     with open(config_filepath) as f:

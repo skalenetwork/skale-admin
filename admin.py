@@ -20,6 +20,7 @@
 import logging
 import time
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from skale import Skale
 from skale.wallets import RPCWallet
 
@@ -38,9 +39,18 @@ SLEEP_INTERVAL = 50
 MONITOR_INTERVAL = 45
 
 
+def init_scheduler():
+    scheduler = BackgroundScheduler()
+    scheduler.add_jobstore('redis', jobs_key='skale_monitor.jobs',
+                           run_times_key='skale_monitor.run_times')
+    return scheduler
+
+
 def monitor(skale, node_config):
+    scheduler = init_scheduler()
+    scheduler.start()
     while True:
-        run_creator(skale, node_config)
+        run_creator(skale, node_config, scheduler)
         time.sleep(MONITOR_INTERVAL)
         run_cleaner(skale, node_config)
         time.sleep(MONITOR_INTERVAL)
