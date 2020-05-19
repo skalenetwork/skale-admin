@@ -23,9 +23,9 @@ from flask import Blueprint, request
 from http import HTTPStatus
 
 from skale.schain_config.generator import get_nodes_for_schain_config
-from core.schains.config import get_allowed_endpoints
+from core.schains.config import get_allowed_endpoints, get_schain_config
+from core.schains.helper import schain_config_exists
 from core.schains.checks import SChainChecks
-from core.schains.helper import get_schain_config
 from tools.iptables import add_rules as add_iptables_rules
 from tools.iptables import remove_rules as remove_iptables_rules
 from web.models.schain import SChainRecord
@@ -54,9 +54,8 @@ def construct_schains_bp(skale, config, docker_utils):
         schain_name = request.args.get(key)
         if not schain_name:
             return construct_key_error_response([key])
-        try:
-            schain_config = get_schain_config(schain_name)
-        except FileNotFoundError:
+        schain_config = get_schain_config(schain_name)
+        if schain_config is None:
             return construct_err_response(
                 msg=f'sChain config not found: {schain_name}'
             )
@@ -91,13 +90,21 @@ def construct_schains_bp(skale, config, docker_utils):
     def get_firewall_rules():
         logger.debug(request)
         schain = request.args.get('schain')
+        if not schain_config_exists(schain):
+            return construct_err_response(
+                msg=f'No schain with name {schain}'
+            )
         endpoints = [e._asdict() for e in get_allowed_endpoints(schain)]
         return construct_ok_response({'endpoints': endpoints})
 
     @schains_bp.route('/api/schains/firewall/on', methods=['POST'])
     def turn_on_schain_firewall_rules():
         logger.debug(request)
-        schain = request.args.get('schain')
+        schain = request.json.get('schain')
+        if not schain_config_exists(schain):
+            return construct_err_response(
+                msg=f'No schain with name {schain}'
+            )
         endpoints = get_allowed_endpoints(schain)
         add_iptables_rules(endpoints)
         return construct_ok_response()
@@ -105,7 +112,11 @@ def construct_schains_bp(skale, config, docker_utils):
     @schains_bp.route('/api/schains/firewall/off', methods=['POST'])
     def turn_off_schain_firewall_rules():
         logger.debug(request)
-        schain = request.args.get('schain')
+        schain = request.json.get('schain')
+        if not schain_config_exists(schain):
+            return construct_err_response(
+                msg=f'No schain with name {schain}'
+            )
         endpoints = get_allowed_endpoints(schain)
         remove_iptables_rules(endpoints)
         return construct_ok_response()

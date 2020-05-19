@@ -24,10 +24,10 @@ export TM_URL=http://localhost:3009
 docker rm -f skale_schain_test1 skale_schain_test2 skale_schain_test3 || true
 rm -rf $PWD/tests/dkg_test/sgx.*
 
-bash scripts/run_sgx_simulator.sh
+# bash scripts/run_sgx_simulator.sh
 
-python tests/prepare_data.py
+# python tests/prepare_data.py
 
-py.test tests/ --ignore=tests/firewall
+py.test tests/routes/schains_test.py --ignore=tests/firewall
 find . -name \*.pyc -delete
 scripts/run_firewall_test.sh

@@ -19,6 +19,7 @@
 
 import json
 import logging
+import os
 from itertools import chain
 
 from skale.schain_config.generator import generate_skale_schain_config
@@ -102,6 +103,8 @@ def get_schain_ports(schain_name):
 
 
 def get_schain_ports_from_config(config):
+    if config is None:
+        return {}
     node_info = config["skaleConfig"]["nodeInfo"]
     return {
         'http': int(node_info["httpRpcPort"]),
@@ -112,6 +115,8 @@ def get_schain_ports_from_config(config):
 
 
 def get_skaled_rpc_endpoints_from_config(config):
+    if config is None:
+        return []
     node_info = config["skaleConfig"]["nodeInfo"]
     return [
         NodeEndpoint(ip=None, port=node_info['httpRpcPort']),
@@ -132,6 +137,8 @@ def get_consensus_ips_with_ports(schain_name, node_id):
 
 
 def get_consensus_endpoints_from_config(config):
+    if config is None:
+        return []
     node_id = config['skaleConfig']['nodeInfo']['nodeID']
     base_port = config['skaleConfig']['nodeInfo']['basePort']
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
@@ -164,6 +171,8 @@ def get_allowed_endpoints(schain_name):
 
 def get_schain_config(schain_name):
     config_filepath = get_schain_config_filepath(schain_name)
+    if not os.path.isfile(config_filepath):
+        return None
     with open(config_filepath) as f:
         schain_config = json.load(f)
     return schain_config
@@ -186,3 +195,15 @@ def get_schain_env(schain_name):
         "DATA_DIR": DATA_DIR_CONTAINER_PATH,
         "SEGFAULT_SIGNALS": 'all'
     }
+
+
+def get_schain_rpc_ports(schain_id):
+    schain_config = get_schain_config(schain_id)
+    node_info = schain_config["skaleConfig"]["nodeInfo"]
+    return int(node_info["httpRpcPort"]), int(node_info["wsRpcPort"])
+
+
+def get_schain_ssl_rpc_ports(schain_id):
+    schain_config = get_schain_config(schain_id)
+    node_info = schain_config["skaleConfig"]["nodeInfo"]
+    return int(node_info["httpsRpcPort"]), int(node_info["wssRpcPort"])
