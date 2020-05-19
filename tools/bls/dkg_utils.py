@@ -22,7 +22,6 @@ import os
 
 from tools.configs import NODE_DATA_PATH
 from tools.bls.dkg_client import DKGClient, DkgError
-from tools.helper import SkaleFilter
 
 logger = logging.getLogger(__name__)
 
@@ -97,68 +96,16 @@ def send_alright(dkg_client):
     dkg_client.alright()
 
 
-def get_dkg_broadcast_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.BroadcastAndKeyShare,
-        from_block=from_block,
-        argument_filters={
-            'groupIndex': group_index
-        }
-    )
+def get_broadcasted_data(dkg_client, from_node):
+    return dkg_client.get_broadcasted_data(from_node)
 
 
-def get_dkg_complaint_sent_filter(skale, group_index, to_node_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.ComplaintSent,
-        from_block=from_block,
-        argument_filters={
-            'groupIndex': group_index, 'toNodeIndex': to_node_index
-        }
-
-    )
+def is_all_data_received(dkg_client, from_node):
+    return dkg_client.is_all_data_received(from_node)
 
 
-def get_dkg_all_complaints_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.ComplaintSent,
-        from_block=from_block,
-        argument_filters={'groupIndex': group_index}
-
-    )
-
-
-def get_dkg_successful_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.SuccessfulDKG,
-        from_block=from_block,
-        argument_filters={'groupIndex': group_index}
-
-    )
-
-
-def get_dkg_fail_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.FailedDKG,
-        from_block=from_block,
-        argument_filters={'groupIndex': group_index}
-
-    )
-
-
-def get_dkg_all_data_received_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.AllDataReceived,
-        from_block=from_block,
-        argument_filters={'groupIndex': group_index}
-    )
-
-
-def get_dkg_bad_guy_filter(skale, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.BadGuy,
-        from_block=from_block,
-        argument_filters={}
-    )
+def get_complaint_data(dkg_client):
+    return dkg_client.get_complaint_data()
 
 
 def get_secret_key_share_filepath(schain_id):
