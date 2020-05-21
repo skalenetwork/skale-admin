@@ -91,14 +91,6 @@ def after_request(response):
 def create_tables():
     if not SChainRecord.table_exists():
         SChainRecord.create_table()
-    set_schains_first_run()
-
-
-def set_schains_first_run():
-    logger.info('Setting first_run=True for all sChain records')
-    query = SChainRecord.update(first_run=True).where(
-        SChainRecord.first_run == False)  # noqa
-    query.execute()
 
 
 if __name__ == '__main__':
