@@ -15,6 +15,5 @@ def skale_bp(skale):
 
 def test_sgx_status(skale_bp, skale):
     data = get_bp_data(skale_bp, '/api/sgx/status')
-    assert data
-    assert data['status'] == 1
+    assert data['status'] == 0
     assert data['sgx_server_url'] == SGX_SERVER_URL

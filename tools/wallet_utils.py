@@ -19,6 +19,8 @@
 
 import logging
 
+from skale.wallets.web3_wallet import to_checksum_address
+
 logger = logging.getLogger(__name__)
 
 # todo: move to smart contracts
@@ -31,7 +33,7 @@ def wallet_with_balance(skale):  # todo: move to the skale.py
     eth_balance_wei = skale.web3.eth.getBalance(address)
     skale_balance_wei = skale.token.get_balance(address)
     return {
-        'address': address,
+        'address': to_checksum_address(address),
         'eth_balance_wei': eth_balance_wei,
         'skale_balance_wei': skale_balance_wei,
         'eth_balance': str(skale.web3.fromWei(eth_balance_wei, 'ether')),
