@@ -20,6 +20,7 @@
 import os
 import logging
 import json
+import requests
 from pathlib import Path
 
 from tools.configs.schains import SCHAINS_DIR_PATH, DATA_DIR_NAME, BASE_SCHAIN_CONFIG_FILEPATH
@@ -82,3 +83,24 @@ def get_schain_ssl_rpc_ports(schain_id):
     schain_config = get_schain_config(schain_id)
     node_info = schain_config["skaleConfig"]["nodeInfo"]
     return int(node_info["httpsRpcPort"]), int(node_info["wssRpcPort"])
+
+
+def send_rotation_request(url, timestamp, is_exit=False):
+    headers = {'content-type': 'application/json'}
+    data = {
+        'timestamp': timestamp,
+        'isExit': is_exit
+    }
+    call_data = {
+        "id": 0,
+        "jsonrpc": "2.0",
+        "method": "setRestartOrExitTime",
+        "params": data,
+    }
+    response = requests.post(
+        url=url,
+        data=json.dumps(call_data),
+        headers=headers,
+    ).json()
+    if response.get('error'):
+        raise Exception(response['error']['message'])
