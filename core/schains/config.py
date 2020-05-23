@@ -32,7 +32,7 @@ from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
-from tools.configs.containers import CONTAINERS_INFO
+from tools.configs.containers import CONTAINERS_INFO, LOCAL_IP
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.iptables import NodeEndpoint
 from tools.helper import read_json
@@ -160,6 +160,16 @@ def get_skaled_http_snapshot_address_from_config(config):
 
     return NodeEndpoint(from_node['ip'], from_node['basePort'] +
                         SkaledPorts.HTTP_JSON.value)
+
+
+def get_skaled_ws_address(schain_name):
+    config = get_schain_config(schain_name)
+    return get_skaled_ws_address_from_config(config)
+
+
+def get_skaled_ws_address_from_config(config):
+    node = config['skaleConfig']['nodeInfo']
+    return NodeEndpoint(LOCAL_IP, node['wsRpcPort'])
 
 
 def get_consensus_ips_with_ports(schain_name):

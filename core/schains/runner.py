@@ -23,6 +23,7 @@ from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_container_limits, get_schain_volume_config
 from core.schains.config import get_skaled_http_snapshot_address
+from core.schains.helper import send_rotation_request
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
@@ -124,6 +125,13 @@ def run_schain_container_in_sync_mode(schain, env, public_key, start_ts, dutils=
                                              DATA_DIR_CONTAINER_PATH)
     run_container(SCHAIN_CONTAINER, schain, env, volume_config, cpu_limit,
                   mem_limit, dutils=dutils)
+
+
+def set_rotation_for_schain(schain, timestamp, is_exit=False):
+    schain_name = schain['name']
+    endpoint = get_skaled_http_snapshot_address(schain_name)
+    url = f'ws://{endpoint.ip}:{endpoint.port}'
+    send_rotation_request(url, timestamp, is_exit)
 
 
 def run_ima_container(schain, env, dutils=None):
