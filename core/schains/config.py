@@ -55,7 +55,7 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
         config_opts['snapshot_interval_ms'] = options.get('snapshotIntervalMs')
     if options.get('emptyBlockIntervalMs'):
         config_opts['empty_block_interval_ms'] = options.get('emptyBlockIntervalMs')
-    return generate_skale_schain_config(
+    obj = generate_skale_schain_config(
         skale=skale,
         schain_name=schain_name,
         node_id=node_id,
@@ -66,6 +66,8 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
         wallets=wallets,
         **config_opts
     )
+    obj['skaleConfig']['nodeInfo']['bindIP'] = '0.0.0.0'
+    return obj
 
 
 def get_mp_addresses():
