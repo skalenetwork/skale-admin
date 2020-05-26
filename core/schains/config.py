@@ -36,6 +36,7 @@ from tools.configs.containers import CONTAINERS_INFO, LOCAL_IP
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.iptables import NodeEndpoint
 from tools.helper import read_json
+from tools.configs import TEMP_CONFIG_EXTENSION
 
 logger = logging.getLogger(__name__)
 
@@ -101,8 +102,10 @@ def generate_wallets_config(schain_name, rotation_id):
     return wallets
 
 
-def save_schain_config(schain_config, schain_name):
+def save_schain_config(schain_config, schain_name, temp=False):
     schain_config_filepath = get_schain_config_filepath(schain_name)
+    if temp:
+        schain_config_filepath = schain_config_filepath + TEMP_CONFIG_EXTENSION
     with open(schain_config_filepath, 'w') as outfile:
         json.dump(schain_config, outfile, indent=4)
 

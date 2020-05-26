@@ -86,6 +86,7 @@ def get_schain_ssl_rpc_ports(schain_id):
 
 
 def send_rotation_request(url, timestamp, is_exit=False):
+    logger.info(f'Send rotation request: {timestamp}, {is_exit}')
     headers = {'content-type': 'application/json'}
     data = {
         'finishTime': timestamp,

@@ -33,7 +33,7 @@ from web.models.schain import SChainRecord
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  run_schain_container_in_sync_mode,
                                  restart_container, set_rotation_for_schain)
-from core.schains.cleaner import cleanup_schain, remove_config_dir
+from core.schains.cleaner import remove_config_dir
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
 from core.schains.config import (generate_schain_config, save_schain_config,
                                  update_schain_config,
@@ -132,12 +132,6 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         if not checks['ima_container']:
             monitor_ima_container(schain)
         set_rotation_for_schain(schain, finish_time_ts, is_exit=True)
-        # jobs = sum(map(lambda job: job.name == name, scheduler.get_jobs()))
-        # if jobs == 0:
-        #     scheduler.add_job(cleanup_schain, 'date',
-        #                       run_date=finish_time,
-        #                       name=name,
-        #                       args=[node_id, name, rotation_id])
 
         return
 
@@ -164,40 +158,20 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
             time.sleep(CONTAINERS_DELAY)
         if not checks['ima_container']:
             monitor_ima_container(schain)
-        jobs = sum(map(lambda job: job.name == name, scheduler.get_jobs()))
-        # if jobs == 0:
-        #     is_dkg_done = safe_run_dkg(
-        #         skale=skale,
-        #         schain_name=name,
-        #         node_id=node_id,
-        #         sgx_key_name=sgx_key_name,
-        #         rotation_id=rotation_id,
-        #         schain_record=schain_record
-        #     )
-        #     if is_dkg_done:
-        #         schain_config = generate_schain_config(skale, name,
-        #                                                node_id, rotation_id)
-        #         scheduler.add_job(rotate_schain, 'date',
-        #                           run_date=finish_time,
-        #                           name=name,
-        #                           args=[schain, schain_config])
-        if jobs == 0:
-            is_dkg_done = safe_run_dkg(
-                skale=skale,
-                schain_name=name,
-                node_id=node_id,
-                sgx_key_name=sgx_key_name,
-                rotation_id=rotation_id,
-                schain_record=schain_record
-            )
-            if is_dkg_done:
-                schain_config = generate_schain_config(skale, name,
-                                                       node_id, rotation_id)
-                set_rotation_for_schain(schain, finish_time_ts)
-                scheduler.add_job(print, 'date',
-                                  run_date=finish_time,
-                                  name=name)
-        logger.info(f'sChain will be restarted at {finish_time}')
+        is_dkg_done = safe_run_dkg(
+            skale=skale,
+            schain_name=name,
+            node_id=node_id,
+            sgx_key_name=sgx_key_name,
+            rotation_id=rotation_id,
+            schain_record=schain_record
+        )
+        # TODO: do once
+        if is_dkg_done:
+            schain_config = generate_schain_config(skale, name,
+                                                   node_id, rotation_id)
+            save_schain_config(schain_config, name, temp=True)
+            set_rotation_for_schain(schain, finish_time_ts)
 
         return
     else:
