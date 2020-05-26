@@ -107,7 +107,9 @@ class DockerUtils:
         return container_info['status'] == RUNNING_STATUS
 
     def to_start_container(self, container_info):
-        return container_info['status'] == CONTAINER_NOT_FOUND
+        if container_info['status'] == CONTAINER_NOT_FOUND:
+            return True
+        return container_info['ExitCode'] == 0
 
     def rm_vol(self, name):
         volume = self.client.volumes.get(name)
