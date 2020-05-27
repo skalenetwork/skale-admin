@@ -13,7 +13,7 @@ simple-crypt==4.1.7
 pycryptodome==3.6.6
 python-iptables==0.14.0
 
-# skale.py==3.6dev12
+# skale.py==3.7dev0
 
 PyYAML==5.3
 psutil==5.6.6
@@ -27,3 +27,5 @@ python-dateutil==2.8.1
 git+git://github.com/skalenetwork/skale.py.git@feature/SKALE-2052-node-rotation#egg=skale.py
 apscheduler==3.6.3
 redis==3.5.2
+python-telegram-bot==12.7
+gunicorn==20.0.4
