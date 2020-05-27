@@ -151,3 +151,11 @@ def add_config_volume(run_args):
         'bind': SKALE_VOLUME_PATH,
         "mode": "ro"
     }
+
+
+def check_container_exit(schain_name, dutils=None):
+    if not dutils:
+        dutils = docker_utils
+    name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    info = dutils.get_info(name)
+    return dutils.container_exited(info)

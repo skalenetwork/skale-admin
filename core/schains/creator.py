@@ -33,7 +33,8 @@ from web.models.schain import SChainRecord
 
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  run_schain_container_in_sync_mode,
-                                 restart_container, set_rotation_for_schain)
+                                 restart_container, set_rotation_for_schain,
+                                 check_container_exit)
 from core.schains.cleaner import remove_config_dir
 from core.tg_bot import TgBot
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
@@ -231,17 +232,11 @@ def check_container(schain_name, volume_required=False):
         return True
 
 
-def check_container_exit(schain_name):
-    name = get_container_name(SCHAIN_CONTAINER, schain_name)
-    info = dutils.get_info(name)
-    return dutils.container_exited(info)
-
-
 def monitor_schain_container(schain):
     if check_container(schain['name'], volume_required=True):
         env = get_schain_env(schain['name'])
         run_schain_container(schain, env)
-    elif check_container_exit(schain['name']):
+    elif check_container_exit(schain['name'], dutils=dutils):
         restart_container(SCHAIN_CONTAINER, schain)
 
 
