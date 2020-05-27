@@ -45,7 +45,7 @@ def generate_schain_config(skale, schain_name, node_id):
     ima_mainnet_url = IMA_ENDPOINT
     ima_mp_schain, ima_mp_mainnet = get_mp_addresses()
     rotate_after_block = CONTAINERS_INFO['schain']['config_options']['rotateAfterBlock']
-    return generate_skale_schain_config(
+    config = generate_skale_schain_config(
         skale=skale,
         schain_name=schain_name,
         node_id=node_id,
@@ -57,6 +57,8 @@ def generate_schain_config(skale, schain_name, node_id):
         ima_data=ima_data,
         rotate_after_block=rotate_after_block
     )
+    config['bindIp'] = '0.0.0.0'
+    return config
 
 
 def get_mp_addresses():
@@ -140,13 +142,19 @@ def get_consensus_endpoints_from_config(config):
 
     node_endpoints = list(chain.from_iterable(
         (
-            NodeEndpoint(node_data['ip'], base_port + SkaledPorts.PROPOSAL.value),
-            NodeEndpoint(node_data['ip'], base_port + SkaledPorts.CATCHUP.value),
             NodeEndpoint(
-                node_data['ip'], base_port + SkaledPorts.BINARY_CONSENSUS.value
+                node_data['publicIp'],
+                base_port + SkaledPorts.PROPOSAL.value),
+            NodeEndpoint(
+                node_data['publicIp'],
+                base_port + SkaledPorts.CATCHUP.value),
+            NodeEndpoint(
+                node_data['publicIp'],
+                base_port + SkaledPorts.BINARY_CONSENSUS.value
             ),
             NodeEndpoint(
-                node_data['ip'], base_port + SkaledPorts.ZMQ_BROADCAST.value
+                node_data['publicIp'],
+                base_port + SkaledPorts.ZMQ_BROADCAST.value
             )
         )
         for node_data in schain_nodes_config
