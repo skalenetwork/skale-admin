@@ -32,6 +32,7 @@ from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.containers import CONTAINERS_INFO
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
+from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import NodeEndpoint
 from tools.helper import read_json
 
@@ -61,7 +62,8 @@ def generate_schain_config(skale, schain_name, node_id):
 
 def get_mp_addresses():
     ima_abi = read_json(MAINNET_PROXY_PATH)
-    ima_mp_schain = None  # todo: unknown at the launch time, tbd
+    schain_ima_abi = read_json(IMA_DATA_FILEPATH)
+    ima_mp_schain = schain_ima_abi['message_proxy_chain_address']
     ima_mp_mainnet = ima_abi['message_proxy_mainnet_address']
     return ima_mp_schain, ima_mp_mainnet
 
