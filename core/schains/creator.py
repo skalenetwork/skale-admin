@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import shutil
 import logging
 from time import sleep
 
@@ -32,8 +33,8 @@ from tools.str_formatters import arguments_list_string
 from core.schains.runner import run_schain_container, run_ima_container
 from core.schains.cleaner import remove_config_dir
 from core.tg_bot import TgBot
-
-from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
+from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
+                                 get_schain_proxy_file_path)
 from core.schains.config import (generate_schain_config, save_schain_config,
                                  get_schain_env, get_allowed_endpoints)
 from core.schains.volume import init_data_volume
@@ -44,6 +45,7 @@ from core.schains.dkg import run_dkg
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import add_rules as add_iptables_rules
 
 from concurrent.futures import ThreadPoolExecutor
@@ -114,9 +116,9 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
             remove_config_dir(schain['name'])
             return
         schain_record.dkg_done()
-
     if not checks_dict['config']:
         init_schain_config(skale, node_id, name, owner)
+        copy_schain_ima_abi(name)
     if not checks_dict['volume']:
         init_data_volume(schain)
     if not checks_dict['firewall_rules']:
@@ -137,6 +139,11 @@ def init_schain_config(skale, node_id, schain_name, schain_owner):
         )
         schain_config = generate_schain_config(skale, schain_name, node_id)
         save_schain_config(schain_config, schain_name)
+
+
+def copy_schain_ima_abi(name):
+    abi_file_dest = get_schain_proxy_file_path(name)
+    shutil.copyfile(IMA_DATA_FILEPATH, abi_file_dest)
 
 
 def add_firewall_rules(schain_name):
