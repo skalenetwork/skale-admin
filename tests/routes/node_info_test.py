@@ -4,9 +4,20 @@ from flask import Flask
 
 from tools.docker_utils import DockerUtils
 from tools.configs.web3 import ENDPOINT
-from tests.utils import get_bp_data
+from tests.utils import get_bp_data, post_bp_data
 from web.routes.node_info import construct_node_info_bp
 from tools.configs.flask import SKALE_LIB_NAME
+
+
+TG_SEND_MSG_RES = {
+    'message_id': 1,
+    'date': 1590069709,
+    'text': 'test'
+}
+
+
+def send_message_mock():
+    return TG_SEND_MSG_RES
 
 
 @pytest.fixture
@@ -34,6 +45,15 @@ def test_containers_healthcheck(skale_bp):
     expected = {
         'status': 'ok',
         'payload': dutils.get_all_skale_containers(all=all, format=True)
+    }
+    assert data == expected
+
+
+def test_send_tg_notification(skale_bp):
+    data = post_bp_data(skale_bp, '/send-tg-notification', {'message': 'test'})
+    expected = {
+        'status': 'error',
+        'payload': 'TG_API_KEY or TG_CHAT_ID not found'
     }
     assert data == expected
 
