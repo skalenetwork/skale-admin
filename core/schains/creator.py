@@ -36,7 +36,6 @@ from core.schains.runner import (run_schain_container, run_ima_container,
 from core.schains.cleaner import remove_config_dir
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
 from core.schains.config import (generate_schain_config, save_schain_config,
-                                 update_schain_config,
                                  get_schain_env, get_allowed_endpoints)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks, check_for_rotation
@@ -44,7 +43,7 @@ from core.schains.ima import get_ima_env
 from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
-from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from tools.configs.containers import SCHAIN_CONTAINER
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 
@@ -56,11 +55,11 @@ dutils = DockerUtils()
 CONTAINERS_DELAY = 20
 
 
-def run_creator(skale, node_config, scheduler):
-    monitor(skale, node_config, scheduler)
+def run_creator(skale, node_config):
+    monitor(skale, node_config)
 
 
-def monitor(skale, node_config, scheduler):
+def monitor(skale, node_config):
     logger.info('Creator procedure started')
     skale = spawn_skale_lib(skale)
     logger.info('Spawned new skale lib')
@@ -87,8 +86,7 @@ def monitor(skale, node_config, scheduler):
                 skale,
                 node_config.id,
                 node_config.sgx_key_name,
-                schain,
-                scheduler
+                schain
             )
             for schain in schains if schain['active']
         ]
@@ -97,7 +95,7 @@ def monitor(skale, node_config, scheduler):
     logger.info('Creator procedure finished')
 
 
-def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
+def monitor_schain(skale, node_id, sgx_key_name, schain):
     skale = spawn_skale_lib(skale)
     name = schain['name']
     rotation = check_for_rotation(skale, name, node_id)
@@ -129,8 +127,6 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         if not checks['container']:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
-        if not checks['ima_container']:
-            monitor_ima_container(schain)
         set_rotation_for_schain(schain, finish_time_ts, is_exit=True)
 
         return
@@ -156,8 +152,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         if not checks['container']:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
-        if not checks['ima_container']:
-            monitor_ima_container(schain)
+
         is_dkg_done = safe_run_dkg(
             skale=skale,
             schain_name=name,
@@ -258,21 +253,6 @@ def monitor_sync_schain_container(skale, schain, start_ts):
                                           public_key=public_key)
 
 
-def rotate_schain(schain, schain_config):
-    name = schain['name']
-    logger.info(f'Schain {name} was rotated. Removing firewall rules')
-    remove_firewall_rules(name)
-
-    logger.info(f'Updating {name} schain config')
-    update_schain_config(schain_config, name)
-
-    logger.info(f'Adding new firewall rules for {name}')
-    add_firewall_rules(name)
-    logger.info(f'Containers for {name} are going to be restarted')
-    restart_container(SCHAIN_CONTAINER, schain)
-    restart_container(IMA_CONTAINER, schain)
-
-
 def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
                  rotation_id, schain_record):
     schain_record.dkg_started()
@@ -317,6 +297,4 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             monitor_sync_schain_container(skale, schain, finish_time_ts)
         else:
             monitor_schain_container(schain)
-        time.sleep(CONTAINERS_DELAY)
-    if not checks['ima_container']:
-        monitor_ima_container(schain)
+            time.sleep(CONTAINERS_DELAY)
