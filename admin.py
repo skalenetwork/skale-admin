@@ -30,12 +30,21 @@ from core.schains.cleaner import run_cleaner
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
 from tools.logger import init_admin_logger
 
+from web.models.schain import SChainRecord
+
 
 init_admin_logger()
 logger = logging.getLogger(__name__)
 
 SLEEP_INTERVAL = 50
 MONITOR_INTERVAL = 45
+
+
+def set_schains_first_run():
+    logger.info('Setting first_run=True for all sChain records')
+    query = SChainRecord.update(first_run=True).where(
+        SChainRecord.first_run == False)  # noqa
+    query.execute()
 
 
 def monitor(skale, node_config):
@@ -50,6 +59,7 @@ def main():
     rpc_wallet = RPCWallet(TM_URL)
     skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
     node_config = NodeConfig()
+    set_schains_first_run()
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
