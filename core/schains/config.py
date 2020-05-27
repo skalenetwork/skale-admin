@@ -26,14 +26,15 @@ from skale.schain_config.generator import generate_skale_schain_config
 from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
-from core.schains.helper import (read_base_config, get_schain_config_filepath,
-                                 get_tmp_schain_config_filepath)
+from core.schains.helper import (read_base_config, read_ima_data,
+                                 get_schain_config_filepath, get_tmp_schain_config_filepath)
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.containers import CONTAINERS_INFO, LOCAL_IP
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
+from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import NodeEndpoint
 from tools.helper import read_json
 from tools.configs import TEMP_CONFIG_EXTENSION
@@ -43,6 +44,7 @@ logger = logging.getLogger(__name__)
 
 def generate_schain_config(skale, schain_name, node_id, rotation_id):
     base_config = read_base_config()
+    ima_data = read_ima_data()
     wallets = generate_wallets_config(schain_name, rotation_id)
     ima_mainnet_url = IMA_ENDPOINT
     ima_mp_schain, ima_mp_mainnet = get_mp_addresses()
@@ -65,6 +67,7 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
         ima_mp_schain=ima_mp_schain,
         ima_mp_mainnet=ima_mp_mainnet,
         wallets=wallets,
+        ima_data=ima_data,
         **config_opts
     )
     obj['skaleConfig']['nodeInfo']['bindIP'] = '0.0.0.0'
@@ -73,7 +76,8 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
 
 def get_mp_addresses():
     ima_abi = read_json(MAINNET_PROXY_PATH)
-    ima_mp_schain = None  # todo: unknown at the launch time, tbd
+    schain_ima_abi = read_json(IMA_DATA_FILEPATH)
+    ima_mp_schain = schain_ima_abi['message_proxy_chain_address']
     ima_mp_mainnet = ima_abi['message_proxy_mainnet_address']
     return ima_mp_schain, ima_mp_mainnet
 
