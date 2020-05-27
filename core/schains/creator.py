@@ -224,10 +224,18 @@ def check_container(schain_name, volume_required=False):
         return True
 
 
+def check_container_exit(schain_name):
+    name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    info = dutils.get_info(name)
+    return dutils.container_exited(info)
+
+
 def monitor_schain_container(schain):
     if check_container(schain['name'], volume_required=True):
         env = get_schain_env(schain['name'])
         run_schain_container(schain, env)
+    elif check_container_exit(schain['name']):
+        restart_container(SCHAIN_CONTAINER, schain)
 
 
 def monitor_ima_container(schain):

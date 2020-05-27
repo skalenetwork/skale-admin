@@ -144,7 +144,7 @@ def add_config_volume(run_args):
     # mount /skale_node_data
     run_args['volumes'][NODE_DATA_PATH_HOST] = {
         'bind': NODE_DATA_PATH,
-        "mode": "ro"
+        "mode": "rw"
     }
     # mount /skale_vol
     run_args['volumes'][SKALE_DIR_HOST] = {
