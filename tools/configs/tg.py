@@ -18,15 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import NODE_DATA_PATH, CONFIG_FOLDER
 
-SCHAINS_DIR_NAME = 'schains'
-SCHAINS_DIR_PATH = os.path.join(NODE_DATA_PATH, SCHAINS_DIR_NAME)
-
-DATA_DIR_NAME = 'data_dir'
-
-BASE_SCHAIN_CONFIG_FILENAME = 'schain_base_config.json'
-BASE_SCHAIN_CONFIG_FILEPATH = os.path.join(CONFIG_FOLDER, BASE_SCHAIN_CONFIG_FILENAME)
-
-IMA_DATA_FILENAME = 'ima_data.json'
-IMA_DATA_FILEPATH = os.path.join(CONFIG_FOLDER, IMA_DATA_FILENAME)
+TG_API_KEY = os.environ.get('TG_API_KEY', None)
+TG_CHAT_ID = os.environ.get('TG_CHAT_ID', None)

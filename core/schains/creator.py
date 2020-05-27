@@ -17,8 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
 import os
+import shutil
+import logging
 import time
 from datetime import datetime
 
@@ -34,7 +35,9 @@ from core.schains.runner import (run_schain_container, run_ima_container,
                                  run_schain_container_in_sync_mode,
                                  restart_container)
 from core.schains.cleaner import cleanup_schain, remove_config_dir
-from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
+from core.tg_bot import TgBot
+from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
+                                 get_schain_proxy_file_path)
 from core.schains.config import (generate_schain_config, save_schain_config,
                                  update_schain_config,
                                  get_schain_env, get_allowed_endpoints)
@@ -45,6 +48,8 @@ from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 
@@ -110,7 +115,9 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
     finish_time_ts = rotation['finish_ts']
     finish_time = datetime.fromtimestamp(finish_time_ts)
 
-    checks = SChainChecks(name, node_id, rotation_id=rotation_id, log=True).get_all()
+    checks = SChainChecks(name, node_id, rotation_id=rotation_id, log=True)
+    checks_dict = checks.get_all()
+    bot = TgBot(TG_API_KEY, TG_CHAT_ID) if TG_API_KEY and TG_CHAT_ID else None
 
     if not SChainRecord.added(name):
         schain_record, _ = SChainRecord.add(name)
@@ -118,8 +125,8 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         schain_record = SChainRecord.get_by_name(name)
 
     if not schain_record.first_run:
-        # todo: send failed checks to tg
-        pass
+        if bot and not checks.is_healthy():
+            bot.send_schain_checks(checks)
 
     schain_record.set_first_run(False)
     if exiting_node and rotation_in_progress:
@@ -132,10 +139,10 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
                               args=[node_id, name, rotation_id])
 
         # ensure containers are working after update
-        if not checks['container']:
+        if not checks_dict['container']:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
-        if not checks['ima_container']:
+        if not checks_dict['ima_container']:
             monitor_ima_container(schain)
         return
 
@@ -144,7 +151,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         monitor_checks(
             skale=skale,
             schain=schain,
-            checks=checks,
+            checks=checks_dict,
             node_id=node_id,
             sgx_key_name=sgx_key_name,
             rotation=rotation,
@@ -175,10 +182,10 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
         logger.info(f'sChain will be restarted at {finish_time}')
 
         # ensure containers are working after update
-        if not checks['container']:
+        if not checks_dict['container']:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
-        if not checks['ima_container']:
+        if not checks_dict['ima_container']:
             monitor_ima_container(schain)
         return
     else:
@@ -187,7 +194,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, scheduler):
     monitor_checks(
         skale=skale,
         schain=schain,
-        checks=checks,
+        checks=checks_dict,
         node_id=node_id,
         sgx_key_name=sgx_key_name,
         rotation=rotation,
@@ -205,6 +212,11 @@ def init_schain_config(skale, node_id, schain_name):
         rotation_id = skale.schains_data.get_last_rotation_id(schain_name)
         schain_config = generate_schain_config(skale, schain_name, node_id, rotation_id)
         save_schain_config(schain_config, schain_name)
+
+
+def copy_schain_ima_abi(name):
+    abi_file_dest = get_schain_proxy_file_path(name)
+    shutil.copyfile(IMA_DATA_FILEPATH, abi_file_dest)
 
 
 def add_firewall_rules(schain_name):
