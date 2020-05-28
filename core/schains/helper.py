@@ -68,15 +68,3 @@ def read_base_config():
 def read_ima_data():
     with open(IMA_DATA_FILEPATH) as f:
         return json.load(f)
-
-
-def get_schain_rpc_ports(schain_id):
-    schain_config = get_schain_config(schain_id)
-    node_info = schain_config["skaleConfig"]["nodeInfo"]
-    return int(node_info["httpRpcPort"]), int(node_info["wsRpcPort"])
-
-
-def get_schain_ssl_rpc_ports(schain_id):
-    schain_config = get_schain_config(schain_id)
-    node_info = schain_config["skaleConfig"]["nodeInfo"]
-    return int(node_info["httpsRpcPort"]), int(node_info["wssRpcPort"])
