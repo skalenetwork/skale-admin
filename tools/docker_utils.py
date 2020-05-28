@@ -24,7 +24,7 @@ from functools import wraps
 
 from docker import APIClient
 
-from tools.configs.containers import CONTAINER_NOT_FOUND, RUNNING_STATUS
+from tools.configs.containers import CONTAINER_NOT_FOUND, RUNNING_STATUS, EXITED_STATUS
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +110,9 @@ class DockerUtils:
         return container_info['status'] == CONTAINER_NOT_FOUND
 
     def container_exited(self, container_info):
-        return container_info['stats']['State']['ExitCode'] == 0
+        if container_info['status'] == EXITED_STATUS:
+            return container_info['stats']['State']['ExitCode'] == 0
+        return False
 
     def rm_vol(self, name):
         volume = self.client.volumes.get(name)
