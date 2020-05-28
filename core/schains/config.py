@@ -57,7 +57,7 @@ def generate_schain_config(skale, schain_name, node_id):
         ima_data=ima_data,
         rotate_after_block=rotate_after_block
     )
-    config['bindIp'] = '0.0.0.0'
+    config['skaleConfig']['nodeInfo']['bindIP'] = '0.0.0.0'
     return config
 
 
@@ -143,17 +143,17 @@ def get_consensus_endpoints_from_config(config):
     node_endpoints = list(chain.from_iterable(
         (
             NodeEndpoint(
-                node_data['publicIp'],
+                node_data['publicIP'],
                 base_port + SkaledPorts.PROPOSAL.value),
             NodeEndpoint(
-                node_data['publicIp'],
+                node_data['publicIP'],
                 base_port + SkaledPorts.CATCHUP.value),
             NodeEndpoint(
-                node_data['publicIp'],
+                node_data['publicIP'],
                 base_port + SkaledPorts.BINARY_CONSENSUS.value
             ),
             NodeEndpoint(
-                node_data['publicIp'],
+                node_data['publicIP'],
                 base_port + SkaledPorts.ZMQ_BROADCAST.value
             )
         )
