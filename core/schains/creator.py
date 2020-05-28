@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import shutil
 import logging
 from time import sleep
 
@@ -31,7 +32,9 @@ from tools.str_formatters import arguments_list_string
 
 from core.schains.runner import run_schain_container, run_ima_container
 from core.schains.cleaner import remove_config_dir
-from core.schains.helper import (init_schain_dir, get_schain_config_filepath)
+from core.tg_bot import TgBot
+from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
+                                 get_schain_proxy_file_path)
 from core.schains.config import (generate_schain_config, save_schain_config,
                                  get_schain_env, get_allowed_endpoints)
 from core.schains.volume import init_data_volume
@@ -41,6 +44,8 @@ from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import add_rules as add_iptables_rules
 
 from concurrent.futures import ThreadPoolExecutor
@@ -82,7 +87,9 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
     skale = spawn_skale_lib(skale)
     name = schain['name']
     owner = schain['owner']
-    checks = SChainChecks(name, node_id, log=True).get_all()
+    checks = SChainChecks(name, node_id, log=True)
+    checks_dict = checks.get_all()
+    bot = TgBot(TG_API_KEY, TG_CHAT_ID) if TG_API_KEY and TG_CHAT_ID else None
 
     if not SChainRecord.added(name):
         schain_record, _ = SChainRecord.add(name)
@@ -90,33 +97,36 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
         schain_record = SChainRecord.get_by_name(name)
 
     if not schain_record.first_run:
-        # todo: send failed checks to tg
-        pass
+        if bot and not checks.is_healthy():
+            bot.send_schain_checks(checks)
+
     schain_record.set_first_run(False)
 
-    if not checks['data_dir']:
+    if not checks_dict['data_dir']:
         init_schain_dir(name)
-    if not checks['dkg']:
+    if not checks_dict['dkg']:
         try:
             schain_record.dkg_started()
             run_dkg(skale, schain['name'], node_id, sgx_key_name)
         except DkgError as err:
             logger.info(f'sChain {name} Dkg procedure failed with {err}')
+            if bot:
+                bot.send_failed_dkg_notification(schain['name'])
             schain_record.dkg_failed()
             remove_config_dir(schain['name'])
             return
         schain_record.dkg_done()
-
-    if not checks['config']:
+    if not checks_dict['config']:
         init_schain_config(skale, node_id, name, owner)
-    if not checks['volume']:
+        copy_schain_ima_abi(name)
+    if not checks_dict['volume']:
         init_data_volume(schain)
-    if not checks['firewall_rules']:
+    if not checks_dict['firewall_rules']:
         add_firewall_rules(name)
-    if not checks['container']:
+    if not checks_dict['container']:
         monitor_schain_container(schain)
     sleep(CONTAINERS_DELAY)
-    if not checks['ima_container']:
+    if not checks_dict['ima_container']:
         monitor_ima_container(schain)
 
 
@@ -129,6 +139,11 @@ def init_schain_config(skale, node_id, schain_name, schain_owner):
         )
         schain_config = generate_schain_config(skale, schain_name, node_id)
         save_schain_config(schain_config, schain_name)
+
+
+def copy_schain_ima_abi(name):
+    abi_file_dest = get_schain_proxy_file_path(name)
+    shutil.copyfile(IMA_DATA_FILEPATH, abi_file_dest)
 
 
 def add_firewall_rules(schain_name):

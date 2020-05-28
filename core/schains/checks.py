@@ -104,10 +104,7 @@ class SChainChecks():
 
     def is_healthy(self):
         checks = self.get_all()
-        for check in checks:
-            if not checks[check]:
-                return False
-        return True
+        return False not in checks.values()
 
     def get_all(self):
         return {

@@ -23,14 +23,11 @@ import shutil
 
 # from multiprocessing import Process
 
-from skale.manager_client import spawn_skale_lib
-
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name
 from core.schains.config import get_allowed_endpoints
 
-from tools.helper import SkaleFilter
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -86,25 +83,15 @@ def remove_config_dir(schain_name):
 def monitor(skale, node_config):
     logger.info('Cleaner procedure started.')
     schains_on_node = get_schains_on_node()
-    schain_ids = schain_names_to_ids(skale, schains_on_node)
     schain_names_on_contracts = get_schain_names_from_contract(skale,
                                                                node_config.id)
-    skale_events = spawn_skale_lib(skale)
-
-    event_filter = SkaleFilter(
-        skale_events.schains.contract.events.SchainDeleted,
-        from_block=0,
-        argument_filters={'schainId': schain_ids}
-    )
-    events = event_filter.get_events()
-
-    for event in events:
-        name = event['args']['name']
-        if name in schains_on_node and name not in schain_names_on_contracts:
+    for schain_name in schains_on_node:
+        on_contract = schain_name in schain_names_on_contracts
+        if not on_contract and not skale.schains_data.is_schain_exist(schain_name):
             logger.info(
-                arguments_list_string({'sChain name': name}, 'sChain deleted event found'))
-            cleanup_schain(node_config.id, name)
-    logger.info('Cleanup procedure finished.')
+                arguments_list_string({'sChain name': schain_name}, 'Removed sChain found'))
+            cleanup_schain(node_config.id, schain_name)
+        logger.info('Cleanup procedure finished')
 
 
 def get_schain_names_from_contract(skale, node_id):
