@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 
+# TODO: Fix IMA
 class SChainChecks:
     def __init__(self, schain_name: str, node_id: int, rotation_id=0, log=False, failhook=None):
         self.name = schain_name
@@ -58,7 +59,7 @@ class SChainChecks:
         self.check_volume()
         self.check_firewall_rules()
         self.check_container()
-        self.check_ima_container()
+        # self.check_ima_container()
         self.check_rpc()
 
     def check_data_dir(self):
@@ -119,7 +120,7 @@ class SChainChecks:
             'config': self._config,
             'volume': self._volume,
             'container': self._container,
-            'ima_container': self._ima_container,
+            # 'ima_container': self._ima_container,
             'firewall_rules': self._firewall_rules,
             'rpc': self._rpc
         }
