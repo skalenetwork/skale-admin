@@ -51,8 +51,6 @@ from web.routes.sgx import sgx_bp
 
 init_api_logger()
 logger = logging.getLogger(__name__)
-werkzeug_logger = logging.getLogger('werkzeug')  # todo: remove
-werkzeug_logger.setLevel(logging.WARNING)  # todo: remove
 
 rpc_wallet = RPCWallet(TM_URL)
 skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
@@ -91,24 +89,22 @@ def after_request(response):
 def create_tables():
     if not SChainRecord.table_exists():
         SChainRecord.create_table()
-    set_schains_first_run()
 
 
-def set_schains_first_run():
-    logger.info('Setting first_run=True for all sChain records')
-    query = SChainRecord.update(first_run=True).where(
-        SChainRecord.first_run == False)  # noqa
-    query.execute()
+create_tables()
+generate_sgx_key(node_config)
+app.secret_key = FLASK_SECRET_KEY_FILE
+app.use_reloader = False
 
 
-if __name__ == '__main__':
+def main():
     logger.info(arguments_list_string({
         'Endpoint': ENDPOINT,
         'Transaction manager': TM_URL,
         'SGX Server': sgx_server_text()
         }, 'Starting Flask server'))
-    create_tables()
-    generate_sgx_key(node_config)
-    app.secret_key = FLASK_SECRET_KEY_FILE
-    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST,
-            use_reloader=False)
+    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST)
+
+
+if __name__ == '__main__':
+    main()
