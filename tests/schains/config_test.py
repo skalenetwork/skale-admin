@@ -54,7 +54,7 @@ CONFIG = {
                     "owner": "0x",
                     "schainIndex": 2,
                     "ip": "127.0.0.1",
-                    "publicIP": "127.0.0.1"
+                    "publicIP": "127.0.0.2"
                 },
                 {
                     "nodeID": 2,
@@ -68,7 +68,7 @@ CONFIG = {
                     "owner": "0x",
                     "schainIndex": 2,
                     "ip": "127.0.0.1",
-                    "publicIP": "127.0.0.1"
+                    "publicIP": "127.0.0.2"
                 }
             ]
         }
@@ -78,10 +78,10 @@ CONFIG = {
 
 def test_get_consensus_endpoints_from_config():
     assert get_consensus_endpoints_from_config(CONFIG) == [
-        NodeEndpoint(ip='127.0.0.1', port=10011),
-        NodeEndpoint(ip='127.0.0.1', port=10012),
-        NodeEndpoint(ip='127.0.0.1', port=10015),
-        NodeEndpoint(ip='127.0.0.1', port=10016)
+        NodeEndpoint(ip='127.0.0.2', port=10011),
+        NodeEndpoint(ip='127.0.0.2', port=10012),
+        NodeEndpoint(ip='127.0.0.2', port=10015),
+        NodeEndpoint(ip='127.0.0.2', port=10016)
     ]
 
 
