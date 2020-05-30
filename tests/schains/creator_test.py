@@ -1,5 +1,4 @@
 import pytest
-from apscheduler.schedulers.background import BackgroundScheduler
 
 from core.node_config import NodeConfig
 from core.schains.creator import monitor_schain
@@ -15,14 +14,6 @@ import os
 def config(skale):
     config = NodeConfig()
     return config
-
-
-@pytest.fixture
-def scheduler():
-    scheduler = BackgroundScheduler()
-    scheduler.start()
-    yield scheduler
-    scheduler.shutdown()
 
 
 @pytest.fixture
@@ -54,7 +45,7 @@ CHECK_MOCK = {
 }
 
 
-def test_exiting_monitor(skale, config, scheduler):
+def test_exiting_monitor(skale, config):
     node_id = config.id
     rotation_info = {
         'result': True,
@@ -76,7 +67,7 @@ def test_exiting_monitor(skale, config, scheduler):
         rotation.assert_called_with(SCHAIN, rotation_info['finish_ts'], is_exit=True)
 
 
-def test_rotating_monitor(skale, config, scheduler):
+def test_rotating_monitor(skale, config):
     node_id = config.id
     rotation_info = {
         'result': True,
@@ -104,7 +95,7 @@ def test_rotating_monitor(skale, config, scheduler):
         os.remove(config_path)
 
 
-def test_new_schain_monitor(skale, config, scheduler):
+def test_new_schain_monitor(skale, config):
     node_id = config.id
     rotation_info = {
         'result': True,
