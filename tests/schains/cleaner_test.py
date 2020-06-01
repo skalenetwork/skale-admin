@@ -11,7 +11,6 @@ from tools.docker_utils import DockerUtils
 from tests.docker_utils_test import run_simple_schain_container, run_simple_ima_container, SCHAIN
 from web.models.schain import SChainRecord
 
-SCHAIN_CONFIG_DIR = os.path.join(SCHAINS_DIR_PATH, SCHAIN['name'])
 SCHAIN_CONTAINER_NAME = 'skale_schain_test'
 IMA_CONTAINER_NAME = 'skale_ima_test'
 
@@ -27,10 +26,12 @@ def dutils():
 
 
 def test_remove_config_dir():
-    init_schain_dir(SCHAIN['name'])
-    assert os.path.isdir(SCHAIN_CONFIG_DIR)
-    remove_config_dir(SCHAIN['name'])
-    assert not os.path.isdir(SCHAIN_CONFIG_DIR)
+    schain_name = 'temp'
+    init_schain_dir(schain_name)
+    config_dir = os.path.join(SCHAINS_DIR_PATH, schain_name)
+    assert os.path.isdir(config_dir)
+    remove_config_dir(schain_name)
+    assert not os.path.isdir(config_dir)
 
 
 def test_remove_schain_volume(dutils):

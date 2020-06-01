@@ -69,7 +69,7 @@ class TgBot():
                 f'Config: {checks_dict["config"]}\n'
                 f'Volume: {checks_dict["volume"]}\n'
                 f'Container: {checks_dict["container"]}\n'
-                f'IMA container: {checks_dict["ima_container"]}\n'
+                # f'IMA container: {checks_dict["ima_container"]}\n'
                 f'Firewall: {checks_dict["firewall_rules"]}\n'
                 f'RPC: {checks_dict["rpc"]}\n'
             )

@@ -32,11 +32,12 @@ from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
-from tools.configs.containers import CONTAINERS_INFO
+from tools.configs.containers import CONTAINERS_INFO, LOCAL_IP
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import NodeEndpoint
 from tools.helper import read_json
+from tools.configs import TEMP_CONFIG_EXTENSION
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
         config_opts['snapshot_interval_ms'] = options.get('snapshotIntervalMs')
     if options.get('emptyBlockIntervalMs'):
         config_opts['empty_block_interval_ms'] = options.get('emptyBlockIntervalMs')
-    return generate_skale_schain_config(
+    obj = generate_skale_schain_config(
         skale=skale,
         schain_name=schain_name,
         node_id=node_id,
@@ -69,6 +70,8 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
         ima_data=ima_data,
         **config_opts
     )
+    obj['skaleConfig']['nodeInfo']['bindIP'] = '0.0.0.0'
+    return obj
 
 
 def get_mp_addresses():
@@ -103,8 +106,10 @@ def generate_wallets_config(schain_name, rotation_id):
     return wallets
 
 
-def save_schain_config(schain_config, schain_name):
+def save_schain_config(schain_config, schain_name, temp=False):
     schain_config_filepath = get_schain_config_filepath(schain_name)
+    if temp:
+        schain_config_filepath = schain_config_filepath + TEMP_CONFIG_EXTENSION
     with open(schain_config_filepath, 'w') as outfile:
         json.dump(schain_config, outfile, indent=4)
 
@@ -164,6 +169,16 @@ def get_skaled_http_snapshot_address_from_config(config):
 
     return NodeEndpoint(from_node['ip'], from_node['basePort'] +
                         SkaledPorts.HTTP_JSON.value)
+
+
+def get_skaled_http_address(schain_name):
+    config = get_schain_config(schain_name)
+    return get_skaled_http_address_from_config(config)
+
+
+def get_skaled_http_address_from_config(config):
+    node = config['skaleConfig']['nodeInfo']
+    return NodeEndpoint(LOCAL_IP, node['httpRpcPort'])
 
 
 def get_consensus_ips_with_ports(schain_name):

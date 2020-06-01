@@ -46,7 +46,7 @@ def test_get_all_checks(skale):
     assert checks['dkg']
     assert checks['config']
     assert checks['container']
-    assert not checks['ima_container']
+    # assert not checks['ima_container']
     assert checks['firewall_rules']
     assert not checks['rpc']
     cleanup_schain(dutils)
@@ -58,6 +58,6 @@ def test_get_all_false_checks(skale):
     assert not checks['dkg']
     assert not checks['config']
     assert not checks['container']
-    assert not checks['ima_container']
+    # assert not checks['ima_container']
     assert not checks['firewall_rules']
     assert not checks['rpc']

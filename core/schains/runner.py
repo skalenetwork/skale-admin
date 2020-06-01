@@ -22,7 +22,8 @@ import copy
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_container_limits, get_schain_volume_config
-from core.schains.config import get_skaled_http_snapshot_address
+from core.schains.config import get_skaled_http_snapshot_address, get_skaled_http_address
+from core.schains.helper import send_rotation_request
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
@@ -126,6 +127,13 @@ def run_schain_container_in_sync_mode(schain, env, public_key, start_ts, dutils=
                   mem_limit, dutils=dutils)
 
 
+def set_rotation_for_schain(schain, timestamp, is_exit=False):
+    schain_name = schain['name']
+    endpoint = get_skaled_http_address(schain_name)
+    url = f'http://{endpoint.ip}:{endpoint.port}'
+    send_rotation_request(url, timestamp, is_exit)
+
+
 def run_ima_container(schain, env, dutils=None):
     run_container(IMA_CONTAINER, schain, env, dutils=dutils)
 
@@ -136,10 +144,18 @@ def add_config_volume(run_args):
     # mount /skale_node_data
     run_args['volumes'][NODE_DATA_PATH_HOST] = {
         'bind': NODE_DATA_PATH,
-        "mode": "ro"
+        "mode": "rw"
     }
     # mount /skale_vol
     run_args['volumes'][SKALE_DIR_HOST] = {
         'bind': SKALE_VOLUME_PATH,
         "mode": "ro"
     }
+
+
+def check_container_exit(schain_name, dutils=None):
+    if not dutils:
+        dutils = docker_utils
+    name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    info = dutils.get_info(name)
+    return dutils.container_exited(info)
