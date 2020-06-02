@@ -114,11 +114,11 @@ class Node:
         rotated_schains = self.skale.schains_data.get_leaving_history(self.config.id)
         current_time = time.time()
         for schain in rotated_schains:
-            if current_time > schain[1]:
+            if current_time > schain['finished_rotation']:
                 status = SchainExitStatuses.LEFT
             else:
                 status = SchainExitStatuses.LEAVING
-            schain_name = self.skale.schains_data.get(schain[0])['name']
+            schain_name = self.skale.schains_data.get(schain['id'])['name']
             if not schain_name:
                 schain_name = '[REMOVED]'
             schain_statuses.append({'name': schain_name, 'status': status.name})

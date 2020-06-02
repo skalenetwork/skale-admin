@@ -74,9 +74,9 @@ def monitor(skale, node_config):
     schains = skale.schains_data.get_schains_for_node(node_id)
     logger.info('Get leaving_history for node ...')
     leaving_history = skale.schains_data.get_leaving_history(node_id)
-    for history in leaving_history:
-        schain = skale.schains_data.get(history[0])
-        if time.time() < history[1] and schain['name']:
+    for leaving_schain in leaving_history:
+        schain = skale.schains_data.get(leaving_schain['id'])
+        if time.time() < leaving_schain['finished_rotation'] and schain['name']:
             schain['active'] = True
             schains.append(schain)
     schains_on_node = sum(map(lambda schain: schain['active'], schains))
