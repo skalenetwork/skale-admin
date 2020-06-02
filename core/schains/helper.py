@@ -50,11 +50,9 @@ def get_schain_config_filepath(schain_name):
                         f'schain_{schain_name}.json')
 
 
-def get_schain_config(schain_name):
-    config_filepath = get_schain_config_filepath(schain_name)
-    with open(config_filepath) as f:
-        schain_config = json.load(f)
-    return schain_config
+def schain_config_exists(schain_name):
+    schain_config_filepath = get_schain_config_filepath(schain_name)
+    return os.path.isfile(schain_config_filepath)
 
 
 def get_schain_proxy_file_path(schain_name):
@@ -70,15 +68,3 @@ def read_base_config():
 def read_ima_data():
     with open(IMA_DATA_FILEPATH) as f:
         return json.load(f)
-
-
-def get_schain_rpc_ports(schain_id):
-    schain_config = get_schain_config(schain_id)
-    node_info = schain_config["skaleConfig"]["nodeInfo"]
-    return int(node_info["httpRpcPort"]), int(node_info["wsRpcPort"])
-
-
-def get_schain_ssl_rpc_ports(schain_id):
-    schain_config = get_schain_config(schain_id)
-    node_info = schain_config["skaleConfig"]["nodeInfo"]
-    return int(node_info["httpsRpcPort"]), int(node_info["wssRpcPort"])

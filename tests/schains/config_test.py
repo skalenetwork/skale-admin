@@ -77,6 +77,7 @@ CONFIG = {
 
 
 def test_get_consensus_endpoints_from_config():
+    assert get_consensus_endpoints_from_config(None) == []
     assert get_consensus_endpoints_from_config(CONFIG) == [
         NodeEndpoint(ip='127.0.0.2', port=10011),
         NodeEndpoint(ip='127.0.0.2', port=10012),
@@ -86,6 +87,7 @@ def test_get_consensus_endpoints_from_config():
 
 
 def test_get_skaled_rpc_endpoinds_from_config():
+    assert get_skaled_rpc_endpoints_from_config(None) == []
     assert get_skaled_rpc_endpoints_from_config(CONFIG) == [
         NodeEndpoint(ip=None, port=10013),
         NodeEndpoint(ip=None, port=10014),
@@ -95,4 +97,5 @@ def test_get_skaled_rpc_endpoinds_from_config():
 
 
 def test_get_snapshots_endpoints_from_config():
+    assert get_snapshots_endpoints_from_config(None) == []
     assert get_snapshots_endpoints_from_config(CONFIG) == []
