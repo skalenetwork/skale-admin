@@ -129,7 +129,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
 
     schain_record.set_first_run(False)
     if exiting_node and rotation_in_progress:
-        logger.info(f'Node is exiting. sChain will be stoped at {finish_time}')
+        logger.warning(f'Node is exiting. sChain will be stoped at {finish_time}')
 
         # ensure containers are working after update
         if not checks_dict['container']:
@@ -140,7 +140,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
         return
 
     if rotation_in_progress and new_schain:
-        logger.info('Building new rotated schain')
+        logger.warning('Building new rotated schain')
         monitor_checks(
             skale=skale,
             schain=schain,
@@ -154,7 +154,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
         return
 
     elif rotation_in_progress and not new_schain:
-        logger.info('Schain was rotated. Rotation in progress')
+        logger.warning('Schain was rotated. Rotation in progress')
 
         # ensure containers are working after update
         if not checks_dict['container']:

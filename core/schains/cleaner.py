@@ -134,6 +134,7 @@ def cleanup_schain(node_id, schain_name, rotation_id=0):
         remove_schain_volume(schain_name)
     if checks['firewall_rules']:
         remove_firewall_rules(schain_name)
+    # TODO: Test IMA
     # if checks['ima_container']:
     #     remove_ima_container(schain_name)
     if checks['data_dir']:

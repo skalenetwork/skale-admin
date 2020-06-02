@@ -144,7 +144,7 @@ def add_config_volume(run_args):
     # mount /skale_node_data
     run_args['volumes'][NODE_DATA_PATH_HOST] = {
         'bind': NODE_DATA_PATH,
-        "mode": "rw"
+        "mode": "ro"
     }
     # mount /skale_vol
     run_args['volumes'][SKALE_DIR_HOST] = {
@@ -158,4 +158,4 @@ def check_container_exit(schain_name, dutils=None):
         dutils = docker_utils
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
     info = dutils.get_info(name)
-    return dutils.container_exited(info)
+    return dutils.is_container_exited(info)

@@ -109,7 +109,7 @@ class DockerUtils:
     def to_start_container(self, container_info):
         return container_info['status'] == CONTAINER_NOT_FOUND
 
-    def container_exited(self, container_info):
+    def is_container_exited(self, container_info):
         if container_info['status'] == EXITED_STATUS:
             return container_info['stats']['State']['ExitCode'] == 0
         return False
