@@ -2,13 +2,12 @@ import pytest
 
 from core.node_config import NodeConfig
 from core.schains.creator import monitor_schain
-from core.schains.helper import get_schain_config_filepath
 from tools.docker_utils import DockerUtils
-from tools.configs import TEMP_CONFIG_EXTENSION
 import mock
 import time
-import os
 
+
+# TODO: Add exited container test
 
 @pytest.fixture
 def config(skale):
@@ -64,7 +63,7 @@ def test_exiting_monitor(skale, config):
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
         monitor_schain(skale, node_id, 'test', SCHAIN)
-        rotation.assert_called_with(SCHAIN, rotation_info['finish_ts'], is_exit=True)
+        rotation.assert_called_with(SCHAIN, rotation_info['finish_ts'])
 
 
 def test_rotating_monitor(skale, config):
@@ -89,10 +88,7 @@ def test_rotating_monitor(skale, config):
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
         monitor_schain(skale, node_id, 'test', SCHAIN)
-        config_path = get_schain_config_filepath(SCHAIN['name']) + TEMP_CONFIG_EXTENSION
         rotation.assert_called_with(SCHAIN, rotation_info['finish_ts'])
-        assert os.path.exists(config_path)
-        os.remove(config_path)
 
 
 def test_new_schain_monitor(skale, config):

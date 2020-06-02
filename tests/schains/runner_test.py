@@ -16,11 +16,10 @@ def test_set_rotation():
         args, kwargs = post.call_args
         data = json.loads(kwargs['data'])
         params = {
-            'finishTime': 100,
-            'isExit': False
+            'finishTime': 100
         }
         assert kwargs['url'] == 'http://127.0.0.1:2234'
-        assert data['method'] == 'setRestartOrExitTime'
+        assert data['method'] == 'setSchainExitTime'
         assert data['params'] == params
 
 
