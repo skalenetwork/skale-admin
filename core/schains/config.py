@@ -37,7 +37,6 @@ from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import NodeEndpoint
 from tools.helper import read_json
-from tools.configs import TEMP_CONFIG_EXTENSION
 
 logger = logging.getLogger(__name__)
 

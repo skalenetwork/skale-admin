@@ -233,11 +233,6 @@ def monitor_schain_container(schain):
     if check_container(schain['name'], volume_required=True):
         env = get_schain_env(schain['name'])
         run_schain_container(schain, env)
-    # elif check_container_exit(schain['name'], dutils=dutils):
-    #     remove_firewall_rules(schain['name'])
-    #     generate_schain_config(skale, schain['name'])
-    #     add_firewall_rules(schain['name'])
-    #     restart_container(SCHAIN_CONTAINER, schain)
 
 
 def monitor_ima_container(schain):
