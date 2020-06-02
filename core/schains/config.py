@@ -50,7 +50,7 @@ def generate_schain_config(skale, schain_name, node_id):
     rotate_after_block = CONTAINERS_INFO['schain']['config_options']['rotateAfterBlock']
 
     resource_allocation = get_resource_allocation_info()
-    schain = skale.schains_data.get_by_name(schain_name) # todo: optimize to avoid multiple calls
+    schain = skale.schains_data.get_by_name(schain_name)  # todo: optimize to avoid multiple calls
     schain_size_name = get_allocation_option_name(schain)
     custom_schain_config_fields = {
         'storageLimit': resource_allocation['schain']['storage_limit'][schain_size_name]
