@@ -91,17 +91,16 @@ def get_schain_ssl_rpc_ports(schain_id):
     return int(node_info["httpsRpcPort"]), int(node_info["wssRpcPort"])
 
 
-def send_rotation_request(url, timestamp, is_exit=False):
-    logger.info(f'Send rotation request: {timestamp}, {is_exit}')
+def send_rotation_request(url, timestamp):
+    logger.info(f'Send rotation request: {timestamp}')
     headers = {'content-type': 'application/json'}
     data = {
-        'finishTime': timestamp,
-        'isExit': is_exit
+        'finishTime': timestamp
     }
     call_data = {
         "id": 0,
         "jsonrpc": "2.0",
-        "method": "setRestartOrExitTime",
+        "method": "setSchainExitTime",
         "params": data,
     }
     response = requests.post(

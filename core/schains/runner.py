@@ -127,11 +127,11 @@ def run_schain_container_in_sync_mode(schain, env, public_key, start_ts, dutils=
                   mem_limit, dutils=dutils)
 
 
-def set_rotation_for_schain(schain, timestamp, is_exit=False):
+def set_rotation_for_schain(schain, timestamp):
     schain_name = schain['name']
     endpoint = get_skaled_http_address(schain_name)
     url = f'http://{endpoint.ip}:{endpoint.port}'
-    send_rotation_request(url, timestamp, is_exit)
+    send_rotation_request(url, timestamp)
 
 
 def run_ima_container(schain, env, dutils=None):
