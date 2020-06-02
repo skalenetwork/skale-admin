@@ -40,7 +40,7 @@ from core.tg_bot import TgBot
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
                                  get_schain_proxy_file_path)
 from core.schains.config import (generate_schain_config, save_schain_config,
-                                 get_schain_env, get_allowed_endpoints)
+                                 get_schain_env, get_allowed_endpoints, update_schain_config)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks, check_for_rotation
 from core.schains.ima import get_ima_env
@@ -135,7 +135,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
         if not checks_dict['container']:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
-        set_rotation_for_schain(schain, finish_time_ts, is_exit=True)
+        set_rotation_for_schain(schain, finish_time_ts)
 
         return
 
@@ -171,9 +171,6 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
         )
         # TODO: do once
         if is_dkg_done:
-            schain_config = generate_schain_config(skale, name,
-                                                   node_id, rotation_id)
-            save_schain_config(schain_config, name, temp=True)
             set_rotation_for_schain(schain, finish_time_ts)
 
         return
@@ -236,8 +233,11 @@ def monitor_schain_container(schain):
     if check_container(schain['name'], volume_required=True):
         env = get_schain_env(schain['name'])
         run_schain_container(schain, env)
-    elif check_container_exit(schain['name'], dutils=dutils):
-        restart_container(SCHAIN_CONTAINER, schain)
+    # elif check_container_exit(schain['name'], dutils=dutils):
+    #     remove_firewall_rules(schain['name'])
+    #     generate_schain_config(skale, schain['name'])
+    #     add_firewall_rules(schain['name'])
+    #     restart_container(SCHAIN_CONTAINER, schain)
 
 
 def monitor_ima_container(schain):
@@ -302,6 +302,12 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         if sync:
             finish_time_ts = rotation['finish_ts']
             monitor_sync_schain_container(skale, schain, finish_time_ts)
+        elif check_container_exit(name, dutils=dutils):
+            remove_firewall_rules(name)
+            config = generate_schain_config(skale, name, node_id, rotation['rotation_id'])
+            update_schain_config(config, name)
+            add_firewall_rules(name)
+            restart_container(SCHAIN_CONTAINER, schain)
         else:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)

@@ -106,10 +106,8 @@ def generate_wallets_config(schain_name, rotation_id):
     return wallets
 
 
-def save_schain_config(schain_config, schain_name, temp=False):
+def save_schain_config(schain_config, schain_name):
     schain_config_filepath = get_schain_config_filepath(schain_name)
-    if temp:
-        schain_config_filepath = schain_config_filepath + TEMP_CONFIG_EXTENSION
     with open(schain_config_filepath, 'w') as outfile:
         json.dump(schain_config, outfile, indent=4)
 
