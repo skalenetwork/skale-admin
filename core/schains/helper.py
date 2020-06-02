@@ -64,6 +64,11 @@ def get_schain_config(schain_name):
     return schain_config
 
 
+def schain_config_exists(schain_name):
+    schain_config_filepath = get_schain_config_filepath(schain_name)
+    return os.path.isfile(schain_config_filepath)
+
+
 def get_schain_proxy_file_path(schain_name):
     schain_dir_path = get_schain_dir_path(schain_name)
     return os.path.join(schain_dir_path, PROXY_ABI_FILENAME)

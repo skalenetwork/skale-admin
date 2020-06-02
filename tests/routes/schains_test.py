@@ -1,17 +1,20 @@
-import json
 import os
 
-import docker
-import mock
 import pytest
+import json
+import mock
 from flask import Flask
 
 from core.node_config import NodeConfig
+
+import docker
+
 from core.schains.runner import get_image_name
 from core.schains.config import get_schain_config_filepath
-from tools.configs.containers import SCHAIN_CONTAINER
+from tests.utils import get_bp_data, post_bp_data
 from tools.docker_utils import DockerUtils
-from tests.utils import get_bp_data
+from tools.configs.containers import SCHAIN_CONTAINER
+from tools.iptables import NodeEndpoint
 from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 
@@ -81,7 +84,8 @@ def test_schains_containers_list(skale_bp, skale):
         phantom_container.remove(force=True)
 
     schain_image = get_image_name(SCHAIN_CONTAINER)
-    cont1 = dutils.client.containers.run(schain_image, name='skale_schain_test_list', detach=True)
+    cont1 = dutils.client.containers.run(
+        schain_image, name='skale_schain_test_list', detach=True)
     data = get_bp_data(skale_bp, '/containers/schains/list', {'all': True})
     assert data['status'] == 'ok'
     payload = data['payload']
@@ -97,7 +101,54 @@ def test_owner_schains(skale_bp, skale):
     assert len(payload[0]['nodes'])
     schain_data = payload[0].copy()
     schain_data.pop('nodes')
-    assert schain_data == skale.schains_data.get_schains_for_owner(skale.wallet.address)[0]
+    assert schain_data == skale.schains_data.get_schains_for_owner(
+        skale.wallet.address)[0]
+
+
+def get_allowed_endpoints_mock(schain):
+    return [
+        NodeEndpoint(ip='11.11.11.11', port='1111'),
+        NodeEndpoint(ip='12.12.12.12', port=None),
+        NodeEndpoint(ip=None, port='1313')
+    ]
+
+
+def schain_config_exists_mock(schain):
+    return True
+
+
+@mock.patch('web.routes.schains.get_allowed_endpoints', get_allowed_endpoints_mock)
+@mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
+def test_get_firewall_rules(skale_bp):
+    data = get_bp_data(skale_bp, '/api/schains/firewall/show',
+                       params={'schain': 'schain-test'})
+    assert data == {
+        'payload': {
+            'endpoints': [
+                {'ip': '11.11.11.11', 'port': '1111'},
+                {'ip': '12.12.12.12', 'port': None},
+                {'ip': None, 'port': '1313'}
+            ]},
+        'status': 'ok'
+    }
+
+
+@mock.patch('web.routes.schains.get_allowed_endpoints', get_allowed_endpoints_mock)
+@mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
+@mock.patch('web.routes.schains.add_iptables_rules', new=mock.Mock())
+def test_firewall_rules_on(skale_bp):
+    data = post_bp_data(skale_bp, '/api/schains/firewall/on',
+                        params={'schain': 'test-schain'})
+    assert data == {'status': 'ok', 'payload': {}}
+
+
+@mock.patch('web.routes.schains.get_allowed_endpoints', get_allowed_endpoints_mock)
+@mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
+@mock.patch('web.routes.schains.remove_iptables_rules', new=mock.Mock())
+def test_firewall_rules_off(skale_bp):
+    data = post_bp_data(skale_bp, '/api/schains/firewall/off',
+                        params={'schain': 'test-schain'})
+    assert data == {'status': 'ok', 'payload': {}}
 
 
 def test_schains_healthchecks(skale_bp, skale):
