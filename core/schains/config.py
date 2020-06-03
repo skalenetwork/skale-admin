@@ -29,6 +29,7 @@ from skale.dataclasses.skaled_ports import SkaledPorts
 from core.schains.ssl import get_ssl_filepath
 from core.schains.helper import (read_base_config, read_ima_data,
                                  get_schain_config_filepath, get_tmp_schain_config_filepath)
+from core.schains.volume import get_resource_allocation_info, get_allocation_option_name
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
@@ -50,14 +51,19 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
     ima_mp_schain, ima_mp_mainnet = get_mp_addresses()
     options = CONTAINERS_INFO['schain']['config_options']
     config_opts = dict()
-    if options.get('storageLimit'):
-        config_opts['storage_limit'] = options.get('storageLimit')
     if options.get('rotateAfterBlock'):
         config_opts['rotate_after_block'] = options.get('rotateAfterBlock')
     if options.get('snapshotIntervalMs'):
         config_opts['snapshot_interval_ms'] = options.get('snapshotIntervalMs')
     if options.get('emptyBlockIntervalMs'):
         config_opts['empty_block_interval_ms'] = options.get('emptyBlockIntervalMs')
+
+    resource_allocation = get_resource_allocation_info()
+    schain = skale.schains_data.get_by_name(schain_name)  # todo: optimize to avoid multiple calls
+    schain_size_name = get_allocation_option_name(schain)
+    custom_schain_config_fields = {
+        'storageLimit': resource_allocation['schain']['storage_limit'][schain_size_name]
+    }
     config = generate_skale_schain_config(
         skale=skale,
         schain_name=schain_name,
@@ -68,6 +74,7 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
         ima_mp_mainnet=ima_mp_mainnet,
         wallets=wallets,
         ima_data=ima_data,
+        custom_schain_config_fields=custom_schain_config_fields,
         **config_opts
     )
     config['skaleConfig']['nodeInfo']['bindIP'] = '0.0.0.0'
