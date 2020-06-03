@@ -97,4 +97,5 @@ def construct_nodes_bp(skale, node, docker_utils):
         containers_list = docker_utils.get_all_skale_containers(
             all=all, format=True)
         return construct_ok_response(data={'containers': containers_list})
+
     return nodes_bp

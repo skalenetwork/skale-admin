@@ -17,7 +17,7 @@ def test_skale_filter(skale):
 
 
 def test_remove_schain_filter(skale):
-    for _ in range(0, 1):
+    for _ in range(0, 2):
         ip, _, port, name = generate_random_node_data()
         skale.manager.create_node(ip, port, name, wait_for=True)
 
