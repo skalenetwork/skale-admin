@@ -1,7 +1,8 @@
 from core.schains.config import (
     get_consensus_endpoints_from_config,
     get_snapshots_endpoints_from_config,
-    get_skaled_rpc_endpoints_from_config
+    get_skaled_rpc_endpoints_from_config,
+    get_schain_container_opts
 )
 from tools.iptables import NodeEndpoint
 
@@ -99,3 +100,9 @@ def test_get_skaled_rpc_endpoinds_from_config():
 def test_get_snapshots_endpoints_from_config():
     assert get_snapshots_endpoints_from_config(None) == []
     assert get_snapshots_endpoints_from_config(CONFIG) == []
+
+
+def test_get_schain_container_opts():
+    container_opts = get_schain_container_opts()
+    print(container_opts)
+    # assert False

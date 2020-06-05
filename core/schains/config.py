@@ -200,22 +200,37 @@ def get_schain_config(schain_name):
 
 
 def get_schain_env(schain_name):
+    container_opts = get_schain_container_opts(schain_name)
+    return {
+        "OPTIONS": container_opts,
+        "SEGFAULT_SIGNALS": 'all'
+    }
+
+
+def get_schain_container_opts(schain_name):
+    # todo: add custom opts: rotation, etc
+    return get_schain_container_base_opts(schain_name)
+
+
+def get_schain_container_base_opts(schain_name, log_level=4):
     config_filepath = get_schain_config_filepath(schain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
-    return {
-        "SSL_KEY_PATH": ssl_key,
-        "SSL_CERT_PATH": ssl_cert,
-        "HTTP_RPC_PORT": ports['http'],
-        "HTTPS_RPC_PORT": ports['https'],
-        "WS_RPC_PORT": ports['ws'],
-        "WSS_RPC_PORT": ports['wss'],
-
-        "SCHAIN_ID": schain_name,
-        "CONFIG_FILE": config_filepath,
-        "DATA_DIR": DATA_DIR_CONTAINER_PATH,
-        "SEGFAULT_SIGNALS": 'all'
-    }
+    return (
+        f'--config {config_filepath} '
+        f'--d {DATA_DIR_CONTAINER_PATH} '
+        f'--ipcpath {DATA_DIR_CONTAINER_PATH} '
+        f'--http-port {ports["http"]} '
+        f'--https-port {ports["https"]} '
+        f'--ws-port {ports["ws"]} '
+        f'--wss-port {ports["wss"]} '
+        f'--ssl-key {ssl_key} '
+        f'--ssl-cert {ssl_cert} '
+        f'-v {log_level} '
+        f'--web3-trace '
+        f'--enable-debug-behavior-apis '
+        f'--aa no '
+    )
 
 
 def get_schain_rpc_ports(schain_id):
