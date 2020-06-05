@@ -243,17 +243,30 @@ def get_schain_config(schain_name):
     return schain_config
 
 
-def get_schain_env(schain_name):
-    container_opts = get_schain_container_opts(schain_name)
+def get_schain_env(schain_name, public_key=None, start_ts=None):
+    container_opts = get_schain_container_opts(schain_name, public_key, start_ts)
     return {
         "OPTIONS": container_opts,
         "SEGFAULT_SIGNALS": 'all'
     }
 
 
-def get_schain_container_opts(schain_name):
-    # todo: add custom opts: rotation, etc
-    return get_schain_container_base_opts(schain_name)
+def get_schain_container_opts(schain_name, public_key=None, start_ts=None):
+    opts = get_schain_container_base_opts(schain_name)
+    if public_key and start_ts:
+        sync_opts = get_schain_container_sync_opts(schain_name, public_key, start_ts)
+        opts += sync_opts
+    return opts
+
+
+def get_schain_container_sync_opts(schain_name, public_key, start_ts):
+    endpoint = get_skaled_http_snapshot_address(schain_name)
+    url = f'http://{endpoint.ip}:{endpoint.port}'
+    return (
+        f'--download-snapshot {url} '
+        f'--public-key {public_key} '
+        f'--start-timestamp {start_ts} '
+    )
 
 
 def get_schain_container_base_opts(schain_name, log_level=4):
