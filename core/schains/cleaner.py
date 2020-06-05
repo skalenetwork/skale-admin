@@ -25,7 +25,7 @@ import shutil
 
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
-from core.schains.runner import get_container_name
+from core.schains.runner import get_container_name, check_container_exit
 from core.schains.config import get_allowed_endpoints
 
 from tools.docker_utils import DockerUtils
@@ -87,7 +87,8 @@ def monitor(skale, node_config):
                                                                node_config.id)
     for schain_name in schains_on_node:
         on_contract = schain_name in schain_names_on_contracts
-        if not on_contract and not skale.schains_data.is_schain_exist(schain_name):
+        if not on_contract and (not skale.schains_data.is_schain_exist(schain_name) or
+                                check_container_exit(schain_name, dutils=dutils)):
             logger.info(
                 arguments_list_string({'sChain name': schain_name}, 'Removed sChain found'))
             cleanup_schain(node_config.id, schain_name)
@@ -125,16 +126,17 @@ def remove_firewall_rules(schain_name):
     remove_iptables_rules(endpoints)
 
 
-def cleanup_schain(node_id, schain_name):
-    checks = SChainChecks(schain_name, node_id).get_all()
-    if checks['container']:
+def cleanup_schain(node_id, schain_name, rotation_id=0):
+    checks = SChainChecks(schain_name, node_id, rotation_id).get_all()
+    if checks['container'] or check_container_exit(schain_name, dutils=dutils):
         remove_schain_container(schain_name)
     if checks['volume']:
         remove_schain_volume(schain_name)
     if checks['firewall_rules']:
         remove_firewall_rules(schain_name)
-    if checks['ima_container']:
-        remove_ima_container(schain_name)
+    # TODO: Test IMA
+    # if checks['ima_container']:
+    #     remove_ima_container(schain_name)
     if checks['data_dir']:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)

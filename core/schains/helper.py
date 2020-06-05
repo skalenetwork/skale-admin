@@ -20,6 +20,7 @@
 import os
 import logging
 import json
+import requests
 from pathlib import Path
 
 from tools.configs.schains import (SCHAINS_DIR_PATH, DATA_DIR_NAME, BASE_SCHAIN_CONFIG_FILEPATH,
@@ -50,6 +51,19 @@ def get_schain_config_filepath(schain_name):
                         f'schain_{schain_name}.json')
 
 
+def get_tmp_schain_config_filepath(schain_name):
+    schain_dir_path = get_schain_dir_path(schain_name)
+    return os.path.join(schain_dir_path,
+                        f'tmp_schain_{schain_name}.json')
+
+
+def get_schain_config(schain_name):
+    config_filepath = get_schain_config_filepath(schain_name)
+    with open(config_filepath) as f:
+        schain_config = json.load(f)
+    return schain_config
+
+
 def schain_config_exists(schain_name):
     schain_config_filepath = get_schain_config_filepath(schain_name)
     return os.path.isfile(schain_config_filepath)
@@ -68,3 +82,36 @@ def read_base_config():
 def read_ima_data():
     with open(IMA_DATA_FILEPATH) as f:
         return json.load(f)
+
+
+def get_schain_rpc_ports(schain_id):
+    schain_config = get_schain_config(schain_id)
+    node_info = schain_config["skaleConfig"]["nodeInfo"]
+    return int(node_info["httpRpcPort"]), int(node_info["wsRpcPort"])
+
+
+def get_schain_ssl_rpc_ports(schain_id):
+    schain_config = get_schain_config(schain_id)
+    node_info = schain_config["skaleConfig"]["nodeInfo"]
+    return int(node_info["httpsRpcPort"]), int(node_info["wssRpcPort"])
+
+
+def send_rotation_request(url, timestamp):
+    logger.info(f'Send rotation request: {timestamp}')
+    headers = {'content-type': 'application/json'}
+    data = {
+        'finishTime': timestamp
+    }
+    call_data = {
+        "id": 0,
+        "jsonrpc": "2.0",
+        "method": "setSchainExitTime",
+        "params": data,
+    }
+    response = requests.post(
+        url=url,
+        data=json.dumps(call_data),
+        headers=headers,
+    ).json()
+    if response.get('error'):
+        raise Exception(response['error']['message'])

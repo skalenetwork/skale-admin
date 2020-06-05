@@ -13,7 +13,7 @@ simple-crypt==4.1.7
 pycryptodome==3.6.6
 python-iptables==0.14.0
 
-skale.py==3.7dev4
+skale.py==3.7dev5
 
 PyYAML==5.3
 psutil==5.6.6
@@ -24,6 +24,5 @@ filelock==3.0.12
 
 pyOpenSSL==19.1.0
 python-dateutil==2.8.1
-
 python-telegram-bot==12.7
 gunicorn==20.0.4

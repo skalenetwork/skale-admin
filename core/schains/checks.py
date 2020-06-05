@@ -19,6 +19,7 @@
 
 import os
 import logging
+import time
 
 from core.schains.config import get_allowed_endpoints, get_schain_rpc_ports
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
@@ -35,19 +36,14 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 
-class SChainChecks():
-    def __init__(self, schain_name: str, node_id: int, log=False, failhook=None):
+# TODO: Fix IMA
+class SChainChecks:
+    def __init__(self, schain_name: str, node_id: int, rotation_id=0, log=False, failhook=None):
         self.name = schain_name
         self.node_id = node_id
         self.failhook = failhook
-        self.check_data_dir()
-        self.check_config()
-        self.check_dkg()
-        self.check_volume()
-        self.check_firewall_rules()
-        self.check_container()
-        self.check_ima_container()
-        self.check_rpc()
+        self.rotation_id = rotation_id
+        self.run_checks()
         if log:
             self.log_health_check()
         if not self.is_healthy() and self.failhook:
@@ -55,12 +51,22 @@ class SChainChecks():
                 f'sChain checks failed: {self.name}, {self.get_all()}, node_id: {node_id}',
                 level='warning')
 
+    def run_checks(self):
+        self.check_data_dir()
+        self.check_config()
+        self.check_dkg()
+        self.check_volume()
+        self.check_firewall_rules()
+        self.check_container()
+        # self.check_ima_container()
+        self.check_rpc()
+
     def check_data_dir(self):
         schain_dir_path = get_schain_dir_path(self.name)
         self._data_dir = os.path.isdir(schain_dir_path)
 
     def check_dkg(self):
-        secret_key_share_filepath = get_secret_key_share_filepath(self.name)
+        secret_key_share_filepath = get_secret_key_share_filepath(self.name, self.rotation_id)
         self._dkg = os.path.isfile(secret_key_share_filepath)
 
     def check_config(self):
@@ -113,7 +119,8 @@ class SChainChecks():
             'config': self._config,
             'volume': self._volume,
             'container': self._container,
-            'ima_container': self._ima_container,
+            # TODO: Test IMA
+            # 'ima_container': self._ima_container,
             'firewall_rules': self._firewall_rules,
             'rpc': self._rpc
         }
@@ -127,10 +134,26 @@ class SChainChecks():
                 failed_checks.append(check)
         if len(failed_checks) != 0:
             failed_checks_str = ", ".join(failed_checks)
-
             logger.info(
                 arguments_list_string(
                     {'sChain name': self.name, 'Failed checks': failed_checks_str},
                     'Failed sChain checks', 'error'
                 )
             )
+
+
+def check_for_rotation(skale, schain_name, node_id):
+    ts = time.time()
+    rotation_data = skale.schains_data.get_rotation(schain_name)
+    finish_ts = rotation_data['finish_ts']
+    rotation_id = rotation_data['rotation_id']
+    rotation_in_progress = finish_ts > ts
+    new_schain = rotation_data['new_node'] == node_id
+    exiting_node = rotation_data['leaving_node'] == node_id
+    return {
+        'result': rotation_in_progress,
+        'new_schain': new_schain,
+        'exiting_node': exiting_node,
+        'finish_ts': finish_ts,
+        'rotation_id': rotation_id
+    }

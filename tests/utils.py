@@ -36,6 +36,7 @@ def get_bp_data(bp, request, params=None, full_data=False, **kwargs):
     data = bp.get(request, query_string=params, **kwargs).data
     if full_data:
         return data
+
     return json.loads(data.decode('utf-8'))
 
 
@@ -43,4 +44,5 @@ def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
     data = bp.post(request, json=params).data
     if full_response:
         return json.loads(data.decode('utf-8'))
+
     return json.loads(data.decode('utf-8'))

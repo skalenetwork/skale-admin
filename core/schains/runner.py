@@ -22,6 +22,8 @@ import copy
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_container_limits, get_schain_volume_config
+from core.schains.config import get_skaled_http_snapshot_address, get_skaled_http_address
+from core.schains.helper import send_rotation_request
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
@@ -92,12 +94,44 @@ def run_container(type, schain, env, volume_config=None,
     return cont
 
 
+def restart_container(type, schain):
+    schain_name = schain['name']
+    container_name = get_container_name(type, schain_name)
+
+    logger.info(arguments_list_string({'Container name': container_name},
+                                      'Restarting container...'))
+    cont = docker_utils.restart(container_name)
+    return cont
+
+
 def run_schain_container(schain, env, dutils=None):
     cpu_limit, mem_limit = get_container_limits(schain)
     volume_config = get_schain_volume_config(schain['name'],
                                              DATA_DIR_CONTAINER_PATH)
     run_container(SCHAIN_CONTAINER, schain, env, volume_config, cpu_limit,
                   mem_limit, dutils=dutils)
+
+
+def run_schain_container_in_sync_mode(schain, env, public_key, start_ts, dutils=None):
+    schain_name = schain['name']
+    endpoint = get_skaled_http_snapshot_address(schain_name)
+    url = f'http://{endpoint.ip}:{endpoint.port}'
+    env['DOWNLOAD_SNAPSHOT_OPTION'] = (f'--download-snapshot {url} '
+                                       f'--public-key {public_key} '
+                                       f'--start-timestamp {start_ts}')
+
+    cpu_limit, mem_limit = get_container_limits(schain)
+    volume_config = get_schain_volume_config(schain_name,
+                                             DATA_DIR_CONTAINER_PATH)
+    run_container(SCHAIN_CONTAINER, schain, env, volume_config, cpu_limit,
+                  mem_limit, dutils=dutils)
+
+
+def set_rotation_for_schain(schain, timestamp):
+    schain_name = schain['name']
+    endpoint = get_skaled_http_address(schain_name)
+    url = f'http://{endpoint.ip}:{endpoint.port}'
+    send_rotation_request(url, timestamp)
 
 
 def run_ima_container(schain, env, dutils=None):
@@ -117,3 +151,11 @@ def add_config_volume(run_args):
         'bind': SKALE_VOLUME_PATH,
         "mode": "ro"
     }
+
+
+def check_container_exit(schain_name, dutils=None):
+    if not dutils:
+        dutils = docker_utils
+    name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    info = dutils.get_info(name)
+    return dutils.is_container_exited(info)

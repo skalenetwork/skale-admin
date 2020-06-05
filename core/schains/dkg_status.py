@@ -24,4 +24,4 @@ class DKGStatus(Enum):
     NOT_STARTED = 1
     IN_PROGRESS = 2
     DONE = 3
-    FAILED = 3
+    FAILED = 4

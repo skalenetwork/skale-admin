@@ -48,5 +48,5 @@ def test_send_schain_checks():
     checks = SChainChecks(NOT_EXISTS_SCHAIN_NAME, TEST_NODE_ID)
     res = bot.send_schain_checks(checks)
 
-    assert 'Data directory: \u274C\nDKG: \u274C\nConfig: \u274C\nVolume: \u274C\nContainer: \u274C\nIMA container: \u274C\nFirewall: \u274C\nRPC: \u274C\n' in res['text'] # noqa
+    assert 'Data directory: \u274C\nDKG: \u274C\nConfig: \u274C\nVolume: \u274C\nContainer: \u274C\nFirewall: \u274C\nRPC: \u274C\n' in res['text'] # noqa
     assert '\u2757 Checks failed \n\nNode ID: 0\nsChain name: qwerty123\n' in res['text']

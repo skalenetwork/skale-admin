@@ -5,7 +5,7 @@ import pytest
 
 from skale.utils.contracts_provision.main import generate_random_node_data
 
-from core.node import Node
+from core.node import Node, NodeExitStatuses
 from core.node_config import NodeConfig
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -62,3 +62,20 @@ def test_register_info(node):
     assert info['port'] == int(port)
     assert info['id'] == node.config.id
     assert info['publicKey'] == node.skale.wallet.public_key
+
+
+@pytest.fixture
+def exiting_node(skale):
+    name = 'exit_test'
+    ip, public_ip, port, _ = generate_random_node_data()
+    skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
+    config = NodeConfig()
+    config.id = skale.nodes_data.node_name_to_index(name)
+    yield Node(skale, config)
+
+
+def test_start_exit(exiting_node):
+    exiting_node.exit({})
+    status = NodeExitStatuses(exiting_node.skale.nodes_data.get_node_status(exiting_node.config.id))
+
+    assert status != NodeExitStatuses.ACTIVE
