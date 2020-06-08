@@ -79,3 +79,16 @@ def test_start_exit(exiting_node):
     status = NodeExitStatuses(exiting_node.skale.nodes_data.get_node_status(exiting_node.config.id))
 
     assert status != NodeExitStatuses.ACTIVE
+
+
+def test_exit_status(exiting_node):
+    active_status_data = exiting_node.get_exit_status()
+    assert list(active_status_data.keys()) == ['status', 'data', 'exit_time']
+    assert active_status_data['status'] == NodeExitStatuses.ACTIVE.name
+    assert active_status_data['exit_time'] == 0
+
+    exiting_node.exit({})
+    exit_status_data = exiting_node.get_exit_status()
+    assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
+    assert exit_status_data['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
+    assert exit_status_data['exit_time'] != 0
