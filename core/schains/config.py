@@ -275,7 +275,7 @@ def get_schain_container_base_opts(schain_name, log_level=4):
     ports = get_schain_ports(schain_name)
     return (
         f'--config {config_filepath} '
-        f'--d {DATA_DIR_CONTAINER_PATH} '
+        f'-d {DATA_DIR_CONTAINER_PATH} '
         f'--ipcpath {DATA_DIR_CONTAINER_PATH} '
         f'--http-port {ports["http"]} '
         f'--https-port {ports["https"]} '
