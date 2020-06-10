@@ -1,34 +1,49 @@
 from unittest import mock
 
 import pytest
+import json
 
 from core.node import Node
 from core.node_config import NodeConfig
 from core.schains.creator import monitor
-from tests.dkg_test.main_test import run_dkg
+from core.schains.runner import run_schain_container
+from core.schains.volume import init_data_volume
 from tests.utils import generate_random_node_data
-from tools.custom_thread import CustomThread
+from tools.bls.dkg_utils import get_secret_key_share_filepath
+from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
 
+dutils = DockerUtils(volume_driver='local')
 
-def run_dkg_all(skale, schain_name, node_ids):
-    results = []
-    dkg_threads = []
-    for i, node_id in enumerate(node_ids):
-        opts = {
-            'index': i,
-            'skale': skale,
-            'schain_name': schain_name,
-            'node_id': node_id,
-            'wallet': skale.wallet,
-            'results': results
-        }
-        dkg_thread = CustomThread(
-            f'DKG for {skale.address}', run_dkg, opts=opts, once=True)
-        dkg_thread.start()
-        dkg_threads.append(dkg_thread)
-    for dkg_thread in dkg_threads:
-        dkg_thread.join()
+SECRET_KEY_INFO = {
+    "common_public_key": [
+        1
+    ],
+    "public_key": [
+        "1",
+        "1",
+        "1",
+        "1"
+    ],
+    "t": 3,
+    "n": 4,
+    "key_share_name": "BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0"
+}
+
+
+def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
+    path = get_secret_key_share_filepath(schain_name, rotation_id)
+    with open(path, 'w') as file:
+        file.write(json.dumps(SECRET_KEY_INFO))
+    return True
+
+
+def init_data_volume_mock(schain):
+    return init_data_volume(schain, dutils)
+
+
+def run_schain_container_mock(schain, env):
+    return run_schain_container(schain, env, dutils)
 
 
 @pytest.fixture
@@ -46,8 +61,6 @@ def exiting_node(skale):
     schain_name = 'exit_schain'
     skale.manager.create_default_schain(schain_name)
 
-    run_dkg_all(skale, schain_name, [skale.nodes_data.node_name_to_index(name)])
-
     name = f'rotation_test_1'
     ip, public_ip, port, _ = generate_random_node_data()
     skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
@@ -62,6 +75,10 @@ def exiting_node(skale):
 
 def test_node_exit(skale, exiting_node):
     SChainRecord.create_table()
-    # with mock.patch('core.schains.creator.run_dkg'):
-    monitor(skale, exiting_node.config)
-    assert False
+    with mock.patch('core.schains.creator.add_firewall_rules'), \
+            mock.patch('core.schains.creator.run_dkg', run_dkg_mock),\
+            mock.patch('core.schains.creator.init_data_volume', init_data_volume_mock), \
+            mock.patch('core.schains.creator.run_schain_container', run_schain_container_mock), \
+            mock.patch('core.schains.checks.apsent_iptables_rules',
+                       new=mock.Mock(return_value=[True, True])):
+        monitor(skale, exiting_node.config)

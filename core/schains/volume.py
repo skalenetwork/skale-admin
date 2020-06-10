@@ -28,10 +28,11 @@ logger = logging.getLogger(__name__)
 docker_utils = DockerUtils()
 
 
-def init_data_volume(schain):
+def init_data_volume(schain, dutils=None):
+    dutils = dutils or docker_utils
     schain_name = schain['name']
 
-    if docker_utils.data_volume_exists(schain_name):
+    if dutils.data_volume_exists(schain_name):
         logger.debug(f'Volume already exists: {schain_name}')
         return
 
@@ -40,7 +41,7 @@ def init_data_volume(schain):
     resource_allocation = get_resource_allocation_info()
     volume_size = resource_allocation['disk'][f'part_{option_name}']
 
-    return docker_utils.create_data_volume(schain_name, volume_size)
+    return dutils.create_data_volume(schain_name, volume_size)
 
 
 def get_container_limits(schain):
