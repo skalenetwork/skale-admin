@@ -247,8 +247,12 @@ def monitor_sync_schain_container(skale, schain, start_ts):
         return ':'.join(map(str, raw_public_key))
 
     if check_container(schain['name'], volume_required=True):
-        env = get_schain_env(schain['name'])
         public_key = get_previous_schain_public_key(schain['name'])
+        env = get_schain_env(
+            schain_name=schain['name'],
+            start_ts=start_ts,
+            public_key=public_key
+        )
         run_schain_container_in_sync_mode(schain,
                                           env,
                                           start_ts=start_ts,
