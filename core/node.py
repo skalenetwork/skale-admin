@@ -25,7 +25,7 @@ from enum import Enum
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
-from skale.dataclasses.tx_res import TransactionFailedError
+from skale.transactions.result import TransactionFailedError
 from skale.utils.helper import ip_from_bytes
 from skale.wallets.web3_wallet import public_key_to_address
 
@@ -89,7 +89,7 @@ class Node:
             return {'status': 0, 'errors': [f'node creation failed']}
 
         self._log_node_info('Node successfully created', ip, public_ip, port, name)
-        self.config.id = self.skale.nodes_data.node_name_to_index(name)
+        self.config.id = self.skale.nodes.node_name_to_index(name)
         run_filebeat_service(public_ip, self.config.id, self.skale)
         return {'status': 1, 'data': self.config.all()}
 
@@ -122,8 +122,8 @@ class Node:
             if not schain_name:
                 schain_name = '[REMOVED]'
             schain_statuses.append({'name': schain_name, 'status': status.name})
-        node_status = NodeExitStatuses(self.skale.nodes_data.get_node_status(self.config.id))
-        exit_time = self.skale.nodes_data.get_node_finish_time(self.config.id)
+        node_status = NodeExitStatuses(self.skale.nodes.get_node_status(self.config.id))
+        exit_time = self.skale.nodes.get_node_finish_time(self.config.id)
         if node_status == NodeExitStatuses.WAIT_FOR_ROTATIONS and current_time >= exit_time:
             node_status = NodeExitStatuses.COMPLETED
         return {'status': node_status.name, 'data': schain_statuses, 'exit_time': exit_time}
@@ -146,7 +146,7 @@ class Node:
     def info(self):
         _id = self.config.id
         if _id is not None:
-            raw_info = self.skale.nodes_data.get(_id)
+            raw_info = self.skale.nodes.get(_id)
             return self._transform_node_info(raw_info, _id)
         return {'status': NodeStatuses.NOT_CREATED.value}
 

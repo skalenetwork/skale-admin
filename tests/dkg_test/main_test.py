@@ -68,10 +68,10 @@ def register_node(skale, wallet):
     skale.wallet = wallet
     ip, public_ip, port, name = generate_random_node_data()
     skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
-    node_id = skale.nodes_data.node_name_to_index(name)
+    node_id = skale.nodes.node_name_to_index(name)
     logger.info(f'Registered node {name}, ID: {node_id}')
     return {
-        'node': skale.nodes_data.get_by_name(name),
+        'node': skale.nodes.get_by_name(name),
         'node_id': node_id,
         'wallet': wallet
     }

@@ -64,7 +64,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 secret_key_contribution, verification_vector = get_broadcasted_data(
                     dkg_client, from_node
                 )
-                if secret_key_contribution == b'' or verification_vector == b'':
+                if secret_key_contribution == [] or verification_vector == []:
                     continue
                 broadcasted_data = [verification_vector, secret_key_contribution]
                 is_received[from_node] = True
