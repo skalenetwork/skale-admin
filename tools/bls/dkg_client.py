@@ -86,8 +86,11 @@ class DKGClient:
     def convert_g2_points_to_array(self, data):
         g2_array = []
         for point in data:
-            g2_array.append(G2Point(*point).tuple)
-        g2_array = tuple(g2_array)
+            new_point = []
+            for coord in point:
+                new_coord = int(coord)
+                new_point.append(new_coord)
+            g2_array.append(G2Point(*new_point).tuple)
         return g2_array
 
     def is_channel_opened(self):
@@ -111,15 +114,8 @@ class DKGClient:
         return_value = []
         for i in range(self.n):
             public_key = sent_secret_key_contribution[i * 192: i * 192 + 128]
-            print(type(public_key), public_key)
-            key_share = binascii.unhexlify(
-                                          sent_secret_key_contribution[
-                                                                      i * 192 + 128:
-                                                                      (i + 1) * 192
-                                                                      ]
-                                          )
+            key_share = bytes.fromhex(sent_secret_key_contribution[i * 192 + 128: (i + 1) * 192])
             return_value.append(KeyShare(public_key, key_share).tuple)
-        return_value = tuple(return_value)
         return return_value
 
     def broadcast(self, poly_name):
@@ -163,19 +159,20 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
     def receive_verification_vector(self, from_node, broadcasted_data):
-        hexed_vv = "0x"
+        hexed_vv = ""
         for point in broadcasted_data:
-            hexed_vv += convert_g2_point_to_hex(*point[0], *point[1])
+            hexed_vv += convert_g2_point_to_hex([*point[0], *point[1]])
         self.incoming_verification_vector[from_node] = hexed_vv
 
     def receive_secret_key_contribution(self, from_node, broadcasted_data):
-        public_key_x_str = binascii.hexlify(broadcasted_data[0]).decode()
-        public_key_y_str = binascii.hexlify(broadcasted_data[1]).decode()
-        key_share_str = binascii.hexlify(broadcasted_data[2]).decode()
+        public_key_x_str = binascii.hexlify(broadcasted_data[from_node][0][0]).decode()
+        public_key_y_str = binascii.hexlify(broadcasted_data[from_node][0][1]).decode()
+        key_share_str = binascii.hexlify(broadcasted_data[from_node][1]).decode()
         incoming = public_key_x_str + public_key_y_str + key_share_str
         self.incoming_secret_key_contribution[from_node] = incoming
 
     def verification(self, from_node):
+        print("VV:", self.incoming_verification_vector[from_node])
         return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
                                             self.eth_key_name,
                                             self.incoming_secret_key_contribution[from_node],
