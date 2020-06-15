@@ -47,6 +47,8 @@ from core.schains.ima import get_ima_env
 from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
+
+from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from tools.configs.schains import IMA_DATA_FILEPATH
@@ -127,6 +129,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
         if bot and not checks.is_healthy():
             bot.send_schain_checks(checks)
 
+    first_run = schain_record.first_run
     schain_record.set_first_run(False)
     if exiting_node and rotation_in_progress:
         logger.warning(f'Node is exiting. sChain will be stoped at {finish_time}')
@@ -139,8 +142,8 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
 
         return
 
-    if rotation_in_progress and new_schain:
-        logger.warning('Building new rotated schain')
+    if (rotation_in_progress and new_schain) or (first_run and BACKUP_RUN):
+        logger.warning('Running sChain container is sync mode')
         monitor_checks(
             skale=skale,
             schain=schain,
