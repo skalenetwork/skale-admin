@@ -82,7 +82,7 @@ class DKGClient:
                 new_point.append(new_coord)
             g2_array.append(G2Point(*new_point).tuple)
         return g2_array
-    
+
     def convert_g2_point_to_hex(self, data):
         data_hexed = ''
         for coord in data:
