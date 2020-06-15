@@ -9,7 +9,8 @@ from skale.manager_client import spawn_skale_lib
 
 from core.node import Node, NodeExitStatuses, SchainExitStatuses
 from core.node_config import NodeConfig
-from core.schains.checks import check_endpoint_alive
+from core.schains.checks import check_endpoint_alive, SChainChecks
+from core.schains.cleaner import monitor as cleaner_monitor
 from core.schains.config import get_skaled_http_address
 from core.schains.creator import monitor
 from core.schains.runner import run_schain_container, check_container_exit
@@ -141,5 +142,12 @@ def test_node_exit(skale, exiting_node):
         with mock.patch('core.schains.creator.check_for_rotation',
                         new=mock.Mock(return_value=rotation_mock)):
             monitor(skale, node.config)
-            sleep(20)
-            assert check_container_exit(schain_name, dutils=dutils)
+            while not check_container_exit(schain_name, dutils=dutils):
+                sleep(10)
+
+            cleaner_monitor(node.skale, node.config)
+            checks = SChainChecks(schain_name, node.config.id).get_all()
+            assert not checks['container']
+            assert not checks['volume']
+            assert not checks['data_dir']
+            assert not checks['config']
