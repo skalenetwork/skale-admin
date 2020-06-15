@@ -50,16 +50,6 @@ class SgxDkgPolynomGenerationError(DkgError):
     pass
 
 
-def convert_g2_point_to_hex(data):
-    data_hexed = ''
-    for coord in data:
-        temp = hex(int(coord))[2:]
-        while (len(temp) < 64):
-            temp = '0' + temp
-        data_hexed += temp
-    return data_hexed
-
-
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
                  node_ids_dkg, node_ids_contract, eth_key_name):
@@ -92,6 +82,15 @@ class DKGClient:
                 new_point.append(new_coord)
             g2_array.append(G2Point(*new_point).tuple)
         return g2_array
+    
+    def convert_g2_point_to_hex(self, data):
+        data_hexed = ''
+        for coord in data:
+            temp = hex(int(coord))[2:]
+            while (len(temp) < 64):
+                temp = '0' + temp
+            data_hexed += temp
+        return data_hexed
 
     def is_channel_opened(self):
         return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
@@ -161,18 +160,17 @@ class DKGClient:
     def receive_verification_vector(self, from_node, broadcasted_data):
         hexed_vv = ""
         for point in broadcasted_data:
-            hexed_vv += convert_g2_point_to_hex([*point[0], *point[1]])
+            hexed_vv += self.convert_g2_point_to_hex([*point[0], *point[1]])
         self.incoming_verification_vector[from_node] = hexed_vv
 
     def receive_secret_key_contribution(self, from_node, broadcasted_data):
-        public_key_x_str = binascii.hexlify(broadcasted_data[from_node][0][0]).decode()
-        public_key_y_str = binascii.hexlify(broadcasted_data[from_node][0][1]).decode()
-        key_share_str = binascii.hexlify(broadcasted_data[from_node][1]).decode()
+        public_key_x_str = binascii.hexlify(broadcasted_data[self.node_id_dkg][0][0]).decode()
+        public_key_y_str = binascii.hexlify(broadcasted_data[self.node_id_dkg][0][1]).decode()
+        key_share_str = binascii.hexlify(broadcasted_data[self.node_id_dkg][1]).decode()
         incoming = public_key_x_str + public_key_y_str + key_share_str
         self.incoming_secret_key_contribution[from_node] = incoming
 
     def verification(self, from_node):
-        print("VV:", self.incoming_verification_vector[from_node])
         return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
                                             self.eth_key_name,
                                             self.incoming_secret_key_contribution[from_node],
@@ -212,7 +210,6 @@ class DKGClient:
         share, dh_key = response['share'], response['dh_key']
 
         share = share.split(':')
-
         share = G2Point(*share).tuple
         try:
             tx_res = self.skale.dkg.response(
