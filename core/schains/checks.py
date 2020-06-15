@@ -91,16 +91,7 @@ class SChainChecks:
         if self._config:
             http_port, _ = get_schain_rpc_ports(self.name)
             http_endpoint = f'http://127.0.0.1:{http_port}'
-            self._rpc = self.__check_endpoint_alive(http_endpoint)
-
-    def __check_endpoint_alive(self, http_endpoint):
-        res = post_request(
-            http_endpoint,
-            json={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1}
-        )
-        if res and res.status_code == 200:
-            return True
-        return False
+            self._rpc = check_endpoint_alive(http_endpoint)
 
     def check_firewall_rules(self):
         self._firewall_rules = False
@@ -157,3 +148,13 @@ def check_for_rotation(skale, schain_name, node_id):
         'finish_ts': finish_ts,
         'rotation_id': rotation_id
     }
+
+
+def check_endpoint_alive(http_endpoint):
+    res = post_request(
+        http_endpoint,
+        json={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1}
+    )
+    if res and res.status_code == 200:
+        return True
+    return False

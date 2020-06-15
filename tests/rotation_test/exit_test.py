@@ -9,6 +9,8 @@ from skale.manager_client import spawn_skale_lib
 
 from core.node import Node, NodeExitStatuses, SchainExitStatuses
 from core.node_config import NodeConfig
+from core.schains.checks import check_endpoint_alive
+from core.schains.config import get_skaled_http_address
 from core.schains.creator import monitor
 from core.schains.runner import run_schain_container
 from core.schains.volume import init_data_volume
@@ -82,7 +84,7 @@ def exiting_node(skale):
     os.remove(key_path)
     os.remove(cert_path)
 
-    yield Node(exit_skale_lib, config)
+    yield Node(exit_skale_lib, config), schain_name
 
     with open(cert_path, 'w') and open(key_path, 'w'):
         pass
@@ -92,12 +94,14 @@ def exiting_node(skale):
 
 
 def test_node_exit(skale, exiting_node):
+    node = exiting_node[0]
+    schain_name = exiting_node[1]
 
     def spawn_skale_lib_mock(skale):
         mocked_skale = spawn_skale_lib(skale)
 
         def get_node_ids_mock(name):
-            return [exiting_node.config.id]
+            return [node.config.id]
 
         mocked_skale.schains_data.get_node_ids_for_schain = get_node_ids_mock
         return mocked_skale
@@ -110,12 +114,17 @@ def test_node_exit(skale, exiting_node):
             mock.patch('core.schains.creator.spawn_skale_lib', spawn_skale_lib_mock), \
             mock.patch('core.schains.checks.apsent_iptables_rules',
                        new=mock.Mock(return_value=[True, True])):
-        monitor(skale, exiting_node.config)
-        exiting_node.exit({})
-        while skale.nodes_data.get_node_status(exiting_node.config.id) != 2:
+        monitor(skale, node.config)
+        node.exit({})
+        while skale.nodes_data.get_node_status(node.config.id) != 2:
             sleep(10)
-        exit_status = exiting_node.get_exit_status()
+        exit_status = node.get_exit_status()
         assert exit_status['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
         assert exit_status['data'][0]['status'] == SchainExitStatuses.LEAVING.name
-        sleep(60)
-        monitor(skale, exiting_node.config)
+
+        schain_endpoint = get_skaled_http_address(schain_name)
+        schain_endpoint = f'http://{schain_endpoint.ip}:{schain_endpoint.port}'
+        while not check_endpoint_alive(schain_endpoint):
+            sleep(10)
+        monitor(skale, node.config)
+        assert check_endpoint_alive(schain_endpoint)
