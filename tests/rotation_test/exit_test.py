@@ -3,10 +3,11 @@ from unittest import mock
 
 import pytest
 import json
+import os
 
 from skale.manager_client import spawn_skale_lib
 
-from core.node import Node
+from core.node import Node, NodeExitStatuses, SchainExitStatuses
 from core.node_config import NodeConfig
 from core.schains.creator import monitor
 from core.schains.runner import run_schain_container
@@ -17,6 +18,7 @@ from tests.utils import generate_random_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
+from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 dutils = DockerUtils(volume_driver='local')
 
@@ -74,22 +76,46 @@ def exiting_node(skale):
 
     exit_skale_lib = spawn_skale_lib(skale)
     exit_skale_lib.wallet = nodes[0]['wallet']
+
+    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+    cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+    os.remove(key_path)
+    os.remove(cert_path)
+
     yield Node(exit_skale_lib, config)
+
+    with open(cert_path, 'w') and open(key_path, 'w'):
+        pass
     skale.manager.delete_schain(schain_name, wait_for=True)
     for i in range(1, 3):
         skale.manager.delete_node_by_root(nodes[i]['node_id'], wait_for=True)
 
 
 def test_node_exit(skale, exiting_node):
+
+    def spawn_skale_lib_mock(skale):
+        mocked_skale = spawn_skale_lib(skale)
+
+        def get_node_ids_mock(name):
+            return [exiting_node.config.id]
+
+        mocked_skale.schains_data.get_node_ids_for_schain = get_node_ids_mock
+        return mocked_skale
+
     SChainRecord.create_table()
     with mock.patch('core.schains.creator.add_firewall_rules'), \
             mock.patch('core.schains.creator.run_dkg', run_dkg_mock),\
             mock.patch('core.schains.creator.init_data_volume', init_data_volume_mock), \
             mock.patch('core.schains.creator.run_schain_container', run_schain_container_mock), \
+            mock.patch('core.schains.creator.spawn_skale_lib', spawn_skale_lib_mock), \
             mock.patch('core.schains.checks.apsent_iptables_rules',
                        new=mock.Mock(return_value=[True, True])):
         monitor(skale, exiting_node.config)
         exiting_node.exit({})
         while skale.nodes_data.get_node_status(exiting_node.config.id) != 2:
             sleep(10)
-        print(exiting_node.get_exit_status())
+        exit_status = exiting_node.get_exit_status()
+        assert exit_status['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
+        assert exit_status['data'][0]['status'] == SchainExitStatuses.LEAVING.name
+        sleep(60)
+        monitor(skale, exiting_node.config)
