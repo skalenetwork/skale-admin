@@ -1,4 +1,4 @@
-from time import sleep
+from time import sleep, time
 from unittest import mock
 
 import pytest
@@ -12,7 +12,7 @@ from core.node_config import NodeConfig
 from core.schains.checks import check_endpoint_alive
 from core.schains.config import get_skaled_http_address
 from core.schains.creator import monitor
-from core.schains.runner import run_schain_container
+from core.schains.runner import run_schain_container, check_container_exit
 from core.schains.volume import init_data_volume
 from tests.dkg_test.main_test import run_dkg_all, generate_sgx_wallets, transfer_eth_to_wallets, \
     link_addresses_to_validator, register_nodes
@@ -126,5 +126,20 @@ def test_node_exit(skale, exiting_node):
         schain_endpoint = f'http://{schain_endpoint.ip}:{schain_endpoint.port}'
         while not check_endpoint_alive(schain_endpoint):
             sleep(10)
+
         monitor(skale, node.config)
         assert check_endpoint_alive(schain_endpoint)
+
+        finish_time = time()
+        rotation_mock = {
+            'result': True,
+            'new_schain': False,
+            'exiting_node': True,
+            'finish_ts': finish_time,
+            'rotation_id': 1
+        }
+        with mock.patch('core.schains.creator.check_for_rotation',
+                        new=mock.Mock(return_value=rotation_mock)):
+            monitor(skale, node.config)
+            sleep(20)
+            assert check_container_exit(schain_name, dutils=dutils)
