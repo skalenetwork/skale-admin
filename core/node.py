@@ -155,6 +155,6 @@ class Node:
         node_info['publicIP'] = ip_from_bytes(node_info['publicIP'])
         node_info['status'] = NodeStatuses.CREATED.value
         node_info['id'] = node_id
-        node_info['publicKey'] = self.skale.web3.toHex(node_info['publicKey'])
+        node_info['publicKey'] = node_info['publicKey']
         node_info['owner'] = public_key_to_address(node_info['publicKey'])
         return node_info

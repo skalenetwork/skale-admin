@@ -37,7 +37,7 @@ def construct_metrics_bp(skale, config):
 
     def get_start_block():
         node_id = config.id
-        return skale.nodes_data.get(node_id)['start_block']
+        return skale.nodes.get(node_id)['start_block']
 
     def convert_to_date(date_str):
         if date_str is None:

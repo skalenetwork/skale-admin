@@ -79,18 +79,18 @@ def register_node(skale, wallet):
 
 def register_nodes(skale, wallets):
     base_wallet = skale.wallet
-    nodes_data = [
+    nodes = [
         register_node(skale, wallet)
         for wallet in wallets
     ]
     skale.wallet = base_wallet
-    return nodes_data
+    return nodes
 
 
-def run_dkg_all(skale, schain_name, nodes_data):
+def run_dkg_all(skale, schain_name, nodes):
     results = []
     dkg_threads = []
-    for i, node_data in enumerate(nodes_data):
+    for i, node_data in enumerate(nodes):
         opts = {
             'index': i,
             'skale': skale,
@@ -143,9 +143,9 @@ def test_init_bls(skale):
     wallets = generate_sgx_wallets(skale, N_OF_NODES)
     transfer_eth_to_wallets(skale, wallets)
     link_addresses_to_validator(skale, wallets)
-    nodes_data = register_nodes(skale, wallets)
+    nodes = register_nodes(skale, wallets)
     schain_name = create_schain(skale)
-    run_dkg_all(skale, schain_name, nodes_data)
+    run_dkg_all(skale, schain_name, nodes)
 
 
 if __name__ == "__main__":
