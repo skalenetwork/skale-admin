@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def cleanup_contracts(skale):
     for schain_id in skale.schains_internal.get_all_schains_ids():
-        schain_data = skale.schains_internal.get(schain_id)
+        schain_data = skale.schains.get(schain_id)
         schain_name = schain_data.get('name', None)
         if schain_name is not None:
             skale.manager.delete_schain(schain_name, wait_for=True)
