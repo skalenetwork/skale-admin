@@ -50,6 +50,26 @@ class SgxDkgPolynomGenerationError(DkgError):
     pass
 
 
+def convert_g2_points_to_array(data):
+    g2_array = []
+    for point in data:
+        new_point = []
+        for coord in point:
+            new_coord = int(coord)
+            new_point.append(new_coord)
+        g2_array.append(G2Point(*new_point).tuple)
+    return g2_array
+
+def convert_g2_point_to_hex(data):
+    data_hexed = ''
+    for coord in data:
+        temp = hex(int(coord))[2:]
+        while (len(temp) < 64):
+            temp = '0' + temp
+        data_hexed += temp
+    return data_hexed
+
+
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
                  node_ids_dkg, node_ids_contract, eth_key_name):
@@ -73,25 +93,6 @@ class DKGClient:
             f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
             f'Node id on contract is {self.node_id_contract}')
 
-    def convert_g2_points_to_array(self, data):
-        g2_array = []
-        for point in data:
-            new_point = []
-            for coord in point:
-                new_coord = int(coord)
-                new_point.append(new_coord)
-            g2_array.append(G2Point(*new_point).tuple)
-        return g2_array
-
-    def convert_g2_point_to_hex(self, data):
-        data_hexed = ''
-        for coord in data:
-            temp = hex(int(coord))[2:]
-            while (len(temp) < 64):
-                temp = '0' + temp
-            data_hexed += temp
-        return data_hexed
-
     def is_channel_opened(self):
         return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
 
@@ -102,7 +103,7 @@ class DKGClient:
     def verification_vector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
-        return self.convert_g2_points_to_array(verification_vector)
+        return convert_g2_points_to_array(verification_vector)
 
     def secret_key_contribution(self):
         sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
@@ -160,7 +161,7 @@ class DKGClient:
     def receive_verification_vector(self, from_node, broadcasted_data):
         hexed_vv = ""
         for point in broadcasted_data:
-            hexed_vv += self.convert_g2_point_to_hex([*point[0], *point[1]])
+            hexed_vv += convert_g2_point_to_hex([*point[0], *point[1]])
         self.incoming_verification_vector[from_node] = hexed_vv
 
     def receive_secret_key_contribution(self, from_node, broadcasted_data):
