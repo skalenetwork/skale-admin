@@ -146,7 +146,7 @@ class DKGClient:
         verification_vector = self.verification_vector()
         secret_key_contribution = self.secret_key_contribution()
         try:
-            tx_res = self.skale.dkg.broadcast(
+            self.skale.dkg.broadcast(
                 self.group_index,
                 self.node_id_contract,
                 verification_vector,
@@ -188,7 +188,7 @@ class DKGClient:
                         f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
             return
         try:
-            tx_res = self.skale.dkg.complaint(
+            self.skale.dkg.complaint(
                 self.group_index,
                 self.node_id_contract,
                 self.node_ids_dkg[to_node],
@@ -221,7 +221,7 @@ class DKGClient:
             share[i] = int(share[i])
         share = G2Point(*share).tuple
         try:
-            tx_res = self.skale.dkg.response(
+            self.skale.dkg.response(
                 self.group_index,
                 self.node_id_contract,
                 int(dh_key, 16),
@@ -287,7 +287,7 @@ class DKGClient:
                         f'{self.node_id_dkg} node has already sent an alright note')
             return
         try:
-            tx_res = self.skale.dkg.alright(
+            self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,
                 gas_price=self.skale.dkg.gas_price()
