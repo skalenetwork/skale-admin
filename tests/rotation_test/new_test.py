@@ -1,3 +1,4 @@
+import shutil
 from time import sleep
 from unittest import mock
 
@@ -18,9 +19,9 @@ from tests.dkg_test.main_test import (
 )
 from tests.utils import generate_random_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
+from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
-from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 dutils = DockerUtils(volume_driver='local')
 
@@ -88,14 +89,9 @@ def rotated_nodes(skale):
         config.id = node['node_id']
         nodes.append(Node(skale_lib, config))
 
-    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
-    cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-
     yield nodes, schain_name
-
-    with open(cert_path, 'w') and open(key_path, 'w'):
-        pass
-
+    shutil.rmtree(os.path.join(SCHAINS_DIR_PATH, schain_name))
+    dutils.safe_rm(f'skale_schain_{schain_name}', force=True)
     skale.manager.delete_schain(schain_name, wait_for=True)
     for i in range(1, 3):
         skale.manager.delete_node_by_root(nodes_data[i]['node_id'], wait_for=True)
