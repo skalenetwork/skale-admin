@@ -1,5 +1,4 @@
-import shutil
-from time import sleep, time
+from time import sleep
 from unittest import mock
 
 import pytest
@@ -7,21 +6,18 @@ import json
 import os
 
 from skale.manager_client import spawn_skale_lib
-from skale.utils.web3_utils import public_key_to_address
 
-from core.node import Node, NodeExitStatuses, SchainExitStatuses
-from core.node_config import NodeConfig
-from core.schains.checks import check_endpoint_alive, SChainChecks
-from core.schains.cleaner import monitor as cleaner_monitor
-from core.schains.config import get_skaled_http_address
+from core.node import Node
+from core.schains.checks import SChainChecks
 from core.schains.creator import monitor
-from core.schains.runner import run_schain_container, check_container_exit
+from core.schains.runner import run_schain_container
 from core.schains.volume import init_data_volume
-from tests.dkg_test.main_test import run_dkg_all, generate_sgx_wallets, transfer_eth_to_wallets, \
+from tests.dkg_test.main_test import (
+    run_dkg_all, generate_sgx_wallets, transfer_eth_to_wallets,
     link_addresses_to_validator, register_nodes
+)
 from tests.utils import generate_random_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
-from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
 from tools.configs import SSL_CERTIFICATES_FILEPATH
@@ -32,6 +28,7 @@ dutils = DockerUtils(volume_driver='local')
 class NodeConfigMock():
     def __init__(self):
         self.id = 0
+        self.sgx_key_name = ""
 
 
 SECRET_KEY_INFO = {
@@ -109,9 +106,18 @@ def test_new_node(skale, rotated_nodes):
     exited_node, new_node = nodes[0], nodes[2]
     exited_node.exit({})
 
-    # while skale.nodes_data.get_node_status(nodes[0].config.id) != 2:
-    #     sleep(10)
+    while skale.nodes_data.get_node_status(nodes[0].config.id) != 2:
+        sleep(10)
 
-    # monitor(new_node.skale, new_node.config)
-
-    assert False
+    with mock.patch('core.schains.creator.add_firewall_rules'), \
+            mock.patch('core.schains.creator.run_schain_container'), \
+            mock.patch('core.schains.creator.init_data_volume', init_data_volume_mock), \
+            mock.patch('core.schains.creator.run_dkg', run_dkg_mock), \
+            mock.patch('core.schains.checks.apsent_iptables_rules',
+                       new=mock.Mock(return_value=[True, True])):
+        monitor(new_node.skale, new_node.config)
+        checks = SChainChecks(schain_name, new_node.config.id).get_all()
+        assert checks['container']
+        assert checks['volume']
+        assert checks['data_dir']
+        assert checks['config']
