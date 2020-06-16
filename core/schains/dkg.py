@@ -123,7 +123,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             if time.time() - start_time_alright > RECEIVE_TIMEOUT:
                 break
             for from_node in range(dkg_client.n):
-                is_alright_sent_list[from_node] = is_all_data_received(dkg_client, from_node)
+                if not is_alright_sent_list[from_node]:
+                    is_alright_sent_list[from_node] = is_all_data_received(dkg_client, from_node)
             complaint_data = get_complaint_data(dkg_client)
             if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
                 is_complaint_received = True
@@ -133,6 +134,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         for i in range(dkg_client.n):
             if not is_alright_sent_list[i] and i != dkg_client.node_id_dkg:
                 send_complaint(dkg_client, i)
+                complainted_node_index = i
                 is_complaint_sent = True
 
     complaint_data = get_complaint_data(dkg_client)

@@ -153,7 +153,6 @@ class DKGClient:
                 secret_key_contribution,
                 gas_price=self.skale.dkg.gas_price()
             )
-            tx_res.raise_for_status()
         except TransactionFailedError as e:
             logger.error(f'DKG broadcast failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
@@ -188,11 +187,17 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
             return
-        self.skale.dkg.complaint(self.group_index,
-                                 self.node_id_contract,
-                                 self.node_ids_dkg[to_node],
-                                 gas_price=self.skale.dkg.gas_price(),
-                                 wait_for=True)
+        try:
+            tx_res = self.skale.dkg.complaint(
+                self.group_index,
+                self.node_id_contract,
+                self.node_ids_dkg[to_node],
+                gas_price=self.skale.dkg.gas_price(),
+                wait_for=True
+            )
+        except TransactionFailedError as e:
+            logger.error(f'DKG complaint failed: sChain {self.schain_name}')
+            raise DkgTransactionError(e)
         logger.info(f'sChain: {self.schain_name}. '
                     f'{self.node_id_dkg} node sent a complaint on {to_node} node')
 
@@ -223,7 +228,6 @@ class DKGClient:
                 share,
                 gas_price=self.skale.dkg.gas_price()
             )
-            tx_res.raise_for_status()
         except TransactionFailedError as e:
             logger.error(f'DKG response failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
@@ -288,7 +292,6 @@ class DKGClient:
                 self.node_id_contract,
                 gas_price=self.skale.dkg.gas_price()
             )
-            tx_res.raise_for_status()
         except TransactionFailedError as e:
             logger.error(f'DKG alright failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
