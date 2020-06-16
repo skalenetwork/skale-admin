@@ -144,7 +144,7 @@ class SChainChecks:
 
 def check_for_rotation(skale, schain_name, node_id):
     ts = time.time()
-    rotation_data = skale.schains_data.get_rotation(schain_name)
+    rotation_data = skale.schains_internal.get_rotation(schain_name)
     finish_ts = rotation_data['finish_ts']
     rotation_id = rotation_data['rotation_id']
     rotation_in_progress = finish_ts > ts

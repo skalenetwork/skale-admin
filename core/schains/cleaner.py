@@ -87,7 +87,7 @@ def monitor(skale, node_config):
                                                                node_config.id)
     for schain_name in schains_on_node:
         on_contract = schain_name in schain_names_on_contracts
-        if not on_contract and (not skale.schains_data.is_schain_exist(schain_name) or
+        if not on_contract and (not skale.schains_internal.is_schain_exist(schain_name) or
                                 check_container_exit(schain_name, dutils=dutils)):
             logger.info(
                 arguments_list_string({'sChain name': schain_name}, 'Removed sChain found'))
@@ -96,7 +96,7 @@ def monitor(skale, node_config):
 
 
 def get_schain_names_from_contract(skale, node_id):
-    schains_on_contract = skale.schains_data.get_schains_for_node(node_id)
+    schains_on_contract = skale.schains.get_schains_for_node(node_id)
     return list(map(lambda schain: schain['name'], schains_on_contract))
 
 
@@ -116,7 +116,7 @@ def get_schains_on_node():
 def schain_names_to_ids(skale, schain_names):
     ids = []
     for name in schain_names:
-        id_ = skale.schains_data.name_to_id(name)
+        id_ = skale.schains.name_to_id(name)
         ids.append(bytes.fromhex(id_))
     return ids
 

@@ -23,7 +23,7 @@ from web.routes.schains import construct_schains_bp
 def skale_bp(skale):
     app = Flask(__name__)
     config = NodeConfig()
-    config.id = 1  # skale.nodes_data.get_active_node_ids()[0]
+    config.id = 1  # skale.nodes.get_active_node_ids()[0]
     dutils = DockerUtils(volume_driver='local')
     app.register_blueprint(construct_schains_bp(skale, config, dutils))
     SChainRecord.create_table()
@@ -58,8 +58,8 @@ def test_node_schains_list(skale_bp, skale):
 
 
 def test_schain_config(skale_bp, skale):
-    sid = skale.schains_data.get_all_schains_ids()[-1]
-    name = skale.schains_data.get(sid).get('name')
+    sid = skale.schains_internal.get_all_schains_ids()[-1]
+    name = skale.schains.get(sid).get('name')
     filename = get_schain_config_filepath(name)
     os.makedirs(os.path.dirname(filename))
     with open(filename, 'w') as f:
@@ -101,7 +101,7 @@ def test_owner_schains(skale_bp, skale):
     assert len(payload[0]['nodes'])
     schain_data = payload[0].copy()
     schain_data.pop('nodes')
-    assert schain_data == skale.schains_data.get_schains_for_owner(
+    assert schain_data == skale.schains.get_schains_for_owner(
         skale.wallet.address)[0]
 
 
@@ -174,7 +174,7 @@ def test_schains_healthchecks(skale_bp, skale):
         }]
 
     with mock.patch('web.routes.schains.SChainChecks', SChainChecksMock):
-        with mock.patch.object(skale.schains_data, 'get_schains_for_node',
+        with mock.patch.object(skale.schains, 'get_schains_for_node',
                                get_schains_for_node_mock):
             data = get_bp_data(skale_bp, '/api/schains/healthchecks')
             assert data['status'] == 'ok'
