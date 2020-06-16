@@ -69,6 +69,7 @@ def set_up_nodes(skale, nodes_number):
 
 @pytest.fixture
 def exiting_node(skale):
+    SChainRecord.create_table()
     nodes = set_up_nodes(skale, 2)
     config = NodeConfig()
     config.id = nodes[0]['node_id']
@@ -101,6 +102,7 @@ def exiting_node(skale):
         skale.manager.delete_node_by_root(nodes[i]['node_id'], wait_for=True)
 
 
+# TODO: Mock leaving history, check final exit status
 def test_node_exit(skale, exiting_node):
     node = exiting_node[0]
     schain_name = exiting_node[1]
@@ -114,7 +116,6 @@ def test_node_exit(skale, exiting_node):
         mocked_skale.schains_data.get_node_ids_for_schain = get_node_ids_mock
         return mocked_skale
 
-    SChainRecord.create_table()
     with mock.patch('core.schains.creator.add_firewall_rules'), \
             mock.patch('core.schains.creator.run_dkg', run_dkg_mock),\
             mock.patch('core.schains.creator.init_data_volume', init_data_volume_mock), \
