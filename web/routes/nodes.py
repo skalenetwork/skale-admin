@@ -48,13 +48,13 @@ def construct_nodes_bp(skale, node, docker_utils):
         port = request.json.get('port')
         name = request.json.get('name')
 
-        is_node_name_available = skale.nodes_data.is_node_name_available(name)
+        is_node_name_available = skale.nodes.is_node_name_available(name)
         if not is_node_name_available:
             error_msg = f'Node name is already taken: {name}'
             logger.error(error_msg)
             return construct_err_response(msg=error_msg)
 
-        is_node_ip_available = skale.nodes_data.is_node_ip_available(ip)
+        is_node_ip_available = skale.nodes.is_node_ip_available(ip)
         if not is_node_ip_available:
             error_msg = f'Node IP is already taken: {ip}'
             logger.error(error_msg)
@@ -80,14 +80,14 @@ def construct_nodes_bp(skale, node, docker_utils):
     def check_node_name():
         logger.debug(request)
         node_name = request.args.get('nodeName')
-        res = skale.nodes_data.is_node_name_available(node_name)
+        res = skale.nodes.is_node_name_available(node_name)
         return construct_ok_response(data={'name_available': res})
 
     @nodes_bp.route('/check-node-ip', methods=['GET'])
     def check_node_ip():
         logger.debug(request)
         node_ip = request.args.get('nodeIp')
-        res = skale.nodes_data.is_node_ip_available(node_ip)
+        res = skale.nodes.is_node_ip_available(node_ip)
         return construct_ok_response(data={'ip_available': res})
 
     @nodes_bp.route('/containers/list', methods=['GET'])
