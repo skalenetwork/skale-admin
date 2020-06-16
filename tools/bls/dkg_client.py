@@ -210,6 +210,8 @@ class DKGClient:
         share, dh_key = response['share'], response['dh_key']
 
         share = share.split(':')
+        for i in range(4):
+            share[i] = int(share[i])
         share = G2Point(*share).tuple
         try:
             tx_res = self.skale.dkg.response(
