@@ -1,3 +1,4 @@
+import shutil
 from time import sleep, time
 from unittest import mock
 
@@ -19,6 +20,7 @@ from tests.dkg_test.main_test import run_dkg_all, generate_sgx_wallets, transfer
     link_addresses_to_validator, register_nodes
 from tests.utils import generate_random_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
+from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
 from tools.configs import SSL_CERTIFICATES_FILEPATH
@@ -82,13 +84,18 @@ def exiting_node(skale):
 
     key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+    test_schain_path = os.path.join(SCHAINS_DIR_PATH, 'test')
+    temp_schain_path = os.path.join(SCHAINS_DIR_PATH, '..', 'test')
     os.remove(key_path)
     os.remove(cert_path)
+    shutil.move(test_schain_path, temp_schain_path)
 
     yield Node(exit_skale_lib, config), schain_name
 
     with open(cert_path, 'w') and open(key_path, 'w'):
         pass
+    shutil.move(temp_schain_path, test_schain_path)
+
     skale.manager.delete_schain(schain_name, wait_for=True)
     for i in range(1, 3):
         skale.manager.delete_node_by_root(nodes[i]['node_id'], wait_for=True)
