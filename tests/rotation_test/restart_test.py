@@ -156,5 +156,9 @@ def test_new_node(skale, rotated_nodes):
                 mock.patch('core.schains.creator.check_for_rotation',
                            new=mock.Mock(return_value=rotation_mock)):
             monitor(restarted_node.skale, restarted_node.config)
+            while not check_endpoint_alive(schain_endpoint):
+                sleep(10)
             checks = SChainChecks(schain_name, restarted_node.config.id).get_all()
             assert checks['container']
+            assert checks['rpc']
+
