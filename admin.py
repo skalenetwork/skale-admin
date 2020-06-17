@@ -27,6 +27,7 @@ from core.node_config import NodeConfig
 from core.schains.creator import run_creator
 from core.schains.cleaner import run_cleaner
 
+from tools.configs import BACKUP_RUN
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
 from tools.logger import init_admin_logger
 
@@ -63,7 +64,8 @@ def main():
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
-
+    if BACKUP_RUN:
+        logger.info('Running sChains in snapshot download mode')
     monitor(skale, node_config)
 
 
