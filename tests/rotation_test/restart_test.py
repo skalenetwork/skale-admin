@@ -1,5 +1,5 @@
 import shutil
-from time import sleep
+from time import sleep, time
 from unittest import mock
 
 import pytest
@@ -9,8 +9,10 @@ import os
 from skale.manager_client import spawn_skale_lib
 
 from core.node import Node
+from core.schains.checks import check_endpoint_alive, SChainChecks
+from core.schains.config import get_skaled_http_address
 from core.schains.creator import monitor
-from core.schains.runner import run_schain_container
+from core.schains.runner import run_schain_container, check_container_exit
 from core.schains.volume import init_data_volume
 from tests.dkg_test.main_test import (
     run_dkg_all, generate_sgx_wallets, transfer_eth_to_wallets,
@@ -18,6 +20,7 @@ from tests.dkg_test.main_test import (
 )
 from tests.utils import generate_random_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
+from tools.configs import SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
@@ -88,7 +91,15 @@ def rotated_nodes(skale):
         config.id = node['node_id']
         nodes.append(Node(skale_lib, config))
 
+    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+    cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+    os.remove(key_path)
+    os.remove(cert_path)
+
     yield nodes, schain_name
+
+    with open(cert_path, 'w') and open(key_path, 'w'):
+        pass
     shutil.rmtree(os.path.join(SCHAINS_DIR_PATH, schain_name))
     dutils.safe_rm(f'skale_schain_{schain_name}', force=True)
     skale.manager.delete_schain(schain_name, wait_for=True)
@@ -117,7 +128,33 @@ def test_new_node(skale, rotated_nodes):
             mock.patch('core.schains.checks.apsent_iptables_rules',
                        new=mock.Mock(return_value=[True, True])):
         monitor(restarted_node.skale, restarted_node.config)
+        schain_endpoint = get_skaled_http_address(schain_name)
+        schain_endpoint = f'http://{schain_endpoint.ip}:{schain_endpoint.port}'
+        while not check_endpoint_alive(schain_endpoint):
+            sleep(10)
 
         exited_node.exit({})
         while skale.nodes_data.get_node_status(exited_node.config.id) != 2:
             sleep(10)
+
+        finish_time = time() + 10
+        rotation_mock = {
+            'result': True,
+            'new_schain': False,
+            'exiting_node': False,
+            'finish_ts': finish_time,
+            'rotation_id': 1
+        }
+        with mock.patch('core.schains.creator.check_for_rotation',
+                        new=mock.Mock(return_value=rotation_mock)):
+            monitor(restarted_node.skale, restarted_node.config)
+            while not check_container_exit(schain_name, dutils=dutils):
+                sleep(10)
+
+        rotation_mock['result'] = False
+        with mock.patch('core.schains.creator.remove_firewall_rules'), \
+                mock.patch('core.schains.creator.check_for_rotation',
+                           new=mock.Mock(return_value=rotation_mock)):
+            monitor(restarted_node.skale, restarted_node.config)
+            checks = SChainChecks(schain_name, restarted_node.config.id).get_all()
+            assert checks['container']
