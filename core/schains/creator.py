@@ -73,11 +73,11 @@ def monitor(skale, node_config):
     logger.info('Spawned new skale lib')
     node_id = node_config.id
     logger.info('Fetching schains ...')
-    schains = skale.schains_data.get_schains_for_node(node_id)
+    schains = skale.schains.get_schains_for_node(node_id)
     logger.info('Get leaving_history for node ...')
-    leaving_history = skale.schains_data.get_leaving_history(node_id)
+    leaving_history = skale.schains_internal.get_leaving_history(node_id)
     for leaving_schain in leaving_history:
-        schain = skale.schains_data.get(leaving_schain['id'])
+        schain = skale.schains.get(leaving_schain['id'])
         if time.time() < leaving_schain['finished_rotation'] and schain['name']:
             schain['active'] = True
             schains.append(schain)
@@ -197,7 +197,7 @@ def init_schain_config(skale, node_id, schain_name):
             f'sChain {schain_name}: sChain config not found: '
             f'{config_filepath}, trying to create.'
         )
-        rotation_id = skale.schains_data.get_last_rotation_id(schain_name)
+        rotation_id = skale.schains.get_last_rotation_id(schain_name)
         schain_config = generate_schain_config(skale, schain_name, node_id, rotation_id)
         save_schain_config(schain_config, schain_name)
 
@@ -243,7 +243,7 @@ def monitor_ima_container(schain):
 
 def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
     def get_schain_public_key(schain_name, method):
-        group_idx = skale.schains_data.name_to_id(schain_name)
+        group_idx = skale.schains.name_to_id(schain_name)
         raw_public_key = method(group_idx)
         return ':'.join(map(str, raw_public_key))
 
@@ -251,12 +251,12 @@ def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
         if not rotation_id:
             public_key = get_schain_public_key(
                 schain['name'],
-                skale.schains_data.get_groups_public_key
+                skale.schains_internal.get_groups_public_key
             )
         else:
             public_key = get_schain_public_key(
                 schain['name'],
-                skale.schains_data.get_previous_groups_public_key
+                skale.schains_internal.get_previous_groups_public_key
             )
         env = get_schain_env(
             schain_name=schain['name'],

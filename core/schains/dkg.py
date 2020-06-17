@@ -64,7 +64,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 secret_key_contribution, verification_vector = get_broadcasted_data(
                     dkg_client, from_node
                 )
-                if secret_key_contribution == b'' or verification_vector == b'':
+                if secret_key_contribution == [] or verification_vector == []:
                     continue
                 broadcasted_data = [verification_vector, secret_key_contribution]
                 is_received[from_node] = True
@@ -91,7 +91,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             complainted_node_index = i
 
     is_group_opened = dkg_client.is_channel_opened()
-    is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+    is_group_failed = skale.schains_internal.is_group_failed_dkg(dkg_client.group_index)
     if not is_group_opened and is_group_failed:
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
@@ -102,7 +102,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         is_alright_sent_list[dkg_client.node_id_dkg] = True
 
     is_group_opened = dkg_client.is_channel_opened()
-    is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+    is_group_failed = skale.schains_internal.is_group_failed_dkg(dkg_client.group_index)
     if not is_group_opened and is_group_failed:
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
@@ -112,7 +112,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         is_complaint_received = True
         response(dkg_client, complaint_data[0])
     is_group_opened = dkg_client.is_channel_opened()
-    is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+    is_group_failed = skale.schains_internal.is_group_failed_dkg(dkg_client.group_index)
     if not is_group_opened and is_group_failed:
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
@@ -143,28 +143,28 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     complaint_data = get_complaint_data(dkg_client)
     is_complaint_sent = complaint_data[0] != complaint_data[1]
     if is_complaint_sent or is_complaint_received:
-        is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+        is_group_failed = skale.schains_internal.is_group_failed_dkg(dkg_client.group_index)
         is_channel_opened = dkg_client.is_channel_opened()
         while not is_group_failed or is_channel_opened:
             if time.time() - start_time_response > RECEIVE_TIMEOUT:
                 break
-            is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+            is_group_failed = skale.schains_internal.is_group_failed_dkg(dkg_client.group_index)
             is_channel_opened = dkg_client.is_channel_opened()
             sleep(1)
 
         is_group_opened = dkg_client.is_channel_opened()
-        is_group_failed = skale.schains_data.is_group_failed_dkg(dkg_client.group_index)
+        is_group_failed = skale.schains_internal.is_group_failed_dkg(dkg_client.group_index)
         if is_group_opened or not is_group_failed:
             send_complaint(dkg_client, complainted_node_index)
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
     if False not in is_alright_sent_list:
-        if not skale.schains_data.is_group_failed_dkg(dkg_client.group_index):
+        if not skale.schains_internal.is_group_failed_dkg(dkg_client.group_index):
             encrypted_bls_key = 0
             bls_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
             encrypted_bls_key = generate_bls_key(dkg_client, bls_name)
             logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
-            common_public_key = skale.schains_data.get_groups_public_key(dkg_client.group_index)
+            common_public_key = skale.schains_internal.get_groups_public_key(dkg_client.group_index)
             return {
                 'common_public_key': common_public_key,
                 'public_key': dkg_client.public_key,

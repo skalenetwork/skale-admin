@@ -40,7 +40,7 @@ def construct_schains_bp(skale, config, docker_utils):
     @schains_bp.route('/get-owner-schains', methods=['GET'])
     def owner_schains():
         logger.debug(request)
-        schains = skale.schains_data.get_schains_for_owner(
+        schains = skale.schains.get_schains_for_owner(
             skale.wallet.address)
         for schain in schains:
             nodes = get_nodes_for_schain_config(skale, schain['name'])
@@ -76,7 +76,7 @@ def construct_schains_bp(skale, config, docker_utils):
         node_id = config.id
         if node_id is None:
             return construct_err_response(msg='No node installed')
-        schains_list = skale.schains_data.get_schains_for_node(node_id)
+        schains_list = skale.schains.get_schains_for_node(node_id)
         return construct_ok_response(schains_list)
 
     @schains_bp.route('/api/dkg/statuses', methods=['GET'])
@@ -127,7 +127,7 @@ def construct_schains_bp(skale, config, docker_utils):
         node_id = config.id
         if node_id is None:
             return construct_err_response(HTTPStatus.BAD_REQUEST, ['No node installed'])
-        schains = skale.schains_data.get_schains_for_node(node_id)
+        schains = skale.schains.get_schains_for_node(node_id)
         checks = [
             {
                 'name': schain['name'],
