@@ -150,6 +150,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         while not is_group_failed or is_channel_opened:
             if time.time() - start_time_response > RECEIVE_TIMEOUT:
                 break
+            complaint_data = get_complaint_data(dkg_client)
+            if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
+                is_complaint_received = True
+                response(dkg_client, complaint_data[0])
             is_group_failed = skale.schains_internal.is_group_failed_dkg(dkg_client.group_index)
             is_channel_opened = dkg_client.is_channel_opened()
             sleep(1)
