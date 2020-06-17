@@ -18,6 +18,7 @@ from core.schains.runner import run_schain_container, check_container_exit
 from core.schains.volume import init_data_volume
 from tests.dkg_test.main_test import run_dkg_all, generate_sgx_wallets, transfer_eth_to_wallets, \
     link_addresses_to_validator, register_nodes
+from tests.prepare_data import cleanup_contracts
 from tests.utils import generate_random_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -27,7 +28,7 @@ from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 dutils = DockerUtils(volume_driver='local')
 
-
+TIMEOUT = 120
 SECRET_KEY_INFO = {
     "common_public_key": [
         1
@@ -69,6 +70,7 @@ def set_up_nodes(skale, nodes_number):
 
 @pytest.fixture
 def exiting_node(skale):
+    cleanup_contracts(skale)
     SChainRecord.create_table()
     nodes = set_up_nodes(skale, 2)
     config = NodeConfig()
@@ -125,7 +127,9 @@ def test_node_exit(skale, exiting_node):
                        new=mock.Mock(return_value=[True, True])):
         monitor(skale, node.config)
         node.exit({})
-        while skale.nodes.get_node_status(node.config.id) != 2:
+        sum_time = 0
+        while skale.nodes.get_node_status(node.config.id) != 2 and sum_time < TIMEOUT:
+            sum_time += 10
             sleep(10)
         exit_status = node.get_exit_status()
         assert exit_status['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
@@ -133,7 +137,9 @@ def test_node_exit(skale, exiting_node):
 
         schain_endpoint = get_skaled_http_address(schain_name)
         schain_endpoint = f'http://{schain_endpoint.ip}:{schain_endpoint.port}'
-        while not check_endpoint_alive(schain_endpoint):
+        sum_time = 0
+        while not check_endpoint_alive(schain_endpoint) and sum_time < TIMEOUT:
+            sum_time += 10
             sleep(10)
 
         monitor(skale, node.config)
@@ -150,7 +156,8 @@ def test_node_exit(skale, exiting_node):
         with mock.patch('core.schains.creator.check_for_rotation',
                         new=mock.Mock(return_value=rotation_mock)):
             monitor(skale, node.config)
-            while not check_container_exit(schain_name, dutils=dutils):
+            while not check_container_exit(schain_name, dutils=dutils) and sum_time < TIMEOUT:
+                sum_time += 10
                 sleep(10)
 
             cleaner_monitor(node.skale, node.config)
