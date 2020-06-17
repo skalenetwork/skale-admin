@@ -42,7 +42,7 @@ result.json
 *.code-workspace
 
 venv/
-
+myenv/
 
 # dkg binary
 dkgpython.so

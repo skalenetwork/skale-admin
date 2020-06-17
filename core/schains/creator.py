@@ -47,6 +47,8 @@ from core.schains.ima import get_ima_env
 from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
+
+from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from tools.configs.schains import IMA_DATA_FILEPATH
@@ -127,20 +129,19 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
         if bot and not checks.is_healthy():
             bot.send_schain_checks(checks)
 
+    first_run = schain_record.first_run
     schain_record.set_first_run(False)
     if exiting_node and rotation_in_progress:
         logger.warning(f'Node is exiting. sChain will be stoped at {finish_time}')
-
         # ensure containers are working after update
         if not checks_dict['container']:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
         set_rotation_for_schain(schain, finish_time_ts)
-
         return
 
-    if rotation_in_progress and new_schain:
-        logger.warning('Building new rotated schain')
+    if (rotation_in_progress and new_schain) or (first_run and BACKUP_RUN):
+        logger.warning('Running sChain container is sync mode')
         monitor_checks(
             skale=skale,
             schain=schain,
@@ -240,14 +241,23 @@ def monitor_ima_container(schain):
     run_ima_container(schain, env)
 
 
-def monitor_sync_schain_container(skale, schain, start_ts):
-    def get_previous_schain_public_key(schain_name):
+def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
+    def get_schain_public_key(schain_name, method):
         group_idx = skale.schains.name_to_id(schain_name)
-        raw_public_key = skale.schains_internal.get_previous_groups_public_key(group_idx)
+        raw_public_key = method(group_idx)
         return ':'.join(map(str, raw_public_key))
 
     if check_container(schain['name'], volume_required=True):
-        public_key = get_previous_schain_public_key(schain['name'])
+        if not rotation_id:
+            public_key = get_schain_public_key(
+                schain['name'],
+                skale.schains_internal.get_groups_public_key
+            )
+        else:
+            public_key = get_schain_public_key(
+                schain['name'],
+                skale.schains_internal.get_previous_groups_public_key
+            )
         env = get_schain_env(
             schain_name=schain['name'],
             start_ts=start_ts,
@@ -300,7 +310,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
     if not checks['container']:
         if sync:
             finish_time_ts = rotation['finish_ts']
-            monitor_sync_schain_container(skale, schain, finish_time_ts)
+            monitor_sync_schain_container(skale, schain, finish_time_ts, rotation['rotation_id'])
         elif check_container_exit(name, dutils=dutils):
             remove_firewall_rules(name)
             config = generate_schain_config(skale, name, node_id, rotation['rotation_id'])
