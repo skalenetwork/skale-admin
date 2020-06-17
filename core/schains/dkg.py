@@ -34,7 +34,7 @@ from tools.helper import write_json
 
 logger = logging.getLogger(__name__)
 
-RECEIVE_TIMEOUT = 60
+RECEIVE_TIMEOUT = 1800
 
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
@@ -160,7 +160,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
         is_group_opened = dkg_client.is_channel_opened()
         is_group_failed = skale.schains_internal.is_group_failed_dkg(dkg_client.group_index)
-        if is_group_opened or not is_group_failed:
+        if is_group_opened or not is_group_failed and is_complaint_sent:
             send_complaint(dkg_client, complainted_node_index)
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
