@@ -7,41 +7,23 @@ import os
 
 from tests.rotation_test.utils import (wait_for_contract_exiting, wait_for_schain_alive,
                                        wait_for_schain_exiting, check_schain_alive,
-                                       get_spawn_skale_mock, set_up_nodes, run_dkg_mock,
+                                       get_spawn_skale_mock, set_up_rotated_schain, run_dkg_mock,
                                        init_data_volume_mock, run_schain_container_mock)
-from skale.manager_client import spawn_skale_lib
 
-from core.node import Node, NodeExitStatuses, SchainExitStatuses
-from core.node_config import NodeConfig
+from core.node import NodeExitStatuses, SchainExitStatuses
 from core.schains.checks import SChainChecks
 from core.schains.cleaner import monitor as cleaner_monitor
 from core.schains.creator import monitor
-from tests.dkg_test.main_test import run_dkg_all
 from tests.prepare_data import cleanup_contracts
-from tests.utils import generate_random_name
 from tools.configs.schains import SCHAINS_DIR_PATH
 from web.models.schain import SChainRecord
 from tools.configs import SSL_CERTIFICATES_FILEPATH
-
-TIMEOUT = 120
 
 
 @pytest.fixture
 def exiting_node(skale):
     cleanup_contracts(skale)
     SChainRecord.create_table()
-    nodes = set_up_nodes(skale, 2)
-    config = NodeConfig()
-    config.id = nodes[0]['node_id']
-
-    schain_name = generate_random_name()
-    skale.manager.create_default_schain(schain_name)
-
-    run_dkg_all(skale, schain_name, nodes)
-    nodes.append(set_up_nodes(skale, 1)[0])
-
-    exit_skale_lib = spawn_skale_lib(skale)
-    exit_skale_lib.wallet = nodes[0]['wallet']
 
     key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
@@ -50,8 +32,9 @@ def exiting_node(skale):
     os.remove(key_path)
     os.remove(cert_path)
     shutil.move(test_schain_path, temp_schain_path)
+    nodes, schain_name = set_up_rotated_schain(skale)
 
-    yield Node(exit_skale_lib, config), schain_name
+    yield nodes, schain_name
 
     with open(cert_path, 'w') and open(key_path, 'w'):
         pass
@@ -59,13 +42,13 @@ def exiting_node(skale):
 
     skale.manager.delete_schain(schain_name, wait_for=True)
     for i in range(1, 3):
-        skale.manager.delete_node_by_root(nodes[i]['node_id'], wait_for=True)
+        skale.manager.delete_node_by_root(nodes[i].config.id, wait_for=True)
 
 
 # TODO: Mock leaving history, check final exit status
 def test_node_exit(skale, exiting_node):
-    node = exiting_node[0]
-    schain_name = exiting_node[1]
+    nodes, schain_name = exiting_node
+    node = nodes[0]
     spawn_skale_lib_mock = get_spawn_skale_mock(node.config.id)
     with mock.patch('core.schains.creator.add_firewall_rules'), \
             mock.patch('core.schains.creator.run_dkg', run_dkg_mock),\

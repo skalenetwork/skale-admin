@@ -3,18 +3,20 @@ from time import sleep
 
 from skale.manager_client import spawn_skale_lib
 
+from core.node import Node
 from core.schains.checks import check_endpoint_alive
 from core.schains.config import get_skaled_http_address
 from core.schains.runner import run_schain_container, check_container_exit
 from core.schains.volume import init_data_volume
 from tests.dkg_test.main_test import (generate_sgx_wallets, transfer_eth_to_wallets,
-                                      link_addresses_to_validator, register_nodes)
+                                      link_addresses_to_validator, register_nodes, run_dkg_all)
+from tests.utils import generate_random_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.docker_utils import DockerUtils
 
 dutils = DockerUtils(volume_driver='local')
 
-TIMEOUT = 120
+TIMEOUT = 240
 SECRET_KEY_INFO = {
     "common_public_key": [
         1
@@ -29,6 +31,12 @@ SECRET_KEY_INFO = {
     "n": 4,
     "key_share_name": "BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0"
 }
+
+
+class NodeConfigMock():
+    def __init__(self):
+        self.id = 0
+        self.sgx_key_name = ""
 
 
 def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
@@ -52,6 +60,25 @@ def set_up_nodes(skale, nodes_number):
     link_addresses_to_validator(skale, wallets)
     nodes_data = register_nodes(skale, wallets)
     return nodes_data
+
+
+def set_up_rotated_schain(skale):
+    nodes_data = set_up_nodes(skale, 2)
+
+    schain_name = generate_random_name()
+    skale.manager.create_default_schain(schain_name)
+
+    run_dkg_all(skale, schain_name, nodes_data)
+    nodes_data.append(set_up_nodes(skale, 1)[0])
+    nodes = []
+    for node in nodes_data:
+        skale_lib = spawn_skale_lib(skale)
+        skale_lib.wallet = node['wallet']
+        config = NodeConfigMock()
+        config.id = node['node_id']
+        nodes.append(Node(skale_lib, config))
+
+    return nodes, schain_name
 
 
 def get_spawn_skale_mock(node_id):
