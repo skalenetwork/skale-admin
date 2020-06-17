@@ -161,4 +161,3 @@ def test_new_node(skale, rotated_nodes):
             checks = SChainChecks(schain_name, restarted_node.config.id).get_all()
             assert checks['container']
             assert checks['rpc']
-
