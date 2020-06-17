@@ -43,9 +43,9 @@ def test_register_info(node):
     assert res['status'] == 1
     res_data = res.get('data')
 
-    skalepy_data = node.skale.nodes_data.get_by_name(name)
+    skalepy_data = node.skale.nodes.get_by_name(name)
     assert skalepy_data['name'] == name
-    assert node.skale.nodes_data.get(res_data['node_id'])
+    assert node.skale.nodes.get(res_data['node_id'])
     assert res_data['node_id'] == node.config.id
 
     # Register the same node again
@@ -70,13 +70,13 @@ def exiting_node(skale):
     ip, public_ip, port, _ = generate_random_node_data()
     skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
     config = NodeConfig()
-    config.id = skale.nodes_data.node_name_to_index(name)
+    config.id = skale.nodes.node_name_to_index(name)
     yield Node(skale, config)
 
 
 def test_start_exit(exiting_node):
     exiting_node.exit({})
-    status = NodeExitStatuses(exiting_node.skale.nodes_data.get_node_status(exiting_node.config.id))
+    status = NodeExitStatuses(exiting_node.skale.nodes.get_node_status(exiting_node.config.id))
 
     assert status != NodeExitStatuses.ACTIVE
 

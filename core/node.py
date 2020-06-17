@@ -25,7 +25,7 @@ from enum import Enum
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
-from skale.dataclasses.tx_res import TransactionFailedError
+from skale.transactions.result import TransactionFailedError
 from skale.utils.helper import ip_from_bytes
 from skale.wallets.web3_wallet import public_key_to_address
 
@@ -89,12 +89,12 @@ class Node:
             return {'status': 0, 'errors': [f'node creation failed']}
 
         self._log_node_info('Node successfully created', ip, public_ip, port, name)
-        self.config.id = self.skale.nodes_data.node_name_to_index(name)
+        self.config.id = self.skale.nodes.node_name_to_index(name)
         run_filebeat_service(public_ip, self.config.id, self.skale)
         return {'status': 1, 'data': self.config.all()}
 
     def exit(self, opts):
-        schains_list = self.skale.schains_data.get_schains_for_node(self.config.id)
+        schains_list = self.skale.schains.get_schains_for_node(self.config.id)
         exit_count = len(schains_list) or 1
         for _ in range(exit_count):
             try:
@@ -103,7 +103,7 @@ class Node:
                 logger.error('Node rotation failed', exc_info=err)
 
     def get_exit_status(self):
-        active_schains = self.skale.schains_data.get_schains_for_node(self.config.id)
+        active_schains = self.skale.schains.get_schains_for_node(self.config.id)
         schain_statuses = [
             {
                 'name': schain['name'],
@@ -111,19 +111,19 @@ class Node:
             }
             for schain in active_schains
         ]
-        rotated_schains = self.skale.schains_data.get_leaving_history(self.config.id)
+        rotated_schains = self.skale.schains.get_leaving_history(self.config.id)
         current_time = time.time()
         for schain in rotated_schains:
             if current_time > schain['finished_rotation']:
                 status = SchainExitStatuses.LEFT
             else:
                 status = SchainExitStatuses.LEAVING
-            schain_name = self.skale.schains_data.get(schain['id'])['name']
+            schain_name = self.skale.schains.get(schain['id'])['name']
             if not schain_name:
                 schain_name = '[REMOVED]'
             schain_statuses.append({'name': schain_name, 'status': status.name})
-        node_status = NodeExitStatuses(self.skale.nodes_data.get_node_status(self.config.id))
-        exit_time = self.skale.nodes_data.get_node_finish_time(self.config.id)
+        node_status = NodeExitStatuses(self.skale.nodes.get_node_status(self.config.id))
+        exit_time = self.skale.nodes.get_node_finish_time(self.config.id)
         if node_status == NodeExitStatuses.WAIT_FOR_ROTATIONS and current_time >= exit_time:
             node_status = NodeExitStatuses.COMPLETED
         return {'status': node_status.name, 'data': schain_statuses, 'exit_time': exit_time}
@@ -146,7 +146,7 @@ class Node:
     def info(self):
         _id = self.config.id
         if _id is not None:
-            raw_info = self.skale.nodes_data.get(_id)
+            raw_info = self.skale.nodes.get(_id)
             return self._transform_node_info(raw_info, _id)
         return {'status': NodeStatuses.NOT_CREATED.value}
 
@@ -155,6 +155,6 @@ class Node:
         node_info['publicIP'] = ip_from_bytes(node_info['publicIP'])
         node_info['status'] = NodeStatuses.CREATED.value
         node_info['id'] = node_id
-        node_info['publicKey'] = self.skale.web3.toHex(node_info['publicKey'])
+        node_info['publicKey'] = node_info['publicKey']
         node_info['owner'] = public_key_to_address(node_info['publicKey'])
         return node_info
