@@ -241,14 +241,23 @@ def monitor_ima_container(schain):
     run_ima_container(schain, env)
 
 
-def monitor_sync_schain_container(skale, schain, start_ts):
-    def get_previous_schain_public_key(schain_name):
+def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
+    def get_schain_public_key(schain_name, method):
         group_idx = skale.schains_data.name_to_id(schain_name)
-        raw_public_key = skale.schains_data.get_previous_groups_public_key(group_idx)
+        raw_public_key = method(group_idx)
         return ':'.join(map(str, raw_public_key))
 
     if check_container(schain['name'], volume_required=True):
-        public_key = get_previous_schain_public_key(schain['name'])
+        if not rotation_id:
+            public_key = get_schain_public_key(
+                schain['name'],
+                skale.schains_data.get_groups_public_key
+            )
+        else:
+            public_key = get_schain_public_key(
+                schain['name'],
+                skale.schains_data.get_previous_groups_public_key
+            )
         env = get_schain_env(
             schain_name=schain['name'],
             start_ts=start_ts,
@@ -301,7 +310,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
     if not checks['container']:
         if sync:
             finish_time_ts = rotation['finish_ts']
-            monitor_sync_schain_container(skale, schain, finish_time_ts)
+            monitor_sync_schain_container(skale, schain, finish_time_ts, rotation['rotation_id'])
         elif check_container_exit(name, dutils=dutils):
             remove_firewall_rules(name)
             config = generate_schain_config(skale, name, node_id, rotation['rotation_id'])

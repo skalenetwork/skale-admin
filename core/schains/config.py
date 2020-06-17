@@ -253,7 +253,7 @@ def get_schain_env(schain_name, public_key=None, start_ts=None):
 
 def get_schain_container_opts(schain_name, public_key=None, start_ts=None):
     opts = get_schain_container_base_opts(schain_name)
-    if public_key and start_ts:
+    if public_key and str(start_ts):
         sync_opts = get_schain_container_sync_opts(schain_name, public_key, start_ts)
         opts += sync_opts
     return opts
