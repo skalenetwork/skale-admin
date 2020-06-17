@@ -113,7 +113,7 @@ def test_node_exit(skale, exiting_node):
         def get_node_ids_mock(name):
             return [node.config.id]
 
-        mocked_skale.schains_data.get_node_ids_for_schain = get_node_ids_mock
+        mocked_skale.schains_internal.get_node_ids_for_schain = get_node_ids_mock
         return mocked_skale
 
     with mock.patch('core.schains.creator.add_firewall_rules'), \
@@ -125,7 +125,7 @@ def test_node_exit(skale, exiting_node):
                        new=mock.Mock(return_value=[True, True])):
         monitor(skale, node.config)
         node.exit({})
-        while skale.nodes_data.get_node_status(node.config.id) != 2:
+        while skale.nodes.get_node_status(node.config.id) != 2:
             sleep(10)
         exit_status = node.get_exit_status()
         assert exit_status['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name

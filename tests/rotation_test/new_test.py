@@ -102,7 +102,7 @@ def test_new_node(skale, rotated_nodes):
     exited_node, new_node = nodes[0], nodes[2]
     exited_node.exit({})
 
-    while skale.nodes_data.get_node_status(nodes[0].config.id) != 2:
+    while skale.nodes.get_node_status(nodes[0].config.id) != 2:
         sleep(10)
 
     with mock.patch('core.schains.creator.add_firewall_rules'), \

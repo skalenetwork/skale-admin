@@ -117,7 +117,7 @@ def test_new_node(skale, rotated_nodes):
         def get_node_ids_mock(name):
             return [restarted_node.config.id]
 
-        mocked_skale.schains_data.get_node_ids_for_schain = get_node_ids_mock
+        mocked_skale.schains_internal.get_node_ids_for_schain = get_node_ids_mock
         return mocked_skale
 
     with mock.patch('core.schains.creator.add_firewall_rules'), \
@@ -134,7 +134,7 @@ def test_new_node(skale, rotated_nodes):
             sleep(10)
 
         exited_node.exit({})
-        while skale.nodes_data.get_node_status(exited_node.config.id) != 2:
+        while skale.nodes.get_node_status(exited_node.config.id) != 2:
             sleep(10)
 
         finish_time = time() + 10
