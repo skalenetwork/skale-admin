@@ -1,32 +1,25 @@
 import shutil
-from time import sleep, time
+from time import time
 from unittest import mock
 
 import pytest
-import json
 import os
-
 
 from tests.rotation_test.utils import (wait_for_contract_exiting, wait_for_schain_alive,
                                        wait_for_schain_exiting, check_schain_alive,
-                                       get_spawn_skale_mock, set_up_nodes, run_dkg_mock, init_data_volume_mock,
-                                       run_schain_container_mock)
+                                       get_spawn_skale_mock, set_up_nodes, run_dkg_mock,
+                                       init_data_volume_mock, run_schain_container_mock)
 from skale.manager_client import spawn_skale_lib
 
 from core.node import Node, NodeExitStatuses, SchainExitStatuses
 from core.node_config import NodeConfig
-from core.schains.checks import check_endpoint_alive, SChainChecks
+from core.schains.checks import SChainChecks
 from core.schains.cleaner import monitor as cleaner_monitor
-from core.schains.config import get_skaled_http_address
 from core.schains.creator import monitor
-from core.schains.runner import run_schain_container, check_container_exit
-from tests.dkg_test.main_test import run_dkg_all, generate_sgx_wallets, transfer_eth_to_wallets, \
-    link_addresses_to_validator, register_nodes
+from tests.dkg_test.main_test import run_dkg_all
 from tests.prepare_data import cleanup_contracts
 from tests.utils import generate_random_name
-from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 

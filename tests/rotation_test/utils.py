@@ -14,7 +14,7 @@ from tools.docker_utils import DockerUtils
 
 dutils = DockerUtils(volume_driver='local')
 
-TIMEOUT=120
+TIMEOUT = 120
 SECRET_KEY_INFO = {
     "common_public_key": [
         1
