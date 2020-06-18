@@ -111,7 +111,7 @@ class Node:
             }
             for schain in active_schains
         ]
-        rotated_schains = self.skale.schains.get_leaving_history(self.config.id)
+        rotated_schains = self.skale.schains_internal.get_leaving_history(self.config.id)
         current_time = time.time()
         for schain in rotated_schains:
             if current_time > schain['finished_rotation']:
