@@ -73,18 +73,6 @@
                     "publicIP": "127.0.0.1"
                 },
                 {
-                    "nodeID": 4,
-                    "nodeName": "node4",
-                    "basePort": 40000,
-                    "httpRpcPort": 40002,
-                    "httpsRpcPort": 40007,
-                    "wsRpcPort": 40003,
-                    "wssRpcPort": 40008,
-                    "schainIndex": 4,
-                    "ip": "127.0.0.1",
-                    "publicIP": "127.0.0.1"
-                },
-                {
                       "nodeID": 3,
                       "nodeName": "node3",
                       "basePort": 30000,
@@ -95,7 +83,19 @@
                       "schainIndex": 3,
                       "ip": "127.0.0.1",
                       "publicIP": "127.0.0.1"
-                  }
+                },
+                {
+                    "nodeID": 4,
+                    "nodeName": "node4",
+                    "basePort": 40000,
+                    "httpRpcPort": 40002,
+                    "httpsRpcPort": 40007,
+                    "wsRpcPort": 40003,
+                    "wssRpcPort": 40008,
+                    "schainIndex": 4,
+                    "ip": "127.0.0.1",
+                    "publicIP": "127.0.0.1"
+                }
             ],
             "storageLimit": 655360000,
             "emptyBlockIntervalMs": 3000
