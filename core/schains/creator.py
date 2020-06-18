@@ -304,7 +304,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
     if not checks['config']:
         init_schain_config(skale, node_id, name)
     if not checks['volume']:
-        init_data_volume(schain)
+        init_data_volume(schain, dutils=dutils)
     if not checks['firewall_rules']:
         add_firewall_rules(name)
     if not checks['container']:
