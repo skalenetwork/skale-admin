@@ -25,11 +25,9 @@ from tools.configs.resource_allocation import RESOURCE_ALLOCATION_FILEPATH
 from tools.docker_utils import DockerUtils
 
 logger = logging.getLogger(__name__)
-docker_utils = DockerUtils()
 
 
-def init_data_volume(schain, dutils=None):
-    dutils = dutils or docker_utils
+def init_data_volume(schain, dutils):
     schain_name = schain['name']
 
     if dutils.data_volume_exists(schain_name):
