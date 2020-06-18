@@ -1,4 +1,5 @@
 import shutil
+from pathlib import Path
 from time import time
 from unittest import mock
 
@@ -36,10 +37,9 @@ def exiting_node(skale):
 
     yield nodes, schain_name
 
-    with open(cert_path, 'w') and open(key_path, 'w'):
-        pass
+    Path(key_path).touch()
+    Path(cert_path).touch()
     shutil.move(temp_schain_path, test_schain_path)
-
     skale.manager.delete_schain(schain_name, wait_for=True)
     for i in range(1, 3):
         skale.manager.delete_node_by_root(nodes[i].config.id, wait_for=True)

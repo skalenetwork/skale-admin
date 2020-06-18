@@ -1,4 +1,5 @@
 import shutil
+from pathlib import Path
 from time import time
 from unittest import mock
 
@@ -34,8 +35,8 @@ def rotated_nodes(skale):
 
     yield nodes, schain_name
 
-    with open(cert_path, 'w') and open(key_path, 'w'):
-        pass
+    Path(key_path).touch()
+    Path(cert_path).touch()
     shutil.rmtree(os.path.join(SCHAINS_DIR_PATH, schain_name))
     dutils.safe_rm(f'skale_schain_{schain_name}', force=True)
     skale.manager.delete_schain(schain_name, wait_for=True)
