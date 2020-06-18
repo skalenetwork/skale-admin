@@ -1,0 +1,80 @@
+{
+    "sealEngine": "Ethash",
+    "params": {
+      "accountStartNonce": "0x00",
+      "homesteadForkBlock": "0x0",
+      "daoHardforkBlock": "0x0",
+      "EIP150ForkBlock": "0x00",
+      "EIP158ForkBlock": "0x00",
+      "byzantiumForkBlock": "0x0",
+      "constantinopleForkBlock": "0x0",
+      "networkID": "12313219",
+      "chainID": "0x01",
+      "maximumExtraDataSize": "0x20",
+      "tieBreakingGas": false,
+      "minGasLimit": "0xFFFFFFF",
+      "maxGasLimit": "7fffffffffffffff",
+      "gasLimitBoundDivisor": "0x0400",
+      "minimumDifficulty": "0x020000",
+      "difficultyBoundDivisor": "0x0800",
+      "durationLimit": "0x0d",
+      "blockReward": "0x4563918244F40000"
+    },
+    "genesis": {
+      "nonce": "0x0000000000000042",
+      "difficulty": "0x020000",
+      "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "author": "0x0000000000000000000000000000000000000000",
+      "timestamp": "0x00",
+      "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "extraData": "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
+      "gasLimit": "0xFFFFFFF"
+    },
+    "accounts": {
+    },
+    "skaleConfig": {
+        "nodeInfo": {
+            "nodeID": 2,
+            "nodeName": "node2",
+            "basePort": 20000,
+            "httpRpcPort": 20002,
+            "httpsRpcPort": 20007,
+            "wsRpcPort": 20003,
+            "wssRpcPort": 20008,
+            "bindIP": "0.0.0.0"
+        },
+        "sChain": {
+            "schainID": 1,
+            "schainName": "rotated-schain",
+            "schainOwner": "0x3483A10F7d6fDeE0b0C1E9ad39cbCE13BD094b12",
+            "nodes": [
+                {
+                    "nodeID": 1,
+                    "nodeName": "node1",
+                    "basePort": 10000,
+                    "httpRpcPort": 10002,
+                    "httpsRpcPort": 10007,
+                    "wsRpcPort": 10003,
+                    "wssRpcPort": 10008,
+                    "schainIndex": 1,
+                    "ip": "127.0.0.1",
+                    "publicIP": "127.0.0.1"
+                },
+                {
+                    "nodeID": 2,
+                    "nodeName": "node2",
+                    "basePort": 20000,
+                    "httpRpcPort": 20002,
+                    "httpsRpcPort": 20007,
+                    "wsRpcPort": 20003,
+                    "wssRpcPort": 20008,
+                    "schainIndex": 2,
+                    "ip": "127.0.0.1",
+                    "publicIP": "127.0.0.1"
+                }
+            ],
+            "storageLimit": 655360000,
+            "emptyBlockIntervalMs": 3000
+        }
+    }
+  }
