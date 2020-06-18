@@ -9,10 +9,11 @@ import os
 from core.schains.checks import SChainChecks
 from core.schains.creator import monitor
 from tests.prepare_data import cleanup_contracts
-from tests.rotation_test.utils import (set_up_rotated_schain, get_spawn_skale_mock,
-                                       run_schain_container_mock, init_data_volume_mock,
-                                       run_dkg_mock, wait_for_schain_exiting,
-                                       wait_for_schain_alive, wait_for_contract_exiting)
+from tests.rotation_test.three_nodes.utils import (
+    set_up_rotated_schain, get_spawn_skale_mock, run_schain_container_mock,
+    init_data_volume_mock, run_dkg_mock, wait_for_schain_exiting,
+    wait_for_schain_alive, wait_for_contract_exiting
+)
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils

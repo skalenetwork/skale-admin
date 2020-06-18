@@ -6,10 +6,11 @@ from unittest import mock
 import pytest
 import os
 
-from tests.rotation_test.utils import (wait_for_contract_exiting, wait_for_schain_alive,
-                                       wait_for_schain_exiting, check_schain_alive,
-                                       get_spawn_skale_mock, set_up_rotated_schain, run_dkg_mock,
-                                       init_data_volume_mock, run_schain_container_mock)
+from tests.rotation_test.three_nodes.utils import (
+    wait_for_contract_exiting, wait_for_schain_alive, wait_for_schain_exiting,
+    check_schain_alive, get_spawn_skale_mock, set_up_rotated_schain,
+    run_dkg_mock, init_data_volume_mock, run_schain_container_mock
+)
 
 from core.node import NodeExitStatuses, SchainExitStatuses
 from core.schains.checks import SChainChecks

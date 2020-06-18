@@ -30,6 +30,6 @@ bash scripts/run_sgx_simulator.sh
 python tests/prepare_data.py
 
 py.test tests/ --ignore=tests/firewall --ignore=tests/rotation_test
-py.test tests/rotation_test
+py.test tests/rotation_test/three_nodes
 find . -name \*.pyc -delete
 scripts/run_firewall_test.sh
