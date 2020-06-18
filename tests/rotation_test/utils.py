@@ -14,7 +14,7 @@ from tests.utils import generate_random_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.docker_utils import DockerUtils
 
-dutils = DockerUtils(volume_driver='local')
+docker_utils = DockerUtils(volume_driver='local')
 
 TIMEOUT = 240
 SECRET_KEY_INFO = {
@@ -46,12 +46,12 @@ def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
     return True
 
 
-def init_data_volume_mock(schain):
-    return init_data_volume(schain, dutils)
+def init_data_volume_mock(schain, dutils):
+    return init_data_volume(schain, docker_utils)
 
 
 def run_schain_container_mock(schain, env):
-    return run_schain_container(schain, env, dutils)
+    return run_schain_container(schain, env, docker_utils)
 
 
 def set_up_nodes(skale, nodes_number):
@@ -113,7 +113,7 @@ def wait_for_schain_alive(schain_name):
 
 def wait_for_schain_exiting(schain_name):
     sum_time = 0
-    while not check_container_exit(schain_name, dutils=dutils) and sum_time < TIMEOUT:
+    while not check_container_exit(schain_name, dutils=docker_utils) and sum_time < TIMEOUT:
         sum_time += 10
         sleep(10)
     assert sum_time < TIMEOUT
