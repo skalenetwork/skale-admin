@@ -22,7 +22,6 @@ import logging
 from core.schains.types import SchainTypes
 from tools.helper import read_json
 from tools.configs.resource_allocation import RESOURCE_ALLOCATION_FILEPATH
-from tools.docker_utils import DockerUtils
 
 logger = logging.getLogger(__name__)
 
