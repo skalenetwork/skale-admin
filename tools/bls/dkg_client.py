@@ -252,7 +252,6 @@ class DKGClient:
         )
 
     def receive_from_node(self, from_node, broadcasted_data):
-        logger.info(f'BROADCASTED: {broadcasted_data}')
         self.receive_verification_vector(from_node, broadcasted_data[0])
         self.receive_secret_key_contribution(from_node, broadcasted_data[1])
         if not self.verification(from_node):
