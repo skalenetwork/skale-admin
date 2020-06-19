@@ -98,6 +98,7 @@
                 }
             ],
             "storageLimit": 655360000,
+            "snapshotIntervalMs": 30,
             "emptyBlockIntervalMs": 3000
         }
     }
