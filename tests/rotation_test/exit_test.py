@@ -30,8 +30,10 @@ def exiting_node(skale):
     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
     test_schain_path = os.path.join(SCHAINS_DIR_PATH, 'test')
     temp_schain_path = os.path.join(SCHAINS_DIR_PATH, '..', 'test')
-    os.remove(key_path)
-    os.remove(cert_path)
+    if os.path.isfile(key_path):
+        os.remove(key_path)
+    if os.path.isfile(cert_path):
+        os.remove(cert_path)
     shutil.move(test_schain_path, temp_schain_path)
     nodes, schain_name = set_up_rotated_schain(skale)
 

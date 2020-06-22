@@ -33,7 +33,7 @@ SECRET_KEY_INFO = {
 }
 
 
-class NodeConfigMock():
+class NodeConfigMock:
     def __init__(self):
         self.id = 0
         self.sgx_key_name = ""
