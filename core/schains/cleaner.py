@@ -20,8 +20,8 @@
 import os
 import logging
 import shutil
+from multiprocessing import Process
 
-# from multiprocessing import Process
 
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
@@ -42,9 +42,9 @@ dutils = DockerUtils()
 
 def run_cleaner(skale, node_config):
     monitor(skale, node_config)
-    # process = Process(target=monitor, args=(skale, node_config))
-    # process.start()
-    # process.join()
+    process = Process(target=monitor, args=(skale, node_config))
+    process.start()
+    process.join()
 
 
 def log_remove(component_name, schain_name):
@@ -87,8 +87,9 @@ def monitor(skale, node_config):
                                                                node_config.id)
     for schain_name in schains_on_node:
         on_contract = schain_name in schain_names_on_contracts
-        if not on_contract and (not skale.schains_internal.is_schain_exist(schain_name) or
-                                check_container_exit(schain_name, dutils=dutils)):
+        if not on_contract and (
+            not skale.schains_internal.is_schain_exist(schain_name) or
+                check_container_exit(schain_name, dutils=dutils)):
             logger.info(
                 arguments_list_string({'sChain name': schain_name}, 'Removed sChain found'))
             cleanup_schain(node_config.id, schain_name)
