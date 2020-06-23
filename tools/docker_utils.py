@@ -110,9 +110,11 @@ class DockerUtils:
         return container_info['status'] == CONTAINER_NOT_FOUND
 
     def is_container_exited(self, container_info):
-        if container_info['status'] == EXITED_STATUS:
-            return container_info['stats']['State']['ExitCode'] == 0
-        return False
+        return container_info['status'] == EXITED_STATUS
+
+    def is_container_exited_with_zero(self, container_info):
+        return self.is_container_exited(container_info) and \
+            container_info['stats']['State']['ExitCode'] == 0
 
     def rm_vol(self, name):
         volume = self.client.volumes.get(name)

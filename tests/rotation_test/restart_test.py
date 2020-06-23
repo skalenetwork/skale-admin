@@ -28,8 +28,10 @@ def rotated_nodes(skale):
 
     key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    os.remove(key_path)
-    os.remove(cert_path)
+    if os.path.isfile(key_path):
+        os.remove(key_path)
+    if os.path.isfile(cert_path):
+        os.remove(cert_path)
 
     nodes, schain_name = set_up_rotated_schain(skale)
 

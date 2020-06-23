@@ -63,10 +63,11 @@ def test_schain_config(skale_bp, skale):
     filename = get_schain_config_filepath(name)
     os.makedirs(os.path.dirname(filename))
     with open(filename, 'w') as f:
-        text = {'skaleConfig': True}
+        text = {'skaleConfig': {'nodeInfo': {'nodeID': 1}}}
         f.write(json.dumps(text))
     data = get_bp_data(skale_bp, '/schain-config', {'schain-name': name})
-    assert data == {'payload': True, 'status': 'ok'}
+    assert data == {'payload': {'nodeInfo': {'nodeID': 1}},
+                    'status': 'ok'}
     os.remove(filename)
     os.rmdir(os.path.dirname(filename))
 
