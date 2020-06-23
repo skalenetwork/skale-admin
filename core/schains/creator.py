@@ -21,7 +21,9 @@ import os
 import shutil
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from multiprocessing import Process
 
 from skale.manager_client import spawn_skale_lib
 
@@ -55,7 +57,6 @@ from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 
-from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()
@@ -64,7 +65,9 @@ CONTAINERS_DELAY = 20
 
 
 def run_creator(skale, node_config):
-    monitor(skale, node_config)
+    process = Process(target=monitor, args=(skale, node_config))
+    process.start()
+    process.join()
 
 
 def monitor(skale, node_config):
@@ -316,7 +319,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         if sync:
             finish_time_ts = rotation['finish_ts']
             monitor_sync_schain_container(skale, schain, finish_time_ts, rotation['rotation_id'])
-        elif check_container_exit(name, dutils=dutils):
+        elif check_container_exit(name, zero_exit_code=True, dutils=dutils):
             remove_firewall_rules(name)
             config = generate_schain_config(skale, name, node_id, rotation['rotation_id'],
                                             ecdsa_sgx_key_name)
