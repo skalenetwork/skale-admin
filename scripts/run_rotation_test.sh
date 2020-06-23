@@ -20,4 +20,34 @@ docker_lvmpy_install () {
     cd -
 }
 
-docker_lvmpy_install
+if [ ! -f docker-lvmpy/loopbackfile.img ]; then
+  docker_lvmpy_install
+fi
+
+export SKALE_DIR_HOST=$PWD/tests/skale-data
+export RUNNING_ON_HOST=True
+export PYTHONPATH=${PYTHONPATH}:.
+export ENV=dev
+export SGX_CERTIFICATES_FOLDER=$PWD/tests/dkg_test/
+export SGX_SERVER_URL=https://localhost:1026
+export ENDPOINT=http://localhost:8545
+export IMA_ENDPOINT=http://localhost:1000
+export DB_USER=user
+export DB_PASSWORD=pass
+export DB_PORT=3307
+export FLASK_APP_HOST=0.0.0.0
+export FLASK_APP_PORT=3008
+export FLASK_DEBUG_MODE=True
+export TM_URL=http://localhost:3009
+export TG_API_KEY=123
+export SCHAIN_TYPE=test4
+
+rm -rf $PWD/tests/dkg_test/sgx.*
+docker rm -f node1 node2 node3 node4 || true
+docker volume rm node1 node2 node3 node4 || true
+
+bash scripts/run_sgx_simulator.sh
+
+python tests/prepare_data.py
+
+python tests/rotation_test/five_nodes/utils.py

@@ -1,7 +1,14 @@
 import os
 
+from skale.manager_client import spawn_skale_lib
+
+from core.node import Node
 from core.schains.runner import get_image_name
 from core.schains.volume import get_resource_allocation_info
+from tests.conftest import init_skale
+from tests.dkg_test.main_test import run_dkg_all
+from tests.rotation_test.three_nodes.utils import set_up_nodes, NodeConfigMock
+from tests.utils import generate_random_name
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
 from skale.dataclasses.skaled_ports import SkaledPorts
@@ -11,10 +18,56 @@ dutils = DockerUtils()
 
 node_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 base_port = 10000
+local_ip = '127.0.0.1'
 
 
-def set_up_nodes():
-    pass
+def register_node(skale, wallet, id):
+    skale.wallet = wallet
+    ip, public_ip, port, name = (local_ip, local_ip, base_port*id, f'node{id}')
+    skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
+    node_id = skale.nodes.node_name_to_index(name)
+    return {
+        'node': skale.nodes.get_by_name(name),
+        'node_id': node_id,
+        'wallet': wallet
+    }
+
+
+def register_nodes(skale, wallets, start_id=1):
+    base_wallet = skale.wallet
+    nodes = [
+        register_node(skale, wallet, node_id)
+        for wallet, node_id in enumerate(wallets, start_id)
+    ]
+    skale.wallet = base_wallet
+    return nodes
+
+
+def create_schain(skale, name):
+    lifetime = 3600
+    nodes_type = 5
+    price_in_wei = skale.schains.get_schain_price(
+        nodes_type, lifetime)
+    skale.manager.create_schain(lifetime, nodes_type, price_in_wei, name, wait_for=True)
+
+
+def set_up_schain_on_contracts(skale):
+    nodes_data = set_up_nodes(skale, 4)
+    print('nodes:', skale.nodes.get_active_node_ids())
+    schain_name = generate_random_name()
+    create_schain(skale, schain_name)
+    run_dkg_all(skale, schain_name, nodes_data)
+    nodes_data.append(set_up_nodes(skale, 1)[0])
+
+    nodes = []
+    for node in nodes_data:
+        skale_lib = spawn_skale_lib(skale)
+        skale_lib.wallet = node['wallet']
+        config = NodeConfigMock()
+        config.id = node['node_id']
+        nodes.append(Node(skale_lib, config))
+
+    return nodes, schain_name
 
 
 def get_args(node_id):
@@ -69,4 +122,5 @@ def run_schain_containers(nodes_count=4):
 
 
 if __name__ == "__main__":
+    set_up_schain_on_contracts(init_skale())
     run_schain_containers()
