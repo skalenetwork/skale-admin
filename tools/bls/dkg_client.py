@@ -178,6 +178,8 @@ class DKGClient:
                                             self.node_id_dkg)
 
     def send_complaint(self, to_node):
+        logger.info(f'sChain: {self.schain_name}. '
+                    f'{self.node_id_dkg} is trying to sent a complaint on {to_node} node')
         is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
         is_complaint_possible = is_complaint_possible_function(
             self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]).call(
@@ -195,11 +197,11 @@ class DKGClient:
                 gas_price=self.skale.dkg.gas_price(),
                 wait_for=True
             )
+            logger.info(f'sChain: {self.schain_name}. '
+                        f'{self.node_id_dkg} node sent a complaint on {to_node} node')
         except TransactionFailedError as e:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
-        logger.info(f'sChain: {self.schain_name}. '
-                    f'{self.node_id_dkg} node sent a complaint on {to_node} node')
 
     def response(self, from_node_index):
         is_response_possible_function = self.dkg_contract_functions.isResponsePossible

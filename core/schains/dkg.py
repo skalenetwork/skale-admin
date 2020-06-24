@@ -145,6 +145,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     complaint_data = get_complaint_data(dkg_client)
     is_complaint_sent = complaint_data[0] != complaint_data[1]
     if is_complaint_sent or is_complaint_received:
+        complainted_node_index = complaint_data[1]
         is_group_failed = skale.schains_internal.is_group_failed_dkg(dkg_client.group_index)
         is_channel_opened = dkg_client.is_channel_opened()
         while not is_group_failed or is_channel_opened:
@@ -160,7 +161,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
         is_group_opened = dkg_client.is_channel_opened()
         is_group_failed = skale.schains_internal.is_group_failed_dkg(dkg_client.group_index)
-        if is_group_opened or not is_group_failed and is_complaint_sent:
+        if is_group_opened or not is_group_failed and is_complaint_sent and 
+                                            complainted_node_index != dkg_client.node_id_dkg:
             send_complaint(dkg_client, complainted_node_index)
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
