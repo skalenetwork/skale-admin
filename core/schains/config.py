@@ -43,7 +43,7 @@ from tools.helper import read_json
 logger = logging.getLogger(__name__)
 
 
-def generate_schain_config(skale, schain_name, node_id, rotation_id):
+def generate_schain_config(skale, schain_name, node_id, rotation_id, ecdsa_sgx_key_name):
     base_config = read_base_config()
     ima_data = read_ima_data()
     wallets = generate_wallets_config(schain_name, rotation_id)
@@ -72,6 +72,7 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
         ima_mainnet=ima_mainnet_url,
         ima_mp_schain=ima_mp_schain,
         ima_mp_mainnet=ima_mp_mainnet,
+        ecdsa_key_name=ecdsa_sgx_key_name,
         wallets=wallets,
         ima_data=ima_data,
         custom_schain_config_fields=custom_schain_config_fields,
@@ -253,7 +254,7 @@ def get_schain_env(schain_name, public_key=None, start_ts=None):
 
 def get_schain_container_opts(schain_name, public_key=None, start_ts=None):
     opts = get_schain_container_base_opts(schain_name)
-    if public_key and start_ts:
+    if public_key and str(start_ts):
         sync_opts = get_schain_container_sync_opts(schain_name, public_key, start_ts)
         opts += sync_opts
     return opts

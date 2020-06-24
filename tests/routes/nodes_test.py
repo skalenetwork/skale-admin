@@ -41,7 +41,7 @@ def test_check_node_name(skale_bp, skale):
     data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': name})
     assert data == {'status': 'ok', 'payload': {'name_available': False}}
     node_idx = skale.nodes.node_name_to_index(name)
-    skale.manager.delete_node_by_root(node_idx, wait_for=True)
+    skale.manager.node_exit(node_idx, wait_for=True)
 
 
 def test_check_node_ip(skale_bp, skale):
@@ -52,7 +52,7 @@ def test_check_node_ip(skale_bp, skale):
     data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': ip})
     assert data == {'status': 'ok', 'payload': {'ip_available': False}}
     node_idx = skale.nodes.node_name_to_index(name)
-    skale.manager.delete_node_by_root(node_idx, wait_for=True)
+    skale.manager.node_exit(node_idx, wait_for=True)
 
 
 def test_containers_list(skale_bp, skale):

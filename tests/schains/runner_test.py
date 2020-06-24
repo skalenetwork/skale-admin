@@ -28,10 +28,20 @@ def test_check_container_exit():
         'status': 'exited',
         'stats': {
             'State': {
-                'ExitCode': 0
+                'ExitCode': 1
             }
         }
     }
     with mock.patch('core.schains.runner.DockerUtils.get_info',
                     new=mock.Mock(return_value=info_mock)):
         assert check_container_exit(SCHAIN['name'])
+
+    with mock.patch('core.schains.runner.DockerUtils.get_info',
+                    new=mock.Mock(return_value=info_mock)):
+        assert not check_container_exit(SCHAIN['name'], zero_exit_code=True)
+
+    info_mock['stats']['State']['ExitCode'] = 0
+
+    with mock.patch('core.schains.runner.DockerUtils.get_info',
+                    new=mock.Mock(return_value=info_mock)):
+        assert check_container_exit(SCHAIN['name'], zero_exit_code=True)
