@@ -113,6 +113,6 @@ def test_get_schain_container_opts():
     opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 2234 '
         f'--https-port 10002 --ws-port 10003 --wss-port 10008 --ssl-key {ssl_key_path} '
-        f'--ssl-cert {ssl_cert_path} -v 4 --web3-trace --enable-debug-behavior-apis --aa no '
+        f'--ssl-cert {ssl_cert_path} -v 6 --web3-trace --enable-debug-behavior-apis --aa no '
     )
     assert container_opts == opts
