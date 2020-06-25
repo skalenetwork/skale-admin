@@ -75,6 +75,7 @@ def monitor(skale, node_config):
     skale = spawn_skale_lib(skale)
     logger.info('Spawned new skale lib')
     node_id = node_config.id
+    ecdsa_sgx_key_name = node_config.sgx_key_name
     logger.info('Fetching schains ...')
     schains = skale.schains.get_schains_for_node(node_id)
     logger.info('Get leaving_history for node ...')
@@ -97,7 +98,8 @@ def monitor(skale, node_config):
                 skale,
                 node_config.id,
                 node_config.sgx_key_name,
-                schain
+                schain,
+                ecdsa_sgx_key_name
             )
             for schain in schains if schain['active']
         ]
@@ -106,7 +108,7 @@ def monitor(skale, node_config):
     logger.info('Creator procedure finished')
 
 
-def monitor_schain(skale, node_id, sgx_key_name, schain):
+def monitor_schain(skale, node_id, sgx_key_name, schain, ecdsa_sgx_key_name):
     skale = spawn_skale_lib(skale)
     name = schain['name']
     rotation = check_for_rotation(skale, name, node_id)
@@ -153,6 +155,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
             sgx_key_name=sgx_key_name,
             rotation=rotation,
             schain_record=schain_record,
+            ecdsa_sgx_key_name=ecdsa_sgx_key_name,
             sync=True
         )
         return
@@ -188,12 +191,13 @@ def monitor_schain(skale, node_id, sgx_key_name, schain):
         node_id=node_id,
         sgx_key_name=sgx_key_name,
         rotation=rotation,
+        ecdsa_sgx_key_name=ecdsa_sgx_key_name,
         schain_record=schain_record
     )
 
 
 # TODO: Check for rotation earlier
-def init_schain_config(skale, node_id, schain_name):
+def init_schain_config(skale, node_id, schain_name, ecdsa_sgx_key_name):
     config_filepath = get_schain_config_filepath(schain_name)
     if not os.path.isfile(config_filepath):
         logger.warning(
@@ -201,7 +205,8 @@ def init_schain_config(skale, node_id, schain_name):
             f'{config_filepath}, trying to create.'
         )
         rotation_id = skale.schains.get_last_rotation_id(schain_name)
-        schain_config = generate_schain_config(skale, schain_name, node_id, rotation_id)
+        schain_config = generate_schain_config(skale, schain_name, node_id, rotation_id,
+                                               ecdsa_sgx_key_name)
         save_schain_config(schain_config, schain_name)
 
 
@@ -287,7 +292,7 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
 
 
 def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
-                   rotation, schain_record, sync=False):
+                   rotation, schain_record, ecdsa_sgx_key_name, sync=False):
     name = schain['name']
     if not checks['data_dir']:
         init_schain_dir(name)
@@ -305,7 +310,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             return
 
     if not checks['config']:
-        init_schain_config(skale, node_id, name)
+        init_schain_config(skale, node_id, name, ecdsa_sgx_key_name)
     if not checks['volume']:
         init_data_volume(schain, dutils=dutils)
     if not checks['firewall_rules']:
@@ -316,7 +321,8 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             monitor_sync_schain_container(skale, schain, finish_time_ts, rotation['rotation_id'])
         elif check_container_exit(name, zero_exit_code=True, dutils=dutils):
             remove_firewall_rules(name)
-            config = generate_schain_config(skale, name, node_id, rotation['rotation_id'])
+            config = generate_schain_config(skale, name, node_id, rotation['rotation_id'],
+                                            ecdsa_sgx_key_name)
             update_schain_config(config, name)
             add_firewall_rules(name)
             restart_container(SCHAIN_CONTAINER, schain)

@@ -44,7 +44,7 @@ def exiting_node(skale):
     shutil.move(temp_schain_path, test_schain_path)
     skale.manager.delete_schain(schain_name, wait_for=True)
     for i in range(1, 3):
-        skale.manager.delete_node_by_root(nodes[i].config.id, wait_for=True)
+        skale.manager.node_exit(nodes[i].config.id, wait_for=True)
 
 
 # TODO: Mock leaving history, check final exit status
