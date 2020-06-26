@@ -259,12 +259,12 @@ def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
         if not rotation_id:
             public_key = get_schain_public_key(
                 schain['name'],
-                skale.schains_internal.get_groups_public_key
+                skale.key_storage.get_common_public_key
             )
         else:
             public_key = get_schain_public_key(
                 schain['name'],
-                skale.schains_internal.get_previous_groups_public_key
+                skale.key_storage.get_previous_public_key
             )
         env = get_schain_env(
             schain_name=schain['name'],
