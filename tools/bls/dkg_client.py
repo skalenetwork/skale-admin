@@ -236,11 +236,9 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. {from_node_index} node sent a response')
 
     def get_broadcasted_data(self, from_node):
-        return self.skale.ke_storage.get_broadcasted_data(self.group_index, self.node_ids_dkg[from_node])
-        # get_broadcasted_data_function = self.dkg_contract_functions.getBroadcastedData
-        # return get_broadcasted_data_function(self.group_index, self.node_ids_dkg[from_node]).call(
-        #     {'from': self.skale.wallet.address}
-        # )
+        return self.skale.key_storage.get_broadcasted_data(
+            self.group_index, self.node_ids_dkg[from_node]
+        )
 
     def is_all_data_received(self, from_node):
         is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
