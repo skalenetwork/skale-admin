@@ -79,7 +79,7 @@ def monitor(skale, node_config):
     logger.info('Fetching schains ...')
     schains = skale.schains.get_schains_for_node(node_id)
     logger.info('Get leaving_history for node ...')
-    leaving_history = skale.schains_internal.get_leaving_history(node_id)
+    leaving_history = skale.node_rotation.get_leaving_history(node_id)
     for leaving_schain in leaving_history:
         schain = skale.schains.get(leaving_schain['id'])
         if time.time() < leaving_schain['finished_rotation'] and schain['name']:
