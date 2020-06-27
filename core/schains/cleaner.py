@@ -88,7 +88,7 @@ def monitor(skale, node_config):
     for schain_name in schains_on_node:
         on_contract = schain_name in schain_names_on_contracts
         if not on_contract and (
-            not skale.node_rotation.is_schain_exist(schain_name) or
+            not skale.schains_internal.is_schain_exist(schain_name) or
                 check_container_exit(schain_name, dutils=dutils)):
             logger.info(
                 arguments_list_string({'sChain name': schain_name}, 'Removed sChain found'))
