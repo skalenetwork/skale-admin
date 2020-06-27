@@ -103,12 +103,12 @@ def generate_wallets_config(schain_name, rotation_id):
     }
     common_public_keys = secret_key_share_config['common_public_key']
     for (i, value) in enumerate(common_public_keys):
-        name = 'insecureBLSPublicKey' + str(i)
+        name = 'insecureCommonBLSPublicKey' + str(i)
         wallets['ima'][name] = str(value)
 
     public_keys = secret_key_share_config['public_key']
     for (i, value) in enumerate(public_keys):
-        name = 'insecureCommonBLSPublicKey' + str(i)
+        name = 'insecureBLSPublicKey' + str(i)
         wallets['ima'][name] = str(value)
 
     return wallets

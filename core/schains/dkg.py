@@ -173,8 +173,12 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             encrypted_bls_key = generate_bls_key(dkg_client, bls_name)
             logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
             common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
+            formated_common_public_key = []
+            for coord in common_public_key:
+                for elem in coord:
+                    formated_common_public_key.append(elem)
             return {
-                'common_public_key': common_public_key,
+                'common_public_key': formated_common_public_key,
                 'public_key': dkg_client.public_key,
                 't': t,
                 'n': n,
