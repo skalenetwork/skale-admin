@@ -65,16 +65,6 @@ logger.info('IVD node')
 
 token = init_user_token()
 
-database = SqliteDatabase(
-    DB_FILE,
-    pragmas={
-        'journal_mode': 'wal',
-        'cache_size': -1 * 64000,  # 64MB
-        'foreign_keys': 1,
-        'ignore_check_constraints': 0,
-        'synchronous': 0
-    }
-)
 logger.info('IVD database')
 
 app = Flask(__name__)
@@ -90,17 +80,38 @@ app.register_blueprint(sgx_bp)
 
 @app.before_request
 def before_request():
+    database = SqliteDatabase(
+        DB_FILE,
+        pragmas={
+            'journal_mode': 'wal',
+            'cache_size': -1 * 64000,  # 64MB
+            'foreign_keys': 1,
+            'ignore_check_constraints': 0,
+            'synchronous': 0
+        }
+    )
     g.db = database
     g.db.connect()
 
 
-@app.after_request
-def after_request(response):
-    g.db.close()
+@app.teardown_request
+def teardown_request(response):
+    if not g.db.is_closed():
+        g.db.close()
     return response
 
 
 def create_tables():
+    database = SqliteDatabase(
+        DB_FILE,
+        pragmas={
+            'journal_mode': 'wal',
+            'cache_size': -1 * 64000,  # 64MB
+            'foreign_keys': 1,
+            'ignore_check_constraints': 0,
+            'synchronous': 0
+        }
+    )
     with database:
         if not SChainRecord.table_exists():
             SChainRecord.create_table()
