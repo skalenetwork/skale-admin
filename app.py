@@ -20,7 +20,6 @@
 import logging
 
 from flask import Flask, g
-from peewee import SqliteDatabase
 
 from skale import Skale
 from skale.wallets import RPCWallet
@@ -30,7 +29,7 @@ from core.node_config import NodeConfig
 
 from tools.configs import FLASK_SECRET_KEY_FILE
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
-from tools.configs.db import DB_FILE
+from tools.db import database
 from tools.docker_utils import DockerUtils
 from tools.logger import init_api_logger
 from tools.sgx_utils import generate_sgx_key, sgx_server_text
@@ -54,18 +53,18 @@ logger = logging.getLogger(__name__)
 
 rpc_wallet = RPCWallet(TM_URL)
 skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
-logger.info('IVD skale inited')
+logger.info('Skale inited')
 
 docker_utils = DockerUtils()
-logger.info('IVD docker utils')
+logger.info('Docker utils inited')
 
 node_config = NodeConfig()
 node = Node(skale, node_config)
-logger.info('IVD node')
+logger.info('Node inited')
 
 token = init_user_token()
+logger.info('Token inited')
 
-logger.info('IVD database')
 
 app = Flask(__name__)
 app.register_blueprint(web_logs)
@@ -80,17 +79,7 @@ app.register_blueprint(sgx_bp)
 
 @app.before_request
 def before_request():
-    database = SqliteDatabase(
-        DB_FILE,
-        pragmas={
-            'journal_mode': 'wal',
-            'cache_size': -1 * 64000,  # 64MB
-            'foreign_keys': 1,
-            'ignore_check_constraints': 0,
-            'synchronous': 0
-        }
-    )
-    g.db = database
+    g.db = database()
     g.db.connect()
 
 
@@ -102,17 +91,9 @@ def teardown_request(response):
 
 
 def create_tables():
-    database = SqliteDatabase(
-        DB_FILE,
-        pragmas={
-            'journal_mode': 'wal',
-            'cache_size': -1 * 64000,  # 64MB
-            'foreign_keys': 1,
-            'ignore_check_constraints': 0,
-            'synchronous': 0
-        }
-    )
-    with database:
+    logger.info('Creating schainrecord table...')
+    db = database()
+    with db:
         if not SChainRecord.table_exists():
             SChainRecord.create_table()
 
