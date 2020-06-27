@@ -22,6 +22,8 @@ import logging
 import shutil
 from multiprocessing import Process
 
+from peewee import SqliteDatabase
+
 
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
@@ -30,6 +32,7 @@ from core.schains.config import get_allowed_endpoints
 
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
+from tools.configs.db import DB_FILE, DB_PRAGMAS
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.iptables import remove_rules as remove_iptables_rules
@@ -85,15 +88,18 @@ def monitor(skale, node_config):
     schains_on_node = get_schains_on_node()
     schain_names_on_contracts = get_schain_names_from_contract(skale,
                                                                node_config.id)
-    for schain_name in schains_on_node:
-        on_contract = schain_name in schain_names_on_contracts
-        if not on_contract and (
-            not skale.schains_internal.is_schain_exist(schain_name) or
-                check_container_exit(schain_name, dutils=dutils)):
-            logger.info(
-                arguments_list_string({'sChain name': schain_name}, 'Removed sChain found'))
-            cleanup_schain(node_config.id, schain_name)
-        logger.info('Cleanup procedure finished')
+    database = SqliteDatabase(DB_FILE, DB_PRAGMAS)
+    with database:
+        for schain_name in schains_on_node:
+            on_contract = schain_name in schain_names_on_contracts
+            if not on_contract and (
+                not skale.schains_internal.is_schain_exist(schain_name) or
+                    check_container_exit(schain_name, dutils=dutils)):
+                logger.info(
+                    arguments_list_string({'sChain name': schain_name},
+                                          'Removed sChain found'))
+                cleanup_schain(node_config.id, schain_name)
+            logger.info('Cleanup procedure finished')
 
 
 def get_schain_names_from_contract(skale, node_id):

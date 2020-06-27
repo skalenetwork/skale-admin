@@ -54,14 +54,28 @@ logger = logging.getLogger(__name__)
 
 rpc_wallet = RPCWallet(TM_URL)
 skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+logger.info('IVD skale inited')
 
 docker_utils = DockerUtils()
+logger.info('IVD docker utils')
 
 node_config = NodeConfig()
 node = Node(skale, node_config)
+logger.info('IVD node')
 
 token = init_user_token()
-database = SqliteDatabase(DB_FILE)
+
+database = SqliteDatabase(
+    DB_FILE,
+    pragmas={
+        'journal_mode': 'wal',
+        'cache_size': -1 * 64000,  # 64MB
+        'foreign_keys': 1,
+        'ignore_check_constraints': 0,
+        'synchronous': 0
+    }
+)
+logger.info('IVD database')
 
 app = Flask(__name__)
 app.register_blueprint(web_logs)
@@ -87,8 +101,9 @@ def after_request(response):
 
 
 def create_tables():
-    if not SChainRecord.table_exists():
-        SChainRecord.create_table()
+    with database:
+        if not SChainRecord.table_exists():
+            SChainRecord.create_table()
 
 
 create_tables()

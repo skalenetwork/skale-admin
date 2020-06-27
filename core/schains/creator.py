@@ -28,11 +28,6 @@ from multiprocessing import Process
 from skale.manager_client import spawn_skale_lib
 
 
-from tools.bls.dkg_client import DkgError
-from tools.docker_utils import DockerUtils
-from tools.str_formatters import arguments_list_string
-from web.models.schain import SChainRecord
-
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  run_schain_container_in_sync_mode,
                                  restart_container, set_rotation_for_schain,
@@ -50,12 +45,17 @@ from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
 
+from tools.bls.dkg_client import DkgError
+from tools.db import queue_database
+from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
+from tools.str_formatters import arguments_list_string
+from web.models.schain import SChainRecord
 
 
 logger = logging.getLogger(__name__)
@@ -91,20 +91,21 @@ def monitor(skale, node_config):
         arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
                                'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
 
-    with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
-        futures = [
-            executor.submit(
-                monitor_schain,
-                skale,
-                node_config.id,
-                node_config.sgx_key_name,
-                schain,
-                ecdsa_sgx_key_name
-            )
-            for schain in schains if schain['active']
-        ]
-        for future in futures:
-            future.result()
+    with queue_database():
+        with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
+            futures = [
+                executor.submit(
+                    monitor_schain,
+                    skale,
+                    node_config.id,
+                    node_config.sgx_key_name,
+                    schain,
+                    ecdsa_sgx_key_name
+                )
+                for schain in schains if schain['active']
+            ]
+            for future in futures:
+                future.result()
     logger.info('Creator procedure finished')
 
 
