@@ -54,14 +54,20 @@ logger = logging.getLogger(__name__)
 
 rpc_wallet = RPCWallet(TM_URL)
 skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+logger.info('Skale inited')
 
 docker_utils = DockerUtils()
+logger.info('Docker utils inited')
 
 node_config = NodeConfig()
 node = Node(skale, node_config)
+logger.info('Node inited')
 
 token = init_user_token()
+logger.info('Token inited')
+
 database = SqliteDatabase(DB_FILE)
+logger.info('DB inited')
 
 app = Flask(__name__)
 app.register_blueprint(web_logs)
@@ -80,9 +86,10 @@ def before_request():
     g.db.connect()
 
 
-@app.after_request
-def after_request(response):
-    g.db.close()
+@app.teardown_request
+def teardown_request(response):
+    if not g.db.is_closed():
+        g.db.close()
     return response
 
 
