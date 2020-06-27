@@ -98,7 +98,7 @@ class Node:
         exit_count = len(schains_list) or 1
         for _ in range(exit_count):
             try:
-                self.skale.manager.node_exit(self.config.id, wait_for=True)
+                self.skale.node_rotation.node_exit(self.config.id, wait_for=True)
             except TransactionFailedError as err:
                 logger.error('Node rotation failed', exc_info=err)
 
@@ -111,7 +111,7 @@ class Node:
             }
             for schain in active_schains
         ]
-        rotated_schains = self.skale.schains_internal.get_leaving_history(self.config.id)
+        rotated_schains = self.skale.node_rotation.get_leaving_history(self.config.id)
         current_time = time.time()
         for schain in rotated_schains:
             if current_time > schain['finished_rotation']:
