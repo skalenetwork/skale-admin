@@ -54,7 +54,7 @@ def test_exiting_monitor(skale, config):
         'rotation_id': 0
     }
     CHECK_MOCK['rotation_in_progress'] = rotation_info
-    with mock.patch('core.schains.creator.SChainRecord'), \
+    with mock.patch('web.models.schain.SChainRecord'), \
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0),\
             mock.patch('core.schains.creator.SChainChecks.run_checks'), \
             mock.patch('core.schains.creator.SChainChecks.get_all',
@@ -76,7 +76,7 @@ def test_rotating_monitor(skale, config):
         'rotation_id': 0
     }
     CHECK_MOCK['rotation_in_progress'] = rotation_info
-    with mock.patch('core.schains.creator.SChainRecord'),\
+    with mock.patch('web.models.schain.SChainRecord'),\
             mock.patch('core.schains.creator.run_dkg'), \
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
             mock.patch('core.schains.creator.SChainChecks.run_checks'), \
@@ -102,7 +102,7 @@ def test_new_schain_monitor(skale, config):
     }
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     CHECK_MOCK['container'] = False
-    with mock.patch('core.schains.creator.SChainRecord'), \
+    with mock.patch('web.models.schain.SChainRecord'), \
             mock.patch('core.schains.creator.run_dkg'), \
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
             mock.patch('core.schains.creator.SChainChecks.run_checks'), \

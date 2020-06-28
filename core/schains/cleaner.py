@@ -28,12 +28,12 @@ from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name, check_container_exit
 from core.schains.config import get_allowed_endpoints
 
-from tools.docker_utils import DockerUtils
-from tools.str_formatters import arguments_list_string
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from tools.docker_utils import DockerUtils
 from tools.iptables import remove_rules as remove_iptables_rules
-from web.models.schain import SChainRecord
+from tools.str_formatters import arguments_list_string
+from web.models.schain import mark_schain_deleted
 
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,6 @@ dutils = DockerUtils()
 
 
 def run_cleaner(skale, node_config):
-    monitor(skale, node_config)
     process = Process(target=monitor, args=(skale, node_config))
     process.start()
     process.join()
@@ -49,12 +48,6 @@ def run_cleaner(skale, node_config):
 
 def log_remove(component_name, schain_name):
     logger.warning(f'Going to remove {component_name} for sChain {schain_name}')
-
-
-def mark_schain_deleted(schain_name):
-    if SChainRecord.added(schain_name):
-        schain_record = SChainRecord.get_by_name(schain_name)
-        schain_record.set_deleted()
 
 
 def remove_schain_volume(schain_name):
@@ -91,7 +84,8 @@ def monitor(skale, node_config):
             not skale.schains_internal.is_schain_exist(schain_name) or
                 check_container_exit(schain_name, dutils=dutils)):
             logger.info(
-                arguments_list_string({'sChain name': schain_name}, 'Removed sChain found'))
+                arguments_list_string({'sChain name': schain_name},
+                                      'Removed sChain found'))
             cleanup_schain(node_config.id, schain_name)
         logger.info('Cleanup procedure finished')
 

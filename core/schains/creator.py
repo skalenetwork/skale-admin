@@ -28,11 +28,6 @@ from multiprocessing import Process
 from skale.manager_client import spawn_skale_lib
 
 
-from tools.bls.dkg_client import DkgError
-from tools.docker_utils import DockerUtils
-from tools.str_formatters import arguments_list_string
-from web.models.schain import SChainRecord
-
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  run_schain_container_in_sync_mode,
                                  restart_container, set_rotation_for_schain,
@@ -50,12 +45,16 @@ from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
 
+from tools.bls.dkg_client import DkgError
+from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
+from tools.str_formatters import arguments_list_string
+from web.models.schain import upsert_schain_record
 
 
 logger = logging.getLogger(__name__)
@@ -125,10 +124,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, ecdsa_sgx_key_name):
     checks_dict = checks.get_all()
     bot = TgBot(TG_API_KEY, TG_CHAT_ID) if TG_API_KEY and TG_CHAT_ID else None
 
-    if not SChainRecord.added(name):
-        schain_record, _ = SChainRecord.add(name)
-    else:
-        schain_record = SChainRecord.get_by_name(name)
+    schain_record = upsert_schain_record(name)
 
     if not schain_record.first_run:
         if bot and not checks.is_healthy():
