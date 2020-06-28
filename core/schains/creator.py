@@ -79,7 +79,7 @@ def monitor(skale, node_config):
     logger.info('Fetching schains ...')
     schains = skale.schains.get_schains_for_node(node_id)
     logger.info('Get leaving_history for node ...')
-    leaving_history = skale.schains_internal.get_leaving_history(node_id)
+    leaving_history = skale.node_rotation.get_leaving_history(node_id)
     for leaving_schain in leaving_history:
         schain = skale.schains.get(leaving_schain['id'])
         if time.time() < leaving_schain['finished_rotation'] and schain['name']:
@@ -260,12 +260,12 @@ def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
         if not rotation_id:
             public_key = get_schain_public_key(
                 schain['name'],
-                skale.schains_internal.get_groups_public_key
+                skale.key_storage.get_common_public_key
             )
         else:
             public_key = get_schain_public_key(
                 schain['name'],
-                skale.schains_internal.get_previous_groups_public_key
+                skale.key_storage.get_previous_public_key
             )
         env = get_schain_env(
             schain_name=schain['name'],

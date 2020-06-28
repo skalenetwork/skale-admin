@@ -103,12 +103,12 @@ def generate_wallets_config(schain_name, rotation_id):
     }
     common_public_keys = secret_key_share_config['common_public_key']
     for (i, value) in enumerate(common_public_keys):
-        name = 'insecureBLSPublicKey' + str(i)
+        name = 'insecureCommonBLSPublicKey' + str(i)
         wallets['ima'][name] = str(value)
 
     public_keys = secret_key_share_config['public_key']
     for (i, value) in enumerate(public_keys):
-        name = 'insecureCommonBLSPublicKey' + str(i)
+        name = 'insecureBLSPublicKey' + str(i)
         wallets['ima'][name] = str(value)
 
     return wallets
@@ -270,7 +270,7 @@ def get_schain_container_sync_opts(schain_name, public_key, start_ts):
     )
 
 
-def get_schain_container_base_opts(schain_name, log_level=4):
+def get_schain_container_base_opts(schain_name, log_level=6):
     config_filepath = get_schain_config_filepath(schain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)

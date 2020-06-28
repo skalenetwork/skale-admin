@@ -19,7 +19,7 @@ docker_utils = DockerUtils(volume_driver='local')
 TIMEOUT = 240
 SECRET_KEY_INFO = {
     "common_public_key": [
-        1
+        1, 1, 1, 1
     ],
     "public_key": [
         "1",
