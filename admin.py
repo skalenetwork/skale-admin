@@ -57,13 +57,13 @@ def monitor(skale, node_config):
 
 
 def main():
-    rpc_wallet = RPCWallet(TM_URL)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
     node_config = NodeConfig()
-    set_schains_first_run()
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
+    rpc_wallet = RPCWallet(TM_URL)
+    skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+    set_schains_first_run()
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
     monitor(skale, node_config)
