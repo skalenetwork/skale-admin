@@ -29,7 +29,7 @@ from core.node_config import NodeConfig
 
 from tools.configs import FLASK_SECRET_KEY_FILE
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
-from tools.db import database
+from tools.db import get_database
 from tools.docker_utils import DockerUtils
 from tools.logger import init_api_logger
 from tools.sgx_utils import generate_sgx_key, sgx_server_text
@@ -37,8 +37,8 @@ from tools.str_formatters import arguments_list_string
 from tools.token_utils import init_user_token
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from web.models.schain import SChainRecord
 
+from web.models.schain import create_tables
 from web.routes.logs import web_logs
 from web.routes.nodes import construct_nodes_bp
 from web.routes.schains import construct_schains_bp
@@ -79,7 +79,7 @@ app.register_blueprint(sgx_bp)
 
 @app.before_request
 def before_request():
-    g.db = database()
+    g.db = get_database()
     g.db.connect()
 
 
@@ -90,18 +90,11 @@ def teardown_request(response):
     return response
 
 
-def create_tables():
-    logger.info('Creating schainrecord table...')
-    db = database()
-    with db:
-        if not SChainRecord.table_exists():
-            SChainRecord.create_table()
-
-
 create_tables()
 generate_sgx_key(node_config)
 app.secret_key = FLASK_SECRET_KEY_FILE
 app.use_reloader = False
+logger.info('Starting api')
 
 
 def main():

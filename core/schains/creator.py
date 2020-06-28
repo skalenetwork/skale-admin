@@ -46,7 +46,6 @@ from core.schains.dkg import run_dkg
 from core.schains.runner import get_container_name
 
 from tools.bls.dkg_client import DkgError
-from tools.db import queue_database
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER
@@ -55,7 +54,7 @@ from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.str_formatters import arguments_list_string
-from web.models.schain import SChainRecord
+from web.models.schain import upsert_schain_record
 
 
 logger = logging.getLogger(__name__)
@@ -91,21 +90,20 @@ def monitor(skale, node_config):
         arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
                                'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
 
-    with queue_database():
-        with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
-            futures = [
-                executor.submit(
-                    monitor_schain,
-                    skale,
-                    node_config.id,
-                    node_config.sgx_key_name,
-                    schain,
-                    ecdsa_sgx_key_name
-                )
-                for schain in schains if schain['active']
-            ]
-            for future in futures:
-                future.result()
+    with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
+        futures = [
+            executor.submit(
+                monitor_schain,
+                skale,
+                node_config.id,
+                node_config.sgx_key_name,
+                schain,
+                ecdsa_sgx_key_name
+            )
+            for schain in schains if schain['active']
+        ]
+        for future in futures:
+            future.result()
     logger.info('Creator procedure finished')
 
 
@@ -126,10 +124,7 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, ecdsa_sgx_key_name):
     checks_dict = checks.get_all()
     bot = TgBot(TG_API_KEY, TG_CHAT_ID) if TG_API_KEY and TG_CHAT_ID else None
 
-    if not SChainRecord.added(name):
-        schain_record, _ = SChainRecord.add(name)
-    else:
-        schain_record = SChainRecord.get_by_name(name)
+    schain_record = upsert_schain_record(name)
 
     if not schain_record.first_run:
         if bot and not checks.is_healthy():

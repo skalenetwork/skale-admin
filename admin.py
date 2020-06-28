@@ -29,10 +29,9 @@ from core.schains.cleaner import run_cleaner
 
 from tools.configs import BACKUP_RUN
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
-from tools.db import database
 from tools.logger import init_admin_logger
 
-from web.models.schain import SChainRecord
+from web.models.schain import set_schains_first_run
 
 
 init_admin_logger()
@@ -40,13 +39,6 @@ logger = logging.getLogger(__name__)
 
 SLEEP_INTERVAL = 50
 MONITOR_INTERVAL = 45
-
-
-def set_schains_first_run():
-    logger.info('Setting first_run=True for all sChain records')
-    query = SChainRecord.update(first_run=True).where(
-        SChainRecord.first_run == False)  # noqa
-    query.execute()
 
 
 def monitor(skale, node_config):
@@ -65,8 +57,7 @@ def main():
 
     rpc_wallet = RPCWallet(TM_URL)
     skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
-    with database():
-        set_schains_first_run()
+    set_schains_first_run()
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
     monitor(skale, node_config)
