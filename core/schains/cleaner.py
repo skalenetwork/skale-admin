@@ -36,6 +36,7 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.iptables import remove_rules as remove_iptables_rules
+from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
 from web.models.schain import mark_schain_deleted
 
