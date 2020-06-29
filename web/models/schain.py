@@ -99,3 +99,30 @@ class SChainRecord(BaseModel):
         logger.info(f'Changing first_run for {self.name} to {val}')
         self.first_run = val
         self.save()
+
+
+def create_tables():
+    logger.info('Creating schainrecord table...')
+    if not SChainRecord.table_exists():
+        SChainRecord.create_table()
+
+
+def set_schains_first_run():
+    logger.info('Setting first_run=True for all sChain records')
+    query = SChainRecord.update(first_run=True).where(
+        SChainRecord.first_run == False)  # noqa
+    query.execute()
+
+
+def upsert_schain_record(name):
+    if not SChainRecord.added(name):
+        schain_record, _ = SChainRecord.add(name)
+    else:
+        schain_record = SChainRecord.get_by_name(name)
+    return schain_record
+
+
+def mark_schain_deleted(name):
+    if SChainRecord.added(name):
+        schain_record = SChainRecord.get_by_name(name)
+        schain_record.set_deleted()

@@ -20,7 +20,7 @@ def cleanup_contracts(skale):
     active_node_ids = skale.nodes.get_active_node_ids()
     logger.info(f'Removing {len(active_node_ids)} nodes from contracts')
     for node_id in active_node_ids:
-        skale.manager.delete_node_by_root(node_id, wait_for=True)
+        skale.manager.node_exit(node_id, wait_for=True)
 
 
 if __name__ == "__main__":

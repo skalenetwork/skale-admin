@@ -19,7 +19,7 @@ docker_utils = DockerUtils(volume_driver='local')
 TIMEOUT = 240
 SECRET_KEY_INFO = {
     "common_public_key": [
-        1
+        1, 1, 1, 1
     ],
     "public_key": [
         "1",
@@ -33,7 +33,7 @@ SECRET_KEY_INFO = {
 }
 
 
-class NodeConfigMock():
+class NodeConfigMock:
     def __init__(self):
         self.id = 0
         self.sgx_key_name = ""

@@ -29,8 +29,10 @@ def rotated_nodes(skale):
 
     key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    os.remove(key_path)
-    os.remove(cert_path)
+    if os.path.isfile(key_path):
+        os.remove(key_path)
+    if os.path.isfile(cert_path):
+        os.remove(cert_path)
 
     nodes, schain_name = set_up_rotated_schain(skale)
 
@@ -42,7 +44,7 @@ def rotated_nodes(skale):
     dutils.safe_rm(f'skale_schain_{schain_name}', force=True)
     skale.manager.delete_schain(schain_name, wait_for=True)
     for i in range(1, 3):
-        skale.manager.delete_node_by_root(nodes[i].config.id, wait_for=True)
+        skale.manager.node_exit(nodes[i].config.id, wait_for=True)
 
 
 def test_new_node(skale, rotated_nodes):

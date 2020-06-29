@@ -2,14 +2,14 @@ import os
 import pytest
 
 from core.schains.cleaner import (remove_config_dir, remove_schain_volume, remove_schain_container,
-                                  remove_ima_container, mark_schain_deleted)
+                                  remove_ima_container)
 from core.schains.helper import init_schain_dir
 from tools.configs.schains import SCHAINS_DIR_PATH
 
 from tools.docker_utils import DockerUtils
 
 from tests.docker_utils_test import run_simple_schain_container, run_simple_ima_container, SCHAIN
-from web.models.schain import SChainRecord
+from web.models.schain import SChainRecord, mark_schain_deleted
 
 SCHAIN_CONTAINER_NAME = 'skale_schain_test'
 IMA_CONTAINER_NAME = 'skale_ima_test'

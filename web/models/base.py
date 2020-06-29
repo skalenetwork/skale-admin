@@ -17,14 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from peewee import Model, SqliteDatabase
-from tools.configs.db import DB_FILE
-
-database = SqliteDatabase(DB_FILE)
+from peewee import Model
+from tools.db import get_database
 
 
 class BaseModel(Model):
-    database = database
+    database = get_database()
 
     class Meta:
-        database = database
+        database = get_database()

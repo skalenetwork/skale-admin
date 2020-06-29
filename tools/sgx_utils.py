@@ -32,6 +32,7 @@ class SGXConnecionError(Exception):
 
 
 def generate_sgx_key(config):
+    logger.info('Generating sgx key...')
     if not SGX_SERVER_URL:
         raise SGXConnecionError('SGX server URL is not provided')
     if not config.sgx_key_name:

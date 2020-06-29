@@ -43,7 +43,7 @@ from tools.helper import read_json
 logger = logging.getLogger(__name__)
 
 
-def generate_schain_config(skale, schain_name, node_id, rotation_id):
+def generate_schain_config(skale, schain_name, node_id, rotation_id, ecdsa_sgx_key_name):
     base_config = read_base_config()
     ima_data = read_ima_data()
     wallets = generate_wallets_config(schain_name, rotation_id)
@@ -72,6 +72,7 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id):
         ima_mainnet=ima_mainnet_url,
         ima_mp_schain=ima_mp_schain,
         ima_mp_mainnet=ima_mp_mainnet,
+        ecdsa_key_name=ecdsa_sgx_key_name,
         wallets=wallets,
         ima_data=ima_data,
         custom_schain_config_fields=custom_schain_config_fields,
@@ -102,12 +103,12 @@ def generate_wallets_config(schain_name, rotation_id):
     }
     common_public_keys = secret_key_share_config['common_public_key']
     for (i, value) in enumerate(common_public_keys):
-        name = 'insecureBLSPublicKey' + str(i)
+        name = 'insecureCommonBLSPublicKey' + str(i)
         wallets['ima'][name] = str(value)
 
     public_keys = secret_key_share_config['public_key']
     for (i, value) in enumerate(public_keys):
-        name = 'insecureCommonBLSPublicKey' + str(i)
+        name = 'insecureBLSPublicKey' + str(i)
         wallets['ima'][name] = str(value)
 
     return wallets
@@ -269,7 +270,7 @@ def get_schain_container_sync_opts(schain_name, public_key, start_ts):
     )
 
 
-def get_schain_container_base_opts(schain_name, log_level=4):
+def get_schain_container_base_opts(schain_name, log_level=6):
     config_filepath = get_schain_config_filepath(schain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)

@@ -178,6 +178,8 @@ class DKGClient:
                                             self.node_id_dkg)
 
     def send_complaint(self, to_node):
+        logger.info(f'sChain: {self.schain_name}. '
+                    f'{self.node_id_dkg} is trying to sent a complaint on {to_node} node')
         is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
         is_complaint_possible = is_complaint_possible_function(
             self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]).call(
@@ -195,11 +197,11 @@ class DKGClient:
                 gas_price=self.skale.dkg.gas_price(),
                 wait_for=True
             )
+            logger.info(f'sChain: {self.schain_name}. '
+                        f'{self.node_id_dkg} node sent a complaint on {to_node} node')
         except TransactionFailedError as e:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
-        logger.info(f'sChain: {self.schain_name}. '
-                    f'{self.node_id_dkg} node sent a complaint on {to_node} node')
 
     def response(self, from_node_index):
         is_response_possible_function = self.dkg_contract_functions.isResponsePossible
@@ -234,9 +236,8 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. {from_node_index} node sent a response')
 
     def get_broadcasted_data(self, from_node):
-        get_broadcasted_data_function = self.dkg_contract_functions.getBroadcastedData
-        return get_broadcasted_data_function(self.group_index, self.node_ids_dkg[from_node]).call(
-            {'from': self.skale.wallet.address}
+        return self.skale.key_storage.get_broadcasted_data(
+            self.group_index, self.node_ids_dkg[from_node]
         )
 
     def is_all_data_received(self, from_node):
@@ -252,7 +253,6 @@ class DKGClient:
         )
 
     def receive_from_node(self, from_node, broadcasted_data):
-        logger.info(f'BROADCASTED: {broadcasted_data}')
         self.receive_verification_vector(from_node, broadcasted_data[0])
         self.receive_secret_key_contribution(from_node, broadcasted_data[1])
         if not self.verification(from_node):
