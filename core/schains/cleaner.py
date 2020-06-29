@@ -28,6 +28,8 @@ from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name, check_container_exit
 from core.schains.config import get_allowed_endpoints
 
+from tools.bls.dkg_utils import get_secret_key_share_filepath
+from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.docker_utils import DockerUtils
@@ -86,7 +88,13 @@ def monitor(skale, node_config):
             logger.info(
                 arguments_list_string({'sChain name': schain_name},
                                       'Removed sChain found'))
-            cleanup_schain(node_config.id, schain_name)
+            rotation_id = skale.schains.get_last_rotation_id(schain_name)
+            cleanup_schain(node_config.id, schain_name, rotation_id)
+            secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
+            secret_key_share_config = read_json(secret_key_share_filepath)
+            bls_key_name = secret_key_share_config['key_share_name']
+            sgx = SgxClient(os.environ['SGX_SERVER_URL'], path_to_cert=SGX_CERTIFICATES_FOLDER)
+            sgx.delete_bls_key(bls_key_name)
         logger.info('Cleanup procedure finished')
 
 
