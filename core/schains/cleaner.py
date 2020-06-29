@@ -28,6 +28,8 @@ from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name, check_container_exit
 from core.schains.config import get_allowed_endpoints
 
+from sgx import SgxClient
+
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
