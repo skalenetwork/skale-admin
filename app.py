@@ -80,7 +80,7 @@ app.register_blueprint(sgx_bp)
 @app.before_request
 def before_request():
     g.db = get_database()
-    g.db.connect()
+    g.db.connect(reuse_if_open=True)
 
 
 @app.teardown_request
