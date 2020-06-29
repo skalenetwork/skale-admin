@@ -249,7 +249,8 @@ def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
     def get_schain_public_key(schain_name, method):
         group_idx = skale.schains.name_to_id(schain_name)
         raw_public_key = method(group_idx)
-        return ':'.join(map(str, raw_public_key))
+        public_key_array = [*raw_public_key[0], *raw_public_key[1]]
+        return ':'.join(map(str, public_key_array))
 
     if check_container(schain['name'], volume_required=True):
         if not rotation_id:
