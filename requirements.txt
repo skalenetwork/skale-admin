@@ -4,7 +4,7 @@ PyMySQL==0.9.3
 Flask==1.0.2
 itsdangerous==0.24
 Jinja2==2.10.1
-MarkupSafe==0.23
+MarkupSafe==1.1.1
 Werkzeug==0.15.3
 
 docker==4.0.2
