@@ -23,7 +23,7 @@ import shutil
 from multiprocessing import Process
 
 
-from core.schains.checks import SChainChecks
+from core.schains.checks import SChainChecks, check_for_rotation
 from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name, check_container_exit
 from core.schains.config import get_allowed_endpoints
@@ -86,7 +86,11 @@ def monitor(skale, node_config):
             logger.info(
                 arguments_list_string({'sChain name': schain_name},
                                       'Removed sChain found'))
-            cleanup_schain(node_config.id, schain_name)
+            rotation = check_for_rotation(skale, schain_name, node_config.id)
+            rotation_id = rotation['rotation_id']
+            if rotation['exiting_node']:
+                rotation_id -= 1
+            cleanup_schain(node_config.id, schain_name, rotation_id)
         logger.info('Cleanup procedure finished')
 
 
