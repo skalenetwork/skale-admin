@@ -23,7 +23,7 @@ import shutil
 from multiprocessing import Process
 
 
-from core.schains.checks import SChainChecks, check_for_rotation
+from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name, check_container_exit
 from core.schains.config import get_allowed_endpoints
