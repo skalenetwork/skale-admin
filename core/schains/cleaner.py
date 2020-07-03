@@ -121,8 +121,8 @@ def remove_firewall_rules(schain_name):
     remove_iptables_rules(endpoints)
 
 
-def cleanup_schain(node_id, schain_name, rotation_id=0):
-    checks = SChainChecks(schain_name, node_id, rotation_id).get_all()
+def cleanup_schain(node_id, schain_name):
+    checks = SChainChecks(schain_name, node_id).get_all()
     if checks['container'] or check_container_exit(schain_name, dutils=dutils):
         remove_schain_container(schain_name)
     if checks['volume']:
