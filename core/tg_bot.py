@@ -18,9 +18,22 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import datetime
+from celery import Celery
 
 from telegram import Bot
-from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+# from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+TG_API_KEY = ''
+TG_CHAT_ID = ''
+
+
+app = Celery('tasks', broker='redis://localhost:6379/0')
+# app.control.rate_limit('tasks.send_message', '20/m')
+print('3here')
+
+
+@app.task(rate_limit='20/m')
+def send_message(bot, chat_id, message):
+    return bot.send_message(chat_id=chat_id, text=message)
 
 
 class TgBot():
@@ -28,6 +41,9 @@ class TgBot():
         self.__api_key = api_key
         self.__chat_id = chat_id
         self.bot = Bot(api_key)
+
+    def celery_send_message(self, formatted_message):
+        send_message(self.bot, self.__chat_id, formatted_message)
 
     def send_message(self, formatted_message):
         return self.bot.send_message(chat_id=self.__chat_id, text=formatted_message)
