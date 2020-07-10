@@ -94,10 +94,14 @@ def monitor(skale, node_config):
             last_rotation_id = skale.schains.get_last_rotation_id(schain_name)
             for i in range(last_rotation_id + 1):
                 try:
-                    secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
+                    secret_key_share_filepath = get_secret_key_share_filepath(
+                                                                    schain_name, last_rotation_id
+                                                                            )
                     secret_key_share_config = read_json(secret_key_share_filepath)
                     bls_key_name = secret_key_share_config['key_share_name']
-                    sgx = SgxClient(os.environ['SGX_SERVER_URL'], path_to_cert=SGX_CERTIFICATES_FOLDER)
+                    sgx = SgxClient(os.environ['SGX_SERVER_URL'],
+                                    path_to_cert=SGX_CERTIFICATES_FOLDER
+                                    )
                     sgx.delete_bls_key(bls_key_name)
                 except IOError:
                     continue
