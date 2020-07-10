@@ -22,7 +22,12 @@ import copy
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_container_limits, get_schain_volume_config
-from core.schains.config import get_skaled_http_snapshot_address, get_skaled_http_address
+from core.schains.config import (
+    get_schain_container_cmd,
+    get_schain_env,
+    get_skaled_http_snapshot_address,
+    get_skaled_http_address
+)
 from core.schains.helper import send_rotation_request
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -65,7 +70,7 @@ def get_ulimits_config(config):
                     Ulimit(name=ulimit['name'], soft=ulimit['soft'], hard=ulimit['hard']), config))
 
 
-def run_container(type, schain, env, volume_config=None,
+def run_container(type, schain, env, cmd=None, volume_config=None,
                   cpu_limit=None, mem_limit=None, dutils=None):
     if not dutils:
         dutils = docker_utils
@@ -85,6 +90,7 @@ def run_container(type, schain, env, volume_config=None,
     if mem_limit:
         run_args['mem_limit'] = mem_limit
     run_args['environment'] = env
+    run_args['command'] = cmd
 
     logger.info(arguments_list_string({'Container name': container_name, 'Image name': image_name,
                                        'Args': run_args}, 'Running container...'))
@@ -104,26 +110,31 @@ def restart_container(type, schain):
     return cont
 
 
-def run_schain_container(schain, env, dutils=None):
+def run_schain_container(schain, dutils=None):
     cpu_limit, mem_limit = get_container_limits(schain)
     volume_config = get_schain_volume_config(schain['name'],
                                              DATA_DIR_CONTAINER_PATH)
-    run_container(SCHAIN_CONTAINER, schain, env, volume_config, cpu_limit,
+    cmd = get_schain_container_cmd(schain['name'])
+    env = get_schain_env(schain['name'])
+    run_container(SCHAIN_CONTAINER, schain, env, cmd, volume_config, cpu_limit,
                   mem_limit, dutils=dutils)
 
 
-def run_schain_container_in_sync_mode(schain, env, public_key, start_ts, dutils=None):
+def run_schain_container_in_sync_mode(schain, public_key, start_ts,
+                                      dutils=None):
     schain_name = schain['name']
     endpoint = get_skaled_http_snapshot_address(schain_name)
     url = f'http://{endpoint.ip}:{endpoint.port}'
     env['DOWNLOAD_SNAPSHOT_OPTION'] = (f'--download-snapshot {url} '
                                        f'--public-key {public_key} '
                                        f'--start-timestamp {start_ts}')
+    cmd = get_schain_container_cmd(schain_name, public_key, start_ts)
+    env = get_schain_env(schain_name)
 
     cpu_limit, mem_limit = get_container_limits(schain)
     volume_config = get_schain_volume_config(schain_name,
                                              DATA_DIR_CONTAINER_PATH)
-    run_container(SCHAIN_CONTAINER, schain, env, volume_config, cpu_limit,
+    run_container(SCHAIN_CONTAINER, schain, env, cmd, volume_config, cpu_limit,
                   mem_limit, dutils=dutils)
 
 
@@ -134,8 +145,8 @@ def set_rotation_for_schain(schain, timestamp):
     send_rotation_request(url, timestamp)
 
 
-def run_ima_container(schain, env, dutils=None):
-    run_container(IMA_CONTAINER, schain, env, dutils=dutils)
+def run_ima_container(schain, env, cmd=None, dutils=None):
+    run_container(IMA_CONTAINER, schain, env, cmd, dutils=dutils)
 
 
 def add_config_volume(run_args):

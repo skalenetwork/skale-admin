@@ -37,7 +37,7 @@ from core.tg_bot import TgBot
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
                                  get_schain_proxy_file_path)
 from core.schains.config import (generate_schain_config, save_schain_config,
-                                 get_schain_env, get_allowed_endpoints, update_schain_config)
+                                 get_allowed_endpoints, update_schain_config)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks, check_for_rotation
 from core.schains.ima import get_ima_env
@@ -236,8 +236,7 @@ def check_container(schain_name, volume_required=False):
 
 def monitor_schain_container(schain):
     if check_container(schain['name'], volume_required=True):
-        env = get_schain_env(schain['name'])
-        run_schain_container(schain, env)
+        run_schain_container(schain)
 
 
 def monitor_ima_container(schain):
@@ -263,13 +262,7 @@ def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
                 schain['name'],
                 skale.key_storage.get_previous_public_key
             )
-        env = get_schain_env(
-            schain_name=schain['name'],
-            start_ts=start_ts,
-            public_key=public_key
-        )
         run_schain_container_in_sync_mode(schain,
-                                          env,
                                           start_ts=start_ts,
                                           public_key=public_key)
 
