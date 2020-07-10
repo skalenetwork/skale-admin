@@ -4,8 +4,9 @@ from concurrent.futures import ThreadPoolExecutor as Executor
 
 TG_API_KEY = ''
 TG_CHAT_ID = ''
-THREADS = 2
-ITERATIONS = 2
+
+THREADS = 4
+ITERATIONS = 1
 
 
 def send(bot, message):
@@ -15,16 +16,14 @@ def send(bot, message):
 
 
 def main():
-    print('here1')
     bot = TgBot(TG_API_KEY, TG_CHAT_ID)
-    print('here')
     with Executor(max_workers=THREADS) as executor:
         futures = [
-            executor.submit(send, bot, {'message': f'test{i}'})
+            executor.submit(send, bot, {'message': f'1test{i}'})
             for i in range(ITERATIONS)
         ]
     for future in futures:
-        future.result()
+        print(future.result())
 
 
 if __name__ == '__main__':

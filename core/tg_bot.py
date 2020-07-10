@@ -32,18 +32,21 @@ print('3here')
 
 
 @app.task(rate_limit='20/m')
-def send_message(bot, chat_id, message):
+# @app.task
+def send_message(api_key, chat_id, message):
+    bot = Bot(api_key)
     return bot.send_message(chat_id=chat_id, text=message)
 
 
-class TgBot():
+class TgBot:
     def __init__(self, api_key=TG_API_KEY, chat_id=TG_CHAT_ID):
         self.__api_key = api_key
         self.__chat_id = chat_id
         self.bot = Bot(api_key)
 
     def celery_send_message(self, formatted_message):
-        send_message(self.bot, self.__chat_id, formatted_message)
+        return send_message.apply_async((self.__api_key, self.__chat_id,
+                                        formatted_message))
 
     def send_message(self, formatted_message):
         return self.bot.send_message(chat_id=self.__chat_id, text=formatted_message)
