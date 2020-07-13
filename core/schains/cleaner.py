@@ -91,20 +91,7 @@ def monitor(skale, node_config):
             logger.info(
                 arguments_list_string({'sChain name': schain_name},
                                       'Removed sChain found'))
-            last_rotation_id = skale.schains.get_last_rotation_id(schain_name)
-            for i in range(last_rotation_id + 1):
-                try:
-                    secret_key_share_filepath = get_secret_key_share_filepath(
-                                                                    schain_name, last_rotation_id
-                                                                            )
-                    secret_key_share_config = read_json(secret_key_share_filepath)
-                    bls_key_name = secret_key_share_config['key_share_name']
-                    sgx = SgxClient(os.environ['SGX_SERVER_URL'],
-                                    path_to_cert=SGX_CERTIFICATES_FOLDER
-                                    )
-                    sgx.delete_bls_key(bls_key_name)
-                except IOError:
-                    continue
+            delete_bls_keys(skale, schain_name)
             cleanup_schain(node_config.id, schain_name)
         logger.info('Cleanup procedure finished')
 
@@ -154,3 +141,16 @@ def cleanup_schain(node_id, schain_name):
     if checks['data_dir']:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
+
+
+def delete_bls_keys(skale, schain_name):
+    last_rotation_id = skale.schains.get_last_rotation_id(schain_name)
+    for i in range(last_rotation_id + 1):
+        try:
+            secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)
+            secret_key_share_config = read_json(secret_key_share_filepath)
+            bls_key_name = secret_key_share_config['key_share_name']
+            sgx = SgxClient(os.environ['SGX_SERVER_URL'], path_to_cert=SGX_CERTIFICATES_FOLDER)
+            sgx.delete_bls_key(bls_key_name)
+        except IOError:
+            continue
