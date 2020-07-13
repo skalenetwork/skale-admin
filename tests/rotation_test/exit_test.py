@@ -9,7 +9,8 @@ import os
 from tests.rotation_test.utils import (wait_for_contract_exiting, wait_for_schain_alive,
                                        wait_for_schain_exiting, check_schain_alive,
                                        get_spawn_skale_mock, set_up_rotated_schain, run_dkg_mock,
-                                       init_data_volume_mock, run_schain_container_mock)
+                                       init_data_volume_mock, run_schain_container_mock,
+                                       check_deleted_bls)
 
 from core.node import NodeExitStatuses, SchainExitStatuses
 from core.schains.checks import SChainChecks
@@ -91,3 +92,4 @@ def test_node_exit(skale, exiting_node):
             assert not checks['volume']
             assert not checks['data_dir']
             assert not checks['config']
+            assert check_deleted_bls(schain_name)
