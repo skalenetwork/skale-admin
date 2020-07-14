@@ -9,7 +9,8 @@ from core.schains.checks import check_endpoint_alive
 from core.schains.config import get_skaled_http_address
 from core.schains.runner import run_schain_container, check_container_exit
 from core.schains.volume import init_data_volume
-from sgx import SgxClient, SgxException
+from sgx import SgxClient
+from sgx.sgx_rpc_handler import SgxException
 from tests.dkg_test.main_test import (generate_sgx_wallets, transfer_eth_to_wallets,
                                       link_addresses_to_validator, register_nodes, run_dkg_all)
 from tests.utils import generate_random_name
