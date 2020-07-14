@@ -27,6 +27,7 @@ from core.schains.config import (
     get_schain_env,
     get_skaled_http_address
 )
+from core.schains.ima import get_ima_env
 from core.schains.helper import send_rotation_request
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -88,7 +89,8 @@ def run_container(type, schain_name, env, cmd=None, volume_config=None,
     if mem_limit:
         run_args['mem_limit'] = mem_limit
     run_args['environment'] = env
-    run_args['command'] = cmd
+    if cmd:
+        run_args['command'] = cmd
 
     logger.info(arguments_list_string({'Container name': container_name, 'Image name': image_name,
                                        'Args': run_args}, 'Running container...'))
@@ -127,8 +129,9 @@ def set_rotation_for_schain(schain, timestamp):
     send_rotation_request(url, timestamp)
 
 
-def run_ima_container(schain, env, cmd=None, dutils=None):
-    run_container(IMA_CONTAINER, schain, env, cmd, dutils=dutils)
+def run_ima_container(schain, dutils=None):
+    env = get_ima_env(schain)
+    run_container(IMA_CONTAINER, schain, env, dutils=dutils)
 
 
 def add_config_volume(run_args):

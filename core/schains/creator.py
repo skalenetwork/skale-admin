@@ -39,7 +39,6 @@ from core.schains.config import (generate_schain_config, save_schain_config,
                                  get_allowed_endpoints, update_schain_config)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks, check_for_rotation
-from core.schains.ima import get_ima_env
 from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
@@ -239,8 +238,7 @@ def monitor_schain_container(schain):
 
 
 def monitor_ima_container(schain):
-    env = get_ima_env(schain['name'])
-    run_ima_container(schain, env)
+    run_ima_container(schain)
 
 
 def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
