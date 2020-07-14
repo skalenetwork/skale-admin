@@ -97,7 +97,7 @@ def run_simple_schain_container_in_sync_mode(dutils):
 
 
 def run_simple_ima_container(dutils):
-    run_ima_container(SCHAIN, {})
+    run_ima_container(SCHAIN)
 
 
 def check_schain_container(client):
