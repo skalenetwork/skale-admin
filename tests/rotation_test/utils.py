@@ -50,7 +50,7 @@ def init_data_volume_mock(schain, dutils):
     return init_data_volume(schain, docker_utils)
 
 
-def run_schain_container_mock(schain, env):
+def run_schain_container_mock(schain):
     return run_schain_container(schain, dutils=docker_utils)
 
 

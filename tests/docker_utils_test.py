@@ -49,35 +49,10 @@ def client():
 
 
 def run_simple_schain_container(dutils):
-    # env = {
-    #     "SSL_KEY_PATH": 'NULL',
-    #     "SSL_CERT_PATH": 'NULL',
-    #     "HTTP_RPC_PORT": 10002,
-    #     "HTTPS_RPC_PORT": 10007,
-    #     "WS_RPC_PORT": 10003,
-    #     "WSS_RPC_PORT": 10008,
-
-    #     "SCHAIN_ID": SCHAIN_NAME,
-    #     "CONFIG_FILE": os.path.join(TEST_SKALE_DATA_DIR, 'schain_config.json'),
-    #     "DATA_DIR": '/data_dir'
-    # }
-    # Run schain container
     run_schain_container(SCHAIN, dutils=dutils)
 
 
 def run_simple_schain_container_in_sync_mode(dutils):
-    # env = {
-    #     "SSL_KEY_PATH": 'NULL',
-    #     "SSL_CERT_PATH": 'NULL',
-    #     "HTTP_RPC_PORT": 10002,
-    #     "HTTPS_RPC_PORT": 10007,
-    #     "WS_RPC_PORT": 10003,
-    #     "WSS_RPC_PORT": 10008,
-
-    #     "SCHAIN_ID": SCHAIN_NAME,
-    #     "CONFIG_FILE": os.path.join(TEST_SKALE_DATA_DIR, 'schain_config.json'),
-    #     "DATA_DIR": '/data_dir'
-    # }
     public_key = "1:1:1:1"
     timestamp = time.time()
 
