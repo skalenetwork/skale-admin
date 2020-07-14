@@ -1,10 +1,8 @@
 import os
-from unittest import mock
-
 import pytest
 
 from core.schains.cleaner import (remove_config_dir, remove_schain_volume, remove_schain_container,
-                                  remove_ima_container, delete_bls_keys)
+                                  remove_ima_container)
 from core.schains.helper import init_schain_dir
 from tools.configs.schains import SCHAINS_DIR_PATH
 
@@ -65,10 +63,3 @@ def test_remove_schain_record():
     record = SChainRecord.to_dict(SChainRecord.get_by_name(name))
     assert record["is_deleted"]
     SChainRecord.drop_table()
-
-
-def test_delete_bls_keys(skale):
-    with mock.patch('core.schains.cleaner.SgxClient.delete_bls_key',
-                    new=mock.Mock()) as delete_mock:
-        delete_bls_keys(skale, SCHAIN['name'])
-        delete_mock.assert_called_with('BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0')
