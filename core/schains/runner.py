@@ -115,7 +115,7 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None):
     cpu_limit, mem_limit = get_container_limits(schain)
     volume_config = get_schain_volume_config(schain_name,
                                              DATA_DIR_CONTAINER_PATH)
-    env = get_schain_env(schain_name)
+    env = get_schain_env()
     cmd = get_schain_container_cmd(schain_name, public_key, start_ts)
     run_container(SCHAIN_CONTAINER, schain_name, env, cmd,
                   volume_config, cpu_limit,

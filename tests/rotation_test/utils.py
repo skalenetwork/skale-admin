@@ -51,7 +51,7 @@ def init_data_volume_mock(schain, dutils):
 
 
 def run_schain_container_mock(schain, env):
-    return run_schain_container(schain, env, docker_utils)
+    return run_schain_container(schain, dutils=docker_utils)
 
 
 def set_up_nodes(skale, nodes_number):
