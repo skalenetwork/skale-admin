@@ -130,8 +130,9 @@ def set_rotation_for_schain(schain, timestamp):
 
 
 def run_ima_container(schain, dutils=None):
+    schain_name = schain['name']
     env = get_ima_env(schain)
-    run_container(IMA_CONTAINER, schain, env, dutils=dutils)
+    run_container(IMA_CONTAINER, schain_name, env, dutils=dutils)
 
 
 def add_config_volume(run_args):
