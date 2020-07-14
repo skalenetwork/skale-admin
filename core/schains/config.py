@@ -176,6 +176,7 @@ def get_skaled_http_snapshot_address_from_config(config):
     for node_data in schain_nodes_config:
         if node_data['nodeID'] != node_id:
             from_node = node_data
+            break
 
     return NodeEndpoint(from_node['ip'], from_node['basePort'] +
                         SkaledPorts.HTTP_JSON.value)

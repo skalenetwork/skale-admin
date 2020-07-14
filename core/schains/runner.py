@@ -25,7 +25,6 @@ from core.schains.volume import get_container_limits, get_schain_volume_config
 from core.schains.config import (
     get_schain_container_cmd,
     get_schain_env,
-    get_skaled_http_snapshot_address,
     get_skaled_http_address
 )
 from core.schains.helper import send_rotation_request
@@ -70,11 +69,10 @@ def get_ulimits_config(config):
                     Ulimit(name=ulimit['name'], soft=ulimit['soft'], hard=ulimit['hard']), config))
 
 
-def run_container(type, schain, env, cmd=None, volume_config=None,
+def run_container(type, schain_name, env, cmd=None, volume_config=None,
                   cpu_limit=None, mem_limit=None, dutils=None):
     if not dutils:
         dutils = docker_utils
-    schain_name = schain['name']
     image_name, container_name, run_args, custom_args = get_container_info(type, schain_name)
 
     add_config_volume(run_args)
@@ -110,31 +108,15 @@ def restart_container(type, schain):
     return cont
 
 
-def run_schain_container(schain, dutils=None):
-    cpu_limit, mem_limit = get_container_limits(schain)
-    volume_config = get_schain_volume_config(schain['name'],
-                                             DATA_DIR_CONTAINER_PATH)
-    cmd = get_schain_container_cmd(schain['name'])
-    env = get_schain_env(schain['name'])
-    run_container(SCHAIN_CONTAINER, schain, env, cmd, volume_config, cpu_limit,
-                  mem_limit, dutils=dutils)
-
-
-def run_schain_container_in_sync_mode(schain, public_key, start_ts,
-                                      dutils=None):
+def run_schain_container(schain, public_key=None, start_ts=None, dutils=None):
     schain_name = schain['name']
-    endpoint = get_skaled_http_snapshot_address(schain_name)
-    url = f'http://{endpoint.ip}:{endpoint.port}'
-    env['DOWNLOAD_SNAPSHOT_OPTION'] = (f'--download-snapshot {url} '
-                                       f'--public-key {public_key} '
-                                       f'--start-timestamp {start_ts}')
-    cmd = get_schain_container_cmd(schain_name, public_key, start_ts)
-    env = get_schain_env(schain_name)
-
     cpu_limit, mem_limit = get_container_limits(schain)
     volume_config = get_schain_volume_config(schain_name,
                                              DATA_DIR_CONTAINER_PATH)
-    run_container(SCHAIN_CONTAINER, schain, env, cmd, volume_config, cpu_limit,
+    env = get_schain_env(schain_name)
+    cmd = get_schain_container_cmd(schain_name, public_key, start_ts)
+    run_container(SCHAIN_CONTAINER, schain_name, env, cmd,
+                  volume_config, cpu_limit,
                   mem_limit, dutils=dutils)
 
 

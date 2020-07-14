@@ -8,8 +8,7 @@ import mock
 
 from tools.docker_utils import DockerUtils
 from core.schains.runner import (run_schain_container, run_ima_container,
-                                 get_container_name, get_image_name,
-                                 run_schain_container_in_sync_mode)
+                                 get_container_name, get_image_name)
 from tools.configs.containers import SCHAIN_CONTAINER
 
 
@@ -63,7 +62,9 @@ def run_simple_schain_container(dutils):
         "DATA_DIR": '/data_dir'
     }
     # Run schain container
-    run_schain_container(SCHAIN, env, dutils=dutils)
+    with mock.patch('core.schains.runner.get_schain_env',
+                    return_value=env):
+        run_schain_container(SCHAIN, dutils=dutils)
 
 
 def run_simple_schain_container_in_sync_mode(dutils):
@@ -82,15 +83,17 @@ def run_simple_schain_container_in_sync_mode(dutils):
     public_key = "1:1:1:1"
     timestamp = time.time()
 
-    class SnapshotAddressMock():
+    class SnapshotAddressMock:
         def __init__(self):
             self.ip = '0.0.0.0'
             self.port = '8080'
 
     # Run schain container
-    with mock.patch('core.schains.runner.get_skaled_http_snapshot_address',
+    with mock.patch('core.schains.config.get_skaled_http_snapshot_address',
                     return_value=SnapshotAddressMock()):
-        run_schain_container_in_sync_mode(SCHAIN, env, public_key, timestamp, dutils=dutils)
+        with mock.patch('core.schains.runner.get_schain_env',
+                        return_value=env):
+            run_schain_container(SCHAIN, public_key, timestamp, dutils=dutils)
 
 
 def run_simple_ima_container(dutils):

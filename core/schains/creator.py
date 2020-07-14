@@ -29,7 +29,6 @@ from skale.manager_client import spawn_skale_lib
 
 
 from core.schains.runner import (run_schain_container, run_ima_container,
-                                 run_schain_container_in_sync_mode,
                                  restart_container, set_rotation_for_schain,
                                  check_container_exit)
 from core.schains.cleaner import remove_config_dir
@@ -262,9 +261,7 @@ def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
                 schain['name'],
                 skale.key_storage.get_previous_public_key
             )
-        run_schain_container_in_sync_mode(schain,
-                                          start_ts=start_ts,
-                                          public_key=public_key)
+        run_schain_container(schain, public_key=public_key, start_ts=start_ts)
 
 
 def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
