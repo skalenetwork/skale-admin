@@ -95,7 +95,7 @@ class Node:
         return {'status': 1, 'data': self.config.all()}
 
     def exit(self, opts):
-        schains_list = self.skale.schains.get_schains_for_node(self.config.id)
+        schains_list = self.skale.schains.get_active_schains_for_node(self.config.id)
         exit_count = len(schains_list) or 1
         for _ in range(exit_count):
             try:
@@ -104,7 +104,7 @@ class Node:
                 logger.error('Node rotation failed', exc_info=err)
 
     def get_exit_status(self):
-        active_schains = self.skale.schains.get_schains_for_node(self.config.id)
+        active_schains = self.skale.schains.get_active_schains_for_node(self.config.id)
         schain_statuses = [
             {
                 'name': schain['name'],
