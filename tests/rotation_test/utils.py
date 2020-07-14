@@ -130,13 +130,16 @@ def check_schain_alive(schain_name):
     return check_endpoint_alive(schain_endpoint)
 
 
-def check_deleted_bls(schain_name, i=0):
-    secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)
-    secret_key_share_config = read_json(secret_key_share_filepath)
-    bls_key_name = secret_key_share_config['key_share_name']
+def check_deleted_bls(bls_key_name):
     sgx = SgxClient(os.environ['SGX_SERVER_URL'], path_to_cert=SGX_CERTIFICATES_FOLDER)
     try:
         sgx.delete_bls_key(bls_key_name)
         return False
     except SgxException as e:
         return str(e) == f'BLS key with such name not found: {bls_key_name}'
+
+
+def get_bls_key_name(schain_name, i=0):
+    secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)
+    secret_key_share_config = read_json(secret_key_share_filepath)
+    return secret_key_share_config['key_share_name']
