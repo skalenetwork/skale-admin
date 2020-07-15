@@ -55,6 +55,10 @@ def run_schain_container_mock(schain, public_key=None, start_ts=None):
                                 start_ts=start_ts, dutils=docker_utils)
 
 
+def delete_bls_keys_mock(self, bls_key_name):
+    return bls_key_name
+
+
 def set_up_nodes(skale, nodes_number):
     wallets = generate_sgx_wallets(skale, nodes_number)
     transfer_eth_to_wallets(skale, wallets)
