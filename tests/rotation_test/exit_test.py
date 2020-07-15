@@ -82,7 +82,8 @@ def test_node_exit(skale, exiting_node):
             'rotation_id': 1
         }
         with mock.patch('core.schains.creator.check_for_rotation',
-                        new=mock.Mock(return_value=rotation_mock)):
+                        new=mock.Mock(return_value=rotation_mock)),\
+                mock.patch('core.schains.cleaner.SgxClient.delete_bls_key', True):
             monitor(skale, node.config)
             wait_for_schain_exiting(schain_name)
             cleaner_monitor(node.skale, node.config)
