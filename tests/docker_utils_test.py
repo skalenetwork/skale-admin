@@ -8,8 +8,7 @@ import mock
 
 from tools.docker_utils import DockerUtils
 from core.schains.runner import (run_schain_container, run_ima_container,
-                                 get_container_name, get_image_name,
-                                 run_schain_container_in_sync_mode)
+                                 get_container_name, get_image_name)
 from tools.configs.containers import SCHAIN_CONTAINER
 
 
@@ -50,51 +49,26 @@ def client():
 
 
 def run_simple_schain_container(dutils):
-    env = {
-        "SSL_KEY_PATH": 'NULL',
-        "SSL_CERT_PATH": 'NULL',
-        "HTTP_RPC_PORT": 10002,
-        "HTTPS_RPC_PORT": 10007,
-        "WS_RPC_PORT": 10003,
-        "WSS_RPC_PORT": 10008,
-
-        "SCHAIN_ID": SCHAIN_NAME,
-        "CONFIG_FILE": os.path.join(TEST_SKALE_DATA_DIR, 'schain_config.json'),
-        "DATA_DIR": '/data_dir'
-    }
-    # Run schain container
-    run_schain_container(SCHAIN, env, dutils=dutils)
+    run_schain_container(SCHAIN, dutils=dutils)
 
 
 def run_simple_schain_container_in_sync_mode(dutils):
-    env = {
-        "SSL_KEY_PATH": 'NULL',
-        "SSL_CERT_PATH": 'NULL',
-        "HTTP_RPC_PORT": 10002,
-        "HTTPS_RPC_PORT": 10007,
-        "WS_RPC_PORT": 10003,
-        "WSS_RPC_PORT": 10008,
-
-        "SCHAIN_ID": SCHAIN_NAME,
-        "CONFIG_FILE": os.path.join(TEST_SKALE_DATA_DIR, 'schain_config.json'),
-        "DATA_DIR": '/data_dir'
-    }
     public_key = "1:1:1:1"
     timestamp = time.time()
 
-    class SnapshotAddressMock():
+    class SnapshotAddressMock:
         def __init__(self):
             self.ip = '0.0.0.0'
             self.port = '8080'
 
     # Run schain container
-    with mock.patch('core.schains.runner.get_skaled_http_snapshot_address',
+    with mock.patch('core.schains.config.get_skaled_http_snapshot_address',
                     return_value=SnapshotAddressMock()):
-        run_schain_container_in_sync_mode(SCHAIN, env, public_key, timestamp, dutils=dutils)
+        run_schain_container(SCHAIN, public_key, timestamp, dutils=dutils)
 
 
 def run_simple_ima_container(dutils):
-    run_ima_container(SCHAIN, {})
+    run_ima_container(SCHAIN, dutils=dutils)
 
 
 def check_schain_container(client):
