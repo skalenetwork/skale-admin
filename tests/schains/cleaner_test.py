@@ -1,6 +1,6 @@
 import os
-from unittest import mock
 
+import mock
 import pytest
 
 from core.schains.cleaner import (remove_config_dir, remove_schain_volume, remove_schain_container,
@@ -51,7 +51,8 @@ def test_remove_schain_container(dutils):
 
 
 def test_remove_ima_container(dutils):
-    run_simple_ima_container(dutils)
+    with mock.patch('core.schains.runner.get_ima_env', return_value={}):
+        run_simple_ima_container(dutils)
     assert container_running(dutils, IMA_CONTAINER_NAME)
     remove_ima_container(SCHAIN['name'])
     assert not container_running(dutils, IMA_CONTAINER_NAME)

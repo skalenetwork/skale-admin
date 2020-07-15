@@ -2,7 +2,7 @@ from core.schains.config import (
     get_consensus_endpoints_from_config,
     get_snapshots_endpoints_from_config,
     get_skaled_rpc_endpoints_from_config,
-    get_schain_container_opts
+    get_schain_container_cmd
 )
 from core.schains.helper import get_schain_config_filepath
 from core.schains.ssl import get_ssl_filepath
@@ -113,9 +113,9 @@ def test_get_snapshots_endpoints_from_config():
     assert get_snapshots_endpoints_from_config(CONFIG) == []
 
 
-def test_get_schain_container_opts():
+def test_get_schain_container_cmd():
     schain_name = 'test'
-    container_opts = get_schain_container_opts(schain_name)
+    container_opts = get_schain_container_cmd(schain_name)
     config_filepath = get_schain_config_filepath(schain_name)
     ssl_key_path, ssl_cert_path = get_ssl_filepath()
     opts = (

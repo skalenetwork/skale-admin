@@ -50,8 +50,9 @@ def init_data_volume_mock(schain, dutils):
     return init_data_volume(schain, docker_utils)
 
 
-def run_schain_container_mock(schain, env):
-    return run_schain_container(schain, env, docker_utils)
+def run_schain_container_mock(schain, public_key=None, start_ts=None):
+    return run_schain_container(schain, public_key=public_key,
+                                start_ts=start_ts, dutils=docker_utils)
 
 
 def delete_bls_keys_mock(self, bls_key_name):
