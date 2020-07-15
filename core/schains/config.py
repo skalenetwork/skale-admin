@@ -176,6 +176,7 @@ def get_skaled_http_snapshot_address_from_config(config):
     for node_data in schain_nodes_config:
         if node_data['nodeID'] != node_id:
             from_node = node_data
+            break
 
     return NodeEndpoint(from_node['ip'], from_node['basePort'] +
                         SkaledPorts.HTTP_JSON.value)
@@ -244,15 +245,13 @@ def get_schain_config(schain_name):
     return schain_config
 
 
-def get_schain_env(schain_name, public_key=None, start_ts=None):
-    container_opts = get_schain_container_opts(schain_name, public_key, start_ts)
+def get_schain_env():
     return {
-        "OPTIONS": container_opts,
         "SEGFAULT_SIGNALS": 'all'
     }
 
 
-def get_schain_container_opts(schain_name, public_key=None, start_ts=None):
+def get_schain_container_cmd(schain_name, public_key=None, start_ts=None):
     opts = get_schain_container_base_opts(schain_name)
     if public_key and str(start_ts):
         sync_opts = get_schain_container_sync_opts(schain_name, public_key, start_ts)

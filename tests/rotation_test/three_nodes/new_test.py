@@ -42,7 +42,6 @@ def test_new_node(skale, rotated_nodes):
     wait_for_contract_exiting(skale, exited_node.config.id)
 
     with mock.patch('core.schains.creator.add_firewall_rules'), \
-            mock.patch('core.schains.creator.run_schain_container'), \
             mock.patch('core.schains.creator.init_data_volume', init_data_volume_mock), \
             mock.patch('core.schains.creator.run_dkg', run_dkg_mock), \
             mock.patch('core.schains.checks.apsent_iptables_rules',

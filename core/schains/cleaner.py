@@ -28,10 +28,15 @@ from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name, check_container_exit
 from core.schains.config import get_allowed_endpoints
 
+from sgx import SgxClient
+
+from tools.bls.dkg_utils import get_secret_key_share_filepath
+from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.iptables import remove_rules as remove_iptables_rules
+from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
 from web.models.schain import mark_schain_deleted
 
@@ -86,6 +91,7 @@ def monitor(skale, node_config):
             logger.info(
                 arguments_list_string({'sChain name': schain_name},
                                       'Removed sChain found'))
+            delete_bls_keys(skale, schain_name)
             cleanup_schain(node_config.id, schain_name)
         logger.info('Cleanup procedure finished')
 
@@ -121,8 +127,8 @@ def remove_firewall_rules(schain_name):
     remove_iptables_rules(endpoints)
 
 
-def cleanup_schain(node_id, schain_name, rotation_id=0):
-    checks = SChainChecks(schain_name, node_id, rotation_id).get_all()
+def cleanup_schain(node_id, schain_name):
+    checks = SChainChecks(schain_name, node_id).get_all()
     if checks['container'] or check_container_exit(schain_name, dutils=dutils):
         remove_schain_container(schain_name)
     if checks['volume']:
@@ -135,3 +141,16 @@ def cleanup_schain(node_id, schain_name, rotation_id=0):
     if checks['data_dir']:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
+
+
+def delete_bls_keys(skale, schain_name):
+    last_rotation_id = skale.schains.get_last_rotation_id(schain_name)
+    for i in range(last_rotation_id + 1):
+        try:
+            secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)
+            secret_key_share_config = read_json(secret_key_share_filepath)
+            bls_key_name = secret_key_share_config['key_share_name']
+            sgx = SgxClient(os.environ['SGX_SERVER_URL'], path_to_cert=SGX_CERTIFICATES_FOLDER)
+            sgx.delete_bls_key(bls_key_name)
+        except IOError:
+            continue

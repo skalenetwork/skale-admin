@@ -29,7 +29,6 @@ from skale.manager_client import spawn_skale_lib
 
 
 from core.schains.runner import (run_schain_container, run_ima_container,
-                                 run_schain_container_in_sync_mode,
                                  restart_container, set_rotation_for_schain,
                                  check_container_exit)
 from core.schains.cleaner import remove_config_dir
@@ -37,10 +36,9 @@ from core.tg_bot import TgBot
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
                                  get_schain_proxy_file_path)
 from core.schains.config import (generate_schain_config, save_schain_config,
-                                 get_schain_env, get_allowed_endpoints, update_schain_config)
+                                 get_allowed_endpoints, update_schain_config)
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks, check_for_rotation
-from core.schains.ima import get_ima_env
 from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
@@ -236,20 +234,19 @@ def check_container(schain_name, volume_required=False):
 
 def monitor_schain_container(schain):
     if check_container(schain['name'], volume_required=True):
-        env = get_schain_env(schain['name'])
-        run_schain_container(schain, env)
+        run_schain_container(schain)
 
 
 def monitor_ima_container(schain):
-    env = get_ima_env(schain['name'])
-    run_ima_container(schain, env)
+    run_ima_container(schain)
 
 
 def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
     def get_schain_public_key(schain_name, method):
         group_idx = skale.schains.name_to_id(schain_name)
         raw_public_key = method(group_idx)
-        return ':'.join(map(str, raw_public_key))
+        public_key_array = [*raw_public_key[0], *raw_public_key[1]]
+        return ':'.join(map(str, public_key_array))
 
     if check_container(schain['name'], volume_required=True):
         if not rotation_id:
@@ -262,15 +259,7 @@ def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
                 schain['name'],
                 skale.key_storage.get_previous_public_key
             )
-        env = get_schain_env(
-            schain_name=schain['name'],
-            start_ts=start_ts,
-            public_key=public_key
-        )
-        run_schain_container_in_sync_mode(schain,
-                                          env,
-                                          start_ts=start_ts,
-                                          public_key=public_key)
+        run_schain_container(schain, public_key=public_key, start_ts=start_ts)
 
 
 def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
