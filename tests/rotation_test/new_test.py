@@ -8,8 +8,7 @@ from core.schains.checks import SChainChecks
 from core.schains.creator import monitor
 from tests.prepare_data import cleanup_contracts
 from tests.rotation_test.utils import (set_up_rotated_schain, wait_for_contract_exiting,
-                                       init_data_volume_mock, run_dkg_mock,
-                                       run_schain_container_mock)
+                                       init_data_volume_mock, run_dkg_mock)
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
