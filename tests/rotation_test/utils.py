@@ -54,7 +54,7 @@ def run_schain_container_mock(schain, env):
     return run_schain_container(schain, env, docker_utils)
 
 
-def delete_bls_keys_mock(bls_key_name):
+def delete_bls_keys_mock(self, bls_key_name):
     return bls_key_name
 
 
