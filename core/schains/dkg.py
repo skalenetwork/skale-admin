@@ -26,7 +26,7 @@ from skale.schain_config import generate_skale_schain_config
 from tools.bls.dkg_utils import (
     init_dkg_client, broadcast, send_complaint, response, send_alright,
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
-    get_broadcasted_data, is_all_data_received, get_complaint_data,
+    get_broadcasted_data, is_all_data_received, get_complaint_data, is_everyone_broadcasted,
     DkgFailedError
 )
 from tools.bls.dkg_client import DkgVerificationError
@@ -118,7 +118,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     pow2 = 2**256 - 1
     complaint_data = get_complaint_data(dkg_client)
-    if complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2:
+    all_broadcasted = is_everyone_broadcasted(dkg_client)
+    if complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2 and all_broadcasted:
         while False in is_alright_sent_list:
             if time.time() - start_time_alright > RECEIVE_TIMEOUT:
                 break

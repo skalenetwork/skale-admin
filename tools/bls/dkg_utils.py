@@ -104,6 +104,10 @@ def is_all_data_received(dkg_client, from_node):
     return dkg_client.is_all_data_received(from_node)
 
 
+def is_everyone_broadcasted(dkg_client):
+    return dkg_client.is_everyone_broadcasted()
+
+
 def get_complaint_data(dkg_client):
     return dkg_client.get_complaint_data()
 

@@ -245,6 +245,10 @@ class DKGClient:
         return is_all_data_received_function(self.group_index, self.node_ids_dkg[from_node]).call(
             {'from': self.skale.wallet.address}
         )
+    
+    def is_everyone_broadcasted(self):
+        is_everyone_broadcasted = self.dkg_contract_functions.isEveryoneBroadcasted
+        return is_everyone_broadcasted(self.group_index).call({'from': self.skale.wallet.address})
 
     def get_complaint_data(self):
         get_complaint_data_function = self.dkg_contract_functions.getComplaintData
