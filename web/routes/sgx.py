@@ -35,7 +35,6 @@ class SGXStatus(Enum):
     NOT_CONNECTED = 1
 
 
-
 def construct_sgx_bp(config):
     sgx_bp = Blueprint('sgx', __name__)
 
