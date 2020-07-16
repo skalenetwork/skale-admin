@@ -1,13 +1,13 @@
 peewee==3.9.5
 PyMySQL==0.9.3
 
-Flask==1.0.2
+Flask==1.1.2
 itsdangerous==0.24
 Jinja2==2.10.1
 MarkupSafe==0.23
-Werkzeug==0.15.3
+Werkzeug==0.15.5
 
-docker==4.0.2
+docker==4.2.2
 pyjwt==1.4.2
 simple-crypt==4.1.7
 pycryptodome==3.6.6
@@ -16,7 +16,7 @@ python-iptables==0.14.0
 skale.py==3.10dev9
 
 PyYAML==5.3
-psutil==5.6.6
+psutil==5.7.0
 
 colorful==0.5.4
 redis==3.2.1
@@ -26,5 +26,5 @@ filelock==3.0.12
 
 pyOpenSSL==19.1.0
 python-dateutil==2.8.1
-python-telegram-bot==12.7
+python-telegram-bot==12.8
 gunicorn==20.0.4

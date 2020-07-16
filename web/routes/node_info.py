@@ -22,12 +22,10 @@ import pkg_resources
 
 from flask import Blueprint, request
 
-from core.tg_bot import TgBot
 from web.helper import construct_ok_response, construct_err_response
 from tools.configs.flask import SKALE_LIB_NAME
-
 from tools.configs.web3 import ENDPOINT
-from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from tools.notifications.messages import notifications_enabled, send_message
 
 logger = logging.getLogger(__name__)
 
@@ -55,11 +53,10 @@ def construct_node_info_bp(skale, docker_utils):
         logger.debug(request)
         message = request.json.get('message')
         if not message:
-            return construct_err_response('Provide message to send')
-        if not TG_API_KEY or not TG_CHAT_ID:
+            return construct_err_response('Message is empty')
+        if not notifications_enabled():
             return construct_err_response('TG_API_KEY or TG_CHAT_ID not found')
-        bot = TgBot(TG_API_KEY, TG_CHAT_ID)
-        message = bot.send_message(message)
+        message = send_message(message)
         res = {
             'message_id': message['message_id'],
             'date': message['date'].timestamp(),

@@ -17,9 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 import shutil
-import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -33,7 +33,6 @@ from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
                                  check_container_exit)
 from core.schains.cleaner import remove_config_dir
-from core.tg_bot import TgBot
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
                                  get_schain_proxy_file_path)
 from core.schains.config import (generate_schain_config, save_schain_config,
@@ -49,10 +48,10 @@ from tools.bls.dkg_client import DkgError
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER
-from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
+from tools.notifications.messages import notifications_enabled, notify_failed_checks
 from tools.str_formatters import arguments_list_string
 from web.models.schain import upsert_schain_record
 
@@ -122,13 +121,12 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, ecdsa_sgx_key_name):
 
     checks = SChainChecks(name, node_id, rotation_id=rotation_id, log=True)
     checks_dict = checks.get_all()
-    bot = TgBot(TG_API_KEY, TG_CHAT_ID) if TG_API_KEY and TG_CHAT_ID else None
 
     schain_record = upsert_schain_record(name)
 
     if not schain_record.first_run:
-        if bot and not checks.is_healthy():
-            bot.send_schain_checks(checks)
+        if notifications_enabled() and not checks.is_healthy():
+            notify_failed_checks(name, node_id, checks_dict)
 
     first_run = schain_record.first_run
     schain_record.set_first_run(False)
