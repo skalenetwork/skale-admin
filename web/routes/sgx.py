@@ -28,7 +28,6 @@ from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs import SGX_CERTIFICATES_FOLDER
 
 logger = logging.getLogger(__name__)
-sgx_bp = Blueprint('sgx', __name__)
 
 
 class SGXStatus(Enum):
@@ -36,17 +35,26 @@ class SGXStatus(Enum):
     NOT_CONNECTED = 1
 
 
-@sgx_bp.route('/api/sgx/status', methods=['GET'])
-def sgx_status():
-    logger.debug(request)
-    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
-    try:
-        status = sgx.get_server_status()
-    except Exception:  # todo: catch specific error - edit sgx.py
-        status = 1
-    res = {
-        'status': status,
-        'status_name': SGXStatus(status).name,
-        'sgx_server_url': SGX_SERVER_URL
-    }
-    return construct_ok_response(data=res)
+
+def construct_sgx_bp(config):
+    sgx_bp = Blueprint('sgx', __name__)
+
+    @sgx_bp.route('/api/sgx/info', methods=['GET'])
+    def sgx_info():
+        logger.debug(request)
+        sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+        try:
+            status = sgx.get_server_status()
+            version = sgx.get_server_version()
+        except Exception:  # todo: catch specific error - edit sgx.py
+            status = 1
+        res = {
+            'status': status,
+            'status_name': SGXStatus(status).name,
+            'sgx_server_url': SGX_SERVER_URL,
+            'sgx_keyname': config.sgx_key_name,
+            'sgx_wallet_version': version
+        }
+        return construct_ok_response(data=res)
+
+    return sgx_bp
