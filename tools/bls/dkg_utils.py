@@ -108,8 +108,27 @@ def is_everyone_broadcasted(dkg_client):
     return dkg_client.is_everyone_broadcasted()
 
 
+def check_broadcasted_data(dkg_client, is_correct, is_recieved):
+    for i in range(dkg_client.n):
+        if not is_correct[i] or not is_recieved[i]:
+            send_complaint(dkg_client, i)
+            return (True, i)
+    return (False, -1)
+
+
+def check_failed_dkg(dkg_client):
+    is_group_opened = dkg_client.is_channel_opened()
+    is_group_failed = dkg_client.skale.dkg.is_last_dkg_successful(dkg_client.group_index)
+    if not is_group_opened and is_group_failed:
+        raise DkgFailedError(f'sChain: {dkg_client.schain_name}. Dkg failed due to event FailedDKG')
+
+
 def get_complaint_data(dkg_client):
     return dkg_client.get_complaint_data()
+
+
+def get_channel_started_time(dkg_client):
+    return dkg_client.get_channel_started_time()
 
 
 def get_secret_key_share_filepath(schain_id, rotation_id):

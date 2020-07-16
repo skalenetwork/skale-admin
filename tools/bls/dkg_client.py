@@ -247,8 +247,16 @@ class DKGClient:
         )
 
     def is_everyone_broadcasted(self):
-        is_everyone_broadcasted = self.dkg_contract_functions.isEveryoneBroadcasted
-        return is_everyone_broadcasted(self.group_index).call({'from': self.skale.wallet.address})
+        is_everyone_broadcasted_function = self.dkg_contract_functions.isEveryoneBroadcasted
+        return is_everyone_broadcasted_function(self.group_index).call(
+            {'from': self.skale.wallet.address}
+        )
+
+    def get_channel_started_time(self):
+        get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
+        return get_channel_started_time_function(self.group_index).call(
+            {'from': self.skale.wallet.address}
+        )
 
     def get_complaint_data(self):
         get_complaint_data_function = self.dkg_contract_functions.getComplaintData
