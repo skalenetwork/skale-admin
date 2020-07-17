@@ -42,6 +42,16 @@ class NodeConfig():
 
     @property
     @config_getter
+    def name(self) -> int:
+        return 'name'
+
+    @name.setter
+    @config_setter
+    def name(self, node_name: str) -> None:
+        return 'name', node_name
+
+    @property
+    @config_getter
     def sgx_key_name(self) -> int:
         return 'sgx_key_name'
 
