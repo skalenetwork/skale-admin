@@ -121,7 +121,7 @@ def check_failed_dkg(dkg_client):
     if not is_group_opened:
         is_last_dkg_successful = dkg_client.skale.dkg.is_last_dkg_successful(dkg_client.group_index)
         if not is_last_dkg_successful:
-            raise DkgFailedError(f'sChain: {dkg_client.schain_name}. Dkg failed due to event FailedDKG')
+            raise DkgFailedError(f'sChain: {dkg_client.schain_name}. Dkg failed')
 
 
 def get_complaint_data(dkg_client):
