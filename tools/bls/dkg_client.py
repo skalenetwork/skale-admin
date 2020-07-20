@@ -246,6 +246,19 @@ class DKGClient:
             {'from': self.skale.wallet.address}
         )
 
+    def is_everyone_broadcasted(self):
+        get_number_of_broadcasted_function = self.dkg_contract_functions.getNumberOfBroadcasted
+        count = get_number_of_broadcasted_function(self.group_index).call(
+            {'from': self.skale.wallet.address}
+        )
+        return count == self.n
+
+    def get_channel_started_time(self):
+        get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
+        return get_channel_started_time_function(self.group_index).call(
+            {'from': self.skale.wallet.address}
+        )
+
     def get_complaint_data(self):
         get_complaint_data_function = self.dkg_contract_functions.getComplaintData
         return get_complaint_data_function(self.group_index).call(
