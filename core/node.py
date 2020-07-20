@@ -30,6 +30,7 @@ from core.filebeat import run_filebeat_service
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 from tools.configs.filebeat import MONITORING_CONTAINERS
+from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 
 logger = logging.getLogger(__name__)
 
@@ -83,13 +84,20 @@ class Node:
         if not check_required_balance(self.skale):
             return self._insufficient_funds()
         try:
-            self.skale.manager.create_node(ip, int(port), name,
-                                           public_ip, wait_for=True)
+            self.skale.manager.create_node(
+                ip=ip,
+                port=int(port),
+                name=name,
+                public_ip=public_ip,
+                wait_for=True,
+                confirmation_blocks=NODE_REGISTER_CONFIRMATION_BLOCKS
+            )
         except TransactionFailedError as err:
             logger.error('Node creation failed', exc_info=err)
-            return {'status': 0, 'errors': [f'node creation failed']}
+            return {'status': 0, 'errors': [f'node creation failed: {ip}:{port}, name: {name}']}
 
         self._log_node_info('Node successfully created', ip, public_ip, port, name)
+        self.config.name = name
         self.config.id = self.skale.nodes.node_name_to_index(name)
         if MONITORING_CONTAINERS:
             run_filebeat_service(public_ip, self.config.id, self.skale)
