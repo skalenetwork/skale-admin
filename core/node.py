@@ -37,10 +37,11 @@ logger = logging.getLogger(__name__)
 
 class NodeStatuses(Enum):
     """This class contains possible node statuses"""
-    NOT_CREATED = 0
-    REQUESTED = 1
-    CREATED = 2
-    ERROR = 3
+    ACTIVE = 0
+    LEAVING = 1
+    FROZEN = 2
+    LEFT = 3
+    NOT_CREATED = 4
 
 
 class NodeExitStatuses(Enum):
@@ -162,8 +163,16 @@ class Node:
     def _transform_node_info(self, node_info, node_id):
         node_info['ip'] = ip_from_bytes(node_info['ip'])
         node_info['publicIP'] = ip_from_bytes(node_info['publicIP'])
-        node_info['status'] = NodeStatuses.CREATED.value
+        node_info['status'] = _get_node_status(node_info)
         node_info['id'] = node_id
         node_info['publicKey'] = node_info['publicKey']
         node_info['owner'] = public_key_to_address(node_info['publicKey'])
         return node_info
+
+
+def _get_node_status(node_info):
+    finish_time = node_info['finish_time']
+    status = NodeStatuses(node_info['status'])
+    if status == NodeStatuses.FROZEN and finish_time < time.time():
+        return NodeStatuses.LEFT.value
+    return status.value

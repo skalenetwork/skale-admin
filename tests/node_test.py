@@ -5,7 +5,7 @@ import pytest
 
 from skale.utils.contracts_provision.main import generate_random_node_data
 
-from core.node import Node, NodeExitStatuses
+from core.node import Node, NodeExitStatuses, NodeStatuses
 from core.node_config import NodeConfig
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -18,7 +18,7 @@ def node(skale):
 
 
 def test_info_unregisted_node(node):
-    assert node.info == {'status': 0}
+    assert node.info == {'status': 4}
 
 
 def test_create_insufficient_funds(node):
@@ -62,6 +62,7 @@ def test_register_info(node):
     assert info['port'] == int(port)
     assert info['id'] == node.config.id
     assert info['publicKey'] == node.skale.wallet.public_key
+    assert info['status'] == 0
 
 
 @pytest.fixture
@@ -92,3 +93,4 @@ def test_exit_status(exiting_node):
     assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
     assert exit_status_data['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
     assert exit_status_data['exit_time'] != 0
+    assert exiting_node.info['status'] == NodeStatuses.FROZEN.value
