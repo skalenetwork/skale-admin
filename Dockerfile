@@ -23,4 +23,5 @@ RUN pip3 install --no-cache-dir -r requirements-dev.txt
 COPY . .
 
 ENV PYTHONPATH="/usr/src/admin"
+ENV COLUMNS=80
 # CMD ["celery", "-A", "core.tg_bot", "worker", "--loglevel=info"]

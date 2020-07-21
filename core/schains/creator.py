@@ -43,6 +43,7 @@ from core.schains.ima import get_ima_env
 from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
+from core.schains.utils import notify_if_not_enough_balance
 
 from tools.bls.dkg_client import DkgError
 from tools.docker_utils import DockerUtils
@@ -51,7 +52,7 @@ from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
-from tools.notifications.messages import notifications_enabled, notify_failed_checks
+from tools.notifications.messages import notifications_enabled, notify_checks
 from tools.str_formatters import arguments_list_string
 from web.models.schain import upsert_schain_record
 
@@ -88,14 +89,19 @@ def monitor(skale, node_config):
     logger.info(
         arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
                                'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
+    node_info = node_config.all()
+    if notifications_enabled():
+        try:
+            notify_if_not_enough_balance(skale, node_info)
+        except Exception as err:
+            logger.info('Balance notification failed', exc_info=err)
 
     with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
         futures = [
             executor.submit(
                 monitor_schain,
                 skale,
-                node_config.id,
-                node_config.sgx_key_name,
+                node_info,
                 schain,
                 ecdsa_sgx_key_name
             )
@@ -106,9 +112,10 @@ def monitor(skale, node_config):
     logger.info('Creator procedure finished')
 
 
-def monitor_schain(skale, node_id, sgx_key_name, schain, ecdsa_sgx_key_name):
+def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     skale = spawn_skale_lib(skale)
     name = schain['name']
+    node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = check_for_rotation(skale, name, node_id)
     logger.info(f'Rotation for {name}: {rotation}')
 
@@ -125,8 +132,8 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, ecdsa_sgx_key_name):
     schain_record = upsert_schain_record(name)
 
     if not schain_record.first_run:
-        if notifications_enabled() and not checks.is_healthy():
-            notify_failed_checks(name, node_id, checks_dict)
+        if notifications_enabled():
+            notify_checks(name, node_info, checks_dict)
 
     first_run = schain_record.first_run
     schain_record.set_first_run(False)

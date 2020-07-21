@@ -17,14 +17,21 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from celery import Celery
-from telegram import Bot
+
+import logging
+
+from tools.notifications.messages import notify_balance
+
+# REQUIRED_BALANCE_WEI = 10 ** 17
+# IVD TMP
+logger = logging.getLogger(__name__)
+
+REQUIRED_BALANCE_WEI = 9 * 10 ** 17
 
 
-app = Celery('tasks', broker='redis://localhost:6379/0')
-
-
-@app.task(rate_limit='20/m')
-def send_message_to_telegram(api_key, chat_id, message, bot=None):
-    bot = bot or Bot(api_key)
-    return bot.send_message(chat_id=chat_id, text=message)
+def notify_if_not_enough_balance(skale, node_info):
+    eth_balance_wei = skale.web3.eth.getBalance(skale.wallet.address)
+    logger.info(f'Node account has {eth_balance_wei} WEI')
+    balance_in_skl = skale.web3.fromWei(eth_balance_wei, 'ether')
+    required_in_skl = skale.web3.fromWei(REQUIRED_BALANCE_WEI, 'ether')
+    notify_balance(node_info, balance_in_skl, required_in_skl)

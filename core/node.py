@@ -86,11 +86,13 @@ class Node:
                                            public_ip, wait_for=True)
         except TransactionFailedError as err:
             logger.error('Node creation failed', exc_info=err)
-            return {'status': 0, 'errors': [f'node creation failed']}
+            return {'status': 0, 'errors': ['node creation failed']}
 
         self._log_node_info('Node successfully created', ip, public_ip, port, name)
         self.config.id = self.skale.nodes.node_name_to_index(name)
-        run_filebeat_service(public_ip, self.config.id, self.skale)
+        self.config.ip = ip
+        # run_filebeat_service(public_ip, self.config.id, self.skale)
+
         return {'status': 1, 'data': self.config.all()}
 
     def exit(self, opts):
@@ -129,7 +131,7 @@ class Node:
         return {'status': node_status.name, 'data': schain_statuses, 'exit_time': exit_time}
 
     def _insufficient_funds(self):
-        err_msg = f'Insufficient funds, re-check your wallet'
+        err_msg = 'Insufficient funds, re-check your wallet'
         logger.error(err_msg)
         return {'status': 0, 'errors': [err_msg]}
 

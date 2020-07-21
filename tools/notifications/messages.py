@@ -19,19 +19,32 @@
 
 
 import copy
+import logging
 import time
 from datetime import datetime
 
+from redis import BlockingConnectionPool, Redis
+
+from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from tools.notifications.tasks import send_message_to_telegram
 
+
+logger = logging.getLogger(__name__)
+client = Redis(connection_pool=BlockingConnectionPool())
+
 # IVD TMP
-# from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
-TG_API_KEY = ''
-TG_CHAT_ID = ''
+# TG_API_KEY = ''
+# TG_CHAT_ID = ''
 
 RED_LIGHT = '\u274C'
 GREEN_LIGHT = '\u2705'
 EXCLAMATION_MARK = '\u2757'
+SUCCESS_MAX_ATTEMPS = 1
+FAILED_MAX_ATTEMPS = 5
+
+
+def notifications_enabled():
+    return TG_API_KEY and TG_CHAT_ID
 
 
 def convert_bool_to_emoji_lights(checks):
@@ -41,42 +54,106 @@ def convert_bool_to_emoji_lights(checks):
     return checks_emojis
 
 
-def compose_failed_checks_message(schain_name, node_id, checks, raw=False):
+def is_checks_passed(checks):
+    return all(checks.values())
+
+
+def compose_checks_message(schain_name, node, checks, raw=False):
+    checks.pop('rpc')
     if raw:
         message = {
             'schain_name': schain_name,
-            'node_id': node_id,
+            'node_id': node['node_id'],
+            'node_ip': node['node_ip'],
             'checks': checks,
         }
     else:
         formated_checks = convert_bool_to_emoji_lights(checks)
 
-        message = (
-            f'{EXCLAMATION_MARK} Checks failed \n\n'
-            f'Node ID: {node_id}\n'
-            f'sChain name: {schain_name}\n'
-            f'Data directory: {formated_checks["data_dir"]}\n'
-            f'DKG: {formated_checks["dkg"]}\n'
-            f'Config: {formated_checks["config"]}\n'
-            f'Volume: {formated_checks["volume"]}\n'
-            f'Container: {formated_checks["container"]}\n'
+        if is_checks_passed(checks):
+            header = f'{GREEN_LIGHT} Checks passed \n'
+        else:
+            header = f'{EXCLAMATION_MARK} Checks failed \n' \
+
+        message = [
+            header,
+            f'Node id: {node["node_id"]}',
+            f'Node ip: {node["node_ip"]}',
+            f'sChain name: {schain_name}',
+            f'Data directory: {formated_checks["data_dir"]}',
+            f'DKG: {formated_checks["dkg"]}',
+            f'Config: {formated_checks["config"]}',
+            f'Volume: {formated_checks["volume"]}',
+            f'Container: {formated_checks["container"]}',
             # f'IMA container: {formated_checks["ima_container"]}\n'
-            f'Firewall: {formated_checks["firewall_rules"]}\n'
-            f'RPC: {formated_checks["rpc"]}\n'
-        )
+            f'Firewall: {formated_checks["firewall_rules"]}'
+            # f'RPC: {formated_checks["rpc"]}'
+        ]
     return message
 
 
-def notifications_enabled():
-    return TG_API_KEY and TG_CHAT_ID
+def get_state_from_checks(checks):
+    return str(sorted(checks.items()))
 
 
-def notify_failed_checks(schain_name, node_id, checks):
-    message = compose_failed_checks_message(schain_name, node_id, checks)
-    send_message(message)
+def notify_checks(schain_name, node, checks):
+    count_key = 'messages.checks.count'
+    state_key = 'messages.checks.state'
+    count = client.get(count_key) or 0
+    saved_state = client.get(state_key)
+    state = get_state_from_checks(checks)
+    success = is_checks_passed(checks)
+    count = 1 if saved_state != state else count + 1
+
+    if saved_state != state or (
+        state == success and count < SUCCESS_MAX_ATTEMPS or
+        state != success and count < FAILED_MAX_ATTEMPS
+    ):
+        message = compose_checks_message(schain_name, node, checks)
+        logger.info(f'Sending checks notification with state {state}')
+        send_message(message)
+
+    client.mset({count_key: count, state_key: saved_state})
+
+
+def compose_balance_message(node_info, balance, required_balance):
+    if balance < required_balance:
+        header = f'{EXCLAMATION_MARK} Balance on node is too low \n'
+    else:
+        header = f'{GREEN_LIGHT} Node id: has enough balance \n'
+    return [
+        header,
+        f'Node id: {node_info["node_id"]}',
+        f'Node ip: {node_info["node_ip"]}',
+        f'Balance: {balance} ETH',
+        f'Required: {required_balance} ETH'
+    ]
+
+
+def notify_balance(node_info, balance, required_balance):
+    count_key = 'messages.balance.count'
+    state_key = 'messages.balance.state'
+    count = client.get(count_key) or 0
+    saved_state = client.get(state_key)
+    state = int(balance > required_balance)
+    success = balance > required_balance
+    count = 1 if saved_state != state else count + 1
+
+    if saved_state != state or (
+        state == success and count < SUCCESS_MAX_ATTEMPS or
+        state != success and count < FAILED_MAX_ATTEMPS
+    ):
+        message = compose_balance_message(node_info, balance, required_balance)
+        logger.info(f'Sending balance notificaton {state}')
+        send_message(message)
+
+    client.mset({count_key: count, state_key: str(saved_state)})
 
 
 def send_message(message, api_key=TG_API_KEY, chat_id=TG_CHAT_ID):
-    message['timestamp'] = int(time.time())
-    message['datetime'] = datetime.utcnow()
-    return send_message_to_telegram.delay(api_key, chat_id, message)
+    message.extend([
+        f'Timestamp: {int(time.time())}',
+        f'Datetime: {datetime.utcnow()}'
+    ])
+    plain_message = '\n'.join(message)
+    return send_message_to_telegram.delay(api_key, chat_id, plain_message)
