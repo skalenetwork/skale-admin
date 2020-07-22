@@ -30,6 +30,7 @@ from core.schains.cleaner import run_cleaner
 from tools.configs import BACKUP_RUN
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
 from tools.logger import init_admin_logger
+from tools.notification.messages import cleanup_state, notifications_enabled
 
 from web.models.schain import set_schains_first_run
 
@@ -58,6 +59,8 @@ def main():
     rpc_wallet = RPCWallet(TM_URL)
     skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
     set_schains_first_run()
+    if notifications_enabled():
+        cleanup_notification_state()
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
     monitor(skale, node_config)
