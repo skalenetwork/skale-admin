@@ -88,8 +88,8 @@ def send_complaint(dkg_client, index):
     dkg_client.send_complaint(index)
 
 
-def response(dkg_client, from_node_index):
-    dkg_client.response(from_node_index)
+def response(dkg_client, to_node_index):
+    dkg_client.response(to_node_index)
 
 
 def send_alright(dkg_client):
