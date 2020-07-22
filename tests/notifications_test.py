@@ -47,7 +47,10 @@ def test_compose_checks_message():
     }
     schain_name = 'test-schain'
     result = compose_checks_message(schain_name, NODE_INFO, checks)
-    expected = '❗ Checks failed \n\nNode ID: 1\nsChain name: test-schain\nData directory: ✅\nDKG: ❌\nConfig: ✅\nVolume: ✅\nContainer: ❌\nFirewall: ✅\nRPC: ❌\n'  # noqa
+    expected = ['❗ Checks failed \n', 'Node id: 1', 'Node ip: 1.1.1.1',
+                'sChain name: test-schain', 'Data directory: ✅',
+                'DKG: ❌', 'Config: ✅', 'Volume: ✅', 'Container: ❌',
+                'Firewall: ✅', 'RPC: ❌']
     assert result == expected
 
 
@@ -63,7 +66,15 @@ def test_compose_checks_message_raw():
     }
     schain_name = 'test-schain'
     result = compose_checks_message(schain_name, NODE_INFO, checks, raw=True)
-    expected = '❗ Checks failed \n\nNode ID: 1\nsChain name: test-schain\nData directory: ✅\nDKG: ❌\nConfig: ✅\nVolume: ✅\nContainer: ❌\nFirewall: ✅\nRPC: ❌\n'  # noqa
+    expected = {
+        'schain_name': 'test-schain', 'node_id': 1,
+        'node_ip': '1.1.1.1',
+        'checks': {
+            'dkg': False, 'config': True,
+            'data_dir': True, 'volume': True, 'container': False,
+            'firewall_rules': True, 'rpc': False
+        }
+    }
     assert result == expected
 
 
@@ -79,20 +90,25 @@ def test_compose_checks_message_success():
     }
     schain_name = 'test-schain'
     result = compose_checks_message(schain_name, NODE_INFO, checks)
-    expected = '❗ Checks failed \n\nNode ID: 1\nsChain name: test-schain\nData directory: ✅\nDKG: ❌\nConfig: ✅\nVolume: ✅\nContainer: ❌\nFirewall: ✅\nRPC: ❌\n'  # noqa
+    expected = ['✅ Checks passed \n', 'Node id: 1', 'Node ip: 1.1.1.1',
+                'sChain name: test-schain', 'Data directory: ✅',
+                'DKG: ✅', 'Config: ✅', 'Volume: ✅', 'Container: ✅',
+                'Firewall: ✅', 'RPC: ✅']
     assert result == expected
 
 
 def test_compose_balance_message():
     balance, required_balance = 1, 2
     result = compose_balance_message(NODE_INFO, balance, required_balance)
-    assert result == ''
+    assert result == ['❗ Balance on node is too low \n', 'Node id: 1',
+                      'Node ip: 1.1.1.1', 'Balance: 1 ETH', 'Required: 2 ETH']
 
 
 def test_compose_balance_message_success():
     balance, required_balance = 1, 0.5
     result = compose_balance_message(NODE_INFO, balance, required_balance)
-    assert result == ''
+    assert result == ['✅ Node id: has enough balance \n', 'Node id: 1',
+                      'Node ip: 1.1.1.1', 'Balance: 1 ETH', 'Required: 0.5 ETH']
 
 
 @pytest.fixture

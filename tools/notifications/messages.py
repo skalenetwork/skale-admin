@@ -32,9 +32,6 @@ from tools.notifications.tasks import send_message_to_telegram
 logger = logging.getLogger(__name__)
 client = Redis(connection_pool=BlockingConnectionPool())
 
-# IVD TMP
-# TG_API_KEY = ''
-# TG_CHAT_ID = ''
 
 RED_LIGHT = '\u274C'
 GREEN_LIGHT = '\u2705'
@@ -45,6 +42,12 @@ FAILED_MAX_ATTEMPS = 5
 
 def notifications_enabled():
     return TG_API_KEY and TG_CHAT_ID
+
+
+def cleanup_notification_state():
+    keys = client.keys('messages.*')
+    logger.info(f'Removing following keys from notificaton state: {keys}')
+    client.delete(*keys)
 
 
 def convert_bool_to_emoji_lights(checks):
@@ -59,7 +62,6 @@ def is_checks_passed(checks):
 
 
 def compose_checks_message(schain_name, node, checks, raw=False):
-    checks.pop('rpc')
     if raw:
         message = {
             'schain_name': schain_name,
@@ -86,8 +88,8 @@ def compose_checks_message(schain_name, node, checks, raw=False):
             f'Volume: {formated_checks["volume"]}',
             f'Container: {formated_checks["container"]}',
             # f'IMA container: {formated_checks["ima_container"]}\n'
-            f'Firewall: {formated_checks["firewall_rules"]}'
-            # f'RPC: {formated_checks["rpc"]}'
+            f'Firewall: {formated_checks["firewall_rules"]}',
+            f'RPC: {formated_checks["rpc"]}'
         ]
     return message
 
@@ -99,21 +101,23 @@ def get_state_from_checks(checks):
 def notify_checks(schain_name, node, checks):
     count_key = 'messages.checks.count'
     state_key = 'messages.checks.state'
-    count = client.get(count_key) or 0
-    saved_state = client.get(state_key)
+    count = int(client.get(count_key) or 0)
+    saved_state_bytes = client.get(state_key) or b''
+    saved_state = saved_state_bytes.decode('utf-8')
     state = get_state_from_checks(checks)
     success = is_checks_passed(checks)
-    count = 1 if saved_state != state else count + 1
 
     if saved_state != state or (
-        state == success and count < SUCCESS_MAX_ATTEMPS or
-        state != success and count < FAILED_MAX_ATTEMPS
+        success and count < SUCCESS_MAX_ATTEMPS or
+        not success and count < FAILED_MAX_ATTEMPS
     ):
         message = compose_checks_message(schain_name, node, checks)
         logger.info(f'Sending checks notification with state {state}')
         send_message(message)
 
-    client.mset({count_key: count, state_key: saved_state})
+    count = 1 if saved_state != state else count + 1
+    logger.info(f'Saving new checks state {count} {state}')
+    client.mset({count_key: count, state_key: state})
 
 
 def compose_balance_message(node_info, balance, required_balance):
@@ -133,27 +137,28 @@ def compose_balance_message(node_info, balance, required_balance):
 def notify_balance(node_info, balance, required_balance):
     count_key = 'messages.balance.count'
     state_key = 'messages.balance.state'
-    count = client.get(count_key) or 0
-    saved_state = client.get(state_key)
+    count = int(client.get(count_key) or 0)
+    saved_state = int(client.get(state_key) or -1)
     state = int(balance > required_balance)
     success = balance > required_balance
-    count = 1 if saved_state != state else count + 1
 
     if saved_state != state or (
-        state == success and count < SUCCESS_MAX_ATTEMPS or
-        state != success and count < FAILED_MAX_ATTEMPS
+        success and count < SUCCESS_MAX_ATTEMPS or
+        success and count < FAILED_MAX_ATTEMPS
     ):
         message = compose_balance_message(node_info, balance, required_balance)
         logger.info(f'Sending balance notificaton {state}')
         send_message(message)
 
-    client.mset({count_key: count, state_key: str(saved_state)})
+    count = 1 if saved_state != state else count + 1
+    logger.info(f'Saving new balance state {count} {state}')
+    client.mset({count_key: count, state_key: str(state)})
 
 
 def send_message(message, api_key=TG_API_KEY, chat_id=TG_CHAT_ID):
     message.extend([
         f'Timestamp: {int(time.time())}',
-        f'Datetime: {datetime.utcnow()}'
+        f'Datetime: {datetime.utcnow().ctime()}'
     ])
     plain_message = '\n'.join(message)
     return send_message_to_telegram.delay(api_key, chat_id, plain_message)
