@@ -10,7 +10,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       IMA_ENDPOINT: ${{ secrets.IMA_ENDPOINT }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-      MANAGER_TAG: "1.5.0-develop.6"
+      MANAGER_TAG: "1.5.0-develop.10"
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.8
