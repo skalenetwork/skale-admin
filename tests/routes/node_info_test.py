@@ -49,6 +49,7 @@ def test_containers_healthcheck(skale_bp):
     assert data == expected
 
 
+@pytest.mark.skip
 def test_send_tg_notification(skale_bp):
     data = post_bp_data(skale_bp, '/send-tg-notification', {'message': 'test'})
     expected = {

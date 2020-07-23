@@ -160,7 +160,7 @@ def notify_balance(node_info, balance, required_balance):
 
     if saved_state != state or (
         success and count < SUCCESS_MAX_ATTEMPS or
-        success and count < FAILED_MAX_ATTEMPS
+        not success and count < FAILED_MAX_ATTEMPS
     ):
         message = compose_balance_message(node_info, balance, required_balance)
         logger.info(f'Sending balance notificaton {state}')
