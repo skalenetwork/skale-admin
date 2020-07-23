@@ -46,7 +46,7 @@ from web.routes.wallet import construct_wallet_bp
 from web.routes.node_info import construct_node_info_bp
 from web.routes.security import construct_security_bp
 from web.routes.node_exit import construct_node_exit_bp
-from web.routes.sgx import sgx_bp
+from web.routes.sgx import construct_sgx_bp
 
 init_api_logger()
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ app.register_blueprint(construct_wallet_bp(skale))
 app.register_blueprint(construct_node_info_bp(skale, docker_utils))
 app.register_blueprint(construct_security_bp(docker_utils))
 app.register_blueprint(construct_node_exit_bp(node))
-app.register_blueprint(sgx_bp)
+app.register_blueprint(construct_sgx_bp(node_config))
 
 
 @app.before_request

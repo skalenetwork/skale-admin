@@ -26,6 +26,7 @@ from skale.wallets import RPCWallet
 from core.node_config import NodeConfig
 from core.schains.creator import run_creator
 from core.schains.cleaner import run_cleaner
+from core.updates import soft_updates
 
 from tools.configs import BACKUP_RUN
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
@@ -58,6 +59,9 @@ def main():
 
     rpc_wallet = RPCWallet(TM_URL)
     skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+
+    soft_updates(skale, node_config)
+
     set_schains_first_run()
     cleanup_notification_state()
     if BACKUP_RUN:
