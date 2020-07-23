@@ -50,9 +50,9 @@ class NodeConfig:
     def ip(self, ip: str) -> None:
         return 'node_ip', ip
 
-    @config_getter
     @property
-    def name(self) -> int:
+    @config_getter
+    def name(self) -> str:
         return 'name'
 
     @name.setter
