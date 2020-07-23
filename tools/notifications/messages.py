@@ -22,6 +22,7 @@ import copy
 import logging
 import time
 from datetime import datetime
+from functools import wraps
 
 from redis import BlockingConnectionPool, Redis
 
@@ -40,10 +41,23 @@ SUCCESS_MAX_ATTEMPS = 1
 FAILED_MAX_ATTEMPS = 5
 
 
-def notifications_enabled():
+def tg_notifications_enabled():
     return TG_API_KEY and TG_CHAT_ID
 
 
+def notifications_enabled(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if tg_notifications_enabled():
+            try:
+                return func(*args, **kwargs)
+            except Exception as err:
+                logger.error(f'Notification {func.__name__} sending failed',
+                             exc_info=err)
+    return wrapper
+
+
+@notifications_enabled
 def cleanup_notification_state():
     keys = client.keys('messages.*')
     logger.info(f'Removing following keys from notificaton state: {keys}')
@@ -98,6 +112,7 @@ def get_state_from_checks(checks):
     return str(sorted(checks.items()))
 
 
+@notifications_enabled
 def notify_checks(schain_name, node, checks):
     count_key = 'messages.checks.count'
     state_key = 'messages.checks.state'
@@ -134,6 +149,7 @@ def compose_balance_message(node_info, balance, required_balance):
     ]
 
 
+@notifications_enabled
 def notify_balance(node_info, balance, required_balance):
     count_key = 'messages.balance.count'
     state_key = 'messages.balance.state'

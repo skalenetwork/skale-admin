@@ -25,7 +25,7 @@ from flask import Blueprint, request
 from web.helper import construct_ok_response, construct_err_response
 from tools.configs.flask import SKALE_LIB_NAME
 from tools.configs.web3 import ENDPOINT
-from tools.notifications.messages import notifications_enabled, send_message
+from tools.notifications.messages import tg_notifications_enabled, send_message
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def construct_node_info_bp(skale, docker_utils):
         message = request.json.get('message')
         if not message:
             return construct_err_response('Message is empty')
-        if not notifications_enabled():
+        if not tg_notifications_enabled():
             return construct_err_response('TG_API_KEY or TG_CHAT_ID not found')
         message = send_message(message)
         res = {

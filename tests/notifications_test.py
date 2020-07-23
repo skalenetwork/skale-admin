@@ -24,15 +24,12 @@ NODE_INFO = {'node_id': 1, 'node_ip': '1.1.1.1'}
 @mock.patch('tools.notifications.messages.send_message_to_telegram')
 @freezegun.freeze_time(CURRENT_DATETIME)
 def test_send_message(task_mock):
-    message = {'data': 'test'}
+    message = ['key1: value1', 'key2: value2']
     send_message(message)
-    expected = {
-        'data': 'test',
-        'timestamp': CURRENT_TIMESTAMP,
-        'datetime': CURRENT_DATETIME
-    }
+    expected_call = ('key1: value1\nkey2: value2\nTimestamp: 1594903080\n'
+                     'Datetime: Thu Jul 16 12:38:00 2020')
     called_with = task_mock.delay.call_args[0][2]
-    assert called_with == expected
+    assert called_with == expected_call
 
 
 def test_compose_checks_message():

@@ -52,7 +52,7 @@ from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
-from tools.notifications.messages import notifications_enabled, notify_checks
+from tools.notifications.messages import notify_checks
 from tools.str_formatters import arguments_list_string
 from web.models.schain import upsert_schain_record
 
@@ -90,11 +90,7 @@ def monitor(skale, node_config):
         arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
                                'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
     node_info = node_config.all()
-    if notifications_enabled():
-        try:
-            notify_if_not_enough_balance(skale, node_info)
-        except Exception as err:
-            logger.info('Balance notification failed', exc_info=err)
+    notify_if_not_enough_balance(skale, node_info)
 
     with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
         futures = [
@@ -132,8 +128,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     schain_record = upsert_schain_record(name)
 
     if not schain_record.first_run:
-        if notifications_enabled():
-            notify_checks(name, node_info, checks_dict)
+        notify_checks(name, node_info, checks_dict)
 
     first_run = schain_record.first_run
     schain_record.set_first_run(False)

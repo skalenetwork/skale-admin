@@ -91,7 +91,7 @@ class Node:
         self._log_node_info('Node successfully created', ip, public_ip, port, name)
         self.config.id = self.skale.nodes.node_name_to_index(name)
         self.config.ip = ip
-        # run_filebeat_service(public_ip, self.config.id, self.skale)
+        run_filebeat_service(public_ip, self.config.id, self.skale)
 
         return {'status': 1, 'data': self.config.all()}
 
