@@ -12,5 +12,8 @@ RUN pip3 install --no-cache-dir -r requirements.txt && \
 
 COPY . .
 
+RUN update-alternatives --set iptables /usr/sbin/iptables-legacy && \
+    update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy 
+
 ENV PYTHONPATH="/usr/src/admin"
 ENV COLUMNS=80
