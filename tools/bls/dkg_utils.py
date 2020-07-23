@@ -132,5 +132,13 @@ def get_channel_started_time(dkg_client):
     return dkg_client.get_channel_started_time()
 
 
+def get_alright_started_time(dkg_client):
+    return dkg_client.get_alright_started_time()
+
+
+def get_complaint_started_time(dkg_client):
+    return dkg_client.get_complaint_started_time()
+
+
 def get_secret_key_share_filepath(schain_id, rotation_id):
     return os.path.join(NODE_DATA_PATH, 'schains', schain_id, f'secret_key_{rotation_id}.json')
