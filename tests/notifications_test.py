@@ -127,13 +127,13 @@ def test_notify_balance(send_message_mock, cleaned_state):
     balance, required_balance = 1, 0.5
 
     notify_balance(NODE_INFO, balance, required_balance)
-    send_message_mock.call_count == 1
+    assert send_message_mock.call_count == 1
 
     count, state = get_state_data()
     assert count == 1 and state == 1
 
     notify_balance(NODE_INFO, balance, required_balance)
-    send_message_mock.call_count == 1
+    assert send_message_mock.call_count == 1
 
     count, state = get_state_data()
     assert count == 2 and state == 1
@@ -145,13 +145,13 @@ def test_notify_balance(send_message_mock, cleaned_state):
     initial_call_count = send_message_mock.call_count
     for i in range(allowed_attempts):
         notify_balance(NODE_INFO, balance, required_balance)
-        send_message_mock.call_count = initial_call_count + i + 1
+        assert send_message_mock.call_count == initial_call_count + i + 1
         count, state = get_state_data()
         assert count == i + 1 and state == 0
 
     # Next is not allowed
     notify_balance(NODE_INFO, balance, required_balance)
-    send_message_mock.call_count == initial_call_count + allowed_attempts
+    assert send_message_mock.call_count == initial_call_count + allowed_attempts
     count, state = get_state_data()
     assert count == allowed_attempts + 1 and state == 0
 
@@ -202,12 +202,12 @@ def test_notify_checks(send_message_mock, cleaned_state):
     check_state(0, '')
 
     notify_checks(schain_name, NODE_INFO, successfull_checks)
-    send_message_mock.call_count == 1
+    assert send_message_mock.call_count == 1
 
     check_state(1, "[('config', True), ('container', True), ('data_dir', True), ('dkg', True), ('firewall_rules', True), ('rpc', True), ('volume', True)]")  # noqa
 
     notify_checks(schain_name, NODE_INFO, successfull_checks)
-    send_message_mock.call_count == 1
+    assert send_message_mock.call_count == 1
 
     count, state = get_state_data()
     check_state(2, "[('config', True), ('container', True), ('data_dir', True), ('dkg', True), ('firewall_rules', True), ('rpc', True), ('volume', True)]")  # noqa
@@ -217,15 +217,15 @@ def test_notify_checks(send_message_mock, cleaned_state):
     initial_call_count = send_message_mock.call_count
     for i in range(allowed_attempts):
         notify_checks(schain_name, NODE_INFO, failed_checks_1)
-        send_message_mock.call_count = initial_call_count + i + 1
+        assert send_message_mock.call_count == initial_call_count + i + 1
         check_state(i + 1, "[('config', True), ('container', False), ('data_dir', True), ('dkg', False), ('firewall_rules', True), ('rpc', False), ('volume', True)]")  # noqa
 
     # Next is not allowed
     notify_checks(schain_name, NODE_INFO, failed_checks_1)
-    send_message_mock.call_count == initial_call_count + allowed_attempts
+    assert send_message_mock.call_count == initial_call_count + allowed_attempts
     check_state(allowed_attempts + 1, "[('config', True), ('container', False), ('data_dir', True), ('dkg', False), ('firewall_rules', True), ('rpc', False), ('volume', True)]")  # noqa
 
     # If state changed message should be sended
     notify_checks(schain_name, NODE_INFO, failed_checks_2)
-    send_message_mock.call_count == initial_call_count + allowed_attempts + 1
+    assert send_message_mock.call_count == initial_call_count + allowed_attempts + 1
     check_state(1, "[('config', True), ('container', False), ('data_dir', True), ('dkg', False), ('firewall_rules', False), ('rpc', False), ('volume', False)]")  # noqa

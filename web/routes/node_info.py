@@ -56,13 +56,12 @@ def construct_node_info_bp(skale, docker_utils):
             return construct_err_response('Message is empty')
         if not tg_notifications_enabled():
             return construct_err_response('TG_API_KEY or TG_CHAT_ID not found')
-        message = send_message(message)
-        res = {
-            'message_id': message['message_id'],
-            'date': message['date'].timestamp(),
-            'chat_id': message['chat']['id'],
-        }
-        return construct_ok_response(res)
+        try:
+            send_message(message)
+        except Exception as err:
+            logger.error('Message was not send due to error', exc_info=err)
+            construct_err_response(['Message sending failed'])
+        return construct_ok_response('Message was sent successfully')
 
     @node_info_bp.route('/about-node', methods=['GET'])
     def about_node():

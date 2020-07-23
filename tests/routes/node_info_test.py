@@ -1,23 +1,19 @@
-import pytest
+import freezegun
+import mock
 import pkg_resources
+import pytest
+from datetime import datetime
 from flask import Flask
 
-from tools.docker_utils import DockerUtils
-from tools.configs.web3 import ENDPOINT
 from tests.utils import get_bp_data, post_bp_data
-from web.routes.node_info import construct_node_info_bp
 from tools.configs.flask import SKALE_LIB_NAME
+from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from tools.configs.web3 import ENDPOINT
+from tools.docker_utils import DockerUtils
+from web.routes.node_info import construct_node_info_bp
 
-
-TG_SEND_MSG_RES = {
-    'message_id': 1,
-    'date': 1590069709,
-    'text': 'test'
-}
-
-
-def send_message_mock():
-    return TG_SEND_MSG_RES
+CURRENT_TIMESTAMP = 1594903080
+CURRENT_DATETIME = datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 
 
 @pytest.fixture
@@ -49,13 +45,23 @@ def test_containers_healthcheck(skale_bp):
     assert data == expected
 
 
-@pytest.mark.skip
+@freezegun.freeze_time(CURRENT_DATETIME)
 def test_send_tg_notification(skale_bp):
-    data = post_bp_data(skale_bp, '/send-tg-notification', {'message': 'test'})
-    expected = {
-        'status': 'error',
-        'payload': 'TG_API_KEY or TG_CHAT_ID not found'
-    }
+    with mock.patch(
+        'tools.notifications.messages.send_message_to_telegram',
+        mock.Mock(return_value={'message': 'test'})
+    ) as send_message_to_telegram_mock:
+        data = post_bp_data(skale_bp, '/send-tg-notification',
+                            {'message': ['test']})
+        send_message_to_telegram_mock.delay.assert_called_once_with(
+            TG_API_KEY,
+            TG_CHAT_ID,
+            'test\nTimestamp: 1594903080\n'
+            'Datetime: Thu Jul 16 12:38:00 2020'
+        )
+
+    expected = {'status': 'ok',
+                'payload': 'Message was sent successfully'}
     assert data == expected
 
 
