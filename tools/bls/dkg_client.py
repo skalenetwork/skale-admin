@@ -263,7 +263,7 @@ class DKGClient:
         return get_complaint_started_time_function(self.group_index).call(
             {'from': self.skale.wallet.address}
         )
-    
+
     def get_alright_started_time(self):
         get_alright_started_time_function = self.dkg_contract_functions.getAlrightStartedTime
         return get_alright_started_time_function(self.group_index).call(
