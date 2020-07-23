@@ -210,7 +210,7 @@ class DKGClient:
 
         if not is_response_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_sgx} node could not sent a response')
+                        f'{self.node_id_dkg} node could not sent a response')
             return
         response = self.sgx.complaint_response(
             self.poly_name,
