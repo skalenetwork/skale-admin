@@ -27,7 +27,7 @@ from tools.bls.dkg_utils import (
     init_dkg_client, broadcast, send_complaint, response, send_alright,
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
     get_broadcasted_data, is_all_data_received, get_complaint_data, is_everyone_broadcasted,
-    check_broadcasted_data, check_failed_dkg, get_channel_started_time, get_channel_started_time,
+    check_broadcasted_data, check_failed_dkg, get_channel_started_time,
     DkgFailedError
 )
 from tools.bls.dkg_client import DkgVerificationError
@@ -90,10 +90,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     )
     all_broadcasted = is_everyone_broadcasted(dkg_client)
     if not all_broadcasted:
-        channel_started_time = get_channel_started_time(dkg_client)
         while True:
             check_failed_dkg(dkg_client)
-            if channel_started_time != get_channel_started_time(dkg_client):
+            if start_time != get_channel_started_time(dkg_client):
                 raise DkgFailedError(
                     f'sChain: {dkg_client.schain_name}. Dkg failed due to event FailedDKG'
                 )
