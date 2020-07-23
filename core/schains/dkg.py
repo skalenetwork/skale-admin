@@ -101,7 +101,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     check_failed_dkg(dkg_client)
 
     is_alright_sent_list = [False for _ in range(n)]
-    start_time_alright = get_alright_started_time()
+    start_time_alright = get_alright_started_time(dkg_client)
     if not is_complaint_sent:
         send_alright(dkg_client)
         is_alright_sent_list[dkg_client.node_id_dkg] = True
