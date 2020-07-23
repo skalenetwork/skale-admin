@@ -25,5 +25,5 @@ filelock==3.0.12
 
 pyOpenSSL==19.1.0
 python-dateutil==2.8.1
-python-telegram-bot==12.7
+python-telegram-bot==12.8
 gunicorn==20.0.4
