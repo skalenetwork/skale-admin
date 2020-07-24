@@ -203,18 +203,18 @@ class DKGClient:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
 
-    def response(self, from_node_index):
+    def response(self, to_node_index):
         is_response_possible_function = self.dkg_contract_functions.isResponsePossible
         is_response_possible = is_response_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
         if not is_response_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
-                        f'{from_node_index} node could not sent a response')
+                        f'{self.node_id_dkg} node could not sent a response')
             return
         response = self.sgx.complaint_response(
             self.poly_name,
-            self.node_ids_contract[from_node_index]
+            self.node_ids_contract[to_node_index]
         )
         share, dh_key = response['share'], response['dh_key']
 
@@ -233,7 +233,7 @@ class DKGClient:
         except TransactionFailedError as e:
             logger.error(f'DKG response failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
-        logger.info(f'sChain: {self.schain_name}. {from_node_index} node sent a response')
+        logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent a response')
 
     def get_broadcasted_data(self, from_node):
         return self.skale.key_storage.get_broadcasted_data(
@@ -243,6 +243,30 @@ class DKGClient:
     def is_all_data_received(self, from_node):
         is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
         return is_all_data_received_function(self.group_index, self.node_ids_dkg[from_node]).call(
+            {'from': self.skale.wallet.address}
+        )
+
+    def is_everyone_broadcasted(self):
+        get_number_of_broadcasted_function = self.dkg_contract_functions.isEveryoneBroadcasted
+        return get_number_of_broadcasted_function(self.group_index).call(
+            {'from': self.skale.wallet.address}
+        )
+
+    def get_channel_started_time(self):
+        get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
+        return get_channel_started_time_function(self.group_index).call(
+            {'from': self.skale.wallet.address}
+        )
+
+    def get_complaint_started_time(self):
+        get_complaint_started_time_function = self.dkg_contract_functions.getComplaintStartedTime
+        return get_complaint_started_time_function(self.group_index).call(
+            {'from': self.skale.wallet.address}
+        )
+
+    def get_alright_started_time(self):
+        get_alright_started_time_function = self.dkg_contract_functions.getAlrightStartedTime
+        return get_alright_started_time_function(self.group_index).call(
             {'from': self.skale.wallet.address}
         )
 
