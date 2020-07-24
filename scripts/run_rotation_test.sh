@@ -20,9 +20,32 @@ docker_lvmpy_install () {
     cd -
 }
 
-if [ ! -f docker-lvmpy/loopbackfile.img ]; then
-  docker_lvmpy_install
-fi
+docker_lvmpy_finalize () {
+    echo "Disable docker-lvmpy service"
+    systemctl disable docker-lvmpy
+    if [ "$(sudo vgs | grep schain)" ]; then
+        echo "Removing all volumes from schain volume group"
+        lvremove schains --yes
+        echo "Removing volume group schain"
+        vgremove schains
+        echo "Cleaning up $BLOCK_DEVICE"
+        pvremove $BLOCK_DEVICE
+        echo "Unmount $BLOCK_DEVICE"
+        umount $BLOCK_DEVICE
+    fi;
+    BLOCK_DEVICE="$(losetup --list -a | grep loopbackfile.img |  awk '{print $1}')"
+    if [ ! -z "${BLOCK_DEVICE}" ]; then
+        echo "Removing $BLOCK_DEVICE"
+        losetup -d $BLOCK_DEVICE
+        echo 'Removing loopbackfile.img'
+        sudo rm -f docker-lvmpy/loopbackfile.img
+    fi
+}
+
+set -e
+source $VIRTUAL_ENV/bin/activate
+
+docker_lvmpy_install
 
 export SKALE_DIR_HOST=$PWD/tests/skale-data
 export RUNNING_ON_HOST=True
@@ -50,4 +73,6 @@ bash scripts/run_sgx_simulator.sh
 
 python tests/prepare_data.py
 
-python tests/rotation_test/five_nodes/utils.py
+py.test tests/rotation_test/five_nodes/new_test.py
+
+docker_lvmpy_finalize
