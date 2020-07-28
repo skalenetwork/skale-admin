@@ -19,5 +19,5 @@
 
 import os
 
-TG_API_KEY = os.environ.get('TG_API_KEY', None)
-TG_CHAT_ID = os.environ.get('TG_CHAT_ID', None)
+TG_API_KEY = os.getenv('TG_API_KEY', None)
+TG_CHAT_ID = os.getenv('TG_CHAT_ID', None)

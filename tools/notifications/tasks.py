@@ -17,14 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 from celery import Celery
 from telegram import Bot
 
+REDIS_URI = os.getenv('REDIS_URI', 'redis://localhost:6379/0')
+# No more than 20 per minute
+NOTIFICATIONS_RATE_LIMIT = os.getenv('NOTIFICATIONS_RATE_LIMIT', '20/m')
 
-app = Celery('tasks', broker='redis://localhost:6379/0')
+
+app = Celery('tasks', broker=REDIS_URI)
 
 
-@app.task(rate_limit='20/m')
+@app.task(rate_limit=NOTIFICATIONS_RATE_LIMIT)
 def send_message_to_telegram(api_key, chat_id, message, bot=None):
     bot = bot or Bot(api_key)
     return bot.send_message(chat_id=chat_id, text=message)
