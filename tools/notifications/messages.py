@@ -31,7 +31,7 @@ from tools.notifications.tasks import send_message_to_telegram
 
 
 logger = logging.getLogger(__name__)
-client = Redis(connection_pool=BlockingConnectionPool())
+redis_client = Redis(connection_pool=BlockingConnectionPool())
 
 
 RED_LIGHT = '\u274C'
@@ -58,10 +58,12 @@ def notifications_enabled(func):
 
 
 @notifications_enabled
-def cleanup_notification_state():
+def cleanup_notification_state(*, client=None):
+    client = client or redis_client
     keys = client.keys('messages.*')
     logger.info(f'Removing following keys from notificaton state: {keys}')
-    client.delete(*keys)
+    if keys:
+        client.delete(*keys)
 
 
 def convert_bool_to_emoji_lights(checks):
@@ -113,7 +115,8 @@ def get_state_from_checks(checks):
 
 
 @notifications_enabled
-def notify_checks(schain_name, node, checks):
+def notify_checks(schain_name, node, checks, *, client=None):
+    client = client or redis_client
     count_key = 'messages.checks.count'
     state_key = 'messages.checks.state'
     count = int(client.get(count_key) or 0)
@@ -150,7 +153,8 @@ def compose_balance_message(node_info, balance, required_balance):
 
 
 @notifications_enabled
-def notify_balance(node_info, balance, required_balance):
+def notify_balance(node_info, balance, required_balance, *, client=None):
+    client = client or redis_client
     count_key = 'messages.balance.count'
     state_key = 'messages.balance.state'
     count = int(client.get(count_key) or 0)
