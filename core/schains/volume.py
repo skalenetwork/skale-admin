@@ -62,6 +62,10 @@ def get_allocation_option_name(schain):
     return SchainTypes(part_of_node).name
 
 
+def get_allocation_part_name(schain):
+    return f'part_{get_allocation_option_name(schain)}'
+
+
 def get_resource_allocation_info():
     return read_json(RESOURCE_ALLOCATION_FILEPATH)
 
