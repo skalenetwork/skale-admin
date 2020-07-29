@@ -113,6 +113,13 @@ def cleaned_state():
     cleanup_notification_state()
 
 
+def test_cleanup_empty_notification_state():
+    redis_client_mock = mock.Mock()
+    redis_client_mock.keys = mock.Mock(return_value=[])
+    cleanup_notification_state(client=redis_client_mock)
+    redis_client_mock.delete.assert_not_called()
+
+
 @mock.patch('tools.notifications.messages.send_message')
 def test_notify_balance(send_message_mock, cleaned_state):
     def get_state_data():
