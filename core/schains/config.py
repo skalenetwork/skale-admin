@@ -29,7 +29,8 @@ from skale.dataclasses.skaled_ports import SkaledPorts
 from core.schains.ssl import get_ssl_filepath
 from core.schains.helper import (read_base_config, read_ima_data,
                                  get_schain_config_filepath, get_tmp_schain_config_filepath)
-from core.schains.volume import get_resource_allocation_info, get_allocation_option_name
+from core.schains.volume import (get_resource_allocation_info, get_allocation_option_name,
+                                 get_allocation_part_name)
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
@@ -41,6 +42,22 @@ from tools.iptables import NodeEndpoint
 from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
+
+
+SCHAIN_INTERNAL_LIMITS = [
+    'maxConsensusStorageBytes',
+    'maxSkaledLeveldbStorageBytes',
+    'maxFileStorageBytes',
+    'maxReservedStorageBytes'
+]
+
+
+def generate_schain_limits_options(resource_allocation, allocation_part_name):
+    options = {}
+    for limit_name in SCHAIN_INTERNAL_LIMITS:
+        print(limit_name)
+        options[limit_name] = resource_allocation['schain'][allocation_part_name][limit_name]
+    return options
 
 
 def generate_schain_config(skale, schain_name, node_id, rotation_id, ecdsa_sgx_key_name):
@@ -61,8 +78,10 @@ def generate_schain_config(skale, schain_name, node_id, rotation_id, ecdsa_sgx_k
     resource_allocation = get_resource_allocation_info()
     schain = skale.schains.get_by_name(schain_name)  # todo: optimize to avoid multiple calls
     schain_size_name = get_allocation_option_name(schain)
+    allocation_part_name = get_allocation_part_name(schain)
     custom_schain_config_fields = {
-        'storageLimit': resource_allocation['schain']['storage_limit'][schain_size_name]
+        'storageLimit': resource_allocation['schain']['storage_limit'][schain_size_name],
+        **generate_schain_limits_options(resource_allocation, allocation_part_name)
     }
     config = generate_skale_schain_config(
         skale=skale,
