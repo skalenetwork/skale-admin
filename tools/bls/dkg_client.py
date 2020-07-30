@@ -71,6 +71,15 @@ def convert_g2_point_to_hex(data):
     return data_hexed
 
 
+def convert_str_to_key_share(sent_secret_key_contribution):
+    return_value = []
+    for i in range(self.n):
+        public_key = sent_secret_key_contribution[i * 192: i * 192 + 128]
+        key_share = bytes.fromhex(sent_secret_key_contribution[i * 192 + 128: (i + 1) * 192])
+        return_value.append(KeyShare(public_key, key_share).tuple)
+    return return_value
+
+
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
                  node_ids_dkg, node_ids_contract, eth_key_name):
@@ -107,56 +116,12 @@ class DKGClient:
         return convert_g2_points_to_array(verification_vector)
 
     def secret_key_contribution(self):
-        sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
+        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
                                                                             self.public_keys)
-        self.incoming_secret_key_contribution[self.node_id_dkg] = sent_secret_key_contribution[
+        self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
             self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
         ]
-        return_value = []
-        for i in range(self.n):
-            public_key = sent_secret_key_contribution[i * 192: i * 192 + 128]
-            key_share = bytes.fromhex(sent_secret_key_contribution[i * 192 + 128: (i + 1) * 192])
-            return_value.append(KeyShare(public_key, key_share).tuple)
-        return return_value
-
-    def broadcast(self, poly_name):
-        poly_success = self.generate_polynomial(poly_name)
-        if poly_success == DkgPolyStatus.FAIL:
-            raise SgxDkgPolynomGenerationError(
-                f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
-            )
-
-        if poly_success == DkgPolyStatus.PREEXISTING:
-            secret_key_contribution, verification_vector = self.get_broadcasted_data(
-                self.node_id_dkg
-            )
-            self.receive_secret_key_contribution(self.node_id_dkg, secret_key_contribution)
-            self.receive_verification_vector(self.node_id_dkg, verification_vector)
-
-        is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
-        is_broadcast_possible = is_broadcast_possible_function(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
-
-        channel_opened = self.is_channel_opened()
-        if not is_broadcast_possible or not channel_opened:
-            logger.info(f'sChain: {self.schain_name}. '
-                        f'Broadcast is already sent from {self.node_id_dkg} node')
-            return
-
-        verification_vector = self.verification_vector()
-        secret_key_contribution = self.secret_key_contribution()
-        try:
-            self.skale.dkg.broadcast(
-                self.group_index,
-                self.node_id_contract,
-                verification_vector,
-                secret_key_contribution,
-                gas_price=self.skale.dkg.gas_price()
-            )
-        except TransactionFailedError as e:
-            logger.error(f'DKG broadcast failed: sChain {self.schain_name}')
-            raise DkgTransactionError(e)
-        logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
+        return convert_str_to_key_share(self.sent_secret_key_contribution)
 
     def receive_verification_vector(self, from_node, broadcasted_data):
         hexed_vv = ""
@@ -171,11 +136,89 @@ class DKGClient:
         incoming = public_key_x_str + public_key_y_str + key_share_str
         self.incoming_secret_key_contribution[from_node] = incoming
 
+    def broadcast(self, poly_name):
+        poly_success = self.generate_polynomial(poly_name)
+        if poly_success == DkgPolyStatus.FAIL:
+            raise SgxDkgPolynomGenerationError(
+                f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
+            )
+        
+        verification_vector = self.verification_vector()
+        secret_key_contribution = self.secret_key_contribution()
+
+        is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
+        is_broadcast_possible = is_broadcast_possible_function(
+            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+
+        channel_opened = self.is_channel_opened()
+        if not is_broadcast_possible or not channel_opened:
+            logger.info(f'sChain: {self.schain_name}. '
+                        f'Broadcast is already sent from {self.node_id_dkg} node')
+            return
+
+        try:
+            self.skale.dkg.broadcast(
+                self.group_index,
+                self.node_id_contract,
+                verification_vector,
+                secret_key_contribution,
+                gas_price=self.skale.dkg.gas_price()
+            )
+        except TransactionFailedError as e:
+            logger.error(f'DKG broadcast failed: sChain {self.schain_name}')
+            raise DkgTransactionError(e)
+        logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
+    
+    def receive_from_node(self, from_node, broadcasted_data):
+        self.receive_verification_vector(from_node, broadcasted_data[0])
+        self.receive_secret_key_contribution(from_node, broadcasted_data[1])
+        if not self.verification(from_node):
+            raise DkgVerificationError(
+                f"sChain: {self.schain_name}. "
+                f"Fatal error : user {str(from_node + 1)} "
+                f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
+            )
+        logger.info(f'sChain: {self.schain_name}. '
+                    f'All data from {from_node} was received and verified')
+
     def verification(self, from_node):
         return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
                                             self.eth_key_name,
                                             self.incoming_secret_key_contribution[from_node],
                                             self.node_id_dkg)
+    
+    def generate_key(self, bls_key_name):
+        received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
+                                                   for j in range(self.sgx.n))
+        logger.info(f'sChain: {self.schain_name}. '
+                    f'DKGClient is going to create BLS private key with name {bls_key_name}')
+        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name,
+                                                          self.eth_key_name,
+                                                          received_secret_key_contribution)
+        logger.info(f'sChain: {self.schain_name}. '
+                    'DKGClient is going to fetch BLS public key with name {bls_key_name}')
+        self.public_key = self.sgx.get_bls_public_key(bls_key_name)
+        return bls_private_key
+
+    def alright(self):
+        is_alright_possible_function = self.dkg_contract_functions.isAlrightPossible
+        is_alright_possible = is_alright_possible_function(
+            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+
+        if not is_alright_possible or not self.is_channel_opened():
+            logger.info(f'sChain: {self.schain_name}. '
+                        f'{self.node_id_dkg} node has already sent an alright note')
+            return
+        try:
+            self.skale.dkg.alright(
+                self.group_index,
+                self.node_id_contract,
+                gas_price=self.skale.dkg.gas_price()
+            )
+        except TransactionFailedError as e:
+            logger.error(f'DKG alright failed: sChain {self.schain_name}')
+            raise DkgTransactionError(e)
+        logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
 
     def send_complaint(self, to_node):
         logger.info(f'sChain: {self.schain_name}. '
@@ -227,6 +270,8 @@ class DKGClient:
                 self.group_index,
                 self.node_id_contract,
                 int(dh_key, 16),
+                convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
+                convert_str_to_key_share(self.sent_secret_key_contribution),
                 share,
                 gas_price=self.skale.dkg.gas_price()
             )
@@ -275,48 +320,3 @@ class DKGClient:
         return get_complaint_data_function(self.group_index).call(
             {'from': self.skale.wallet.address}
         )
-
-    def receive_from_node(self, from_node, broadcasted_data):
-        self.receive_verification_vector(from_node, broadcasted_data[0])
-        self.receive_secret_key_contribution(from_node, broadcasted_data[1])
-        if not self.verification(from_node):
-            raise DkgVerificationError(
-                f"sChain: {self.schain_name}. "
-                f"Fatal error : user {str(from_node + 1)} "
-                f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
-            )
-        logger.info(f'sChain: {self.schain_name}. '
-                    f'All data from {from_node} was received and verified')
-
-    def generate_key(self, bls_key_name):
-        received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
-                                                   for j in range(self.sgx.n))
-        logger.info(f'sChain: {self.schain_name}. '
-                    f'DKGClient is going to create BLS private key with name {bls_key_name}')
-        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name,
-                                                          self.eth_key_name,
-                                                          received_secret_key_contribution)
-        logger.info(f'sChain: {self.schain_name}. '
-                    'DKGClient is going to fetch BLS public key with name {bls_key_name}')
-        self.public_key = self.sgx.get_bls_public_key(bls_key_name)
-        return bls_private_key
-
-    def alright(self):
-        is_alright_possible_function = self.dkg_contract_functions.isAlrightPossible
-        is_alright_possible = is_alright_possible_function(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
-
-        if not is_alright_possible or not self.is_channel_opened():
-            logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_dkg} node has already sent an alright note')
-            return
-        try:
-            self.skale.dkg.alright(
-                self.group_index,
-                self.node_id_contract,
-                gas_price=self.skale.dkg.gas_price()
-            )
-        except TransactionFailedError as e:
-            logger.error(f'DKG alright failed: sChain {self.schain_name}')
-            raise DkgTransactionError(e)
-        logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
