@@ -38,6 +38,6 @@ class Filter:
             txns = block["transactions"]
             for tx in txns:
                 receipt = self.skale.web3.eth.getTransactionReceipt(tx)
-                events = [event["args"] for event in receipt["logs"] if event["event"] == "BroadcastAndKeyShare" and event["args"]["groupIndex"] == self.group_index]
+                events.extend([event["args"] for event in receipt["logs"] if event["event"] == "BroadcastAndKeyShare" and event["args"]["groupIndex"] == self.group_index])
             self.last_viewed_block = current_block + 1
         return events
