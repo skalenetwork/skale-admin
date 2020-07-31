@@ -96,10 +96,6 @@ def send_alright(dkg_client):
     dkg_client.alright()
 
 
-def get_broadcasted_data(dkg_client, from_node):
-    return dkg_client.get_broadcasted_data(from_node)
-
-
 def is_all_data_received(dkg_client, from_node):
     return dkg_client.is_all_data_received(from_node)
 
