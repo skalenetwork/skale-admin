@@ -21,11 +21,9 @@
 class Filter:
     def __init__(self, skale, schain_name):
         self.skale = skale
-        self.schain_name = schain_name
-        self.group_index = skale.web3.sha3(text=self.schain_name)
+        self.group_index = skale.web3.sha3(text=schain_name)
         self.last_viewed_block = -1
-        self.dkg_contract = skale.dkg.contract.functions
-        self.events = []
+        self.dkg_contract = skale.dkg.contract
 
     def get_events(self):
         start_block = -1
@@ -34,12 +32,12 @@ class Filter:
                 self.group_index
             ).call({'from': self.skale.wallet.address})
         current_block = self.skale.web3.eth.getBlock()["blockNumber"]
-        self.events.clear()
+        events = []
         for block_number in range(max(start_block, self.last_viewed_block), current_block + 1):
             block = self.skale.web3.eth.getBlock(block_number)
             txns = block["transactions"]
             for tx in txns:
                 receipt = self.skale.web3.eth.getTransactionReceipt(tx)
-                self.events = [event["args"] for event in receipt["logs"] if event["event"] == "BroadcastAndKeyShare" and event["args"]["groupIndex"] == self.group_index]
+                events = [event["args"] for event in receipt["logs"] if event["event"] == "BroadcastAndKeyShare" and event["args"]["groupIndex"] == self.group_index]
             self.last_viewed_block = current_block + 1
-        return self.events
+        return events
