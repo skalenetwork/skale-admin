@@ -2,17 +2,14 @@ import functools
 from filelock import FileLock
 
 from tools.helper import read_json, write_json, init_file
-from tools.configs import NODE_CONFIG_FILEPATH
-
-
-LOCK_PATH = '/tmp/skale_node_config.lock'
+from tools.configs import NODE_CONFIG_FILEPATH, NODE_CONFIG_LOCK_PATH
 
 
 def config_setter(func):
     @functools.wraps(func)
     def wrapper_decorator(*args, **kwargs):
         field_name, field_value = func(*args, **kwargs)
-        lock = FileLock(LOCK_PATH)
+        lock = FileLock(NODE_CONFIG_LOCK_PATH)
         with lock:
             config = read_json(NODE_CONFIG_FILEPATH)
             config[field_name] = field_value
@@ -42,6 +39,16 @@ class NodeConfig():
     @config_setter
     def id(self, node_id: int) -> None:
         return 'node_id', node_id
+
+    @property
+    @config_getter
+    def name(self) -> int:
+        return 'name'
+
+    @name.setter
+    @config_setter
+    def name(self, node_name: str) -> None:
+        return 'name', node_name
 
     @property
     @config_getter

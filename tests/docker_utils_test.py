@@ -3,6 +3,8 @@ from functools import partial
 
 import docker
 import pytest
+import time
+import mock
 
 from tools.docker_utils import DockerUtils
 from core.schains.runner import (run_schain_container, run_ima_container,
@@ -46,32 +48,30 @@ def client():
     return DockerUtils(volume_driver='local')
 
 
-def run_test_schain_container(dutils):
-    env = {
-        "SSL_KEY_PATH": 'NULL',
-        "SSL_CERT_PATH": 'NULL',
-        "HTTP_RPC_PORT": 10002,
-        "HTTPS_RPC_PORT": 10007,
-        "WS_RPC_PORT": 10003,
-        "WSS_RPC_PORT": 10008,
+def run_simple_schain_container(dutils):
+    run_schain_container(SCHAIN, dutils=dutils)
 
-        "SCHAIN_ID": SCHAIN_NAME,
-        "CONFIG_FILE": os.path.join(TEST_SKALE_DATA_DIR, 'schain_config.json'),
-        "DATA_DIR": '/data_dir'
-    }
+
+def run_simple_schain_container_in_sync_mode(dutils):
+    public_key = "1:1:1:1"
+    timestamp = time.time()
+
+    class SnapshotAddressMock:
+        def __init__(self):
+            self.ip = '0.0.0.0'
+            self.port = '8080'
+
     # Run schain container
-    run_schain_container(SCHAIN, env, dutils=dutils)
+    with mock.patch('core.schains.config.get_skaled_http_snapshot_address',
+                    return_value=SnapshotAddressMock()):
+        run_schain_container(SCHAIN, public_key, timestamp, dutils=dutils)
 
 
-def run_test_ima_container(dutils):
-    run_ima_container(SCHAIN, {})
+def run_simple_ima_container(dutils):
+    run_ima_container(SCHAIN, dutils=dutils)
 
 
-def test_run_schain_container(client):
-    # Run schain container
-    run_test_schain_container(client)
-
-    # Perform container checks
+def check_schain_container(client):
     assert client.data_volume_exists(SCHAIN_NAME)
 
     containers = client.get_all_schain_containers()
@@ -83,11 +83,36 @@ def test_run_schain_container(client):
     assert 'stats' in info
     assert info['status'] == 'running'
     assert client.container_running(info)
+    assert containers[0].name
+
+
+def remove_schain_container(client):
+    containers = client.get_all_schain_containers()
+    name = containers[0].name
+    client.safe_rm(name, force=True)
+    client.rm_vol(SCHAIN_NAME)
+
+
+def test_run_schain_container(client):
+    # Run schain container
+    run_simple_schain_container(client)
+
+    # Perform container checks
+    check_schain_container(client)
 
     # Remove container and volume
-    assert containers[0].name
-    client.safe_rm(containers[0].name, force=True)
-    client.rm_vol(SCHAIN_NAME)
+    remove_schain_container(client)
+
+
+def test_run_schain_container_in_sync_mode(client):
+    # Run schain container
+    run_simple_schain_container_in_sync_mode(client)
+
+    # Perform container checks
+    check_schain_container(client)
+
+    # Remove container and volume
+    remove_schain_container(client)
 
 
 def test_not_existed_docker_objects(client):
@@ -119,3 +144,5 @@ def test_restart_all_schains(mocked_client):
     mocked_client.restart_all_schains()
     for cont_name in cont_names:
         assert get_schain_time(cont_name) != start_time[cont_name]
+    for cont_name in cont_names:
+        mocked_client.client.containers.get(cont_name).remove(force=True)

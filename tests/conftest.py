@@ -13,6 +13,10 @@ TEST_ABI_FILEPATH = os.path.join(DIR_PATH, 'test_abi.json')
 
 @pytest.fixture
 def skale():
+    return init_skale()
+
+
+def init_skale():
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
     return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)

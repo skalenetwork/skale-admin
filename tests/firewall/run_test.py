@@ -7,12 +7,16 @@ import pytest
 from tools.iptables import add_rules, apsent_rules, remove_rules, NodeEndpoint
 
 
-def get_rules_through_plain_subprocess():
-    result = subprocess.run(['iptables', '-S'],
-                            stderr=subprocess.PIPE,
-                            stdout=subprocess.PIPE)
-    stdout = result.stdout.decode('utf-8')
-    return set(filter(lambda s: s, stdout.split('\n')))
+def get_rules_through_plain_subprocess(unique=True):
+    cmd_result = subprocess.run(['iptables', '-S'],
+                                stderr=subprocess.PIPE,
+                                stdout=subprocess.PIPE)
+    stdout = cmd_result.stdout.decode('utf-8')
+    result = filter(lambda s: s, stdout.split('\n'))
+    if unique:
+        return set(result)
+    else:
+        return list(result)
 
 
 def plain_rule_from_endpoint(endpoint):
@@ -99,3 +103,32 @@ def test_add_in_threads():
         print(future.result)
 
     assert len(apsent_rules(endpoints)) == len(endpoints)
+
+
+def test_add_duplicates():
+    endpoints = [
+        NodeEndpoint(ip='11.11.11.11', port='1111'),
+        NodeEndpoint(ip='12.12.12.12', port=None),
+        NodeEndpoint(ip=None, port='1313')
+    ]
+    # Check that all rules are apsent
+    assert len(apsent_rules(endpoints)) == 3
+
+    # Add rules
+    add_rules(endpoints)
+
+    # Check that all rules to add are successfully added
+    assert len(apsent_rules(endpoints)) == 0
+    plain_rules = get_rules_through_plain_subprocess()
+    for endpoint in endpoints:
+        plain_rule = plain_rule_from_endpoint(endpoint)
+        assert plain_rule in plain_rules
+
+    # Add same rules again
+    add_rules(endpoints)
+    plain_rules = get_rules_through_plain_subprocess(unique=False)
+    for endpoint in endpoints:
+        plain_rule = plain_rule_from_endpoint(endpoint)
+        assert plain_rules.count(plain_rule) == 1
+
+    remove_rules(endpoints)

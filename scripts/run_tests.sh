@@ -20,6 +20,7 @@ export FLASK_APP_HOST=0.0.0.0
 export FLASK_APP_PORT=3008
 export FLASK_DEBUG_MODE=True
 export TM_URL=http://localhost:3009
+export TG_API_KEY=123
 
 docker rm -f skale_schain_test1 skale_schain_test2 skale_schain_test3 || true
 rm -rf $PWD/tests/dkg_test/sgx.*
@@ -28,6 +29,7 @@ bash scripts/run_sgx_simulator.sh
 
 python tests/prepare_data.py
 
-py.test tests/ --ignore=tests/firewall
+py.test tests/ --ignore=tests/firewall --ignore=tests/rotation_test
+py.test tests/rotation_test
 find . -name \*.pyc -delete
 scripts/run_firewall_test.sh

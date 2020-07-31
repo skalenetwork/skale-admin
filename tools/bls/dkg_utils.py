@@ -22,7 +22,6 @@ import os
 
 from tools.configs import NODE_DATA_PATH
 from tools.bls.dkg_client import DKGClient, DkgError
-from tools.helper import SkaleFilter
 
 logger = logging.getLogger(__name__)
 
@@ -89,77 +88,49 @@ def send_complaint(dkg_client, index):
     dkg_client.send_complaint(index)
 
 
-def response(dkg_client, from_node_index):
-    dkg_client.response(from_node_index)
+def response(dkg_client, to_node_index):
+    dkg_client.response(to_node_index)
 
 
 def send_alright(dkg_client):
     dkg_client.alright()
 
 
-def get_dkg_broadcast_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.BroadcastAndKeyShare,
-        from_block=from_block,
-        argument_filters={
-            'groupIndex': group_index
-        }
-    )
+def get_broadcasted_data(dkg_client, from_node):
+    return dkg_client.get_broadcasted_data(from_node)
 
 
-def get_dkg_complaint_sent_filter(skale, group_index, to_node_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.ComplaintSent,
-        from_block=from_block,
-        argument_filters={
-            'groupIndex': group_index, 'toNodeIndex': to_node_index
-        }
-
-    )
+def is_all_data_received(dkg_client, from_node):
+    return dkg_client.is_all_data_received(from_node)
 
 
-def get_dkg_all_complaints_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.ComplaintSent,
-        from_block=from_block,
-        argument_filters={'groupIndex': group_index}
-
-    )
+def is_everyone_broadcasted(dkg_client):
+    return dkg_client.is_everyone_broadcasted()
 
 
-def get_dkg_successful_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.SuccessfulDKG,
-        from_block=from_block,
-        argument_filters={'groupIndex': group_index}
-
-    )
-
-
-def get_dkg_fail_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.FailedDKG,
-        from_block=from_block,
-        argument_filters={'groupIndex': group_index}
-
-    )
+def check_broadcasted_data(dkg_client, is_correct, is_recieved):
+    for i in range(dkg_client.n):
+        if not is_correct[i] or not is_recieved[i]:
+            send_complaint(dkg_client, i)
+            return (True, i)
+    return (False, -1)
 
 
-def get_dkg_all_data_received_filter(skale, group_index, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.AllDataReceived,
-        from_block=from_block,
-        argument_filters={'groupIndex': group_index}
-    )
+def check_failed_dkg(dkg_client):
+    is_group_opened = dkg_client.is_channel_opened()
+    if not is_group_opened:
+        is_last_dkg_successful = dkg_client.skale.dkg.is_last_dkg_successful(dkg_client.group_index)
+        if not is_last_dkg_successful:
+            raise DkgFailedError(f'sChain: {dkg_client.schain_name}. Dkg failed')
 
 
-def get_dkg_bad_guy_filter(skale, from_block=0):
-    return SkaleFilter(
-        skale.dkg.contract.events.BadGuy,
-        from_block=from_block,
-        argument_filters={}
-    )
+def get_complaint_data(dkg_client):
+    return dkg_client.get_complaint_data()
 
 
-def get_secret_key_share_filepath(schain_id):
-    return os.path.join(NODE_DATA_PATH, 'schains', schain_id, 'secret_key.json')
+def get_channel_started_time(dkg_client):
+    return dkg_client.get_channel_started_time()
+
+
+def get_secret_key_share_filepath(schain_id, rotation_id):
+    return os.path.join(NODE_DATA_PATH, 'schains', schain_id, f'secret_key_{rotation_id}.json')

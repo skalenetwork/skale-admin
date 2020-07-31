@@ -22,6 +22,13 @@ import copy
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_container_limits, get_schain_volume_config
+from core.schains.config import (
+    get_schain_container_cmd,
+    get_schain_env,
+    get_skaled_http_address
+)
+from core.schains.ima import get_ima_env
+from core.schains.helper import send_rotation_request
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
@@ -63,11 +70,10 @@ def get_ulimits_config(config):
                     Ulimit(name=ulimit['name'], soft=ulimit['soft'], hard=ulimit['hard']), config))
 
 
-def run_container(type, schain, env, volume_config=None,
+def run_container(type, schain_name, env, cmd=None, volume_config=None,
                   cpu_limit=None, mem_limit=None, dutils=None):
     if not dutils:
         dutils = docker_utils
-    schain_name = schain['name']
     image_name, container_name, run_args, custom_args = get_container_info(type, schain_name)
 
     add_config_volume(run_args)
@@ -83,6 +89,8 @@ def run_container(type, schain, env, volume_config=None,
     if mem_limit:
         run_args['mem_limit'] = mem_limit
     run_args['environment'] = env
+    if cmd:
+        run_args['command'] = cmd
 
     logger.info(arguments_list_string({'Container name': container_name, 'Image name': image_name,
                                        'Args': run_args}, 'Running container...'))
@@ -92,16 +100,39 @@ def run_container(type, schain, env, volume_config=None,
     return cont
 
 
-def run_schain_container(schain, env, dutils=None):
+def restart_container(type, schain):
+    schain_name = schain['name']
+    container_name = get_container_name(type, schain_name)
+
+    logger.info(arguments_list_string({'Container name': container_name},
+                                      'Restarting container...'))
+    cont = docker_utils.restart(container_name)
+    return cont
+
+
+def run_schain_container(schain, public_key=None, start_ts=None, dutils=None):
+    schain_name = schain['name']
     cpu_limit, mem_limit = get_container_limits(schain)
-    volume_config = get_schain_volume_config(schain['name'],
+    volume_config = get_schain_volume_config(schain_name,
                                              DATA_DIR_CONTAINER_PATH)
-    run_container(SCHAIN_CONTAINER, schain, env, volume_config, cpu_limit,
+    env = get_schain_env()
+    cmd = get_schain_container_cmd(schain_name, public_key, start_ts)
+    run_container(SCHAIN_CONTAINER, schain_name, env, cmd,
+                  volume_config, cpu_limit,
                   mem_limit, dutils=dutils)
 
 
-def run_ima_container(schain, env, dutils=None):
-    run_container(IMA_CONTAINER, schain, env, dutils=dutils)
+def set_rotation_for_schain(schain, timestamp):
+    schain_name = schain['name']
+    endpoint = get_skaled_http_address(schain_name)
+    url = f'http://{endpoint.ip}:{endpoint.port}'
+    send_rotation_request(url, timestamp)
+
+
+def run_ima_container(schain, dutils=None):
+    schain_name = schain['name']
+    env = get_ima_env(schain)
+    run_container(IMA_CONTAINER, schain_name, env, dutils=dutils)
 
 
 def add_config_volume(run_args):
@@ -117,3 +148,14 @@ def add_config_volume(run_args):
         'bind': SKALE_VOLUME_PATH,
         "mode": "ro"
     }
+
+
+def check_container_exit(schain_name, zero_exit_code=False, dutils=None):
+    if not dutils:
+        dutils = docker_utils
+    name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    info = dutils.get_info(name)
+    if zero_exit_code:
+        return dutils.is_container_exited_with_zero(info)
+    else:
+        return dutils.is_container_exited(info)

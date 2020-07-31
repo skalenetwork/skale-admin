@@ -18,27 +18,45 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 from enum import Enum
 
-
-from tools.str_formatters import arguments_list_string
-from tools.wallet_utils import check_required_balance
-
-from skale.dataclasses.tx_res import TransactionFailedError
+from skale.transactions.result import TransactionFailedError
 from skale.utils.helper import ip_from_bytes
 from skale.wallets.web3_wallet import public_key_to_address
 
 from core.filebeat import run_filebeat_service
+
+from tools.str_formatters import arguments_list_string
+from tools.wallet_utils import check_required_balance
+from tools.configs.filebeat import MONITORING_CONTAINERS
+from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 
 logger = logging.getLogger(__name__)
 
 
 class NodeStatuses(Enum):
     """This class contains possible node statuses"""
-    NOT_CREATED = 0
-    REQUESTED = 1
-    CREATED = 2
-    ERROR = 3
+    ACTIVE = 0
+    LEAVING = 1
+    FROZEN = 2
+    LEFT = 3
+    NOT_CREATED = 4
+
+
+class NodeExitStatuses(Enum):
+    """This class contains possible node exit statuses"""
+    ACTIVE = 0
+    IN_PROGRESS = 1
+    WAIT_FOR_ROTATIONS = 2
+    COMPLETED = 3
+
+
+class SchainExitStatuses(Enum):
+    """This class contains possible schain exit statuses"""
+    ACTIVE = 0
+    LEAVING = 1
+    LEFT = 2
 
 
 class Node:
@@ -66,21 +84,59 @@ class Node:
         if not check_required_balance(self.skale):
             return self._insufficient_funds()
         try:
-            tx_res = self.skale.manager.create_node(ip, int(port), name, public_ip,
-                                                    wait_for=True,
-                                                    raise_for_status=False)
-            tx_res.raise_for_status()
-        except TransactionFailedError:
-            logger.error(arguments_list_string(
-                {'tx': tx_res.hash},
-                'Node creation failed',
-                'error'
-            ))
-            return {'status': 0, 'errors': [str(tx_res.receipt)]}
+            self.skale.manager.create_node(
+                ip=ip,
+                port=int(port),
+                name=name,
+                public_ip=public_ip,
+                wait_for=True,
+                confirmation_blocks=NODE_REGISTER_CONFIRMATION_BLOCKS
+            )
+        except TransactionFailedError as err:
+            logger.error('Node creation failed', exc_info=err)
+            return {'status': 0, 'errors': [f'node creation failed: {ip}:{port}, name: {name}']}
+
         self._log_node_info('Node successfully created', ip, public_ip, port, name)
-        self.config.id = self.skale.nodes_data.node_name_to_index(name)
-        run_filebeat_service(public_ip, self.config.id, self.skale)
+        self.config.name = name
+        self.config.id = self.skale.nodes.node_name_to_index(name)
+        if MONITORING_CONTAINERS:
+            run_filebeat_service(public_ip, self.config.id, self.skale)
         return {'status': 1, 'data': self.config.all()}
+
+    def exit(self, opts):
+        schains_list = self.skale.schains.get_active_schains_for_node(self.config.id)
+        exit_count = len(schains_list) or 1
+        for _ in range(exit_count):
+            try:
+                self.skale.manager.node_exit(self.config.id, wait_for=True)
+            except TransactionFailedError as err:
+                logger.error('Node rotation failed', exc_info=err)
+
+    def get_exit_status(self):
+        active_schains = self.skale.schains.get_active_schains_for_node(self.config.id)
+        schain_statuses = [
+            {
+                'name': schain['name'],
+                'status': SchainExitStatuses.ACTIVE.name
+            }
+            for schain in active_schains
+        ]
+        rotated_schains = self.skale.node_rotation.get_leaving_history(self.config.id)
+        current_time = time.time()
+        for schain in rotated_schains:
+            if current_time > schain['finished_rotation']:
+                status = SchainExitStatuses.LEFT
+            else:
+                status = SchainExitStatuses.LEAVING
+            schain_name = self.skale.schains.get(schain['id'])['name']
+            if not schain_name:
+                schain_name = '[REMOVED]'
+            schain_statuses.append({'name': schain_name, 'status': status.name})
+        node_status = NodeExitStatuses(self.skale.nodes.get_node_status(self.config.id))
+        exit_time = self.skale.nodes.get_node_finish_time(self.config.id)
+        if node_status == NodeExitStatuses.WAIT_FOR_ROTATIONS and current_time >= exit_time:
+            node_status = NodeExitStatuses.COMPLETED
+        return {'status': node_status.name, 'data': schain_statuses, 'exit_time': exit_time}
 
     def _insufficient_funds(self):
         err_msg = f'Insufficient funds, re-check your wallet'
@@ -100,15 +156,23 @@ class Node:
     def info(self):
         _id = self.config.id
         if _id is not None:
-            raw_info = self.skale.nodes_data.get(_id)
+            raw_info = self.skale.nodes.get(_id)
             return self._transform_node_info(raw_info, _id)
         return {'status': NodeStatuses.NOT_CREATED.value}
 
     def _transform_node_info(self, node_info, node_id):
         node_info['ip'] = ip_from_bytes(node_info['ip'])
         node_info['publicIP'] = ip_from_bytes(node_info['publicIP'])
-        node_info['status'] = NodeStatuses.CREATED.value
+        node_info['status'] = _get_node_status(node_info)
         node_info['id'] = node_id
-        node_info['publicKey'] = self.skale.web3.toHex(node_info['publicKey'])
+        node_info['publicKey'] = node_info['publicKey']
         node_info['owner'] = public_key_to_address(node_info['publicKey'])
         return node_info
+
+
+def _get_node_status(node_info):
+    finish_time = node_info['finish_time']
+    status = NodeStatuses(node_info['status'])
+    if status == NodeStatuses.FROZEN and finish_time < time.time():
+        return NodeStatuses.LEFT.value
+    return status.value

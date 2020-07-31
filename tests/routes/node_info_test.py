@@ -4,9 +4,20 @@ from flask import Flask
 
 from tools.docker_utils import DockerUtils
 from tools.configs.web3 import ENDPOINT
-from tests.utils import get_bp_data
+from tests.utils import get_bp_data, post_bp_data
 from web.routes.node_info import construct_node_info_bp
 from tools.configs.flask import SKALE_LIB_NAME
+
+
+TG_SEND_MSG_RES = {
+    'message_id': 1,
+    'date': 1590069709,
+    'text': 'test'
+}
+
+
+def send_message_mock():
+    return TG_SEND_MSG_RES
 
 
 @pytest.fixture
@@ -19,28 +30,50 @@ def skale_bp(skale):
 
 def test_rpc_healthcheck(skale_bp):
     data = get_bp_data(skale_bp, '/get-rpc-credentials')
-    assert data['endpoint'] == ENDPOINT
+    expected = {
+        'status': 'ok',
+        'payload': {
+            'endpoint': ENDPOINT
+        }
+    }
+    assert data == expected
 
 
 def test_containers_healthcheck(skale_bp):
     data = get_bp_data(skale_bp, '/healthchecks/containers')
     dutils = DockerUtils(volume_driver='local')
-    assert data == dutils.get_all_skale_containers(all=all, format=True)
+    expected = {
+        'status': 'ok',
+        'payload': dutils.get_all_skale_containers(all=all, format=True)
+    }
+    assert data == expected
+
+
+def test_send_tg_notification(skale_bp):
+    data = post_bp_data(skale_bp, '/send-tg-notification', {'message': 'test'})
+    expected = {
+        'status': 'error',
+        'payload': 'TG_API_KEY or TG_CHAT_ID not found'
+    }
+    assert data == expected
 
 
 def test_about(skale_bp, skale):
-    node_about = {
-        'libraries': {
-            'javascript': 'N/A',  # get_js_package_version(),
-            'skale.py': pkg_resources.get_distribution(SKALE_LIB_NAME).version
-        },
-        'contracts': {
-            'token': skale.token.address,
-            'manager': skale.manager.address,
-        },
-        'network': {
-            'endpoint': ENDPOINT
-        },
+    expected = {
+        'status': 'ok',
+        'payload': {
+            'libraries': {
+                'javascript': 'N/A',  # get_js_package_version(),
+                'skale.py': pkg_resources.get_distribution(SKALE_LIB_NAME).version
+            },
+            'contracts': {
+                'token': skale.token.address,
+                'manager': skale.manager.address,
+            },
+            'network': {
+                'endpoint': ENDPOINT
+            }
+        }
     }
     data = get_bp_data(skale_bp, '/about-node')
-    assert data == node_about
+    assert data == expected

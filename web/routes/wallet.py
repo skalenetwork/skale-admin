@@ -34,6 +34,6 @@ def construct_wallet_bp(skale):
     def load_wallet():
         logger.debug(request)
         res = wallet_with_balance(skale)
-        return construct_ok_response(res)
+        return construct_ok_response(data=res)
 
     return wallet_bp

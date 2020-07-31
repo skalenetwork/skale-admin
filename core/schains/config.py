@@ -19,32 +19,52 @@
 
 import json
 import logging
+import shutil
+import os
 from itertools import chain
 
 from skale.schain_config.generator import generate_skale_schain_config
 from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
-from core.schains.helper import read_base_config, get_schain_config_filepath
+from core.schains.helper import (read_base_config, read_ima_data,
+                                 get_schain_config_filepath, get_tmp_schain_config_filepath)
+from core.schains.volume import get_resource_allocation_info, get_allocation_option_name
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
-from tools.configs.containers import CONTAINERS_INFO
+from tools.configs.containers import CONTAINERS_INFO, LOCAL_IP
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
+from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import NodeEndpoint
 from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
 
 
-def generate_schain_config(skale, schain_name, node_id):
+def generate_schain_config(skale, schain_name, node_id, rotation_id, ecdsa_sgx_key_name):
     base_config = read_base_config()
-    wallets = generate_wallets_config(schain_name)
+    ima_data = read_ima_data()
+    wallets = generate_wallets_config(schain_name, rotation_id)
     ima_mainnet_url = IMA_ENDPOINT
     ima_mp_schain, ima_mp_mainnet = get_mp_addresses()
-    rotate_after_block = CONTAINERS_INFO['schain']['config_options']['rotateAfterBlock']
-    return generate_skale_schain_config(
+    options = CONTAINERS_INFO['schain']['config_options']
+    config_opts = dict()
+    if options.get('rotateAfterBlock'):
+        config_opts['rotate_after_block'] = options.get('rotateAfterBlock')
+    if options.get('snapshotIntervalMs'):
+        config_opts['snapshot_interval_ms'] = options.get('snapshotIntervalMs')
+    if options.get('emptyBlockIntervalMs'):
+        config_opts['empty_block_interval_ms'] = options.get('emptyBlockIntervalMs')
+
+    resource_allocation = get_resource_allocation_info()
+    schain = skale.schains.get_by_name(schain_name)  # todo: optimize to avoid multiple calls
+    schain_size_name = get_allocation_option_name(schain)
+    custom_schain_config_fields = {
+        'storageLimit': resource_allocation['schain']['storage_limit'][schain_size_name]
+    }
+    config = generate_skale_schain_config(
         skale=skale,
         schain_name=schain_name,
         node_id=node_id,
@@ -52,20 +72,26 @@ def generate_schain_config(skale, schain_name, node_id):
         ima_mainnet=ima_mainnet_url,
         ima_mp_schain=ima_mp_schain,
         ima_mp_mainnet=ima_mp_mainnet,
+        ecdsa_key_name=ecdsa_sgx_key_name,
         wallets=wallets,
-        rotate_after_block=rotate_after_block
+        ima_data=ima_data,
+        custom_schain_config_fields=custom_schain_config_fields,
+        **config_opts
     )
+    config['skaleConfig']['nodeInfo']['bindIP'] = '0.0.0.0'
+    return config
 
 
 def get_mp_addresses():
     ima_abi = read_json(MAINNET_PROXY_PATH)
-    ima_mp_schain = None  # todo: unknown at the launch time, tbd
+    schain_ima_abi = read_json(IMA_DATA_FILEPATH)
+    ima_mp_schain = schain_ima_abi['message_proxy_chain_address']
     ima_mp_mainnet = ima_abi['message_proxy_mainnet_address']
     return ima_mp_schain, ima_mp_mainnet
 
 
-def generate_wallets_config(schain_name):
-    secret_key_share_filepath = get_secret_key_share_filepath(schain_name)
+def generate_wallets_config(schain_name, rotation_id):
+    secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
     secret_key_share_config = read_json(secret_key_share_filepath)
     wallets = {
         'ima': {
@@ -77,12 +103,12 @@ def generate_wallets_config(schain_name):
     }
     common_public_keys = secret_key_share_config['common_public_key']
     for (i, value) in enumerate(common_public_keys):
-        name = 'insecureBLSPublicKey' + str(i)
+        name = 'insecureCommonBLSPublicKey' + str(i)
         wallets['ima'][name] = str(value)
 
     public_keys = secret_key_share_config['public_key']
     for (i, value) in enumerate(public_keys):
-        name = 'insecureCommonBLSPublicKey' + str(i)
+        name = 'insecureBLSPublicKey' + str(i)
         wallets['ima'][name] = str(value)
 
     return wallets
@@ -96,12 +122,22 @@ def save_schain_config(schain_config, schain_name):
     return schain_config_filepath
 
 
+def update_schain_config(schain_config, schain_name):
+    tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
+    with open(tmp_config_filepath, 'w') as outfile:
+        json.dump(schain_config, outfile, indent=4)
+    config_filepath = get_schain_config_filepath(schain_name)
+    shutil.move(tmp_config_filepath, config_filepath)
+
+
 def get_schain_ports(schain_name):
     config = get_schain_config(schain_name)
     return get_schain_ports_from_config(config)
 
 
 def get_schain_ports_from_config(config):
+    if config is None:
+        return {}
     node_info = config["skaleConfig"]["nodeInfo"]
     return {
         'http': int(node_info["httpRpcPort"]),
@@ -112,6 +148,8 @@ def get_schain_ports_from_config(config):
 
 
 def get_skaled_rpc_endpoints_from_config(config):
+    if config is None:
+        return []
     node_info = config["skaleConfig"]["nodeInfo"]
     return [
         NodeEndpoint(ip=None, port=node_info['httpRpcPort']),
@@ -126,25 +164,61 @@ def get_snapshots_endpoints_from_config(config):
     return []
 
 
-def get_consensus_ips_with_ports(schain_name, node_id):
+def get_skaled_http_snapshot_address(schain_name):
+    config = get_schain_config(schain_name)
+    return get_skaled_http_snapshot_address_from_config(config)
+
+
+def get_skaled_http_snapshot_address_from_config(config):
+    node_id = config['skaleConfig']['nodeInfo']['nodeID']
+    schain_nodes_config = config['skaleConfig']['sChain']['nodes']
+    from_node = None
+    for node_data in schain_nodes_config:
+        if node_data['nodeID'] != node_id:
+            from_node = node_data
+            break
+
+    return NodeEndpoint(from_node['ip'], from_node['basePort'] +
+                        SkaledPorts.HTTP_JSON.value)
+
+
+def get_skaled_http_address(schain_name):
+    config = get_schain_config(schain_name)
+    return get_skaled_http_address_from_config(config)
+
+
+def get_skaled_http_address_from_config(config):
+    node = config['skaleConfig']['nodeInfo']
+    return NodeEndpoint(LOCAL_IP, node['httpRpcPort'])
+
+
+def get_consensus_ips_with_ports(schain_name):
     config = get_schain_config(schain_name)
     return get_consensus_endpoints_from_config(config)
 
 
 def get_consensus_endpoints_from_config(config):
+    if config is None:
+        return []
     node_id = config['skaleConfig']['nodeInfo']['nodeID']
     base_port = config['skaleConfig']['nodeInfo']['basePort']
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
 
     node_endpoints = list(chain.from_iterable(
         (
-            NodeEndpoint(node_data['ip'], base_port + SkaledPorts.PROPOSAL.value),
-            NodeEndpoint(node_data['ip'], base_port + SkaledPorts.CATCHUP.value),
             NodeEndpoint(
-                node_data['ip'], base_port + SkaledPorts.BINARY_CONSENSUS.value
+                node_data['publicIP'],
+                base_port + SkaledPorts.PROPOSAL.value),
+            NodeEndpoint(
+                node_data['publicIP'],
+                base_port + SkaledPorts.CATCHUP.value),
+            NodeEndpoint(
+                node_data['publicIP'],
+                base_port + SkaledPorts.BINARY_CONSENSUS.value
             ),
             NodeEndpoint(
-                node_data['ip'], base_port + SkaledPorts.ZMQ_BROADCAST.value
+                node_data['publicIP'],
+                base_port + SkaledPorts.ZMQ_BROADCAST.value
             )
         )
         for node_data in schain_nodes_config
@@ -164,25 +238,65 @@ def get_allowed_endpoints(schain_name):
 
 def get_schain_config(schain_name):
     config_filepath = get_schain_config_filepath(schain_name)
+    if not os.path.isfile(config_filepath):
+        return None
     with open(config_filepath) as f:
         schain_config = json.load(f)
     return schain_config
 
 
-def get_schain_env(schain_name):
+def get_schain_env():
+    return {
+        "SEGFAULT_SIGNALS": 'all'
+    }
+
+
+def get_schain_container_cmd(schain_name, public_key=None, start_ts=None):
+    opts = get_schain_container_base_opts(schain_name)
+    if public_key and str(start_ts):
+        sync_opts = get_schain_container_sync_opts(schain_name, public_key, start_ts)
+        opts += sync_opts
+    return opts
+
+
+def get_schain_container_sync_opts(schain_name, public_key, start_ts):
+    endpoint = get_skaled_http_snapshot_address(schain_name)
+    url = f'http://{endpoint.ip}:{endpoint.port}'
+    return (
+        f'--download-snapshot {url} '
+        f'--public-key {public_key} '
+        f'--start-timestamp {start_ts} '
+    )
+
+
+def get_schain_container_base_opts(schain_name, log_level=4):
     config_filepath = get_schain_config_filepath(schain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
-    return {
-        "SSL_KEY_PATH": ssl_key,
-        "SSL_CERT_PATH": ssl_cert,
-        "HTTP_RPC_PORT": ports['http'],
-        "HTTPS_RPC_PORT": ports['https'],
-        "WS_RPC_PORT": ports['ws'],
-        "WSS_RPC_PORT": ports['wss'],
+    return (
+        f'--config {config_filepath} '
+        f'-d {DATA_DIR_CONTAINER_PATH} '
+        f'--ipcpath {DATA_DIR_CONTAINER_PATH} '
+        f'--http-port {ports["http"]} '
+        f'--https-port {ports["https"]} '
+        f'--ws-port {ports["ws"]} '
+        f'--wss-port {ports["wss"]} '
+        f'--ssl-key {ssl_key} '
+        f'--ssl-cert {ssl_cert} '
+        f'-v {log_level} '
+        f'--web3-trace '
+        f'--enable-debug-behavior-apis '
+        f'--aa no '
+    )
 
-        "SCHAIN_ID": schain_name,
-        "CONFIG_FILE": config_filepath,
-        "DATA_DIR": DATA_DIR_CONTAINER_PATH,
-        "SEGFAULT_SIGNALS": 'all'
-    }
+
+def get_schain_rpc_ports(schain_id):
+    schain_config = get_schain_config(schain_id)
+    node_info = schain_config["skaleConfig"]["nodeInfo"]
+    return int(node_info["httpRpcPort"]), int(node_info["wsRpcPort"])
+
+
+def get_schain_ssl_rpc_ports(schain_id):
+    schain_config = get_schain_config(schain_id)
+    node_info = schain_config["skaleConfig"]["nodeInfo"]
+    return int(node_info["httpsRpcPort"]), int(node_info["wssRpcPort"])
