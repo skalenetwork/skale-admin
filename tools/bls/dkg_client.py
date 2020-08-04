@@ -153,7 +153,7 @@ class DKGClient:
         channel_opened = self.is_channel_opened()
         if not is_broadcast_possible or not channel_opened:
             logger.info(f'sChain: {self.schain_name}. '
-                        f'Broadcast is already sent from {self.node_id_dkg} node')
+                        f'{self.node_id_dkg} node could not sent broadcast')
             return
 
         try:
@@ -207,7 +207,7 @@ class DKGClient:
 
         if not is_alright_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_dkg} node has already sent an alright note')
+                        f'{self.node_id_dkg} node could not sent an alright note')
             return
         try:
             self.skale.dkg.alright(

@@ -111,6 +111,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     all_broadcasted = is_everyone_broadcasted(dkg_client)
     if not all_broadcasted:
         while True:
+            logger.info(f'sChain: {dkg_client.schain_name}. Not everyone broadcasted,'
+                        'waiting for FailedDKG')
             check_failed_dkg(dkg_client)
             if start_time != get_channel_started_time(dkg_client):
                 raise DkgFailedError(
