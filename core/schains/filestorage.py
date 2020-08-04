@@ -30,6 +30,6 @@ def compose_filestorage_info(schin_internal_limits):
         'address': filestorage_info['address'],
         'bytecode': filestorage_info['bytecode'],
         'storage': {
-            '0x0': max_file_storage_bytes
+            '0x0': str(max_file_storage_bytes)
         }
     }
