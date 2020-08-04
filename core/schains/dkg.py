@@ -129,10 +129,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     check_failed_dkg(dkg_client)
 
-    is_complaint_received = False
     complaint_data = get_complaint_data(dkg_client)
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
-        is_complaint_received = True
         response(dkg_client, complaint_data[0])
 
     check_failed_dkg(dkg_client)
@@ -149,7 +147,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                     is_alright_sent_list[from_node] = is_all_data_received(dkg_client, from_node)
             complaint_data = get_complaint_data(dkg_client)
             if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
-                is_complaint_received = True
                 response(dkg_client, complaint_data[0])
             sleep(1)
 
@@ -161,23 +158,20 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     complaint_data = get_complaint_data(dkg_client)
     if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
-        is_complaint_received = True
         response(dkg_client, complaint_data[0])
 
     complaint_data = get_complaint_data(dkg_client)
     is_complaint_sent = complaint_data[0] != complaint_data[1]
-    if is_complaint_sent or is_complaint_received:
+    if is_complaint_sent:
+        complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
         is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
         is_channel_opened = dkg_client.is_channel_opened()
         start_time_response = get_complaint_started_time(dkg_client)
+        if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
+            response(dkg_client, complaint_data[0])
         while not is_group_failed or is_channel_opened:
             if time.time() - start_time_response > RECEIVE_TIMEOUT:
                 break
-            complaint_data = get_complaint_data(dkg_client)
-            complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
-            if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
-                is_complaint_received = True
-                response(dkg_client, complaint_data[0])
             is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
             is_channel_opened = dkg_client.is_channel_opened()
             sleep(1)
