@@ -24,3 +24,36 @@ IMA_ENDPOINT = os.environ['IMA_ENDPOINT']
 
 PROXY_ABI_FILENAME = 'proxy.json'
 MAINNET_PROXY_PATH = os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
+
+PRECOMPILED_IMA_CONTRACTS = {
+    'skale_features': {
+        'filename': 'SkaleFeatures'
+    },
+    'lock_and_data_for_schain': {
+        'filename': 'LockAndDataForSchain'
+    },
+    'eth_erc20': {
+        'filename': 'EthERC20'
+    },
+    'token_manager': {
+        'filename': 'TokenManager'
+    },
+    'lock_and_data_for_schain_erc20': {
+        'filename': 'LockAndDataForSchainERC20'
+    },
+    'erc20_module_for_schain': {
+        'filename': 'ERC20ModuleForSchain'
+    },
+    'lock_and_data_for_schain_erc721': {
+        'filename': 'LockAndDataForSchainERC721'
+    },
+    'erc721_module_for_schain': {
+        'filename': 'ERC721ModuleForSchain'
+    },
+    'token_factory': {
+        'filename': 'TokenFactory'
+    },
+    'message_proxy_chain': {
+        'filename': 'MessageProxyForSchain'
+    }
+}
