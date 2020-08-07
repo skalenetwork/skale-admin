@@ -30,7 +30,7 @@ from tools.bls.dkg_utils import (
     check_broadcasted_data, check_failed_dkg, get_channel_started_time, get_complaint_started_time,
     get_alright_started_time, DkgFailedError
 )
-from tools.bls.skale_dkg_broadcst_filtet import Filter
+from tools.bls.skale_dkg_broadcast_filter import Filter
 from tools.bls.dkg_client import DkgVerificationError
 from tools.helper import write_json
 
@@ -56,17 +56,18 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     is_correct = [False for _ in range(n)]
     is_correct[dkg_client.node_id_dkg] = True
 
-    dkg_filter = Filter(skale, schain_name)
+    dkg_filter = Filter(skale, schain_name, n)
 
     start_time = get_channel_started_time(dkg_client)
     while False in is_received:
         if time.time() - start_time > RECEIVE_TIMEOUT:
             break
-
-        for event in dkg_filter.get_events():
+        
+        events = dkg_filter.get_events()
+        for event in events:
             from_node = event["nodeIndex"]
             # if not is_received[from_node]:
-            secret_key_contribution, verification_vector = event["BroadcastAndKeyShare"]["secretKeyContribution"], event["BroadcastAndKeyShare"]["verificationVector"]
+            secret_key_contribution, verification_vector = event["secretKeyContribution"], event["verificationVector"]
             broadcasted_data = [verification_vector, secret_key_contribution]
             is_received[from_node] = True
 
