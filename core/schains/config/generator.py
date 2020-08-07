@@ -20,6 +20,8 @@
 import logging
 from dataclasses import dataclass
 
+from core.schains.config.contract_settings import (ContractSettings,
+                                                   generate_schain_contract_settings)
 from core.schains.config.accounts import generate_dynamic_accounts
 from core.schains.config.helper import get_chain_id
 
@@ -46,20 +48,6 @@ class SChainBaseConfig:
             self.config = read_json(self._base_config_path)
         except Exception as err:
             raise NoBaseConfigError(err)
-
-
-@dataclass
-class ContractSettings:
-    """Dataclass that represents contractSettings key of the skaleConfig section"""
-    common: dict
-    ima: dict
-
-    def to_dict(self):
-        """Returns camel-case representation of the ContractSettings object"""
-        return {
-            'common': self.common,
-            'IMA': self.ima,
-        }
 
 
 @dataclass
@@ -132,7 +120,10 @@ def generate_schain_config():
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
-    contract_settings = ContractSettings()
+    contract_settings = generate_schain_contract_settings(
+        schain_owner=schain_owner,
+        schain_nodes_owners=schain_nodes_owners
+    )
     node_info = NodeInfo()
     schain_info = SChainInfo()
 

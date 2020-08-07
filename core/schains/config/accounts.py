@@ -21,7 +21,7 @@ import logging
 
 from web3 import Web3
 
-from core.schains.config.helper import _string_to_storage
+from core.schains.config.helper import fix_address, _string_to_storage
 from core.schains.filestorage import compose_filestorage_info
 from core.schains.volume import get_context_contract
 from core.schains.helper import read_ima_data
@@ -29,10 +29,6 @@ from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC
 from tools.configs.ima import PRECOMPILED_IMA_CONTRACTS
 
 logger = logging.getLogger(__name__)
-
-
-def fix_address(address):
-    return Web3.toChecksumAddress(address)
 
 
 def generate_account(balance, code=None, storage={}, nonce=0):

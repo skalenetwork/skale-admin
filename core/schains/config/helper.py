@@ -17,7 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from web3 import Web3
 from Crypto.Hash import keccak
+
+
+def fix_address(address):
+    return Web3.toChecksumAddress(address)
 
 
 def get_chain_id(schain_name):
