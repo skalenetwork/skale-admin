@@ -19,13 +19,12 @@
 
 import os
 import sys
-import binascii
 import logging
 
 from skale.transactions.result import TransactionFailedError
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
-from sgx.sgx_rpc_handler import DkgPolyStatus
+from sgx.sgx_rpc_handler import DkgPolyStatus, SgxException
 
 from skale.contracts.dkg import G2Point, KeyShare
 
@@ -123,19 +122,6 @@ class DKGClient:
         ]
         return convert_str_to_key_share(self.sent_secret_key_contribution, self.n)
 
-    def receive_verification_vector(self, from_node, broadcasted_data):
-        hexed_vv = ""
-        for point in broadcasted_data:
-            hexed_vv += convert_g2_point_to_hex([*point[0], *point[1]])
-        self.incoming_verification_vector[from_node] = hexed_vv
-
-    def receive_secret_key_contribution(self, from_node, broadcasted_data):
-        public_key_x_str = binascii.hexlify(broadcasted_data[self.node_id_dkg][0][0]).decode()
-        public_key_y_str = binascii.hexlify(broadcasted_data[self.node_id_dkg][0][1]).decode()
-        key_share_str = binascii.hexlify(broadcasted_data[self.node_id_dkg][1]).decode()
-        incoming = public_key_x_str + public_key_y_str + key_share_str
-        self.incoming_secret_key_contribution[from_node] = incoming
-
     def broadcast(self, poly_name):
         poly_success = self.generate_polynomial(poly_name)
         if poly_success == DkgPolyStatus.FAIL:
@@ -170,16 +156,24 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
     def receive_from_node(self, from_node, broadcasted_data):
-        self.receive_verification_vector(from_node, broadcasted_data[0])
-        self.receive_secret_key_contribution(from_node, broadcasted_data[1])
-        if not self.verification(from_node):
+        self.incoming_verification_vector[from_node] = broadcasted_data[0]
+        self.incoming_secret_key_contribution[from_node] = broadcasted_data[1][192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)]
+        try:
+            if not self.verification(from_node):
+                raise DkgVerificationError(
+                    f"sChain: {self.schain_name}. "
+                    f"Fatal error : user {str(from_node + 1)} "
+                    f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
+                )
+            logger.info(f'sChain: {self.schain_name}. '
+                        f'All data from {from_node} was received and verified')
+        except SgxException as e:
             raise DkgVerificationError(
-                f"sChain: {self.schain_name}. "
-                f"Fatal error : user {str(from_node + 1)} "
-                f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
-            )
-        logger.info(f'sChain: {self.schain_name}. '
-                    f'All data from {from_node} was received and verified')
+                    f"sChain: {self.schain_name}. "
+                    f"Fatal error : user {str(from_node + 1)} "
+                    f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
+                    f"with SgxException: ", e
+                )
 
     def verification(self, from_node):
         return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
@@ -270,8 +264,8 @@ class DKGClient:
                 self.group_index,
                 self.node_id_contract,
                 int(dh_key, 16),
-                convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
-                convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
+                # convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
+                # convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
                 share,
                 gas_price=self.skale.dkg.gas_price()
             )
@@ -287,8 +281,8 @@ class DKGClient:
         )
 
     def is_everyone_broadcasted(self):
-        get_number_of_broadcasted_function = self.dkg_contract_functions.isEveryoneBroadcasted
-        return get_number_of_broadcasted_function(self.group_index).call(
+        is_everyone_broadcasted_function = self.dkg_contract_functions.isEveryoneBroadcasted
+        return is_everyone_broadcasted_function(self.group_index).call(
             {'from': self.skale.wallet.address}
         )
 

@@ -113,10 +113,8 @@ def check_broadcasted_data(dkg_client, is_correct, is_recieved):
 
 
 def check_failed_dkg(dkg_client):
-    is_group_opened = dkg_client.is_channel_opened()
-    if not is_group_opened:
-        is_last_dkg_successful = dkg_client.skale.dkg.is_last_dkg_successful(dkg_client.group_index)
-        if not is_last_dkg_successful:
+    if not dkg_client.is_channel_opened():
+        if not dkg_client.skale.dkg.is_last_dkg_successful(dkg_client.group_index):
             raise DkgFailedError(f'sChain: {dkg_client.schain_name}. Dkg failed')
 
 

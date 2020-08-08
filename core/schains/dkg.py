@@ -62,55 +62,29 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     while False in is_received:
         if time.time() - start_time > RECEIVE_TIMEOUT:
             break
-        
+
         events = dkg_filter.get_events()
         for event in events:
-            from_node = event["nodeIndex"]
-            # if not is_received[from_node]:
-            secret_key_contribution, verification_vector = event["secretKeyContribution"], event["verificationVector"]
-            broadcasted_data = [verification_vector, secret_key_contribution]
-            is_received[from_node] = True
+            from_node = dkg_client.node_ids_dkg[event["nodeIndex"]]
+            if from_node != dkg_client.node_id_dkg:
+                secret_key_contribution, verification_vector = event["secretKeyContribution"], event["verificationVector"]
+                broadcasted_data = [verification_vector, secret_key_contribution]
+                is_received[from_node] = True
 
-            try:
-                dkg_client.receive_from_node(from_node, broadcasted_data)
-                is_correct[from_node] = True
-            except DkgVerificationError:
-                continue
+                try:
+                    dkg_client.receive_from_node(from_node, broadcasted_data)
+                    is_correct[from_node] = True
+                except DkgVerificationError:
+                    continue
 
-            logger.info(
-                f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
-                f'{from_node}'
-            )
+                logger.info(
+                    f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
+                    f'{from_node}'
+                )
 
-        # for from_node in range(dkg_client.n):
-        #     if not is_received[from_node]:
-        #         secret_key_contribution, verification_vector = get_broadcasted_data(
-        #             dkg_client, from_node
-        #         )
-        #         if secret_key_contribution == [] or verification_vector == []:
-        #             continue
-        #         broadcasted_data = [verification_vector, secret_key_contribution]
-        #         is_received[from_node] = True
-
-        #         try:
-        #             dkg_client.receive_from_node(from_node, broadcasted_data)
-        #             is_correct[from_node] = True
-        #         except DkgVerificationError:
-        #             continue
-
-        #         logger.info(
-        #             f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
-        #             f'{from_node}'
-        #         )
         sleep(1)
 
-    is_complaint_sent = False
-    complainted_node_index = -1
-    is_complaint_sent, complainted_node_index = check_broadcasted_data(
-                                        dkg_client, is_correct, is_received
-    )
-    all_broadcasted = is_everyone_broadcasted(dkg_client)
-    if not all_broadcasted:
+    if not is_everyone_broadcasted(dkg_client):
         while True:
             logger.info(f'sChain: {dkg_client.schain_name}. Not everyone broadcasted,'
                         'waiting for FailedDKG')
@@ -121,6 +95,11 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 )
             sleep(30)
 
+    is_complaint_sent = False
+    complainted_node_index = -1
+    is_complaint_sent, complainted_node_index = check_broadcasted_data(
+                                        dkg_client, is_correct, is_received
+    )
     check_failed_dkg(dkg_client)
 
     is_alright_sent_list = [False for _ in range(n)]
