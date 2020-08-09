@@ -23,7 +23,7 @@ from flask import Blueprint, request
 from http import HTTPStatus
 
 from skale.schain_config.generator import get_nodes_for_schain_config
-from core.schains.config import get_allowed_endpoints, get_schain_config
+from core.schains.config.utils import get_allowed_endpoints, get_schain_config
 from core.schains.helper import schain_config_exists
 from core.schains.checks import SChainChecks
 from web.models.schain import SChainRecord

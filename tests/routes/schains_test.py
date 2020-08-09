@@ -10,7 +10,7 @@ from core.node_config import NodeConfig
 import docker
 
 from core.schains.runner import get_image_name
-from core.schains.config import get_schain_config_filepath
+from core.schains.config.utils import get_schain_config_filepath
 from tests.utils import get_bp_data
 from tools.docker_utils import DockerUtils
 from tools.configs.containers import SCHAIN_CONTAINER
