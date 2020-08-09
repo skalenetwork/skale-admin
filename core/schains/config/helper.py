@@ -20,6 +20,17 @@
 from web3 import Web3
 from Crypto.Hash import keccak
 
+from tools.helper import read_json
+from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
+
+
+def get_static_schain_params():
+    return read_json(STATIC_SCHAIN_PARAMS_FILEPATH)
+
+
+def get_context_contract():
+    return get_static_schain_params()['context_contract']
+
 
 def fix_address(address):
     return Web3.toChecksumAddress(address)

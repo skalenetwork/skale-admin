@@ -34,8 +34,9 @@ from core.schains.runner import (run_schain_container, run_ima_container,
 from core.schains.cleaner import remove_config_dir
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
                                  get_schain_proxy_file_path)
-from core.schains.config import (generate_schain_config, save_schain_config,
-                                 get_allowed_endpoints, update_schain_config)
+from core.schains.config.utils import (save_schain_config, get_allowed_endpoints,
+                                       update_schain_config)
+from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks, check_for_rotation
 from core.schains.dkg import run_dkg
@@ -47,7 +48,7 @@ from tools.bls.dkg_client import DkgError
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER
-from tools.configs.schains import IMA_DATA_FILEPATH
+from tools.configs.ima import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks
@@ -199,8 +200,13 @@ def init_schain_config(skale, node_id, schain_name, ecdsa_sgx_key_name):
             f'{config_filepath}, trying to create.'
         )
         rotation_id = skale.schains.get_last_rotation_id(schain_name)
-        schain_config = generate_schain_config(skale, schain_name, node_id, rotation_id,
-                                               ecdsa_sgx_key_name)
+        schain_config = generate_schain_config_with_skale(
+            skale=skale,
+            schain_name=schain_name,
+            node_id=node_id,
+            rotation_id=rotation_id,
+            ecdsa_key_name=ecdsa_sgx_key_name
+        )
         save_schain_config(schain_config, schain_name)
 
 
@@ -306,8 +312,13 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             monitor_sync_schain_container(skale, schain, finish_time_ts, rotation['rotation_id'])
         elif check_container_exit(name, zero_exit_code=True, dutils=dutils):
             remove_firewall_rules(name)
-            config = generate_schain_config(skale, name, node_id, rotation['rotation_id'],
-                                            ecdsa_sgx_key_name)
+            config = generate_schain_config_with_skale(
+                skale=skale,
+                schain_name=name,
+                node_id=node_id,
+                rotation_id=rotation['rotation_id'],
+                ecdsa_key_name=ecdsa_sgx_key_name
+            )
             update_schain_config(config, name)
             add_firewall_rules(name)
             restart_container(SCHAIN_CONTAINER, schain)

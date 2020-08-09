@@ -21,6 +21,7 @@ import logging
 from dataclasses import dataclass
 
 from skale.utils.helper import decapitalize
+from skale.wallets.web3_wallet import public_key_to_address
 
 from core.schains.config.helper import fix_address
 from core.schains.helper import read_ima_data
@@ -43,12 +44,11 @@ class ContractSettings:
         }
 
 
-def generate_schain_contract_settings(schain_owner: str,
-                                      schain_nodes_owners: list) -> ContractSettings:
+def generate_contract_settings(schain_owner: str, schain_nodes: list) -> ContractSettings:
     ima_data = read_ima_data()
     permitted_contracts = generate_permitted_ima_contracts_info(ima_data)
     mp_authorized_callers = generate_mp_authorized_callers(ima_data, schain_owner,
-                                                           schain_nodes_owners)
+                                                           schain_nodes)
     ima_contracts_addresses = generate_ima_contracts_addresses(ima_data)
     return ContractSettings(
         common={'enableContractLogMessages': False},
@@ -79,12 +79,13 @@ def generate_permitted_ima_contracts_info(ima_data):
     return permitted_contracts
 
 
-def generate_mp_authorized_callers(ima_data, schain_owner, schain_nodes_owners):
+def generate_mp_authorized_callers(ima_data, schain_owner, schain_nodes):
     mp_authorized_callers = {}
     for name in PRECOMPILED_IMA_CONTRACTS:
         address = get_contract_address_from_ima_data(ima_data, name)
         mp_authorized_callers[address] = 1
-    for node_owner in schain_nodes_owners:
+    for node in schain_nodes:
+        node_owner = public_key_to_address(node['publicKey'])
         acc_fx = fix_address(node_owner)
         if not mp_authorized_callers.get(acc_fx, None):
             mp_authorized_callers[acc_fx] = 1

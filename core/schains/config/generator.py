@@ -20,8 +20,10 @@
 import logging
 from dataclasses import dataclass
 
-from core.schains.config.contract_settings import (ContractSettings,
-                                                   generate_schain_contract_settings)
+from skale import Skale
+from skale.schain_config.generator import get_schain_nodes_with_schains
+
+from core.schains.config.skale_config import SkaleConfig, generate_skale_config
 from core.schains.config.accounts import generate_dynamic_accounts
 from core.schains.config.helper import get_chain_id
 
@@ -51,44 +53,6 @@ class SChainBaseConfig:
 
 
 @dataclass
-class NodeInfo:
-    """Dataclass that represents nodeInfo key of the skaleConfig section"""
-
-    def to_dict(self):
-        """Returns camel-case representation of the NodeInfo object"""
-        return {
-            # todo: 3030
-        }
-
-
-@dataclass
-class SChainInfo:
-    """Dataclass that represents sChain key of the skaleConfig section"""
-
-    def to_dict(self):
-        """Returns camel-case representation of the SChainInfo object"""
-        return {
-            # todo: 3030
-        }
-
-
-@dataclass
-class SkaleConfig:
-    """Dataclass that represents skaleConfig key of the sChain config"""
-    contract_settings: ContractSettings
-    node_info: NodeInfo
-    schain_info: SChainInfo
-
-    def to_dict(self):
-        """Returns camel-case representation of the SkaleConfig object"""
-        return {
-            'contractSettings': self.contract_settings.to_dict(),
-            'nodeInfo': self.node_info.to_dict(),
-            'sChain': self.schain_info.to_dict(),
-        }
-
-
-@dataclass
 class SChainConfig:
     """Dataclass that represents a full sChain configuration"""
     seal_engine: str
@@ -108,40 +72,36 @@ class SChainConfig:
         }
 
 
-def generate_schain_config():
+def generate_schain_config(schain: dict, schain_id: int, node_id: int,
+                           node: dict, ecdsa_key_name: str, schains_on_node: list,
+                           rotation_id: int, schain_nodes_with_schains: list) -> SChainConfig:
     """Main function that is used to generate sChain config"""
-    logger.info(f'Going to generate sChain config...')
-
-    schain_owner = '0x5112cE768917E907191557D7E9521c2590Cdd3A0'  # todo: 3030 tmp
-    schain_nodes_owners = ['0x278Af5dD8523e54d0Ce37e27b3cbcc6A3368Ddeb',
-                           '0x5112cE768917E907191557D7E9521c2590Cdd3A0']  # todo: 3030 tmp
-    schain_name = 'test'  # todo: 3030 tmp
-    schain_internal_limits = {'maxFileStorageBytes': 128}  # todo: 3030 tmp
+    logger.info(
+        f'Going to generate sChain config for {schain["name"]}, '
+        f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}, '
+        f'ecdsa_key_name: {ecdsa_key_name}, schain_id: {schain_id}'
+    )
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
-    contract_settings = generate_schain_contract_settings(
-        schain_owner=schain_owner,
-        schain_nodes_owners=schain_nodes_owners
-    )
-    node_info = NodeInfo()
-    schain_info = SChainInfo()
-
-    skale_config = SkaleConfig(
-        contract_settings=contract_settings,
-        node_info=node_info,
-        schain_info=schain_info,
-    )
-
     dynamic_params = {
-        'chainID': get_chain_id(schain_name)
+        'chainID': get_chain_id(schain['name'])
     }
 
     dynamic_accounts = generate_dynamic_accounts(
-        schain_owner=schain_owner,
-        schain_nodes_owners=schain_nodes_owners,
-        schain_name=schain_name,
-        schain_internal_limits=schain_internal_limits
+        schain=schain,
+        schain_nodes=schain_nodes_with_schains
+    )
+
+    skale_config = generate_skale_config(
+        schain=schain,
+        schain_id=schain_id,
+        node_id=node_id,
+        node=node,
+        ecdsa_key_name=ecdsa_key_name,
+        schains_on_node=schains_on_node,
+        schain_nodes_with_schains=schain_nodes_with_schains,
+        rotation_id=rotation_id
     )
 
     schain_config = SChainConfig(
@@ -158,3 +118,23 @@ def generate_schain_config():
         skale_config=skale_config
     )
     return schain_config
+
+
+def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: int,
+                                      rotation_id: int, ecdsa_key_name: str) -> SChainConfig:
+    schain_id = 1  # todo: remove this later (should be removed from the skaled first)
+    schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
+    schains_on_node = skale.schains.get_schains_for_node(node_id)
+    schain = skale.schains.get_by_name(schain_name)
+    node = skale.nodes.get(node_id)
+
+    return generate_schain_config(
+        schain=schain,
+        schain_id=schain_id,
+        node=node,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        schains_on_node=schains_on_node,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=schain_nodes_with_schains
+    )

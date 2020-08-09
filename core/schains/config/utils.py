@@ -23,119 +23,16 @@ import shutil
 import os
 from itertools import chain
 
-from skale.schain_config.generator import generate_skale_schain_config
 from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
-from core.schains.filestorage import compose_filestorage_info
-from core.schains.helper import (read_base_config, read_ima_data,
-                                 get_schain_config_filepath, get_tmp_schain_config_filepath)
-from core.schains.volume import (get_resource_allocation_info, get_allocation_option_name,
-                                 get_allocation_part_name)
-from tools.sgx_utils import SGX_SERVER_URL
+from core.schains.helper import get_schain_config_filepath, get_tmp_schain_config_filepath
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
-from tools.bls.dkg_utils import get_secret_key_share_filepath
-from tools.configs.containers import CONTAINERS_INFO, LOCAL_IP
-from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
-from tools.configs.schains import IMA_DATA_FILEPATH
+from tools.configs.containers import LOCAL_IP
 from tools.iptables import NodeEndpoint
-from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
-
-
-SCHAIN_INTERNAL_LIMITS = [
-    'maxConsensusStorageBytes',
-    'maxSkaledLeveldbStorageBytes',
-    'maxFileStorageBytes',
-    'maxReservedStorageBytes'
-]
-
-
-def generate_schain_limits_options(schin_internal_limits):
-    options = {}
-    for limit_name in SCHAIN_INTERNAL_LIMITS:
-        print(limit_name)
-        options[limit_name] = schin_internal_limits[limit_name]
-    return options
-
-
-def generate_schain_config(skale, schain_name, node_id, rotation_id, ecdsa_sgx_key_name):
-    base_config = read_base_config()
-    ima_data = read_ima_data()
-    wallets = generate_wallets_config(schain_name, rotation_id)
-    ima_mainnet_url = IMA_ENDPOINT
-    ima_mp_schain, ima_mp_mainnet = get_mp_addresses()
-    options = CONTAINERS_INFO['schain']['config_options']
-    config_opts = dict()
-    if options.get('rotateAfterBlock'):
-        config_opts['rotate_after_block'] = options.get('rotateAfterBlock')
-    if options.get('snapshotIntervalMs'):
-        config_opts['snapshot_interval_ms'] = options.get('snapshotIntervalMs')
-    if options.get('emptyBlockIntervalMs'):
-        config_opts['empty_block_interval_ms'] = options.get('emptyBlockIntervalMs')
-
-    resource_allocation = get_resource_allocation_info()
-    schain = skale.schains.get_by_name(schain_name)  # todo: optimize to avoid multiple calls
-    schain_size_name = get_allocation_option_name(schain)
-    allocation_part_name = get_allocation_part_name(schain)
-    schin_internal_limits = resource_allocation['schain'][allocation_part_name]
-    custom_schain_config_fields = {
-        'storageLimit': resource_allocation['schain']['storage_limit'][schain_size_name],
-        **generate_schain_limits_options(schin_internal_limits)
-    }
-    filestorage_info = compose_filestorage_info(schin_internal_limits)
-
-    config = generate_skale_schain_config(
-        skale=skale,
-        schain_name=schain_name,
-        node_id=node_id,
-        base_config=base_config,
-        ima_mainnet=ima_mainnet_url,
-        ima_mp_schain=ima_mp_schain,
-        ima_mp_mainnet=ima_mp_mainnet,
-        ecdsa_key_name=ecdsa_sgx_key_name,
-        wallets=wallets,
-        ima_data=ima_data,
-        custom_schain_config_fields=custom_schain_config_fields,
-        filestorage_info=filestorage_info,
-        **config_opts
-    )
-    config['skaleConfig']['nodeInfo']['bindIP'] = '0.0.0.0'
-    return config
-
-
-def get_mp_addresses():
-    ima_abi = read_json(MAINNET_PROXY_PATH)
-    schain_ima_abi = read_json(IMA_DATA_FILEPATH)
-    ima_mp_schain = schain_ima_abi['message_proxy_chain_address']
-    ima_mp_mainnet = ima_abi['message_proxy_mainnet_address']
-    return ima_mp_schain, ima_mp_mainnet
-
-
-def generate_wallets_config(schain_name, rotation_id):
-    secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
-    secret_key_share_config = read_json(secret_key_share_filepath)
-    wallets = {
-        'ima': {
-            'url': SGX_SERVER_URL,
-            'keyShareName': secret_key_share_config['key_share_name'],
-            't': secret_key_share_config['t'],
-            'n': secret_key_share_config['n']
-        }
-    }
-    common_public_keys = secret_key_share_config['common_public_key']
-    for (i, value) in enumerate(common_public_keys):
-        name = 'insecureCommonBLSPublicKey' + str(i)
-        wallets['ima'][name] = str(value)
-
-    public_keys = secret_key_share_config['public_key']
-    for (i, value) in enumerate(public_keys):
-        name = 'insecureBLSPublicKey' + str(i)
-        wallets['ima'][name] = str(value)
-
-    return wallets
 
 
 def save_schain_config(schain_config, schain_name):
