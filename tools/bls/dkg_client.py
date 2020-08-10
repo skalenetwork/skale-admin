@@ -24,7 +24,7 @@ import logging
 from skale.transactions.result import TransactionFailedError
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
-from sgx.sgx_rpc_handler import DkgPolyStatus, SgxException
+from sgx.sgx_rpc_handler import DkgPolyStatus, SgxServerError
 
 from skale.contracts.dkg import G2Point, KeyShare
 
@@ -167,12 +167,12 @@ class DKGClient:
                 )
             logger.info(f'sChain: {self.schain_name}. '
                         f'All data from {from_node} was received and verified')
-        except SgxException as e:
+        except SgxServerError as e:
             raise DkgVerificationError(
                     f"sChain: {self.schain_name}. "
                     f"Fatal error : user {str(from_node + 1)} "
                     f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
-                    f"with SgxException: ", e
+                    f"with SgxServerError: ", e
                 )
 
     def verification(self, from_node):

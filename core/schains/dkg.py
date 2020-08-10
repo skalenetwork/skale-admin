@@ -81,6 +81,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                     f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
                     f'{from_node}'
                 )
+        # assert False
 
         sleep(1)
 
@@ -95,8 +96,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 )
             sleep(30)
 
-    is_complaint_sent = False
-    complainted_node_index = -1
     is_complaint_sent, complainted_node_index = check_broadcasted_data(
                                         dkg_client, is_correct, is_received
     )
@@ -165,7 +164,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     if False not in is_alright_sent_list:
         if skale.dkg.is_last_dkg_successful(dkg_client.group_index):
-            encrypted_bls_key = 0
             bls_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
             encrypted_bls_key = generate_bls_key(dkg_client, bls_name)
             logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
