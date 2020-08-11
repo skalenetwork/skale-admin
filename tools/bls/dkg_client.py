@@ -252,6 +252,12 @@ class DKGClient:
             {'from': self.skale.wallet.address}
         )
 
+    def is_node_broadcasted(self, from_node):
+        is_node_broadcasted_function = self.dkg_contract_functions.isNodeBroadcasted
+        return is_node_broadcasted_function(self.group_index).call(
+            {'from': self.skale.wallet.address}
+        )
+
     def get_channel_started_time(self):
         get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
         return get_channel_started_time_function(self.group_index).call(
@@ -297,7 +303,7 @@ class DKGClient:
                                                           self.eth_key_name,
                                                           received_secret_key_contribution)
         logger.info(f'sChain: {self.schain_name}. '
-                    'DKGClient is going to fetch BLS public key with name {bls_key_name}')
+                    f'DKGClient is going to fetch BLS public key with name {bls_key_name}')
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
         return bls_private_key
 
