@@ -89,7 +89,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     all_broadcasted = is_everyone_broadcasted(dkg_client)
     if not all_broadcasted:
         while True:
-            logger.info("Not all nodes broadcasted. Waiting for FailedDkg event...")
+            logger.info(f'sChain: {dkg_client.schain_name}. Not all nodes broadcasted. Waiting for FailedDkg event...')
             check_failed_dkg(dkg_client)
             if start_time != get_channel_started_time(dkg_client):
                 raise DkgFailedError(
@@ -140,7 +140,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     no_complaint = complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2
     if no_complaint and False in is_alright_sent_list:
         while True:
-            logger.info("Not all nodes sent alright. Waiting for FailedDkg event...")
+            logger.info(f'sChain: {dkg_client.schain_name}. Not all nodes sent alright. Waiting for FailedDkg event...')
             check_failed_dkg(dkg_client)
             if start_time != get_channel_started_time(dkg_client):
                 raise DkgFailedError(
