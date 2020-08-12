@@ -17,8 +17,11 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from skale import Skale
+from core.node_config import NodeConfig
 
-def soft_updates(skale, node_config):
+
+def soft_updates(skale: Skale, node_config: NodeConfig) -> None:
     """
     This function is triggered after each admin container restart and calls all functions that
     could be required to update existing software or config files on the machine.
@@ -31,7 +34,7 @@ def soft_updates(skale, node_config):
     update_node_config_file(skale, node_config)
 
 
-def update_node_config_file(skale, node_config):
+def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:
     """
     - Fix for node_id field in the config file
     - Add node name field to node config
@@ -43,3 +46,6 @@ def update_node_config_file(skale, node_config):
         if node_config.name is None:
             node_info = skale.nodes.get(node_config.id)
             node_config.name = node_info['name']
+        if node_config.ip is None:
+            node_info = skale.nodes.get(node_config.id)
+            node_config.ip = node_info['ip']
