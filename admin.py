@@ -31,6 +31,7 @@ from core.updates import soft_updates
 from tools.configs import BACKUP_RUN
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
 from tools.logger import init_admin_logger
+from tools.notifications.messages import cleanup_notification_state
 
 from web.models.schain import set_schains_first_run
 
@@ -62,6 +63,7 @@ def main():
     soft_updates(skale, node_config)
 
     set_schains_first_run()
+    cleanup_notification_state()
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
     monitor(skale, node_config)

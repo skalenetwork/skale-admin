@@ -26,7 +26,7 @@ def config_getter(func):
     return wrapper_decorator
 
 
-class NodeConfig():
+class NodeConfig:
     def __init__(self):
         init_file(NODE_CONFIG_FILEPATH, {})
 
@@ -42,7 +42,17 @@ class NodeConfig():
 
     @property
     @config_getter
-    def name(self) -> int:
+    def ip(self) -> str:
+        return 'node_ip'
+
+    @ip.setter
+    @config_setter
+    def ip(self, ip: str) -> None:
+        return 'node_ip', ip
+
+    @property
+    @config_getter
+    def name(self) -> str:
         return 'name'
 
     @name.setter

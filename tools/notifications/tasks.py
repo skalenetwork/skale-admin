@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2020 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -18,6 +18,18 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+from celery import Celery
+from telegram import Bot
 
-TG_API_KEY = os.getenv('TG_API_KEY', None)
-TG_CHAT_ID = os.getenv('TG_CHAT_ID', None)
+REDIS_URI = os.getenv('REDIS_URI', 'redis://localhost:6379/0')
+# No more than 20 per minute
+NOTIFICATIONS_RATE_LIMIT = os.getenv('NOTIFICATIONS_RATE_LIMIT', '20/m')
+
+
+app = Celery('tasks', broker=REDIS_URI)
+
+
+@app.task(rate_limit=NOTIFICATIONS_RATE_LIMIT)
+def send_message_to_telegram(api_key, chat_id, message, bot=None):
+    bot = bot or Bot(api_key)
+    return bot.send_message(chat_id=chat_id, text=message)

@@ -27,6 +27,36 @@
             "tiny": 655360000,
             "small": 10737418240,
             "medium": 85899345920
+        },
+        "part_test4": {
+            "maxConsensusStorageBytes": 4,
+            "maxSkaledLeveldbStorageBytes": 4,
+            "maxFileStorageBytes": 4,
+            "maxReservedStorageBytes": 1
+        },
+        "part_test": {
+            "maxConsensusStorageBytes": 4,
+            "maxSkaledLeveldbStorageBytes": 4,
+            "maxFileStorageBytes": 4,
+            "maxReservedStorageBytes": 1
+        },
+        "part_small": {
+            "maxConsensusStorageBytes": 0,
+            "maxSkaledLeveldbStorageBytes": 0,
+            "maxFileStorageBytes": 0,
+            "maxReservedStorageBytes": 0
+        },
+        "part_medium": {
+            "maxConsensusStorageBytes": 4,
+            "maxSkaledLeveldbStorageBytes": 4,
+            "maxFileStorageBytes": 4,
+            "maxReservedStorageBytes": 1
+        },
+        "part_large": {
+            "maxConsensusStorageBytes": 38,
+            "maxSkaledLeveldbStorageBytes": 38,
+            "maxFileStorageBytes": 38,
+            "maxReservedStorageBytes": 12
         }
     }
 }

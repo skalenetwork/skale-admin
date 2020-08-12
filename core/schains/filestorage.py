@@ -17,7 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+from core.schains.volume import get_filestorage_info
 
-TG_API_KEY = os.getenv('TG_API_KEY', None)
-TG_CHAT_ID = os.getenv('TG_CHAT_ID', None)
+
+FILESTORAGE_LIMIT_OPTION_NAME = 'maxFileStorageBytes'
+
+
+def compose_filestorage_info(schin_internal_limits):
+    filestorage_info = get_filestorage_info()
+    max_file_storage_bytes = schin_internal_limits[FILESTORAGE_LIMIT_OPTION_NAME]
+    return {
+        'address': filestorage_info['address'],
+        'bytecode': filestorage_info['bytecode'],
+        'storage': {
+            '0x0': str(max_file_storage_bytes)
+        }
+    }

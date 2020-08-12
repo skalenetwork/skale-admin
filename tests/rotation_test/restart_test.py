@@ -39,7 +39,9 @@ def rotated_nodes(skale):
 
     Path(key_path).touch()
     Path(cert_path).touch()
-    shutil.rmtree(os.path.join(SCHAINS_DIR_PATH, schain_name))
+    schain_dir = os.path.join(SCHAINS_DIR_PATH, schain_name)
+    if os.path.isdir(schain_dir):
+        shutil.rmtree(schain_dir)
     dutils.safe_rm(f'skale_schain_{schain_name}', force=True)
     skale.manager.delete_schain(schain_name, wait_for=True)
     for i in range(1, 3):
