@@ -137,7 +137,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 is_complaint_sent = True
 
     complaint_data = get_complaint_data(dkg_client)
-    if complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2 and False in is_alright_sent_list:
+    no_complaint = complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2
+    if no_complaint and False in is_alright_sent_list:
         while True:
             logger.info("Not all nodes sent alright. Waiting for FailedDkg event...")
             check_failed_dkg(dkg_client)
