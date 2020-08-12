@@ -28,7 +28,7 @@ from tools.bls.dkg_utils import (
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
     get_broadcasted_data, is_all_data_received, get_complaint_data, is_everyone_broadcasted,
     check_broadcasted_data, check_failed_dkg, get_channel_started_time, get_complaint_started_time,
-    get_alright_started_time, DkgFailedError
+    is_node_broadcasted, get_alright_started_time, DkgFailedError
 )
 from tools.bls.dkg_client import DkgVerificationError
 from tools.helper import write_json
@@ -61,12 +61,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             break
 
         for from_node in range(dkg_client.n):
-            if not is_received[from_node]:
+            if not is_received[from_node] and is_node_broadcasted(dkg_client, from_node):
                 secret_key_contribution, verification_vector = get_broadcasted_data(
                     dkg_client, from_node
                 )
-                if secret_key_contribution == [] or verification_vector == []:
-                    continue
                 broadcasted_data = [verification_vector, secret_key_contribution]
                 is_received[from_node] = True
 
