@@ -51,6 +51,6 @@ def construct_wallet_bp(skale):
         except Exception as err:
             logger.error('Funds were not sent due to error', exc_info=err)
             construct_err_response(['Funds sending failed'])
-        return construct_ok_response('Funds were sent successfully')
+        return construct_ok_response()
 
     return wallet_bp

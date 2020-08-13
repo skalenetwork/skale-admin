@@ -2,7 +2,7 @@ import pytest
 from flask import Flask
 from skale.wallets.web3_wallet import to_checksum_address
 
-from tests.utils import get_bp_data
+from tests.utils import get_bp_data, post_bp_data
 from web.routes.wallet import construct_wallet_bp
 
 
@@ -29,3 +29,16 @@ def test_load_wallet(skale_bp, skale):
         }
     }
     assert data == expected_data
+
+
+def test_send_eth(skale_bp, skale):
+    address = skale.wallet.address
+    balance_before = skale.web3.eth.getBalance(address)
+    json_data = {
+        'address': '0x3483A10F7d6fDeE0b0C1E9ad39cbCE13BD094b12',
+        'amount': '0.1'
+    }
+    data = post_bp_data(skale_bp, '/send-eth', json_data)
+    balance_after = skale.web3.eth.getBalance(address)
+    assert balance_before > balance_after
+    assert data == {'status': 'ok', 'payload': {}}
