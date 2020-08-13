@@ -42,9 +42,9 @@ def construct_sgx_bp(config):
     def sgx_info():
         logger.debug(request)
         sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
-        version = None
         try:
             status = sgx.get_server_status()
+            version = sgx.get_server_version()
         except Exception:  # todo: catch specific error - edit sgx.py
             status = 1
             version = None
