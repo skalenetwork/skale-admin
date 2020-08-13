@@ -22,6 +22,7 @@ import logging
 from core.schains.types import SchainTypes
 from tools.helper import read_json
 from tools.configs.resource_allocation import RESOURCE_ALLOCATION_FILEPATH
+from tools.configs.schains import FILESTORAGE_ARTIFACTS_FILEPATH
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,10 @@ def get_allocation_part_name(schain):
 
 def get_resource_allocation_info():
     return read_json(RESOURCE_ALLOCATION_FILEPATH)
+
+
+def get_filestorage_info():
+    return read_json(FILESTORAGE_ARTIFACTS_FILEPATH)
 
 
 def get_schain_volume_config(name, mount_path):

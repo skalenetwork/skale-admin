@@ -17,19 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-from tools.configs import NODE_DATA_PATH, CONFIG_FOLDER
+from core.schains.volume import get_filestorage_info
 
-SCHAINS_DIR_NAME = 'schains'
-SCHAINS_DIR_PATH = os.path.join(NODE_DATA_PATH, SCHAINS_DIR_NAME)
 
-DATA_DIR_NAME = 'data_dir'
+FILESTORAGE_LIMIT_OPTION_NAME = 'maxFileStorageBytes'
 
-BASE_SCHAIN_CONFIG_FILENAME = 'schain_base_config.json'
-BASE_SCHAIN_CONFIG_FILEPATH = os.path.join(CONFIG_FOLDER, BASE_SCHAIN_CONFIG_FILENAME)
 
-IMA_DATA_FILENAME = 'ima_data.json'
-IMA_DATA_FILEPATH = os.path.join(CONFIG_FOLDER, IMA_DATA_FILENAME)
-
-FILESTORAGE_ARTIFACTS_FILENAME = 'filestorage_artifacts.json'
-FILESTORAGE_ARTIFACTS_FILEPATH = os.path.join(NODE_DATA_PATH, FILESTORAGE_ARTIFACTS_FILENAME)
+def compose_filestorage_info(schin_internal_limits):
+    filestorage_info = get_filestorage_info()
+    max_file_storage_bytes = schin_internal_limits[FILESTORAGE_LIMIT_OPTION_NAME]
+    return {
+        'address': filestorage_info['address'],
+        'bytecode': filestorage_info['bytecode'],
+        'storage': {
+            '0x0': str(max_file_storage_bytes)
+        }
+    }

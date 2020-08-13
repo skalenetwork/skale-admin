@@ -28,7 +28,7 @@ from tools.bls.dkg_utils import (
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
     is_all_data_received, get_complaint_data, is_everyone_broadcasted,
     check_broadcasted_data, check_failed_dkg, get_channel_started_time, get_complaint_started_time,
-    get_alright_started_time, DkgFailedError
+    is_node_broadcasted, get_alright_started_time, DkgFailedError
 )
 from tools.bls.skale_dkg_broadcast_filter import Filter
 from tools.bls.dkg_client import DkgVerificationError
@@ -87,8 +87,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     if not is_everyone_broadcasted(dkg_client):
         while True:
-            logger.info(f'sChain: {dkg_client.schain_name}. Not everyone broadcasted,'
-                        'waiting for FailedDKG')
+            logger.info(f'sChain: {dkg_client.schain_name}.'
+                        'Not all nodes broadcasted. Waiting for FailedDkg event...')
             check_failed_dkg(dkg_client)
             if start_time != get_channel_started_time(dkg_client):
                 raise DkgFailedError(
@@ -136,6 +136,18 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 is_complaint_sent = True
 
     complaint_data = get_complaint_data(dkg_client)
+    no_complaint = complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2
+    if no_complaint and False in is_alright_sent_list:
+        while True:
+            logger.info(f'sChain: {dkg_client.schain_name}.'
+                        'Not all nodes sent alright. Waiting for FailedDkg event...')
+            check_failed_dkg(dkg_client)
+            if start_time != get_channel_started_time(dkg_client):
+                raise DkgFailedError(
+                    f'sChain: {dkg_client.schain_name}. Dkg failed due to event FailedDKG'
+                )
+            sleep(30)
+
     if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
         response(dkg_client, complaint_data[0])
 
