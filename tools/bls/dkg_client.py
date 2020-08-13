@@ -286,10 +286,6 @@ class DKGClient:
             {'from': self.skale.wallet.address}
         )
 
-    def is_node_broadcasted(self, from_node):
-        is_node_broadcasted_function = self.dkg_contract_functions.isNodeBroadcasted
-        return is_node_broadcasted_function(self.group_index, self.node_ids_dkg[from_node]).call()
-
     def get_channel_started_time(self):
         get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
         return get_channel_started_time_function(self.group_index).call()

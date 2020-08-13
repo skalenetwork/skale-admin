@@ -28,7 +28,7 @@ from tools.bls.dkg_utils import (
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
     is_all_data_received, get_complaint_data, is_everyone_broadcasted,
     check_broadcasted_data, check_failed_dkg, get_channel_started_time, get_complaint_started_time,
-    is_node_broadcasted, get_alright_started_time, DkgFailedError
+    get_alright_started_time, DkgFailedError
 )
 from tools.bls.skale_dkg_broadcast_filter import Filter
 from tools.bls.dkg_client import DkgVerificationError
