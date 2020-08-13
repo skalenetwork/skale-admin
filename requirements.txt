@@ -13,8 +13,10 @@ simple-crypt==4.1.7
 pycryptodome==3.6.6
 python-iptables==0.14.0
 
-skale.py==3.10dev19
-sgx.py==0.6dev6
+# skale.py==3.10dev19
+# sgx.py==0.6dev6
+git+git://github.com/skalenetwork/sgx.py.git@bug/SKALE-2985-exception-instead-of-retry#egg=sgx.py
+git+git://github.com/skalenetwork/skale.py.git@bug/SKALE-2985-exception-instead-of-retry#egg=skale.py
 
 PyYAML==5.3
 psutil==5.7.0
