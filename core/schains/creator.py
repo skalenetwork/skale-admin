@@ -17,9 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 import shutil
-import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -32,7 +32,6 @@ from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
                                  check_container_exit)
 from core.schains.cleaner import remove_config_dir
-from core.tg_bot import TgBot
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
                                  get_schain_proxy_file_path)
 from core.schains.config import (generate_schain_config, save_schain_config,
@@ -42,15 +41,16 @@ from core.schains.checks import SChainChecks, check_for_rotation
 from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
+from core.schains.utils import notify_if_not_enough_balance
 
 from tools.bls.dkg_client import DkgError
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER
-from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from tools.configs.schains import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
+from tools.notifications.messages import notify_checks
 from tools.str_formatters import arguments_list_string
 from web.models.schain import upsert_schain_record
 
@@ -87,14 +87,15 @@ def monitor(skale, node_config):
     logger.info(
         arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
                                'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
+    node_info = node_config.all()
+    notify_if_not_enough_balance(skale, node_info)
 
     with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
         futures = [
             executor.submit(
                 monitor_schain,
                 skale,
-                node_config.id,
-                node_config.sgx_key_name,
+                node_info,
                 schain,
                 ecdsa_sgx_key_name
             )
@@ -105,9 +106,10 @@ def monitor(skale, node_config):
     logger.info('Creator procedure finished')
 
 
-def monitor_schain(skale, node_id, sgx_key_name, schain, ecdsa_sgx_key_name):
+def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     skale = spawn_skale_lib(skale)
     name = schain['name']
+    node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = check_for_rotation(skale, name, node_id)
     logger.info(f'Rotation for {name}: {rotation}')
 
@@ -120,13 +122,11 @@ def monitor_schain(skale, node_id, sgx_key_name, schain, ecdsa_sgx_key_name):
 
     checks = SChainChecks(name, node_id, rotation_id=rotation_id, log=True)
     checks_dict = checks.get_all()
-    bot = TgBot(TG_API_KEY, TG_CHAT_ID) if TG_API_KEY and TG_CHAT_ID else None
 
     schain_record = upsert_schain_record(name)
 
     if not schain_record.first_run:
-        if bot and not checks.is_healthy():
-            bot.send_schain_checks(checks)
+        notify_checks(name, node_info, checks_dict)
 
     first_run = schain_record.first_run
     schain_record.set_first_run(False)

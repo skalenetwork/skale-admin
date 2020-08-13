@@ -11,7 +11,7 @@ import docker
 
 from core.schains.runner import get_image_name
 from core.schains.config import get_schain_config_filepath
-from tests.utils import get_bp_data, post_bp_data
+from tests.utils import get_bp_data
 from tools.docker_utils import DockerUtils
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.iptables import NodeEndpoint
@@ -132,24 +132,6 @@ def test_get_firewall_rules(skale_bp):
             ]},
         'status': 'ok'
     }
-
-
-@mock.patch('web.routes.schains.get_allowed_endpoints', get_allowed_endpoints_mock)
-@mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
-@mock.patch('web.routes.schains.add_iptables_rules', new=mock.Mock())
-def test_firewall_rules_on(skale_bp):
-    data = post_bp_data(skale_bp, '/api/schains/firewall/on',
-                        params={'schain': 'test-schain'})
-    assert data == {'status': 'ok', 'payload': {}}
-
-
-@mock.patch('web.routes.schains.get_allowed_endpoints', get_allowed_endpoints_mock)
-@mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
-@mock.patch('web.routes.schains.remove_iptables_rules', new=mock.Mock())
-def test_firewall_rules_off(skale_bp):
-    data = post_bp_data(skale_bp, '/api/schains/firewall/off',
-                        params={'schain': 'test-schain'})
-    assert data == {'status': 'ok', 'payload': {}}
 
 
 def test_schains_healthchecks(skale_bp, skale):

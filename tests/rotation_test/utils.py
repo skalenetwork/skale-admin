@@ -36,7 +36,17 @@ SECRET_KEY_INFO = {
 class NodeConfigMock:
     def __init__(self):
         self.id = 0
+        self.ip = '1.1.1.1'
+        self.name = 'node0'
         self.sgx_key_name = ""
+
+    def all(self):
+        return {
+            'node_id': self.id,
+            'node_ip': self.ip,
+            'name': self.name,
+            'sgx_key_name': self.sgx_key_name
+        }
 
 
 def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):

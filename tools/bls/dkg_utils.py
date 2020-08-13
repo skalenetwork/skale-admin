@@ -108,6 +108,10 @@ def is_everyone_broadcasted(dkg_client):
     return dkg_client.is_everyone_broadcasted()
 
 
+def is_node_broadcasted(dkg_client, from_node):
+    return dkg_client.is_node_broadcasted(from_node)
+
+
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):
     for i in range(dkg_client.n):
         if not is_correct[i] or not is_recieved[i]:
@@ -130,6 +134,14 @@ def get_complaint_data(dkg_client):
 
 def get_channel_started_time(dkg_client):
     return dkg_client.get_channel_started_time()
+
+
+def get_alright_started_time(dkg_client):
+    return dkg_client.get_alright_started_time()
+
+
+def get_complaint_started_time(dkg_client):
+    return dkg_client.get_complaint_started_time()
 
 
 def get_secret_key_share_filepath(schain_id, rotation_id):

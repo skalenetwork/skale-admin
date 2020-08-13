@@ -210,7 +210,7 @@ class DKGClient:
 
         if not is_response_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_sgx} node could not sent a response')
+                        f'{self.node_id_dkg} node could not sent a response')
             return
         response = self.sgx.complaint_response(
             self.poly_name,
@@ -247,23 +247,28 @@ class DKGClient:
         )
 
     def is_everyone_broadcasted(self):
-        get_number_of_broadcasted_function = self.dkg_contract_functions.getNumberOfBroadcasted
-        count = get_number_of_broadcasted_function(self.group_index).call(
-            {'from': self.skale.wallet.address}
-        )
-        return count == self.n
+        get_number_of_broadcasted_function = self.dkg_contract_functions.isEveryoneBroadcasted
+        return get_number_of_broadcasted_function(self.group_index).call()
+
+    def is_node_broadcasted(self, from_node):
+        is_node_broadcasted_function = self.dkg_contract_functions.isNodeBroadcasted
+        return is_node_broadcasted_function(self.group_index, self.node_ids_dkg[from_node]).call()
 
     def get_channel_started_time(self):
         get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
-        return get_channel_started_time_function(self.group_index).call(
-            {'from': self.skale.wallet.address}
-        )
+        return get_channel_started_time_function(self.group_index).call()
+
+    def get_complaint_started_time(self):
+        get_complaint_started_time_function = self.dkg_contract_functions.getComplaintStartedTime
+        return get_complaint_started_time_function(self.group_index).call()
+
+    def get_alright_started_time(self):
+        get_alright_started_time_function = self.dkg_contract_functions.getAlrightStartedTime
+        return get_alright_started_time_function(self.group_index).call()
 
     def get_complaint_data(self):
         get_complaint_data_function = self.dkg_contract_functions.getComplaintData
-        return get_complaint_data_function(self.group_index).call(
-            {'from': self.skale.wallet.address}
-        )
+        return get_complaint_data_function(self.group_index).call()
 
     def receive_from_node(self, from_node, broadcasted_data):
         self.receive_verification_vector(from_node, broadcasted_data[0])
@@ -286,7 +291,7 @@ class DKGClient:
                                                           self.eth_key_name,
                                                           received_secret_key_contribution)
         logger.info(f'sChain: {self.schain_name}. '
-                    'DKGClient is going to fetch BLS public key with name {bls_key_name}')
+                    f'DKGClient is going to fetch BLS public key with name {bls_key_name}')
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
         return bls_private_key
 
