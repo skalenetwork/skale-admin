@@ -78,7 +78,7 @@ RETRY_ATTEMPTS = 9
 TIMEOUTS = [2 ** p for p in range(RETRY_ATTEMPTS)]
 
 
-def retry_sgx_unreachable(func):
+def sgx_unreachable_retry(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         result, error = None, None
@@ -124,18 +124,18 @@ class DKGClient:
     def is_channel_opened(self):
         return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
 
-    @retry_sgx_unreachable
+    @sgx_unreachable_retry
     def generate_polynomial(self, poly_name):
         self.poly_name = poly_name
         return self.sgx.generate_dkg_poly(poly_name)
 
-    @retry_sgx_unreachable
+    @sgx_unreachable_retry
     def verification_vector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
         return convert_g2_points_to_array(verification_vector)
 
-    @retry_sgx_unreachable
+    @sgx_unreachable_retry
     def secret_key_contribution(self):
         sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
                                                                             self.public_keys)
@@ -201,7 +201,7 @@ class DKGClient:
         incoming = public_key_x_str + public_key_y_str + key_share_str
         self.incoming_secret_key_contribution[from_node] = incoming
 
-    @retry_sgx_unreachable
+    @sgx_unreachable_retry
     def verification(self, from_node):
         return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
                                             self.eth_key_name,
@@ -234,7 +234,7 @@ class DKGClient:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
 
-    @retry_sgx_unreachable
+    @sgx_unreachable_retry
     def get_complaint_response(self, to_node_index):
         response = self.sgx.complaint_response(
             self.poly_name,
@@ -319,7 +319,7 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. '
                     f'All data from {from_node} was received and verified')
 
-    @retry_sgx_unreachable
+    @sgx_unreachable_retry
     def generate_key(self, bls_key_name):
         received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
                                                    for j in range(self.sgx.n))
