@@ -33,12 +33,30 @@ def test_load_wallet(skale_bp, skale):
 
 def test_send_eth(skale_bp, skale):
     address = skale.wallet.address
-    balance_before = skale.web3.eth.getBalance(address)
+    balance_0 = skale.web3.eth.getBalance(address)
     json_data = {
-        'address': '0x3483A10F7d6fDeE0b0C1E9ad39cbCE13BD094b12',
+        'address': '0xf38b5dddd74b8901c9b5fb3ebd60bf5e7c1e9763',
+        'amount': '0.01'
+    }
+    data = post_bp_data(skale_bp, '/send-eth', json_data)
+    balance_1 = skale.web3.eth.getBalance(address)
+    assert balance_0 > balance_1
+    assert data == {'status': 'ok', 'payload': {}}
+
+    json_data = {
+        'address': '0x01C19c5d3Ad1C3014145fC82263Fbae09e23924A',
+        'amount': '0.01'
+    }
+    data = post_bp_data(skale_bp, '/send-eth', json_data)
+    balance_2 = skale.web3.eth.getBalance(address)
+    assert balance_1 > balance_2
+    assert data == {'status': 'ok', 'payload': {}}
+
+
+def test_send_eth_with_error(skale_bp, skale):
+    json_data = {
+        'address': '0x0000000',
         'amount': '0.1'
     }
     data = post_bp_data(skale_bp, '/send-eth', json_data)
-    balance_after = skale.web3.eth.getBalance(address)
-    assert balance_before > balance_after
-    assert data == {'status': 'ok', 'payload': {}}
+    assert data == {'status': 'error', 'payload': 'Funds sending failed'}
