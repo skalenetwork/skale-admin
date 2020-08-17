@@ -38,7 +38,7 @@ def construct_wallet_bp(skale):
         res = wallet_with_balance(skale)
         return construct_ok_response(data=res)
 
-    @wallet_bp.route('/send-eth', methods=['POST'])
+    @wallet_bp.route('/api/send-eth', methods=['POST'])
     def send_eth():
         logger.debug(request)
         raw_address = request.json.get('address')
