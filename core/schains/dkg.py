@@ -47,6 +47,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 
+    logger.info(f'sChain {schain_name}: Sending broadcast')
     broadcast(dkg_client, poly_name)
 
     is_received = [False for _ in range(n)]
@@ -59,6 +60,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     while False in is_received:
         if time.time() - start_time > RECEIVE_TIMEOUT:
             break
+        logger.info(f'sChain {schain_name}: trying to receive broadcasted data')
 
         for from_node in range(dkg_client.n):
             if not is_received[from_node] and is_node_broadcasted(dkg_client, from_node):
@@ -67,11 +69,14 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 )
                 broadcasted_data = [verification_vector, secret_key_contribution]
                 is_received[from_node] = True
-
+                logger.info(f'sChain {schain_name}: receiving from node {from_node}')
                 try:
                     dkg_client.receive_from_node(from_node, broadcasted_data)
                     is_correct[from_node] = True
                 except DkgVerificationError:
+                    logger.info(
+                        f'sChain {schain_name}: dkg verification error from node {from_node}'
+                    )
                     continue
 
                 logger.info(
@@ -103,6 +108,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     is_alright_sent_list = [False for _ in range(n)]
     start_time_alright = get_alright_started_time(dkg_client)
     if not is_complaint_sent:
+        logger.info(f'sChain {schain_name}: No complaints sent - sending alright ...')
         send_alright(dkg_client)
         is_alright_sent_list[dkg_client.node_id_dkg] = True
 
@@ -111,6 +117,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     is_complaint_received = False
     complaint_data = get_complaint_data(dkg_client)
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
+        logger.info(f'sChain {schain_name}: Complaint received. Sending response ...')
         is_complaint_received = True
         response(dkg_client, complaint_data[0])
 
@@ -152,6 +159,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
         is_complaint_received = True
+        logger.info(f'sChain {schain_name}. Complaint received. Sending response ...')
         response(dkg_client, complaint_data[0])
 
     complaint_data = get_complaint_data(dkg_client)
@@ -179,6 +187,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
     if False not in is_alright_sent_list:
+        logger.info(f'sChain: {schain_name}: Everyone sent alright')
         if skale.dkg.is_last_dkg_successful(dkg_client.group_index):
             encrypted_bls_key = 0
             bls_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
