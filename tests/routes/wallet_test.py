@@ -33,24 +33,33 @@ def test_load_wallet(skale_bp, skale):
 
 def test_send_eth(skale_bp, skale):
     address = skale.wallet.address
+    amount = '0.01'
+    amount_wei = skale.web3.toWei(amount, 'ether')
+
+    receiver_0 = '0xf38b5dddd74b8901c9b5fb3ebd60bf5e7c1e9763'
+    checksum_receiver_0 = to_checksum_address(receiver_0)
+    receiver_balance_0 = skale.web3.eth.getBalance(checksum_receiver_0)
     balance_0 = skale.web3.eth.getBalance(address)
     json_data = {
-        'address': '0xf38b5dddd74b8901c9b5fb3ebd60bf5e7c1e9763',
-        'amount': '0.01'
+        'address': receiver_0,
+        'amount': amount
     }
     data = post_bp_data(skale_bp, '/api/send-eth', json_data)
     balance_1 = skale.web3.eth.getBalance(address)
-    assert balance_0 > balance_1
     assert data == {'status': 'ok', 'payload': {}}
+    assert balance_1 < balance_0
+    assert skale.web3.eth.getBalance(checksum_receiver_0) - receiver_balance_0 == amount_wei
 
+    receiver_1 = '0x01C19c5d3Ad1C3014145fC82263Fbae09e23924A'
+    receiver_balance_1 = skale.web3.eth.getBalance(receiver_1)
     json_data = {
-        'address': '0x01C19c5d3Ad1C3014145fC82263Fbae09e23924A',
-        'amount': '0.01'
+        'address': receiver_1,
+        'amount': amount
     }
     data = post_bp_data(skale_bp, '/api/send-eth', json_data)
-    balance_2 = skale.web3.eth.getBalance(address)
-    assert balance_1 > balance_2
     assert data == {'status': 'ok', 'payload': {}}
+    assert skale.web3.eth.getBalance(address) < balance_1
+    assert skale.web3.eth.getBalance(receiver_1) - receiver_balance_1 == amount_wei
 
 
 def test_send_eth_with_error(skale_bp, skale):
