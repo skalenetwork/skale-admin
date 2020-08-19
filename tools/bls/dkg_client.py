@@ -306,7 +306,7 @@ class DKGClient:
     def get_complaint_data(self):
         get_complaint_data_function = self.dkg_contract_functions.getComplaintData
         return get_complaint_data_function(self.group_index).call()
-    
+
     def get_time_of_last_successful_dkg(self):
         time_of_last_successful_dkg_function = self.dkg_contract_functions.getTimeOfLastSuccesfulDKG
         return time_of_last_successful_dkg_function(self.group_index).call()
