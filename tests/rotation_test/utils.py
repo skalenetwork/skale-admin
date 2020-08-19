@@ -5,7 +5,7 @@ from skale.manager_client import spawn_skale_lib
 
 from core.node import Node
 from core.schains.checks import check_endpoint_alive
-from core.schains.config_builder.utils import get_skaled_http_address
+from core.schains.config_builder.helper import get_skaled_http_address
 from core.schains.runner import run_schain_container, check_container_exit
 from core.schains.volume import init_data_volume
 from tests.dkg_test.main_test import (generate_sgx_wallets, transfer_eth_to_wallets,

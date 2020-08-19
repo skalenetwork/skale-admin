@@ -34,8 +34,8 @@ from core.schains.runner import (run_schain_container, run_ima_container,
 from core.schains.cleaner import remove_config_dir
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
                                  get_schain_proxy_file_path)
-from core.schains.config_builder.utils import (save_schain_config, get_allowed_endpoints,
-                                               update_schain_config)
+from core.schains.config_builder.helper import (save_schain_config, get_allowed_endpoints,
+                                                update_schain_config)
 from core.schains.config_builder.generator import generate_schain_config_with_skale
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks, check_for_rotation

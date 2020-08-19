@@ -19,7 +19,7 @@
 
 from core.schains.helper import (get_schain_data_dir, get_schain_config_filepath,
                                  get_schain_dir_path, get_schain_proxy_file_path)
-from core.schains.config_builder.utils import get_schain_ports, get_schain_config
+from core.schains.config_builder.helper import get_schain_ports, get_schain_config
 
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.configs import LOCAL_WALLET_FILEPATH

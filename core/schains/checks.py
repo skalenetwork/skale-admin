@@ -21,7 +21,7 @@ import os
 import logging
 import time
 
-from core.schains.config_builder.utils import get_allowed_endpoints, get_schain_rpc_ports
+from core.schains.config_builder.helper import get_allowed_endpoints, get_schain_rpc_ports
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
