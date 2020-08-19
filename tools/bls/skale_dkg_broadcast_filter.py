@@ -27,18 +27,18 @@ class Filter:
         self.group_index_str = self.skale.web3.toHex(self.group_index)
         self.last_viewed_block = -1
         self.dkg_contract = skale.dkg.contract
-        self.event_hash = self.skale.web3.toHex(self.skale.web3.sha3(
-                                    text="BroadcastAndKeyShare(bytes32,uint256,tuple[],tuple[])")
-                        )
+        self.event_hash = "47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d"
         self.n = n
         self.t = (2 * n + 1) // 3
-        # 47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d
+        # self.skale.web3.toHex(self.skale.web3.sha3(
+        #                             text="BroadcastAndKeyShare(bytes32,uint256,tuple[],tuple[])")
+        #                 )
 
     def check_event(self, receipt):
         logs = receipt['logs']
         if len(logs) == 0:
             return False
-        if logs[0]['topics'][0].hex() != "0x47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d":  # self.event_hash:
+        if logs[0]['topics'][0].hex() != self.event_hash:
             return False
         if logs[0]['topics'][1].hex() != self.group_index_str:
             return False
@@ -54,7 +54,7 @@ class Filter:
             })
 
     def get_events(self):
-        # start_block = 1439
+        start_block = self.last_viewed_block
         if self.last_viewed_block == -1:
             start_block = self.dkg_contract.functions.getChannelStartedBlock(
                 self.group_index

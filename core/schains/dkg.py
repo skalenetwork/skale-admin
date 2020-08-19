@@ -69,7 +69,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         for event in events:
             from_node = dkg_client.node_ids_dkg[event["nodeIndex"]]
             if from_node != dkg_client.node_id_dkg:
-                secret_key_contribution, verification_vector = event["secretKeyContribution"], event["verificationVector"]
+                secret_key_contribution, verification_vector = (
+                    event["secretKeyContribution"], event["verificationVector"]
+                )
                 broadcasted_data = [verification_vector, secret_key_contribution]
                 is_received[from_node] = True
                 logger.info(f'sChain {schain_name}: receiving from node {from_node}')
@@ -86,7 +88,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                     f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
                     f'{from_node}'
                 )
-        # assert False
 
         sleep(1)
 
@@ -117,7 +118,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     complaint_data = get_complaint_data(dkg_client)
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
         logger.info(f'sChain {schain_name}: Complaint received. Sending response ...')
-        is_complaint_received = True
         response(dkg_client, complaint_data[0])
 
     check_failed_dkg(dkg_client)
@@ -157,7 +157,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             sleep(30)
 
     if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
-        is_complaint_received = True
         logger.info(f'sChain {schain_name}. Complaint received. Sending response ...')
         response(dkg_client, complaint_data[0])
 

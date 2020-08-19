@@ -19,11 +19,8 @@
 
 import os
 import sys
-import binascii
 import functools
 import logging
-import os
-import sys
 import time
 
 from skale.transactions.result import TransactionFailedError
@@ -83,6 +80,7 @@ def convert_str_to_key_share(sent_secret_key_contribution, n):
         key_share = bytes.fromhex(sent_secret_key_contribution[i * 192 + 128: (i + 1) * 192])
         return_value.append(KeyShare(public_key, key_share).tuple)
     return return_value
+
 
 RETRY_ATTEMPTS = 9
 TIMEOUTS = [2 ** p for p in range(RETRY_ATTEMPTS)]
@@ -189,7 +187,9 @@ class DKGClient:
 
     def receive_from_node(self, from_node, broadcasted_data):
         self.incoming_verification_vector[from_node] = broadcasted_data[0]
-        self.incoming_secret_key_contribution[from_node] = broadcasted_data[1][192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)]
+        self.incoming_secret_key_contribution[from_node] = broadcasted_data[1][
+            192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
+        ]
         try:
             if not self.verification(from_node):
                 raise DkgVerificationError(
@@ -199,12 +199,12 @@ class DKGClient:
                 )
             logger.info(f'sChain: {self.schain_name}. '
                         f'All data from {from_node} was received and verified')
-        except SgxServerError as e:
+        except SgxUnreachableError as e:
             raise DkgVerificationError(
                     f"sChain: {self.schain_name}. "
                     f"Fatal error : user {str(from_node + 1)} "
                     f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
-                    f"with SgxServerError: ", e
+                    f"with SgxUnreachableError: ", e
                 )
 
     @sgx_unreachable_retry
@@ -214,6 +214,7 @@ class DKGClient:
                                             self.incoming_secret_key_contribution[from_node],
                                             self.node_id_dkg)
 
+    @sgx_unreachable_retry
     def generate_key(self, bls_key_name):
         received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
                                                    for j in range(self.sgx.n))
@@ -340,49 +341,3 @@ class DKGClient:
     def get_complaint_data(self):
         get_complaint_data_function = self.dkg_contract_functions.getComplaintData
         return get_complaint_data_function(self.group_index).call()
-
-    def receive_from_node(self, from_node, broadcasted_data):
-        self.receive_verification_vector(from_node, broadcasted_data[0])
-        self.receive_secret_key_contribution(from_node, broadcasted_data[1])
-        if not self.verification(from_node):
-            raise DkgVerificationError(
-                f"sChain: {self.schain_name}. "
-                f"Fatal error : user {str(from_node + 1)} "
-                f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
-            )
-        logger.info(f'sChain: {self.schain_name}. '
-                    f'All data from {from_node} was received and verified')
-
-    @sgx_unreachable_retry
-    def generate_key(self, bls_key_name):
-        received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
-                                                   for j in range(self.sgx.n))
-        logger.info(f'sChain: {self.schain_name}. '
-                    f'DKGClient is going to create BLS private key with name {bls_key_name}')
-        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name,
-                                                          self.eth_key_name,
-                                                          received_secret_key_contribution)
-        logger.info(f'sChain: {self.schain_name}. '
-                    f'DKGClient is going to fetch BLS public key with name {bls_key_name}')
-        self.public_key = self.sgx.get_bls_public_key(bls_key_name)
-        return bls_private_key
-
-    def alright(self):
-        is_alright_possible_function = self.dkg_contract_functions.isAlrightPossible
-        is_alright_possible = is_alright_possible_function(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
-
-        if not is_alright_possible or not self.is_channel_opened():
-            logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_dkg} node has already sent an alright note')
-            return
-        try:
-            self.skale.dkg.alright(
-                self.group_index,
-                self.node_id_contract,
-                gas_price=self.skale.dkg.gas_price()
-            )
-        except TransactionFailedError as e:
-            logger.error(f'DKG alright failed: sChain {self.schain_name}')
-            raise DkgTransactionError(e)
-        logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
