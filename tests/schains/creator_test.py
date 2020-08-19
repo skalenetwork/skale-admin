@@ -79,7 +79,7 @@ def test_rotating_monitor(skale, config):
             mock.patch('core.schains.creator.run_dkg'), \
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
             mock.patch('core.schains.creator.SChainChecks.run_checks'), \
-            mock.patch('core.schains.creator.generate_schain_config',
+            mock.patch('core.schains.creator.generate_schain_config_with_skale',
                        new=mock.Mock(return_value=True)), \
             mock.patch('core.schains.creator.SChainChecks.get_all',
                        new=mock.Mock(return_value=CHECK_MOCK)), \
