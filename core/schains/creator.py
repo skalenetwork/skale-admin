@@ -91,6 +91,8 @@ def monitor(skale, node_config):
     node_info = node_config.all()
     notify_if_not_enough_balance(skale, node_info)
 
+    logger.info('Starting schains ThreadPoolExecutor')
+
     with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
         futures = [
             executor.submit(
@@ -108,6 +110,7 @@ def monitor(skale, node_config):
 
 
 def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
+    logger.info("Monitor for sChain {schain['name']}")
     skale = spawn_skale_lib(skale)
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
