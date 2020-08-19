@@ -23,9 +23,8 @@ import json
 import requests
 from pathlib import Path
 
-from tools.configs.schains import (SCHAINS_DIR_PATH, DATA_DIR_NAME, BASE_SCHAIN_CONFIG_FILEPATH,
-                                   IMA_DATA_FILEPATH)
-from tools.configs.ima import PROXY_ABI_FILENAME
+from tools.configs.schains import SCHAINS_DIR_PATH, DATA_DIR_NAME, BASE_SCHAIN_CONFIG_FILEPATH
+from tools.configs.ima import PROXY_ABI_FILENAME, IMA_DATA_FILEPATH
 
 logger = logging.getLogger(__name__)
 

@@ -22,7 +22,7 @@ import logging
 import time
 from time import sleep
 
-from skale.schain_config import generate_skale_schain_config
+from skale.schain_config.generator import get_nodes_for_schain
 from tools.bls.dkg_utils import (
     init_dkg_client, broadcast, send_complaint, response, send_alright,
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
@@ -39,11 +39,11 @@ RECEIVE_TIMEOUT = 1800
 
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
-    schain_config = generate_skale_schain_config(skale, schain_name, node_id)
-    n = len(schain_config["skaleConfig"]["sChain"]["nodes"])
+    schain_nodes = get_nodes_for_schain(skale, schain_name)
+    n = len(schain_nodes)
     t = (2 * n + 1) // 3
 
-    dkg_client = init_dkg_client(schain_config, skale, n, t, sgx_key_name)
+    dkg_client = init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_key_name)
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 

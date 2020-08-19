@@ -18,9 +18,45 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME
+from tools.configs import CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME, CONFIG_FOLDER
 
 IMA_ENDPOINT = os.environ['IMA_ENDPOINT']
 
 PROXY_ABI_FILENAME = 'proxy.json'
 MAINNET_PROXY_PATH = os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
+
+IMA_DATA_FILENAME = 'ima_data.json'
+IMA_DATA_FILEPATH = os.path.join(CONFIG_FOLDER, IMA_DATA_FILENAME)
+
+PRECOMPILED_IMA_CONTRACTS = {
+    'skale_features': {
+        'filename': 'SkaleFeatures'
+    },
+    'lock_and_data_for_schain': {
+        'filename': 'LockAndDataForSchain'
+    },
+    'eth_erc20': {
+        'filename': 'EthERC20'
+    },
+    'token_manager': {
+        'filename': 'TokenManager'
+    },
+    'lock_and_data_for_schain_erc20': {
+        'filename': 'LockAndDataForSchainERC20'
+    },
+    'erc20_module_for_schain': {
+        'filename': 'ERC20ModuleForSchain'
+    },
+    'lock_and_data_for_schain_erc721': {
+        'filename': 'LockAndDataForSchainERC721'
+    },
+    'erc721_module_for_schain': {
+        'filename': 'ERC721ModuleForSchain'
+    },
+    'token_factory': {
+        'filename': 'TokenFactory'
+    },
+    'message_proxy_chain': {
+        'filename': 'MessageProxyForSchain'
+    }
+}

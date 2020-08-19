@@ -10,7 +10,7 @@ from core.node_config import NodeConfig
 import docker
 
 from core.schains.runner import get_image_name
-from core.schains.config import get_schain_config_filepath
+from core.schains.config.helper import get_schain_config_filepath
 from tests.utils import get_bp_data
 from tools.docker_utils import DockerUtils
 from tools.configs.containers import SCHAIN_CONTAINER
@@ -99,9 +99,7 @@ def test_owner_schains(skale_bp, skale):
     assert data['status'] == 'ok'
     payload = data['payload']
     assert len(payload)
-    assert len(payload[0]['nodes'])
     schain_data = payload[0].copy()
-    schain_data.pop('nodes')
     assert schain_data == skale.schains.get_schains_for_owner(
         skale.wallet.address)[0]
 
