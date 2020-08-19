@@ -19,11 +19,12 @@
 
 from dataclasses import dataclass
 
-from core.schains.config.contract_settings import ContractSettings, generate_contract_settings
-from core.schains.config.node_info import CurrentNodeInfo, generate_current_node_info
-from core.schains.config.schain_info import SChainInfo, generate_schain_info
-from core.schains.config.schain_node import generate_schain_nodes
-from core.schains.config.helper import get_static_schain_params
+from core.schains.config_builder.contract_settings import (ContractSettings,
+                                                           generate_contract_settings)
+from core.schains.config_builder.node_info import CurrentNodeInfo, generate_current_node_info
+from core.schains.config_builder.schain_info import SChainInfo, generate_schain_info
+from core.schains.config_builder.schain_node import generate_schain_nodes
+from core.schains.config_builder.helper import get_static_schain_params
 
 
 @dataclass
@@ -57,7 +58,7 @@ def generate_skale_config(schain: dict, schain_id: int, node_id: int, node: dict
         node=node,
         ecdsa_key_name=ecdsa_key_name,
         static_schain_params=static_schain_params,
-        schain_name=schain['name'],
+        schain=schain,
         schains_on_node=schains_on_node,
         rotation_id=rotation_id
     )

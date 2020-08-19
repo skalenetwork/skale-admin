@@ -22,7 +22,7 @@ import copy
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_container_limits, get_schain_volume_config
-from core.schains.config.utils import (
+from core.schains.config_builder.utils import (
     get_schain_container_cmd,
     get_schain_env,
     get_skaled_http_address

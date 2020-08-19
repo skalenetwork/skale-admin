@@ -30,25 +30,22 @@ class DkgFailedError(DkgError):
     pass
 
 
-def init_dkg_client(schain_config, skale, n, t, sgx_eth_key_name):
+def init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_eth_key_name):
     node_id_dkg = -1
-    node_id_contract = schain_config["skaleConfig"]["nodeInfo"]["nodeID"]
     public_keys = [0] * n
     node_ids_contract = dict()
     node_ids_dkg = dict()
-    for i, node in enumerate(schain_config["skaleConfig"]["sChain"]["nodes"]):
-        if node["nodeID"] == schain_config["skaleConfig"]["nodeInfo"]["nodeID"]:
+    for i, node in enumerate(schain_nodes):
+        if node['id'] == node_id:
             node_id_dkg = i
 
-        node_ids_contract[node["nodeID"]] = i
-        node_ids_dkg[i] = node["nodeID"]
+        node_ids_contract[node["id"]] = i
+        node_ids_dkg[i] = node["id"]
 
         public_keys[i] = node["publicKey"]
 
-    schain_name = schain_config["skaleConfig"]["sChain"]["schainName"]
-
     dkg_client = DKGClient(
-        node_id_dkg, node_id_contract, skale, t, n, schain_name,
+        node_id_dkg, node_id, skale, t, n, schain_name,
         public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name
     )
     return dkg_client

@@ -21,7 +21,8 @@ from dataclasses import dataclass
 from skale.dataclasses.node_info import NodeInfo
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
-from core.schains.config.ima import get_message_proxy_addresses
+from core.schains.config_builder.ima import get_message_proxy_addresses
+from core.schains.volume import get_allocation_option_name
 from tools.configs import SGX_SERVER_URL
 from tools.configs.ima import IMA_ENDPOINT
 
@@ -42,6 +43,13 @@ class CurrentNodeInfo(NodeInfo):
     ecdsa_key_name: str
     wallets: dict
 
+    min_cache_size: int
+    max_cache_size: int
+    collection_queue_size: int
+    collection_duration: int
+    transaction_queue_size: int
+    max_open_leveldb_files: int
+
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         return {
@@ -55,25 +63,33 @@ class CurrentNodeInfo(NodeInfo):
                 'imaMessageProxyMainNet': self.ima_message_proxy_mainnet,
                 'rotateAfterBlock': self.rotate_after_block,
                 'ecdsaKeyName': self.ecdsa_key_name,
-                'wallets': self.wallets
+                'wallets': self.wallets,
+                'minCacheSize': self.min_cache_size,
+                'maxCacheSize': self.max_cache_size,
+                'collectionQueueSize': self.collection_queue_size,
+                'collectionDuration': self.collection_duration,
+                'transactionQueueSize': self.transaction_queue_size,
+                'maxOpenLeveldbFiles': self.max_open_leveldb_files,
             }
         }
 
 
 def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
-                               static_schain_params: dict, schain_name: str,
+                               static_schain_params: dict, schain: dict,
                                schains_on_node: list, rotation_id: int) -> CurrentNodeInfo:
-    schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain_name,
+    schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain['name'],
                                                             node['port'])
+    schain_size_name = get_allocation_option_name(schain)
     return CurrentNodeInfo(
         node_id=node_id,
         name=node['name'],
         base_port=schain_base_port_on_node,
         ima_mainnet=IMA_ENDPOINT,
         ecdsa_key_name=ecdsa_key_name,
-        wallets=generate_wallets_config(schain_name, rotation_id),
+        wallets=generate_wallets_config(schain['name'], rotation_id),
         **get_message_proxy_addresses(),
-        **static_schain_params['current_node_info']
+        **static_schain_params['current_node_info'],
+        **static_schain_params['cache_options'][schain_size_name]
     )
 
 

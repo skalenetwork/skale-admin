@@ -34,9 +34,9 @@ from core.schains.runner import (run_schain_container, run_ima_container,
 from core.schains.cleaner import remove_config_dir
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
                                  get_schain_proxy_file_path)
-from core.schains.config.utils import (save_schain_config, get_allowed_endpoints,
-                                       update_schain_config)
-from core.schains.config.generator import generate_schain_config_with_skale
+from core.schains.config_builder.utils import (save_schain_config, get_allowed_endpoints,
+                                               update_schain_config)
+from core.schains.config_builder.generator import generate_schain_config_with_skale
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks, check_for_rotation
 from core.schains.dkg import run_dkg
@@ -207,7 +207,7 @@ def init_schain_config(skale, node_id, schain_name, ecdsa_sgx_key_name):
             rotation_id=rotation_id,
             ecdsa_key_name=ecdsa_sgx_key_name
         )
-        save_schain_config(schain_config, schain_name)
+        save_schain_config(schain_config.to_dict(), schain_name)
 
 
 def copy_schain_ima_abi(name):

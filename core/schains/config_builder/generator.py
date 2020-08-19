@@ -23,9 +23,9 @@ from dataclasses import dataclass
 from skale import Skale
 from skale.schain_config.generator import get_schain_nodes_with_schains
 
-from core.schains.config.skale_config import SkaleConfig, generate_skale_config
-from core.schains.config.accounts import generate_dynamic_accounts
-from core.schains.config.helper import get_chain_id
+from core.schains.config_builder.skale_config import SkaleConfig, generate_skale_config
+from core.schains.config_builder.accounts import generate_dynamic_accounts
+from core.schains.config_builder.helper import get_chain_id
 
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
@@ -68,7 +68,7 @@ class SChainConfig:
             'params': self.params,
             'genesis': self.genesis,
             'accounts': self.accounts,
-            'skale_config': self.skale_config.to_dict(),
+            'skaleConfig': self.skale_config.to_dict(),
         }
 
 

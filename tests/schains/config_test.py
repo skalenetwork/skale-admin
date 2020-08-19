@@ -1,4 +1,4 @@
-from core.schains.config.utils import (
+from core.schains.config_builder.utils import (
     get_consensus_endpoints_from_config,
     get_snapshots_endpoints_from_config,
     get_skaled_rpc_endpoints_from_config,
