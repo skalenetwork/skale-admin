@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from skale.dataclasses.node_info import NodeInfo
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
-from core.schains.config_builder.ima import get_message_proxy_addresses
+from core.schains.config.ima import get_message_proxy_addresses
 from core.schains.volume import get_allocation_option_name
 from tools.configs import SGX_SERVER_URL
 from tools.configs.ima import IMA_ENDPOINT

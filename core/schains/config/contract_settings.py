@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from skale.utils.helper import decapitalize
 from skale.wallets.web3_wallet import public_key_to_address
 
-from core.schains.config_builder.helper import fix_address
+from core.schains.config.helper import fix_address
 from core.schains.helper import read_ima_data
 from tools.configs.ima import PRECOMPILED_IMA_CONTRACTS
 
