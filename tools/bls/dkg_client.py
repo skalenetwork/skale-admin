@@ -19,12 +19,18 @@
 
 import os
 import sys
+import binascii
+import functools
 import logging
+import os
+import sys
+import time
 
 from skale.transactions.result import TransactionFailedError
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
-from sgx.sgx_rpc_handler import DkgPolyStatus, SgxServerError
+from sgx.sgx_rpc_handler import DkgPolyStatus
+from sgx.http import SgxUnreachableError
 
 from skale.contracts.dkg import G2Point, KeyShare
 
@@ -78,6 +84,29 @@ def convert_str_to_key_share(sent_secret_key_contribution, n):
         return_value.append(KeyShare(public_key, key_share).tuple)
     return return_value
 
+RETRY_ATTEMPTS = 9
+TIMEOUTS = [2 ** p for p in range(RETRY_ATTEMPTS)]
+
+
+def sgx_unreachable_retry(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        result, error = None, None
+        for i, timeout in enumerate(TIMEOUTS):
+            try:
+                result = func(*args, **kwargs)
+            except SgxUnreachableError as err:
+                logger.info(f'Sgx server is unreachable during try {i}')
+                error = err
+                time.sleep(timeout)
+            else:
+                error = None
+                break
+        if error is not None:
+            raise error
+        return result
+    return wrapper
+
 
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
@@ -105,15 +134,18 @@ class DKGClient:
     def is_channel_opened(self):
         return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
 
+    @sgx_unreachable_retry
     def generate_polynomial(self, poly_name):
         self.poly_name = poly_name
         return self.sgx.generate_dkg_poly(poly_name)
 
+    @sgx_unreachable_retry
     def verification_vector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
         return convert_g2_points_to_array(verification_vector)
 
+    @sgx_unreachable_retry
     def secret_key_contribution(self):
         self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
                                                                                  self.public_keys)
@@ -175,6 +207,7 @@ class DKGClient:
                     f"with SgxServerError: ", e
                 )
 
+    @sgx_unreachable_retry
     def verification(self, from_node):
         return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
                                             self.eth_key_name,
@@ -240,6 +273,19 @@ class DKGClient:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
 
+    @sgx_unreachable_retry
+    def get_complaint_response(self, to_node_index):
+        response = self.sgx.complaint_response(
+            self.poly_name,
+            self.node_ids_contract[to_node_index]
+        )
+        share, dh_key = response['share'], response['dh_key']
+        share = share.split(':')
+        for i in range(4):
+            share[i] = int(share[i])
+        share = G2Point(*share).tuple
+        return share, dh_key
+
     def response(self, to_node_index):
         is_response_possible_function = self.dkg_contract_functions.isResponsePossible
         is_response_possible = is_response_possible_function(
@@ -249,16 +295,9 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent a response')
             return
-        response = self.sgx.complaint_response(
-            self.poly_name,
-            self.node_ids_contract[to_node_index]
-        )
-        share, dh_key = response['share'], response['dh_key']
 
-        share = share.split(':')
-        for i in range(4):
-            share[i] = int(share[i])
-        share = G2Point(*share).tuple
+        share, dh_key = self.get_complaint_response(to_node_index)
+
         try:
             self.skale.dkg.response(
                 self.group_index,
@@ -304,11 +343,6 @@ class DKGClient:
 
     def get_complaint_data(self):
         get_complaint_data_function = self.dkg_contract_functions.getComplaintData
-<<<<<<< HEAD
-        return get_complaint_data_function(self.group_index).call(
-            {'from': self.skale.wallet.address}
-        )
-=======
         return get_complaint_data_function(self.group_index).call()
 
     def receive_from_node(self, from_node, broadcasted_data):
@@ -323,6 +357,7 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. '
                     f'All data from {from_node} was received and verified')
 
+    @sgx_unreachable_retry
     def generate_key(self, bls_key_name):
         received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
                                                    for j in range(self.sgx.n))
@@ -355,4 +390,3 @@ class DKGClient:
             logger.error(f'DKG alright failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
         logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
->>>>>>> develop

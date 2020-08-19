@@ -1,4 +1,4 @@
-from core.schains.config import (
+from core.schains.config.helper import (
     get_consensus_endpoints_from_config,
     get_snapshots_endpoints_from_config,
     get_skaled_rpc_endpoints_from_config,
@@ -30,14 +30,14 @@ CONFIG = {
                     "keyShareName": "",
                     "t": 1,
                     "n": 2,
-                    "insecureBLSPublicKey0": "8",
-                    "insecureBLSPublicKey1": "4",
-                    "insecureBLSPublicKey2": "4",
-                    "insecureBLSPublicKey3": "1",
-                    "insecureCommonBLSPublicKey0": "8",
-                    "insecureCommonBLSPublicKey1": "4",
-                    "insecureCommonBLSPublicKey2": "4",
-                    "insecureCommonBLSPublicKey3": "1"
+                    "BLSPublicKey0": "8",
+                    "BLSPublicKey1": "4",
+                    "BLSPublicKey2": "4",
+                    "BLSPublicKey3": "1",
+                    "commonBLSPublicKey0": "8",
+                    "commonBLSPublicKey1": "4",
+                    "commonBLSPublicKey2": "4",
+                    "commonBLSPublicKey3": "1"
                 }
             }
         },
@@ -121,6 +121,6 @@ def test_get_schain_container_cmd():
     opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 2234 '
         f'--https-port 10002 --ws-port 10003 --wss-port 10008 --ssl-key {ssl_key_path} '
-        f'--ssl-cert {ssl_cert_path} -v 6 --web3-trace --enable-debug-behavior-apis --aa no '
+        f'--ssl-cert {ssl_cert_path} -v 4 --web3-trace --enable-debug-behavior-apis --aa no '
     )
     assert container_opts == opts

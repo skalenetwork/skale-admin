@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 CERTS_UPLOADED_ERR_MSG = 'SSL Certificates are already uploaded'
 NO_REQUIRED_FILES_ERR_MSG = 'No required files added'
+CERTS_HAS_INVALID_FORMAT = 'Certificates have invalid format'
 
 SSL_KEY_NAME = 'ssl_key'
 SSL_CRT_NAME = 'ssl_cert'
@@ -50,14 +51,22 @@ def construct_security_bp(docker_utils):
 
         cert_filepath = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
         with open(cert_filepath) as cert_file:
-            cert = crypto.load_certificate(
-                crypto.FILETYPE_PEM, cert_file.read())
+            try:
+                cert = crypto.load_certificate(
+                    crypto.FILETYPE_PEM, cert_file.read())
 
-            subject = cert.get_subject()
-            issued_to = subject.CN
-            expiration_date_raw = cert.get_notAfter()
-            expiration_date = parser.parse(
-                expiration_date_raw).strftime('%Y-%m-%dT%H:%M:%S')
+                subject = cert.get_subject()
+                issued_to = subject.CN
+                expiration_date_raw = cert.get_notAfter()
+                expiration_date = parser.parse(
+                    expiration_date_raw).strftime('%Y-%m-%dT%H:%M:%S')
+            except Exception as err:
+                logger.error(
+                    'Error during parsing certs. May be they are invalid',
+                    exc_info=err
+                )
+                return construct_err_response(msg=CERTS_HAS_INVALID_FORMAT)
+
             return construct_ok_response(data={
                 'issued_to': issued_to,
                 'expiration_date': expiration_date,

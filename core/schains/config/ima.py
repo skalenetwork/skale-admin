@@ -17,19 +17,17 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from core.schains.volume import get_filestorage_info
+
+from tools.helper import read_json
+from tools.configs.ima import MAINNET_PROXY_PATH, IMA_DATA_FILEPATH
 
 
-FILESTORAGE_LIMIT_OPTION_NAME = 'max_file_storage_bytes'
-
-
-def compose_filestorage_info(schin_internal_limits):
-    filestorage_info = get_filestorage_info()
-    max_file_storage_bytes = schin_internal_limits[FILESTORAGE_LIMIT_OPTION_NAME]
+def get_message_proxy_addresses():
+    ima_abi = read_json(MAINNET_PROXY_PATH)
+    schain_ima_abi = read_json(IMA_DATA_FILEPATH)
+    ima_mp_schain = schain_ima_abi['message_proxy_chain_address']
+    ima_mp_mainnet = ima_abi['message_proxy_mainnet_address']
     return {
-        'address': filestorage_info['address'],
-        'bytecode': filestorage_info['bytecode'],
-        'storage': {
-            '0x0': str(max_file_storage_bytes)
-        }
+        'ima_message_proxy_schain': ima_mp_schain,
+        'ima_message_proxy_mainnet': ima_mp_mainnet
     }

@@ -22,7 +22,7 @@ import logging
 import time
 from time import sleep
 
-from skale.schain_config import generate_skale_schain_config
+from skale.schain_config.generator import get_nodes_for_schain
 from tools.bls.dkg_utils import (
     init_dkg_client, broadcast, send_complaint, response, send_alright,
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
@@ -40,14 +40,15 @@ RECEIVE_TIMEOUT = 1800
 
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
-    schain_config = generate_skale_schain_config(skale, schain_name, node_id)
-    n = len(schain_config["skaleConfig"]["sChain"]["nodes"])
+    schain_nodes = get_nodes_for_schain(skale, schain_name)
+    n = len(schain_nodes)
     t = (2 * n + 1) // 3
 
-    dkg_client = init_dkg_client(schain_config, skale, n, t, sgx_key_name)
+    dkg_client = init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_key_name)
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 
+    logger.info(f'sChain {schain_name}: Sending broadcast')
     broadcast(dkg_client, poly_name)
 
     is_received = [False for _ in range(n)]
@@ -62,6 +63,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     while False in is_received:
         if time.time() - start_time > RECEIVE_TIMEOUT:
             break
+        logger.info(f'sChain {schain_name}: trying to receive broadcasted data')
 
         events = dkg_filter.get_events()
         for event in events:
@@ -70,11 +72,14 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 secret_key_contribution, verification_vector = event["secretKeyContribution"], event["verificationVector"]
                 broadcasted_data = [verification_vector, secret_key_contribution]
                 is_received[from_node] = True
-
+                logger.info(f'sChain {schain_name}: receiving from node {from_node}')
                 try:
                     dkg_client.receive_from_node(from_node, broadcasted_data)
                     is_correct[from_node] = True
                 except DkgVerificationError:
+                    logger.info(
+                        f'sChain {schain_name}: dkg verification error from node {from_node}'
+                    )
                     continue
 
                 logger.info(
@@ -103,6 +108,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     is_alright_sent_list = [False for _ in range(n)]
     if not is_complaint_sent:
+        logger.info(f'sChain {schain_name}: No complaints sent - sending alright ...')
         send_alright(dkg_client)
         is_alright_sent_list[dkg_client.node_id_dkg] = True
 
@@ -110,6 +116,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     complaint_data = get_complaint_data(dkg_client)
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
+        logger.info(f'sChain {schain_name}: Complaint received. Sending response ...')
+        is_complaint_received = True
         response(dkg_client, complaint_data[0])
 
     check_failed_dkg(dkg_client)
@@ -149,6 +157,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             sleep(30)
 
     if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
+        is_complaint_received = True
+        logger.info(f'sChain {schain_name}. Complaint received. Sending response ...')
         response(dkg_client, complaint_data[0])
 
     complaint_data = get_complaint_data(dkg_client)
@@ -175,6 +185,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
 
     if False not in is_alright_sent_list:
+        logger.info(f'sChain: {schain_name}: Everyone sent alright')
         if skale.dkg.is_last_dkg_successful(dkg_client.group_index):
             bls_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
             encrypted_bls_key = generate_bls_key(dkg_client, bls_name)

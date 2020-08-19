@@ -57,7 +57,7 @@ def main():
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
-    rpc_wallet = RPCWallet(TM_URL)
+    rpc_wallet = RPCWallet(TM_URL, retry_unreachable_sgx=True)
     skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
 
     soft_updates(skale, node_config)
