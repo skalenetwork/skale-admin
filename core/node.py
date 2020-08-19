@@ -144,6 +144,12 @@ class Node:
             node_status = NodeExitStatuses.COMPLETED
         return {'status': node_status.name, 'data': schain_statuses, 'exit_time': exit_time}
 
+    def set_maintenance_on(self):
+        return self.skale.nodes.set_node_in_maintenance(self.config.id)
+
+    def set_maintenance_off(self):
+        return self.skale.nodes.remove_node_from_in_maintenance(self.config.id)
+
     def _insufficient_funds(self):
         err_msg = 'Insufficient funds, re-check your wallet'
         logger.error(err_msg)
