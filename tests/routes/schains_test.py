@@ -99,9 +99,7 @@ def test_owner_schains(skale_bp, skale):
     assert data['status'] == 'ok'
     payload = data['payload']
     assert len(payload)
-    assert len(payload[0]['nodes'])
     schain_data = payload[0].copy()
-    schain_data.pop('nodes')
     assert schain_data == skale.schains.get_schains_for_owner(
         skale.wallet.address)[0]
 

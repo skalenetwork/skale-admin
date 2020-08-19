@@ -22,7 +22,6 @@ import logging
 from flask import Blueprint, request
 from http import HTTPStatus
 
-# from skale.schain_config.generator import get_schain_nodes_with_schains
 from core.schains.config.helper import get_allowed_endpoints, get_schain_config
 from core.schains.helper import schain_config_exists
 from core.schains.checks import SChainChecks
@@ -40,9 +39,6 @@ def construct_schains_bp(skale, config, docker_utils):
         logger.debug(request)
         schains = skale.schains.get_schains_for_owner(
             skale.wallet.address)
-        # for schain in schains:
-        #     nodes = get_schain_nodes_with_schains(skale, schain['name'])
-        #     schain['nodes'] = nodes
         return construct_ok_response(schains)
 
     @schains_bp.route('/schain-config', methods=['GET'])
