@@ -105,6 +105,10 @@ def is_everyone_broadcasted(dkg_client):
     return dkg_client.is_everyone_broadcasted()
 
 
+def is_node_broadcasted(dkg_client, from_node):
+    return dkg_client.is_node_broadcasted(from_node)
+
+
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):
     for i in range(dkg_client.n):
         if not is_correct[i] or not is_recieved[i]:

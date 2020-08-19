@@ -13,9 +13,8 @@ simple-crypt==4.1.7
 pycryptodome==3.6.6
 python-iptables==0.14.0
 
-git+git://github.com/skalenetwork/skale.py@5f66905ef14bb51e2fe6cc866287a80e19cccf33#egg=skale
-
-sgx.py==0.6dev6
+skale.py==3.11dev0
+sgx.py==0.6dev7
 
 PyYAML==5.3
 psutil==5.7.0

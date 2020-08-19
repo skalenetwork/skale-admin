@@ -190,7 +190,7 @@ def get_schain_container_sync_opts(schain_name, public_key, start_ts):
     )
 
 
-def get_schain_container_base_opts(schain_name, log_level=6):
+def get_schain_container_base_opts(schain_name, log_level=4):
     config_filepath = get_schain_config_filepath(schain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
