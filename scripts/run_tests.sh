@@ -33,5 +33,5 @@ python tests/prepare_data.py
 
 py.test tests/ --ignore=tests/firewall --ignore=tests/rotation_test
 #py.test tests/rotation_test
-#find . -name \*.pyc -delete
-#scripts/run_firewall_test.sh
+find . -name \*.pyc -delete
+scripts/run_firewall_test.sh

@@ -30,14 +30,14 @@ CONFIG = {
                     "keyShareName": "",
                     "t": 1,
                     "n": 2,
-                    "insecureBLSPublicKey0": "8",
-                    "insecureBLSPublicKey1": "4",
-                    "insecureBLSPublicKey2": "4",
-                    "insecureBLSPublicKey3": "1",
-                    "insecureCommonBLSPublicKey0": "8",
-                    "insecureCommonBLSPublicKey1": "4",
-                    "insecureCommonBLSPublicKey2": "4",
-                    "insecureCommonBLSPublicKey3": "1"
+                    "BLSPublicKey0": "8",
+                    "BLSPublicKey1": "4",
+                    "BLSPublicKey2": "4",
+                    "BLSPublicKey3": "1",
+                    "commonBLSPublicKey0": "8",
+                    "commonBLSPublicKey1": "4",
+                    "commonBLSPublicKey2": "4",
+                    "commonBLSPublicKey3": "1"
                 }
             }
         },

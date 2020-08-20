@@ -19,9 +19,9 @@ def test_update_node_config_file(skale):
     assert config.name is None
     assert config.ip is None
 
-    with mock.patch('skale.contracts.nodes.Nodes.get_active_node_ids_by_address',
+    with mock.patch('skale.contracts.manager.nodes.Nodes.get_active_node_ids_by_address',
                     new=mock.Mock(return_value=[3])):
-        with mock.patch('skale.contracts.nodes.Nodes.get',
+        with mock.patch('skale.contracts.manager.nodes.Nodes.get',
                         new=mock.Mock(return_value=NODE_STRUCT)):
             update_node_config_file(skale, config)
 
