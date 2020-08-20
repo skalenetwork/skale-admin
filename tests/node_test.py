@@ -97,8 +97,10 @@ def test_exit_status(exiting_node):
 
 
 def test_node_maintenance(node, skale):
-    node.set_maintenance_on()
+    res = node.set_maintenance_on()
+    assert res == {'status': 0}
     assert NodeStatuses(skale.nodes.get_node_status(node.config.id)) == NodeStatuses.IN_MAINTENANCE
 
-    node.set_maintenance_off()
+    res = node.set_maintenance_off()
+    assert res == {'status': 0}
     assert NodeStatuses(skale.nodes.get_node_status(node.config.id)) == NodeStatuses.ACTIVE

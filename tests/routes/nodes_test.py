@@ -126,3 +126,13 @@ def test_node_signature(skale_bp, skale):
     expected_signature = get_expected_signature(skale, validator_id)
     assert data == {'status': 'ok', 'payload': {
         'signature': expected_signature}}
+
+
+def test_set_maintenance_on(skale_bp, skale, node_config):
+    data = post_bp_data(skale_bp, '/api/node/maintenance-on')
+    assert data == {'payload': {}, 'status': 'ok'}
+
+
+def test_set_maintenance_off(skale_bp, skale, node_config):
+    data = post_bp_data(skale_bp, '/api/node/maintenance-off')
+    assert data == {'payload': {}, 'status': 'ok'}
