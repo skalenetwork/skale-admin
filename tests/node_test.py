@@ -94,3 +94,11 @@ def test_exit_status(exiting_node):
     assert exit_status_data['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
     assert exit_status_data['exit_time'] != 0
     assert exiting_node.info['status'] == NodeStatuses.FROZEN.value
+
+
+def test_node_maintenance(node, skale):
+    node.set_maintenance_on()
+    assert NodeStatuses(skale.nodes.get_node_status(node.config.id)) == NodeStatuses.IN_MAINTENANCE
+
+    node.set_maintenance_off()
+    assert NodeStatuses(skale.nodes.get_node_status(node.config.id)) == NodeStatuses.ACTIVE
