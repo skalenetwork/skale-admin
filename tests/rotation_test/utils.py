@@ -1,7 +1,7 @@
 import json
 from time import sleep
 
-from skale.manager_client import spawn_skale_lib
+from skale.skale_manager import spawn_skale_manager_lib
 
 from core.node import Node
 from core.schains.checks import check_endpoint_alive
@@ -87,7 +87,7 @@ def set_up_rotated_schain(skale):
     nodes_data.append(set_up_nodes(skale, 1)[0])
     nodes = []
     for node in nodes_data:
-        skale_lib = spawn_skale_lib(skale)
+        skale_lib = spawn_skale_manager_lib(skale)
         skale_lib.wallet = node['wallet']
         config = NodeConfigMock()
         config.id = node['node_id']
@@ -98,7 +98,7 @@ def set_up_rotated_schain(skale):
 
 def get_spawn_skale_mock(node_id):
     def spawn_skale_lib_mock(skale):
-        mocked_skale = spawn_skale_lib(skale)
+        mocked_skale = spawn_skale_manager_lib(skale)
 
         def get_node_ids_mock(name):
             return [node_id]
