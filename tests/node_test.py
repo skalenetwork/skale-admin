@@ -109,7 +109,7 @@ def test_node_maintenance(active_node, skale):
 
 def test_node_maintenance_error(active_node, skale):
     res = active_node.set_maintenance_off()
-    assert res == {'status': 1, 'errors': ['Node is not in maintenance']}
+    assert res == {'status': 1, 'errors': ['Node is not in maintenance mode']}
 
     active_node.set_maintenance_on()
     res = active_node.set_maintenance_on()

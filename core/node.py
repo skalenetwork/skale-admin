@@ -153,20 +153,20 @@ class Node:
         try:
             self.skale.nodes.set_node_in_maintenance(self.config.id)
         except TransactionFailedError as err:
-            err_msg = 'Set node maintenance on failed'
+            err_msg = 'Set node in maintenance mode failed'
             logger.error(err_msg, exc_info=err)
             return {'status': 1, 'errors': [err_msg]}
         return {'status': 0}
 
     def set_maintenance_off(self):
         if NodeStatuses(self.info['status']) != NodeStatuses.IN_MAINTENANCE:
-            err_msg = 'Node is not in maintenance'
+            err_msg = 'Node is not in maintenance mode'
             logger.error(err_msg)
             return {'status': 1, 'errors': [err_msg]}
         try:
             self.skale.nodes.remove_node_from_in_maintenance(self.config.id)
         except TransactionFailedError as err:
-            err_msg = 'Set node maintenance on failed'
+            err_msg = 'Remove node from maintenance mode failed'
             logger.error(err_msg, exc_info=err)
             return {'status': 1, 'errors': [err_msg]}
         return {'status': 0}
