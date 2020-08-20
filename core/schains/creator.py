@@ -25,7 +25,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from multiprocessing import Process
 
-from skale.manager_client import spawn_skale_lib
+from skale.skale_manager import spawn_skale_manager_lib
 
 
 from core.schains.runner import (run_schain_container, run_ima_container,
@@ -70,7 +70,7 @@ def run_creator(skale, node_config):
 
 def monitor(skale, node_config):
     logger.info('Creator procedure started')
-    skale = spawn_skale_lib(skale)
+    skale = spawn_skale_manager_lib(skale)
     logger.info('Spawned new skale lib')
     node_id = node_config.id
     ecdsa_sgx_key_name = node_config.sgx_key_name
@@ -108,7 +108,7 @@ def monitor(skale, node_config):
 
 
 def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
-    skale = spawn_skale_lib(skale)
+    skale = spawn_skale_manager_lib(skale)
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = check_for_rotation(skale, name, node_id)
