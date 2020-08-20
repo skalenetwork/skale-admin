@@ -27,7 +27,7 @@ class Filter:
         self.group_index_str = self.skale.web3.toHex(self.group_index)
         self.last_viewed_block = -1
         self.dkg_contract = skale.dkg.contract
-        self.event_hash = "47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d"
+        self.event_hash = "0x47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d"
         self.n = n
         self.t = (2 * n + 1) // 3
         # self.skale.web3.toHex(self.skale.web3.sha3(
