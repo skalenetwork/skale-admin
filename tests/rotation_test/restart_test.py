@@ -58,7 +58,7 @@ def test_new_node(skale, rotated_nodes):
             mock.patch('core.schains.creator.run_schain_container', run_schain_container_mock), \
             mock.patch('core.schains.creator.init_data_volume', init_data_volume_mock), \
             mock.patch('core.schains.creator.run_dkg', run_dkg_mock), \
-            mock.patch('core.schains.creator.spawn_skale_lib', spawn_skale_lib_mock), \
+            mock.patch('core.schains.creator.spawn_skale_manager_lib', spawn_skale_lib_mock), \
             mock.patch('core.schains.checks.apsent_iptables_rules',
                        new=mock.Mock(return_value=[True, True])):
         monitor(restarted_node.skale, restarted_node.config)

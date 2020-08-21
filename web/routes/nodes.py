@@ -98,4 +98,20 @@ def construct_nodes_bp(skale, node, docker_utils):
             all=all, format=True)
         return construct_ok_response(data={'containers': containers_list})
 
+    @nodes_bp.route('/api/node/maintenance-on', methods=['POST'])
+    def set_node_maintenance_on():
+        logger.debug(request)
+        res = node.set_maintenance_on()
+        if res['status'] != 0:
+            return construct_err_response(msg=res['errors'])
+        return construct_ok_response()
+
+    @nodes_bp.route('/api/node/maintenance-off', methods=['POST'])
+    def set_node_maintenance_off():
+        logger.debug(request)
+        res = node.set_maintenance_off()
+        if res['status'] != 0:
+            return construct_err_response(msg=res['errors'])
+        return construct_ok_response()
+
     return nodes_bp
