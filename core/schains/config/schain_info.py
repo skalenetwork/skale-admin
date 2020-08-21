@@ -19,6 +19,7 @@
 
 from dataclasses import dataclass
 
+from core.schains.config.helper import compose_public_key_info
 from core.schains.volume import (get_resource_allocation_info, get_allocation_option_name,
                                  get_allocation_part_name)
 
@@ -39,7 +40,14 @@ class SChainInfo:
     max_file_storage_bytes: int
     max_reserved_storage_bytes: int
 
+    previous_public_keys: list
     nodes: list
+
+    def previous_public_keys_info(self):
+        return [
+            compose_public_key_info(pk)
+            for pk in self.previous_public_keys
+        ]
 
     def to_dict(self):
         """Returns camel-case representation of the SChainInfo object"""
@@ -54,12 +62,13 @@ class SChainInfo:
             'maxSkaledLeveldbStorageBytes': self.max_skaled_leveldb_storage_bytes,
             'maxFileStorageBytes': self.max_file_storage_bytes,
             'maxReservedStorageBytes': self.max_reserved_storage_bytes,
+            'previousPublicKeys': self.previous_public_keys_info(),
             'nodes': self.nodes
         }
 
 
 def generate_schain_info(schain_id: int, schain: dict, static_schain_params: dict,
-                         nodes: dict) -> SChainInfo:
+                         previous_public_keys: list, nodes: dict) -> SChainInfo:
     resource_allocation = get_resource_allocation_info()
     schain_size_name = get_allocation_option_name(schain)
     allocation_part_name = get_allocation_part_name(schain)
@@ -70,6 +79,7 @@ def generate_schain_info(schain_id: int, schain: dict, static_schain_params: dic
         name=schain['name'],
         owner=schain['owner'],
         storage_limit=resource_allocation['schain']['storage_limit'][schain_size_name],
+        previous_public_keys=previous_public_keys,
         nodes=nodes,
         **schin_internal_limits,
         **static_schain_params['schain']

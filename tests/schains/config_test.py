@@ -55,6 +55,14 @@ CONFIG = {
                     "wsRpcPort": 10015,
                     "wssRpcPort": 10020,
                     "publicKey": "0x",
+                    "previousBlsPublicKeys": [
+                        {
+                            "blsPublicKey0": "8",
+                            "blsPublicKey1": "4",
+                            "blsPublicKey2": "4",
+                            "blsPublicKey3": "1"
+                        }
+                    ],
                     "blsPublicKey0": "8",
                     "blsPublicKey1": "4",
                     "blsPublicKey2": "4",
@@ -73,6 +81,14 @@ CONFIG = {
                     "wsRpcPort": 10016,
                     "wssRpcPort": 10021,
                     "publicKey": "0x",
+                    "previousBlsPublicKeys": [
+                        {
+                            "blsPublicKey0": "8",
+                            "blsPublicKey1": "4",
+                            "blsPublicKey2": "4",
+                            "blsPublicKey3": "1"
+                        }
+                    ],
                     "blsPublicKey0": "8",
                     "blsPublicKey1": "4",
                     "blsPublicKey2": "4",
