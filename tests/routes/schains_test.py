@@ -1,14 +1,13 @@
-import os
-
-import pytest
 import json
 import mock
+import os
+import shutil
+
+import docker
+import pytest
 from flask import Flask
 
 from core.node_config import NodeConfig
-
-import docker
-
 from core.schains.runner import get_image_name
 from core.schains.config.helper import get_schain_config_filepath
 from tests.utils import get_bp_data
@@ -71,7 +70,7 @@ def test_schain_config(skale_bp, skale):
     assert data == {'payload': {'nodeInfo': {'nodeID': 1}},
                     'status': 'ok'}
     os.remove(filename)
-    os.rmdir(os.path.dirname(filename))
+    shutil.rmtree(os.path.dirname(filename))
 
 
 def test_schains_containers_list(skale_bp, skale):
