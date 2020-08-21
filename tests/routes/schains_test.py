@@ -61,7 +61,9 @@ def test_schain_config(skale_bp, skale):
     sid = skale.schains_internal.get_all_schains_ids()[-1]
     name = skale.schains.get(sid).get('name')
     filename = get_schain_config_filepath(name)
-    os.makedirs(os.path.dirname(filename))
+    dirname = os.path.dirname(filename)
+    if not os.path.isdir(dirname):
+        os.makedirs(os.path.dirname(filename))
     with open(filename, 'w') as f:
         text = {'skaleConfig': {'nodeInfo': {'nodeID': 1}}}
         f.write(json.dumps(text))
