@@ -9,6 +9,7 @@ from core.schains.config.helper import get_skaled_http_address
 from core.schains.runner import run_schain_container, check_container_exit
 from core.schains.volume import init_data_volume
 from sgx import SgxClient
+from sgx.sgx_rpc_handler import SgxServerError
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tests.dkg_test.main_test import (generate_sgx_wallets, transfer_eth_to_wallets,
                                       link_addresses_to_validator, register_nodes, run_dkg_all)
@@ -98,6 +99,7 @@ def set_up_rotated_schain(skale):
         skale_lib.wallet = node['wallet']
         config = NodeConfigMock()
         config.id = node['node_id']
+        config.sgx_key_name = skale_lib.wallet.key_name
         nodes.append(Node(skale_lib, config))
 
     return nodes, schain_name
@@ -149,4 +151,8 @@ def check_schain_alive(schain_name):
 
 def import_bls_key():
     sgx_client = SgxClient(SGX_SERVER_URL, n=1, t=1, path_to_cert=SGX_CERTIFICATES_FOLDER)
-    sgx_client.import_bls_private_key(SECRET_KEY_INFO['key_share_name'], 1, INSECURE_PRIVATE_KEY)
+    try:
+        sgx_client.import_bls_private_key(SECRET_KEY_INFO['key_share_name'], 1, INSECURE_PRIVATE_KEY)
+    except SgxServerError as e:
+        if str(e) == 'Key share with this name already exists':
+            pass
