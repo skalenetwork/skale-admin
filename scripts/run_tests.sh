@@ -32,6 +32,7 @@ bash scripts/run_redis.sh
 python tests/prepare_data.py
 
 py.test tests/ --ignore=tests/firewall --ignore=tests/rotation_test
-py.test tests/rotation_test
+export SGX_CERTIFICATES_FOLDER=$PWD/tests/skale-data/node_data/sgx_certs
+py.test tests/rotation_test/exit_test.py
 find . -name \*.pyc -delete
 scripts/run_firewall_test.sh
