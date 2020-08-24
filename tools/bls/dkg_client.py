@@ -29,7 +29,7 @@ from sgx import SgxClient
 from sgx.sgx_rpc_handler import DkgPolyStatus
 from sgx.http import SgxUnreachableError
 
-from skale.contracts.dkg import G2Point, KeyShare
+from skale.contracts.manager.dkg import G2Point, KeyShare
 
 sys.path.insert(0, NODE_DATA_PATH)
 

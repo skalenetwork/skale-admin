@@ -18,7 +18,7 @@ def node(skale):
 
 
 def test_info_unregisted_node(node):
-    assert node.info == {'status': 4}
+    assert node.info == {'status': 5}
 
 
 def test_create_insufficient_funds(node):
@@ -66,31 +66,51 @@ def test_register_info(node):
 
 
 @pytest.fixture
-def exiting_node(skale):
-    name = 'exit_test'
-    ip, public_ip, port, _ = generate_random_node_data()
+def active_node(skale):
+    ip, public_ip, port, name = generate_random_node_data()
     skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
     config = NodeConfig()
     config.id = skale.nodes.node_name_to_index(name)
     yield Node(skale, config)
 
 
-def test_start_exit(exiting_node):
-    exiting_node.exit({})
-    status = NodeExitStatuses(exiting_node.skale.nodes.get_node_status(exiting_node.config.id))
+def test_start_exit(active_node):
+    active_node.exit({})
+    status = NodeExitStatuses(active_node.skale.nodes.get_node_status(active_node.config.id))
 
     assert status != NodeExitStatuses.ACTIVE
 
 
-def test_exit_status(exiting_node):
-    active_status_data = exiting_node.get_exit_status()
+def test_exit_status(active_node):
+    active_status_data = active_node.get_exit_status()
     assert list(active_status_data.keys()) == ['status', 'data', 'exit_time']
     assert active_status_data['status'] == NodeExitStatuses.ACTIVE.name
     assert active_status_data['exit_time'] == 0
 
-    exiting_node.exit({})
-    exit_status_data = exiting_node.get_exit_status()
+    active_node.exit({})
+    exit_status_data = active_node.get_exit_status()
     assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
     assert exit_status_data['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
     assert exit_status_data['exit_time'] != 0
-    assert exiting_node.info['status'] == NodeStatuses.FROZEN.value
+    assert active_node.info['status'] == NodeStatuses.FROZEN.value
+
+
+def test_node_maintenance(active_node, skale):
+    res = active_node.set_maintenance_on()
+    node_status = NodeStatuses(skale.nodes.get_node_status(active_node.config.id))
+    assert res == {'status': 0}
+    assert node_status == NodeStatuses.IN_MAINTENANCE
+
+    res = active_node.set_maintenance_off()
+    node_status = NodeStatuses(skale.nodes.get_node_status(active_node.config.id))
+    assert res == {'status': 0}
+    assert node_status == NodeStatuses.ACTIVE
+
+
+def test_node_maintenance_error(active_node, skale):
+    res = active_node.set_maintenance_off()
+    assert res == {'status': 1, 'errors': ['Node is not in maintenance mode']}
+
+    active_node.set_maintenance_on()
+    res = active_node.set_maintenance_on()
+    assert res == {'status': 1, 'errors': ['Node should be active']}
