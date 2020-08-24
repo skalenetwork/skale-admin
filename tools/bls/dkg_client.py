@@ -304,9 +304,9 @@ class DKGClient:
                 self.group_index,
                 self.node_id_contract,
                 int(dh_key, 16),
-                # convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
-                # convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
                 share,
+                convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
+                convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
                 gas_price=self.skale.dkg.gas_price()
             )
         except TransactionFailedError as e:
