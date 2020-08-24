@@ -278,7 +278,7 @@ class DKGClient:
     def get_complaint_response(self, to_node_index):
         response = self.sgx.complaint_response(
             self.poly_name,
-            self.node_ids_dkg[to_node_index] # contract
+            self.node_ids_dkg[to_node_index]
         )
         share, dh_key = response['share'], response['dh_key']
         share = share.split(':')
@@ -316,9 +316,9 @@ class DKGClient:
 
     def is_all_data_received(self, from_node):
         is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
-        return is_all_data_received_function(self.group_index, self.node_ids_contract[from_node]).call(
-            {'from': self.skale.wallet.address}
-        )
+        return is_all_data_received_function(
+            self.group_index, self.node_ids_contract[from_node]
+        ).call({'from': self.skale.wallet.address})
 
     def is_everyone_broadcasted(self):
         is_everyone_broadcasted_function = self.dkg_contract_functions.isEveryoneBroadcasted
