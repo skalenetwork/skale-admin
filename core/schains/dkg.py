@@ -67,7 +67,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
         events = dkg_filter.get_events()
         for event in events:
-            from_node = dkg_client.node_ids_dkg[event["nodeIndex"]]
+            from_node = dkg_client.node_ids_contract[event["nodeIndex"]]
             if from_node != dkg_client.node_id_dkg:
                 secret_key_contribution, verification_vector = (
                     event["secretKeyContribution"], event["verificationVector"]
