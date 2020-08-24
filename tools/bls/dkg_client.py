@@ -253,7 +253,7 @@ class DKGClient:
                     f'{self.node_id_dkg} is trying to sent a complaint on {to_node} node')
         is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
         is_complaint_possible = is_complaint_possible_function(
-            self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]).call(
+            self.group_index, self.node_id_contract, self.node_ids_contract[to_node]).call(
                 {'from': self.skale.wallet.address})
 
         if not is_complaint_possible or not self.is_channel_opened():
@@ -264,7 +264,7 @@ class DKGClient:
             self.skale.dkg.complaint(
                 self.group_index,
                 self.node_id_contract,
-                self.node_ids_dkg[to_node],
+                self.node_ids_contract[to_node],
                 gas_price=self.skale.dkg.gas_price(),
                 wait_for=True
             )
@@ -278,7 +278,7 @@ class DKGClient:
     def get_complaint_response(self, to_node_index):
         response = self.sgx.complaint_response(
             self.poly_name,
-            self.node_ids_contract[to_node_index]
+            self.node_ids_dkg[to_node_index] # contract
         )
         share, dh_key = response['share'], response['dh_key']
         share = share.split(':')
@@ -316,7 +316,7 @@ class DKGClient:
 
     def is_all_data_received(self, from_node):
         is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
-        return is_all_data_received_function(self.group_index, self.node_ids_dkg[from_node]).call(
+        return is_all_data_received_function(self.group_index, self.node_ids_contract[from_node]).call(
             {'from': self.skale.wallet.address}
         )
 

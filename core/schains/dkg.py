@@ -163,7 +163,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     complaint_data = get_complaint_data(dkg_client)
     is_complaint_sent = complaint_data[0] != complaint_data[1]
     if is_complaint_sent:
-        complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
+        complainted_node_index = dkg_client.node_ids_dkg[complaint_data[1]]
         is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
         is_channel_opened = dkg_client.is_channel_opened()
         start_time_response = get_complaint_started_time(dkg_client)
