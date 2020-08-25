@@ -21,7 +21,7 @@ import logging
 import os
 import shutil
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import datetime
 from multiprocessing import Process
 
@@ -60,11 +60,14 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 CONTAINERS_DELAY = 20
+JOIN_TIMEOUT = 3600
 
 
 def run_creator(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
     process.start()
+    process.join(JOIN_TIMEOUT)
+    process.terminate()
     process.join()
 
 
@@ -104,13 +107,13 @@ def monitor(skale, node_config):
             )
             for schain in schains if schain['active']
         ]
-        for future in futures:
+        for future in as_completed(futures):
             future.result()
     logger.info('Creator procedure finished')
 
 
 def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
-    logger.info("Monitor for sChain {schain['name']}")
+    logger.info(f"Monitor for sChain {schain['name']}")
     skale = spawn_skale_manager_lib(skale)
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
