@@ -23,6 +23,7 @@ import json
 import requests
 from pathlib import Path
 
+from tools.configs import SCHAIN_DATA_PATH
 from tools.configs.schains import SCHAINS_DIR_PATH, DATA_DIR_NAME, BASE_SCHAIN_CONFIG_FILEPATH
 from tools.configs.ima import PROXY_ABI_FILENAME, IMA_DATA_FILEPATH
 
@@ -44,8 +45,8 @@ def init_schain_dir(schain_name):
     os.makedirs(path, exist_ok=True)
 
 
-def get_schain_config_filepath(schain_name):
-    schain_dir_path = get_schain_dir_path(schain_name)
+def get_schain_config_filepath(schain_name, inside_skaled=False):
+    schain_dir_path = SCHAIN_DATA_PATH if inside_skaled else get_schain_dir_path(schain_name)
     return os.path.join(schain_dir_path,
                         f'schain_{schain_name}.json')
 
