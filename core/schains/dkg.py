@@ -91,6 +91,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
         sleep(1)
 
+    is_complaint_sent, complainted_node_index = check_broadcasted_data(
+                                        dkg_client, is_correct, is_received
+    )
+
     if not is_everyone_broadcasted(dkg_client):
         while True:
             logger.info(f'sChain: {dkg_client.schain_name}.'
@@ -102,9 +106,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 )
             sleep(30)
 
-    is_complaint_sent, complainted_node_index = check_broadcasted_data(
-                                        dkg_client, is_correct, is_received
-    )
     check_failed_dkg(dkg_client)
 
     is_alright_sent_list = [False for _ in range(n)]
