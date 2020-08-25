@@ -33,7 +33,8 @@ from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
                                       IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
-from tools.configs import NODE_DATA_PATH_HOST, NODE_DATA_PATH, SKALE_DIR_HOST, SKALE_VOLUME_PATH
+from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
+                           SKALE_VOLUME_PATH)
 
 docker_utils = DockerUtils()
 logger = logging.getLogger(__name__)
@@ -140,7 +141,7 @@ def add_config_volume(run_args):
         run_args['volumes'] = {}
     # mount /skale_node_data
     run_args['volumes'][NODE_DATA_PATH_HOST] = {
-        'bind': NODE_DATA_PATH,
+        'bind': SCHAIN_NODE_DATA_PATH,
         "mode": "ro"
     }
     # mount /skale_vol
