@@ -24,7 +24,9 @@ import requests
 from pathlib import Path
 
 from tools.configs import SCHAIN_DATA_PATH
-from tools.configs.schains import SCHAINS_DIR_PATH, DATA_DIR_NAME, BASE_SCHAIN_CONFIG_FILEPATH
+from tools.configs.schains import (SCHAINS_DIR_PATH, DATA_DIR_NAME,
+                                   BASE_SCHAIN_CONFIG_FILEPATH,
+                                   SCHAINS_DIR_PATH_HOST)
 from tools.configs.ima import PROXY_ABI_FILENAME, IMA_DATA_FILEPATH
 
 logger = logging.getLogger(__name__)
@@ -32,6 +34,10 @@ logger = logging.getLogger(__name__)
 
 def get_schain_dir_path(schain_name):
     return os.path.join(SCHAINS_DIR_PATH, schain_name)
+
+
+def get_schain_dir_path_host(schain_name):
+    return os.path.join(SCHAINS_DIR_PATH_HOST, schain_name)
 
 
 def get_schain_data_dir(schain_name):

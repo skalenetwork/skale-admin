@@ -28,7 +28,7 @@ from core.schains.config.helper import (
     get_skaled_http_address
 )
 from core.schains.ima import get_ima_env
-from core.schains.helper import send_rotation_request, get_schain_dir_path
+from core.schains.helper import send_rotation_request, get_schain_dir_path_host
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
@@ -139,7 +139,7 @@ def run_ima_container(schain, dutils=None):
 def add_config_volume(run_args, schain_name):
     if not run_args.get('volumes', None):
         run_args['volumes'] = {}
-    schain_data_dir = get_schain_dir_path(schain_name)
+    schain_data_dir_path = get_schain_dir_path_host(schain_name)
 
     # mount /skale_node_data
     run_args['volumes'][NODE_DATA_PATH_HOST] = {
@@ -152,7 +152,7 @@ def add_config_volume(run_args, schain_name):
         'mode': 'ro'
     }
     # mount /skale_schain_data
-    run_args['volumes'][schain_data_dir] = {
+    run_args['volumes'][schain_data_dir_path] = {
         'bind': SCHAIN_DATA_PATH,
         'mode': 'rw'
     }
