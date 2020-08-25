@@ -307,6 +307,10 @@ class DKGClient:
         get_complaint_data_function = self.dkg_contract_functions.getComplaintData
         return get_complaint_data_function(self.group_index).call()
 
+    def get_time_of_last_successful_dkg(self):
+        time_of_last_successful_dkg_function = self.dkg_contract_functions.getTimeOfLastSuccesfulDKG
+        return time_of_last_successful_dkg_function(self.group_index).call()
+
     def receive_from_node(self, from_node, broadcasted_data):
         self.receive_verification_vector(from_node, broadcasted_data[0])
         self.receive_secret_key_contribution(from_node, broadcasted_data[1])
