@@ -28,13 +28,13 @@ from core.schains.config.helper import (
     get_skaled_http_address
 )
 from core.schains.ima import get_ima_env
-from core.schains.helper import send_rotation_request
+from core.schains.helper import send_rotation_request, get_schain_dir_path
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
                                       IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
-                           SKALE_VOLUME_PATH)
+                           SKALE_VOLUME_PATH, SCHAIN_DATA_PATH)
 
 docker_utils = DockerUtils()
 logger = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ def run_container(type, schain_name, env, cmd=None, volume_config=None,
         dutils = docker_utils
     image_name, container_name, run_args, custom_args = get_container_info(type, schain_name)
 
-    add_config_volume(run_args)
+    add_config_volume(run_args, schain_name)
 
     if custom_args.get('logs', None):
         run_args['log_config'] = get_logs_config(custom_args['logs'])
@@ -136,18 +136,25 @@ def run_ima_container(schain, dutils=None):
     run_container(IMA_CONTAINER, schain_name, env, dutils=dutils)
 
 
-def add_config_volume(run_args):
+def add_config_volume(run_args, schain_name):
     if not run_args.get('volumes', None):
         run_args['volumes'] = {}
+    schain_data_dir = get_schain_dir_path(schain_name)
+
     # mount /skale_node_data
     run_args['volumes'][NODE_DATA_PATH_HOST] = {
         'bind': SCHAIN_NODE_DATA_PATH,
-        "mode": "ro"
+        'mode': 'ro'
     }
     # mount /skale_vol
     run_args['volumes'][SKALE_DIR_HOST] = {
         'bind': SKALE_VOLUME_PATH,
-        "mode": "ro"
+        'mode': 'ro'
+    }
+    # mount /skale_schain_data
+    run_args['volumes'][schain_data_dir] = {
+        'bind': SCHAIN_DATA_PATH,
+        'mode': 'rw'
     }
 
 

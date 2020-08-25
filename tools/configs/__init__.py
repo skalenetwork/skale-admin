@@ -18,6 +18,7 @@ else:
 
 
 SCHAIN_NODE_DATA_PATH = '/skale_node_data'
+SCHAIN_DATA_PATH = '/skale_schain_data'
 CONFIG_FOLDER_NAME = 'config'
 CONTRACTS_INFO_FOLDER_NAME = 'contracts_info'
 
