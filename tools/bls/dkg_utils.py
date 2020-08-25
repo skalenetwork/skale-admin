@@ -93,20 +93,12 @@ def send_alright(dkg_client):
     dkg_client.alright()
 
 
-def get_broadcasted_data(dkg_client, from_node):
-    return dkg_client.get_broadcasted_data(from_node)
-
-
 def is_all_data_received(dkg_client, from_node):
     return dkg_client.is_all_data_received(from_node)
 
 
 def is_everyone_broadcasted(dkg_client):
     return dkg_client.is_everyone_broadcasted()
-
-
-def is_node_broadcasted(dkg_client, from_node):
-    return dkg_client.is_node_broadcasted(from_node)
 
 
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):
@@ -118,10 +110,9 @@ def check_broadcasted_data(dkg_client, is_correct, is_recieved):
 
 
 def check_failed_dkg(dkg_client):
-    is_group_opened = dkg_client.is_channel_opened()
-    if not is_group_opened:
-        is_last_dkg_successful = dkg_client.skale.dkg.is_last_dkg_successful(dkg_client.group_index)
-        if not is_last_dkg_successful and dkg_client.get_time_of_last_successful_dkg() != 0:
+    if not dkg_client.is_channel_opened():
+        if not dkg_client.skale.dkg.is_last_dkg_successful(dkg_client.group_index) \
+                and dkg_client.get_time_of_last_successful_dkg() != 0:
             raise DkgFailedError(f'sChain: {dkg_client.schain_name}. Dkg failed')
 
 
