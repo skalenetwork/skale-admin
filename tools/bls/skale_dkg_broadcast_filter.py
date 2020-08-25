@@ -30,6 +30,7 @@ class Filter:
         self.event_hash = "0x47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d"
         self.n = n
         self.t = (2 * n + 1) // 3
+        # TODO: use scheme below to calculate event hash
         # self.skale.web3.toHex(self.skale.web3.sha3(
         #                             text="BroadcastAndKeyShare(bytes32,uint256,tuple[],tuple[])")
         #                 )
