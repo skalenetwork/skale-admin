@@ -23,7 +23,7 @@ import json
 import requests
 from pathlib import Path
 
-from tools.configs import SCHAIN_DATA_PATH
+from tools.configs import SCHAIN_DATA_PATH, ROTATION_FLAG_FILENAME
 from tools.configs.schains import (SCHAINS_DIR_PATH, DATA_DIR_NAME,
                                    BASE_SCHAIN_CONFIG_FILEPATH,
                                    SCHAINS_DIR_PATH_HOST)
@@ -55,6 +55,11 @@ def get_schain_config_filepath(schain_name, inside_skaled=False):
     schain_dir_path = SCHAIN_DATA_PATH if inside_skaled else get_schain_dir_path(schain_name)
     return os.path.join(schain_dir_path,
                         f'schain_{schain_name}.json')
+
+
+def get_schain_rotation_filepath(schain_name):
+    schain_dir_path = get_schain_dir_path(schain_name)
+    return os.path.join(schain_dir_path, ROTATION_FLAG_FILENAME)
 
 
 def get_tmp_schain_config_filepath(schain_name):

@@ -63,3 +63,5 @@ else:
 NODE_CONFIG_LOCK_PATH = os.getenv('LOCK_PATH')
 if not NODE_CONFIG_LOCK_PATH:
     NODE_CONFIG_LOCK_PATH = '/tmp/skale_node_config.lock'
+
+ROTATION_FLAG_FILENAME = '.rotation'

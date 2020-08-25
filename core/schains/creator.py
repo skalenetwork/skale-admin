@@ -33,7 +33,7 @@ from core.schains.runner import (run_schain_container, run_ima_container,
                                  check_container_exit)
 from core.schains.cleaner import remove_config_dir
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
-                                 get_schain_proxy_file_path)
+                                 get_schain_proxy_file_path, get_schain_rotation_filepath)
 from core.schains.config.helper import (save_schain_config, get_allowed_endpoints,
                                         update_schain_config)
 from core.schains.config.generator import generate_schain_config_with_skale
@@ -144,7 +144,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         return
 
     if (rotation_in_progress and new_schain) or (first_run and BACKUP_RUN):
-        logger.warning('Running sChain container is sync mode')
+        logger.warning('Running sChain container in sync mode')
         monitor_checks(
             skale=skale,
             schain=schain,
@@ -313,7 +313,8 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         if sync:
             finish_time_ts = rotation['finish_ts']
             monitor_sync_schain_container(skale, schain, finish_time_ts, rotation['rotation_id'])
-        elif check_container_exit(name, zero_exit_code=True, dutils=dutils):
+        elif check_schain_rotated(name):
+            logger.warning(f'sChain {name} is stopped after rotation. Going to restart')
             remove_firewall_rules(name)
             config = generate_schain_config_with_skale(
                 skale=skale,
@@ -328,3 +329,10 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         else:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
+
+
+def check_schain_rotated(schain_name):
+    schain_rotation_filepath = get_schain_rotation_filepath(schain_name)
+    rotation_file_exists = os.path.exists(schain_rotation_filepath)
+    zero_exit_code = check_container_exit(schain_name, zero_exit_code=True, dutils=dutils)
+    return rotation_file_exists and zero_exit_code
