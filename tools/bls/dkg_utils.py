@@ -201,7 +201,8 @@ def check_no_complaints(dkg_client):
 
 
 def wait_for_fail(dkg_client, reason=""):
-    while True:
+    start_time = time.time()
+    while time.time() - start_time < RECEIVE_TIMEOUT:
         if len(reason) > 0:
             logger.info(f'sChain: {dkg_client.schain_name}.'
                         f'Not all nodes sent {reason}. Waiting for FailedDkg event...')
