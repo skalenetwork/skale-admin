@@ -126,7 +126,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
 
         sleep(1)
 
-    return check_broadcasted_data(dkg_client, is_correct, is_received)
+    check_broadcasted_data(dkg_client, is_correct, is_received)
 
 
 def generate_bls_key(dkg_client, bls_key_name):
@@ -161,8 +161,7 @@ def check_broadcasted_data(dkg_client, is_correct, is_recieved):
     for i in range(dkg_client.n):
         if not is_correct[i] or not is_recieved[i]:
             send_complaint(dkg_client, i)
-            return i
-    return -1
+            break
 
 
 def check_failed_dkg(dkg_client):

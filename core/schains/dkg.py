@@ -46,7 +46,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 
-    complainted_node_index = broadcast_and_check_data(dkg_client, poly_name)
+    broadcast_and_check_data(dkg_client, poly_name)
 
     if not is_everyone_broadcasted(dkg_client):
         wait_for_fail(dkg_client, "broadcast")
@@ -66,6 +66,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     were_alrights = False
     if check_no_complaints(dkg_client):
         were_alrights = True
+
         start_time_alright = get_alright_started_time(dkg_client)
         while False in is_alright_sent_list:
             check_failed_dkg(dkg_client)
@@ -80,20 +81,22 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         for i in range(dkg_client.n):
             if not is_alright_sent_list[i] and i != dkg_client.node_id_dkg:
                 send_complaint(dkg_client, i)
-                complainted_node_index = i
 
-    if check_no_complaints(dkg_client) and False in is_alright_sent_list and were_alrights:
+    if False in is_alright_sent_list and were_alrights:
         wait_for_fail(dkg_client, "alright")
 
     check_response(dkg_client)
 
     if not check_no_complaints(dkg_client):
+        check_response(dkg_client)
+
         complaint_data = get_complaint_data(dkg_client)
-        complainted_node_index = dkg_client.node_ids_dkg[complaint_data[1]]
+        complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
+
         is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
         is_channel_opened = dkg_client.is_channel_opened()
+
         start_time_response = get_complaint_started_time(dkg_client)
-        check_response(dkg_client)
         while not is_group_failed or is_channel_opened:
             if time.time() - start_time_response > RECEIVE_TIMEOUT:
                 break
@@ -103,9 +106,11 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
         is_group_opened = dkg_client.is_channel_opened()
         is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
+
         complaint_itself = complainted_node_index == dkg_client.node_id_dkg
         if is_group_opened or not is_group_failed and not complaint_itself:
             send_complaint(dkg_client, complainted_node_index)
+
         wait_for_fail(dkg_client, "response")
 
     if False not in is_alright_sent_list:
