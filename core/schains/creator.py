@@ -60,7 +60,7 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 CONTAINERS_DELAY = 20
-JOIN_TIMEOUT = 3600
+JOIN_TIMEOUT = 3800
 
 
 def run_creator(skale, node_config):
