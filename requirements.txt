@@ -13,8 +13,7 @@ simple-crypt==4.1.7
 pycryptodome==3.6.6
 python-iptables==0.14.0
 
-# skale.py==4.0dev4
-git+git://github.com/skalenetwork/skale.py.git@enhancement/SKALE-3042-name-to-gid#egg=skale.py
+skale.py==4.0dev5
 sgx.py==0.6dev9
 
 PyYAML==5.3.1
