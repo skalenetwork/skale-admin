@@ -44,10 +44,14 @@ from web.models.schain import mark_schain_deleted
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
+JOIN_TIMEOUT = 1800
+
 
 def run_cleaner(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
     process.start()
+    process.join(JOIN_TIMEOUT)
+    process.terminate()
     process.join()
 
 
@@ -93,7 +97,7 @@ def monitor(skale, node_config):
                                       'Removed sChain found'))
             delete_bls_keys(skale, schain_name)
             cleanup_schain(node_config.id, schain_name)
-        logger.info('Cleanup procedure finished')
+    logger.info('Cleanup procedure finished')
 
 
 def get_schain_names_from_contract(skale, node_id):
