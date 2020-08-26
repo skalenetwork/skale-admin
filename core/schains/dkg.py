@@ -64,7 +64,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     were_alrights = False
     if check_no_complaints(dkg_client):
         were_alrights = True
-
         start_time_alright = get_alright_started_time(dkg_client)
         while False in is_alright_sent_list:
             check_failed_dkg(dkg_client)
@@ -81,6 +80,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 send_complaint(dkg_client, i)
 
     if False in is_alright_sent_list and were_alrights:
+        logger.info(f'sChain {schain_name}: Not everyone sent alright')
         wait_for_fail(dkg_client, "alright")
 
     check_response(dkg_client)
