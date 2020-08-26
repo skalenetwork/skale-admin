@@ -1,7 +1,11 @@
+import os
+from pathlib import Path
+
 import pytest
 
 from core.node_config import NodeConfig
-from core.schains.creator import monitor_schain
+from core.schains.creator import monitor_schain, check_schain_rotated
+from core.schains.helper import get_schain_rotation_filepath
 from tools.docker_utils import DockerUtils
 import mock
 import time
@@ -116,3 +120,22 @@ def test_new_schain_monitor(skale, config):
         args, kwargs = sync.call_args
         assert args[1] == SCHAIN
         assert args[2] == rotation_info['finish_ts']
+
+
+def test_check_schain_rotated(skale):
+    assert not check_schain_rotated(SCHAIN_NAME)
+    info_mock = {
+        'status': 'exited',
+        'stats': {
+            'State': {
+                'ExitCode': 0
+            }
+        }
+    }
+    with mock.patch('core.schains.creator.DockerUtils.get_info',
+                    new=mock.Mock(return_value=info_mock)):
+        assert not check_schain_rotated(SCHAIN_NAME)
+        path = get_schain_rotation_filepath(SCHAIN_NAME)
+        Path(path).touch()
+        assert check_schain_rotated(SCHAIN_NAME)
+        os.remove(path)
