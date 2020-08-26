@@ -153,7 +153,7 @@ def import_bls_key():
     sgx_client = SgxClient(SGX_SERVER_URL, n=1, t=1, path_to_cert=SGX_CERTIFICATES_FOLDER)
     try:
         sgx_client.import_bls_private_key(
-            SECRET_KEY_INFO['key_share_name'], 1, INSECURE_PRIVATE_KEY
+            SECRET_KEY_INFO['key_share_name'], INSECURE_PRIVATE_KEY
         )
     except SgxServerError as e:
         if str(e) == 'Key share with this name already exists':
