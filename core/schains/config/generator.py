@@ -129,7 +129,7 @@ def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: i
     schains_on_node = skale.schains.get_schains_for_node(node_id)
     schain = skale.schains.get_by_name(schain_name)
 
-    group_id = skale.web3.sha3(text=schain_name)
+    group_id = skale.schains.name_to_group_id(schain_name)
     previous_public_keys = skale.key_storage.get_all_previous_public_keys(group_id)
 
     node = skale.nodes.get(node_id)

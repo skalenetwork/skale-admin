@@ -112,7 +112,7 @@ class DKGClient:
         self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t,
                              path_to_cert=SGX_CERTIFICATES_FOLDER)
         self.schain_name = schain_name
-        self.group_index = skale.web3.sha3(text=self.schain_name)
+        self.group_index = skale.schains.name_to_group_id(schain_name)
         self.node_id_contract = node_id_contract
         self.node_id_dkg = node_id_dkg
         self.skale = skale
