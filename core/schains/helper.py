@@ -51,8 +51,8 @@ def init_schain_dir(schain_name):
     os.makedirs(path, exist_ok=True)
 
 
-def get_schain_config_filepath(schain_name, inside_skaled=False):
-    schain_dir_path = SCHAIN_DATA_PATH if inside_skaled else get_schain_dir_path(schain_name)
+def get_schain_config_filepath(schain_name, in_schain_container=False):
+    schain_dir_path = SCHAIN_DATA_PATH if in_schain_container else get_schain_dir_path(schain_name)
     return os.path.join(schain_dir_path,
                         f'schain_{schain_name}.json')
 

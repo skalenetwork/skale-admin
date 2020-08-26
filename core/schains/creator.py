@@ -30,7 +30,7 @@ from skale.skale_manager import spawn_skale_manager_lib
 
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
-                                 check_container_exit)
+                                 is_exited_with_zero)
 from core.schains.cleaner import remove_config_dir
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
                                  get_schain_proxy_file_path, get_schain_rotation_filepath)
@@ -334,5 +334,5 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
 def check_schain_rotated(schain_name):
     schain_rotation_filepath = get_schain_rotation_filepath(schain_name)
     rotation_file_exists = os.path.exists(schain_rotation_filepath)
-    zero_exit_code = check_container_exit(schain_name, zero_exit_code=True, dutils=dutils)
+    zero_exit_code = is_exited_with_zero(schain_name, dutils=dutils)
     return rotation_file_exists and zero_exit_code

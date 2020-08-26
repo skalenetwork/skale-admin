@@ -1,4 +1,4 @@
-from core.schains.runner import set_rotation_for_schain, check_container_exit
+from core.schains.runner import set_rotation_for_schain, is_exited, is_exited_with_zero
 from tests.schains.creator_test import SCHAIN
 import mock
 import json
@@ -23,7 +23,7 @@ def test_set_rotation():
         assert data['params'] == params
 
 
-def test_check_container_exit():
+def test_is_exited():
     info_mock = {
         'status': 'exited',
         'stats': {
@@ -34,14 +34,24 @@ def test_check_container_exit():
     }
     with mock.patch('core.schains.runner.DockerUtils.get_info',
                     new=mock.Mock(return_value=info_mock)):
-        assert check_container_exit(SCHAIN['name'])
+        assert is_exited(SCHAIN['name'])
 
+
+def test_is_exited_with_zero():
+    info_mock = {
+        'status': 'exited',
+        'stats': {
+            'State': {
+                'ExitCode': 1
+            }
+        }
+    }
     with mock.patch('core.schains.runner.DockerUtils.get_info',
                     new=mock.Mock(return_value=info_mock)):
-        assert not check_container_exit(SCHAIN['name'], zero_exit_code=True)
+        assert not is_exited_with_zero(SCHAIN['name'])
 
     info_mock['stats']['State']['ExitCode'] = 0
 
     with mock.patch('core.schains.runner.DockerUtils.get_info',
                     new=mock.Mock(return_value=info_mock)):
-        assert check_container_exit(SCHAIN['name'], zero_exit_code=True)
+        assert is_exited_with_zero(SCHAIN['name'])

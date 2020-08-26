@@ -158,12 +158,20 @@ def add_config_volume(run_args, schain_name):
     }
 
 
-def check_container_exit(schain_name, zero_exit_code=False, dutils=None):
+def is_exited_with_zero(schain_name, dutils=None):
     if not dutils:
         dutils = docker_utils
+    info = get_schain_container_info(schain_name, dutils)
+    return dutils.is_container_exited_with_zero(info)
+
+
+def is_exited(schain_name, dutils=None):
+    if not dutils:
+        dutils = docker_utils
+    info = get_schain_container_info(schain_name, dutils)
+    return dutils.is_container_exited(info)
+
+
+def get_schain_container_info(schain_name, dutils):
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
-    info = dutils.get_info(name)
-    if zero_exit_code:
-        return dutils.is_container_exited_with_zero(info)
-    else:
-        return dutils.is_container_exited(info)
+    return dutils.get_info(name)
