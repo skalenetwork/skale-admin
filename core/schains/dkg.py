@@ -28,13 +28,11 @@ from tools.bls.dkg_utils import (
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
     is_all_data_received, get_complaint_data, is_everyone_broadcasted, check_failed_dkg,
     check_response, check_no_complaints, wait_for_fail, broadcast_and_check_data,
-    get_complaint_started_time, get_alright_started_time
+    get_complaint_started_time, get_alright_started_time, RECEIVE_TIMEOUT
 )
 from tools.helper import write_json
 
 logger = logging.getLogger(__name__)
-
-RECEIVE_TIMEOUT = 1800
 
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
