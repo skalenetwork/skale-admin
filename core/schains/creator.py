@@ -324,7 +324,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
                 node_id=node_id,
                 rotation_id=rotation['rotation_id'],
                 ecdsa_key_name=ecdsa_sgx_key_name
-            )
+            ).to_dict()
             update_schain_config(config, name)
             add_firewall_rules(name)
             restart_container(SCHAIN_CONTAINER, schain)
