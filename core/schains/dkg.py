@@ -125,6 +125,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     pow2 = 2**256 - 1
     complaint_data = get_complaint_data(dkg_client)
+    logger.info(f'sChain {schain_name}: Checking for complaint again')
     if complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2:
         start_time_alright = get_alright_started_time(dkg_client)
         while False in is_alright_sent_list:
@@ -147,6 +148,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     complaint_data = get_complaint_data(dkg_client)
     no_complaint = complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2
     if no_complaint and False in is_alright_sent_list:
+        logger.info(f'sChain {schain_name} No complaint received and everyone sent alright')
         while True:
             logger.info(f'sChain: {dkg_client.schain_name}.'
                         'Not all nodes sent alright. Waiting for FailedDkg event...')
@@ -158,12 +160,13 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             sleep(30)
 
     if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
-        logger.info(f'sChain {schain_name}. Complaint received. Sending response ...')
+        logger.info(f'sChain: {schain_name}. Complaint received. Sending response ...')
         response(dkg_client, complaint_data[0])
 
     complaint_data = get_complaint_data(dkg_client)
     is_complaint_sent = complaint_data[0] != complaint_data[1]
     if is_complaint_sent:
+        logger.info(f'sChain: {schain_name}. Complaint sent or complaint received')
         complainted_node_index = dkg_client.node_ids_dkg[complaint_data[1]]
         is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
         is_channel_opened = dkg_client.is_channel_opened()
