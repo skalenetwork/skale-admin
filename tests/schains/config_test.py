@@ -124,7 +124,7 @@ def test_get_snapshots_endpoints_from_config():
 def test_get_schain_container_cmd():
     schain_name = 'test'
     container_opts = get_schain_container_cmd(schain_name)
-    config_filepath = get_schain_config_filepath(schain_name)
+    config_filepath = get_schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key_path, ssl_cert_path = get_ssl_filepath()
     opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 2234 '

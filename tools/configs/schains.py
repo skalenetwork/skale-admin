@@ -18,10 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import NODE_DATA_PATH, CONFIG_FOLDER
+from tools.configs import NODE_DATA_PATH, CONFIG_FOLDER, NODE_DATA_PATH_HOST
 
 SCHAINS_DIR_NAME = 'schains'
 SCHAINS_DIR_PATH = os.path.join(NODE_DATA_PATH, SCHAINS_DIR_NAME)
+SCHAINS_DIR_PATH_HOST = os.path.join(NODE_DATA_PATH_HOST, SCHAINS_DIR_NAME)
 
 DATA_DIR_NAME = 'data_dir'
 
