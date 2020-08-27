@@ -6,7 +6,7 @@ from skale.skale_manager import spawn_skale_manager_lib
 from core.node import Node
 from core.schains.checks import check_endpoint_alive
 from core.schains.config.helper import get_skaled_http_address
-from core.schains.runner import run_schain_container, check_container_exit
+from core.schains.runner import run_schain_container, is_exited
 from core.schains.volume import init_data_volume
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
@@ -137,7 +137,7 @@ def wait_for_schain_alive(schain_name):
 
 def wait_for_schain_exiting(schain_name):
     sum_time = 0
-    while not check_container_exit(schain_name, dutils=docker_utils) and sum_time < TIMEOUT:
+    while not is_exited(schain_name, dutils=docker_utils) and sum_time < TIMEOUT:
         sum_time += 10
         sleep(10)
     assert sum_time < TIMEOUT
