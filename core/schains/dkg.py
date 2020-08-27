@@ -24,19 +24,15 @@ from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
 from tools.bls.dkg_utils import (
-    init_dkg_client, broadcast, send_complaint, response, send_alright,
+    init_dkg_client, send_complaint, send_alright,
     generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
-    is_all_data_received, get_complaint_data, is_everyone_broadcasted,
-    check_broadcasted_data, check_failed_dkg, get_channel_started_time, get_complaint_started_time,
-    get_alright_started_time, DkgFailedError
+    is_all_data_received, get_complaint_data, is_everyone_broadcasted, check_failed_dkg,
+    check_response, check_no_complaints, wait_for_fail, broadcast_and_check_data,
+    get_complaint_started_time, get_alright_started_time, RECEIVE_TIMEOUT
 )
-from tools.bls.skale_dkg_broadcast_filter import Filter
-from tools.bls.dkg_client import DkgVerificationError
 from tools.helper import write_json
 
 logger = logging.getLogger(__name__)
-
-RECEIVE_TIMEOUT = 1800
 
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
@@ -48,131 +44,57 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 
-    logger.info(f'sChain {schain_name}: Sending broadcast')
-    broadcast(dkg_client, poly_name)
-
-    is_received = [False for _ in range(n)]
-    is_received[dkg_client.node_id_dkg] = True
-
-    is_correct = [False for _ in range(n)]
-    is_correct[dkg_client.node_id_dkg] = True
-
-    dkg_filter = Filter(skale, schain_name, n)
-
-    start_time = get_channel_started_time(dkg_client)
-    while False in is_received:
-        if time.time() - start_time > RECEIVE_TIMEOUT:
-            break
-        logger.info(f'sChain {schain_name}: trying to receive broadcasted data')
-
-        events = dkg_filter.get_events()
-        for event in events:
-            from_node = dkg_client.node_ids_contract[event["nodeIndex"]]
-            if from_node != dkg_client.node_id_dkg:
-                secret_key_contribution, verification_vector = (
-                    event["secretKeyContribution"], event["verificationVector"]
-                )
-                broadcasted_data = [verification_vector, secret_key_contribution]
-                is_received[from_node] = True
-                logger.info(f'sChain {schain_name}: receiving from node {from_node}')
-                try:
-                    dkg_client.receive_from_node(from_node, broadcasted_data)
-                    is_correct[from_node] = True
-                except DkgVerificationError:
-                    logger.info(
-                        f'sChain {schain_name}: dkg verification error from node {from_node}'
-                    )
-                    continue
-
-                logger.info(
-                    f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
-                    f'{from_node}'
-                )
-
-        sleep(1)
-
-    is_complaint_sent, complainted_node_index = check_broadcasted_data(
-                                        dkg_client, is_correct, is_received
-    )
+    broadcast_and_check_data(dkg_client, poly_name)
 
     if not is_everyone_broadcasted(dkg_client):
-        while True:
-            logger.info(f'sChain: {dkg_client.schain_name}.'
-                        'Not all nodes broadcasted. Waiting for FailedDkg event...')
-            check_failed_dkg(dkg_client)
-            if start_time != get_channel_started_time(dkg_client):
-                raise DkgFailedError(
-                    f'sChain: {dkg_client.schain_name}. Dkg failed due to event FailedDKG'
-                )
-            sleep(30)
+        wait_for_fail(dkg_client, "broadcast")
 
     check_failed_dkg(dkg_client)
 
     is_alright_sent_list = [False for _ in range(n)]
-    if not is_complaint_sent:
-        logger.info(f'sChain {schain_name}: No complaints sent - sending alright ...')
+    if check_no_complaints(dkg_client):
+        logger.info(f'sChain {schain_name}: No complaints sent in schain - sending alright ...')
         send_alright(dkg_client)
         is_alright_sent_list[dkg_client.node_id_dkg] = True
 
     check_failed_dkg(dkg_client)
 
-    complaint_data = get_complaint_data(dkg_client)
-    if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
-        logger.info(f'sChain {schain_name}: Complaint received. Sending response ...')
-        response(dkg_client, complaint_data[0])
+    check_response(dkg_client)
 
-    check_failed_dkg(dkg_client)
-
-    pow2 = 2**256 - 1
-    complaint_data = get_complaint_data(dkg_client)
-    logger.info(f'sChain {schain_name}: Checking for complaint again')
-    if complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2:
+    were_alrights = False
+    if check_no_complaints(dkg_client):
+        were_alrights = True
         start_time_alright = get_alright_started_time(dkg_client)
         while False in is_alright_sent_list:
+            check_failed_dkg(dkg_client)
             if time.time() - start_time_alright > RECEIVE_TIMEOUT:
                 break
             for from_node in range(dkg_client.n):
                 if not is_alright_sent_list[from_node]:
                     is_alright_sent_list[from_node] = is_all_data_received(dkg_client, from_node)
-            complaint_data = get_complaint_data(dkg_client)
-            if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
-                response(dkg_client, complaint_data[0])
+            check_response(dkg_client)
             sleep(1)
 
         for i in range(dkg_client.n):
             if not is_alright_sent_list[i] and i != dkg_client.node_id_dkg:
                 send_complaint(dkg_client, i)
-                complainted_node_index = i
-                is_complaint_sent = True
 
-    complaint_data = get_complaint_data(dkg_client)
-    no_complaint = complaint_data[0] == complaint_data[1] and complaint_data[0] == pow2
-    if no_complaint and False in is_alright_sent_list:
-        logger.info(f'sChain {schain_name} No complaint received and everyone sent alright')
-        while True:
-            logger.info(f'sChain: {dkg_client.schain_name}.'
-                        'Not all nodes sent alright. Waiting for FailedDkg event...')
-            check_failed_dkg(dkg_client)
-            if start_time != get_channel_started_time(dkg_client):
-                raise DkgFailedError(
-                    f'sChain: {dkg_client.schain_name}. Dkg failed due to event FailedDKG'
-                )
-            sleep(30)
+    if False in is_alright_sent_list and were_alrights:
+        logger.info(f'sChain {schain_name}: Not everyone sent alright')
+        wait_for_fail(dkg_client, "alright")
 
-    if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
-        logger.info(f'sChain: {schain_name}. Complaint received. Sending response ...')
-        response(dkg_client, complaint_data[0])
+    check_response(dkg_client)
 
-    complaint_data = get_complaint_data(dkg_client)
-    is_complaint_sent = complaint_data[0] != complaint_data[1]
-    if is_complaint_sent:
-        logger.info(f'sChain: {schain_name}. Complaint sent or complaint received')
-        complainted_node_index = dkg_client.node_ids_dkg[complaint_data[1]]
+    if not check_no_complaints(dkg_client):
+        check_response(dkg_client)
+
+        complaint_data = get_complaint_data(dkg_client)
+        complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
+
         is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
         is_channel_opened = dkg_client.is_channel_opened()
+
         start_time_response = get_complaint_started_time(dkg_client)
-        if complaint_data[0] != pow2 and complaint_data[1] == dkg_client.node_id_contract:
-            response(dkg_client, complaint_data[0])
         while not is_group_failed or is_channel_opened:
             if time.time() - start_time_response > RECEIVE_TIMEOUT:
                 break
@@ -182,10 +104,12 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
         is_group_opened = dkg_client.is_channel_opened()
         is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
+
         complaint_itself = complainted_node_index == dkg_client.node_id_dkg
-        if is_group_opened or not is_group_failed and is_complaint_sent and not complaint_itself:
+        if is_group_opened or not is_group_failed and not complaint_itself:
             send_complaint(dkg_client, complainted_node_index)
-        raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
+
+        wait_for_fail(dkg_client, "response")
 
     if False not in is_alright_sent_list:
         logger.info(f'sChain: {schain_name}: Everyone sent alright')
