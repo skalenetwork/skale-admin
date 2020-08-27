@@ -14,7 +14,7 @@ pycryptodome==3.6.6
 python-iptables==0.14.0
 
 skale.py==4.0dev5
-sgx.py==0.6dev9
+sgx.py==0.6dev12
 
 PyYAML==5.3.1
 psutil==5.7.0
