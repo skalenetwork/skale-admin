@@ -269,3 +269,12 @@ def get_schain_ssl_rpc_ports(schain_id):
     schain_config = get_schain_config(schain_id)
     node_info = schain_config["skaleConfig"]["nodeInfo"]
     return int(node_info["httpsRpcPort"]), int(node_info["wssRpcPort"])
+
+
+def compose_public_key_info(bls_public_key):
+    return {
+        'blsPublicKey0': str(bls_public_key[0][0]),
+        'blsPublicKey1': str(bls_public_key[0][1]),
+        'blsPublicKey2': str(bls_public_key[1][0]),
+        'blsPublicKey3': str(bls_public_key[1][1])
+    }

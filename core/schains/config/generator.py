@@ -74,7 +74,8 @@ class SChainConfig:
 
 def generate_schain_config(schain: dict, schain_id: int, node_id: int,
                            node: dict, ecdsa_key_name: str, schains_on_node: list,
-                           rotation_id: int, schain_nodes_with_schains: list) -> SChainConfig:
+                           rotation_id: int, schain_nodes_with_schains: list,
+                           previous_public_keys: list) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
@@ -101,7 +102,8 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         ecdsa_key_name=ecdsa_key_name,
         schains_on_node=schains_on_node,
         schain_nodes_with_schains=schain_nodes_with_schains,
-        rotation_id=rotation_id
+        rotation_id=rotation_id,
+        previous_public_keys=previous_public_keys
     )
 
     schain_config = SChainConfig(
@@ -126,6 +128,10 @@ def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: i
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
     schains_on_node = skale.schains.get_schains_for_node(node_id)
     schain = skale.schains.get_by_name(schain_name)
+
+    group_id = skale.schains.name_to_group_id(schain_name)
+    previous_public_keys = skale.key_storage.get_all_previous_public_keys(group_id)
+
     node = skale.nodes.get(node_id)
 
     return generate_schain_config(
@@ -136,5 +142,6 @@ def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: i
         ecdsa_key_name=ecdsa_key_name,
         schains_on_node=schains_on_node,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=schain_nodes_with_schains
+        schain_nodes_with_schains=schain_nodes_with_schains,
+        previous_public_keys=previous_public_keys
     )

@@ -45,6 +45,14 @@ CONFIG = {
             "schainID": 1,
             "schainName": "2chainTest",
             "schainOwner": "0x",
+            "previousBlsPublicKeys": [
+                {
+                    "blsPublicKey0": "8",
+                    "blsPublicKey1": "4",
+                    "blsPublicKey2": "4",
+                    "blsPublicKey3": "1"
+                }
+            ],
             "nodes": [
                 {
                     "nodeID": 1,
