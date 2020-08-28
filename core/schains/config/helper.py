@@ -31,6 +31,7 @@ from core.schains.ssl import get_ssl_filepath
 from core.schains.helper import get_schain_config_filepath, get_tmp_schain_config_filepath
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
+from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.helper import read_json
 from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
 from tools.configs.containers import LOCAL_IP
@@ -278,3 +279,9 @@ def compose_public_key_info(bls_public_key):
         'blsPublicKey2': str(bls_public_key[1][0]),
         'blsPublicKey3': str(bls_public_key[1][1])
     }
+
+
+def get_bls_public_keys(schain_name, rotation_id):
+    key_file = get_secret_key_share_filepath(schain_name, rotation_id)
+    json_file = read_json(filepath, dkg_results)
+    return json_file["bls_public_keys"]

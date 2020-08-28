@@ -68,6 +68,7 @@ def generate_skale_config(schain: dict, schain_id: int, node_id: int, node: dict
     schain_nodes = generate_schain_nodes(
         schain_nodes_with_schains=schain_nodes_with_schains,
         schain_name=schain['name']
+        rotation_id=rotation_id
     )
 
     schain_info = generate_schain_info(
