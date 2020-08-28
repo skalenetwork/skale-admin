@@ -283,5 +283,5 @@ def compose_public_key_info(bls_public_key):
 
 def get_bls_public_keys(schain_name, rotation_id):
     key_file = get_secret_key_share_filepath(schain_name, rotation_id)
-    json_file = read_json(filepath, dkg_results)
+    json_file = read_json(key_file)
     return json_file["bls_public_keys"]
