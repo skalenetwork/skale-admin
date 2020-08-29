@@ -272,12 +272,13 @@ def get_schain_ssl_rpc_ports(schain_id):
     return int(node_info["httpsRpcPort"]), int(node_info["wssRpcPort"])
 
 
-def compose_public_key_info(bls_public_key):
+def parse_public_key_info(bls_public_key):
+    public_key_list = bls_public_key.split(':')
     return {
-        'blsPublicKey0': str(bls_public_key[0][0]),
-        'blsPublicKey1': str(bls_public_key[0][1]),
-        'blsPublicKey2': str(bls_public_key[1][0]),
-        'blsPublicKey3': str(bls_public_key[1][1])
+        'blsPublicKey0': str(public_key_list[0]),
+        'blsPublicKey1': str(public_key_list[1]),
+        'blsPublicKey2': str(public_key_list[2]),
+        'blsPublicKey3': str(public_key_list[3])
     }
 
 
