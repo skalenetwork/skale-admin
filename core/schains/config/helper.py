@@ -286,3 +286,11 @@ def get_bls_public_keys(schain_name, rotation_id):
     key_file = get_secret_key_share_filepath(schain_name, rotation_id)
     json_file = read_json(key_file)
     return json_file["bls_public_keys"]
+
+def compose_public_key_info(bls_public_key):
+    return {
+        'blsPublicKey0': str(bls_public_key[0][0]),
+        'blsPublicKey1': str(bls_public_key[0][1]),
+        'blsPublicKey2': str(bls_public_key[1][0]),
+        'blsPublicKey3': str(bls_public_key[1][1])
+    }
