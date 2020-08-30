@@ -126,13 +126,17 @@ def broadcast_and_check_data(dkg_client, poly_name):
                     f'{from_node}'
                 )
 
-        sleep(1)
+        sleep(30)
 
     check_broadcasted_data(dkg_client, is_correct, is_received)
 
 
 def generate_bls_key(dkg_client, bls_key_name):
     return dkg_client.generate_key(bls_key_name)
+
+
+def get_bls_public_keys(dkg_client):
+    return dkg_client.get_bls_public_keys()
 
 
 def broadcast(dkg_client, poly_name):

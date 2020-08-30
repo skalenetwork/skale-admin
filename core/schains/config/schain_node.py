@@ -23,14 +23,14 @@ from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.utils.helper import ip_from_bytes
 from skale.utils.web3_utils import public_key_to_address
 
-from core.schains.config.helper import compose_public_key_info
+from core.schains.config.helper import parse_public_key_info, get_bls_public_keys
 
 
 @dataclass
 class SChainNodeInfo(NodeInfo):
     """Dataclass that represents sChain node key of the schain section"""
     public_key: str
-    bls_public_key: list
+    bls_public_key: str
     owner: str
     schain_index: int
     ip: str
@@ -40,7 +40,7 @@ class SChainNodeInfo(NodeInfo):
         """ Returns camel-case representation of the SChainNodeInfo object """
         return {
             **super().to_dict(),
-            **compose_public_key_info(self.bls_public_key),
+            **parse_public_key_info(self.bls_public_key),
             **{
                 'publicKey': self.public_key,
                 'owner': self.owner,
@@ -51,15 +51,16 @@ class SChainNodeInfo(NodeInfo):
         }
 
 
-def generate_schain_nodes(schain_nodes_with_schains: list, schain_name):
+def generate_schain_nodes(schain_nodes_with_schains: list, schain_name, rotation_id: int):
     schain_nodes = []
+    bls_public_keys = get_bls_public_keys(schain_name, rotation_id)
     for i, node in enumerate(schain_nodes_with_schains, 1):
         base_port = get_schain_base_port_on_node(node['schains'], schain_name, node['port'])
         node_info = SChainNodeInfo(
             name=node['name'],
             node_id=node['id'],
             base_port=base_port,
-            bls_public_key=node['bls_public_key'],
+            bls_public_key=bls_public_keys[i - 1],
             schain_index=i,
             ip=ip_from_bytes(node['ip']),
             public_key=node['publicKey'],
