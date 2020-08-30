@@ -30,7 +30,7 @@ from core.schains.config.helper import parse_public_key_info, get_bls_public_key
 class SChainNodeInfo(NodeInfo):
     """Dataclass that represents sChain node key of the schain section"""
     public_key: str
-    bls_public_key: list
+    bls_public_key: str
     owner: str
     schain_index: int
     ip: str
@@ -60,7 +60,7 @@ def generate_schain_nodes(schain_nodes_with_schains: list, schain_name, rotation
             name=node['name'],
             node_id=node['id'],
             base_port=base_port,
-            bls_public_key=bls_public_keys[i],
+            bls_public_key=bls_public_keys[i - 1],
             schain_index=i,
             ip=ip_from_bytes(node['ip']),
             public_key=node['publicKey'],
