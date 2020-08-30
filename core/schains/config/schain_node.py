@@ -54,9 +54,7 @@ class SChainNodeInfo(NodeInfo):
 def generate_schain_nodes(schain_nodes_with_schains: list, schain_name, rotation_id: int):
     schain_nodes = []
     bls_public_keys = get_bls_public_keys(schain_name, rotation_id)
-    print("BLS PUBLIC KEYS:", bls_public_keys)
     for i, node in enumerate(schain_nodes_with_schains, 1):
-        print("I:", i)
         base_port = get_schain_base_port_on_node(node['schains'], schain_name, node['port'])
         node_info = SChainNodeInfo(
             name=node['name'],
