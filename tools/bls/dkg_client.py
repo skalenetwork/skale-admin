@@ -307,7 +307,8 @@ class DKGClient:
                 share,
                 convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
                 convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
-                gas_price=self.skale.dkg.gas_price()
+                gas_price=self.skale.dkg.gas_price(),
+                wait_for=True
             )
         except TransactionFailedError as e:
             logger.error(f'DKG response failed: sChain {self.schain_name}')
