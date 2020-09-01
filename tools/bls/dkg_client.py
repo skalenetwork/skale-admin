@@ -63,6 +63,13 @@ def convert_g2_points_to_array(data):
     return g2_array
 
 
+def convert_g2_array_to_hex(data):
+    data_hexed = ''
+    for point in data:
+        data_hexed += convert_g2_point_to_hex(point)
+    return data_hexed
+
+
 def convert_g2_point_to_hex(data):
     data_hexed = ''
     for coord in data:
@@ -227,6 +234,12 @@ class DKGClient:
                     'DKGClient is going to fetch BLS public key with name {bls_key_name}')
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
         return bls_private_key
+
+    def get_bls_public_keys(self):
+        self.incoming_verification_vector[self.node_id_dkg] = convert_g2_array_to_hex(
+            self.incoming_verification_vector[self.node_id_dkg]
+        )
+        return self.sgx.calculate_all_bls_public_keys(self.incoming_verification_vector)
 
     def alright(self):
         is_alright_possible_function = self.dkg_contract_functions.isAlrightPossible

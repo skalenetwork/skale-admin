@@ -25,10 +25,10 @@ from time import sleep
 from skale.schain_config.generator import get_nodes_for_schain
 from tools.bls.dkg_utils import (
     init_dkg_client, send_complaint, send_alright,
-    generate_bls_key, generate_bls_key_name, generate_poly_name, get_secret_key_share_filepath,
-    is_all_data_received, get_complaint_data, is_everyone_broadcasted, check_failed_dkg,
-    check_response, check_no_complaints, wait_for_fail, broadcast_and_check_data,
-    get_complaint_started_time, get_alright_started_time, RECEIVE_TIMEOUT
+    generate_bls_key, get_bls_public_keys, generate_bls_key_name, generate_poly_name,
+    get_secret_key_share_filepath, is_all_data_received, get_complaint_data,
+    is_everyone_broadcasted, check_failed_dkg, check_response, check_no_complaints, wait_for_fail,
+    broadcast_and_check_data, get_complaint_started_time, get_alright_started_time, RECEIVE_TIMEOUT
 )
 from tools.helper import write_json
 
@@ -117,6 +117,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             bls_name = generate_bls_key_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
             encrypted_bls_key = generate_bls_key(dkg_client, bls_name)
             logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
+            bls_public_keys = get_bls_public_keys(dkg_client)
             common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
             formated_common_public_key = []
             for coord in common_public_key:
@@ -125,6 +126,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             return {
                 'common_public_key': formated_common_public_key,
                 'public_key': dkg_client.public_key,
+                'bls_public_keys': bls_public_keys,
                 't': t,
                 'n': n,
                 'key_share_name': bls_name
