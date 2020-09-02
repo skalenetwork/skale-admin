@@ -1,22 +1,24 @@
-import json
 import logging
+import json
 import os
 import random
 import string
 import time
 from concurrent.futures import as_completed, ThreadPoolExecutor
 from contextlib import contextmanager
-from multiprocessing import Process
+# from multiprocessing import Process as Thread
+from threading import Thread
 
 from skale import Skale
 from skale.skale_manager import spawn_skale_manager_lib
-from skale.utils.account_tools import generate_account
-from skale.utils.account_tools import send_ether
+from skale.utils.account_tools import generate_account, send_ether
+# from skale.utils.helper import init_default_logger
 from skale.utils.web3_utils import init_web3
 from skale.wallets import BaseWallet, SgxWallet, Web3Wallet
 from web3 import Web3
 
 from core.schains.dkg import run_dkg
+from tools.logger import init_admin_logger
 
 
 logger = logging.getLogger(__name__)
@@ -141,9 +143,9 @@ class Node:
     def __init__(self, name: str, wallet: BaseWallet, save: bool = True):
         self.wallet = wallet
         self.name = name
-        skale, id = Node.create(name, wallet)
+        skale, _id = Node.create(name, wallet)
         self.skale = skale
-        self.id = id
+        self.id = _id
         self.process = None
         if save:
             self.ensure_base_path()
@@ -163,7 +165,7 @@ class Node:
                     run_dkg,
                     skale,
                     schain,
-                    id,
+                    self.id,
                     skale.wallet._key_name
                 )
                 for skale, schain in zip(schain_skales, schains)
@@ -182,7 +184,7 @@ class Node:
         print(f'Starting dkg on node {self.id} {id(self.skale.web3)}')
         schains = self.get_schains_names()
         print(f'Schains on node {self.id} {schains}')
-        self.process = Process(
+        self.process = Thread(
             target=self.run_dkg_for_node_schains,
             args=(schains,)
         )
@@ -306,6 +308,7 @@ def run_dkg_test(nodes: list) -> None:
     for node in nodes:
         node.start_dkg()
 
+    print(nodes)
     for node in nodes:
         node.join()
 
@@ -324,6 +327,8 @@ def cleanup_schains() -> None:
 
 
 def main() -> None:
+    # init_default_logger()
+    init_admin_logger()
     nodes = prepare()
     with cleanup_schains():
         run_dkg_test(nodes)
