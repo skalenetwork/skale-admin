@@ -73,7 +73,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
                 if not is_alright_sent_list[from_node]:
                     is_alright_sent_list[from_node] = is_all_data_received(dkg_client, from_node)
             check_response(dkg_client)
-            sleep(1)
+            sleep(30)
 
         for i in range(dkg_client.n):
             if not is_alright_sent_list[i] and i != dkg_client.node_id_dkg:
@@ -91,22 +91,14 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         complaint_data = get_complaint_data(dkg_client)
         complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
 
-        is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
-        is_channel_opened = dkg_client.is_channel_opened()
-
         start_time_response = get_complaint_started_time(dkg_client)
-        while not is_group_failed or is_channel_opened:
+        while check_failed_dkg(dkg_client):
             if time.time() - start_time_response > RECEIVE_TIMEOUT:
                 break
-            is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
-            is_channel_opened = dkg_client.is_channel_opened()
-            sleep(1)
-
-        is_group_opened = dkg_client.is_channel_opened()
-        is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
+            sleep(30)
 
         complaint_itself = complainted_node_index == dkg_client.node_id_dkg
-        if is_group_opened or not is_group_failed and not complaint_itself:
+        if check_failed_dkg(dkg_client) and not complaint_itself:
             send_complaint(dkg_client, complainted_node_index)
 
         wait_for_fail(dkg_client, "response")

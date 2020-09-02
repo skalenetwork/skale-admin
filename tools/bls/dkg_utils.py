@@ -187,6 +187,7 @@ def check_failed_dkg(dkg_client):
         if not dkg_client.skale.dkg.is_last_dkg_successful(dkg_client.group_index) \
                 and dkg_client.get_time_of_last_successful_dkg() != 0:
             raise DkgFailedError(f'sChain: {dkg_client.schain_name}. Dkg failed')
+    return True
 
 
 def check_response(dkg_client):
