@@ -133,7 +133,7 @@ def check_schain_info(nodes, schain_info):
         ['schainID', 'schainName', 'schainOwner', 'storageLimit',
          'snapshotIntervalMs', 'emptyBlockIntervalMs',
          'maxConsensusStorageBytes', 'maxSkaledLeveldbStorageBytes',
-         'maxFileStorageBytes', 'maxReservedStorageBytes', 'previousPublicKeys',
+         'maxFileStorageBytes', 'maxReservedStorageBytes',
          'nodes']
     )
     for node_data, schain_node_info in zip(
