@@ -14,7 +14,8 @@ pycryptodome==3.6.6
 python-iptables==0.14.0
 
 skale.py==4.0dev9
-sgx.py==0.6dev13
+# sgx.py==0.6dev13
+git+git://github.com/skalenetwork/sgx.py.git@enhancement/SKALE-3210-remove-keyname#egg=sgx.py
 
 PyYAML==5.3.1
 psutil==5.7.0
