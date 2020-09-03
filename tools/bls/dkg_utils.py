@@ -92,15 +92,18 @@ def broadcast_and_check_data(dkg_client, poly_name):
     is_correct = [False for _ in range(n)]
     is_correct[dkg_client.node_id_dkg] = True
 
-    broadcast(dkg_client, poly_name)
+    if dkg_client.node_id_dkg != 0:
+        broadcast(dkg_client, poly_name)
 
     dkg_filter = Filter(skale, schain_name, n)
 
     start_time = get_channel_started_time(dkg_client)
     while False in is_received:
-        if time.time() - start_time > RECEIVE_TIMEOUT:
+        time_gone = dkg_client.skale.web3.eth.getBlock("latest")["timestamp"] - start_time
+        if time_gone > RECEIVE_TIMEOUT:
             break
-        logger.info(f'sChain {schain_name}: trying to receive broadcasted data')
+        logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
+                    f'{time_gone} seconds left')
 
         events = dkg_filter.get_events()
         for event in events:
@@ -146,9 +149,17 @@ def broadcast(dkg_client, poly_name):
         pass
 
 
-def send_complaint(dkg_client, index):
+def send_complaint(dkg_client, index, wait_for=False):
     try:
-        dkg_client.send_complaint(index)
+        if dkg_client.send_complaint(index):
+            if wait_for:
+                wait_for_fail(dkg_client, "correct data")
+                logger.info(f'sChain {dkg_client.schain_name}:'
+                            'Complainted node did not send a response.'
+                            f'Sending complaint once again')
+                dkg_client.send_complaint(index)
+            else:
+                wait_for_fail(dkg_client)
     except DkgTransactionError:
         pass
 
@@ -178,7 +189,7 @@ def is_everyone_broadcasted(dkg_client):
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):
     for i in range(dkg_client.n):
         if not is_correct[i] or not is_recieved[i]:
-            send_complaint(dkg_client, i)
+            send_complaint(dkg_client, i, True)
             break
 
 
@@ -207,6 +218,7 @@ def check_no_complaints(dkg_client):
 
 def wait_for_fail(dkg_client, reason=""):
     start_time = time.time()
+    channel_started_time = get_channel_started_time(dkg_client)
     while time.time() - start_time < RECEIVE_TIMEOUT:
         if len(reason) > 0:
             logger.info(f'sChain: {dkg_client.schain_name}.'
@@ -214,8 +226,7 @@ def wait_for_fail(dkg_client, reason=""):
         else:
             logger.info(f'sChain: {dkg_client.schain_name}. Waiting for FailedDkg event...')
         check_failed_dkg(dkg_client)
-        start_time = get_channel_started_time(dkg_client)
-        if start_time != get_channel_started_time(dkg_client):
+        if channel_started_time != get_channel_started_time(dkg_client):
             raise DkgFailedError(
                 f'sChain: {dkg_client.schain_name}. Dkg failed due to event FailedDKG'
             )

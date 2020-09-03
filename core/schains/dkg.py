@@ -26,9 +26,9 @@ from skale.schain_config.generator import get_nodes_for_schain
 from tools.bls.dkg_utils import (
     init_dkg_client, send_complaint, send_alright,
     generate_bls_key, get_bls_public_keys, generate_bls_key_name, generate_poly_name,
-    get_secret_key_share_filepath, is_all_data_received, get_complaint_data,
-    is_everyone_broadcasted, check_failed_dkg, check_response, check_no_complaints, wait_for_fail,
-    broadcast_and_check_data, get_complaint_started_time, get_alright_started_time, RECEIVE_TIMEOUT
+    get_secret_key_share_filepath, is_all_data_received, is_everyone_broadcasted, check_failed_dkg,
+    check_response, check_no_complaints, wait_for_fail, broadcast_and_check_data,
+    get_alright_started_time, RECEIVE_TIMEOUT
 )
 from tools.helper import write_json
 
@@ -84,24 +84,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         wait_for_fail(dkg_client, "alright")
 
     check_response(dkg_client)
-
-    if not check_no_complaints(dkg_client):
-        check_response(dkg_client)
-
-        complaint_data = get_complaint_data(dkg_client)
-        complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
-
-        start_time_response = get_complaint_started_time(dkg_client)
-        while check_failed_dkg(dkg_client):
-            if time.time() - start_time_response > RECEIVE_TIMEOUT:
-                break
-            sleep(30)
-
-        complaint_itself = complainted_node_index == dkg_client.node_id_dkg
-        if check_failed_dkg(dkg_client) and not complaint_itself:
-            send_complaint(dkg_client, complainted_node_index)
-
-        wait_for_fail(dkg_client, "response")
 
     if False not in is_alright_sent_list:
         logger.info(f'sChain: {schain_name}: Everyone sent alright')

@@ -272,7 +272,7 @@ class DKGClient:
         if not is_complaint_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
-            return
+            return False
         try:
             self.skale.dkg.complaint(
                 self.group_index,
@@ -283,6 +283,7 @@ class DKGClient:
             )
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node sent a complaint on {to_node} node')
+            return True
         except TransactionFailedError as e:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
