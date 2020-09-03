@@ -18,6 +18,7 @@ from skale.wallets import BaseWallet, SgxWallet, Web3Wallet
 from web3 import Web3
 
 from core.schains.dkg import run_dkg
+from core.schains.helper import get_schain_dir_path
 from tools.logger import init_admin_logger
 
 
@@ -282,6 +283,11 @@ def generate_random_name(len: int = 16) -> None:
         string.ascii_uppercase + string.digits, k=len))
 
 
+def create_config_dir(name):
+    schain_dir = get_schain_dir_path(name)
+    os.makedirs(schain_dir)
+
+
 def create_schains(amount: int) -> None:
     for i in range(amount):
         name = generate_random_name()
@@ -291,6 +297,8 @@ def create_schains(amount: int) -> None:
         root_skale.manager.create_schain(lifetime=lifetime_seconds,
                                          type_of_nodes=SCHAIN_TYPE,
                                          deposit=price_in_wei, name=name)
+
+        create_config_dir(name)
         time.sleep(TIMEOUT)
 
 
@@ -318,7 +326,6 @@ def cleanup_schains() -> None:
     try:
         yield
     finally:
-        print('Darova')
         schain_ids = root_skale.schains_internal.get_all_schains_ids()
         names = [root_skale.schains.get(sid)['name'] for sid in schain_ids]
         print(names)

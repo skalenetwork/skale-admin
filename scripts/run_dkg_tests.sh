@@ -6,7 +6,7 @@ export SKALE_DIR_HOST=$PWD/tests/skale-data
 export RUNNING_ON_HOST=True
 export PYTHONPATH=${PYTHONPATH}:.
 export ENV=dev
-export SGX_CERTIFICATES_FOLDER=$PWD/dkg/sgx_certs/
+export SGX_CERTIFICATES_FOLDER=$PWD/test_dkg/sgx_certs/
 export SGX_SERVER_URL=https://localhost:1026
 export ENDPOINT=http://localhost:8545
 export IMA_ENDPOINT=http://localhost:1000
@@ -24,4 +24,4 @@ export TEST_ABI_FILEPATH=$PWD/test_abi.json
 echo $SGX_CERTIFICATES_FOLDER
 rm -r $SGX_CERTIFICATES_FOLDER || true
 mkdir $SGX_CERTIFICATES_FOLDER
-python dkg/test.py
+python test_dkg/test.py
