@@ -266,7 +266,7 @@ class DKGClient:
                     f'{self.node_id_dkg} is trying to sent a complaint on {to_node} node')
         is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
         is_complaint_possible = is_complaint_possible_function(
-            self.group_index, self.node_id_contract, self.node_ids_contract[to_node]).call(
+            self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]).call(
                 {'from': self.skale.wallet.address})
 
         if not is_complaint_possible or not self.is_channel_opened():
@@ -277,7 +277,7 @@ class DKGClient:
             self.skale.dkg.complaint(
                 self.group_index,
                 self.node_id_contract,
-                self.node_ids_contract[to_node],
+                self.node_ids_dkg[to_node],
                 gas_price=self.skale.dkg.gas_price(),
                 wait_for=True
             )
