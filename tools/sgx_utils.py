@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import hashlib
 import logging
 
 from sgx import SgxClient
@@ -39,7 +40,7 @@ def generate_sgx_key(config):
         sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
         key_info = sgx.generate_key()
         logger.info(arguments_list_string({
-            'Name': key_info.name,
+            'Name hash': hashlib.sha256(key_info.name),
             'Address': key_info.address
             }, 'Generated new SGX key'))
         config.sgx_key_name = key_info.name
