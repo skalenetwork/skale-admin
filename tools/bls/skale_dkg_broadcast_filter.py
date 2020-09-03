@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from eth_account.datastructures import AttributeDict
+from web3.exceptions import TransactionNotFound
 
 
 class Filter:
@@ -66,10 +67,14 @@ class Filter:
             block = self.skale.web3.eth.getBlock(block_number)
             txns = block["transactions"]
             for tx in txns:
-                receipt = self.skale.web3.eth.getTransactionReceipt(tx)
-                if not self.check_event(receipt):
-                    continue
-                else:
-                    events.append(self.parse_event(receipt))
+                try:
+                    receipt = self.skale.web3.eth.getTransactionReceipt(tx)
+
+                    if not self.check_event(receipt):
+                        continue
+                    else:
+                        events.append(self.parse_event(receipt))
+                except TransactionNotFound:
+                    pass
             self.last_viewed_block = current_block + 1
         return events
