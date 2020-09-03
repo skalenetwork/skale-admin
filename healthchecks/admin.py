@@ -30,7 +30,7 @@ def run_healthcheck():
     time_diff = current_time - modification_time
 
     print(f'Modification time diff: {time_diff}')
-    if time_diff > MAX_ALLOWED_LOG_TIME_DIFF:
+    if time_diff > int(MAX_ALLOWED_LOG_TIME_DIFF):
         exit(3)
     else:
         exit(0)
