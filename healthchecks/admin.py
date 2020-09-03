@@ -20,8 +20,8 @@
 import os
 import time
 
-MAX_ALLOWED_LOG_TIME_DIFF = os.environ.get('MAX_ALLOWED_LOG_TIME_DIFF', 600)
-ADMIN_LOG_FILEPATH = os.environ.get('ADMIN_LOG_FILEPATH', '/skale_node_data/log/admin.log')
+MAX_ALLOWED_LOG_TIME_DIFF = os.getenv('MAX_ALLOWED_LOG_TIME_DIFF', 600)
+ADMIN_LOG_FILEPATH = os.getenv('ADMIN_LOG_FILEPATH', '/skale_node_data/log/admin.log')
 
 modification_time = os.path.getmtime(ADMIN_LOG_FILEPATH)
 current_time = time.time()
