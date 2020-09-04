@@ -156,7 +156,6 @@ class DKGClient:
     @sgx_unreachable_retry
     def verification_vector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
-        print("GOT FROM SGX:", verification_vector)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
         return convert_g2_points_to_array(verification_vector)
 
