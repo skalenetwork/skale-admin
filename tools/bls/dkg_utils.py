@@ -147,17 +147,17 @@ def broadcast(dkg_client, poly_name):
         pass
 
 
-def send_complaint(dkg_client, index, wait_for=False):
+def send_complaint(dkg_client, index, reason="", wait_for_response=False):
     try:
         if dkg_client.send_complaint(index):
-            if wait_for:
-                wait_for_fail(dkg_client, "correct data")
+            if wait_for_response:
+                wait_for_fail(dkg_client, reason)
                 logger.info(f'sChain {dkg_client.schain_name}:'
                             'Complainted node did not send a response.'
                             f'Sending complaint once again')
                 dkg_client.send_complaint(index)
             else:
-                wait_for_fail(dkg_client)
+                wait_for_fail(dkg_client, reason)
     except DkgTransactionError:
         pass
 
@@ -187,7 +187,7 @@ def is_everyone_broadcasted(dkg_client):
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):
     for i in range(dkg_client.n):
         if not is_correct[i] or not is_recieved[i]:
-            send_complaint(dkg_client, i, True)
+            send_complaint(dkg_client, i, "correct data", True)
             break
 
 
