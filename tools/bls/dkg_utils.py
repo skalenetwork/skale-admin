@@ -150,14 +150,15 @@ def broadcast(dkg_client, poly_name):
 def send_complaint(dkg_client, index, reason="", wait_for_response=False):
     try:
         if dkg_client.send_complaint(index):
+            channel_started_time = get_channel_started_time(dkg_client)
             if wait_for_response:
-                wait_for_fail(dkg_client, reason)
+                wait_for_fail(dkg_client, channel_started_time, reason)
                 logger.info(f'sChain {dkg_client.schain_name}:'
                             'Complainted node did not send a response.'
                             f'Sending complaint once again')
                 dkg_client.send_complaint(index)
             else:
-                wait_for_fail(dkg_client, reason)
+                wait_for_fail(dkg_client, channel_started_time, reason)
     except DkgTransactionError:
         pass
 
@@ -185,6 +186,9 @@ def is_everyone_broadcasted(dkg_client):
 
 
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):
+    if dkg_client.node_id_dkg == 0:
+        send_complaint(dkg_client, 1, "correct data", True)
+        return
     for i in range(dkg_client.n):
         if not is_correct[i] or not is_recieved[i]:
             send_complaint(dkg_client, i, "correct data", True)
@@ -202,11 +206,12 @@ def check_failed_dkg(dkg_client):
 def check_response(dkg_client):
     complaint_data = get_complaint_data(dkg_client)
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
-        logger.info(f'sChain {dkg_client.schain_name}: Complaint received. Sending response ...')
+        logger.info(f'sChain: {dkg_client.schain_name}: Complaint received. Sending response ...')
+        channel_started_time = get_channel_started_time(dkg_client)
         response(dkg_client, complaint_data[0])
-        logger.info(f'sChain {dkg_client.schain_name}: Response sent.'
-                    'Waiting for FailedDkg event ...')
-        wait_for_fail(dkg_client)
+        logger.info(f'sChain: {dkg_client.schain_name}: Response sent.'
+                    ' Waiting for FailedDkg event ...')
+        wait_for_fail(dkg_client, channel_started_time)
 
 
 def check_no_complaints(dkg_client):
@@ -214,13 +219,12 @@ def check_no_complaints(dkg_client):
     return complaint_data[0] == UINT_CONSTANT and complaint_data[1] == UINT_CONSTANT
 
 
-def wait_for_fail(dkg_client, reason=""):
+def wait_for_fail(dkg_client, channel_started_time, reason=""):
     start_time = get_latest_block_timestamp(dkg_client)
-    channel_started_time = get_channel_started_time(dkg_client)
     while get_latest_block_timestamp(dkg_client) - start_time < RECEIVE_TIMEOUT:
         if len(reason) > 0:
             logger.info(f'sChain: {dkg_client.schain_name}.'
-                        f'Not all nodes sent {reason}. Waiting for FailedDkg event...')
+                        f' Not all nodes sent {reason}. Waiting for FailedDkg event...')
         else:
             logger.info(f'sChain: {dkg_client.schain_name}. Waiting for FailedDkg event...')
         check_failed_dkg(dkg_client)
