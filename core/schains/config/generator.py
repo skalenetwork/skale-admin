@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import hashlib
 import logging
 from dataclasses import dataclass
 
@@ -78,11 +77,10 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
                            rotation_id: int, schain_nodes_with_schains: list,
                            previous_public_keys: list) -> SChainConfig:
     """Main function that is used to generate sChain config"""
-    keyname_hash = hashlib.sha256(ecdsa_key_name)
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
         f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}, '
-        f'ecdsa keyname hash: {keyname_hash}, schain_id: {schain_id}'
+        f'ecdsa keyname: {ecdsa_key_name}, schain_id: {schain_id}'
     )
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
