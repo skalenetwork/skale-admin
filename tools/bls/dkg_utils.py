@@ -19,7 +19,6 @@
 
 import logging
 import os
-import time
 from time import sleep
 
 from tools.configs import NODE_DATA_PATH
@@ -92,18 +91,17 @@ def broadcast_and_check_data(dkg_client, poly_name):
     is_correct = [False for _ in range(n)]
     is_correct[dkg_client.node_id_dkg] = True
 
-    if dkg_client.node_id_dkg != 0:
-        broadcast(dkg_client, poly_name)
+    broadcast(dkg_client, poly_name)
 
     dkg_filter = Filter(skale, schain_name, n)
 
     start_time = get_channel_started_time(dkg_client)
     while False in is_received:
-        time_gone = dkg_client.skale.web3.eth.getBlock("latest")["timestamp"] - start_time
+        time_gone = get_latest_block_timestamp(dkg_client) - start_time
         if time_gone > RECEIVE_TIMEOUT:
             break
         logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
-                    f'{time_gone} seconds left')
+                    f'{RECEIVE_TIMEOUT - time_gone} seconds left')
 
         events = dkg_filter.get_events()
         for event in events:
@@ -217,9 +215,9 @@ def check_no_complaints(dkg_client):
 
 
 def wait_for_fail(dkg_client, reason=""):
-    start_time = time.time()
+    start_time = get_latest_block_timestamp(dkg_client)
     channel_started_time = get_channel_started_time(dkg_client)
-    while time.time() - start_time < RECEIVE_TIMEOUT:
+    while get_latest_block_timestamp(dkg_client) - start_time < RECEIVE_TIMEOUT:
         if len(reason) > 0:
             logger.info(f'sChain: {dkg_client.schain_name}.'
                         f'Not all nodes sent {reason}. Waiting for FailedDkg event...')
@@ -247,6 +245,10 @@ def get_alright_started_time(dkg_client):
 
 def get_complaint_started_time(dkg_client):
     return dkg_client.get_complaint_started_time()
+
+
+def get_latest_block_timestamp(dkg_client):
+    return dkg_client.skale.web3.eth.getBlock("latest")["timestamp"]
 
 
 def get_secret_key_share_filepath(schain_id, rotation_id):

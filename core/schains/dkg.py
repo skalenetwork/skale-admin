@@ -19,7 +19,6 @@
 
 import os
 import logging
-import time
 from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
@@ -28,7 +27,7 @@ from tools.bls.dkg_utils import (
     generate_bls_key, get_bls_public_keys, generate_bls_key_name, generate_poly_name,
     get_secret_key_share_filepath, is_all_data_received, is_everyone_broadcasted, check_failed_dkg,
     check_response, check_no_complaints, wait_for_fail, broadcast_and_check_data,
-    get_alright_started_time, RECEIVE_TIMEOUT
+    get_alright_started_time, RECEIVE_TIMEOUT, get_latest_block_timestamp
 )
 from tools.helper import write_json
 
@@ -67,7 +66,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         start_time_alright = get_alright_started_time(dkg_client)
         while False in is_alright_sent_list:
             check_failed_dkg(dkg_client)
-            if time.time() - start_time_alright > RECEIVE_TIMEOUT:
+            if get_latest_block_timestamp(dkg_client) - start_time_alright > RECEIVE_TIMEOUT:
                 break
             for from_node in range(dkg_client.n):
                 if not is_alright_sent_list[from_node]:
