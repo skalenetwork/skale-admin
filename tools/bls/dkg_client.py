@@ -166,9 +166,6 @@ class DKGClient:
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
 
-        verification_vector = self.verification_vector()
-        secret_key_contribution = self.secret_key_contribution()
-
         is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
         is_broadcast_possible = is_broadcast_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
@@ -178,6 +175,9 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent broadcast')
             return
+
+        verification_vector = self.verification_vector()
+        secret_key_contribution = self.secret_key_contribution()
 
         try:
             self.skale.dkg.broadcast(
@@ -272,7 +272,7 @@ class DKGClient:
         if not is_complaint_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
-            return
+            return False
         try:
             self.skale.dkg.complaint(
                 self.group_index,
@@ -283,6 +283,7 @@ class DKGClient:
             )
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node sent a complaint on {to_node} node')
+            return True
         except TransactionFailedError as e:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
