@@ -80,6 +80,15 @@ def convert_g2_point_to_hex(data):
     return data_hexed
 
 
+def convert_hex_to_g2_array(data):
+    g2_array = []
+    while len(data) > 0:
+        cur = data[:256]
+        g2_array.append([str(x) for x in [int(cur[64 * i:64 * i + 64], 16) for i in range(4)]])
+        data = data[256:]
+    return g2_array
+
+
 def convert_str_to_key_share(sent_secret_key_contribution, n):
     return_value = []
     for i in range(n):
@@ -147,6 +156,7 @@ class DKGClient:
     @sgx_unreachable_retry
     def verification_vector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
+        print("GET FROM SGX:", verification_vector)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
         return convert_g2_points_to_array(verification_vector)
 
@@ -193,10 +203,20 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
     def receive_from_node(self, from_node, broadcasted_data):
+        if from_node == self.node_id_dkg and self.incoming_verification_vector[from_node] == '0':
+            self.incoming_verification_vector[from_node] = convert_hex_to_g2_array(
+                broadcasted_data[0]
+            )
+            self.incoming_secret_key_contribution[from_node] = broadcasted_data[1][
+                192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
+            ]
+            return
+
         self.incoming_verification_vector[from_node] = broadcasted_data[0]
         self.incoming_secret_key_contribution[from_node] = broadcasted_data[1][
             192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
         ]
+
         try:
             if not self.verification(from_node):
                 raise DkgVerificationError(

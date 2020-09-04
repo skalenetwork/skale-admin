@@ -106,26 +106,25 @@ def broadcast_and_check_data(dkg_client, poly_name):
         events = dkg_filter.get_events()
         for event in events:
             from_node = dkg_client.node_ids_contract[event["nodeIndex"]]
-            if from_node != dkg_client.node_id_dkg:
-                secret_key_contribution, verification_vector = (
-                    event["secretKeyContribution"], event["verificationVector"]
-                )
-                broadcasted_data = [verification_vector, secret_key_contribution]
-                is_received[from_node] = True
-                logger.info(f'sChain {schain_name}: receiving from node {from_node}')
-                try:
-                    dkg_client.receive_from_node(from_node, broadcasted_data)
-                    is_correct[from_node] = True
-                except DkgVerificationError:
-                    logger.info(
-                        f'sChain {schain_name}: dkg verification error from node {from_node}'
-                    )
-                    continue
-
+            secret_key_contribution, verification_vector = (
+                event["secretKeyContribution"], event["verificationVector"]
+            )
+            broadcasted_data = [verification_vector, secret_key_contribution]
+            is_received[from_node] = True
+            logger.info(f'sChain {schain_name}: receiving from node {from_node}')
+            try:
+                dkg_client.receive_from_node(from_node, broadcasted_data)
+                is_correct[from_node] = True
+            except DkgVerificationError:
                 logger.info(
-                    f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
-                    f'{from_node}'
+                    f'sChain {schain_name}: dkg verification error from node {from_node}'
                 )
+                continue
+
+            logger.info(
+                f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
+                f'{from_node}'
+            )
 
         sleep(30)
 
@@ -186,9 +185,6 @@ def is_everyone_broadcasted(dkg_client):
 
 
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):
-    if dkg_client.node_id_dkg == 0:
-        send_complaint(dkg_client, 1, "correct data", True)
-        return
     for i in range(dkg_client.n):
         if not is_correct[i] or not is_recieved[i]:
             send_complaint(dkg_client, i, "correct data", True)
