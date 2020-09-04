@@ -156,7 +156,7 @@ class DKGClient:
     @sgx_unreachable_retry
     def verification_vector(self):
         verification_vector = self.sgx.get_verification_vector(self.poly_name)
-        print("GET FROM SGX:", verification_vector)
+        print("GOT FROM SGX:", verification_vector)
         self.incoming_verification_vector[self.node_id_dkg] = verification_vector
         return convert_g2_points_to_array(verification_vector)
 
@@ -203,13 +203,14 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
     def receive_from_node(self, from_node, broadcasted_data):
-        if from_node == self.node_id_dkg and self.incoming_verification_vector[from_node] == '0':
-            self.incoming_verification_vector[from_node] = convert_hex_to_g2_array(
-                broadcasted_data[0]
-            )
-            self.incoming_secret_key_contribution[from_node] = broadcasted_data[1][
-                192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
-            ]
+        if from_node == self.node_id_dkg:
+            if self.incoming_verification_vector[from_node] == '0':
+                self.incoming_verification_vector[from_node] = convert_hex_to_g2_array(
+                    broadcasted_data[0]
+                )
+                self.incoming_secret_key_contribution[from_node] = broadcasted_data[1][
+                    192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
+                ]
             return
 
         self.incoming_verification_vector[from_node] = broadcasted_data[0]
@@ -256,6 +257,7 @@ class DKGClient:
         return bls_private_key
 
     def get_bls_public_keys(self):
+        print("BEFORE PUBLIC KEYS:", self.incoming_verification_vector[self.node_id_dkg])
         self.incoming_verification_vector[self.node_id_dkg] = convert_g2_array_to_hex(
             self.incoming_verification_vector[self.node_id_dkg]
         )

@@ -111,7 +111,8 @@ def broadcast_and_check_data(dkg_client, poly_name):
             )
             broadcasted_data = [verification_vector, secret_key_contribution]
             is_received[from_node] = True
-            logger.info(f'sChain {schain_name}: receiving from node {from_node}')
+            if from_node != dkg_client.node_id_dkg:
+                logger.info(f'sChain {schain_name}: receiving from node {from_node}')
             try:
                 dkg_client.receive_from_node(from_node, broadcasted_data)
                 is_correct[from_node] = True
