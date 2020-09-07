@@ -83,7 +83,7 @@ def monitor(skale, node_config):
     leaving_history = skale.node_rotation.get_leaving_history(node_id)
     for leaving_schain in leaving_history:
         schain = skale.schains.get(leaving_schain['id'])
-        if time.time() < leaving_schain['finished_rotation'] and schain['name']:
+        if skale.node_rotation.is_rotation_in_progress(schain['name']) and schain['name']:
             schain['active'] = True
             schains.append(schain)
     schains_on_node = sum(map(lambda schain: schain['active'], schains))
@@ -137,8 +137,8 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
 
     first_run = schain_record.first_run
     schain_record.set_first_run(False)
-    if exiting_node and rotation_in_progress:
-        logger.warning(f'Node is exiting. sChain will be stoped at {finish_time}')
+    if rotation_in_progress and exiting_node:
+        logger.warning(f'Node is exiting. sChain {name} will be stoped at {finish_time}')
         # ensure containers are working after update
         if not checks_dict['container']:
             monitor_schain_container(schain)
@@ -147,7 +147,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         return
 
     if (rotation_in_progress and new_schain) or (first_run and BACKUP_RUN):
-        logger.warning('Running sChain container in sync mode')
+        logger.warning(f'Running sChain {name} container in sync mode')
         monitor_checks(
             skale=skale,
             schain=schain,
@@ -162,7 +162,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         return
 
     elif rotation_in_progress and not new_schain:
-        logger.warning('Schain was rotated. Rotation in progress')
+        logger.warning(f'sChain {name} was rotated. Rotation in progress')
 
         # ensure containers are working after update
         if not checks_dict['container']:
@@ -183,7 +183,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
 
         return
     else:
-        logger.info('No rotation for schain')
+        logger.info(f'No rotation for sChain {name}')
 
     monitor_checks(
         skale=skale,
