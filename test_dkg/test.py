@@ -303,6 +303,7 @@ def create_schains(amount: int) -> None:
 
 
 def prepare() -> list:
+    # TODO: Save info about nodes
     validators = ensure_validators(NODES_AMOUNT)
     wallets = generate_wallets(NODES_AMOUNT)
     send_eth_to_addresses([w.address for w in wallets], ETH_AMOUNT)
@@ -312,8 +313,10 @@ def prepare() -> list:
 
 
 def run_dkg_test(nodes: list) -> None:
+    print('======== Starting dkg test =====================================')
     create_schains(SCHAINS_AMOUNT)
     for node in nodes:
+        print(f'Address {node.skale.wallet.address}')
         node.start_dkg()
 
     print(nodes)
