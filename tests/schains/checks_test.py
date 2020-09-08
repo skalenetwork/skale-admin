@@ -11,7 +11,7 @@ SCHAIN_NAME = 'test'
 NOT_EXISTS_SCHAIN_NAME = 'qwerty123'
 SCHAIN_CONTAINER_NAME = 'skale_schain_test'
 TEST_NODE_ID = 0
-SKALED_INIT_TIMEOUT = 30
+SKALED_INIT_TIMEOUT = 60
 
 
 def check_firewall_rules_mock(self):
