@@ -87,16 +87,14 @@ def monitor(skale, node_config):
     schains_on_node = get_schains_on_node()
     schain_names_on_contracts = get_schain_names_from_contract(skale,
                                                                node_config.id)
+    logger.info(f'Found such schains schains: {schain_names_on_contracts}')
     for schain_name in schains_on_node:
-        on_contract = schain_name in schain_names_on_contracts
-        if not on_contract and (
-            not skale.schains_internal.is_schain_exist(schain_name) or
-                is_exited(schain_name, dutils=dutils)):
-            logger.info(
-                arguments_list_string({'sChain name': schain_name},
-                                      'Removed sChain found'))
-            delete_bls_keys(skale, schain_name)
-            cleanup_schain(node_config.id, schain_name)
+        try:
+            if schain_name not in schain_names_on_contracts:
+                ensure_schain_removed(skale, schain_name, node_config.id)
+        except Exception as err:
+            logger.error(f'Removing schain {schain_name} failed', exc_info=err)
+
     logger.info('Cleanup procedure finished')
 
 
@@ -109,13 +107,14 @@ def get_schains_on_node():
     # get all schain dirs
     schain_dirs = os.listdir(SCHAINS_DIR_PATH)
     # get all schain containers
+
     schain_containers = dutils.get_all_schain_containers(all=True)
     schain_containers_names = []
     for container in schain_containers:
         schain_name = container.name.replace('skale_schain_', '', 1)
         schain_containers_names.append(schain_name)
     # merge 2 lists without duplicates
-    return list(set(schain_dirs + schain_containers_names))
+    return sorted(list(set(schain_dirs + schain_containers_names)))
 
 
 def schain_names_to_ids(skale, schain_names):
@@ -129,6 +128,16 @@ def schain_names_to_ids(skale, schain_names):
 def remove_firewall_rules(schain_name):
     endpoints = get_allowed_endpoints(schain_name)
     remove_iptables_rules(endpoints)
+
+
+def ensure_schain_removed(skale, schain_name, node_id):
+    if not skale.schains_internal.is_schain_exist(schain_name) or \
+            is_exited(schain_name, dutils=dutils):
+        logger.info(arguments_list_string(
+            {'sChain name': schain_name}, 'Removed sChain found')
+        )
+        delete_bls_keys(skale, schain_name)
+        cleanup_schain(node_id, schain_name)
 
 
 def cleanup_schain(node_id, schain_name):
