@@ -24,7 +24,7 @@ def test_load_wallet(skale_bp, skale):
             'eth_balance_wei': eth_balance_wei,
             'skale_balance_wei': 0,  # TODO: Remove from node cli
             'eth_balance': str(skale.web3.fromWei(eth_balance_wei, 'ether')),
-            'skale_balance': 0  # TODO: Remove from node cli
+            'skale_balance': '0'  # TODO: Remove from node cli
         }
     }
     assert data == expected_data
