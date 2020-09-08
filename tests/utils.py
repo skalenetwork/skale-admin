@@ -1,14 +1,8 @@
 """ SKALE test utilities """
 
 import json
-import os
 import random
 import string
-from pathlib import Path
-
-import pytest
-
-from tools.configs.schains import SCHAINS_DIR_PATH
 
 
 class FailedAPICall(Exception):
