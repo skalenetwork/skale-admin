@@ -98,7 +98,6 @@ def test_remove_schain_volume(dutils):
 
 
 def test_remove_schain_container(dutils, schain_dir):
-    assert True
     run_simple_schain_container(dutils)
     assert container_running(dutils, SCHAIN_CONTAINER_NAME)
     remove_schain_container(SCHAIN['name'])

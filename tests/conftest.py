@@ -107,7 +107,7 @@ SECRET_KEY = {
 @pytest.fixture
 def schain_dir():
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, SCHAIN_NAME)
-    Path(schain_dir_path).mkdir()
+    Path(schain_dir_path).mkdir(parent=True, exist_ok=True)
     config_path = os.path.join(schain_dir_path,
                                f'schain_{SCHAIN_NAME}.json')
     secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')
