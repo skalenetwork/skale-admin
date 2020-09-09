@@ -87,7 +87,8 @@ def monitor(skale, node_config):
     schains_on_node = get_schains_on_node()
     schain_names_on_contracts = get_schain_names_from_contract(skale,
                                                                node_config.id)
-    logger.info(f'Found such schains schains: {schain_names_on_contracts}')
+    logger.info(f'Found such schains on contracts: {schain_names_on_contracts}')
+    logger.info(f'Found such schains on node: {schains_on_node}')
     for schain_name in schains_on_node:
         try:
             if schain_name not in schain_names_on_contracts:
@@ -136,6 +137,7 @@ def ensure_schain_removed(skale, schain_name, node_id):
         logger.info(arguments_list_string(
             {'sChain name': schain_name}, 'Removed sChain found')
         )
+        remove_schain_container(schain_name)
         delete_bls_keys(skale, schain_name)
         cleanup_schain(node_id, schain_name)
 
