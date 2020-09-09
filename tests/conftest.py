@@ -116,6 +116,6 @@ def schain_dir():
     with open(secret_key_path, 'w') as key_file:
         json.dump(SECRET_KEY, key_file)
     yield
-    Path(config_path).unlink()
-    Path(secret_key_path).unlink()
+    Path(config_path).unlink(missing_ok=True)
+    Path(secret_key_path).unlink(missing_ok=True)
     Path(schain_dir_path).rmdir()
