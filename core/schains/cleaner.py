@@ -25,8 +25,8 @@ from multiprocessing import Process
 
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
-from core.schains.runner import get_container_name, check_container_exit
-from core.schains.config import get_allowed_endpoints
+from core.schains.runner import get_container_name, is_exited
+from core.schains.config.helper import get_allowed_endpoints
 
 from sgx import SgxClient
 
@@ -44,10 +44,14 @@ from web.models.schain import mark_schain_deleted
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
+JOIN_TIMEOUT = 1800
+
 
 def run_cleaner(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
     process.start()
+    process.join(JOIN_TIMEOUT)
+    process.terminate()
     process.join()
 
 
@@ -87,13 +91,13 @@ def monitor(skale, node_config):
         on_contract = schain_name in schain_names_on_contracts
         if not on_contract and (
             not skale.schains_internal.is_schain_exist(schain_name) or
-                check_container_exit(schain_name, dutils=dutils)):
+                is_exited(schain_name, dutils=dutils)):
             logger.info(
                 arguments_list_string({'sChain name': schain_name},
                                       'Removed sChain found'))
             delete_bls_keys(skale, schain_name)
             cleanup_schain(node_config.id, schain_name)
-        logger.info('Cleanup procedure finished')
+    logger.info('Cleanup procedure finished')
 
 
 def get_schain_names_from_contract(skale, node_id):
@@ -129,7 +133,7 @@ def remove_firewall_rules(schain_name):
 
 def cleanup_schain(node_id, schain_name):
     checks = SChainChecks(schain_name, node_id).get_all()
-    if checks['container'] or check_container_exit(schain_name, dutils=dutils):
+    if checks['container'] or is_exited(schain_name, dutils=dutils):
         remove_schain_container(schain_name)
     if checks['volume']:
         remove_schain_volume(schain_name)

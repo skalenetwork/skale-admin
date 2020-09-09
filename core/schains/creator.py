@@ -21,21 +21,22 @@ import logging
 import os
 import shutil
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import datetime
 from multiprocessing import Process
 
-from skale.manager_client import spawn_skale_lib
+from skale.skale_manager import spawn_skale_manager_lib
 
 
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
-                                 check_container_exit)
+                                 is_exited_with_zero)
 from core.schains.cleaner import remove_config_dir
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
-                                 get_schain_proxy_file_path)
-from core.schains.config import (generate_schain_config, save_schain_config,
-                                 get_allowed_endpoints, update_schain_config)
+                                 get_schain_proxy_file_path, get_schain_rotation_filepath)
+from core.schains.config.helper import (save_schain_config, get_allowed_endpoints,
+                                        update_schain_config)
+from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks, check_for_rotation
 from core.schains.dkg import run_dkg
@@ -47,7 +48,7 @@ from tools.bls.dkg_client import DkgError
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER
-from tools.configs.schains import IMA_DATA_FILEPATH
+from tools.configs.ima import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks
@@ -59,17 +60,20 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 CONTAINERS_DELAY = 20
+JOIN_TIMEOUT = 3800
 
 
 def run_creator(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
     process.start()
+    process.join(JOIN_TIMEOUT)
+    process.terminate()
     process.join()
 
 
 def monitor(skale, node_config):
     logger.info('Creator procedure started')
-    skale = spawn_skale_lib(skale)
+    skale = spawn_skale_manager_lib(skale)
     logger.info('Spawned new skale lib')
     node_id = node_config.id
     ecdsa_sgx_key_name = node_config.sgx_key_name
@@ -79,7 +83,7 @@ def monitor(skale, node_config):
     leaving_history = skale.node_rotation.get_leaving_history(node_id)
     for leaving_schain in leaving_history:
         schain = skale.schains.get(leaving_schain['id'])
-        if time.time() < leaving_schain['finished_rotation'] and schain['name']:
+        if skale.node_rotation.is_rotation_in_progress(schain['name']) and schain['name']:
             schain['active'] = True
             schains.append(schain)
     schains_on_node = sum(map(lambda schain: schain['active'], schains))
@@ -89,6 +93,8 @@ def monitor(skale, node_config):
                                'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
     node_info = node_config.all()
     notify_if_not_enough_balance(skale, node_info)
+
+    logger.info('Starting schains ThreadPoolExecutor')
 
     with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
         futures = [
@@ -101,13 +107,14 @@ def monitor(skale, node_config):
             )
             for schain in schains if schain['active']
         ]
-        for future in futures:
+        for future in as_completed(futures):
             future.result()
     logger.info('Creator procedure finished')
 
 
 def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
-    skale = spawn_skale_lib(skale)
+    logger.info(f"Monitor for sChain {schain['name']}")
+    skale = spawn_skale_manager_lib(skale)
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = check_for_rotation(skale, name, node_id)
@@ -130,8 +137,8 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
 
     first_run = schain_record.first_run
     schain_record.set_first_run(False)
-    if exiting_node and rotation_in_progress:
-        logger.warning(f'Node is exiting. sChain will be stoped at {finish_time}')
+    if rotation_in_progress and exiting_node:
+        logger.warning(f'Node is exiting. sChain {name} will be stoped at {finish_time}')
         # ensure containers are working after update
         if not checks_dict['container']:
             monitor_schain_container(schain)
@@ -140,7 +147,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         return
 
     if (rotation_in_progress and new_schain) or (first_run and BACKUP_RUN):
-        logger.warning('Running sChain container is sync mode')
+        logger.warning(f'Running sChain {name} container in sync mode')
         monitor_checks(
             skale=skale,
             schain=schain,
@@ -155,7 +162,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         return
 
     elif rotation_in_progress and not new_schain:
-        logger.warning('Schain was rotated. Rotation in progress')
+        logger.warning(f'sChain {name} was rotated. Rotation in progress')
 
         # ensure containers are working after update
         if not checks_dict['container']:
@@ -176,7 +183,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
 
         return
     else:
-        logger.info('No rotation for schain')
+        logger.info(f'No rotation for sChain {name}')
 
     monitor_checks(
         skale=skale,
@@ -199,9 +206,14 @@ def init_schain_config(skale, node_id, schain_name, ecdsa_sgx_key_name):
             f'{config_filepath}, trying to create.'
         )
         rotation_id = skale.schains.get_last_rotation_id(schain_name)
-        schain_config = generate_schain_config(skale, schain_name, node_id, rotation_id,
-                                               ecdsa_sgx_key_name)
-        save_schain_config(schain_config, schain_name)
+        schain_config = generate_schain_config_with_skale(
+            skale=skale,
+            schain_name=schain_name,
+            node_id=node_id,
+            rotation_id=rotation_id,
+            ecdsa_key_name=ecdsa_sgx_key_name
+        )
+        save_schain_config(schain_config.to_dict(), schain_name)
 
 
 def copy_schain_ima_abi(name):
@@ -304,13 +316,26 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         if sync:
             finish_time_ts = rotation['finish_ts']
             monitor_sync_schain_container(skale, schain, finish_time_ts, rotation['rotation_id'])
-        elif check_container_exit(name, zero_exit_code=True, dutils=dutils):
+        elif check_schain_rotated(name):
+            logger.warning(f'sChain {name} is stopped after rotation. Going to restart')
             remove_firewall_rules(name)
-            config = generate_schain_config(skale, name, node_id, rotation['rotation_id'],
-                                            ecdsa_sgx_key_name)
+            config = generate_schain_config_with_skale(
+                skale=skale,
+                schain_name=name,
+                node_id=node_id,
+                rotation_id=rotation['rotation_id'],
+                ecdsa_key_name=ecdsa_sgx_key_name
+            ).to_dict()
             update_schain_config(config, name)
             add_firewall_rules(name)
             restart_container(SCHAIN_CONTAINER, schain)
         else:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
+
+
+def check_schain_rotated(schain_name):
+    schain_rotation_filepath = get_schain_rotation_filepath(schain_name)
+    rotation_file_exists = os.path.exists(schain_rotation_filepath)
+    zero_exit_code = is_exited_with_zero(schain_name, dutils=dutils)
+    return rotation_file_exists and zero_exit_code

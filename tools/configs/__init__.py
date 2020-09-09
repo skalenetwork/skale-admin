@@ -17,6 +17,8 @@ else:
     NODE_DATA_PATH = '/skale_node_data'
 
 
+SCHAIN_NODE_DATA_PATH = '/skale_node_data'
+SCHAIN_DATA_PATH = '/skale_schain_data'
 CONFIG_FOLDER_NAME = 'config'
 CONTRACTS_INFO_FOLDER_NAME = 'contracts_info'
 
@@ -61,3 +63,5 @@ else:
 NODE_CONFIG_LOCK_PATH = os.getenv('LOCK_PATH')
 if not NODE_CONFIG_LOCK_PATH:
     NODE_CONFIG_LOCK_PATH = '/tmp/skale_node_config.lock'
+
+ROTATION_FLAG_FILENAME = '.rotation'

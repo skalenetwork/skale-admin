@@ -6,20 +6,24 @@ SCHAIN_TYPE=test2/test4/tiny SGX_CERTIFICATES_FOLDER=./tests/dkg_test/ SGX_SERVE
 """
 import logging
 from time import sleep
+from concurrent.futures import ThreadPoolExecutor as Executor
 
 from skale.wallets import SgxWallet
 from skale.utils.helper import init_default_logger
 from skale.utils.account_tools import send_ether
 
-from core.schains.dkg import init_bls
+from core.schains.config.generator import generate_schain_config_with_skale
+from core.schains.dkg import run_dkg
+from core.schains.helper import init_schain_dir
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
-from tools.custom_thread import CustomThread
 
 from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import generate_random_node_data, generate_random_schain_data
 from tests.prepare_data import cleanup_contracts
 
+
+MAX_WORKERS = 5
 
 logger = logging.getLogger(__name__)
 
@@ -87,42 +91,119 @@ def register_nodes(skale, wallets):
     return nodes
 
 
+def check_keys(data, expected_keys):
+    assert all(key in data for key in expected_keys)
+
+
+def check_node_ports(info):
+    base_port = info['basePort']
+    assert isinstance(base_port, int)
+    assert info['wsRpcPort'] == base_port + 2
+    assert info['wssRpcPort'] == base_port + 7
+    assert info['httpRpcPort'] == base_port + 3
+    assert info['httpsRpcPort'] == base_port + 8
+
+
+def check_node_info(node_data, info):
+    keys = ['nodeID', 'nodeName', 'basePort', 'httpRpcPort', 'httpsRpcPort',
+            'wsRpcPort', 'wssRpcPort', 'bindIP', 'logLevel', 'logLevelConfig',
+            'imaMainNet', 'imaMessageProxySChain', 'imaMessageProxyMainNet',
+            'rotateAfterBlock', 'ecdsaKeyName', 'wallets', 'minCacheSize',
+            'maxCacheSize', 'collectionQueueSize', 'collectionDuration',
+            'transactionQueueSize', 'maxOpenLeveldbFiles']
+    check_keys(info, keys)
+    assert info['nodeID'] == node_data['node_id']
+    check_node_ports(info)
+    assert info['ecdsaKeyName'] == node_data['wallet']._key_name
+
+
+def check_schain_node_info(node_data, schain_node_info):
+    check_keys(schain_node_info,
+               ['nodeID', 'nodeName', 'basePort', 'httpRpcPort',
+                'httpsRpcPort', 'wsRpcPort', 'wssRpcPort', 'publicKey',
+                'blsPublicKey0', 'blsPublicKey1', 'blsPublicKey2',
+                'blsPublicKey3', 'owner', 'schainIndex', 'ip', 'publicIP'])
+    assert schain_node_info['nodeID'] == node_data['node_id']
+    check_node_ports(schain_node_info)
+
+
+def check_schain_info(nodes, schain_info):
+    check_keys(
+        schain_info,
+        ['schainID', 'schainName', 'schainOwner', 'storageLimit',
+         'snapshotIntervalMs', 'emptyBlockIntervalMs',
+         'maxConsensusStorageBytes', 'maxSkaledLeveldbStorageBytes',
+         'maxFileStorageBytes', 'maxReservedStorageBytes',
+         'nodes']
+    )
+    for node_data, schain_node_info in zip(
+        nodes, sorted(schain_info['nodes'],
+                      key=lambda x: x['nodeID'])):
+        check_schain_node_info(node_data, schain_node_info)
+
+
+def check_config(nodes, node_data, config):
+    check_keys(
+        config,
+        ['sealEngine', 'params', 'genesis', 'accounts', 'skaleConfig']
+    )
+    check_node_info(node_data, config['skaleConfig']['nodeInfo'])
+    check_schain_info(nodes, config['skaleConfig']['sChain'])
+
+
 def run_dkg_all(skale, schain_name, nodes):
-    results = []
-    dkg_threads = []
-    for i, node_data in enumerate(nodes):
-        opts = {
-            'index': i,
-            'skale': skale,
-            'schain_name': schain_name,
-            'node_id': node_data['node_id'],
-            'wallet': node_data['wallet'],
-            'results': results
-        }
-        dkg_thread = CustomThread(
-            f'DKG for {node_data["wallet"].address}', run_dkg, opts=opts, once=True)
-        dkg_thread.start()
-        dkg_threads.append(dkg_thread)
-    for dkg_thread in dkg_threads:
-        dkg_thread.join()
+    futures, results = [], []
+    nodes.sort(key=lambda x: x['node_id'])
+    with Executor(max_workers=MAX_WORKERS) as executor:
+        for i, node_data in enumerate(nodes):
+            opts = {
+                'index': i,
+                'skale': skale,
+                'schain_name': schain_name,
+                'node_id': node_data['node_id'],
+                'wallet': node_data['wallet'],
+                'results': results
+            }
+            futures.append(executor.submit(run_node_dkg, opts))
+    for future in futures:
+        results.append(future.result())
+
+    for node_data, result in zip(nodes, results):
+        assert result['node_id'] == node_data['node_id']
+        assert result['dkg_results'] is None
+        check_config(nodes, node_data, result['config'])
 
     assert len(results) == N_OF_NODES
     # todo: add some additional checks that dkg is finished successfully
 
 
-def run_dkg(opts):
+def run_node_dkg(opts):
     timeout = opts['index'] * 5  # diversify start time for all nodes
     logger.info(f'Node {opts["node_id"]} going to sleep {timeout} seconds')
     sleep(timeout)
     skale = skale_fixture()
     skale.wallet = opts['wallet']
     sgx_key_name = skale.wallet._key_name
-    dkg_results = init_bls(skale, opts['schain_name'], opts['node_id'], sgx_key_name)
-    opts['results'].append({
-        'node_id': opts["node_id"],
-        'dkg_results': dkg_results
-    })
-    print(f'=========================\nDKG DONE: node_id: {opts["node_id"]} {dkg_results}')
+    schain_name = opts['schain_name']
+    node_id = opts['node_id']
+
+    init_schain_dir(schain_name)
+    dkg_results = run_dkg(skale, schain_name, opts['node_id'], sgx_key_name)
+    print(f'=========================\nDKG DONE: node_id: {node_id} {dkg_results}')
+
+    rotation_id = skale.schains.get_last_rotation_id(schain_name)
+    schain_config = generate_schain_config_with_skale(
+        skale=skale,
+        schain_name=schain_name,
+        node_id=node_id,
+        rotation_id=rotation_id,
+        ecdsa_key_name=sgx_key_name
+    )
+    return {
+        'node_id': node_id,
+        'dkg_results': dkg_results,
+        'config': schain_config.to_dict()
+    }
 
 
 def create_schain(skale):

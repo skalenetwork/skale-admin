@@ -22,18 +22,19 @@ import copy
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_container_limits, get_schain_volume_config
-from core.schains.config import (
+from core.schains.config.helper import (
     get_schain_container_cmd,
     get_schain_env,
     get_skaled_http_address
 )
 from core.schains.ima import get_ima_env
-from core.schains.helper import send_rotation_request
+from core.schains.helper import send_rotation_request, get_schain_dir_path_host
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
                                       IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
-from tools.configs import NODE_DATA_PATH_HOST, NODE_DATA_PATH, SKALE_DIR_HOST, SKALE_VOLUME_PATH
+from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
+                           SKALE_VOLUME_PATH, SCHAIN_DATA_PATH)
 
 docker_utils = DockerUtils()
 logger = logging.getLogger(__name__)
@@ -76,7 +77,7 @@ def run_container(type, schain_name, env, cmd=None, volume_config=None,
         dutils = docker_utils
     image_name, container_name, run_args, custom_args = get_container_info(type, schain_name)
 
-    add_config_volume(run_args)
+    add_config_volume(run_args, schain_name)
 
     if custom_args.get('logs', None):
         run_args['log_config'] = get_logs_config(custom_args['logs'])
@@ -135,27 +136,42 @@ def run_ima_container(schain, dutils=None):
     run_container(IMA_CONTAINER, schain_name, env, dutils=dutils)
 
 
-def add_config_volume(run_args):
+def add_config_volume(run_args, schain_name):
     if not run_args.get('volumes', None):
         run_args['volumes'] = {}
+    schain_data_dir_path = get_schain_dir_path_host(schain_name)
+
     # mount /skale_node_data
     run_args['volumes'][NODE_DATA_PATH_HOST] = {
-        'bind': NODE_DATA_PATH,
-        "mode": "ro"
+        'bind': SCHAIN_NODE_DATA_PATH,
+        'mode': 'ro'
     }
     # mount /skale_vol
     run_args['volumes'][SKALE_DIR_HOST] = {
         'bind': SKALE_VOLUME_PATH,
-        "mode": "ro"
+        'mode': 'ro'
+    }
+    # mount /skale_schain_data
+    run_args['volumes'][schain_data_dir_path] = {
+        'bind': SCHAIN_DATA_PATH,
+        'mode': 'rw'
     }
 
 
-def check_container_exit(schain_name, zero_exit_code=False, dutils=None):
+def is_exited_with_zero(schain_name, dutils=None):
     if not dutils:
         dutils = docker_utils
+    info = get_schain_container_info(schain_name, dutils)
+    return dutils.is_container_exited_with_zero(info)
+
+
+def is_exited(schain_name, dutils=None):
+    if not dutils:
+        dutils = docker_utils
+    info = get_schain_container_info(schain_name, dutils)
+    return dutils.is_container_exited(info)
+
+
+def get_schain_container_info(schain_name, dutils):
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
-    info = dutils.get_info(name)
-    if zero_exit_code:
-        return dutils.is_container_exited_with_zero(info)
-    else:
-        return dutils.is_container_exited(info)
+    return dutils.get_info(name)

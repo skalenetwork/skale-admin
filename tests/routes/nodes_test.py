@@ -83,6 +83,10 @@ def register_mock(self, ip, public_ip, port, name):
     return {'status': 1, 'data': 1}
 
 
+def set_maintenance_mock(self):
+    return {'status': 0}
+
+
 @patch.object(Node, 'register', register_mock)
 def test_node_create(skale_bp, node_config):
     ip, public_ip, port, name = generate_random_node_data()
@@ -126,3 +130,15 @@ def test_node_signature(skale_bp, skale):
     expected_signature = get_expected_signature(skale, validator_id)
     assert data == {'status': 'ok', 'payload': {
         'signature': expected_signature}}
+
+
+@patch.object(Node, 'set_maintenance_on', set_maintenance_mock)
+def test_set_maintenance_on(skale_bp, skale, node_config):
+    data = post_bp_data(skale_bp, '/api/node/maintenance-on')
+    assert data == {'payload': {}, 'status': 'ok'}
+
+
+@patch.object(Node, 'set_maintenance_off', set_maintenance_mock)
+def test_set_maintenance_off(skale_bp, skale, node_config):
+    data = post_bp_data(skale_bp, '/api/node/maintenance-off')
+    assert data == {'payload': {}, 'status': 'ok'}

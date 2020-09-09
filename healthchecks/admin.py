@@ -17,19 +17,24 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from core.schains.volume import get_filestorage_info
+import os
+import time
+
+MAX_ALLOWED_LOG_TIME_DIFF = os.getenv('MAX_ALLOWED_LOG_TIME_DIFF', 600)
+ADMIN_LOG_FILEPATH = os.getenv('ADMIN_LOG_FILEPATH', '/skale_node_data/log/admin.log')
 
 
-FILESTORAGE_LIMIT_OPTION_NAME = 'max_file_storage_bytes'
+def run_healthcheck():
+    modification_time = os.path.getmtime(ADMIN_LOG_FILEPATH)
+    current_time = time.time()
+    time_diff = current_time - modification_time
+
+    print(f'Modification time diff: {time_diff}, limit is {MAX_ALLOWED_LOG_TIME_DIFF}')
+    if time_diff > int(MAX_ALLOWED_LOG_TIME_DIFF):
+        exit(3)
+    else:
+        exit(0)
 
 
-def compose_filestorage_info(schin_internal_limits):
-    filestorage_info = get_filestorage_info()
-    max_file_storage_bytes = schin_internal_limits[FILESTORAGE_LIMIT_OPTION_NAME]
-    return {
-        'address': filestorage_info['address'],
-        'bytecode': filestorage_info['bytecode'],
-        'storage': {
-            '0x0': str(max_file_storage_bytes)
-        }
-    }
+if __name__ == '__main__':
+    run_healthcheck()

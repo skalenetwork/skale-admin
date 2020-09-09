@@ -1,16 +1,15 @@
-import os
-
-import pytest
 import json
 import mock
+import os
+import shutil
+
+import docker
+import pytest
 from flask import Flask
 
 from core.node_config import NodeConfig
-
-import docker
-
 from core.schains.runner import get_image_name
-from core.schains.config import get_schain_config_filepath
+from core.schains.config.helper import get_schain_config_filepath
 from tests.utils import get_bp_data
 from tools.docker_utils import DockerUtils
 from tools.configs.containers import SCHAIN_CONTAINER
@@ -61,7 +60,9 @@ def test_schain_config(skale_bp, skale):
     sid = skale.schains_internal.get_all_schains_ids()[-1]
     name = skale.schains.get(sid).get('name')
     filename = get_schain_config_filepath(name)
-    os.makedirs(os.path.dirname(filename))
+    dirname = os.path.dirname(filename)
+    if not os.path.isdir(dirname):
+        os.makedirs(os.path.dirname(filename))
     with open(filename, 'w') as f:
         text = {'skaleConfig': {'nodeInfo': {'nodeID': 1}}}
         f.write(json.dumps(text))
@@ -69,7 +70,7 @@ def test_schain_config(skale_bp, skale):
     assert data == {'payload': {'nodeInfo': {'nodeID': 1}},
                     'status': 'ok'}
     os.remove(filename)
-    os.rmdir(os.path.dirname(filename))
+    shutil.rmtree(os.path.dirname(filename))
 
 
 def test_schains_containers_list(skale_bp, skale):
@@ -99,9 +100,7 @@ def test_owner_schains(skale_bp, skale):
     assert data['status'] == 'ok'
     payload = data['payload']
     assert len(payload)
-    assert len(payload[0]['nodes'])
     schain_data = payload[0].copy()
-    schain_data.pop('nodes')
     assert schain_data == skale.schains.get_schains_for_owner(
         skale.wallet.address)[0]
 
