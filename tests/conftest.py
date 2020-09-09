@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 from pathlib import Path
 
 import pytest
@@ -118,4 +119,4 @@ def schain_dir():
     yield
     Path(config_path).unlink(missing_ok=True)
     Path(secret_key_path).unlink(missing_ok=True)
-    Path(schain_dir_path).rmdir()
+    shutil.rmtree(schain_dir_path, ignore_errors=True)
