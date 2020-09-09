@@ -137,7 +137,6 @@ def ensure_schain_removed(skale, schain_name, node_id):
         logger.info(arguments_list_string(
             {'sChain name': schain_name}, 'Removed sChain found')
         )
-        remove_schain_container(schain_name)
         delete_bls_keys(skale, schain_name)
         cleanup_schain(node_id, schain_name)
 
