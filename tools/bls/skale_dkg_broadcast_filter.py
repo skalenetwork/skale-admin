@@ -55,9 +55,9 @@ class Filter:
             'nodeIndex': node_index, "secretKeyContribution": skc, "verificationVector": vv
             })
 
-    def get_events(self):
+    def get_events(self, from_channel_started_block=False):
         start_block = self.last_viewed_block
-        if self.last_viewed_block == -1:
+        if self.last_viewed_block == -1 or from_channel_started_block:
             start_block = self.dkg_contract.functions.getChannelStartedBlock(
                 self.group_index
             ).call({'from': self.skale.wallet.address})
