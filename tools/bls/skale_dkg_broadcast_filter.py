@@ -56,14 +56,15 @@ class Filter:
             })
 
     def get_events(self, from_channel_started_block=False):
-        start_block = self.last_viewed_block
         if self.last_viewed_block == -1 or from_channel_started_block:
             start_block = self.dkg_contract.functions.getChannelStartedBlock(
                 self.group_index
             ).call({'from': self.skale.wallet.address})
+        else:
+            start_block = self.last_viewed_block
         current_block = self.skale.web3.eth.getBlock("latest")["number"]
         events = []
-        for block_number in range(max(start_block, self.last_viewed_block), current_block + 1):
+        for block_number in range(start_block, current_block + 1):
             block = self.skale.web3.eth.getBlock(block_number)
             txns = block["transactions"]
             for tx in txns:
