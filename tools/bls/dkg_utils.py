@@ -25,6 +25,8 @@ from tools.configs import NODE_DATA_PATH
 from tools.bls.dkg_client import DKGClient, DkgError, DkgVerificationError, DkgTransactionError
 from tools.bls.skale_dkg_broadcast_filter import Filter
 
+from sgx.http import SgxUnreachableError
+
 logger = logging.getLogger(__name__)
 
 RECEIVE_TIMEOUT = 1800
@@ -91,7 +93,11 @@ def broadcast_and_check_data(dkg_client, poly_name):
     is_correct = [False for _ in range(n)]
     is_correct[dkg_client.node_id_dkg] = True
 
-    broadcast(dkg_client, poly_name)
+    try:
+        broadcast(dkg_client, poly_name)
+    except SgxUnreachableError as e:
+        logger.error(e)
+        wait_for_fail(dkg_client)
 
     dkg_filter = Filter(skale, schain_name, n)
 
@@ -116,11 +122,12 @@ def broadcast_and_check_data(dkg_client, poly_name):
                 try:
                     dkg_client.receive_from_node(from_node, broadcasted_data)
                     is_correct[from_node] = True
-                except DkgVerificationError:
-                    logger.info(
-                        f'sChain {schain_name}: dkg verification error from node {from_node}'
-                    )
+                except DkgVerificationError as e:
+                    logger.error(e)
                     continue
+                except SgxUnreachableError as e:
+                    logger.error(e)
+                    wait_for_fail(dkg_client)
 
                 logger.info(
                     f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
@@ -167,6 +174,9 @@ def response(dkg_client, to_node_index):
         dkg_client.response(to_node_index)
     except DkgTransactionError:
         pass
+    except SgxUnreachableError as e:
+        logger.error(e)
+        wait_for_fail(dkg_client)
 
 
 def send_alright(dkg_client):
