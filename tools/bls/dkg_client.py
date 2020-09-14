@@ -297,7 +297,7 @@ class DKGClient:
                         f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
             return False
         try:
-            self.skale.dkg.complaint(
+            tx_res = self.skale.dkg.complaint(
                 self.group_index,
                 self.node_id_contract,
                 self.node_ids_dkg[to_node],
@@ -306,6 +306,9 @@ class DKGClient:
             )
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node sent a complaint on {to_node} node')
+            if len(tx_res.receipt['logs']) != 5:
+                logger.info(f'sChain: {self.schain_name}. Complaint was rejected')
+                return False
             return True
         except TransactionFailedError as e:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
