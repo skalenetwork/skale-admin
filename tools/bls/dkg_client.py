@@ -150,6 +150,18 @@ class DKGClient:
     def is_channel_opened(self):
         return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
 
+    def store_broadcasted_data(self, data, from_node, receive_for_itself=False):
+        if not receive_for_itself:
+            self.incoming_verification_vector[from_node] = data[0]
+            self.incoming_secret_key_contribution[from_node] = data[1][
+                192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
+            ]
+        else:
+            self.incoming_verification_vector[from_node] = convert_hex_to_g2_array(data[0])
+            self.incoming_secret_key_contribution[from_node] = data[1][
+                192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
+            ]
+
     @sgx_unreachable_retry
     def generate_polynomial(self, poly_name):
         self.poly_name = poly_name
@@ -206,18 +218,10 @@ class DKGClient:
     def receive_from_node(self, from_node, broadcasted_data):
         if from_node == self.node_id_dkg:
             if self.incoming_verification_vector[from_node] == '0':
-                self.incoming_verification_vector[from_node] = convert_hex_to_g2_array(
-                    broadcasted_data[0]
-                )
-                self.incoming_secret_key_contribution[from_node] = broadcasted_data[1][
-                    192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
-                ]
+                self.store_broadcasted_data(broadcasted_data, from_node, True)
             return
 
-        self.incoming_verification_vector[from_node] = broadcasted_data[0]
-        self.incoming_secret_key_contribution[from_node] = broadcasted_data[1][
-            192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
-        ]
+        self.store_broadcasted_data(broadcasted_data, from_node)
 
         try:
             if not self.verification(from_node):
