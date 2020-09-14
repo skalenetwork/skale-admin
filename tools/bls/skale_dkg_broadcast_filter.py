@@ -77,5 +77,5 @@ class Filter:
                         events.append(self.parse_event(receipt))
                 except TransactionNotFound:
                     pass
-        self.first_unseen_block = current_block + 1
+            self.first_unseen_block = block_number + 1
         return events
