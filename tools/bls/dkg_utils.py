@@ -103,7 +103,10 @@ def broadcast_and_check_data(dkg_client, poly_name):
         logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
                     f'{RECEIVE_TIMEOUT - time_gone} seconds left')
 
-        events = dkg_filter.get_events()
+        if is_everyone_broadcasted(dkg_client):
+            events = dkg_filter.get_events(from_channel_started_block=True)
+        else:
+            events = dkg_filter.get_events()
         for event in events:
             from_node = dkg_client.node_ids_contract[event["nodeIndex"]]
             secret_key_contribution, verification_vector = (
