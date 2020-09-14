@@ -26,7 +26,7 @@ class Filter:
         self.skale = skale
         self.group_index = skale.web3.sha3(text=schain_name)
         self.group_index_str = self.skale.web3.toHex(self.group_index)
-        self.last_viewed_block = -1
+        self.first_unseen_block = -1
         self.dkg_contract = skale.dkg.contract
         self.event_hash = "0x47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d"
         self.n = n
@@ -56,12 +56,12 @@ class Filter:
             })
 
     def get_events(self, from_channel_started_block=False):
-        if self.last_viewed_block == -1 or from_channel_started_block:
+        if self.first_unseen_block == -1 or from_channel_started_block:
             start_block = self.dkg_contract.functions.getChannelStartedBlock(
                 self.group_index
             ).call({'from': self.skale.wallet.address})
         else:
-            start_block = self.last_viewed_block
+            start_block = self.first_unseen_block
         current_block = self.skale.web3.eth.getBlock("latest")["number"]
         events = []
         for block_number in range(start_block, current_block + 1):
@@ -77,5 +77,5 @@ class Filter:
                         events.append(self.parse_event(receipt))
                 except TransactionNotFound:
                     pass
-            self.last_viewed_block = current_block + 1
+        self.first_unseen_block = current_block + 1
         return events
