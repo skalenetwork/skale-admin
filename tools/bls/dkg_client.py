@@ -143,12 +143,18 @@ class DKGClient:
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
         self.dkg_contract_functions = self.skale.dkg.contract.functions
+        self.complaint_error_event_hash = self.skale.web3.toHex(self.skale.web3.sha3(
+            text="ComplaintError(string)"
+        ))
         logger.info(
             f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
             f'Node id on contract is {self.node_id_contract}')
 
     def is_channel_opened(self):
         return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
+
+    def check_complaint_logs(self, logs):
+        return logs['topics'][0].hex() != self.complaint_error_event_hash
 
     def store_broadcasted_data(self, data, from_node, receive_for_itself=False):
         if not receive_for_itself:
@@ -310,10 +316,7 @@ class DKGClient:
             )
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node sent a complaint on {to_node} node')
-            if len(tx_res.receipt['logs']) != 5:
-                logger.info(f'sChain: {self.schain_name}. Complaint was rejected')
-                return False
-            return True
+            return self.check_complaint_logs(tx_res.receipt['logs'][0])
         except TransactionFailedError as e:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
