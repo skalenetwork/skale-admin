@@ -47,6 +47,7 @@ def construct_sgx_bp(config):
             version = sgx.get_server_version()
         except Exception:  # todo: catch specific error - edit sgx.py
             status = 1
+            version = None
         res = {
             'status': status,
             'status_name': SGXStatus(status).name,
