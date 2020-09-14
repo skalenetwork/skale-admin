@@ -152,8 +152,8 @@ def broadcast(dkg_client, poly_name):
 
 def send_complaint(dkg_client, index, reason="", wait_for_response=False):
     try:
+        channel_started_time = get_channel_started_time(dkg_client)
         if dkg_client.send_complaint(index):
-            channel_started_time = get_channel_started_time(dkg_client)
             if wait_for_response:
                 wait_for_fail(dkg_client, channel_started_time, reason)
                 logger.info(f'sChain {dkg_client.schain_name}:'
