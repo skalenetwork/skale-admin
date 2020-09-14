@@ -1,8 +1,8 @@
 """ SKALE test utilities """
 
+import json
 import random
 import string
-import json
 
 
 class FailedAPICall(Exception):

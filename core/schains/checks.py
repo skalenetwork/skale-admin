@@ -19,7 +19,6 @@
 
 import os
 import logging
-import time
 
 from core.schains.config.helper import get_allowed_endpoints, get_schain_rpc_ports
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
@@ -134,11 +133,10 @@ class SChainChecks:
 
 
 def check_for_rotation(skale, schain_name, node_id):
-    ts = time.time()
     rotation_data = skale.node_rotation.get_rotation(schain_name)
+    rotation_in_progress = skale.node_rotation.is_rotation_in_progress(schain_name)
     finish_ts = rotation_data['finish_ts']
     rotation_id = rotation_data['rotation_id']
-    rotation_in_progress = finish_ts > ts
     new_schain = rotation_data['new_node'] == node_id
     exiting_node = rotation_data['leaving_node'] == node_id
     return {

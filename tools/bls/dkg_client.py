@@ -35,6 +35,8 @@ sys.path.insert(0, NODE_DATA_PATH)
 
 logger = logging.getLogger(__name__)
 
+ALRIGHT_GAS_LIMIT = 1000000
+
 
 class DkgError(Exception):
     pass
@@ -275,7 +277,8 @@ class DKGClient:
             self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,
-                gas_price=self.skale.dkg.gas_price()
+                gas_price=self.skale.dkg.gas_price(),
+                gas_limit=ALRIGHT_GAS_LIMIT
             )
         except TransactionFailedError as e:
             logger.error(f'DKG alright failed: sChain {self.schain_name}')

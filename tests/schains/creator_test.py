@@ -122,7 +122,7 @@ def test_new_schain_monitor(skale, config):
         assert args[2] == rotation_info['finish_ts']
 
 
-def test_check_schain_rotated(skale):
+def test_check_schain_rotated(skale, schain_dir):
     assert not check_schain_rotated(SCHAIN_NAME)
     info_mock = {
         'status': 'exited',

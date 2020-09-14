@@ -80,7 +80,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
         f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}, '
-        f'ecdsa_key_name: {ecdsa_key_name}, schain_id: {schain_id}'
+        f'ecdsa keyname: {ecdsa_key_name}, schain_id: {schain_id}'
     )
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
