@@ -256,7 +256,6 @@ class DKGClient:
         return bls_private_key
 
     def get_bls_public_keys(self):
-        print("BEFORE PUBLIC KEYS:", self.incoming_verification_vector[self.node_id_dkg])
         self.incoming_verification_vector[self.node_id_dkg] = convert_g2_array_to_hex(
             self.incoming_verification_vector[self.node_id_dkg]
         )
