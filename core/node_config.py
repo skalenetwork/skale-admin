@@ -18,10 +18,13 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import functools
+import logging
 from filelock import FileLock
 
 from tools.helper import read_json, write_json, init_file
 from tools.configs import NODE_CONFIG_FILEPATH, NODE_CONFIG_LOCK_PATH
+
+logger = logging.getLogger(__name__)
 
 
 def config_setter(func):
