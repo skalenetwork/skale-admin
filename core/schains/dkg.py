@@ -44,10 +44,11 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 
+    channel_started_time = get_channel_started_time(dkg_client)
+
     broadcast_and_check_data(dkg_client, poly_name)
 
     if not is_everyone_broadcasted(dkg_client):
-        channel_started_time = get_channel_started_time(dkg_client)
         wait_for_fail(dkg_client, channel_started_time, "broadcast")
 
     check_failed_dkg(dkg_client)
