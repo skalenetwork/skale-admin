@@ -239,7 +239,7 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'All data from {from_node} was received and verified')
         except SgxUnreachableError as e:
-            raise DkgVerificationError(
+            raise SgxUnreachableError(
                     f"sChain: {self.schain_name}. "
                     f"Fatal error : user {str(from_node + 1)} "
                     f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
