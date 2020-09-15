@@ -214,7 +214,6 @@ class DKGClient:
                 self.node_id_contract,
                 verification_vector,
                 secret_key_contribution,
-                gas_price=self.skale.dkg.gas_price()
             )
         except TransactionFailedError as e:
             logger.error(f'DKG broadcast failed: sChain {self.schain_name}')
@@ -286,7 +285,6 @@ class DKGClient:
             self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,
-                gas_price=self.skale.dkg.gas_price(),
                 gas_limit=ALRIGHT_GAS_LIMIT
             )
         except TransactionFailedError as e:
@@ -311,7 +309,6 @@ class DKGClient:
                 self.group_index,
                 self.node_id_contract,
                 self.node_ids_dkg[to_node],
-                gas_price=self.skale.dkg.gas_price(),
                 wait_for=True
             )
             if self.check_complaint_logs(tx_res.receipt['logs'][0]):
@@ -359,7 +356,6 @@ class DKGClient:
                 share,
                 convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
                 convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
-                gas_price=self.skale.dkg.gas_price()
             )
         except TransactionFailedError as e:
             logger.error(f'DKG response failed: sChain {self.schain_name}')
