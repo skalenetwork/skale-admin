@@ -82,6 +82,15 @@ def convert_g2_point_to_hex(data):
     return data_hexed
 
 
+def convert_hex_to_g2_array(data):
+    g2_array = []
+    while len(data) > 0:
+        cur = data[:256]
+        g2_array.append([str(x) for x in [int(cur[64 * i:64 * i + 64], 16) for i in range(4)]])
+        data = data[256:]
+    return g2_array
+
+
 def convert_str_to_key_share(sent_secret_key_contribution, n):
     return_value = []
     for i in range(n):
@@ -134,12 +143,30 @@ class DKGClient:
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
         self.dkg_contract_functions = self.skale.dkg.contract.functions
+        self.complaint_error_event_hash = self.skale.web3.toHex(self.skale.web3.sha3(
+            text="ComplaintError(string)"
+        ))
         logger.info(
             f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
             f'Node id on contract is {self.node_id_contract}')
 
     def is_channel_opened(self):
         return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
+
+    def check_complaint_logs(self, logs):
+        return logs['topics'][0].hex() != self.complaint_error_event_hash
+
+    def store_broadcasted_data(self, data, from_node, receive_for_itself=False):
+        if not receive_for_itself:
+            self.incoming_verification_vector[from_node] = data[0]
+            self.incoming_secret_key_contribution[from_node] = data[1][
+                192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
+            ]
+        else:
+            self.incoming_verification_vector[from_node] = convert_hex_to_g2_array(data[0])
+            self.incoming_secret_key_contribution[from_node] = data[1][
+                192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
+            ]
 
     @sgx_unreachable_retry
     def generate_polynomial(self, poly_name):
@@ -194,10 +221,13 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
     def receive_from_node(self, from_node, broadcasted_data):
-        self.incoming_verification_vector[from_node] = broadcasted_data[0]
-        self.incoming_secret_key_contribution[from_node] = broadcasted_data[1][
-            192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
-        ]
+        if from_node == self.node_id_dkg:
+            if self.incoming_verification_vector[from_node] == '0':
+                self.store_broadcasted_data(broadcasted_data, from_node, True)
+            return
+
+        self.store_broadcasted_data(broadcasted_data, from_node)
+
         try:
             if not self.verification(from_node):
                 raise DkgVerificationError(
@@ -208,7 +238,7 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'All data from {from_node} was received and verified')
         except SgxUnreachableError as e:
-            raise DkgVerificationError(
+            raise SgxUnreachableError(
                     f"sChain: {self.schain_name}. "
                     f"Fatal error : user {str(from_node + 1)} "
                     f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
@@ -275,15 +305,20 @@ class DKGClient:
                         f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
             return False
         try:
-            self.skale.dkg.complaint(
+            tx_res = self.skale.dkg.complaint(
                 self.group_index,
                 self.node_id_contract,
                 self.node_ids_dkg[to_node],
                 wait_for=True
             )
-            logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_dkg} node sent a complaint on {to_node} node')
-            return True
+            if self.check_complaint_logs(tx_res.receipt['logs'][0]):
+                logger.info(f'sChain: {self.schain_name}. '
+                            f'{self.node_id_dkg} node sent a complaint on {to_node} node')
+                return True
+            else:
+                logger.info(f'sChain: {self.schain_name}. Complaint from {self.node_id_dkg} on '
+                            f'{to_node} node was rejected')
+                return False
         except TransactionFailedError as e:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
