@@ -190,7 +190,10 @@ def is_everyone_broadcasted(dkg_client):
 
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):
     for i in range(dkg_client.n):
-        if not is_correct[i] or not is_recieved[i]:
+        if not is_recieved[i]:
+            send_complaint(dkg_client, i, "broadcast", True)
+            break
+        if not is_correct[i]:
             send_complaint(dkg_client, i, "correct data", True)
             break
 

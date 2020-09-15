@@ -314,9 +314,14 @@ class DKGClient:
                 gas_price=self.skale.dkg.gas_price(),
                 wait_for=True
             )
-            logger.info(f'sChain: {self.schain_name}. '
+            if self.check_complaint_logs(tx_res.receipt['logs'][0]):
+                logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node sent a complaint on {to_node} node')
-            return self.check_complaint_logs(tx_res.receipt['logs'][0])
+                return True
+            else:
+                logger.info(f'sChain: {self.schain_name}. Complaint from {self.node_id_dkg} on '
+                            f'{to_node} node was rejected')
+                return False
         except TransactionFailedError as e:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)

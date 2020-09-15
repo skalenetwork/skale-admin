@@ -27,7 +27,8 @@ from tools.bls.dkg_utils import (
     generate_bls_key, get_bls_public_keys, generate_bls_key_name, generate_poly_name,
     get_secret_key_share_filepath, is_all_data_received, is_everyone_broadcasted,
     check_response, check_no_complaints, check_failed_dkg, wait_for_fail, broadcast_and_check_data,
-    get_complaint_data, get_complaint_started_time, get_alright_started_time, RECEIVE_TIMEOUT
+    get_complaint_data, get_complaint_started_time, get_alright_started_time,
+    get_channel_started_time, RECEIVE_TIMEOUT
 )
 from tools.helper import write_json
 
@@ -46,7 +47,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     broadcast_and_check_data(dkg_client, poly_name)
 
     if not is_everyone_broadcasted(dkg_client):
-        wait_for_fail(dkg_client, "broadcast")
+        channel_started_time = get_channel_started_time(dkg_client)
+        wait_for_fail(dkg_client, channel_started_time, "broadcast")
 
     check_failed_dkg(dkg_client)
 
