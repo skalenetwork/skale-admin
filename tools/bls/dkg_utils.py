@@ -93,15 +93,16 @@ def broadcast_and_check_data(dkg_client, poly_name):
     is_correct = [False for _ in range(n)]
     is_correct[dkg_client.node_id_dkg] = True
 
+    start_time = get_channel_started_time(dkg_client)
+
     try:
         broadcast(dkg_client, poly_name)
     except SgxUnreachableError as e:
         logger.error(e)
-        wait_for_fail(dkg_client)
+        wait_for_fail(dkg_client, start_time)
 
     dkg_filter = Filter(skale, schain_name, n)
 
-    start_time = get_channel_started_time(dkg_client)
     while False in is_received:
         time_gone = get_latest_block_timestamp(dkg_client) - start_time
         if time_gone > RECEIVE_TIMEOUT:
