@@ -9,7 +9,7 @@ class ResponseMock:
         return {}
 
 
-def test_set_rotation():
+def test_set_rotation(schain_dir):
     with mock.patch('core.schains.helper.requests.post',
                     new=mock.Mock(return_value=ResponseMock())) as post:
         set_rotation_for_schain(SCHAIN, 100)

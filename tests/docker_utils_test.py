@@ -93,7 +93,7 @@ def remove_schain_container(client):
     client.rm_vol(SCHAIN_NAME)
 
 
-def test_run_schain_container(client):
+def test_run_schain_container(client, schain_dir):
     # Run schain container
     run_simple_schain_container(client)
 
@@ -104,7 +104,7 @@ def test_run_schain_container(client):
     remove_schain_container(client)
 
 
-def test_run_schain_container_in_sync_mode(client):
+def test_run_schain_container_in_sync_mode(client, schain_dir):
     # Run schain container
     run_simple_schain_container_in_sync_mode(client)
 
