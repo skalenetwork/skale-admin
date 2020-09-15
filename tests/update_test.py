@@ -5,7 +5,7 @@ from core.updates import update_node_config_file
 
 NODE_STRUCT = {
     'name': 'test',
-    'ip': '0.0.0.0'
+    'ip': b'A\x80\x17\xe4'
 }
 
 
@@ -27,4 +27,4 @@ def test_update_node_config_file(skale):
 
     assert config.id == 3
     assert config.name == 'test'
-    assert config.ip == '0.0.0.0'
+    assert config.ip == '65.128.23.228'

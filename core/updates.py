@@ -18,6 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from skale import Skale
+from skale.utils.helper import ip_from_bytes
+
 from core.node_config import NodeConfig
 
 
@@ -48,4 +50,4 @@ def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:
             node_config.name = node_info['name']
         if node_config.ip is None:
             node_info = skale.nodes.get(node_config.id)
-            node_config.ip = node_info['ip']
+            node_config.ip = ip_from_bytes(node_info['ip'])

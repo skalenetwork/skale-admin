@@ -39,6 +39,7 @@ from web.models.schain import set_schains_first_run
 init_admin_logger()
 logger = logging.getLogger(__name__)
 
+INITIAL_SLEEP_INTERVAL = 135
 SLEEP_INTERVAL = 50
 MONITOR_INTERVAL = 45
 
@@ -52,6 +53,7 @@ def monitor(skale, node_config):
 
 
 def main():
+    time.sleep(INITIAL_SLEEP_INTERVAL)
     node_config = NodeConfig()
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
