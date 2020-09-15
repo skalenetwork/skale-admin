@@ -131,7 +131,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
                 continue
             except SgxUnreachableError as e:
                 logger.error(e)
-                wait_for_fail(dkg_client)
+                wait_for_fail(dkg_client, start_time)
 
             logger.info(
                 f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
@@ -176,12 +176,13 @@ def send_complaint(dkg_client, index, reason="", wait_for_response=False):
 
 def response(dkg_client, to_node_index):
     try:
+        channel_started_time = get_channel_started_time(dkg_client)
         dkg_client.response(to_node_index)
     except DkgTransactionError:
         pass
     except SgxUnreachableError as e:
         logger.error(e)
-        wait_for_fail(dkg_client)
+        wait_for_fail(dkg_client, channel_started_time)
 
 
 def send_alright(dkg_client):
