@@ -32,7 +32,7 @@ def test_init_checks(skale):
     assert checks.node_id == TEST_NODE_ID
 
 
-def test_get_all_checks(skale):
+def test_get_all_checks(skale, schain_dir):
     dutils = DockerUtils(volume_driver='local')
     cleanup_schain(dutils)
     run_simple_schain_container(dutils)
