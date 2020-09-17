@@ -33,7 +33,7 @@ class SChainRecord(BaseModel):
     dkg_status = IntegerField()
     is_deleted = BooleanField(default=False)
     first_run = BooleanField(default=True)
-    repair_mode = BooleanField(default=True)
+    repair_mode = BooleanField(default=False)
 
     @classmethod
     def add(cls, name):

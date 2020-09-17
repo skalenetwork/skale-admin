@@ -4,10 +4,11 @@ import pytest
 
 from web.models.schain import (
     create_tables,
-    set_schains_first_run,
-    upsert_schain_record,
     mark_schain_deleted,
-    SChainRecord
+    set_schains_first_run,
+    toggle_schain_repair_mode,
+    SChainRecord,
+    upsert_schain_record
 )
 
 
@@ -25,6 +26,7 @@ def db():
 
 @pytest.fixture
 def upsert_db(db):
+    """ Fixture: db with filled records """
     for i in range(RECORDS_NUMBER):
         upsert_schain_record(f'schain-{i}')
     return
@@ -69,3 +71,14 @@ def test_schains_first_run(db, upsert_db):
     set_schains_first_run()
     assert SChainRecord.select().where(
         SChainRecord.first_run == True).count() == RECORDS_NUMBER  # noqa: E712
+
+
+def test_toggle_repair_mode(db, upsert_db):
+    toggle_schain_repair_mode('schain-0')
+    assert SChainRecord.select().where(
+        SChainRecord.repair_mode == True).count() == 1  # noqa: E712
+    cursor = SChainRecord.select().where(
+        SChainRecord.repair_mode == True).execute()  # noqa: E712
+    records = list(cursor)
+    assert len(records) == 1
+    assert records[0].name == 'schain-0'
