@@ -7,6 +7,7 @@ from skale.utils.contracts_provision.utils import (
 )
 
 
+@pytest.mark.skip('Deprecated functionality')
 def test_skale_filter(skale):
     sfilter = SkaleFilter(
         skale.dkg.contract.events.BroadcastAndKeyShare,
@@ -16,8 +17,9 @@ def test_skale_filter(skale):
     assert isinstance(sfilter.get_events(), list)
 
 
+@pytest.mark.skip('Deprecated functionality')
 def test_remove_schain_filter(skale):
-    for _ in range(0, 1):
+    for _ in range(0, 2):
         ip, _, port, name = generate_random_node_data()
         skale.manager.create_node(ip, port, name, wait_for=True)
 
@@ -37,6 +39,7 @@ def test_remove_schain_filter(skale):
     assert events[-1]['args']['name'] == name
 
 
+@pytest.mark.skip('Deprecated functionality')
 def test_skale_filter_with_events(skale):
     events = [{'event_id': 1}, {'event_id': 2}]
 
@@ -59,6 +62,7 @@ def test_skale_filter_with_events(skale):
         assert sfilter.get_events() == events
 
 
+@pytest.mark.skip('Deprecated functionality')
 def test_skale_filter_with_exception(skale):
     events = [{'event_id': 1}, {'event_id': 2}]
 

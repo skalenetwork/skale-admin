@@ -22,12 +22,21 @@ import json
 import logging
 import subprocess
 import time
+import requests
 from subprocess import PIPE
 
 from jinja2 import Environment
 
 
 logger = logging.getLogger(__name__)
+
+
+def post_request(url, json, cookies=None):
+    try:
+        return requests.post(url, json=json, cookies=cookies, timeout=10)
+    except requests.exceptions.ConnectionError:
+        print(f'Could not connect to {url}')
+        return None
 
 
 def read_json(path, mode='r'):
@@ -122,12 +131,10 @@ class SkaleFilter:
         for _ in range(self.retries):
             try:
                 events = self.web3_filter.get_all_entries()
-            except Exception as err:
+            except Exception:
                 self.web3_filter = self.create_filter()
                 time.sleep(self.timeout)
-                logger.error(
-                    f'Retreiving events from filter failed with {err}'
-                )
+                logger.error('Retreiving events from filter failed')
             else:
                 break
 

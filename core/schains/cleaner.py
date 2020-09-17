@@ -20,29 +20,39 @@
 import os
 import logging
 import shutil
-from time import sleep
+from multiprocessing import Process
 
-from skale.manager_client import spawn_skale_lib
 
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
-from core.schains.runner import get_container_name
-from core.schains.config import get_allowed_endpoints
+from core.schains.runner import get_container_name, is_exited
+from core.schains.config.helper import get_allowed_endpoints
 
-from tools.helper import SkaleFilter
-from tools.docker_utils import DockerUtils
-from tools.custom_thread import CustomThread
-from tools.str_formatters import arguments_list_string
+from sgx import SgxClient
+
+from tools.bls.dkg_utils import get_secret_key_share_filepath
+from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from tools.docker_utils import DockerUtils
 from tools.iptables import remove_rules as remove_iptables_rules
-from web.models.schain import SChainRecord
-
-from . import CLEANER_INTERVAL, MONITOR_INTERVAL
+from tools.helper import read_json
+from tools.str_formatters import arguments_list_string
+from web.models.schain import mark_schain_deleted
 
 
 logger = logging.getLogger(__name__)
 dutils = DockerUtils()
+
+JOIN_TIMEOUT = 1800
+
+
+def run_cleaner(skale, node_config):
+    process = Process(target=monitor, args=(skale, node_config))
+    process.start()
+    process.join(JOIN_TIMEOUT)
+    process.terminate()
+    process.join()
 
 
 def log_remove(component_name, schain_name):
@@ -72,86 +82,89 @@ def remove_config_dir(schain_name):
     shutil.rmtree(schain_dir_path)
 
 
-def remove_schain_record(schain_name):
-    if SChainRecord.added(schain_name):
-        schain_record = SChainRecord.get_by_name(schain_name)
-        schain_record.set_deleted()
+def monitor(skale, node_config):
+    logger.info('Cleaner procedure started.')
+    schains_on_node = get_schains_on_node()
+    schain_names_on_contracts = get_schain_names_from_contract(skale,
+                                                               node_config.id)
+    logger.info(f'Found such schains on contracts: {schain_names_on_contracts}')
+    logger.info(f'Found such schains on node: {schains_on_node}')
+    for schain_name in schains_on_node:
+        try:
+            if schain_name not in schain_names_on_contracts:
+                ensure_schain_removed(skale, schain_name, node_config.id)
+        except Exception as err:
+            logger.error(f'Removing schain {schain_name} failed', exc_info=err)
+
+    logger.info('Cleanup procedure finished')
 
 
-class SChainsCleaner():
-    def __init__(self, skale, node_config):
-        self.skale = spawn_skale_lib(skale)
-        self.skale_events = spawn_skale_lib(skale)
-        self.node_config = node_config
-        CustomThread('Wait for node ID', self.wait_for_node_id, once=True).start()
+def get_schain_names_from_contract(skale, node_id):
+    schains_on_contract = skale.schains.get_schains_for_node(node_id)
+    return list(map(lambda schain: schain['name'], schains_on_contract))
 
-    def wait_for_node_id(self, opts):
-        while self.node_config.id is None:
-            logger.debug('Waiting for the node_id in sChains Cleaner...')
-            sleep(MONITOR_INTERVAL)
-        self.node_id = self.node_config.id
-        self.monitor = CustomThread('sChains cleaner monitor', self.schains_cleaner,
-                                    interval=CLEANER_INTERVAL)
-        self.monitor.start()
-        logger.info(
-            arguments_list_string({'Node ID': self.node_config.id}, 'sChains cleaner started'))
 
-    def get_schain_names_from_contract(self):
-        schains_on_contract = self.skale.schains_data.get_schains_for_node(self.node_config.id)
-        return list(map(lambda schain: schain['name'], schains_on_contract))
+def get_schains_on_node():
+    # get all schain dirs
+    schain_dirs = os.listdir(SCHAINS_DIR_PATH)
+    # get all schain containers
 
-    def schains_cleaner(self, opts):
-        schains_on_node = self.get_schains_on_node()
-        schain_ids = self.schain_names_to_ids(schains_on_node)
-        schain_names_on_contracts = self.get_schain_names_from_contract()
+    schain_containers = dutils.get_all_schain_containers(all=True)
+    schain_containers_names = []
+    for container in schain_containers:
+        schain_name = container.name.replace('skale_schain_', '', 1)
+        schain_containers_names.append(schain_name)
+    # merge 2 lists without duplicates
+    return sorted(list(set(schain_dirs + schain_containers_names)))
 
-        event_filter = SkaleFilter(
-            self.skale_events.schains.contract.events.SchainDeleted,
-            from_block=0,
-            argument_filters={'schainId': schain_ids}
+
+def schain_names_to_ids(skale, schain_names):
+    ids = []
+    for name in schain_names:
+        id_ = skale.schains.name_to_id(name)
+        ids.append(bytes.fromhex(id_))
+    return ids
+
+
+def remove_firewall_rules(schain_name):
+    endpoints = get_allowed_endpoints(schain_name)
+    remove_iptables_rules(endpoints)
+
+
+def ensure_schain_removed(skale, schain_name, node_id):
+    if not skale.schains_internal.is_schain_exist(schain_name) or \
+            is_exited(schain_name, dutils=dutils):
+        logger.info(arguments_list_string(
+            {'sChain name': schain_name}, 'Removed sChain found')
         )
-        events = event_filter.get_events()
+        delete_bls_keys(skale, schain_name)
+        cleanup_schain(node_id, schain_name)
 
-        for event in events:
-            name = event['args']['name']
-            if name in schains_on_node and name not in schain_names_on_contracts:
-                logger.info(
-                    arguments_list_string({'sChain name': name}, 'sChain deleted event found'))
-                self.run_cleanup(name)
 
-    def get_schains_on_node(self):
-        # get all schain dirs
-        schain_dirs = os.listdir(SCHAINS_DIR_PATH)
-        # get all schain containers
-        schain_containers = dutils.get_all_schain_containers(all=True)
-        schain_containers_names = []
-        for container in schain_containers:
-            schain_name = container.name.replace('skale_schain_', '', 1)
-            schain_containers_names.append(schain_name)
-        # merge 2 lists without duplicates
-        return list(set(schain_dirs + schain_containers_names))
+def cleanup_schain(node_id, schain_name):
+    checks = SChainChecks(schain_name, node_id).get_all()
+    if checks['container'] or is_exited(schain_name, dutils=dutils):
+        remove_schain_container(schain_name)
+    if checks['volume']:
+        remove_schain_volume(schain_name)
+    if checks['firewall_rules']:
+        remove_firewall_rules(schain_name)
+    # TODO: Test IMA
+    # if checks['ima_container']:
+    #     remove_ima_container(schain_name)
+    if checks['data_dir']:
+        remove_config_dir(schain_name)
+    mark_schain_deleted(schain_name)
 
-    def schain_names_to_ids(self, schain_names):
-        ids = []
-        for name in schain_names:
-            id_ = self.skale.schains_data.name_to_id(name)
-            ids.append(bytes.fromhex(id_))
-        return ids
 
-    def remove_firewall_rules(self, schain_name):
-        endpoints = get_allowed_endpoints(schain_name)
-        remove_iptables_rules(endpoints)
-
-    def run_cleanup(self, schain_name):
-        checks = SChainChecks(schain_name, self.node_id).get_all()
-        if checks['container']:
-            remove_schain_container(schain_name)
-        if checks['volume']:
-            remove_schain_volume(schain_name)
-        if checks['firewall_rules']:
-            self.remove_firewall_rules(schain_name)
-        if checks['ima_container']:
-            remove_ima_container(schain_name)
-        if checks['data_dir']:
-            remove_config_dir(schain_name)
-        remove_schain_record(schain_name)
+def delete_bls_keys(skale, schain_name):
+    last_rotation_id = skale.schains.get_last_rotation_id(schain_name)
+    for i in range(last_rotation_id + 1):
+        try:
+            secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)
+            secret_key_share_config = read_json(secret_key_share_filepath)
+            bls_key_name = secret_key_share_config['key_share_name']
+            sgx = SgxClient(os.environ['SGX_SERVER_URL'], path_to_cert=SGX_CERTIFICATES_FOLDER)
+            sgx.delete_bls_key(bls_key_name)
+        except IOError:
+            continue

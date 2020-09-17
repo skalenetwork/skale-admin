@@ -17,21 +17,54 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import sys
+import hashlib
 import logging
+import re
+import sys
 from logging import Formatter, StreamHandler
-import logging.handlers as py_handlers
+from logging.handlers import RotatingFileHandler
 
-from tools.configs.logs import (ADMIN_LOG_PATH, DEBUG_LOG_PATH, LOG_FILE_SIZE_BYTES,
+from tools.configs.logs import (ADMIN_LOG_PATH,
+                                API_LOG_PATH,
+                                DEBUG_LOG_PATH,
+                                LOG_FILE_SIZE_BYTES,
                                 LOG_BACKUP_COUNT, LOG_FORMAT)
+
+
+HIDING_PATTERNS = [
+    r'NEK\:\w+',
+    r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
+    r'ws[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+]
+
+
+class HidingFormatter:
+    def __init__(self, base_formatter, patterns):
+        self.base_formatter = base_formatter
+        self._patterns = patterns
+
+    @classmethod
+    def convert_match_to_sha3(cls, match):
+        return hashlib.sha3_256(match.group(0).encode('utf-8')).digest().hex()
+
+    def format(self, record):
+        msg = self.base_formatter.format(record)
+        for pattern in self._patterns:
+            pat = re.compile(pattern)
+            msg = pat.sub(self.convert_match_to_sha3, msg)
+        return msg
+
+    def __getattr__(self, attr):
+        return getattr(self.base_formatter, attr)
 
 
 def init_logger(log_file_path, debug_file_path=None):
     handlers = []
 
-    formatter = Formatter(LOG_FORMAT)
-    f_handler = py_handlers.RotatingFileHandler(log_file_path, maxBytes=LOG_FILE_SIZE_BYTES,
-                                                backupCount=LOG_BACKUP_COUNT)
+    base_formatter = Formatter(LOG_FORMAT)
+    formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
+    f_handler = RotatingFileHandler(log_file_path, maxBytes=LOG_FILE_SIZE_BYTES,
+                                    backupCount=LOG_BACKUP_COUNT)
 
     f_handler.setFormatter(formatter)
     f_handler.setLevel(logging.INFO)
@@ -43,9 +76,9 @@ def init_logger(log_file_path, debug_file_path=None):
     handlers.append(stream_handler)
 
     if debug_file_path:
-        f_handler_debug = py_handlers.RotatingFileHandler(debug_file_path,
-                                                          maxBytes=LOG_FILE_SIZE_BYTES,
-                                                          backupCount=LOG_BACKUP_COUNT)
+        f_handler_debug = RotatingFileHandler(debug_file_path,
+                                              maxBytes=LOG_FILE_SIZE_BYTES,
+                                              backupCount=LOG_BACKUP_COUNT)
         f_handler_debug.setFormatter(formatter)
         f_handler_debug.setLevel(logging.DEBUG)
         handlers.append(f_handler_debug)
@@ -55,3 +88,7 @@ def init_logger(log_file_path, debug_file_path=None):
 
 def init_admin_logger():
     init_logger(ADMIN_LOG_PATH, DEBUG_LOG_PATH)
+
+
+def init_api_logger():
+    init_logger(API_LOG_PATH)

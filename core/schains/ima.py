@@ -17,9 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from core.schains.helper import get_schain_data_dir, get_schain_config_filepath, \
-    get_schain_config, get_schain_dir_path, get_schain_proxy_file_path
-from core.schains.config import get_schain_ports
+from core.schains.helper import (get_schain_data_dir, get_schain_config_filepath,
+                                 get_schain_dir_path, get_schain_proxy_file_path)
+from core.schains.config.helper import get_schain_ports, get_schain_config
 
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.configs import LOCAL_WALLET_FILEPATH

@@ -32,6 +32,7 @@ class SChainRecord(BaseModel):
     added_at = DateTimeField()
     dkg_status = IntegerField()
     is_deleted = BooleanField(default=False)
+    first_run = BooleanField(default=True)
 
     @classmethod
     def add(cls, name):
@@ -73,6 +74,7 @@ class SChainRecord(BaseModel):
             'dkg_status': record.dkg_status,
             'dkg_status_name': DKGStatus(record.dkg_status).name,
             'is_deleted': record.is_deleted,
+            'first_run': record.first_run
         }
 
     def dkg_started(self):
@@ -92,3 +94,35 @@ class SChainRecord(BaseModel):
     def set_deleted(self):
         self.is_deleted = True
         self.save()
+
+    def set_first_run(self, val):
+        logger.info(f'Changing first_run for {self.name} to {val}')
+        self.first_run = val
+        self.save()
+
+
+def create_tables():
+    logger.info('Creating schainrecord table...')
+    if not SChainRecord.table_exists():
+        SChainRecord.create_table()
+
+
+def set_schains_first_run():
+    logger.info('Setting first_run=True for all sChain records')
+    query = SChainRecord.update(first_run=True).where(
+        SChainRecord.first_run == False)  # noqa
+    query.execute()
+
+
+def upsert_schain_record(name):
+    if not SChainRecord.added(name):
+        schain_record, _ = SChainRecord.add(name)
+    else:
+        schain_record = SChainRecord.get_by_name(name)
+    return schain_record
+
+
+def mark_schain_deleted(name):
+    if SChainRecord.added(name):
+        schain_record = SChainRecord.get_by_name(name)
+        schain_record.set_deleted()

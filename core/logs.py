@@ -25,7 +25,7 @@ from tools.helper import run_cmd
 from tools.docker_utils import DockerUtils
 
 
-class Logs():
+class Logs:
     def __init__(self):
         self.docker_utils = DockerUtils()
 

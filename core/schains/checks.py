@@ -20,12 +20,13 @@
 import os
 import logging
 
-from core.schains.config import get_allowed_endpoints
+from core.schains.config.helper import get_allowed_endpoints, get_schain_rpc_ports
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.iptables import apsent_rules as apsent_iptables_rules
+from tools.helper import post_request
 
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -34,18 +35,14 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 
-class SChainChecks():
-    def __init__(self, schain_name: str, node_id: int, log=False, failhook=None):
+# TODO: Fix IMA
+class SChainChecks:
+    def __init__(self, schain_name: str, node_id: int, rotation_id=0, log=False, failhook=None):
         self.name = schain_name
         self.node_id = node_id
         self.failhook = failhook
-        self.check_data_dir()
-        self.check_config()
-        self.check_dkg()
-        self.check_volume()
-        self.check_firewall_rules()
-        self.check_container()
-        self.check_ima_container()
+        self.rotation_id = rotation_id
+        self.run_checks()
         if log:
             self.log_health_check()
         if not self.is_healthy() and self.failhook:
@@ -53,12 +50,22 @@ class SChainChecks():
                 f'sChain checks failed: {self.name}, {self.get_all()}, node_id: {node_id}',
                 level='warning')
 
+    def run_checks(self):
+        self.check_data_dir()
+        self.check_config()
+        self.check_dkg()
+        self.check_volume()
+        self.check_firewall_rules()
+        self.check_container()
+        # self.check_ima_container()
+        self.check_rpc()
+
     def check_data_dir(self):
         schain_dir_path = get_schain_dir_path(self.name)
         self._data_dir = os.path.isdir(schain_dir_path)
 
     def check_dkg(self):
-        secret_key_share_filepath = get_secret_key_share_filepath(self.name)
+        secret_key_share_filepath = get_secret_key_share_filepath(self.name, self.rotation_id)
         self._dkg = os.path.isfile(secret_key_share_filepath)
 
     def check_config(self):
@@ -78,6 +85,13 @@ class SChainChecks():
         info = dutils.get_info(name)
         self._ima_container = dutils.container_running(info)
 
+    def check_rpc(self):
+        self._rpc = False
+        if self._config:
+            http_port, _ = get_schain_rpc_ports(self.name)
+            http_endpoint = f'http://127.0.0.1:{http_port}'
+            self._rpc = check_endpoint_alive(http_endpoint)
+
     def check_firewall_rules(self):
         self._firewall_rules = False
         if self._config:
@@ -86,10 +100,7 @@ class SChainChecks():
 
     def is_healthy(self):
         checks = self.get_all()
-        for check in checks:
-            if not checks[check]:
-                return False
-        return True
+        return False not in checks.values()
 
     def get_all(self):
         return {
@@ -98,8 +109,10 @@ class SChainChecks():
             'config': self._config,
             'volume': self._volume,
             'container': self._container,
-            'ima_container': self._ima_container,
-            'firewall_rules': self._firewall_rules
+            # TODO: Test IMA
+            # 'ima_container': self._ima_container,
+            'firewall_rules': self._firewall_rules,
+            'rpc': self._rpc
         }
 
     def log_health_check(self):
@@ -111,10 +124,35 @@ class SChainChecks():
                 failed_checks.append(check)
         if len(failed_checks) != 0:
             failed_checks_str = ", ".join(failed_checks)
-
             logger.info(
                 arguments_list_string(
                     {'sChain name': self.name, 'Failed checks': failed_checks_str},
                     'Failed sChain checks', 'error'
                 )
             )
+
+
+def check_for_rotation(skale, schain_name, node_id):
+    rotation_data = skale.node_rotation.get_rotation(schain_name)
+    rotation_in_progress = skale.node_rotation.is_rotation_in_progress(schain_name)
+    finish_ts = rotation_data['finish_ts']
+    rotation_id = rotation_data['rotation_id']
+    new_schain = rotation_data['new_node'] == node_id
+    exiting_node = rotation_data['leaving_node'] == node_id
+    return {
+        'result': rotation_in_progress,
+        'new_schain': new_schain,
+        'exiting_node': exiting_node,
+        'finish_ts': finish_ts,
+        'rotation_id': rotation_id
+    }
+
+
+def check_endpoint_alive(http_endpoint):
+    res = post_request(
+        http_endpoint,
+        json={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1}
+    )
+    if res and res.status_code == 200:
+        return True
+    return False

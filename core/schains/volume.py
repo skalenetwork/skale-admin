@@ -22,16 +22,15 @@ import logging
 from core.schains.types import SchainTypes
 from tools.helper import read_json
 from tools.configs.resource_allocation import RESOURCE_ALLOCATION_FILEPATH
-from tools.docker_utils import DockerUtils
+from tools.configs.schains import FILESTORAGE_ARTIFACTS_FILEPATH
 
 logger = logging.getLogger(__name__)
-docker_utils = DockerUtils()
 
 
-def init_data_volume(schain):
+def init_data_volume(schain, dutils):
     schain_name = schain['name']
 
-    if docker_utils.data_volume_exists(schain_name):
+    if dutils.data_volume_exists(schain_name):
         logger.debug(f'Volume already exists: {schain_name}')
         return
 
@@ -40,7 +39,7 @@ def init_data_volume(schain):
     resource_allocation = get_resource_allocation_info()
     volume_size = resource_allocation['disk'][f'part_{option_name}']
 
-    return docker_utils.create_data_volume(schain_name, volume_size)
+    return dutils.create_data_volume(schain_name, volume_size)
 
 
 def get_container_limits(schain):
@@ -64,8 +63,16 @@ def get_allocation_option_name(schain):
     return SchainTypes(part_of_node).name
 
 
+def get_allocation_part_name(schain):
+    return f'part_{get_allocation_option_name(schain)}'
+
+
 def get_resource_allocation_info():
     return read_json(RESOURCE_ALLOCATION_FILEPATH)
+
+
+def get_filestorage_info():
+    return read_json(FILESTORAGE_ARTIFACTS_FILEPATH)
 
 
 def get_schain_volume_config(name, mount_path):

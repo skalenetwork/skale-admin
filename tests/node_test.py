@@ -5,7 +5,7 @@ import pytest
 
 from skale.utils.contracts_provision.main import generate_random_node_data
 
-from core.node import Node
+from core.node import Node, NodeExitStatuses, NodeStatuses
 from core.node_config import NodeConfig
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -18,7 +18,7 @@ def node(skale):
 
 
 def test_info_unregisted_node(node):
-    assert node.info == {'status': 0}
+    assert node.info == {'status': 5}
 
 
 def test_create_insufficient_funds(node):
@@ -43,9 +43,9 @@ def test_register_info(node):
     assert res['status'] == 1
     res_data = res.get('data')
 
-    skalepy_data = node.skale.nodes_data.get_by_name(name)
+    skalepy_data = node.skale.nodes.get_by_name(name)
     assert skalepy_data['name'] == name
-    assert node.skale.nodes_data.get(res_data['node_id'])
+    assert node.skale.nodes.get(res_data['node_id'])
     assert res_data['node_id'] == node.config.id
 
     # Register the same node again
@@ -62,3 +62,55 @@ def test_register_info(node):
     assert info['port'] == int(port)
     assert info['id'] == node.config.id
     assert info['publicKey'] == node.skale.wallet.public_key
+    assert info['status'] == 0
+
+
+@pytest.fixture
+def active_node(skale):
+    ip, public_ip, port, name = generate_random_node_data()
+    skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
+    config = NodeConfig()
+    config.id = skale.nodes.node_name_to_index(name)
+    yield Node(skale, config)
+
+
+def test_start_exit(active_node):
+    active_node.exit({})
+    status = NodeExitStatuses(active_node.skale.nodes.get_node_status(active_node.config.id))
+
+    assert status != NodeExitStatuses.ACTIVE
+
+
+def test_exit_status(active_node):
+    active_status_data = active_node.get_exit_status()
+    assert list(active_status_data.keys()) == ['status', 'data', 'exit_time']
+    assert active_status_data['status'] == NodeExitStatuses.ACTIVE.name
+    assert active_status_data['exit_time'] == 0
+
+    active_node.exit({})
+    exit_status_data = active_node.get_exit_status()
+    assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
+    assert exit_status_data['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
+    assert exit_status_data['exit_time'] != 0
+    assert active_node.info['status'] == NodeStatuses.FROZEN.value
+
+
+def test_node_maintenance(active_node, skale):
+    res = active_node.set_maintenance_on()
+    node_status = NodeStatuses(skale.nodes.get_node_status(active_node.config.id))
+    assert res == {'status': 0}
+    assert node_status == NodeStatuses.IN_MAINTENANCE
+
+    res = active_node.set_maintenance_off()
+    node_status = NodeStatuses(skale.nodes.get_node_status(active_node.config.id))
+    assert res == {'status': 0}
+    assert node_status == NodeStatuses.ACTIVE
+
+
+def test_node_maintenance_error(active_node, skale):
+    res = active_node.set_maintenance_off()
+    assert res == {'status': 1, 'errors': ['Node is not in maintenance mode']}
+
+    active_node.set_maintenance_on()
+    res = active_node.set_maintenance_on()
+    assert res == {'status': 1, 'errors': ['Node should be active']}

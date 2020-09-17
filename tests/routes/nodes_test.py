@@ -35,41 +35,56 @@ def skale_bp(skale, node):
 
 def test_check_node_name(skale_bp, skale):
     data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': 'test'})
-    assert data is True
+    assert data == {'status': 'ok', 'payload': {'name_available': True}}
     ip, public_ip, port, name = generate_random_node_data()
     skale.manager.create_node(ip, port, name, wait_for=True)
     data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': name})
-    assert data is False
-    node_idx = skale.nodes_data.node_name_to_index(name)
-    skale.manager.delete_node_by_root(node_idx, wait_for=True)
+    assert data == {'status': 'ok', 'payload': {'name_available': False}}
+    node_idx = skale.nodes.node_name_to_index(name)
+    skale.manager.node_exit(node_idx, wait_for=True)
 
 
 def test_check_node_ip(skale_bp, skale):
     data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': '0.0.0.0'})
-    assert data is True
+    assert data == {'status': 'ok', 'payload': {'ip_available': True}}
     ip, public_ip, port, name = generate_random_node_data()
     skale.manager.create_node(ip, port, name, wait_for=True)
     data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': ip})
-    assert data is False
-    node_idx = skale.nodes_data.node_name_to_index(name)
-    skale.manager.delete_node_by_root(node_idx, wait_for=True)
+    assert data == {'status': 'ok', 'payload': {'ip_available': False}}
+    node_idx = skale.nodes.node_name_to_index(name)
+    skale.manager.node_exit(node_idx, wait_for=True)
 
 
 def test_containers_list(skale_bp, skale):
     dutils = DockerUtils(volume_driver='local')
     data = get_bp_data(skale_bp, '/containers/list')
-    assert data == dutils.get_all_skale_containers(format=True)
+    expected = {
+        'status': 'ok',
+        'payload': {
+            'containers': dutils.get_all_skale_containers(format=True)
+        }
+    }
+    assert data == expected
     data = get_bp_data(skale_bp, '/containers/list', {'all': True})
-    assert data == dutils.get_all_skale_containers(all=all, format=True)
+    expected = {'status': 'ok',
+                'payload': {
+                    'containers': dutils.get_all_skale_containers(all=True,
+                                                                  format=True)}
+                }
+    assert data == expected
 
 
 def test_node_info(skale_bp, node):
     data = get_bp_data(skale_bp, '/node-info')
-    assert data == node.info
+    assert data == {'status': 'ok', 'payload': {'node_info': node.info}}
 
 
 def register_mock(self, ip, public_ip, port, name):
     return {'status': 1, 'data': 1}
+
+
+def set_maintenance_mock(self):
+    return {'status': 0}
 
 
 @patch.object(Node, 'register', register_mock)
@@ -82,7 +97,24 @@ def test_node_create(skale_bp, node_config):
         'port': port
     }
     data = post_bp_data(skale_bp, '/create-node', json_data)
-    assert data == 1
+    assert data == {'status': 'ok', 'payload': {'node_data': 1}}
+
+
+def failed_register_mock(self, ip, public_ip, port, name):
+    return {'status': 0, 'errors': ['Already registered']}
+
+
+@patch.object(Node, 'register', failed_register_mock)
+def test_create_with_errors(skale_bp, node_config):
+    ip, public_ip, port, name = generate_random_node_data()
+    json_data = {
+        'name': name,
+        'ip': ip,
+        'publicIP': public_ip,
+        'port': port
+    }
+    data = post_bp_data(skale_bp, '/create-node', json_data)
+    assert data == {'payload': ['Already registered'], 'status': 'error'}
 
 
 def get_expected_signature(skale, validator_id):
@@ -98,3 +130,15 @@ def test_node_signature(skale_bp, skale):
     expected_signature = get_expected_signature(skale, validator_id)
     assert data == {'status': 'ok', 'payload': {
         'signature': expected_signature}}
+
+
+@patch.object(Node, 'set_maintenance_on', set_maintenance_mock)
+def test_set_maintenance_on(skale_bp, skale, node_config):
+    data = post_bp_data(skale_bp, '/api/node/maintenance-on')
+    assert data == {'payload': {}, 'status': 'ok'}
+
+
+@patch.object(Node, 'set_maintenance_off', set_maintenance_mock)
+def test_set_maintenance_off(skale_bp, skale, node_config):
+    data = post_bp_data(skale_bp, '/api/node/maintenance-off')
+    assert data == {'payload': {}, 'status': 'ok'}
