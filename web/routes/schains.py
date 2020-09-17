@@ -25,7 +25,7 @@ from http import HTTPStatus
 from core.schains.config.helper import get_allowed_endpoints, get_schain_config
 from core.schains.helper import schain_config_exists
 from core.schains.checks import SChainChecks
-from web.models.schain import SChainRecord
+from web.models.schain import SChainRecord, toggle_schain_repair_mode
 from web.helper import construct_ok_response, construct_err_response, construct_key_error_response
 
 logger = logging.getLogger(__name__)
@@ -106,5 +106,16 @@ def construct_schains_bp(skale, config, docker_utils):
             for schain in schains
         ]
         return construct_ok_response(checks)
+
+    @schains_bp.route('/api/schains/repair', methods=['POST'])
+    def enable_repair_mode():
+        logger.debug(request)
+        schain = request.args.get('schain')
+        if not schain_config_exists(schain):
+            return construct_err_response(
+                msg=f'No schain with name {schain}'
+            )
+        toggle_schain_repair_mode(schain)
+        return construct_ok_response()
 
     return schains_bp
