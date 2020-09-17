@@ -110,12 +110,13 @@ def construct_schains_bp(skale, config, docker_utils):
     @schains_bp.route('/api/schains/repair', methods=['POST'])
     def enable_repair_mode():
         logger.debug(request)
-        schain = request.args.get('schain')
-        if not schain_config_exists(schain):
+        schain = request.json.get('schain')
+        result = toggle_schain_repair_mode(schain)
+        if result:
+            return construct_ok_response()
+        else:
             return construct_err_response(
                 msg=f'No schain with name {schain}'
             )
-        toggle_schain_repair_mode(schain)
-        return construct_ok_response()
 
     return schains_bp

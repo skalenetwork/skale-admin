@@ -10,6 +10,8 @@ from skale.utils.web3_utils import init_web3
 
 from tools.configs.schains import SCHAINS_DIR_PATH
 
+from web.models.schain import create_tables, SChainRecord
+
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
@@ -120,3 +122,10 @@ def schain_dir():
     Path(config_path).unlink(missing_ok=True)
     Path(secret_key_path).unlink(missing_ok=True)
     shutil.rmtree(schain_dir_path, ignore_errors=True)
+
+
+@pytest.fixture
+def db():
+    create_tables()
+    yield
+    SChainRecord.drop_table()

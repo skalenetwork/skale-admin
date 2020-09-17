@@ -10,11 +10,11 @@ from flask import Flask
 from core.node_config import NodeConfig
 from core.schains.runner import get_image_name
 from core.schains.config.helper import get_schain_config_filepath
-from tests.utils import get_bp_data
+from tests.utils import get_bp_data, post_bp_data
 from tools.docker_utils import DockerUtils
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.iptables import NodeEndpoint
-from web.models.schain import SChainRecord
+from web.models.schain import SChainRecord, upsert_schain_record
 from web.routes.schains import construct_schains_bp
 
 
@@ -172,3 +172,21 @@ def test_schains_healthchecks(skale_bp, skale):
                 'firewall_rules': True,
                 'rpc': False
             }
+
+
+def test_enable_repair_mode(skale_bp, db):
+    schain_name = 'test-schain'
+    upsert_schain_record(schain_name)
+    data = post_bp_data(skale_bp, '/api/schains/repair',
+                        params={'schain': schain_name})
+    assert data == {
+        'payload': {},
+        'status': 'ok'
+    }
+
+    data = post_bp_data(skale_bp, '/api/schains/repair',
+                        params={'schain': 'undefined-schain'})
+    assert data == {
+        'payload': 'No schain with name undefined-schain',
+        'status': 'error'
+    }

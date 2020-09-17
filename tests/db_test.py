@@ -3,7 +3,6 @@ from concurrent.futures import ProcessPoolExecutor as pexec
 import pytest
 
 from web.models.schain import (
-    create_tables,
     mark_schain_deleted,
     set_schains_first_run,
     toggle_schain_repair_mode,
@@ -15,13 +14,6 @@ from web.models.schain import (
 THREADS = 8
 RECORDS_NUMBER = THREADS
 MAX_WORKERS = 5
-
-
-@pytest.fixture
-def db():
-    create_tables()
-    yield
-    SChainRecord.drop_table()
 
 
 @pytest.fixture
@@ -74,7 +66,8 @@ def test_schains_first_run(db, upsert_db):
 
 
 def test_toggle_repair_mode(db, upsert_db):
-    toggle_schain_repair_mode('schain-0')
+    result = toggle_schain_repair_mode('schain-0')
+    assert result
     assert SChainRecord.select().where(
         SChainRecord.repair_mode == True).count() == 1  # noqa: E712
     cursor = SChainRecord.select().where(
@@ -82,3 +75,10 @@ def test_toggle_repair_mode(db, upsert_db):
     records = list(cursor)
     assert len(records) == 1
     assert records[0].name == 'schain-0'
+
+
+def test_toggle_repair_mode_schain_not_exists(db, upsert_db):
+    result = toggle_schain_repair_mode('undefined-schain')
+    assert not result
+    assert SChainRecord.select().where(
+        SChainRecord.repair_mode == True).count() == 0  # noqa: E712

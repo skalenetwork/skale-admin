@@ -138,4 +138,5 @@ def toggle_schain_repair_mode(name):
     logger.info(f'Toggling repair mode for schain {name}')
     query = SChainRecord.update(repair_mode=True).where(
         SChainRecord.name == name)
-    query.execute()
+    count = query.execute()
+    return count > 0
