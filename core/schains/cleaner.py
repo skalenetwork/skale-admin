@@ -37,6 +37,7 @@ from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.iptables import remove_rules as remove_iptables_rules
 from tools.helper import read_json
+from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
 from web.models.schain import mark_schain_deleted
 
@@ -162,9 +163,13 @@ def delete_bls_keys(skale, schain_name):
     for i in range(last_rotation_id + 1):
         try:
             secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)
-            secret_key_share_config = read_json(secret_key_share_filepath)
-            bls_key_name = secret_key_share_config['key_share_name']
-            sgx = SgxClient(os.environ['SGX_SERVER_URL'], path_to_cert=SGX_CERTIFICATES_FOLDER)
-            sgx.delete_bls_key(bls_key_name)
-        except IOError:
-            continue
+            if os.path.isfile(secret_key_share_filepath):
+                secret_key_share_config = read_json(secret_key_share_filepath)
+                bls_key_name = secret_key_share_config.get('key_share_name')
+                if bls_key_name:
+                    sgx = SgxClient(SGX_SERVER_URL,
+                                    path_to_cert=SGX_CERTIFICATES_FOLDER)
+                    sgx.delete_bls_key(bls_key_name)
+        except Exception as err:
+            logger.warning(f'Removing secret_key for rotation {i} failed',
+                           exc_info=err)
