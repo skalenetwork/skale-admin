@@ -44,9 +44,8 @@ def init_data_volume(schain, dutils):
 
 def get_container_limits(schain):
     size = get_allocation_option_name(schain)
-    cpu_limit = get_allocation_option('cpu', size)
-    nanocpu_limit = cpu_to_nanocpu(cpu_limit)
-    return nanocpu_limit, get_allocation_option('mem', size)
+    cpu_shares_limit = get_allocation_option('cpu_shares', size)
+    return cpu_shares_limit, get_allocation_option('mem', size)
 
 
 def cpu_to_nanocpu(cpu_limit):

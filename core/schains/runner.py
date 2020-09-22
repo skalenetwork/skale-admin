@@ -72,7 +72,7 @@ def get_ulimits_config(config):
 
 
 def run_container(type, schain_name, env, cmd=None, volume_config=None,
-                  cpu_limit=None, mem_limit=None, dutils=None):
+                  cpu_shares_limit=None, mem_limit=None, dutils=None):
     if not dutils:
         dutils = docker_utils
     image_name, container_name, run_args, custom_args = get_container_info(type, schain_name)
@@ -85,8 +85,8 @@ def run_container(type, schain_name, env, cmd=None, volume_config=None,
         run_args['ulimits'] = get_ulimits_config(custom_args['ulimits_list'])
     if volume_config:
         run_args['volumes'].update(volume_config)
-    if cpu_limit:
-        run_args['nano_cpus'] = cpu_limit
+    if cpu_shares_limit:
+        run_args['cpu_shares'] = cpu_shares_limit
     if mem_limit:
         run_args['mem_limit'] = mem_limit
     run_args['environment'] = env
@@ -113,13 +113,13 @@ def restart_container(type, schain):
 
 def run_schain_container(schain, public_key=None, start_ts=None, dutils=None):
     schain_name = schain['name']
-    cpu_limit, mem_limit = get_container_limits(schain)
+    cpu_shares_limit, mem_limit = get_container_limits(schain)
     volume_config = get_schain_volume_config(schain_name,
                                              DATA_DIR_CONTAINER_PATH)
     env = get_schain_env()
     cmd = get_schain_container_cmd(schain_name, public_key, start_ts)
     run_container(SCHAIN_CONTAINER, schain_name, env, cmd,
-                  volume_config, cpu_limit,
+                  volume_config, cpu_shares_limit,
                   mem_limit, dutils=dutils)
 
 
