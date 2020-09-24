@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 from pathlib import Path
@@ -55,8 +56,8 @@ def create_test_schain_on_contracts(skale):
 def schain_dirs_for_monitor():
     schain_dir_path2 = os.path.join(SCHAINS_DIR_PATH, TEST_SCHAIN_NAME_1)
     schain_dir_path1 = os.path.join(SCHAINS_DIR_PATH, TEST_SCHAIN_NAME_2)
-    Path(schain_dir_path1).mkdir(parents=True, exist_ok=False)
-    Path(schain_dir_path2).mkdir(parents=True, exist_ok=False)
+    Path(schain_dir_path1).mkdir(parents=True, exist_ok=True)
+    Path(schain_dir_path2).mkdir(parents=True, exist_ok=True)
     yield
     shutil.rmtree(schain_dir_path1)
     shutil.rmtree(schain_dir_path2)
@@ -122,8 +123,48 @@ def test_remove_schain_record():
     SChainRecord.drop_table()
 
 
-def test_delete_bls_keys(skale, schain_dir):
+@pytest.fixture
+def invalid_secret_key_file(schain_dirs_for_monitor):
+    schain_dir_path1 = os.path.join(SCHAINS_DIR_PATH, TEST_SCHAIN_NAME_1)
+    secret_key_filepath = os.path.join(schain_dir_path1,
+                                       f'secret_key_1.json')
+    with open(secret_key_filepath, 'w') as secret_key_file:
+        json.dump(None, secret_key_file)
+    return
+
+
+@pytest.fixture
+def valid_secret_key_file(schain_dirs_for_monitor):
+    schain_dir_path1 = os.path.join(SCHAINS_DIR_PATH, TEST_SCHAIN_NAME_1)
+    secret_key_filepath = os.path.join(schain_dir_path1,
+                                       f'secret_key_0.json')
+    with open(secret_key_filepath, 'w') as secret_key_file:
+        json.dump(
+            {'key_share_name': 'BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0'},
+            secret_key_file
+        )
+    return
+
+
+def test_delete_bls_keys(skale, valid_secret_key_file):
     with mock.patch('core.schains.cleaner.SgxClient.delete_bls_key',
                     new=mock.Mock()) as delete_mock:
-        delete_bls_keys(skale, SCHAIN['name'])
+        delete_bls_keys(skale, TEST_SCHAIN_NAME_1)
         delete_mock.assert_called_with('BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0')
+        assert delete_mock.call_count == 1
+
+
+def test_delete_bls_keys_with_invalid_secret_key(
+    skale,
+    invalid_secret_key_file,
+    valid_secret_key_file
+):
+    """
+    No exception but removing called only for 0 secret key
+    secret_key_1.json - invalid, secret_key_2.json not exists
+    """
+    skale.schains.get_last_rotation_id = lambda x: 2
+    with mock.patch('core.schains.cleaner.SgxClient.delete_bls_key',
+                    new=mock.Mock()) as delete_mock:
+        delete_bls_keys(skale, TEST_SCHAIN_NAME_1)
+        assert delete_mock.call_count == 1

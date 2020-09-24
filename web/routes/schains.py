@@ -17,14 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
 import logging
 
 from flask import Blueprint, request
 from http import HTTPStatus
 
+from core.schains.checks import SChainChecks
 from core.schains.config.helper import get_allowed_endpoints, get_schain_config
 from core.schains.helper import schain_config_exists
-from core.schains.checks import SChainChecks
+from core.schains.info import get_schain_info_by_name
 from web.models.schain import SChainRecord, toggle_schain_repair_mode
 from web.helper import construct_ok_response, construct_err_response, construct_key_error_response
 
@@ -118,5 +120,17 @@ def construct_schains_bp(skale, config, docker_utils):
             return construct_err_response(
                 msg=f'No schain with name {schain}'
             )
+
+    @schains_bp.route('/api/schains/get', methods=['GET'])
+    def get_schain():
+        logger.debug(request)
+        schain = request.args.get('schain')
+        info = get_schain_info_by_name(schain)
+        if not info:
+            return construct_err_response(
+                msg=f'No schain with name {schain}'
+            )
+        json_response = json.dumps(info.to_dict())
+        return construct_ok_response(json_response)
 
     return schains_bp

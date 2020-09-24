@@ -14,7 +14,7 @@ from tests.utils import get_bp_data, post_bp_data
 from tools.docker_utils import DockerUtils
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.iptables import NodeEndpoint
-from web.models.schain import SChainRecord, upsert_schain_record
+from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 
 
@@ -56,9 +56,8 @@ def test_node_schains_list(skale_bp, skale):
     assert data == {'payload': [], 'status': 'ok'}
 
 
-def test_schain_config(skale_bp, skale):
-    sid = skale.schains_internal.get_all_schains_ids()[-1]
-    name = skale.schains.get(sid).get('name')
+def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):
+    name = schain_on_contracts
     filename = get_schain_config_filepath(name)
     dirname = os.path.dirname(filename)
     if not os.path.isdir(dirname):
@@ -95,7 +94,7 @@ def test_schains_containers_list(skale_bp, skale):
     cont1.remove(force=True)
 
 
-def test_owner_schains(skale_bp, skale):
+def test_owner_schains(skale_bp, skale, schain_on_contracts):
     data = get_bp_data(skale_bp, '/get-owner-schains')
     assert data['status'] == 'ok'
     payload = data['payload']
@@ -174,9 +173,25 @@ def test_schains_healthchecks(skale_bp, skale):
             }
 
 
-def test_enable_repair_mode(skale_bp, db):
-    schain_name = 'test-schain'
-    upsert_schain_record(schain_name)
+def test_enable_repair_mode(skale_bp, schain_db):
+    schain_name = schain_db
+    data = post_bp_data(skale_bp, '/api/schains/repair',
+                        params={'schain': schain_name})
+    assert data == {
+        'payload': {},
+        'status': 'ok'
+    }
+
+    data = post_bp_data(skale_bp, '/api/schains/repair',
+                        params={'schain': 'undefined-schain'})
+    assert data == {
+        'payload': 'No schain with name undefined-schain',
+        'status': 'error'
+    }
+
+
+def test_get_schain(skale_bp, schain_db, schain_on_contracts):
+    schain_name = schain_on_contracts
     data = post_bp_data(skale_bp, '/api/schains/repair',
                         params={'schain': schain_name})
     assert data == {

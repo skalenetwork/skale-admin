@@ -95,7 +95,7 @@ def run_container(type, schain_name, env, cmd=None, volume_config=None,
 
     logger.info(arguments_list_string({'Container name': container_name, 'Image name': image_name,
                                        'Args': run_args}, 'Running container...'))
-    cont = dutils.client.containers.run(image_name, name=container_name, detach=True, **run_args)
+    cont = dutils.run_container(image_name, container_name, **run_args)
     logger.info(arguments_list_string({'Container name': container_name, 'Container id': cont.id},
                                       'Container created', 'success'))
     return cont

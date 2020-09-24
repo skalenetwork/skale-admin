@@ -1,13 +1,27 @@
 """ SKALE data prep for testing """
 
 import logging
+import os
 
+from skale import Skale
 from skale.utils.contracts_provision.main import setup_validator, _skip_evm_time
 from skale.utils.contracts_provision import MONTH_IN_SECONDS
+from skale.wallets import Web3Wallet
+from skale.utils.web3_utils import init_web3
 
-from tests.conftest import init_skale
 
 logger = logging.getLogger(__name__)
+
+
+ENDPOINT = os.getenv('ENDPOINT')
+ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
+TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH')
+
+
+def init_skale():
+    web3 = init_web3(ENDPOINT)
+    wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
+    return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
 
 
 def cleanup_contracts(skale):

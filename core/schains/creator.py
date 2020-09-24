@@ -31,7 +31,11 @@ from skale.skale_manager import spawn_skale_manager_lib
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
                                  is_exited_with_zero)
-from core.schains.cleaner import remove_config_dir
+from core.schains.cleaner import (
+    remove_config_dir,
+    remove_schain_container,
+    remove_schain_volume
+)
 from core.schains.helper import (init_schain_dir, get_schain_config_filepath,
                                  get_schain_proxy_file_path, get_schain_rotation_filepath)
 from core.schains.config.helper import (save_schain_config, get_allowed_endpoints,
@@ -51,7 +55,7 @@ from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs.ima import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
-from tools.notifications.messages import notify_checks
+from tools.notifications.messages import notify_checks, notify_repair_mode
 from tools.str_formatters import arguments_list_string
 from web.models.schain import upsert_schain_record
 
@@ -131,6 +135,13 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     checks_dict = checks.get_all()
 
     schain_record = upsert_schain_record(name)
+    logger.info(f'IVD {schain_record} {schain_record.repair_mode}')
+
+    if schain_record.repair_mode:
+        logger.info(f'Repair mode was toggled for schain {schain["name"]}')
+        notify_repair_mode(node_info, name)
+        repair_schain(skale, schain, checks, finish_time_ts, rotation_id)
+        schain_record.repair_mode = False
 
     if not schain_record.first_run:
         notify_checks(name, node_info, checks_dict)
@@ -197,6 +208,16 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     )
 
 
+def repair_schain(skale, schain, checks, start_ts, rotation_id, dutils=None):
+    logger.info('Cleaning schain {schain["name"]} container and datadir volume')
+    if checks.check_container():
+        remove_schain_container(schain['name'])
+    if checks.check_volume():
+        remove_schain_volume(schain['name'])
+    logger.info('Running fresh container for {schain["name"]}')
+    monitor_sync_schain_container(skale, schain, start_ts, rotation_id, dutils)
+
+
 # TODO: Check for rotation earlier
 def init_schain_config(skale, node_id, schain_name, ecdsa_sgx_key_name):
     config_filepath = get_schain_config_filepath(schain_name)
@@ -253,7 +274,8 @@ def monitor_ima_container(schain):
     run_ima_container(schain)
 
 
-def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
+def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0,
+                                  dutils=None):
     def get_schain_public_key(schain_name, method):
         group_idx = skale.schains.name_to_id(schain_name)
         raw_public_key = method(group_idx)
@@ -271,7 +293,8 @@ def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0):
                 schain['name'],
                 skale.key_storage.get_previous_public_key
             )
-        run_schain_container(schain, public_key=public_key, start_ts=start_ts)
+        run_schain_container(schain, public_key=public_key, start_ts=start_ts,
+                             dutils=dutils)
 
 
 def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,

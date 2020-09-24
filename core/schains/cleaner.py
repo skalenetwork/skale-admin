@@ -164,7 +164,7 @@ def delete_bls_keys(skale, schain_name):
         try:
             secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)
             if os.path.isfile(secret_key_share_filepath):
-                secret_key_share_config = read_json(secret_key_share_filepath)
+                secret_key_share_config = read_json(secret_key_share_filepath) or {}
                 bls_key_name = secret_key_share_config.get('key_share_name')
                 if bls_key_name:
                     sgx = SgxClient(SGX_SERVER_URL,

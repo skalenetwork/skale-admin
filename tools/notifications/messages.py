@@ -127,8 +127,7 @@ def notify_checks(schain_name, node, checks, *, client=None):
 
     if saved_state != state or (
         success and count < SUCCESS_MAX_ATTEMPS or
-        not success and count < FAILED_MAX_ATTEMPS
-    ):
+            not success and count < FAILED_MAX_ATTEMPS):
         message = compose_checks_message(schain_name, node, checks)
         logger.info(f'Sending checks notification with state {state}')
         send_message(message)
@@ -173,6 +172,22 @@ def notify_balance(node_info, balance, required_balance, *, client=None):
     count = 1 if saved_state != state else count + 1
     logger.info(f'Saving new balance state {count} {state}')
     client.mset({count_key: count, state_key: str(state)})
+
+
+def compose_repair_mode_notification(node_info, schain):
+    header = f'{EXCLAMATION_MARK} Repair mode for {schain} enabled \n'
+    return [
+        header,
+        f'Node id: {node_info["node_id"]}',
+        f'Node ip: {node_info["node_ip"]}',
+    ]
+
+
+@notifications_enabled
+def notify_repair_mode(node_info, schain):
+    message = compose_repair_mode_notification(node_info, schain)
+    logger.info('Sending repair mode notificaton')
+    send_message(message)
 
 
 def send_message(message, api_key=TG_API_KEY, chat_id=TG_CHAT_ID):

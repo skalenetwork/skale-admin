@@ -21,7 +21,7 @@ from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 
 @pytest.fixture
-def exiting_node(skale, schain_dir):
+def exiting_node(skale, schain_config):
     cleanup_contracts(skale)
     SChainRecord.create_table()
 
@@ -43,7 +43,7 @@ def exiting_node(skale, schain_dir):
 
 
 # TODO: Mock leaving history, check final exit status
-def test_node_exit(skale, exiting_node, schain_dir):
+def test_node_exit(skale, exiting_node, schain_config):
     nodes, schain_name = exiting_node
     node = nodes[0]
     spawn_skale_lib_mock = get_spawn_skale_mock(node.config.id)
