@@ -93,9 +93,9 @@ def test_remove_config_dir():
 
 def test_remove_schain_volume(dutils):
     dutils.create_data_volume(SCHAIN['name'])
-    assert dutils.data_volume_exists(SCHAIN['name'])
+    assert dutils.is_data_volume_exists(SCHAIN['name'])
     remove_schain_volume(SCHAIN['name'])
-    assert not dutils.data_volume_exists(SCHAIN['name'])
+    assert not dutils.is_data_volume_exists(SCHAIN['name'])
 
 
 def test_remove_schain_container(dutils, schain_dir):

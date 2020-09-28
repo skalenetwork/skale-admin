@@ -63,12 +63,19 @@ class DockerUtils:
     def init_docker_cli(self) -> APIClient:
         return APIClient()
 
-    def data_volume_exists(self, name: str) -> bool:
+    def is_data_volume_exists(self, name: str) -> bool:
         try:
             self.cli.inspect_volume(name)
-            return True
         except docker.errors.NotFound:
             return False
+        return True
+
+    def is_container_exists(self, name: str) -> bool:
+        try:
+            self.client.containers.get(name)
+        except docker.errors.NotFound:
+            return False
+        return True
 
     def run_container(self, image_name: str, name: str,
                       *args, **kwargs) -> Container:

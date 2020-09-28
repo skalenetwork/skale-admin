@@ -72,7 +72,7 @@ def run_simple_ima_container(dutils):
 
 
 def check_schain_container(client):
-    assert client.data_volume_exists(SCHAIN_NAME)
+    assert client.is_data_volume_exists(SCHAIN_NAME)
 
     containers = client.get_all_schain_containers()
     assert len(containers) == 1
@@ -117,7 +117,7 @@ def test_run_schain_container_in_sync_mode(client, schain_dir):
 
 def test_not_existed_docker_objects(client):
     # Not existed volume
-    assert not client.data_volume_exists('random_name')
+    assert not client.is_data_volume_exists('random_name')
     with pytest.raises(docker.errors.NotFound):
         client.rm_vol('random_name')
 

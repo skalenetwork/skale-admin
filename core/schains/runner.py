@@ -159,8 +159,7 @@ def add_config_volume(run_args, schain_name):
 
 
 def is_exited_with_zero(schain_name, dutils=None):
-    if not dutils:
-        dutils = docker_utils
+    dutils = dutils or docker_utils
     info = get_schain_container_info(schain_name, dutils)
     return dutils.is_container_exited_with_zero(info)
 

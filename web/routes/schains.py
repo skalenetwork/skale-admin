@@ -125,7 +125,7 @@ def construct_schains_bp(skale, config, docker_utils):
     def get_schain():
         logger.debug(request)
         schain = request.args.get('schain')
-        info = get_schain_info_by_name(schain)
+        info = get_schain_info_by_name(skale, schain)
         if not info:
             return construct_err_response(
                 msg=f'No schain with name {schain}'

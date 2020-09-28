@@ -87,7 +87,7 @@ def generate_schain_config(schain_name):
             },
             "sChain": {
                 "schainID": 1,
-                "schainName": '',  # Should be replaced to _schain_name
+                "schainName": schain_name,
                 "schainOwner": "0x3483A10F7d6fDeE0b0C1E9ad39cbCE13BD094b12",
                 "nodes": [
                     {

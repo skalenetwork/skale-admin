@@ -20,7 +20,7 @@ def check_firewall_rules_mock(self):
 
 def cleanup_schain(dutils):
     dutils.safe_rm('skale_schain_test', force=True)
-    if dutils.data_volume_exists(SCHAIN_NAME):
+    if dutils.is_data_volume_exists(SCHAIN_NAME):
         dutils.rm_vol(SCHAIN_NAME)
 
 

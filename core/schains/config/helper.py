@@ -18,8 +18,9 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-import shutil
+import logging
 import os
+import shutil
 from itertools import chain
 
 from web3 import Web3
@@ -36,6 +37,9 @@ from tools.helper import read_json
 from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
 from tools.configs.containers import LOCAL_IP
 from tools.iptables import NodeEndpoint
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_static_schain_params():

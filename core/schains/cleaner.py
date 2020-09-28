@@ -65,19 +65,19 @@ def remove_schain_volume(schain_name):
     dutils.rm_vol(schain_name)
 
 
-def remove_schain_container(schain_name):
+def remove_schain_container(schain_name: str):
     log_remove('container', schain_name)
     schain_container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
     return dutils.safe_rm(schain_container_name, v=True, force=True)
 
 
-def remove_ima_container(schain_name):
+def remove_ima_container(schain_name: str):
     log_remove('IMA container', schain_name)
     ima_container_name = get_container_name(IMA_CONTAINER, schain_name)
     dutils.safe_rm(ima_container_name, v=True, force=True)
 
 
-def remove_config_dir(schain_name):
+def remove_config_dir(schain_name: str) -> None:
     log_remove('config directory', schain_name)
     schain_dir_path = get_schain_dir_path(schain_name)
     shutil.rmtree(schain_dir_path)

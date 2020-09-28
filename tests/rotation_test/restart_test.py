@@ -22,10 +22,11 @@ dutils = DockerUtils(volume_driver='local')
 
 
 @pytest.fixture
-def rotated_nodes(skale):
+def rotated_nodes(skale, schain_config):
     cleanup_contracts(skale)
     SChainRecord.create_table()
 
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
     key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
     if os.path.isfile(key_path):
@@ -33,7 +34,7 @@ def rotated_nodes(skale):
     if os.path.isfile(cert_path):
         os.remove(cert_path)
 
-    nodes, schain_name = set_up_rotated_schain(skale)
+    nodes, schain_name = set_up_rotated_schain(skale, schain_name)
 
     yield nodes, schain_name
 
@@ -75,14 +76,14 @@ def test_new_node(skale, rotated_nodes):
             'finish_ts': finish_time,
             'rotation_id': 1
         }
-        with mock.patch('core.schains.creator.check_for_rotation',
+        with mock.patch('core.schains.creator.get_rotation_state',
                         new=mock.Mock(return_value=rotation_mock)):
             monitor(restarted_node.skale, restarted_node.config)
             wait_for_schain_exiting(schain_name)
 
         rotation_mock['result'] = False
         with mock.patch('core.schains.creator.remove_firewall_rules'), \
-                mock.patch('core.schains.creator.check_for_rotation',
+                mock.patch('core.schains.creator.get_rotation_state',
                            new=mock.Mock(return_value=rotation_mock)):
             monitor(restarted_node.skale, restarted_node.config)
             wait_for_schain_alive(schain_name)

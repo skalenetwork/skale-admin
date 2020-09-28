@@ -25,13 +25,14 @@ def exiting_node(skale, schain_config):
     cleanup_contracts(skale)
     SChainRecord.create_table()
 
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
     key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
     if os.path.isfile(key_path):
         os.remove(key_path)
     if os.path.isfile(cert_path):
         os.remove(cert_path)
-    nodes, schain_name = set_up_rotated_schain(skale)
+    nodes, schain_name = set_up_rotated_schain(skale, schain_name)
 
     yield nodes, schain_name
 
@@ -43,7 +44,7 @@ def exiting_node(skale, schain_config):
 
 
 # TODO: Mock leaving history, check final exit status
-def test_node_exit(skale, exiting_node, schain_config):
+def test_node_exit(skale, exiting_node):
     nodes, schain_name = exiting_node
     node = nodes[0]
     spawn_skale_lib_mock = get_spawn_skale_mock(node.config.id)

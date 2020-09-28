@@ -73,7 +73,7 @@ class SChainChecks:
         self._config = os.path.isfile(config_filepath)
 
     def check_volume(self):
-        self._volume = dutils.data_volume_exists(self.name)
+        self._volume = dutils.is_data_volume_exists(self.name)
 
     def check_container(self):
         name = get_container_name(SCHAIN_CONTAINER, self.name)
@@ -132,7 +132,7 @@ class SChainChecks:
             )
 
 
-def check_for_rotation(skale, schain_name, node_id):
+def get_rotation_state(skale, schain_name, node_id):
     rotation_data = skale.node_rotation.get_rotation(schain_name)
     rotation_in_progress = skale.node_rotation.is_rotation_in_progress(schain_name)
     finish_ts = rotation_data['finish_ts']
@@ -140,7 +140,7 @@ def check_for_rotation(skale, schain_name, node_id):
     new_schain = rotation_data['new_node'] == node_id
     exiting_node = rotation_data['leaving_node'] == node_id
     return {
-        'result': rotation_in_progress,
+        'in_progress': rotation_in_progress,
         'new_schain': new_schain,
         'exiting_node': exiting_node,
         'finish_ts': finish_ts,

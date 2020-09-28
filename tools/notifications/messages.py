@@ -174,23 +174,25 @@ def notify_balance(node_info, balance, required_balance, *, client=None):
     client.mset({count_key: count, state_key: str(state)})
 
 
-def compose_repair_mode_notification(node_info, schain):
-    header = f'{EXCLAMATION_MARK} Repair mode for {schain} enabled \n'
+def compose_repair_mode_notification(node_info: dict, schain_name: str) -> list:
+    header = f'{EXCLAMATION_MARK} Repair mode for {schain_name} enabled \n'
     return [
         header,
         f'Node id: {node_info["node_id"]}',
         f'Node ip: {node_info["node_ip"]}',
+        f'SChain: {schain_name}'
     ]
 
 
 @notifications_enabled
-def notify_repair_mode(node_info, schain):
-    message = compose_repair_mode_notification(node_info, schain)
+def notify_repair_mode(node_info: dict, schain_name: str) -> None:
+    message = compose_repair_mode_notification(node_info, schain_name)
     logger.info('Sending repair mode notificaton')
     send_message(message)
 
 
-def send_message(message, api_key=TG_API_KEY, chat_id=TG_CHAT_ID):
+def send_message(message: list, api_key: str = TG_API_KEY,
+                 chat_id: str = TG_CHAT_ID):
     message.extend([
         f'Timestamp: {int(time.time())}',
         f'Datetime: {datetime.utcnow().ctime()}'

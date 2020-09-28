@@ -95,10 +95,10 @@ def set_up_nodes(skale, nodes_number):
     return nodes_data
 
 
-def set_up_rotated_schain(skale):
+def set_up_rotated_schain(skale, schain_name=None):
     nodes_data = set_up_nodes(skale, 2)
 
-    schain_name = generate_random_name()
+    schain_name = schain_name or generate_random_name()
     skale.manager.create_default_schain(schain_name)
 
     run_dkg_all(skale, schain_name, nodes_data)

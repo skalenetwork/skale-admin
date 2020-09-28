@@ -192,14 +192,14 @@ def test_enable_repair_mode(skale_bp, schain_db):
 
 def test_get_schain(skale_bp, schain_db, schain_on_contracts):
     schain_name = schain_on_contracts
-    data = post_bp_data(skale_bp, '/api/schains/repair',
+    data = post_bp_data(skale_bp, '/api/schains/get',
                         params={'schain': schain_name})
     assert data == {
         'payload': {},
         'status': 'ok'
     }
 
-    data = post_bp_data(skale_bp, '/api/schains/repair',
+    data = post_bp_data(skale_bp, '/api/schains/get',
                         params={'schain': 'undefined-schain'})
     assert data == {
         'payload': 'No schain with name undefined-schain',

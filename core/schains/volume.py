@@ -23,14 +23,16 @@ from core.schains.types import SchainTypes
 from tools.helper import read_json
 from tools.configs.resource_allocation import RESOURCE_ALLOCATION_FILEPATH
 from tools.configs.schains import FILESTORAGE_ARTIFACTS_FILEPATH
+from tools.docker_utils import DockerUtils
 
 logger = logging.getLogger(__name__)
 
 
-def init_data_volume(schain, dutils):
+def init_data_volume(schain, dutils=None):
+    dutils = dutils or DockerUtils()
     schain_name = schain['name']
 
-    if dutils.data_volume_exists(schain_name):
+    if dutils.is_data_volume_exists(schain_name):
         logger.debug(f'Volume already exists: {schain_name}')
         return
 
