@@ -43,7 +43,7 @@ from web.models.schain import mark_schain_deleted
 
 
 logger = logging.getLogger(__name__)
-dutils = DockerUtils()
+docker_utils = DockerUtils()
 
 JOIN_TIMEOUT = 1800
 
@@ -60,18 +60,21 @@ def log_remove(component_name, schain_name):
     logger.warning(f'Going to remove {component_name} for sChain {schain_name}')
 
 
-def remove_schain_volume(schain_name):
+def remove_schain_volume(schain_name, dutils=None):
+    dutils = dutils or docker_utils
     log_remove('volume', schain_name)
     dutils.rm_vol(schain_name)
 
 
-def remove_schain_container(schain_name: str):
+def remove_schain_container(schain_name: str, dutils: DockerUtils = None):
+    dutils = dutils or docker_utils
     log_remove('container', schain_name)
     schain_container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
     return dutils.safe_rm(schain_container_name, v=True, force=True)
 
 
-def remove_ima_container(schain_name: str):
+def remove_ima_container(schain_name: str, dutils: DockerUtils = None):
+    dutils = dutils or docker_utils
     log_remove('IMA container', schain_name)
     ima_container_name = get_container_name(IMA_CONTAINER, schain_name)
     dutils.safe_rm(ima_container_name, v=True, force=True)
@@ -105,7 +108,8 @@ def get_schain_names_from_contract(skale, node_id):
     return list(map(lambda schain: schain['name'], schains_on_contract))
 
 
-def get_schains_on_node():
+def get_schains_on_node(dutils=None):
+    dutils = dutils or docker_utils
     # get all schain dirs
     schain_dirs = os.listdir(SCHAINS_DIR_PATH)
     # get all schain containers
@@ -132,7 +136,7 @@ def remove_firewall_rules(schain_name):
     remove_iptables_rules(endpoints)
 
 
-def ensure_schain_removed(skale, schain_name, node_id):
+def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
     if not skale.schains_internal.is_schain_exist(schain_name) or \
             is_exited(schain_name, dutils=dutils):
         logger.info(arguments_list_string(
@@ -142,7 +146,7 @@ def ensure_schain_removed(skale, schain_name, node_id):
         cleanup_schain(node_id, schain_name)
 
 
-def cleanup_schain(node_id, schain_name):
+def cleanup_schain(node_id, schain_name, dutils=None):
     checks = SChainChecks(schain_name, node_id).get_all()
     if checks['container'] or is_exited(schain_name, dutils=dutils):
         remove_schain_container(schain_name)

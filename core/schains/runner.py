@@ -123,16 +123,15 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None):
                   mem_limit, dutils=dutils)
 
 
-def set_rotation_for_schain(schain, timestamp):
-    schain_name = schain['name']
+def set_rotation_for_schain(schain_name: str, timestamp: int) -> None:
     endpoint = get_skaled_http_address(schain_name)
     url = f'http://{endpoint.ip}:{endpoint.port}'
     send_rotation_request(url, timestamp)
 
 
-def run_ima_container(schain, dutils=None):
-    schain_name = schain['name']
-    env = get_ima_env(schain)
+def run_ima_container(schain_name: str, dutils: DockerUtils = None) -> None:
+    dutils = dutils or docker_utils
+    env = get_ima_env(schain_name)
     run_container(IMA_CONTAINER, schain_name, env, dutils=dutils)
 
 

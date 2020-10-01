@@ -1,8 +1,24 @@
 """ SKALE test utilities """
 
 import json
+import os
 import random
 import string
+import time
+
+import mock
+
+from skale import Skale
+from skale.utils.web3_utils import init_web3
+from skale.wallets import Web3Wallet
+
+from core.schains.runner import run_schain_container, run_ima_container
+from tools.docker_utils import DockerUtils
+
+
+ENDPOINT = os.getenv('ENDPOINT')
+ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
+TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH')
 
 
 class FailedAPICall(Exception):
@@ -46,3 +62,48 @@ def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
         return json.loads(data.decode('utf-8'))
 
     return json.loads(data.decode('utf-8'))
+
+
+def get_schain_contracts_data(schain_name):
+    """ Schain data mock in case if schain on contracts is not required """
+    return {
+        'name': schain_name,
+        'owner': '0x1213123091a230923123213123',
+        'indexInOwnerList': 0,
+        'partOfNode': 0,
+        'lifetime': 3600,
+        'startDate': 1575448438,
+        'deposit': 1000000000000000000,
+        'index': 0,
+        'active': True
+    }
+
+
+def run_simple_schain_container(schain_data: dict, dutils: DockerUtils):
+    run_schain_container(schain_data, dutils=dutils)
+
+
+def run_simple_schain_container_in_sync_mode(schain_data: dict,
+                                             dutils: DockerUtils):
+    public_key = "1:1:1:1"
+    timestamp = time.time()
+
+    class SnapshotAddressMock:
+        def __init__(self):
+            self.ip = '0.0.0.0'
+            self.port = '8080'
+
+    # Run schain container
+    with mock.patch('core.schains.config.helper.get_skaled_http_snapshot_address',
+                    return_value=SnapshotAddressMock()):
+        run_schain_container(schain_data, public_key, timestamp, dutils=dutils)
+
+
+def run_simple_ima_container(schain_name: str, dutils: DockerUtils):
+    run_ima_container(schain_name, dutils=dutils)
+
+
+def init_skale():
+    web3 = init_web3(ENDPOINT)
+    wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
+    return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)

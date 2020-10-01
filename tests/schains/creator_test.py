@@ -15,6 +15,7 @@ from core.schains.creator import (check_schain_rotated,
                                   monitor_sync_schain_container)
 from core.schains.helper import get_schain_rotation_filepath
 from core.schains.runner import get_container_name
+from tests.utils import get_schain_contracts_data
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
@@ -31,21 +32,6 @@ def node_config(skale):
     config.sgx_key_name = 'test-sgx-key-name'
     config.ip = '127.0.0.1'
     return config
-
-
-def get_schain_contracts_data(schain_name):
-    """ Schain data mock in case if schain on contracts is not required """
-    return {
-        'name': schain_name,
-        'owner': '0x1213123091a230923123213123',
-        'indexInOwnerList': 0,
-        'partOfNode': 0,
-        'lifetime': 3600,
-        'startDate': 1575448438,
-        'deposit': 1000000000000000000,
-        'index': 0,
-        'active': True
-    }
 
 
 CHECK_MOCK = {
@@ -68,7 +54,8 @@ def test_exiting_monitor(skale, node_config, db):
         'rotation_id': 0
     }
 
-    schain = get_schain_contracts_data(schain_name='test')
+    schain_name = 'test'
+    schain = get_schain_contracts_data(schain_name=schain_name)
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     with mock.patch('core.schains.creator.CONTAINERS_DELAY', 0),\
         mock.patch('core.schains.creator.SChainChecks.run_checks'), \
@@ -80,7 +67,8 @@ def test_exiting_monitor(skale, node_config, db):
         node_info = node_config.all()
         monitor_schain(skale, node_info, schain,
                        ecdsa_sgx_key_name=node_config.sgx_key_name)
-        rotation.assert_called_with(schain, rotation_info['finish_ts'])
+        rotation.assert_called_with(schain_name=schain_name,
+                                    timestamp=rotation_info['finish_ts'])
 
 
 def test_rotating_monitor(skale, node_config, db):
@@ -91,7 +79,8 @@ def test_rotating_monitor(skale, node_config, db):
         'finish_ts': time.time(),
         'rotation_id': 0
     }
-    schain = get_schain_contracts_data(schain_name='test')
+    schain_name = 'test'
+    schain = get_schain_contracts_data(schain_name=schain_name)
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     with mock.patch('core.schains.creator.run_dkg'),\
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
@@ -105,7 +94,8 @@ def test_rotating_monitor(skale, node_config, db):
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
         monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name='test')
-        rotation.assert_called_with(schain, rotation_info['finish_ts'])
+        rotation.assert_called_with(schain_name=schain_name,
+                                    timestamp=rotation_info['finish_ts'])
 
 
 def test_new_schain_monitor(skale, node_config, db):
@@ -118,7 +108,8 @@ def test_new_schain_monitor(skale, node_config, db):
     }
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     CHECK_MOCK['container'] = False
-    schain = get_schain_contracts_data(schain_name='test')
+    schain_name = 'test'
+    schain = get_schain_contracts_data(schain_name=schain_name)
     with mock.patch('core.schains.creator.run_dkg'), \
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
             mock.patch('core.schains.creator.SChainChecks.run_checks'), \

@@ -175,7 +175,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         if not checks_dict['container']:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
-        set_rotation_for_schain(schain, finish_ts)
+        set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     elif mode == MonitorMode.SYNC:
         logger.info(f'Running monitor for sChain {name} in SYNC mode')
@@ -209,7 +209,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         )
         # TODO: do once
         if is_dkg_done:
-            set_rotation_for_schain(schain, finish_ts)
+            set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     else:
         logger.info(f'Running monitor for sChain {name} in REGULAR mode')
@@ -272,8 +272,8 @@ def monitor_schain_container(schain, dutils=None):
         run_schain_container(schain, dutils=dutils)
 
 
-def monitor_ima_container(schain):
-    run_ima_container(schain)
+def monitor_ima_container(schain_name: str):
+    run_ima_container(schain_name)
 
 
 def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0,

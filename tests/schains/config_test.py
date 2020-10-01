@@ -121,8 +121,8 @@ def test_get_snapshots_endpoints_from_config():
     assert get_snapshots_endpoints_from_config(CONFIG) == []
 
 
-def test_get_schain_container_cmd(schain_dir):
-    schain_name = 'test'
+def test_get_schain_container_cmd(schain_config):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
     container_opts = get_schain_container_cmd(schain_name)
     config_filepath = get_schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key_path, ssl_cert_path = get_ssl_filepath()

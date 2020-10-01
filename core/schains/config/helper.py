@@ -152,8 +152,10 @@ def get_skaled_http_snapshot_address_from_config(config):
             from_node = node_data
             break
 
-    return NodeEndpoint(from_node['ip'], from_node['basePort'] +
-                        SkaledPorts.HTTP_JSON.value)
+    return NodeEndpoint(
+        from_node['ip'], from_node['basePort'] +
+        SkaledPorts.HTTP_JSON.value
+    )
 
 
 def get_skaled_http_address(schain_name):
@@ -288,8 +290,8 @@ def parse_public_key_info(bls_public_key):
 
 def get_bls_public_keys(schain_name, rotation_id):
     key_file = get_secret_key_share_filepath(schain_name, rotation_id)
-    json_file = read_json(key_file)
-    return json_file["bls_public_keys"]
+    data = read_json(key_file)
+    return data["bls_public_keys"]
 
 
 def compose_public_key_info(bls_public_key):

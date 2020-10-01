@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import json
 import logging
 
 from flask import Blueprint, request
@@ -130,7 +129,7 @@ def construct_schains_bp(skale, config, docker_utils):
             return construct_err_response(
                 msg=f'No schain with name {schain}'
             )
-        json_response = json.dumps(info.to_dict())
-        return construct_ok_response(json_response)
+        response = info.to_dict()
+        return construct_ok_response(response)
 
     return schains_bp

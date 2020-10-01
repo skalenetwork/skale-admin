@@ -74,11 +74,12 @@ def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
     return True
 
 
-def init_data_volume_mock(schain, dutils):
+def init_data_volume_mock(schain, dutils=None):
     return init_data_volume(schain, docker_utils)
 
 
-def run_schain_container_mock(schain, public_key=None, start_ts=None):
+def run_schain_container_mock(schain, public_key=None, start_ts=None,
+                              dutils=None):
     return run_schain_container(schain, public_key=public_key,
                                 start_ts=start_ts, dutils=docker_utils)
 

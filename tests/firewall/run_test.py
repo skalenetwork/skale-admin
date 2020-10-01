@@ -2,8 +2,6 @@ import time
 import subprocess
 import concurrent.futures
 
-import pytest
-
 from tools.iptables import add_rules, apsent_rules, remove_rules, NodeEndpoint
 
 
@@ -79,7 +77,7 @@ def test_rules_manipulation():
         assert plain_rule not in plain_rules
 
 
-@pytest.mark.skip('Problems with github actions')
+# @pytest.mark.skip('Problems with github actions')
 def test_add_in_threads():
     def add_remove_rule(endpoint):
         add_rules([endpoint])

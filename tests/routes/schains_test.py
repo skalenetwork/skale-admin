@@ -17,6 +17,8 @@ from tools.iptables import NodeEndpoint
 from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 
+from Crypto.Hash import keccak
+
 
 @pytest.fixture
 def skale_bp(skale):
@@ -192,15 +194,24 @@ def test_enable_repair_mode(skale_bp, schain_db):
 
 def test_get_schain(skale_bp, schain_db, schain_on_contracts):
     schain_name = schain_on_contracts
-    data = post_bp_data(skale_bp, '/api/schains/get',
-                        params={'schain': schain_name})
+    keccak_hash = keccak.new(data=schain_name.encode("utf8"), digest_bits=256)
+    schain_id = '0x' + keccak_hash.hexdigest()
+
+    data = get_bp_data(skale_bp, '/api/schains/get',
+                       params={'schain': schain_name})
     assert data == {
-        'payload': {},
-        'status': 'ok'
+        'status': 'ok',
+        'payload': {
+            'name': schain_name,
+            'id': schain_id,
+            'owner': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
+            'part_of_node': 0, 'dkg_status': 1, 'is_deleted': False,
+            'first_run': True, 'repair_mode': False
+        }
     }
 
-    data = post_bp_data(skale_bp, '/api/schains/get',
-                        params={'schain': 'undefined-schain'})
+    data = get_bp_data(skale_bp, '/api/schains/get',
+                       params={'schain': 'undefined-schain'})
     assert data == {
         'payload': 'No schain with name undefined-schain',
         'status': 'error'
