@@ -1,10 +1,10 @@
 {
-    "cpu": {
-        "part_test4": 0.125,
-        "part_test": 0.125,
-        "part_small": 0.0078125,
-        "part_medium": 0.125,
-        "part_large": 1.0
+    "cpu_shares": {
+        "part_test4": 128,
+        "part_test": 128,
+        "part_small": 8,
+        "part_medium": 128,
+        "part_large": 1024
     },
     "mem": {
         "part_test4": 68619571,
@@ -24,9 +24,9 @@
         "storage_limit": {
             "test4": 655360000,
             "test": 655360000,
-            "tiny": 655360000,
-            "small": 10737418240,
-            "medium": 85899345920
+            "small": 655360000,
+            "medium": 10737418240,
+            "large": 85899345920
         },
         "part_test4": {
             "max_consensus_storage_bytes": 4,
