@@ -153,7 +153,7 @@ def add_config_volume(run_args, schain_name):
     # mount /skale_schain_data
     run_args['volumes'][schain_data_dir_path] = {
         'bind': SCHAIN_DATA_PATH,
-        'mode': 'rw'
+        'mode': 'Z'
     }
 
 
