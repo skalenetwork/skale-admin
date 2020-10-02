@@ -192,7 +192,7 @@ def test_enable_repair_mode(skale_bp, schain_db):
     }
 
 
-def test_get_schain(skale_bp, schain_db, schain_on_contracts):
+def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
     schain_name = schain_on_contracts
     keccak_hash = keccak.new(data=schain_name.encode("utf8"), digest_bits=256)
     schain_id = '0x' + keccak_hash.hexdigest()
@@ -204,7 +204,7 @@ def test_get_schain(skale_bp, schain_db, schain_on_contracts):
         'payload': {
             'name': schain_name,
             'id': schain_id,
-            'owner': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
+            'owner': skale.wallet.address,
             'part_of_node': 0, 'dkg_status': 1, 'is_deleted': False,
             'first_run': True, 'repair_mode': False
         }
