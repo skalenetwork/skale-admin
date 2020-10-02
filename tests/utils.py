@@ -16,9 +16,11 @@ from core.schains.runner import run_schain_container, run_ima_container
 from tools.docker_utils import DockerUtils
 
 
+DIR_PATH = ''
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
-TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH')
+TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
+    DIR_PATH, 'test_abi.json')
 
 
 class FailedAPICall(Exception):
