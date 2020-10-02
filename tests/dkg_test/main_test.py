@@ -17,7 +17,7 @@ from skale.utils.helper import init_default_logger
 from skale.utils.account_tools import send_ether
 from skale.wallets import SgxWallet
 
-from core.schains.cleaner import remove_schain_container, remove_schain_volume
+from core.schains.cleaner import remove_schain_container
 from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.dkg import run_dkg
 from core.schains.helper import init_schain_dir
@@ -184,6 +184,9 @@ def run_dkg_all(skale, schain_name, nodes):
         check_config(nodes, node_data, result['config'])
 
     assert len(results) == N_OF_NODES
+
+    gid = skale.schains.name_to_id(schain_name)
+    assert skale.dkg.is_last_dkg_successful(gid)
     # todo: add some additional checks that dkg is finished successfully
 
 
@@ -233,12 +236,12 @@ def cleanup_contracts_from_dkg_items(schain_name: str) -> None:
     node_ids = owner_skale.schains_internal.get_node_ids_for_schain(schain_name)
     owner_skale.manager.delete_schain(schain_name)
     for node_id in node_ids:
-        skale.manager.node_exit(node_id)
+        owner_skale.manager.node_exit(node_id)
 
 
 def cleanup_docker_items(schain_name: str) -> None:
     remove_schain_container(schain_name)
-    remove_schain_volume(schain_name)
+    # remove_schain_volume(schain_name)
 
 
 def cleanup_schain_configs(schain_name: str) -> None:

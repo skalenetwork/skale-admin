@@ -1,5 +1,6 @@
+import subprocess
+import time
 from pathlib import Path
-from time import time
 from unittest import mock
 
 import pytest
@@ -16,23 +17,23 @@ from core.schains.checks import SChainChecks
 from core.schains.cleaner import monitor as cleaner_monitor
 from core.schains.creator import monitor
 from tests.prepare_data import cleanup_contracts
-from web.models.schain import SChainRecord
 from tools.configs import SSL_CERTIFICATES_FILEPATH
+from tools.configs.schains import SCHAINS_DIR_PATH
 
 
 @pytest.fixture
-def exiting_node(skale, schain_config):
+def exiting_node(skale, db):
     cleanup_contracts(skale)
-    SChainRecord.create_table()
 
-    schain_name = schain_config['skaleConfig']['sChain']['schainName']
     key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
     if os.path.isfile(key_path):
         os.remove(key_path)
     if os.path.isfile(cert_path):
         os.remove(cert_path)
-    nodes, schain_name = set_up_rotated_schain(skale, schain_name)
+
+    nodes, schain_name = set_up_rotated_schain(skale)
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
 
     yield nodes, schain_name
 
@@ -41,6 +42,10 @@ def exiting_node(skale, schain_config):
     skale.manager.delete_schain(schain_name, wait_for=True)
     for i in range(1, 3):
         skale.manager.node_exit(nodes[i].config.id, wait_for=True)
+
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
+    # fix permission denied after schain container running
+    subprocess.run(['rm', '-rf', schain_dir_path])
 
 
 # TODO: Mock leaving history, check final exit status
