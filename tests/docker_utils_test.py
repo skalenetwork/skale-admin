@@ -53,7 +53,8 @@ def check_schain_container(schain_name: str, client: DockerUtils):
 def cleanup_container(schain_config, client):
     yield
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    remove_schain_container(schain_name, client)
+    client.safe_rm(get_container_name(SCHAIN_CONTAINER, schain_name),
+                   force=True)
 
 
 def remove_schain_container(schain_name, client):

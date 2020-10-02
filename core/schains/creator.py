@@ -155,7 +155,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     mode = get_monitor_mode(schain_record, rotation)
 
     if schain_record.repair_mode:
-        logger.info(f'Repair mode was toggled for schain {schain["name"]}')
+        logger.info(f'REPAIR MODE was toggled for schain {schain["name"]}')
         notify_repair_mode(node_info, name)
         cleanup_schain_docker_entity(name)
         schain_record.set_repair_mode(False)

@@ -9,10 +9,13 @@ import pytest
 from skale.skale_manager import spawn_skale_manager_lib
 
 from core.node_config import NodeConfig
+
 from core.schains.cleaner import (monitor, remove_config_dir,
                                   remove_schain_volume, remove_schain_container,
                                   remove_ima_container, delete_bls_keys)
 from core.schains.helper import init_schain_dir
+from core.schains.runner import get_container_name
+from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord, mark_schain_deleted
@@ -98,8 +101,10 @@ def test_remove_schain_volume(dutils, schain_config):
 def cleanup_container(schain_config, dutils):
     yield
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    remove_schain_container(schain_name, dutils)
-    remove_ima_container(schain_name, dutils)
+    dutils.safe_rm(get_container_name(SCHAIN_CONTAINER, schain_name),
+                   force=True)
+    dutils.safe_rm(get_container_name(IMA_CONTAINER, schain_name),
+                   force=True)
 
 
 def test_remove_schain_container(dutils, schain_config, cleanup_container):
