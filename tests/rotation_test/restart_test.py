@@ -1,5 +1,5 @@
 import shutil
-from pathlib import Path
+# from pathlib import Path
 from time import time
 from unittest import mock
 
@@ -13,7 +13,7 @@ from tests.rotation_test.utils import (set_up_rotated_schain, get_spawn_skale_mo
                                        run_schain_container_mock, init_data_volume_mock,
                                        run_dkg_mock, wait_for_schain_exiting,
                                        wait_for_schain_alive, wait_for_contract_exiting)
-from tools.configs import SSL_CERTIFICATES_FILEPATH
+# from tools.configs import SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
@@ -27,19 +27,19 @@ def rotated_nodes(skale, schain_config, schain_db):
     SChainRecord.create_table()
 
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
-    cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    if os.path.isfile(key_path):
-        os.remove(key_path)
-    if os.path.isfile(cert_path):
-        os.remove(cert_path)
+#    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+#     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+#     if os.path.isfile(key_path):
+#         os.remove(key_path)
+#     if os.path.isfile(cert_path):
+#         os.remove(cert_path)
 
     nodes, schain_name = set_up_rotated_schain(skale, schain_name)
 
     yield nodes, schain_name
 
-    Path(key_path).touch()
-    Path(cert_path).touch()
+    # Path(key_path).touch()
+    # Path(cert_path).touch()
     schain_dir = os.path.join(SCHAINS_DIR_PATH, schain_name)
     if os.path.isdir(schain_dir):
         shutil.rmtree(schain_dir)
