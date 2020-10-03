@@ -221,14 +221,18 @@ def get_schain_config(schain_name):
     return schain_config
 
 
-def get_schain_env():
-    return {
-        "SEGFAULT_SIGNALS": 'all'
-    }
+def get_schain_env(ulimit_check=True):
+    env = {'SEGFAULT_SIGNALS': 'all'}
+    if not ulimit_check:
+        env.update({
+            'NO_ULIMIT_CHECK': 1
+        })
+    return env
 
 
-def get_schain_container_cmd(schain_name, public_key=None, start_ts=None):
-    opts = get_schain_container_base_opts(schain_name)
+def get_schain_container_cmd(schain_name, public_key=None, start_ts=None,
+                             enable_ssl=True):
+    opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
     if public_key and str(start_ts):
         sync_opts = get_schain_container_sync_opts(schain_name, public_key, start_ts)
         opts += sync_opts
@@ -245,25 +249,29 @@ def get_schain_container_sync_opts(schain_name, public_key, start_ts):
     )
 
 
-def get_schain_container_base_opts(schain_name, log_level=4):
+def get_schain_container_base_opts(schain_name, log_level=4, enable_ssl=True):
     config_filepath = get_schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
-    return (
-        f'--config {config_filepath} '
-        f'-d {DATA_DIR_CONTAINER_PATH} '
-        f'--ipcpath {DATA_DIR_CONTAINER_PATH} '
-        f'--http-port {ports["http"]} '
-        f'--https-port {ports["https"]} '
-        f'--ws-port {ports["ws"]} '
-        f'--wss-port {ports["wss"]} '
-        f'--ssl-key {ssl_key} '
-        f'--ssl-cert {ssl_cert} '
-        f'-v {log_level} '
-        f'--web3-trace '
-        f'--enable-debug-behavior-apis '
-        f'--aa no '
-    )
+    cmd = [
+        f'--config {config_filepath}',
+        f'-d {DATA_DIR_CONTAINER_PATH}',
+        f'--ipcpath {DATA_DIR_CONTAINER_PATH}',
+        f'--http-port {ports["http"]}',
+        f'--https-port {ports["https"]}',
+        f'--ws-port {ports["ws"]}',
+        f'--wss-port {ports["wss"]}',
+        f'-v {log_level}',
+        '--web3-trace',
+        '--enable-debug-behavior-apis',
+        '--aa no'
+    ]
+    if enable_ssl:
+        cmd.extend([
+            f'--ssl-key {ssl_key} ',
+            f'--ssl-cert {ssl_cert} '
+        ])
+    return ' '.join(cmd)
 
 
 def get_schain_rpc_ports(schain_id):

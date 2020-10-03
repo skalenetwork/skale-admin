@@ -57,7 +57,7 @@ def run_cleaner(skale, node_config):
 
 
 def log_remove(component_name, schain_name):
-    logger.warning(f'Going to remove {component_name} for sChain {schain_name}')
+    logger.info(f'Going to remove {component_name} for sChain {schain_name}')
 
 
 def remove_schain_volume(schain_name, dutils=None):

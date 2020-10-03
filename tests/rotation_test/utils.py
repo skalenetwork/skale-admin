@@ -83,8 +83,14 @@ def init_data_volume_mock(schain, dutils=None):
 
 def run_schain_container_mock(schain, public_key=None, start_ts=None,
                               dutils=None):
-    return run_schain_container(schain, public_key=public_key,
-                                start_ts=start_ts, dutils=docker_utils)
+    return run_schain_container(
+        schain, public_key=public_key,
+        start_ts=start_ts,
+        dutils=docker_utils,
+        volume_mode='Z',
+        ulimit_check=False,
+        enable_ssl=False
+    )
 
 
 def delete_bls_keys_mock(self, bls_key_name):

@@ -132,9 +132,12 @@ class DockerUtils:
             container_info['stats']['State']['ExitCode'] == 0
 
     def rm_vol(self, name: str) -> None:
-        volume = self.client.volumes.get(name)
-        if volume:
-            logger.warning(f'Going to remove volume {name}')
+        try:
+            volume = self.client.volumes.get(name)
+        except docker.errors.NotFound:
+            logger.warning(f'Volume {name} is not exist')
+        else:
+            logger.info(f'Going to remove volume {name}')
             volume.remove(force=True)
 
     def safe_rm(self, container_name: str, **kwargs):

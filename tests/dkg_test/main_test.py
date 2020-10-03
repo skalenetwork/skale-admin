@@ -81,6 +81,7 @@ def link_addresses_to_validator(skale, wallets):
 def register_node(skale, wallet):
     skale.wallet = wallet
     ip, public_ip, port, name = generate_random_node_data()
+    port = 10000
     skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
     node_id = skale.nodes.node_name_to_index(name)
     logger.info(f'Registered node {name}, ID: {node_id}')
