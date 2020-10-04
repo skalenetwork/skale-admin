@@ -1,7 +1,6 @@
 import os
 from functools import partial
 
-import docker
 import pytest
 
 from core.schains.runner import get_container_name, get_image_name
