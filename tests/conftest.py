@@ -65,11 +65,11 @@ def generate_schain_config(schain_name):
             "nodeInfo": {
                 "nodeID": 0,
                 "nodeName": "test-node1",
-                "basePort": 2231,
-                "httpRpcPort": 2234,
-                "httpsRpcPort": 10002,
-                "wsRpcPort": 10003,
-                "wssRpcPort": 10008,
+                "basePort": 10000,
+                "httpRpcPort": 10003,
+                "httpsRpcPort": 10008,
+                "wsRpcPort": 10002,
+                "wssRpcPort": 10007,
                 "bindIP": "0.0.0.0"
             },
             "sChain": {

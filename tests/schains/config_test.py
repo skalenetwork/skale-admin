@@ -128,8 +128,8 @@ def test_get_schain_container_cmd(schain_config):
     config_filepath = get_schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key_path, ssl_cert_path = get_ssl_filepath()
     expected_opts = (
-        f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 2234 '
-        f'--https-port 10002 --ws-port 10003 --wss-port 10008 -v 4 '
+        f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
+        f'--https-port 10008 --ws-port 10002 --wss-port 10007 -v 4 '
         f'--web3-trace --enable-debug-behavior-apis '
         f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path}'
     )
@@ -137,9 +137,9 @@ def test_get_schain_container_cmd(schain_config):
 
     container_opts = get_schain_container_cmd(schain_name, enable_ssl=False)
     expected_opts = (
-        f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 2234 '
-        f'--https-port 10002 --ws-port 10003 --wss-port 10008 '
-        f'-v 4 --web3-trace --enable-debug-behavior-apis --aa no '
+        f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
+        f'--https-port 10008 --ws-port 10002 --wss-port 10007 '
+        f'-v 4 --web3-trace --enable-debug-behavior-apis --aa no'
     )
     assert container_opts == expected_opts
 

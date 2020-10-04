@@ -268,8 +268,8 @@ def get_schain_container_base_opts(schain_name, log_level=4, enable_ssl=True):
     ]
     if enable_ssl:
         cmd.extend([
-            f'--ssl-key {ssl_key} ',
-            f'--ssl-cert {ssl_cert} '
+            f'--ssl-key {ssl_key}',
+            f'--ssl-cert {ssl_cert}'
         ])
     return ' '.join(cmd)
 
