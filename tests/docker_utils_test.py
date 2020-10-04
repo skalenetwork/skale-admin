@@ -89,8 +89,8 @@ def test_run_schain_container_in_sync_mode(client, schain_config,
 def test_not_existed_docker_objects(client):
     # Not existed volume
     assert not client.is_data_volume_exists('random_name')
-    with pytest.raises(docker.errors.NotFound):
-        client.rm_vol('random_name')
+    # No exception
+    client.rm_vol('random_name')
 
     # Not existed container
     info = client.get_info('random_id')
