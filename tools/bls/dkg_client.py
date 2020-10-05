@@ -292,7 +292,10 @@ class DKGClient:
             raise DkgTransactionError(e)
         logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
 
-    def send_complaint(self, to_node):
+    def send_complaint(self, to_node, report_bad_data=False):
+        reason = "complaint"
+        if report_bad_data:
+            reason = "complaint_bad_data"
         logger.info(f'sChain: {self.schain_name}. '
                     f'{self.node_id_dkg} is trying to sent a complaint on {to_node} node')
         is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
@@ -305,12 +308,20 @@ class DKGClient:
                         f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
             return False
         try:
-            tx_res = self.skale.dkg.complaint(
-                self.group_index,
-                self.node_id_contract,
-                self.node_ids_dkg[to_node],
-                wait_for=True
-            )
+            if not report_bad_data:
+                tx_res = self.skale.dkg.complaint(
+                    self.group_index,
+                    self.node_id_contract,
+                    self.node_ids_dkg[to_node],
+                    wait_for=True
+                )
+            else:
+                tx_res = self.skale.dkg.complaint_bad_data(
+                    self.group_index,
+                    self.node_id_contract,
+                    self.node_ids_dkg[to_node],
+                    wait_for=True
+                )
             if self.check_complaint_logs(tx_res.receipt['logs'][0]):
                 logger.info(f'sChain: {self.schain_name}. '
                             f'{self.node_id_dkg} node sent a complaint on {to_node} node')
@@ -330,6 +341,7 @@ class DKGClient:
             self.node_ids_contract[to_node_index]
         )
         share, dh_key = response['share'], response['dh_key']
+        verification_vector_mult = response['verification_vector_mult']
         share = share.split(':')
         for i in range(4):
             share[i] = int(share[i])
@@ -341,21 +353,32 @@ class DKGClient:
         is_response_possible = is_response_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
-        if not is_response_possible or not self.is_channel_opened():
+        is_pre_response_possible_function = self.dkg_contract_functions.isPreResponsePossible
+        is_pre_response_possible_function = is_pre_response_possible_function(
+            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+
+        if not is_response_possible or not is_pre_response_possible_function or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent a response')
             return
 
-        share, dh_key = self.get_complaint_response(to_node_index)
+        share, dh_key, verification_vector_mult = self.get_complaint_response(to_node_index)
 
         try:
+            self.skale.dkg.pre_response(
+                self.group_index,
+                self.node_id_contract,
+                convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
+                convert_g2_points_to_array(verification_vector_mult),
+                convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
+                wait_for=True
+            )
+
             self.skale.dkg.response(
                 self.group_index,
                 self.node_id_contract,
                 int(dh_key, 16),
-                share,
-                convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
-                convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
+                share
             )
         except TransactionFailedError as e:
             logger.error(f'DKG response failed: sChain {self.schain_name}')
