@@ -230,26 +230,30 @@ def get_schain_env(ulimit_check=True):
     return env
 
 
-def get_schain_container_cmd(schain_name, public_key=None, start_ts=None,
-                             enable_ssl=True):
+def get_schain_container_cmd(schain_name: str,
+                             public_key: str = None,
+                             start_ts: int = None,
+                             enable_ssl: bool = True) -> str:
     opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
     if public_key and str(start_ts):
         sync_opts = get_schain_container_sync_opts(schain_name, public_key, start_ts)
-        opts += sync_opts
-    return opts
+        opts.extend(sync_opts)
+    return ' '.join(opts)
 
 
-def get_schain_container_sync_opts(schain_name, public_key, start_ts):
+def get_schain_container_sync_opts(schain_name: str, public_key: str,
+                                   start_ts: int) -> list:
     endpoint = get_skaled_http_snapshot_address(schain_name)
     url = f'http://{endpoint.ip}:{endpoint.port}'
-    return (
-        f'--download-snapshot {url} '
-        f'--public-key {public_key} '
-        f'--start-timestamp {start_ts} '
-    )
+    return [
+        f'--download-snapshot {url}',
+        f'--public-key {public_key}',
+        f'--start-timestamp {start_ts}'
+    ]
 
 
-def get_schain_container_base_opts(schain_name, log_level=4, enable_ssl=True):
+def get_schain_container_base_opts(schain_name: str, log_level: int = 4,
+                                   enable_ssl: bool = True) -> list:
     config_filepath = get_schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
@@ -271,7 +275,7 @@ def get_schain_container_base_opts(schain_name, log_level=4, enable_ssl=True):
             f'--ssl-key {ssl_key}',
             f'--ssl-cert {ssl_cert}'
         ])
-    return ' '.join(cmd)
+    return cmd
 
 
 def get_schain_rpc_ports(schain_id):

@@ -18,7 +18,7 @@ def test_set_rotation(schain_config):
         params = {
             'finishTime': 100
         }
-        assert kwargs['url'] == 'http://127.0.0.1:2234'
+        assert kwargs['url'] == 'http://127.0.0.1:10003'
         assert data['method'] == 'setSchainExitTime'
         assert data['params'] == params
 
