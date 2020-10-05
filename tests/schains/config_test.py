@@ -7,6 +7,7 @@ from core.schains.config.helper import (
 )
 from core.schains.helper import get_schain_config_filepath
 from core.schains.ssl import get_ssl_filepath
+from core.schains.volume import get_schain_volume_config
 
 from tools.iptables import NodeEndpoint
 
@@ -149,3 +150,15 @@ def test_get_schain_env():
     assert get_schain_env() == expected_env
     expected_env = {"SEGFAULT_SIGNALS": 'all', 'NO_ULIMIT_CHECK': 1}
     assert get_schain_env(ulimit_check=False) == expected_env
+
+
+def test_get_schain_volume_config():
+    volume_config = get_schain_volume_config('test_name', '/mnt/mount_path/')
+    assert volume_config == {
+        'test_name': {'bind': '/mnt/mount_path/', 'mode': 'rw'}
+    }
+    volume_config = get_schain_volume_config('test_name',
+                                             '/mnt/mount_path/', mode='Z')
+    assert volume_config == {
+        'test_name': {'bind': '/mnt/mount_path/', 'mode': 'Z'}
+    }
