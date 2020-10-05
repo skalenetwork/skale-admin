@@ -147,7 +147,7 @@ SECRET_KEY = {
 @pytest.fixture
 def _schain_name():
     """ Generates default schain name """
-    return 'schain_' + get_random_string()
+    return get_random_string()
 
 
 @pytest.fixture

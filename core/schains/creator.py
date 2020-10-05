@@ -167,10 +167,10 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         notify_checks(name, node_info, checks_dict)
 
     schain_record.set_first_run(False)
+    logger.info(f'Running monitor for sChain {name} in {mode.name} mode. '
+                f'Finish time: {finish_time}')
 
     if mode == MonitorMode.EXIT:
-        logger.info(f'Running monitor for sChain {name} in EXIT mode. '
-                    f'Finish time: {finish_time}')
         # ensure containers are working after update
         if not checks_dict['container']:
             monitor_schain_container(schain)
@@ -178,7 +178,6 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     elif mode == MonitorMode.SYNC:
-        logger.info(f'Running monitor for sChain {name} in SYNC mode')
         monitor_checks(
             skale=skale,
             schain=schain,
@@ -192,8 +191,6 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         )
 
     elif mode == MonitorMode.RESTART:
-        logger.info(f'Running monitor for sChain {name} in RESTART mode')
-
         # ensure containers are working after update
         if not checks_dict['container']:
             monitor_schain_container(schain)
@@ -212,8 +209,6 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
             set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     else:
-        logger.info(f'Running monitor for sChain {name} in REGULAR mode')
-
         monitor_checks(
             skale=skale,
             schain=schain,
