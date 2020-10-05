@@ -51,9 +51,9 @@ def notifications_enabled(func):
         if tg_notifications_enabled():
             try:
                 return func(*args, **kwargs)
-            except Exception as err:
-                logger.error(f'Notification {func.__name__} sending failed',
-                             exc_info=err)
+            except Exception:
+                logger.exception(f'Notification {func.__name__} sending failed')
+
     return wrapper
 
 

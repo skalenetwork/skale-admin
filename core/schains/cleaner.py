@@ -97,8 +97,8 @@ def monitor(skale, node_config):
         try:
             if schain_name not in schain_names_on_contracts:
                 ensure_schain_removed(skale, schain_name, node_config.id)
-        except Exception as err:
-            logger.error(f'Removing schain {schain_name} failed', exc_info=err)
+        except Exception:
+            logger.exception(f'Removing schain {schain_name} failed')
 
     logger.info('Cleanup procedure finished')
 
@@ -174,6 +174,5 @@ def delete_bls_keys(skale, schain_name):
                     sgx = SgxClient(SGX_SERVER_URL,
                                     path_to_cert=SGX_CERTIFICATES_FOLDER)
                     sgx.delete_bls_key(bls_key_name)
-        except Exception as err:
-            logger.warning(f'Removing secret_key for rotation {i} failed',
-                           exc_info=err)
+        except Exception:
+            logger.exception(f'Removing secret_key for rotation {i} failed')
