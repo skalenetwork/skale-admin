@@ -186,6 +186,7 @@ def report_bad_data(dkg_client, index):
     except DkgTransactionError:
         pass
 
+
 def response(dkg_client, to_node_index):
     try:
         channel_started_time = get_channel_started_time(dkg_client)

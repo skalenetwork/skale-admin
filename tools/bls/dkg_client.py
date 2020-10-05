@@ -297,7 +297,7 @@ class DKGClient:
         if report_bad_data:
             reason = "complaint_bad_data"
         logger.info(f'sChain: {self.schain_name}. '
-                    f'{self.node_id_dkg} is trying to sent a complaint on {to_node} node')
+                    f'{self.node_id_dkg} is trying to sent a {reason} on {to_node} node')
         is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
         is_complaint_possible = is_complaint_possible_function(
             self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]).call(
@@ -346,7 +346,7 @@ class DKGClient:
         for i in range(4):
             share[i] = int(share[i])
         share = G2Point(*share).tuple
-        return share, dh_key
+        return share, dh_key, verification_vector_mult
 
     def response(self, to_node_index):
         is_response_possible_function = self.dkg_contract_functions.isResponsePossible
@@ -357,7 +357,8 @@ class DKGClient:
         is_pre_response_possible_function = is_pre_response_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
-        if not is_response_possible or not is_pre_response_possible_function or not self.is_channel_opened():
+        if not is_response_possible \
+           or not is_pre_response_possible_function or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent a response')
             return
