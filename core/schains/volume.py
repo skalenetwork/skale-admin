@@ -76,5 +76,6 @@ def get_filestorage_info():
     return read_json(FILESTORAGE_ARTIFACTS_FILEPATH)
 
 
-def get_schain_volume_config(name, mount_path, mode='rw'):
+def get_schain_volume_config(name, mount_path, mode=None):
+    mode = mode or 'rw'
     return {f'{name}': {'bind': mount_path, 'mode': mode}}
