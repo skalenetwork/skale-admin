@@ -60,7 +60,7 @@ def log_remove(component_name, schain_name):
     logger.info(f'Going to remove {component_name} for sChain {schain_name}')
 
 
-def remove_schain_volume(schain_name, dutils=None):
+def remove_schain_volume(schain_name: str, dutils: DockerUtils = None) -> None:
     dutils = dutils or docker_utils
     log_remove('volume', schain_name)
     dutils.rm_vol(schain_name)

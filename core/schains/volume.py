@@ -77,4 +77,4 @@ def get_filestorage_info():
 
 
 def get_schain_volume_config(name, mount_path, mode='Z'):
-    return {f'{name}': {'bind': mount_path, 'mode': 'Z'}}
+    return {f'{name}': {'bind': mount_path, 'mode': mode}}
