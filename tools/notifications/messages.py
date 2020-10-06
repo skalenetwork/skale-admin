@@ -51,9 +51,9 @@ def notifications_enabled(func):
         if tg_notifications_enabled():
             try:
                 return func(*args, **kwargs)
-            except Exception as err:
-                logger.error(f'Notification {func.__name__} sending failed',
-                             exc_info=err)
+            except Exception:
+                logger.exception(f'Notification {func.__name__} sending failed')
+
     return wrapper
 
 
@@ -127,8 +127,7 @@ def notify_checks(schain_name, node, checks, *, client=None):
 
     if saved_state != state or (
         success and count < SUCCESS_MAX_ATTEMPS or
-        not success and count < FAILED_MAX_ATTEMPS
-    ):
+            not success and count < FAILED_MAX_ATTEMPS):
         message = compose_checks_message(schain_name, node, checks)
         logger.info(f'Sending checks notification with state {state}')
         send_message(message)
@@ -175,7 +174,25 @@ def notify_balance(node_info, balance, required_balance, *, client=None):
     client.mset({count_key: count, state_key: str(state)})
 
 
-def send_message(message, api_key=TG_API_KEY, chat_id=TG_CHAT_ID):
+def compose_repair_mode_notification(node_info: dict, schain_name: str) -> list:
+    header = f'{EXCLAMATION_MARK} Repair mode for {schain_name} enabled \n'
+    return [
+        header,
+        f'Node id: {node_info["node_id"]}',
+        f'Node ip: {node_info["node_ip"]}',
+        f'SChain: {schain_name}'
+    ]
+
+
+@notifications_enabled
+def notify_repair_mode(node_info: dict, schain_name: str) -> None:
+    message = compose_repair_mode_notification(node_info, schain_name)
+    logger.info('Sending repair mode notificaton')
+    send_message(message)
+
+
+def send_message(message: list, api_key: str = TG_API_KEY,
+                 chat_id: str = TG_CHAT_ID):
     message.extend([
         f'Timestamp: {int(time.time())}',
         f'Datetime: {datetime.utcnow().ctime()}'

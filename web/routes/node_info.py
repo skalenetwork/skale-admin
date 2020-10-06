@@ -58,8 +58,8 @@ def construct_node_info_bp(skale, docker_utils):
             return construct_err_response('TG_API_KEY or TG_CHAT_ID not found')
         try:
             send_message(message)
-        except Exception as err:
-            logger.error('Message was not send due to error', exc_info=err)
+        except Exception:
+            logger.exception('Message was not send due to error')
             construct_err_response(['Message sending failed'])
         return construct_ok_response('Message was sent successfully')
 

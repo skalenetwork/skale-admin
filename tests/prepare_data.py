@@ -4,8 +4,8 @@ import logging
 
 from skale.utils.contracts_provision.main import setup_validator, _skip_evm_time
 from skale.utils.contracts_provision import MONTH_IN_SECONDS
+from tests.utils import init_skale
 
-from tests.conftest import init_skale
 
 logger = logging.getLogger(__name__)
 
