@@ -167,10 +167,10 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         notify_checks(name, node_info, checks_dict)
 
     schain_record.set_first_run(False)
-    logger.info(f'Running monitor for sChain {name} in {mode.name} mode. '
-                f'Finish time: {finish_time}')
+    logger.info(f'Running monitor for sChain {name} in {mode.name} mode')
 
     if mode == MonitorMode.EXIT:
+        logger.info(f'Finish time: {finish_time}')
         # ensure containers are working after update
         if not checks_dict['container']:
             monitor_schain_container(schain)
