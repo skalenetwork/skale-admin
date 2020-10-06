@@ -18,8 +18,9 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-import shutil
+import logging
 import os
+import shutil
 from itertools import chain
 
 from web3 import Web3
@@ -36,6 +37,9 @@ from tools.helper import read_json
 from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
 from tools.configs.containers import LOCAL_IP
 from tools.iptables import NodeEndpoint
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_static_schain_params():
@@ -148,8 +152,10 @@ def get_skaled_http_snapshot_address_from_config(config):
             from_node = node_data
             break
 
-    return NodeEndpoint(from_node['ip'], from_node['basePort'] +
-                        SkaledPorts.HTTP_JSON.value)
+    return NodeEndpoint(
+        from_node['ip'], from_node['basePort'] +
+        SkaledPorts.HTTP_JSON.value
+    )
 
 
 def get_skaled_http_address(schain_name):
@@ -215,49 +221,61 @@ def get_schain_config(schain_name):
     return schain_config
 
 
-def get_schain_env():
-    return {
-        "SEGFAULT_SIGNALS": 'all'
-    }
+def get_schain_env(ulimit_check=True):
+    env = {'SEGFAULT_SIGNALS': 'all'}
+    if not ulimit_check:
+        env.update({
+            'NO_ULIMIT_CHECK': 1
+        })
+    return env
 
 
-def get_schain_container_cmd(schain_name, public_key=None, start_ts=None):
-    opts = get_schain_container_base_opts(schain_name)
+def get_schain_container_cmd(schain_name: str,
+                             public_key: str = None,
+                             start_ts: int = None,
+                             enable_ssl: bool = True) -> str:
+    opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
     if public_key and str(start_ts):
         sync_opts = get_schain_container_sync_opts(schain_name, public_key, start_ts)
-        opts += sync_opts
-    return opts
+        opts.extend(sync_opts)
+    return ' '.join(opts)
 
 
-def get_schain_container_sync_opts(schain_name, public_key, start_ts):
+def get_schain_container_sync_opts(schain_name: str, public_key: str,
+                                   start_ts: int) -> list:
     endpoint = get_skaled_http_snapshot_address(schain_name)
     url = f'http://{endpoint.ip}:{endpoint.port}'
-    return (
-        f'--download-snapshot {url} '
-        f'--public-key {public_key} '
-        f'--start-timestamp {start_ts} '
-    )
+    return [
+        f'--download-snapshot {url}',
+        f'--public-key {public_key}',
+        f'--start-timestamp {start_ts}'
+    ]
 
 
-def get_schain_container_base_opts(schain_name, log_level=4):
+def get_schain_container_base_opts(schain_name: str, log_level: int = 4,
+                                   enable_ssl: bool = True) -> list:
     config_filepath = get_schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
-    return (
-        f'--config {config_filepath} '
-        f'-d {DATA_DIR_CONTAINER_PATH} '
-        f'--ipcpath {DATA_DIR_CONTAINER_PATH} '
-        f'--http-port {ports["http"]} '
-        f'--https-port {ports["https"]} '
-        f'--ws-port {ports["ws"]} '
-        f'--wss-port {ports["wss"]} '
-        f'--ssl-key {ssl_key} '
-        f'--ssl-cert {ssl_cert} '
-        f'-v {log_level} '
-        f'--web3-trace '
-        f'--enable-debug-behavior-apis '
-        f'--aa no '
-    )
+    cmd = [
+        f'--config {config_filepath}',
+        f'-d {DATA_DIR_CONTAINER_PATH}',
+        f'--ipcpath {DATA_DIR_CONTAINER_PATH}',
+        f'--http-port {ports["http"]}',
+        f'--https-port {ports["https"]}',
+        f'--ws-port {ports["ws"]}',
+        f'--wss-port {ports["wss"]}',
+        f'-v {log_level}',
+        '--web3-trace',
+        '--enable-debug-behavior-apis',
+        '--aa no'
+    ]
+    if enable_ssl:
+        cmd.extend([
+            f'--ssl-key {ssl_key}',
+            f'--ssl-cert {ssl_cert}'
+        ])
+    return cmd
 
 
 def get_schain_rpc_ports(schain_id):
@@ -284,8 +302,8 @@ def parse_public_key_info(bls_public_key):
 
 def get_bls_public_keys(schain_name, rotation_id):
     key_file = get_secret_key_share_filepath(schain_name, rotation_id)
-    json_file = read_json(key_file)
-    return json_file["bls_public_keys"]
+    data = read_json(key_file)
+    return data["bls_public_keys"]
 
 
 def compose_public_key_info(bls_public_key):

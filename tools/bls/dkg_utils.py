@@ -270,5 +270,6 @@ def get_latest_block_timestamp(dkg_client):
     return dkg_client.skale.web3.eth.getBlock("latest")["timestamp"]
 
 
-def get_secret_key_share_filepath(schain_id, rotation_id):
-    return os.path.join(NODE_DATA_PATH, 'schains', schain_id, f'secret_key_{rotation_id}.json')
+def get_secret_key_share_filepath(schain_name, rotation_id):
+    return os.path.join(NODE_DATA_PATH, 'schains', schain_name,
+                        f'secret_key_{rotation_id}.json')

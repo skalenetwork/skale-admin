@@ -93,8 +93,8 @@ class Node:
                 wait_for=True,
                 confirmation_blocks=NODE_REGISTER_CONFIRMATION_BLOCKS
             )
-        except TransactionFailedError as err:
-            logger.error('Node creation failed', exc_info=err)
+        except TransactionFailedError:
+            logger.exception('Node creation failed')
             return {
                 'status': 0,
                 'errors': [
@@ -116,8 +116,8 @@ class Node:
         for _ in range(exit_count):
             try:
                 self.skale.manager.node_exit(self.config.id, wait_for=True)
-            except TransactionFailedError as err:
-                logger.error('Node rotation failed', exc_info=err)
+            except TransactionFailedError:
+                logger.exception('Node rotation failed')
 
     def get_exit_status(self):
         active_schains = self.skale.schains.get_active_schains_for_node(self.config.id)
@@ -152,9 +152,9 @@ class Node:
             return {'status': 1, 'errors': [err_msg]}
         try:
             self.skale.nodes.set_node_in_maintenance(self.config.id)
-        except TransactionFailedError as err:
+        except TransactionFailedError:
             err_msg = 'Moving node to maintenance mode failed'
-            logger.error(err_msg, exc_info=err)
+            logger.exception(err_msg)
             return {'status': 1, 'errors': [err_msg]}
         return {'status': 0}
 
@@ -165,9 +165,9 @@ class Node:
             return {'status': 1, 'errors': [err_msg]}
         try:
             self.skale.nodes.remove_node_from_in_maintenance(self.config.id)
-        except TransactionFailedError as err:
+        except TransactionFailedError:
             err_msg = 'Removing node from maintenance mode failed'
-            logger.error(err_msg, exc_info=err)
+            logger.exception(err_msg)
             return {'status': 1, 'errors': [err_msg]}
         return {'status': 0}
 
