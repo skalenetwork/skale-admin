@@ -31,13 +31,12 @@ DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10 ** 18))
 def wallet_with_balance(skale):  # todo: move to the skale.py
     address = skale.wallet.address
     eth_balance_wei = skale.web3.eth.getBalance(address)
-    skale_balance_wei = skale.token.get_balance(address)
     return {
         'address': to_checksum_address(address),
         'eth_balance_wei': eth_balance_wei,
-        'skale_balance_wei': skale_balance_wei,
+        'skale_balance_wei': 0,
         'eth_balance': str(skale.web3.fromWei(eth_balance_wei, 'ether')),
-        'skale_balance': str(skale.web3.fromWei(skale_balance_wei, 'ether'))
+        'skale_balance': '0'
     }
 
 

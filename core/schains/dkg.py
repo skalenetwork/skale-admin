@@ -19,16 +19,16 @@
 
 import os
 import logging
-import time
 from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
 from tools.bls.dkg_utils import (
-    init_dkg_client, send_complaint, send_alright,
+    init_dkg_client, send_complaint, send_alright, get_latest_block_timestamp,
     generate_bls_key, get_bls_public_keys, generate_bls_key_name, generate_poly_name,
-    get_secret_key_share_filepath, is_all_data_received, get_complaint_data,
-    is_everyone_broadcasted, check_failed_dkg, check_response, check_no_complaints, wait_for_fail,
-    broadcast_and_check_data, get_complaint_started_time, get_alright_started_time, RECEIVE_TIMEOUT
+    get_secret_key_share_filepath, is_all_data_received, is_everyone_broadcasted,
+    check_response, check_no_complaints, check_failed_dkg, wait_for_fail, broadcast_and_check_data,
+    get_complaint_data, get_complaint_started_time, get_alright_started_time,
+    get_channel_started_time, RECEIVE_TIMEOUT
 )
 from tools.helper import write_json
 
@@ -44,10 +44,12 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 
+    channel_started_time = get_channel_started_time(dkg_client)
+
     broadcast_and_check_data(dkg_client, poly_name)
 
     if not is_everyone_broadcasted(dkg_client):
-        wait_for_fail(dkg_client, "broadcast")
+        wait_for_fail(dkg_client, channel_started_time, "broadcast")
 
     check_failed_dkg(dkg_client)
 
@@ -61,27 +63,22 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     check_response(dkg_client)
 
-    were_alrights = False
     if check_no_complaints(dkg_client):
-        were_alrights = True
         start_time_alright = get_alright_started_time(dkg_client)
         while False in is_alright_sent_list:
             check_failed_dkg(dkg_client)
-            if time.time() - start_time_alright > RECEIVE_TIMEOUT:
+            if get_latest_block_timestamp(dkg_client) - start_time_alright > RECEIVE_TIMEOUT:
                 break
             for from_node in range(dkg_client.n):
                 if not is_alright_sent_list[from_node]:
                     is_alright_sent_list[from_node] = is_all_data_received(dkg_client, from_node)
             check_response(dkg_client)
-            sleep(1)
+            sleep(30)
 
-        for i in range(dkg_client.n):
-            if not is_alright_sent_list[i] and i != dkg_client.node_id_dkg:
-                send_complaint(dkg_client, i)
-
-    if False in is_alright_sent_list and were_alrights:
-        logger.info(f'sChain {schain_name}: Not everyone sent alright')
-        wait_for_fail(dkg_client, "alright")
+        if check_no_complaints(dkg_client):
+            for i in range(dkg_client.n):
+                if not is_alright_sent_list[i] and i != dkg_client.node_id_dkg:
+                    send_complaint(dkg_client, i, "alright")
 
     check_response(dkg_client)
 
@@ -91,25 +88,15 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         complaint_data = get_complaint_data(dkg_client)
         complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
 
-        is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
-        is_channel_opened = dkg_client.is_channel_opened()
-
         start_time_response = get_complaint_started_time(dkg_client)
-        while not is_group_failed or is_channel_opened:
-            if time.time() - start_time_response > RECEIVE_TIMEOUT:
+        while check_failed_dkg(dkg_client):
+            if get_latest_block_timestamp(dkg_client) - start_time_response > RECEIVE_TIMEOUT:
                 break
-            is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
-            is_channel_opened = dkg_client.is_channel_opened()
-            sleep(1)
-
-        is_group_opened = dkg_client.is_channel_opened()
-        is_group_failed = not skale.dkg.is_last_dkg_successful(dkg_client.group_index)
+            sleep(30)
 
         complaint_itself = complainted_node_index == dkg_client.node_id_dkg
-        if is_group_opened or not is_group_failed and not complaint_itself:
-            send_complaint(dkg_client, complainted_node_index)
-
-        wait_for_fail(dkg_client, "response")
+        if check_failed_dkg(dkg_client) and not complaint_itself:
+            send_complaint(dkg_client, complainted_node_index, "response")
 
     if False not in is_alright_sent_list:
         logger.info(f'sChain: {schain_name}: Everyone sent alright')

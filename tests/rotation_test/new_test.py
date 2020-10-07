@@ -17,11 +17,12 @@ dutils = DockerUtils(volume_driver='local')
 
 
 @pytest.fixture
-def rotated_nodes(skale):
+def rotated_nodes(skale, schain_config, schain_db):
     cleanup_contracts(skale)
     SChainRecord.create_table()
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
 
-    nodes, schain_name = set_up_rotated_schain(skale)
+    nodes, schain_name = set_up_rotated_schain(skale, schain_name)
 
     yield nodes, schain_name
 
@@ -34,6 +35,7 @@ def rotated_nodes(skale):
 
 def test_new_node(skale, rotated_nodes):
     nodes, schain_name = rotated_nodes
+
     exited_node, new_node = nodes[0], nodes[2]
     exited_node.exit({})
 

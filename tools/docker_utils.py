@@ -18,11 +18,14 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import docker
 import re
 from functools import wraps
 
+import docker
 from docker import APIClient
+from docker.client import DockerClient
+from docker.models.containers import Container
+from docker.models.volumes import Volume
 
 from tools.configs.containers import CONTAINER_NOT_FOUND, RUNNING_STATUS, EXITED_STATUS
 
@@ -31,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 def format_containers(f):
     @wraps(f)
-    def inner(*args, **kwargs):
+    def inner(*args, **kwargs) -> list:
         format = kwargs.get('format', None)
         containers = f(*args, **kwargs)
         if not format:
@@ -49,25 +52,37 @@ def format_containers(f):
 
 
 class DockerUtils:
-    def __init__(self, volume_driver='lvmpy'):
+    def __init__(self, volume_driver: str = 'lvmpy') -> None:
         self.client = self.init_docker_client()
         self.cli = self.init_docker_cli()
         self.volume_driver = volume_driver
 
-    def init_docker_client(self):
+    def init_docker_client(self) -> DockerClient:
         return docker.from_env()
 
-    def init_docker_cli(self):
+    def init_docker_cli(self) -> APIClient:
         return APIClient()
 
-    def data_volume_exists(self, name):
+    def is_data_volume_exists(self, name: str) -> bool:
         try:
             self.cli.inspect_volume(name)
-            return True
         except docker.errors.NotFound:
             return False
+        return True
 
-    def create_data_volume(self, name, size=None):
+    def is_container_exists(self, name: str) -> bool:
+        try:
+            self.client.containers.get(name)
+        except docker.errors.NotFound:
+            return False
+        return True
+
+    def run_container(self, image_name: str, name: str,
+                      *args, **kwargs) -> Container:
+        return self.client.containers.run(image_name, name=name, detach=True,
+                                          *args, **kwargs)
+
+    def create_data_volume(self, name: str, size: int = None) -> Volume:
         driver_opts = None
         if self.volume_driver != 'local' and size:
             driver_opts = {'size': str(size)}
@@ -82,14 +97,14 @@ class DockerUtils:
         return volume
 
     @format_containers
-    def get_all_skale_containers(self, all=False, format=False):
+    def get_all_skale_containers(self, all=False, format=False) -> list:
         return self.client.containers.list(all=all, filters={'name': 'skale_*'})
 
     @format_containers
-    def get_all_schain_containers(self, all=False, format=False):
+    def get_all_schain_containers(self, all=False, format=False) -> list:
         return self.client.containers.list(all=all, filters={'name': 'skale_schain_*'})
 
-    def get_info(self, container_id):
+    def get_info(self, container_id: str) -> dict:
         container_info = {}
         try:
             container = self.client.containers.get(container_id)
@@ -103,26 +118,29 @@ class DockerUtils:
             container_info['status'] = CONTAINER_NOT_FOUND
         return container_info
 
-    def container_running(self, container_info):
+    def container_running(self, container_info: dict) -> bool:
         return container_info['status'] == RUNNING_STATUS
 
-    def to_start_container(self, container_info):
+    def to_start_container(self, container_info: dict) -> bool:
         return container_info['status'] == CONTAINER_NOT_FOUND
 
-    def is_container_exited(self, container_info):
+    def is_container_exited(self, container_info: dict) -> bool:
         return container_info['status'] == EXITED_STATUS
 
-    def is_container_exited_with_zero(self, container_info):
+    def is_container_exited_with_zero(self, container_info: dict) -> bool:
         return self.is_container_exited(container_info) and \
             container_info['stats']['State']['ExitCode'] == 0
 
-    def rm_vol(self, name):
-        volume = self.client.volumes.get(name)
-        if volume:
-            logger.warning(f'Going to remove volume {name}')
+    def rm_vol(self, name: str) -> None:
+        try:
+            volume = self.client.volumes.get(name)
+        except docker.errors.NotFound:
+            logger.warning(f'Volume {name} is not exist')
+        else:
+            logger.info(f'Going to remove volume {name}')
             volume.remove(force=True)
 
-    def safe_rm(self, container_name, **kwargs):
+    def safe_rm(self, container_name: str, **kwargs):
         logger.info(f'Removing container: {container_name}')
         try:
             container = self.client.containers.get(container_name)
@@ -132,7 +150,7 @@ class DockerUtils:
         except docker.errors.APIError:
             logger.error(f'No such container: {container_name}')
 
-    def restart(self, container_name, **kwargs):
+    def restart(self, container_name: str, **kwargs):
         logger.info(f'Restarting container: {container_name}')
         try:
             container = self.client.containers.get(container_name)
@@ -142,7 +160,7 @@ class DockerUtils:
         except docker.errors.APIError:
             logger.error(f'No such container: {container_name}')
 
-    def restart_all_schains(self):
+    def restart_all_schains(self) -> None:
         containers = self.get_all_schain_containers()
         for container in containers:
             self.restart(container.name)

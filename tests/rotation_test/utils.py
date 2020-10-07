@@ -11,9 +11,12 @@ from core.schains.volume import init_data_volume
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
-from tests.dkg_test.main_test import (generate_sgx_wallets, transfer_eth_to_wallets,
-                                      link_addresses_to_validator, register_nodes, run_dkg_all)
-from tests.utils import generate_random_name
+from tests.utils import generate_random_schain_data
+from tests.dkg_test.main_test import (create_schain,
+                                      generate_sgx_wallets,
+                                      transfer_eth_to_wallets,
+                                      link_addresses_to_validator,
+                                      register_nodes, run_dkg_all)
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.docker_utils import DockerUtils
 
@@ -74,13 +77,20 @@ def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
     return True
 
 
-def init_data_volume_mock(schain, dutils):
+def init_data_volume_mock(schain, dutils=None):
     return init_data_volume(schain, docker_utils)
 
 
-def run_schain_container_mock(schain, public_key=None, start_ts=None):
-    return run_schain_container(schain, public_key=public_key,
-                                start_ts=start_ts, dutils=docker_utils)
+def run_schain_container_mock(schain, public_key=None, start_ts=None,
+                              dutils=None):
+    return run_schain_container(
+        schain, public_key=public_key,
+        start_ts=start_ts,
+        dutils=docker_utils,
+        volume_mode='Z',
+        ulimit_check=False,
+        enable_ssl=False
+    )
 
 
 def delete_bls_keys_mock(self, bls_key_name):
@@ -95,13 +105,13 @@ def set_up_nodes(skale, nodes_number):
     return nodes_data
 
 
-def set_up_rotated_schain(skale):
+def set_up_rotated_schain(skale, schain_name=None):
     nodes_data = set_up_nodes(skale, 2)
 
-    schain_name = generate_random_name()
-    skale.manager.create_default_schain(schain_name)
-
+    _, lifetime_seconds, schain_name = generate_random_schain_data()
+    create_schain(skale, schain_name, lifetime_seconds)
     run_dkg_all(skale, schain_name, nodes_data)
+
     nodes_data.append(set_up_nodes(skale, 1)[0])
     nodes = []
     for node in nodes_data:
