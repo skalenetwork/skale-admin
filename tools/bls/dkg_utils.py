@@ -237,5 +237,6 @@ def get_complaint_started_time(dkg_client):
     return dkg_client.get_complaint_started_time()
 
 
-def get_secret_key_share_filepath(schain_id, rotation_id):
+def get_secret_key_share_filepath(schain_id, rotation_id, node_data_path=None):
+    node_data_path = node_data_path or NODE_DATA_PATH
     return os.path.join(NODE_DATA_PATH, 'schains', schain_id, f'secret_key_{rotation_id}.json')

@@ -23,7 +23,7 @@ from web3 import Web3
 
 from core.schains.dkg import run_dkg
 from core.schains.helper import get_schain_dir_path
-from tools.logger import init_admin_logger
+# from tools.logger import init_admin_logger
 
 
 logger = logging.getLogger(__name__)
@@ -144,21 +144,23 @@ class Validator:
 
 
 class TxManager:
+    INIT_WAIT_TIME = 30
+
     docker_client = docker.from_env()
     host = '127.0.0.1'
-    gport = 0
+    gport = 10000
 
     def __init__(self, skale_dir: str) -> None:
         self.port = TxManager.gport
         TxManager.gport += 1
-        self.container_name = f'tm-{self.port}'
+        self.name = f'tm-{self.port}'
         self.skale_dir = skale_dir
-        self._keyname = TxManager.ensure_sgx_key(skale_dir)
+        self.keyname = TxManager.ensure_sgx_key(skale_dir)
         self.container = self.run()
 
     @classmethod
     def ensure_sgx_key(cls, skale_dir):
-        node_config_path = Path(skale_dir).joinpath('node_config.json')
+        node_config_path = Path(skale_dir).joinpath('node_data', 'node_config.json')
         if not node_config_path.exists():
             sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
             key_info = sgx.generate_key()
@@ -167,7 +169,7 @@ class TxManager:
             keyname = key_info.name
         else:
             with open(node_config_path) as config_file:
-                data = json.load(node_config_path)
+                data = json.load(config_file)
                 keyname = data.get('sgx_key_name')
         return keyname
 
@@ -176,23 +178,25 @@ class TxManager:
         return {
             'FLASK_APP_HOST': TxManager.host,
             'FLASK_APP_PORT': self.port,
+            'FLASK_DEBUG_MODE': 'False',
             'ENDPOINT': ENDPOINT,
             'SGX_SERVER_URL': SGX_SERVER_URL,
             'SGX_CERTIFICATES_DIR_NAME': sgx_certs_dirname,
-            'SKALE_DIR_HOST': self.skale_dir
+            'SKALE_DIR_HOST': self.skale_dir,
+            # 'UWSGI_HTTP': f'127.0.0.1:{self.port}'
         }
 
     @property
     def url(self) -> str:
         return f'http://{TxManager.host}:{self.port}'
 
-    def get_volumes(self, mode='rw') -> dict:
+    def get_volumes(self, mode='Z') -> dict:
         return {
-            f'{self.skale_dir}': {
+            os.path.abspath(self.skale_dir): {
                 'bind': '/skale_vol',
                 'mode': mode
             },
-            f'{self.skale_dir}/node_data': {
+            os.path.abspath(os.path.join(self.skale_dir, 'node_data')): {
                 'bind': '/skale_node_data',
                 'mode': mode
             }
@@ -201,14 +205,27 @@ class TxManager:
     def get_rpc_wallet(self) -> RPCWallet:
         return RPCWallet(self.url)
 
+    @property
+    def container_cmd(self):
+        return ' '.join([
+            f'uwsgi --http 127.0.0.1:{self.port} --module main --callable app',
+            '--hook-master-start "unix_signal:15 gracefully_kill_them_all"',
+            '--die-on-term',
+            '--need-app', '--master',
+            '--http-timeout 200', '--single-interpreter',
+            '--show-config'
+        ])
+
     def run(self):
-        return TxManager.docker_client.run(
-            TRANSACTION_MANAGER_IMAGE,
-            name=self.container_name,
+        return TxManager.docker_client.containers.run(
+            image=TRANSACTION_MANAGER_IMAGE,
+            name=self.name,
             network='host',
             tty=True,
-            environments=self.get_env(),
-            volumes=self.get_volumes()
+            environment=self.get_env(),
+            detach=True,
+            volumes=self.get_volumes(),
+            command=self.container_cmd
         )
 
     def stop(self) -> None:
@@ -233,7 +250,7 @@ class Node:
         self.skale_dir = Node.ensure_skale_dir(name)
         self.id = Node.loads(name).get('id')
         self.tm = TxManager(self.skale_dir)
-        self.wallet = TxManager.get_rpc_wallet()
+        self.wallet = self.tm.get_rpc_wallet()
         self.skale = Skale(ENDPOINT, TEST_ABI_FILEPATH, self.wallet)
         self.process = None
         if save:
@@ -245,10 +262,12 @@ class Node:
 
     @classmethod
     def ensure_skale_dir(cls, node_name: str) -> Path:
+        print(f'IVD ensure_skale_dir')
         skale_dir_path = cls.get_skale_dir_path(node_name)
-        abi_dir = Path(skale_dir_path) \
-            .joinpath('contracts_info').mkdir(exist_ok=True)
-        copyfile(TEST_ABI_FILEPATH, abi_dir.joinpath('manager.json'))
+        print(f'IVD {skale_dir_path}')
+        abi_dir_path = Path(skale_dir_path).joinpath('contracts_info')
+        abi_dir_path.mkdir(parents=True, exist_ok=True)
+        copyfile(TEST_ABI_FILEPATH, abi_dir_path.joinpath('manager.json'))
         Path(skale_dir_path).joinpath('node_data', 'log').mkdir(
             exist_ok=True, parents=True
         )
@@ -259,7 +278,7 @@ class Node:
 
     @classmethod
     def get_node_config_path(cls, skale_dir):
-        return Path(skale_dir).joinpath('node_data').joinpath('node_config.json')
+        return Path(skale_dir).joinpath('node_data', 'node_config.json')
 
     def join(self) -> None:
         self.process.join()
@@ -276,7 +295,8 @@ class Node:
                     skale,
                     schain,
                     self.id,
-                    skale.wallet._key_name
+                    self.tm.keyname,
+                    node_data_path=os.path.join(self.skale_dir, 'node_data')
                 )
                 for skale, schain in zip(schain_skales, schains)
             ]
@@ -319,18 +339,18 @@ class Node:
         if filepath:
             node_config_path = Path(filepath)
         else:
-            node_config_path = self.ensure_node_config_path()
+            node_config_path = Node.get_node_config_path(self.skale_dir)
 
         data = {}
         if node_config_path.exists():
             with open(node_config_path) as node_config_file:
                 try:
-                    data = json.loads(node_config_file)
-                except json.JSONDecoderError:
+                    data = json.load(node_config_file)
+                except json.JSONDecodeError:
                     pass
         data.update(self.to_dict())
         with open(node_config_path, 'w') as node_config_file:
-            json.dump(data, node_config_path)
+            json.dump(data, node_config_file)
 
     def to_dict(self) -> dict:
         return {
@@ -344,7 +364,8 @@ class Node:
 
     def register(self, save: bool = True) -> int:
         if self.id is not None:
-            raise Node.AlreadyRegisteredError()
+            return
+            # raise Node.AlreadyRegisteredError()
         if Node.is_registered(self.name):
             data = Node.loads(self.name)
             id_ = data['id']
@@ -436,10 +457,13 @@ def prepare() -> list:
     enable_validators(validators)
     # wallets = generate_wallets(NODES_AMOUNT)
     nodes = ensure_nodes(NODES_AMOUNT)
+    print(f'Waiting for tm containers initialization')
+    time.sleep(TxManager.INIT_WAIT_TIME)
     wallets = [node.wallet for node in nodes]
     send_eth_to_addresses([w.address for w in wallets], ETH_AMOUNT)
     link_node_wallets_to_validators(wallets, validators)
-    return register_nodes(nodes)
+    register_nodes(nodes)
+    return nodes
 
 
 def run_dkg_test(nodes: list) -> None:
@@ -468,7 +492,7 @@ def cleanup_schains() -> None:
 
 def main() -> None:
     # init_default_logger()
-    init_admin_logger()
+    # init_admin_logger()
     nodes = prepare()
     with cleanup_schains():
         run_dkg_test(nodes)
