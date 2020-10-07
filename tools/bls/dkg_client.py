@@ -18,20 +18,20 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import sys
 import functools
 import logging
 import time
 
 from skale.transactions.result import TransactionFailedError
-from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
+from tools.configs import SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import DkgPolyStatus
 from sgx.http import SgxUnreachableError
 
 from skale.contracts.manager.dkg import G2Point, KeyShare
 
-sys.path.insert(0, NODE_DATA_PATH)
+# IVD investigate tmp
+# sys.path.insert(0, NODE_DATA_PATH)
 
 logger = logging.getLogger(__name__)
 
