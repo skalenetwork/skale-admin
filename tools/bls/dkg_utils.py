@@ -219,7 +219,7 @@ def check_broadcasted_data(dkg_client, is_correct, is_recieved):
             send_complaint(dkg_client, i, "broadcast", True)
             break
         if not is_correct[i]:
-            report_bad_data(dkg_client, i, "correct data", True)
+            report_bad_data(dkg_client, i)
             break
 
 

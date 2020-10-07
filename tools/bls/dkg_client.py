@@ -349,16 +349,11 @@ class DKGClient:
         return share, dh_key, verification_vector_mult
 
     def response(self, to_node_index):
-        is_response_possible_function = self.dkg_contract_functions.isResponsePossible
-        is_response_possible = is_response_possible_function(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
-
         is_pre_response_possible_function = self.dkg_contract_functions.isPreResponsePossible
-        is_pre_response_possible_function = is_pre_response_possible_function(
+        is_pre_response_possible = is_pre_response_possible_function(
             self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
-        if not is_response_possible \
-           or not is_pre_response_possible_function or not self.is_channel_opened():
+        if not is_pre_response_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent a response')
             return
@@ -374,6 +369,15 @@ class DKGClient:
                 convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
                 wait_for=True
             )
+
+            is_response_possible_function = self.dkg_contract_functions.isResponsePossible
+            is_response_possible = is_response_possible_function(
+                self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+
+            if not is_response_possible or not self.is_channel_opened():
+                logger.info(f'sChain: {self.schain_name}. '
+                            f'{self.node_id_dkg} node could not sent a response')
+                return
 
             self.skale.dkg.response(
                 self.group_index,
