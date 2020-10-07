@@ -174,6 +174,19 @@ def send_complaint(dkg_client, index, reason="", wait_for_response=False):
         pass
 
 
+def report_bad_data(dkg_client, index):
+    try:
+        channel_started_time = get_channel_started_time(dkg_client)
+        if dkg_client.send_complaint(index, True):
+            wait_for_fail(dkg_client, channel_started_time, "correct data")
+            logger.info(f'sChain {dkg_client.schain_name}:'
+                        'Complainted node did not send a response.'
+                        f'Sending complaint once again')
+            dkg_client.send_complaint(index)
+    except DkgTransactionError:
+        pass
+
+
 def response(dkg_client, to_node_index):
     try:
         channel_started_time = get_channel_started_time(dkg_client)
@@ -206,7 +219,7 @@ def check_broadcasted_data(dkg_client, is_correct, is_recieved):
             send_complaint(dkg_client, i, "broadcast", True)
             break
         if not is_correct[i]:
-            send_complaint(dkg_client, i, "correct data", True)
+            report_bad_data(dkg_client, i)
             break
 
 
