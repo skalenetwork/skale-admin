@@ -2,6 +2,7 @@ import logging
 import json
 import os
 import random
+import shutil
 import string
 import time
 from pathlib import Path
@@ -22,8 +23,7 @@ from skale.wallets import RPCWallet, SgxWallet, Web3Wallet
 from web3 import Web3
 
 from core.schains.dkg import run_dkg
-from core.schains.helper import get_schain_dir_path
-# from tools.logger import init_admin_logger
+from tools.logger import init_admin_logger
 
 
 logger = logging.getLogger(__name__)
@@ -36,16 +36,20 @@ SGX_SERVER_URL = os.getenv('SGX_SERVER_URL')
 SGX_CERTIFICATES_FOLDER = os.getenv('SGX_CERTIFICATES_FOLDER')
 SKALE_BASE_DIR = os.getenv('SKALE_BASE_DIR')
 TRANSACTION_MANAGER_IMAGE = os.getenv('TRANSACTION_MANAGER_IMAGE')
+NODES_AMOUNT = int(os.getenv('NODES_AMOUNT') or 0)
+ETH_AMOUNT = int(os.getenv('ETH_AMOUNT') or 0)
+SCHAIN_TYPE = int(os.getenv('SCHAIN_TYPE') or 0)
+SCHAINS_AMOUNT = int(os.getenv('SCHAINS_AMOUNT') or 0)
 
-print(ETH_PRIVATE_KEY)
-print(ENDPOINT)
-print(TEST_ABI_FILEPATH)
+print('ENDPOINT: ', ENDPOINT)
+print('SGX_SERVER_URL: ', SGX_SERVER_URL)
+print('ABI_FILEPATH: ', TEST_ABI_FILEPATH)
+print('NODES_AMOUNT: ', NODES_AMOUNT)
+print('ETH_AMOUNT: ', ETH_AMOUNT)
+print('SCHAINS_AMOUNT: ', SCHAINS_AMOUNT)
+print('SCHAIN_TYPE: ', SCHAIN_TYPE)
 
 TIMEOUT = 5
-NODES_AMOUNT = 2
-ETH_AMOUNT = 2.5
-SCHAIN_TYPE = 4
-SCHAINS_AMOUNT = 1
 
 
 def generate_random_ip() -> str:
@@ -183,7 +187,6 @@ class TxManager:
             'SGX_SERVER_URL': SGX_SERVER_URL,
             'SGX_CERTIFICATES_DIR_NAME': sgx_certs_dirname,
             'SKALE_DIR_HOST': self.skale_dir,
-            # 'UWSGI_HTTP': f'127.0.0.1:{self.port}'
         }
 
     @property
@@ -262,18 +265,14 @@ class Node:
 
     @classmethod
     def ensure_skale_dir(cls, node_name: str) -> Path:
-        print(f'IVD ensure_skale_dir')
         skale_dir_path = cls.get_skale_dir_path(node_name)
-        print(f'IVD {skale_dir_path}')
         abi_dir_path = Path(skale_dir_path).joinpath('contracts_info')
         abi_dir_path.mkdir(parents=True, exist_ok=True)
         copyfile(TEST_ABI_FILEPATH, abi_dir_path.joinpath('manager.json'))
-        Path(skale_dir_path).joinpath('node_data', 'log').mkdir(
-            exist_ok=True, parents=True
-        )
-        Path(skale_dir_path).joinpath('node_data', 'sgx_certs').mkdir(
-            exist_ok=True, parents=True
-        )
+        for dirname in ('log', 'sgx_certs', 'schains'):
+            Path(skale_dir_path).joinpath('node_data', dirname).mkdir(
+                exist_ok=True, parents=True
+            )
         return skale_dir_path
 
     @classmethod
@@ -284,6 +283,13 @@ class Node:
         self.process.join()
 
     def run_dkg_for_node_schains(self, schains: list) -> None:
+        schain_config_pathes = [
+            Path(self.skale_dir).joinpath('node_data', 'schains', schain)
+            for schain in schains
+        ]
+        for path in schain_config_pathes:
+            path.mkdir(parents=True, exist_ok=True)
+
         schain_skales = [
             spawn_skale_manager_lib(self.skale)
             for _ in range(len(schains))
@@ -302,6 +308,9 @@ class Node:
             ]
         for future in as_completed(futures):
             future.result()
+
+        for path in schain_config_pathes:
+            shutil.rmtree(path)
 
     def get_schains_names(self):
         sids = self.skale.schains_internal.get_active_schain_ids_for_node(
@@ -432,14 +441,11 @@ def generate_random_name(len: int = 16) -> None:
         string.ascii_uppercase + string.digits, k=len))
 
 
-def create_config_dir(name: str) -> str:
-    schain_dir = get_schain_dir_path(name)
-    os.makedirs(schain_dir)
-
-
 def create_schains(amount: int) -> None:
+    schain_names = []
     for i in range(amount):
         name = generate_random_name()
+        schain_names.append(name)
         lifetime_seconds = 12 * 3600
         price_in_wei = root_skale.schains.get_schain_price(
             SCHAIN_TYPE, lifetime_seconds)
@@ -447,8 +453,8 @@ def create_schains(amount: int) -> None:
                                          type_of_nodes=SCHAIN_TYPE,
                                          deposit=price_in_wei, name=name)
 
-        create_config_dir(name)
         time.sleep(TIMEOUT)
+    return schain_names
 
 
 def prepare() -> list:
@@ -468,7 +474,7 @@ def prepare() -> list:
 
 def run_dkg_test(nodes: list) -> None:
     print('======== Starting dkg test =====================================')
-    create_schains(SCHAINS_AMOUNT)
+    schain_names = create_schains(SCHAINS_AMOUNT)
     for node in nodes:
         print(f'Address {node.skale.wallet.address}')
         node.start_dkg()
@@ -477,22 +483,51 @@ def run_dkg_test(nodes: list) -> None:
     for node in nodes:
         node.join()
 
+    for schain_name in schain_names:
+        gid = root_skale.schains.name_to_id(schain_name)
+        assert root_skale.dkg.is_last_dkg_successful(gid)
+
 
 @contextmanager
 def cleanup_schains() -> None:
     try:
         yield
     finally:
-        schain_ids = root_skale.schains_internal.get_all_schains_ids()
-        names = [root_skale.schains.get(sid)['name'] for sid in schain_ids]
-        print(names)
-        for name in names:
-            root_skale.manager.delete_schain(name)
+        cleanup_schains_from_contracts()
+
+
+def cleanup_schains_from_contracts():
+    schain_ids = root_skale.schains_internal.get_all_schains_ids()
+    names = [root_skale.schains.get(sid)['name'] for sid in schain_ids]
+    print(names)
+    for name in names:
+        root_skale.manager.delete_schain(name)
+
+
+def cleanup_tm_containers():
+    docker_client = docker.from_env()
+    tm_containers = filter(
+        lambda c: c.name.startswith('tm'),
+        docker_client.containers.list()
+    )
+    for c in tm_containers:
+        print(c.name)
+        c.remove(force=True)
+
+
+def cleanup_schain_configs():
+    for node_data_path in Path(SKALE_BASE_DIR).glob('node-*'):
+        schain_base_dir_path = node_data_path.joinpath('node_data', 'schains')
+        for schain_config_path in schain_base_dir_path.iterdir():
+            print(schain_config_path)
+            shutil.rmtree(schain_config_path)
 
 
 def main() -> None:
     # init_default_logger()
-    # init_admin_logger()
+    init_admin_logger()
+    cleanup_tm_containers()
+    cleanup_schain_configs()
     nodes = prepare()
     with cleanup_schains():
         run_dkg_test(nodes)
