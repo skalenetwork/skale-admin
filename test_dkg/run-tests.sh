@@ -5,7 +5,7 @@ export $(grep -v '^#' .env | xargs)
 mkdir -p $SKALE_BASE_DIR || true
 mkdir -p $SGX_CERTIFICATES_FOLDER || true
 
-export SKALE_DIR_HOST=$PWD/tests/skale-data
+export SKALE_DIR_HOST=$PWD/../tests/skale-data
 export RUNNING_ON_HOST=True
 export IMA_ENDPOINT=http://localhost:1000
 export DB_USER=user
