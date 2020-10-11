@@ -121,7 +121,7 @@ class DockerUtils:
     def container_running(self, container_info: dict) -> bool:
         return container_info['status'] == RUNNING_STATUS
 
-    def to_start_container(self, container_info: dict) -> bool:
+    def container_not_found(self, container_info: dict) -> bool:
         return container_info['status'] == CONTAINER_NOT_FOUND
 
     def is_container_exited(self, container_info: dict) -> bool:
@@ -130,6 +130,12 @@ class DockerUtils:
     def is_container_exited_with_zero(self, container_info: dict) -> bool:
         return self.is_container_exited(container_info) and \
             container_info['stats']['State']['ExitCode'] == 0
+
+    def container_exit_code(self, container_info: dict) -> int:
+        if not self.container_not_found(container_info):
+            return container_info['stats']['State']['ExitCode']
+        else:
+            return -1
 
     def rm_vol(self, name: str) -> None:
         try:
