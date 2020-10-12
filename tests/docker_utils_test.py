@@ -94,7 +94,7 @@ def test_not_existed_docker_objects(client):
     # Not existed container
     info = client.get_info('random_id')
     assert info['status'] == 'not_found'
-    assert client.container_not_found(info)
+    assert not client.container_found(info)
     client.safe_rm('random_name')
 
 

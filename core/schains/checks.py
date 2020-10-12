@@ -86,7 +86,7 @@ class SChainChecks:
 
     def check_broken_container(self):
         exit_code = dutils.container_exit_code(self.info)
-        self._needs_repair = int(exit_code) == SkaledExitCodes.EC_STATE_ROOT_MISMATCH.value
+        self._needs_repair = int(exit_code) == SkaledExitCodes.EC_STATE_ROOT_MISMATCH
 
     def check_ima_container(self):
         name = get_container_name(IMA_CONTAINER, self.name)

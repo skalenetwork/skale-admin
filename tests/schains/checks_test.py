@@ -65,8 +65,6 @@ def test_get_all_false_checks(skale):
     assert not checks['rpc']
     assert not checks['needs_repair']
 
-    assert False
-
 
 def test_needs_repair_check(skale, dutils):
     test_schain_name = 'needs_repair_test'

@@ -121,8 +121,8 @@ class DockerUtils:
     def container_running(self, container_info: dict) -> bool:
         return container_info['status'] == RUNNING_STATUS
 
-    def container_not_found(self, container_info: dict) -> bool:
-        return container_info['status'] == CONTAINER_NOT_FOUND
+    def container_found(self, container_info: dict) -> bool:
+        return container_info['status'] != CONTAINER_NOT_FOUND
 
     def is_container_exited(self, container_info: dict) -> bool:
         return container_info['status'] == EXITED_STATUS
@@ -132,7 +132,7 @@ class DockerUtils:
             container_info['stats']['State']['ExitCode'] == 0
 
     def container_exit_code(self, container_info: dict) -> int:
-        if not self.container_not_found(container_info):
+        if self.container_found(container_info):
             return container_info['stats']['State']['ExitCode']
         else:
             return -1

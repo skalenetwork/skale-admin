@@ -252,7 +252,7 @@ def check_container(schain_name, volume_required=False, dutils=None):
     dutils = dutils or DockerUtils()
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
     info = dutils.get_info(name)
-    if dutils.container_not_found(info):
+    if not dutils.container_found(info):
         logger.warning(f'sChain: {schain_name}. '
                        f'sChain container: {name} not found, trying to create.')
         if volume_required and not dutils.is_data_volume_exists(schain_name):

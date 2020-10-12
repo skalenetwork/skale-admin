@@ -17,10 +17,10 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import Enum
+from enum import IntEnum
 
 
-class SkaledExitCodes(Enum):
+class SkaledExitCodes(IntEnum):
     """This class contains skaled container exit codes"""
     EC_SUCCESS = 0
     EC_FAILURE = 1

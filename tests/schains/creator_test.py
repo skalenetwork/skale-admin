@@ -41,7 +41,8 @@ CHECK_MOCK = {
     'volume': True,
     'container': True,
     'ima_container': True,
-    'firewall_rules': True
+    'firewall_rules': True,
+    'needs_repair': False
 }
 
 
