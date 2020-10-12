@@ -54,3 +54,6 @@ test_abi.json
 *.key
 *.crt
 *.csr
+dkg_tm/node_base
+dkg_tm/.env
+dkg_tm/validators
