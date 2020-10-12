@@ -70,11 +70,16 @@ def test_needs_repair_check(skale, dutils):
     test_schain_name = 'needs_repair_test'
     image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, test_schain_name)
     dutils.safe_rm(container_name)
-    dutils.run_container(
-        image_name=image_name,
-        name=container_name,
-        entrypoint='bash -c "exit 200"'
-    )
-    sleep(10)
-    checks = SChainChecks(test_schain_name, TEST_NODE_ID, log=True).get_all()
-    assert checks['needs_repair']
+    try:
+        dutils.run_container(
+            image_name=image_name,
+            name=container_name,
+            entrypoint='bash -c "exit 200"'
+        )
+        sleep(10)
+        checks = SChainChecks(test_schain_name, TEST_NODE_ID, log=True).get_all()
+        assert checks['needs_repair']
+    except Exception as e:
+        dutils.safe_rm(container_name)
+        raise e
+    dutils.safe_rm(container_name)
