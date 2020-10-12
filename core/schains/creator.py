@@ -154,14 +154,14 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     schain_record = upsert_schain_record(name)
     mode = get_monitor_mode(schain_record, rotation)
 
-    if schain_record.repair_mode:
+    checks = SChainChecks(name, node_id, rotation_id=rotation_id, log=True)
+    checks_dict = checks.get_all()
+
+    if schain_record.repair_mode or checks_dict['needs_repair']:
         logger.info(f'REPAIR MODE was toggled for schain {schain["name"]}')
         notify_repair_mode(node_info, name)
         cleanup_schain_docker_entity(name)
         schain_record.set_repair_mode(False)
-
-    checks = SChainChecks(name, node_id, rotation_id=rotation_id, log=True)
-    checks_dict = checks.get_all()
 
     if not schain_record.first_run:
         notify_checks(name, node_info, checks_dict)
@@ -252,7 +252,7 @@ def check_container(schain_name, volume_required=False, dutils=None):
     dutils = dutils or DockerUtils()
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
     info = dutils.get_info(name)
-    if dutils.to_start_container(info):
+    if not dutils.container_found(info):
         logger.warning(f'sChain: {schain_name}. '
                        f'sChain container: {name} not found, trying to create.')
         if volume_required and not dutils.is_data_volume_exists(schain_name):

@@ -1,10 +1,9 @@
 import mock
-import pytest
+from time import sleep
 
 from core.schains.checks import SChainChecks
-from core.schains.cleaner import remove_schain_container
-from core.schains.cleaner import remove_schain_volume
-from tools.docker_utils import DockerUtils
+from core.schains.runner import get_container_info
+from tools.configs.containers import SCHAIN_CONTAINER
 
 from tests.utils import get_schain_contracts_data, run_simple_schain_container
 
@@ -23,11 +22,6 @@ def check_container_mock(self):
     self._container = True
 
 
-def cleanup_schain_container(schain_name: str, dutils: DockerUtils):
-    remove_schain_container(schain_name, dutils)
-    remove_schain_volume(schain_name, dutils)
-
-
 def test_init_checks(skale):
     schain_name = 'name'
     with mock.patch('core.schains.checks.SChainChecks.check_firewall_rules',
@@ -35,18 +29,6 @@ def test_init_checks(skale):
         checks = SChainChecks(schain_name, TEST_NODE_ID)
     assert checks.name == schain_name
     assert checks.node_id == TEST_NODE_ID
-
-
-@pytest.fixture
-def dutils():
-    return DockerUtils(volume_driver='local')
-
-
-@pytest.fixture
-def cleanup_container(schain_config, dutils):
-    yield
-    schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    cleanup_schain_container(schain_name, dutils)
 
 
 def test_get_all_checks(skale, schain_config, dutils, cleanup_container):
@@ -81,3 +63,23 @@ def test_get_all_false_checks(skale):
     # assert not checks['ima_container']
     assert not checks['firewall_rules']
     assert not checks['rpc']
+    assert not checks['needs_repair']
+
+
+def test_needs_repair_check(skale, dutils):
+    test_schain_name = 'needs_repair_test'
+    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, test_schain_name)
+    dutils.safe_rm(container_name)
+    try:
+        dutils.run_container(
+            image_name=image_name,
+            name=container_name,
+            entrypoint='bash -c "exit 200"'
+        )
+        sleep(10)
+        checks = SChainChecks(test_schain_name, TEST_NODE_ID, log=True).get_all()
+        assert checks['needs_repair']
+    except Exception as e:
+        dutils.safe_rm(container_name)
+        raise e
+    dutils.safe_rm(container_name)

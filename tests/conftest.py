@@ -10,8 +10,12 @@ import pytest
 from skale.utils.contracts_provision.main import (create_nodes, create_schain,
                                                   cleanup_nodes_schains)
 
+from core.schains.cleaner import remove_schain_container
+from core.schains.cleaner import remove_schain_volume
+
 from tests.utils import init_skale
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.docker_utils import DockerUtils
 
 from web.models.schain import create_tables, SChainRecord, upsert_schain_record
 
@@ -189,3 +193,20 @@ def schain_on_contracts(skale, _schain_name) -> str:
     create_schain(skale, _schain_name)
     yield _schain_name
     cleanup_nodes_schains(skale)
+
+
+@pytest.fixture
+def dutils():
+    return DockerUtils(volume_driver='local')
+
+
+@pytest.fixture
+def cleanup_container(schain_config, dutils):
+    yield
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    cleanup_schain_container(schain_name, dutils)
+
+
+def cleanup_schain_container(schain_name: str, dutils: DockerUtils):
+    remove_schain_container(schain_name, dutils)
+    remove_schain_volume(schain_name, dutils)
