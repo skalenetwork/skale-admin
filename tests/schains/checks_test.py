@@ -63,11 +63,11 @@ def test_get_all_false_checks(skale):
     # assert not checks['ima_container']
     assert not checks['firewall_rules']
     assert not checks['rpc']
-    assert not checks['needs_repair']
+    assert checks['exit_code_ok']
 
 
-def test_needs_repair_check(skale, dutils):
-    test_schain_name = 'needs_repair_test'
+def test_exit_code_ok_check(skale, dutils):
+    test_schain_name = 'exit_code_ok_test'
     image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, test_schain_name)
     dutils.safe_rm(container_name)
     try:
@@ -78,7 +78,7 @@ def test_needs_repair_check(skale, dutils):
         )
         sleep(10)
         checks = SChainChecks(test_schain_name, TEST_NODE_ID, log=True).get_all()
-        assert checks['needs_repair']
+        assert not checks['exit_code_ok']
     except Exception as e:
         dutils.safe_rm(container_name)
         raise e

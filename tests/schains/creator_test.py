@@ -42,7 +42,7 @@ CHECK_MOCK = {
     'container': True,
     'ima_container': True,
     'firewall_rules': True,
-    'needs_repair': False
+    'exit_code_ok': True
 }
 
 

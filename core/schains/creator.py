@@ -126,8 +126,12 @@ def monitor(skale, node_config):
     logger.info('Creator procedure finished')
 
 
+def is_backup_run(schain_record):
+    return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
+
+
 def get_monitor_mode(schain_record, rotation_state):
-    if schain_record.first_run and BACKUP_RUN or schain_record.repair_mode:
+    if is_backup_run(schain_record) or schain_record.repair_mode:
         return MonitorMode.SYNC
     elif rotation_state['in_progress']:
         if rotation_state['exiting_node']:
@@ -157,16 +161,20 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     checks = SChainChecks(name, node_id, rotation_id=rotation_id, log=True)
     checks_dict = checks.get_all()
 
-    if schain_record.repair_mode or checks_dict['needs_repair']:
+    if schain_record.repair_mode or not checks_dict['exit_code_ok']:
         logger.info(f'REPAIR MODE was toggled for schain {schain["name"]}')
         notify_repair_mode(node_info, name)
         cleanup_schain_docker_entity(name)
         schain_record.set_repair_mode(False)
 
+    if not checks_dict['exit_code_ok']:
+        mode = MonitorMode.SYNC
+
     if not schain_record.first_run:
         notify_checks(name, node_info, checks_dict)
 
     schain_record.set_first_run(False)
+    schain_record.set_new_schain(False)
     logger.info(f'Running monitor for sChain {name} in {mode.name} mode')
 
     if mode == MonitorMode.EXIT:
