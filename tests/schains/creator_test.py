@@ -276,6 +276,7 @@ def test_get_monitor_mode_backup_sync(skale, schain_db):
 
     record = SChainRecord.get_by_name(schain_name)
     record.set_first_run(True)
+    record.set_new_schain(False)
 
     rotation_state = {
         'rotation_id': 0,
