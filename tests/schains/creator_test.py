@@ -42,7 +42,7 @@ CHECK_MOCK = {
     'container': True,
     'ima_container': True,
     'firewall_rules': True,
-    'needs_repair': False
+    'exit_code_ok': True
 }
 
 
@@ -228,7 +228,7 @@ def test_get_monitor_mode_repair(skale, schain_db):
 
 
 @mock.patch('core.schains.creator.BACKUP_RUN', True)
-def test_get_monitor_mode_backup(skale, schain_db):
+def test_get_monitor_mode_backup_rotation(skale, schain_db):
     schain_name = schain_db
 
     rotation_state = {
@@ -237,6 +237,52 @@ def test_get_monitor_mode_backup(skale, schain_db):
         'exiting_node': True,
         'new_schain': False,
         'finish_ts': 1
+    }
+    record = SChainRecord.get_by_name(schain_name)
+    assert get_monitor_mode(record, rotation_state) == MonitorMode.EXIT
+
+
+@mock.patch('core.schains.creator.BACKUP_RUN', True)
+def test_get_monitor_mode_backup_new_schain(skale, schain_db):
+    schain_name = schain_db
+
+    rotation_state = {
+        'rotation_id': 0,
+        'in_progress': False,
+        'exiting_node': False,
+        'new_schain': True
+    }
+    record = SChainRecord.get_by_name(schain_name)
+    assert get_monitor_mode(record, rotation_state) == MonitorMode.REGULAR
+
+
+@mock.patch('core.schains.creator.BACKUP_RUN', True)
+def test_get_monitor_mode_backup_regular(skale, schain_db):
+    schain_name = schain_db
+
+    rotation_state = {
+        'rotation_id': 0,
+        'in_progress': False,
+        'exiting_node': False,
+        'new_schain': False
+    }
+    record = SChainRecord.get_by_name(schain_name)
+    assert get_monitor_mode(record, rotation_state) == MonitorMode.REGULAR
+
+
+@mock.patch('core.schains.creator.BACKUP_RUN', True)
+def test_get_monitor_mode_backup_sync(skale, schain_db):
+    schain_name = schain_db
+
+    record = SChainRecord.get_by_name(schain_name)
+    record.set_first_run(True)
+    record.set_new_schain(False)
+
+    rotation_state = {
+        'rotation_id': 0,
+        'in_progress': False,
+        'exiting_node': False,
+        'new_schain': False
     }
     record = SChainRecord.get_by_name(schain_name)
     assert get_monitor_mode(record, rotation_state) == MonitorMode.SYNC

@@ -33,6 +33,7 @@ class SChainRecord(BaseModel):
     dkg_status = IntegerField()
     is_deleted = BooleanField(default=False)
     first_run = BooleanField(default=True)
+    new_schain = BooleanField(default=True)
     repair_mode = BooleanField(default=False)
 
     @classmethod
@@ -42,7 +43,8 @@ class SChainRecord(BaseModel):
                 schain = cls.create(
                     name=name,
                     added_at=datetime.datetime.now(),
-                    dkg_status=DKGStatus.NOT_STARTED.value
+                    dkg_status=DKGStatus.NOT_STARTED.value,
+                    new_schain=True
                 )
             return (schain, None)
         except IntegrityError as err:
@@ -75,7 +77,8 @@ class SChainRecord(BaseModel):
             'dkg_status': record.dkg_status,
             'dkg_status_name': DKGStatus(record.dkg_status).name,
             'is_deleted': record.is_deleted,
-            'first_run': record.first_run
+            'first_run': record.first_run,
+            'new_schain': record.new_schain,
         }
 
     def dkg_started(self):
@@ -104,6 +107,11 @@ class SChainRecord(BaseModel):
     def set_repair_mode(self, value):
         logger.info(f'Changing repair_mode for {self.name} to {value}')
         self.repair_mode = value
+        self.save()
+
+    def set_new_schain(self, value):
+        logger.info(f'Changing new_schain for {self.name} to {value}')
+        self.new_schain = value
         self.save()
 
 
