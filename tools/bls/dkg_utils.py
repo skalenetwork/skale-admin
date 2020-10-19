@@ -29,7 +29,6 @@ from sgx.http import SgxUnreachableError
 
 logger = logging.getLogger(__name__)
 
-RECEIVE_TIMEOUT = 0
 UINT_CONSTANT = 2**256 - 1
 
 
@@ -56,6 +55,7 @@ def init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_eth_key
         public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name
     )
 
+    global RECEIVE_TIMEOUT
     RECEIVE_TIMEOUT = skale.dkg.contract.functions.complaintTimelimit.call()
     return dkg_client
 
