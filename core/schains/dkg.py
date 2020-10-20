@@ -90,7 +90,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
         start_time_response = get_complaint_started_time(dkg_client)
         while check_failed_dkg(dkg_client):
-            if get_latest_block_timestamp(dkg_client) - start_time_response > dkg_client.dkg_timeout:
+            if get_latest_block_timestamp(dkg_client) - start_time_response > \
+               dkg_client.dkg_timeout:
                 break
             sleep(30)
 
