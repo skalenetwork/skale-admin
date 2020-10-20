@@ -143,6 +143,7 @@ class DKGClient:
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
         self.dkg_contract_functions = self.skale.dkg.contract.functions
+        self.dkg_timeout = skale.constants_holder.contract.functions.complaintTimelimit().call()
         self.complaint_error_event_hash = self.skale.web3.toHex(self.skale.web3.sha3(
             text="ComplaintError(string)"
         ))

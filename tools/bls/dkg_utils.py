@@ -29,7 +29,6 @@ from sgx.http import SgxUnreachableError
 
 logger = logging.getLogger(__name__)
 
-RECEIVE_TIMEOUT = 1800
 UINT_CONSTANT = 2**256 - 1
 
 
@@ -55,6 +54,7 @@ def init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_eth_key
         node_id_dkg, node_id, skale, t, n, schain_name,
         public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name
     )
+
     return dkg_client
 
 
@@ -105,10 +105,10 @@ def broadcast_and_check_data(dkg_client, poly_name):
 
     while False in is_received:
         time_gone = get_latest_block_timestamp(dkg_client) - start_time
-        if time_gone > RECEIVE_TIMEOUT:
+        if time_gone > dkg_client.dkg_timeout:
             break
         logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
-                    f'{RECEIVE_TIMEOUT - time_gone} seconds left')
+                    f'{dkg_client.dkg_timeout - time_gone} seconds left')
 
         if is_everyone_broadcasted(dkg_client):
             events = dkg_filter.get_events(from_channel_started_block=True)
@@ -249,7 +249,7 @@ def check_no_complaints(dkg_client):
 
 def wait_for_fail(dkg_client, channel_started_time, reason=""):
     start_time = get_latest_block_timestamp(dkg_client)
-    while get_latest_block_timestamp(dkg_client) - start_time < RECEIVE_TIMEOUT:
+    while get_latest_block_timestamp(dkg_client) - start_time < dkg_client.dkg_timeout:
         if len(reason) > 0:
             logger.info(f'sChain: {dkg_client.schain_name}.'
                         f' Not all nodes sent {reason}. Waiting for FailedDkg event...')
