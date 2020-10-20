@@ -28,7 +28,7 @@ from tools.bls.dkg_utils import (
     get_secret_key_share_filepath, is_all_data_received, is_everyone_broadcasted,
     check_response, check_no_complaints, check_failed_dkg, wait_for_fail, broadcast_and_check_data,
     get_complaint_data, get_complaint_started_time, get_alright_started_time,
-    get_channel_started_time, RECEIVE_TIMEOUT
+    get_channel_started_time
 )
 from tools.helper import write_json
 
@@ -67,7 +67,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         start_time_alright = get_alright_started_time(dkg_client)
         while False in is_alright_sent_list:
             check_failed_dkg(dkg_client)
-            if get_latest_block_timestamp(dkg_client) - start_time_alright > RECEIVE_TIMEOUT:
+            if get_latest_block_timestamp(dkg_client) - start_time_alright > dkg_client.dkg_timeout:
                 break
             for from_node in range(dkg_client.n):
                 if not is_alright_sent_list[from_node]:
@@ -90,7 +90,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
         start_time_response = get_complaint_started_time(dkg_client)
         while check_failed_dkg(dkg_client):
-            if get_latest_block_timestamp(dkg_client) - start_time_response > RECEIVE_TIMEOUT:
+            if get_latest_block_timestamp(dkg_client) - start_time_response > dkg_client.dkg_timeout:
                 break
             sleep(30)
 
