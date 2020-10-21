@@ -182,7 +182,6 @@ def report_bad_data(dkg_client, index):
 
 def response(dkg_client, to_node_index):
     try:
-        channel_started_time = get_channel_started_time(dkg_client)
         dkg_client.response(to_node_index)
     except DkgTransactionError as e:
         logger.error(e)
