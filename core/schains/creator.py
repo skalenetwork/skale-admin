@@ -362,6 +362,8 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         else:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
+    if not checks['ima_container']:
+        monitor_ima_container(name)
 
 
 def check_schain_rotated(schain_name):
