@@ -384,12 +384,13 @@ class DKGClient:
                 self.group_index,
                 self.node_id_contract,
                 int(dh_key, 16),
-                share
+                share,
+                wait_for=True
             )
+            logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent a response')
         except TransactionFailedError as e:
             logger.error(f'DKG response failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
-        logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent a response')
 
     def is_all_data_received(self, from_node):
         is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
