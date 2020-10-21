@@ -97,39 +97,33 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
         complaint_itself = complainted_node_index == dkg_client.node_id_dkg
         if check_failed_dkg(dkg_client) and not complaint_itself:
-            logger.info(f'sChain: {schain_name}.'
+            logger.info(f'sChain: {schain_name}. '
                         'Accused node has not sent response. Sending complaint...')
             send_complaint(dkg_client, complainted_node_index, "response")
-
-    while True:
-        logger.info(f'sChain: {schain_name}.'
-                    'Successfully sent and received everything. Waiting for others...')
-        if not check_no_complaints(dkg_client):
-            wait_for_fail(dkg_client, channel_started_time)
-        if False not in is_alright_sent_list:
-            logger.info(f'sChain: {schain_name}: Everyone sent alright')
-            if skale.dkg.is_last_dkg_successful(dkg_client.group_index):
-                bls_name = generate_bls_key_name(
-                    group_index_str, dkg_client.node_id_dkg, rotation_id
-                )
-                encrypted_bls_key = generate_bls_key(dkg_client, bls_name)
-                logger.info(f'sChain: {schain_name}.'
-                            f'Node`s encrypted bls key is: {encrypted_bls_key}')
-                bls_public_keys = get_bls_public_keys(dkg_client)
-                common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
-                formated_common_public_key = []
-                for coord in common_public_key:
-                    for elem in coord:
-                        formated_common_public_key.append(elem)
-                return {
-                    'common_public_key': formated_common_public_key,
-                    'public_key': dkg_client.public_key,
-                    'bls_public_keys': bls_public_keys,
-                    't': t,
-                    'n': n,
-                    'key_share_name': bls_name
-                }
-        sleep(30)
+    
+    if False not in is_alright_sent_list:
+        logger.info(f'sChain: {schain_name}: Everyone sent alright')
+        if skale.dkg.is_last_dkg_successful(dkg_client.group_index):
+            bls_name = generate_bls_key_name(
+                group_index_str, dkg_client.node_id_dkg, rotation_id
+            )
+            encrypted_bls_key = generate_bls_key(dkg_client, bls_name)
+            logger.info(f'sChain: {schain_name}. '
+                        f'Node`s encrypted bls key is: {encrypted_bls_key}')
+            bls_public_keys = get_bls_public_keys(dkg_client)
+            common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
+            formated_common_public_key = []
+            for coord in common_public_key:
+                for elem in coord:
+                    formated_common_public_key.append(elem)
+            return {
+                'common_public_key': formated_common_public_key,
+                'public_key': dkg_client.public_key,
+                'bls_public_keys': bls_public_keys,
+                't': t,
+                'n': n,
+                'key_share_name': bls_name
+            }
 
 
 def run_dkg(skale, schain_name, node_id, sgx_key_name, rotation_id=0):

@@ -184,16 +184,16 @@ def response(dkg_client, to_node_index):
     try:
         dkg_client.response(to_node_index)
     except DkgTransactionError as e:
-        logger.error(e)
+        logger.error(f'sChain {dkg_client.schain_name}:' + str(e))
     except SgxUnreachableError as e:
-        logger.error(e)
+        logger.error(f'sChain {dkg_client.schain_name}:' + str(e))
 
 
 def send_alright(dkg_client):
     try:
         dkg_client.alright()
-    except DkgTransactionError:
-        pass
+    except DkgTransactionError as e:
+        logger.error(f'sChain {dkg_client.schain_name}:' + str(e))
 
 
 def is_all_data_received(dkg_client, from_node):
