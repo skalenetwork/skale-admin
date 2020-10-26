@@ -34,6 +34,7 @@ from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 
 from web.models.schain import set_schains_first_run
+from web.migrations import run_migrations
 
 
 init_admin_logger()
@@ -63,6 +64,7 @@ def main():
     skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
 
     soft_updates(skale, node_config)
+    run_migrations()
 
     set_schains_first_run()
     cleanup_notification_state()

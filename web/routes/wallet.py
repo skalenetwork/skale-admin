@@ -50,8 +50,8 @@ def construct_wallet_bp(skale):
         try:
             address = to_checksum_address(raw_address)
             send_ether(skale.web3, skale.wallet, address, eth_amount)
-        except Exception as err:
-            logger.error('Funds were not sent due to error', exc_info=err)
+        except Exception:
+            logger.exception('Funds were not sent due to error')
             return construct_err_response(msg='Funds sending failed')
         return construct_ok_response()
 

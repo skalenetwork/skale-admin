@@ -29,7 +29,6 @@ from sgx.http import SgxUnreachableError
 
 logger = logging.getLogger(__name__)
 
-RECEIVE_TIMEOUT = 1800
 UINT_CONSTANT = 2**256 - 1
 
 
@@ -55,6 +54,7 @@ def init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_eth_key
         node_id_dkg, node_id, skale, t, n, schain_name,
         public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name
     )
+
     return dkg_client
 
 
@@ -105,10 +105,10 @@ def broadcast_and_check_data(dkg_client, poly_name):
 
     while False in is_received:
         time_gone = get_latest_block_timestamp(dkg_client) - start_time
-        if time_gone > RECEIVE_TIMEOUT:
+        if time_gone > dkg_client.dkg_timeout:
             break
         logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
-                    f'{RECEIVE_TIMEOUT - time_gone} seconds left')
+                    f'{dkg_client.dkg_timeout - time_gone} seconds left')
 
         if is_everyone_broadcasted(dkg_client):
             events = dkg_filter.get_events(from_channel_started_block=True)
@@ -174,6 +174,19 @@ def send_complaint(dkg_client, index, reason="", wait_for_response=False):
         pass
 
 
+def report_bad_data(dkg_client, index):
+    try:
+        channel_started_time = get_channel_started_time(dkg_client)
+        if dkg_client.send_complaint(index, True):
+            wait_for_fail(dkg_client, channel_started_time, "correct data")
+            logger.info(f'sChain {dkg_client.schain_name}:'
+                        'Complainted node did not send a response.'
+                        f'Sending complaint once again')
+            dkg_client.send_complaint(index)
+    except DkgTransactionError:
+        pass
+
+
 def response(dkg_client, to_node_index):
     try:
         channel_started_time = get_channel_started_time(dkg_client)
@@ -206,7 +219,7 @@ def check_broadcasted_data(dkg_client, is_correct, is_recieved):
             send_complaint(dkg_client, i, "broadcast", True)
             break
         if not is_correct[i]:
-            send_complaint(dkg_client, i, "correct data", True)
+            report_bad_data(dkg_client, i)
             break
 
 
@@ -236,7 +249,7 @@ def check_no_complaints(dkg_client):
 
 def wait_for_fail(dkg_client, channel_started_time, reason=""):
     start_time = get_latest_block_timestamp(dkg_client)
-    while get_latest_block_timestamp(dkg_client) - start_time < RECEIVE_TIMEOUT:
+    while get_latest_block_timestamp(dkg_client) - start_time < dkg_client.dkg_timeout:
         if len(reason) > 0:
             logger.info(f'sChain: {dkg_client.schain_name}.'
                         f' Not all nodes sent {reason}. Waiting for FailedDkg event...')
@@ -270,5 +283,6 @@ def get_latest_block_timestamp(dkg_client):
     return dkg_client.skale.web3.eth.getBlock("latest")["timestamp"]
 
 
-def get_secret_key_share_filepath(schain_id, rotation_id):
-    return os.path.join(NODE_DATA_PATH, 'schains', schain_id, f'secret_key_{rotation_id}.json')
+def get_secret_key_share_filepath(schain_name, rotation_id):
+    return os.path.join(NODE_DATA_PATH, 'schains', schain_name,
+                        f'secret_key_{rotation_id}.json')

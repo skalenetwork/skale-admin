@@ -23,14 +23,16 @@ from core.schains.types import SchainTypes
 from tools.helper import read_json
 from tools.configs.resource_allocation import RESOURCE_ALLOCATION_FILEPATH
 from tools.configs.schains import FILESTORAGE_ARTIFACTS_FILEPATH
+from tools.docker_utils import DockerUtils
 
 logger = logging.getLogger(__name__)
 
 
-def init_data_volume(schain, dutils):
+def init_data_volume(schain, dutils=None):
+    dutils = dutils or DockerUtils()
     schain_name = schain['name']
 
-    if dutils.data_volume_exists(schain_name):
+    if dutils.is_data_volume_exists(schain_name):
         logger.debug(f'Volume already exists: {schain_name}')
         return
 
@@ -44,9 +46,8 @@ def init_data_volume(schain, dutils):
 
 def get_container_limits(schain):
     size = get_allocation_option_name(schain)
-    cpu_limit = get_allocation_option('cpu', size)
-    nanocpu_limit = cpu_to_nanocpu(cpu_limit)
-    return nanocpu_limit, get_allocation_option('mem', size)
+    cpu_shares_limit = get_allocation_option('cpu_shares', size)
+    return cpu_shares_limit, get_allocation_option('mem', size)
 
 
 def cpu_to_nanocpu(cpu_limit):
@@ -75,5 +76,6 @@ def get_filestorage_info():
     return read_json(FILESTORAGE_ARTIFACTS_FILEPATH)
 
 
-def get_schain_volume_config(name, mount_path):
-    return {f'{name}': {'bind': mount_path, 'mode': 'rw'}}
+def get_schain_volume_config(name, mount_path, mode=None):
+    mode = mode or 'rw'
+    return {f'{name}': {'bind': mount_path, 'mode': mode}}

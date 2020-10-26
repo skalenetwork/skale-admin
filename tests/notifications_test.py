@@ -9,6 +9,7 @@ from tools.notifications.messages import (cleanup_notification_state,
                                           compose_balance_message,
                                           compose_checks_message,
                                           notify_checks, notify_balance,
+                                          notify_repair_mode,
                                           send_message)
 
 CURRENT_TIMESTAMP = 1594903080
@@ -236,3 +237,12 @@ def test_notify_checks(send_message_mock, cleaned_state):
     notify_checks(schain_name, NODE_INFO, failed_checks_2)
     assert send_message_mock.call_count == initial_call_count + allowed_attempts + 1
     check_state(1, "[('config', True), ('container', False), ('data_dir', True), ('dkg', False), ('firewall_rules', False), ('rpc', False), ('volume', False)]")  # noqa
+
+
+@mock.patch('tools.notifications.messages.send_message')
+def test_notify_repair(send_message_mock):
+    notify_repair_mode(NODE_INFO, 'test-schain')
+    send_message_mock.assert_called_with(
+        ['\u2757 Repair mode for test-schain enabled \n',
+         'Node id: 1', 'Node ip: 1.1.1.1', 'SChain: test-schain']
+    )

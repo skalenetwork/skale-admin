@@ -20,6 +20,7 @@
 import os
 import logging
 
+from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.config.helper import get_allowed_endpoints, get_schain_rpc_ports
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
@@ -42,6 +43,10 @@ class SChainChecks:
         self.node_id = node_id
         self.failhook = failhook
         self.rotation_id = rotation_id
+
+        self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
+        self.info = dutils.get_info(self.container_name)
+
         self.run_checks()
         if log:
             self.log_health_check()
@@ -57,6 +62,7 @@ class SChainChecks:
         self.check_volume()
         self.check_firewall_rules()
         self.check_container()
+        self.check_broken_container()
         # self.check_ima_container()
         self.check_rpc()
 
@@ -73,12 +79,14 @@ class SChainChecks:
         self._config = os.path.isfile(config_filepath)
 
     def check_volume(self):
-        self._volume = dutils.data_volume_exists(self.name)
+        self._volume = dutils.is_data_volume_exists(self.name)
 
     def check_container(self):
-        name = get_container_name(SCHAIN_CONTAINER, self.name)
-        info = dutils.get_info(name)
-        self._container = dutils.container_running(info)
+        self._container = dutils.container_running(self.info)
+
+    def check_broken_container(self):
+        exit_code = dutils.container_exit_code(self.info)
+        self._exit_code_ok = int(exit_code) != SkaledExitCodes.EC_STATE_ROOT_MISMATCH
 
     def check_ima_container(self):
         name = get_container_name(IMA_CONTAINER, self.name)
@@ -112,7 +120,8 @@ class SChainChecks:
             # TODO: Test IMA
             # 'ima_container': self._ima_container,
             'firewall_rules': self._firewall_rules,
-            'rpc': self._rpc
+            'rpc': self._rpc,
+            'exit_code_ok': self._exit_code_ok
         }
 
     def log_health_check(self):
@@ -132,7 +141,7 @@ class SChainChecks:
             )
 
 
-def check_for_rotation(skale, schain_name, node_id):
+def get_rotation_state(skale, schain_name, node_id):
     rotation_data = skale.node_rotation.get_rotation(schain_name)
     rotation_in_progress = skale.node_rotation.is_rotation_in_progress(schain_name)
     finish_ts = rotation_data['finish_ts']
@@ -140,7 +149,7 @@ def check_for_rotation(skale, schain_name, node_id):
     new_schain = rotation_data['new_node'] == node_id
     exiting_node = rotation_data['leaving_node'] == node_id
     return {
-        'result': rotation_in_progress,
+        'in_progress': rotation_in_progress,
         'new_schain': new_schain,
         'exiting_node': exiting_node,
         'finish_ts': finish_ts,

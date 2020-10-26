@@ -60,11 +60,8 @@ def construct_security_bp(docker_utils):
                 expiration_date_raw = cert.get_notAfter()
                 expiration_date = parser.parse(
                     expiration_date_raw).strftime('%Y-%m-%dT%H:%M:%S')
-            except Exception as err:
-                logger.error(
-                    'Error during parsing certs. May be they are invalid',
-                    exc_info=err
-                )
+            except Exception:
+                logger.exception('Error during parsing certs. May be they are invalid')
                 return construct_err_response(msg=CERTS_HAS_INVALID_FORMAT)
 
             return construct_ok_response(data={
