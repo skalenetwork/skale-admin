@@ -27,8 +27,7 @@ from tools.bls.dkg_utils import (
     generate_bls_key, get_bls_public_keys, generate_bls_key_name, generate_poly_name,
     get_secret_key_share_filepath, is_all_data_received, is_everyone_broadcasted,
     check_response, check_no_complaints, check_failed_dkg, wait_for_fail, broadcast_and_check_data,
-    get_complaint_data, get_complaint_started_time, get_alright_started_time,
-    get_channel_started_time
+    get_complaint_data, get_alright_started_time, get_channel_started_time
 )
 from tools.helper import write_json
 
@@ -88,19 +87,14 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         complaint_data = get_complaint_data(dkg_client)
         complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
 
-        start_time_response = get_complaint_started_time(dkg_client)
-        while check_failed_dkg(dkg_client):
-            if get_latest_block_timestamp(dkg_client) - start_time_response > \
-               dkg_client.dkg_timeout:
-                break
-            sleep(30)
+        wait_for_fail(dkg_client, channel_started_time, "either correct data or alright")
 
         complaint_itself = complainted_node_index == dkg_client.node_id_dkg
         if check_failed_dkg(dkg_client) and not complaint_itself:
             logger.info(f'sChain: {schain_name}. '
                         'Accused node has not sent response. Sending complaint...')
             send_complaint(dkg_client, complainted_node_index, "response")
-    
+
     if False not in is_alright_sent_list:
         logger.info(f'sChain: {schain_name}: Everyone sent alright')
         if skale.dkg.is_last_dkg_successful(dkg_client.group_index):
