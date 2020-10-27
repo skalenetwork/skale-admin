@@ -27,14 +27,14 @@ from tools.str_formatters import arguments_list_string
 logger = logging.getLogger(__name__)
 
 
-class SGXConnecionError(Exception):
+class SGXConnectionError(Exception):
     """Raised when admin couldn't establish connection with SGX server"""
 
 
 def generate_sgx_key(config):
     logger.info('Generating sgx key...')
     if not SGX_SERVER_URL:
-        raise SGXConnecionError('SGX server URL is not provided')
+        raise SGXConnectionError('SGX server URL is not provided')
     if not config.sgx_key_name:
         sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
         key_info = sgx.generate_key()
