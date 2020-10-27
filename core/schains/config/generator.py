@@ -57,6 +57,7 @@ class SChainConfig:
     """Dataclass that represents a full sChain configuration"""
     seal_engine: str
     params: dict
+    unddos: dict
     genesis: dict
     accounts: dict
     skale_config: SkaleConfig
@@ -66,6 +67,7 @@ class SChainConfig:
         return {
             'sealEngine': self.seal_engine,
             'params': self.params,
+            'unddos': self.unddos,
             'genesis': self.genesis,
             'accounts': self.accounts,
             'skaleConfig': self.skale_config.to_dict(),
@@ -112,6 +114,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
             **base_config.config['params'],
             **dynamic_params
         },
+        unddos=base_config.config['unddos'],
         genesis=base_config.config['genesis'],
         accounts={
             **base_config.config['accounts'],
