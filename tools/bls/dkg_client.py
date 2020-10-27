@@ -94,10 +94,14 @@ def convert_hex_to_g2_array(data):
 def convert_str_to_key_share(sent_secret_key_contribution, n):
     return_value = []
     for i in range(n):
-        public_key = sent_secret_key_contribution[i * 192: i * 192 + 128]
-        key_share = bytes.fromhex(sent_secret_key_contribution[i * 192 + 128: (i + 1) * 192])
+        public_key = sent_secret_key_contribution[i * 192 + 64: (i + 1) * 192]
+        key_share = bytes.fromhex(sent_secret_key_contribution[i * 192: i * 192 + 64])
         return_value.append(KeyShare(public_key, key_share).tuple)
     return return_value
+
+
+def to_verify(share):
+    return share[128:192] + share[:128]
 
 
 RETRY_ATTEMPTS = 9
@@ -250,7 +254,9 @@ class DKGClient:
     def verification(self, from_node):
         return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
                                             self.eth_key_name,
-                                            self.incoming_secret_key_contribution[from_node],
+                                            to_verify(
+                                                self.incoming_secret_key_contribution[from_node]
+                                            ),
                                             self.node_id_dkg)
 
     @sgx_unreachable_retry
