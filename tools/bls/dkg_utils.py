@@ -158,18 +158,11 @@ def broadcast(dkg_client, poly_name):
         pass
 
 
-def send_complaint(dkg_client, index, reason="", wait_for_response=False):
+def send_complaint(dkg_client, index, reason=""):
     try:
         channel_started_time = get_channel_started_time(dkg_client)
         if dkg_client.send_complaint(index):
-            if wait_for_response:
-                wait_for_fail(dkg_client, channel_started_time, reason)
-                logger.info(f'sChain {dkg_client.schain_name}:'
-                            'Complainted node did not send a response.'
-                            f'Sending complaint once again')
-                dkg_client.send_complaint(index)
-            else:
-                wait_for_fail(dkg_client, channel_started_time, reason)
+            wait_for_fail(dkg_client, channel_started_time, reason)
     except DkgTransactionError:
         pass
 
@@ -189,20 +182,18 @@ def report_bad_data(dkg_client, index):
 
 def response(dkg_client, to_node_index):
     try:
-        channel_started_time = get_channel_started_time(dkg_client)
         dkg_client.response(to_node_index)
-    except DkgTransactionError:
-        pass
+    except DkgTransactionError as e:
+        logger.error(f'sChain {dkg_client.schain_name}:' + str(e))
     except SgxUnreachableError as e:
-        logger.error(e)
-        wait_for_fail(dkg_client, channel_started_time)
+        logger.error(f'sChain {dkg_client.schain_name}:' + str(e))
 
 
 def send_alright(dkg_client):
     try:
         dkg_client.alright()
-    except DkgTransactionError:
-        pass
+    except DkgTransactionError as e:
+        logger.error(f'sChain {dkg_client.schain_name}:' + str(e))
 
 
 def is_all_data_received(dkg_client, from_node):
@@ -216,7 +207,7 @@ def is_everyone_broadcasted(dkg_client):
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):
     for i in range(dkg_client.n):
         if not is_recieved[i]:
-            send_complaint(dkg_client, i, "broadcast", True)
+            send_complaint(dkg_client, i, "broadcast")
             break
         if not is_correct[i]:
             report_bad_data(dkg_client, i)
