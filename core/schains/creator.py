@@ -167,6 +167,10 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         cleanup_schain_docker_entity(name)
         schain_record.set_repair_mode(False)
 
+        checks.check_volume()
+        checks.check_container()
+        checks_dict = checks.get_all()
+
     if not checks_dict['exit_code_ok']:
         mode = MonitorMode.SYNC
 
