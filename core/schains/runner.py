@@ -22,7 +22,7 @@ import copy
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_schain_volume_config
-from core.schains.limits import get_schain_limit
+from core.schains.limits import get_schain_limit, get_ima_limit
 from core.schains.types import MetricType
 from core.schains.config.helper import (
     get_schain_container_cmd,
@@ -143,10 +143,21 @@ def set_rotation_for_schain(schain_name: str, timestamp: int) -> None:
     send_rotation_request(url, timestamp)
 
 
-def run_ima_container(schain_name: str, dutils: DockerUtils = None) -> None:
+def run_ima_container(schain: dict, dutils: DockerUtils = None) -> None:
     dutils = dutils or docker_utils
-    env = get_ima_env(schain_name)
-    run_container(IMA_CONTAINER, schain_name, env, dutils=dutils)
+    env = get_ima_env(schain['name'])
+
+    cpu_limit = get_ima_limit(schain, MetricType.cpu_shares)
+    mem_limit = get_ima_limit(schain, MetricType.mem)
+
+    run_container(
+        type=IMA_CONTAINER,
+        schain_name=schain['name'],
+        env=env,
+        cpu_shares_limit=cpu_limit,
+        mem_limit=mem_limit,
+        dutils=dutils
+    )
 
 
 def add_config_volume(run_args, schain_name, mode=None):

@@ -101,8 +101,8 @@ def run_simple_schain_container_in_sync_mode(schain_data: dict,
         run_schain_container(schain_data, public_key, timestamp, dutils=dutils)
 
 
-def run_simple_ima_container(schain_name: str, dutils: DockerUtils):
-    run_ima_container(schain_name, dutils=dutils)
+def run_simple_ima_container(schain: dict, dutils: DockerUtils):
+    run_ima_container(schain, dutils=dutils)
 
 
 def init_skale():

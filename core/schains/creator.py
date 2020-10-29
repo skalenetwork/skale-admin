@@ -279,8 +279,8 @@ def monitor_schain_container(schain, dutils=None):
         run_schain_container(schain, dutils=dutils)
 
 
-def monitor_ima_container(schain_name: str):
-    run_ima_container(schain_name)
+def monitor_ima_container(schain: dict):
+    run_ima_container(schain)
 
 
 def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0,
