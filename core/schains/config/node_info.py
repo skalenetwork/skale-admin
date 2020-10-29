@@ -22,7 +22,7 @@ from skale.dataclasses.node_info import NodeInfo
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
 from core.schains.config.ima import get_message_proxy_addresses
-from core.schains.volume import get_allocation_option_name
+from core.schains.limits import get_schain_type
 from tools.configs import SGX_SERVER_URL
 from tools.configs.ima import IMA_ENDPOINT
 
@@ -79,7 +79,7 @@ def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
                                schains_on_node: list, rotation_id: int) -> CurrentNodeInfo:
     schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain['name'],
                                                             node['port'])
-    schain_size_name = get_allocation_option_name(schain)
+    schain_type_name = get_schain_type(schain).name
     return CurrentNodeInfo(
         node_id=node_id,
         name=node['name'],
@@ -89,7 +89,7 @@ def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
         wallets=generate_wallets_config(schain['name'], rotation_id),
         **get_message_proxy_addresses(),
         **static_schain_params['current_node_info'],
-        **static_schain_params['cache_options'][schain_size_name]
+        **static_schain_params['cache_options'][schain_type_name]
     )
 
 

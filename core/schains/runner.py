@@ -21,7 +21,9 @@ import logging
 import copy
 from docker.types import LogConfig, Ulimit
 
-from core.schains.volume import get_container_limits, get_schain_volume_config
+from core.schains.volume import get_schain_volume_config
+from core.schains.limits import get_schain_limit
+from core.schains.types import MetricType
 from core.schains.config.helper import (
     get_schain_container_cmd,
     get_schain_env,
@@ -115,7 +117,9 @@ def restart_container(type, schain):
 def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
                          volume_mode=None, ulimit_check=True, enable_ssl=True):
     schain_name = schain['name']
-    cpu_shares_limit, mem_limit = get_container_limits(schain)
+    cpu_limit = get_schain_limit(schain, MetricType.cpu_shares)
+    mem_limit = get_schain_limit(schain, MetricType.mem)
+
     volume_config = get_schain_volume_config(
         schain_name,
         DATA_DIR_CONTAINER_PATH,
@@ -129,7 +133,7 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
         enable_ssl=enable_ssl
     )
     run_container(SCHAIN_CONTAINER, schain_name, env, cmd,
-                  volume_config, cpu_shares_limit,
+                  volume_config, cpu_limit,
                   mem_limit, dutils=dutils, volume_mode=volume_mode)
 
 
