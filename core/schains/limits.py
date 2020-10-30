@@ -24,7 +24,8 @@ from tools.configs.resource_allocation import RESOURCE_ALLOCATION_FILEPATH
 
 def get_limit(metric_type: MetricType, schain_type: SchainType, container_type: ContainerType,
               resource_allocation: dict) -> int:
-    """Get allocation option from the resources allocation file
+    """
+    Get allocation option from the resources allocation file
 
     :param metric: Type of the metric to get
     :type metric: MetricType
