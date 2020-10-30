@@ -31,8 +31,8 @@ class SGXConnectionError(Exception):
     """Raised when admin couldn't establish connection with SGX server"""
 
 
-def generate_sgx_key(config):
-    logger.info('Generating sgx key...')
+def ensure_sgx_key(config):
+    logger.info('Trying to ensure that sgx key is generated ...')
     if not SGX_SERVER_URL:
         raise SGXConnectionError('SGX server URL is not provided')
     if not config.sgx_key_name:

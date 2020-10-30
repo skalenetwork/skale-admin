@@ -61,6 +61,7 @@ from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode
 from tools.str_formatters import arguments_list_string
+from tools.wallet import init_wallet
 from web.models.schain import upsert_schain_record
 
 
@@ -103,8 +104,14 @@ def monitor(skale, node_config):
     schains_on_node = sum(map(lambda schain: schain['active'], schains))
     schains_holes = len(schains) - schains_on_node
     logger.info(
-        arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
-                               'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
+        arguments_list_string(
+            {
+                'Node ID': node_id,
+                'sChains on node': schains_on_node,
+                'Empty sChain structs': schains_holes
+            }, 'Monitoring sChains'
+        )
+    )
     node_info = node_config.all()
     notify_if_not_enough_balance(skale, node_info)
 
@@ -147,6 +154,9 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     logger.info(f"Monitor for sChain {schain['name']}")
     skale = spawn_skale_manager_lib(skale)
     name = schain['name']
+    skale.wallet = init_wallet(
+        channel=f'schain-{name}', key_name=ecdsa_sgx_key_name
+    )
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
     logger.info(f'Rotation for {name}: {rotation}')

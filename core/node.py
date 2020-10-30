@@ -28,7 +28,7 @@ from skale.wallets.web3_wallet import public_key_to_address
 from core.filebeat import run_filebeat_service
 
 from tools.str_formatters import arguments_list_string
-from tools.wallet_utils import check_required_balance
+from tools.wallet import check_required_balance
 from tools.configs.filebeat import MONITORING_CONTAINERS
 from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 

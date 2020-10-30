@@ -24,7 +24,7 @@ from skale.utils.account_tools import send_ether
 from skale.utils.web3_utils import to_checksum_address
 
 from web.helper import construct_ok_response, construct_err_response
-from tools.wallet_utils import wallet_with_balance
+from tools.wallet import wallet_with_balance
 
 logger = logging.getLogger(__name__)
 

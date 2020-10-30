@@ -60,6 +60,7 @@ def main():
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
+    # TODO: IVD Remove
     rpc_wallet = RPCWallet(TM_URL, retry_if_failed=True)
     skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
 

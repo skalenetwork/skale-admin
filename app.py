@@ -22,21 +22,21 @@ import logging
 from flask import Flask, g
 
 from skale import Skale
-from skale.wallets import RPCWallet
 
 from core.node import Node
 from core.node_config import NodeConfig
 
 from tools.configs import FLASK_SECRET_KEY_FILE
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
+from tools.configs.web3 import ABI_FILEPATH, API_CHANNEL_NAME, ENDPOINT
 from tools.db import get_database
 from tools.docker_utils import DockerUtils
 from tools.logger import init_api_logger
-from tools.sgx_utils import generate_sgx_key, sgx_server_text
+from tools.sgx_utils import ensure_sgx_key, sgx_server_text
 from tools.str_formatters import arguments_list_string
 from tools.token_utils import init_user_token
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
+from tools.wallet import init_wallet
 
 from web.models.schain import create_tables
 from web.routes.logs import web_logs
@@ -51,14 +51,23 @@ from web.routes.sgx import construct_sgx_bp
 init_api_logger()
 logger = logging.getLogger(__name__)
 
-rpc_wallet = RPCWallet(TM_URL)
-skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
-logger.info('Skale inited')
 
 docker_utils = DockerUtils()
 logger.info('Docker utils inited')
 
 node_config = NodeConfig()
+logger.info('Node config inited')
+
+ensure_sgx_key(node_config)
+logger.info('Sgx key inited')
+
+wallet = init_wallet(
+    channel=API_CHANNEL_NAME,
+    key_name=node_config.sgx_key_name
+)
+skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
+logger.info('Skale inited')
+
 node = Node(skale, node_config)
 logger.info('Node inited')
 
@@ -91,7 +100,6 @@ def teardown_request(response):
 
 
 create_tables()
-generate_sgx_key(node_config)
 app.secret_key = FLASK_SECRET_KEY_FILE
 app.use_reloader = False
 logger.info('Starting api')
@@ -100,7 +108,7 @@ logger.info('Starting api')
 def main():
     logger.info(arguments_list_string({
         'Endpoint': ENDPOINT,
-        'Transaction manager': TM_URL,
+        'Transaction manager channel name': API_CHANNEL_NAME,
         'SGX Server': sgx_server_text()
         }, 'Starting Flask server'))
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST)
