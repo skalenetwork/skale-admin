@@ -77,7 +77,7 @@ class SChainConfig:
 def generate_schain_config(schain: dict, schain_id: int, node_id: int,
                            node: dict, ecdsa_key_name: str, schains_on_node: list,
                            rotation_id: int, schain_nodes_with_schains: list,
-                           previous_public_keys: list) -> SChainConfig:
+                           previous_public_keys: list, complexity_number: int) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
@@ -88,7 +88,8 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
     dynamic_params = {
-        'chainID': get_chain_id(schain['name'])
+        'chainID': get_chain_id(schain['name']),
+        'externalGasDifficulty': complexity_number
     }
 
     dynamic_accounts = generate_dynamic_accounts(
@@ -135,6 +136,9 @@ def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: i
     group_id = skale.schains.name_to_group_id(schain_name)
     previous_public_keys = skale.key_storage.get_all_previous_public_keys(group_id)
 
+    # TODO: get complexity number from skale-manager
+    complexity_number = 0
+
     node = skale.nodes.get(node_id)
 
     return generate_schain_config(
@@ -146,5 +150,6 @@ def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: i
         schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=schain_nodes_with_schains,
-        previous_public_keys=previous_public_keys
+        previous_public_keys=previous_public_keys,
+        complexity_number=complexity_number
     )
