@@ -37,6 +37,7 @@ NODE = {
 
 ECDSA_KEY_NAME = 'TEST:KEY:NAME'
 ROTATION_ID = 0
+COMPLEXITY_NUMBER = 1
 
 SECRET_KEY = {
     "key_share_name": "BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0",
@@ -73,7 +74,8 @@ def test_generate_schain_config(schain_secret_key_file):
         ecdsa_key_name=ECDSA_KEY_NAME,
         schains_on_node=SCHAINS_ON_NODE,
         rotation_id=ROTATION_ID,
-        schain_nodes_with_schains=SCHAIN_NODES_WITH_SCHAINS
+        schain_nodes_with_schains=SCHAIN_NODES_WITH_SCHAINS,
+        complexity_number=COMPLEXITY_NUMBER
     )
     print(json.dumps(schain_config.to_dict(), indent=2))
     assert False
