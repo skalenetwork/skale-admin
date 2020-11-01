@@ -136,8 +136,7 @@ def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: i
     group_id = skale.schains.name_to_group_id(schain_name)
     previous_public_keys = skale.key_storage.get_all_previous_public_keys(group_id)
 
-    # TODO: get complexity number from skale-manager
-    complexity_number = 0
+    complexity_number = skale.schains_internal.get_schain_complexity(schain_name)
 
     node = skale.nodes.get(node_id)
 
