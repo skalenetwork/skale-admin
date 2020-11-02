@@ -67,3 +67,5 @@ if not NODE_CONFIG_LOCK_PATH:
 ROTATION_FLAG_FILENAME = '.rotation'
 
 REDIS_URI = os.getenv('REDIS_URI', 'redis://127.0.0.1:6379')
+API_CHANNEL_NAME = 'api'
+ADMIN_CHANNEL_NAME = 'admin'

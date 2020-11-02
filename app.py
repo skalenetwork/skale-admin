@@ -26,8 +26,8 @@ from skale import Skale
 from core.node import Node
 from core.node_config import NodeConfig
 
-from tools.configs import FLASK_SECRET_KEY_FILE
-from tools.configs.web3 import ABI_FILEPATH, API_CHANNEL_NAME, ENDPOINT
+from tools.configs import API_CHANNEL_NAME, FLASK_SECRET_KEY_FILE
+from tools.configs.web3 import ABI_FILEPATH, ENDPOINT
 from tools.db import get_database
 from tools.docker_utils import DockerUtils
 from tools.logger import init_api_logger
@@ -36,7 +36,7 @@ from tools.str_formatters import arguments_list_string
 from tools.token_utils import init_user_token
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from tools.wallet import init_wallet
+from tools.wallet import init_queue_wallet
 
 from web.models.schain import create_tables
 from web.routes.logs import web_logs
@@ -61,7 +61,7 @@ logger.info('Node config inited')
 ensure_sgx_key(node_config)
 logger.info('Sgx key inited')
 
-wallet = init_wallet(
+wallet = init_queue_wallet(
     channel=API_CHANNEL_NAME,
     key_name=node_config.sgx_key_name
 )

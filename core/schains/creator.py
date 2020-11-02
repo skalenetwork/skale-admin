@@ -26,7 +26,7 @@ from datetime import datetime
 from enum import Enum
 from multiprocessing import Process
 
-from skale.skale_manager import spawn_skale_manager_lib
+from skale.skale_manager import spawn_skale_manager_from
 
 
 from core.schains.runner import (run_schain_container, run_ima_container,
@@ -61,7 +61,7 @@ from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode
 from tools.str_formatters import arguments_list_string
-from tools.wallet import init_wallet
+from tools.wallet import init_queue_wallet
 from web.models.schain import upsert_schain_record
 
 
@@ -88,7 +88,7 @@ def run_creator(skale, node_config):
 
 def monitor(skale, node_config):
     logger.info('Creator procedure started')
-    skale = spawn_skale_manager_lib(skale)
+    skale = spawn_skale_manager_from(skale)
     logger.info('Spawned new skale lib')
     node_id = node_config.id
     ecdsa_sgx_key_name = node_config.sgx_key_name
@@ -152,11 +152,11 @@ def get_monitor_mode(schain_record, rotation_state):
 
 def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     logger.info(f"Monitor for sChain {schain['name']}")
-    skale = spawn_skale_manager_lib(skale)
     name = schain['name']
-    skale.wallet = init_wallet(
+    wallet = init_queue_wallet(
         channel=f'schain-{name}', key_name=ecdsa_sgx_key_name
     )
+    skale = spawn_skale_manager_from(skale, wallet=wallet)
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
     logger.info(f'Rotation for {name}: {rotation}')

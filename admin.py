@@ -21,17 +21,17 @@ import logging
 import time
 
 from skale import Skale
-from skale.wallets import RPCWallet
 
 from core.node_config import NodeConfig
 from core.schains.creator import run_creator
 from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
 
-from tools.configs import BACKUP_RUN
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
+from tools.configs import ADMIN_CHANNEL_NAME, BACKUP_RUN
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
+from tools.wallet import init_queue_wallet
 
 from web.models.schain import set_schains_first_run
 from web.migrations import run_migrations
@@ -60,9 +60,11 @@ def main():
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
-    # TODO: IVD Remove
-    rpc_wallet = RPCWallet(TM_URL, retry_if_failed=True)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+    admin_wallet = init_queue_wallet(
+        channel=ADMIN_CHANNEL_NAME,
+        key_name=node_config.sgx_key_name
+    )
+    skale = Skale(ENDPOINT, ABI_FILEPATH, admin_wallet)
 
     soft_updates(skale, node_config)
     run_migrations()
