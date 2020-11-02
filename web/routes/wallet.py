@@ -20,7 +20,7 @@
 import logging
 
 from flask import Blueprint, request
-from skale.utils.account_tools import send_ether
+from skale.transactions.tools import send_eth_with_skale
 from skale.utils.web3_utils import to_checksum_address
 
 from web.helper import construct_ok_response, construct_err_response
@@ -43,13 +43,17 @@ def construct_wallet_bp(skale):
         logger.debug(request)
         raw_address = request.json.get('address')
         eth_amount = request.json.get('amount')
+        gas_limit = request.json.get('gas_limit', None)
+        gas_price = request.json.get('gas_price', None)
+        wei_amount = skale.web3.toWei(eth_amount, 'ether')
         if not raw_address:
             return construct_err_response('Address is empty')
         if not eth_amount:
             return construct_err_response('Amount is empty')
         try:
             address = to_checksum_address(raw_address)
-            send_ether(skale.web3, skale.wallet, address, eth_amount)
+            send_eth_with_skale(skale, address, wei_amount,
+                                gas_limit=gas_limit, gas_price=gas_price)
         except Exception:
             logger.exception('Funds were not sent due to error')
             return construct_err_response(msg='Funds sending failed')
