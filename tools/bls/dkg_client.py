@@ -261,7 +261,9 @@ class DKGClient:
 
     @sgx_unreachable_retry
     def generate_key(self, bls_key_name):
-        received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
+        received_secret_key_contribution = "".join(to_verify(
+                                                    self.incoming_secret_key_contribution[j]
+                                                    )
                                                    for j in range(self.sgx.n))
         logger.info(f'sChain: {self.schain_name}. '
                     f'DKGClient is going to create BLS private key with name {bls_key_name}')
