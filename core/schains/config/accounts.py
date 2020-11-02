@@ -25,7 +25,9 @@ from skale.wallets.web3_wallet import public_key_to_address
 from core.schains.config.helper import fix_address, _string_to_storage, get_context_contract
 from core.schains.filestorage import compose_filestorage_info
 from core.schains.helper import read_ima_data
-from core.schains.volume import get_resource_allocation_info, get_allocation_part_name
+
+from core.schains.limits import get_schain_limit
+from core.schains.types import MetricType
 
 from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC
 from tools.configs.ima import PRECOMPILED_IMA_CONTRACTS
@@ -101,11 +103,8 @@ def generate_fs_accounts(schain: dict) -> dict:
     :returns: Dictionary with accounts
     :rtype: dict
     """
-    resource_allocation = get_resource_allocation_info()
-    allocation_part_name = get_allocation_part_name(schain)
-    schin_internal_limits = resource_allocation['schain'][allocation_part_name]
-
-    filestorage_info = compose_filestorage_info(schin_internal_limits)
+    volume_limits = get_schain_limit(schain, MetricType.volume_limits)
+    filestorage_info = compose_filestorage_info(volume_limits)
     accounts = {}
     account = generate_account(
         balance=0,

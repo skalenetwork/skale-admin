@@ -167,6 +167,10 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         cleanup_schain_docker_entity(name)
         schain_record.set_repair_mode(False)
 
+        checks.check_volume()
+        checks.check_container()
+        checks_dict = checks.get_all()
+
     if not checks_dict['exit_code_ok']:
         mode = MonitorMode.SYNC
 
@@ -275,8 +279,8 @@ def monitor_schain_container(schain, dutils=None):
         run_schain_container(schain, dutils=dutils)
 
 
-def monitor_ima_container(schain_name: str):
-    run_ima_container(schain_name)
+def monitor_ima_container(schain: dict):
+    run_ima_container(schain)
 
 
 def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0,
