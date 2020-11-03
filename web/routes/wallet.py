@@ -18,10 +18,12 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from decimal import Decimal
 
 from flask import Blueprint, request
 from skale.transactions.tools import send_eth_with_skale
 from skale.utils.web3_utils import to_checksum_address
+from web3 import Web3
 
 from web.helper import construct_ok_response, construct_err_response
 from tools.wallet_utils import wallet_with_balance
@@ -45,13 +47,20 @@ def construct_wallet_bp(skale):
         eth_amount = request.json.get('amount')
         gas_limit = request.json.get('gas_limit', None)
         gas_price = request.json.get('gas_price', None)
+        if gas_price is not None:
+            gas_price = Web3.toWei(Decimal(gas_price), 'gwei')
         wei_amount = skale.web3.toWei(eth_amount, 'ether')
         if not raw_address:
             return construct_err_response('Address is empty')
         if not eth_amount:
             return construct_err_response('Amount is empty')
+        address = to_checksum_address(raw_address)
+        logger.info(
+            f'Sending {eth_amount} wei to {address} with '
+            f'gas_price: {gas_price} Wei, '
+            f'gas_limit: {gas_limit}'
+        )
         try:
-            address = to_checksum_address(raw_address)
             send_eth_with_skale(skale, address, wei_amount,
                                 gas_limit=gas_limit, gas_price=gas_price)
         except Exception:
