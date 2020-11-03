@@ -54,13 +54,13 @@ def construct_wallet_bp(skale):
             return construct_err_response('Address is empty')
         if not eth_amount:
             return construct_err_response('Amount is empty')
-        address = to_checksum_address(raw_address)
-        logger.info(
-            f'Sending {eth_amount} wei to {address} with '
-            f'gas_price: {gas_price} Wei, '
-            f'gas_limit: {gas_limit}'
-        )
         try:
+            address = to_checksum_address(raw_address)
+            logger.info(
+                f'Sending {eth_amount} wei to {address} with '
+                f'gas_price: {gas_price} Wei, '
+                f'gas_limit: {gas_limit}'
+            )
             send_eth_with_skale(skale, address, wei_amount,
                                 gas_limit=gas_limit, gas_price=gas_price)
         except Exception:
