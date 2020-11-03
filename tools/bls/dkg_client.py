@@ -227,11 +227,10 @@ class DKGClient:
 
     def receive_from_node(self, from_node, broadcasted_data):
         if from_node == self.node_id_dkg:
-            if self.incoming_verification_vector[from_node] == '0':
-                self.store_broadcasted_data(broadcasted_data, from_node, True)
+            self.store_broadcasted_data(broadcasted_data, from_node, True)
             return
-
-        self.store_broadcasted_data(broadcasted_data, from_node)
+        else:
+            self.store_broadcasted_data(broadcasted_data, from_node)
 
         try:
             if not self.verification(from_node):
@@ -261,7 +260,9 @@ class DKGClient:
 
     @sgx_unreachable_retry
     def generate_key(self, bls_key_name):
-        received_secret_key_contribution = "".join(self.incoming_secret_key_contribution[j]
+        received_secret_key_contribution = "".join(to_verify(
+                                                    self.incoming_secret_key_contribution[j]
+                                                    )
                                                    for j in range(self.sgx.n))
         logger.info(f'sChain: {self.schain_name}. '
                     f'DKGClient is going to create BLS private key with name {bls_key_name}')
