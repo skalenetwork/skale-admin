@@ -23,7 +23,7 @@ from core.schains.helper import get_schain_dir_path, get_schain_proxy_file_path
 from core.schains.config.helper import get_schain_ports, get_schain_config
 
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
-from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_URL
+from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 
 
 @dataclass
@@ -93,7 +93,7 @@ def get_ima_env(schain_name: str) -> ImaEnv:
         mainnet_rpc_url=IMA_ENDPOINT,
         node_number=schain_index,
         nodes_count=len(schain_nodes['nodes']),
-        sgx_url=SGX_URL,
+        sgx_url=SGX_SERVER_URL,
         ecdsa_key_name=node_info['ecdsaKeyName'],
         sgx_ssl_key_path=SGX_SSL_KEY_FILEPATH,
         sgx_ssl_cert_path=SGX_SSL_CERT_FILEPATH,
