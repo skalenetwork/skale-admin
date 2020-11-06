@@ -90,7 +90,6 @@ Certificates are already uploaded/Wrong form content:
 
 ## Development
 
-
 ### Run tests locally
 
 1) Run local ganache, download and deploy SKALE Manager contracts to it

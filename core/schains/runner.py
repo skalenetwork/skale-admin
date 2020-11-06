@@ -153,7 +153,7 @@ def run_ima_container(schain: dict, dutils: DockerUtils = None) -> None:
     run_container(
         type=IMA_CONTAINER,
         schain_name=schain['name'],
-        env=env,
+        env=env.to_dict(),
         cpu_shares_limit=cpu_limit,
         mem_limit=mem_limit,
         dutils=dutils
