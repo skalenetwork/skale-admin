@@ -55,7 +55,7 @@ from core.schains.utils import notify_if_not_enough_balance
 from tools.bls.dkg_client import DkgError
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
-from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.configs.ima import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
@@ -279,7 +279,10 @@ def monitor_schain_container(schain, dutils=None):
         run_schain_container(schain, dutils=dutils)
 
 
-def monitor_ima_container(schain: dict):
+def monitor_ima_container(schain: dict, dutils=None):
+    dutils = dutils or DockerUtils()
+    ima_conainer_name = get_container_name(IMA_CONTAINER, schain['name'])
+    dutils.safe_rm(ima_conainer_name)
     run_ima_container(schain)
 
 
