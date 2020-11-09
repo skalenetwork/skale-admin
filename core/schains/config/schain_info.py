@@ -32,7 +32,7 @@ class SChainInfo:
     owner: str
     storage_limit: int
 
-    snapshot_interval: int
+    snapshot_interval_sec: int
     empty_block_interval_ms: int
 
     max_consensus_storage_bytes: int
@@ -56,7 +56,7 @@ class SChainInfo:
             'schainName': self.name,
             'schainOwner': self.owner,
             'storageLimit': self.storage_limit,
-            'snapshotInterval': self.snapshot_interval,
+            'snapshotIntervalSec': self.snapshot_interval_sec,
             'emptyBlockIntervalMs': self.empty_block_interval_ms,
             'maxConsensusStorageBytes': self.max_consensus_storage_bytes,
             'maxSkaledLeveldbStorageBytes': self.max_skaled_leveldb_storage_bytes,
