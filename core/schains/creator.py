@@ -369,7 +369,8 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         else:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
-    # if not checks['ima_container']:
+    if not checks['ima_container']:
+        pass
     #     copy_schain_ima_abi(name)
     #     monitor_ima_container(schain)
 
