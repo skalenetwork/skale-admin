@@ -34,7 +34,6 @@ from tools.docker_utils import DockerUtils
 from tools.logger import init_api_logger
 from tools.sgx_utils import generate_sgx_key, sgx_server_text
 from tools.str_formatters import arguments_list_string
-from tools.token_utils import init_user_token
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 
@@ -61,10 +60,6 @@ logger.info('Docker utils inited')
 node_config = NodeConfig()
 node = Node(skale, node_config)
 logger.info('Node inited')
-
-token = init_user_token()
-logger.info('Token inited')
-
 
 app = Flask(__name__)
 app.register_blueprint(web_logs)

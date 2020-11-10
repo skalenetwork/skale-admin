@@ -127,6 +127,10 @@ class SChainChecks:
             log_checks_dict(self.name, checks_dict)
         return checks_dict
 
+    def is_healthy(self):
+        checks = self.get_all()
+        return False not in checks.values()
+
 
 def log_checks_dict(schain_name, checks_dict):
     logger.info(f'sChain {schain_name} checks: {checks_dict}')
