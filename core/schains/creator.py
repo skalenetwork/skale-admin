@@ -46,7 +46,8 @@ from core.schains.config.helper import (get_allowed_endpoints,
                                         save_schain_config,
                                         update_schain_config)
 from core.schains.volume import init_data_volume
-from core.schains.checks import get_rotation_state, SChainChecks
+from core.schains.checks import SChainChecks
+from core.schains.rotation import get_rotation_state
 from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
