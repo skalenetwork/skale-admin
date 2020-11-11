@@ -1,62 +1,80 @@
 {
-    "cpu_shares": {
-        "part_test4": 128,
-        "part_test": 128,
-        "part_small": 8,
-        "part_medium": 128,
-        "part_large": 1024
-    },
-    "mem": {
-        "part_test4": 68619571,
-        "part_test": 68619571,
-        "part_small": 4288723,
-        "part_medium": 68619571,
-        "part_large": 548956569
-    },
-    "disk": {
-        "part_test4": 26843,
-        "part_test": 2000000,
-        "part_small": 167772160,
-        "part_medium": 2684354560,
-        "part_large": 21474836480
-    },
     "schain": {
+        "cpu_shares": {
+            "test4": 89,
+            "test": 89,
+            "small": 5,
+            "medium": 89,
+            "large": 716
+        },
+        "mem": {
+            "test4": 145709383,
+            "test": 145709383,
+            "small": 9106836,
+            "medium": 145709383,
+            "large": 1165675069
+        },
+        "disk": {
+            "test4": 2550136832,
+            "test": 2550136832,
+            "small": 159383552,
+            "medium": 2550136832,
+            "large": 20401094656
+        },
+        "volume_limits": {
+            "test4": {
+                "max_consensus_storage_bytes": 765041049,
+                "max_skaled_leveldb_storage_bytes": 765041049,
+                "max_file_storage_bytes": 765041049,
+                "max_reserved_storage_bytes": 255013683
+            },
+            "test": {
+                "max_consensus_storage_bytes": 765041049,
+                "max_skaled_leveldb_storage_bytes": 765041049,
+                "max_file_storage_bytes": 765041049,
+                "max_reserved_storage_bytes": 255013683
+            },
+            "small": {
+                "max_consensus_storage_bytes": 47815065,
+                "max_skaled_leveldb_storage_bytes": 47815065,
+                "max_file_storage_bytes": 47815065,
+                "max_reserved_storage_bytes": 15938355
+            },
+            "medium": {
+                "max_consensus_storage_bytes": 765041049,
+                "max_skaled_leveldb_storage_bytes": 765041049,
+                "max_file_storage_bytes": 765041049,
+                "max_reserved_storage_bytes": 255013683
+            },
+            "large": {
+                "max_consensus_storage_bytes": 6120328396,
+                "max_skaled_leveldb_storage_bytes": 6120328396,
+                "max_file_storage_bytes": 6120328396,
+                "max_reserved_storage_bytes": 2040109465
+            }
+        },
         "storage_limit": {
             "test4": 655360000,
             "test": 655360000,
             "small": 655360000,
             "medium": 10737418240,
             "large": 85899345920
+        }
+    },
+    "ima": {
+        "cpu_shares": {
+            "test4": 38,
+            "test": 38,
+            "small": 2,
+            "medium": 38,
+            "large": 307
         },
-        "part_test4": {
-            "max_consensus_storage_bytes": 4,
-            "max_skaled_leveldb_storage_bytes": 4,
-            "max_file_storage_bytes": 4,
-            "max_reserved_storage_bytes": 1
-        },
-        "part_test": {
-            "max_consensus_storage_bytes": 4,
-            "max_skaled_leveldb_storage_bytes": 4,
-            "max_file_storage_bytes": 4,
-            "max_reserved_storage_bytes": 1
-        },
-        "part_small": {
-            "max_consensus_storage_bytes": 0,
-            "max_skaled_leveldb_storage_bytes": 0,
-            "max_file_storage_bytes": 0,
-            "max_reserved_storage_bytes": 0
-        },
-        "part_medium": {
-            "max_consensus_storage_bytes": 4,
-            "max_skaled_leveldb_storage_bytes": 4,
-            "max_file_storage_bytes": 4,
-            "max_reserved_storage_bytes": 1
-        },
-        "part_large": {
-            "max_consensus_storage_bytes": 38,
-            "max_skaled_leveldb_storage_bytes": 38,
-            "max_file_storage_bytes": 38,
-            "max_reserved_storage_bytes": 12
+        "mem": {
+            "test4": 62446878,
+            "test": 62446878,
+            "small": 3902929,
+            "medium": 62446878,
+            "large": 499575029
         }
     }
 }

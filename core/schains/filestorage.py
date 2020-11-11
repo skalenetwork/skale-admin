@@ -17,10 +17,15 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from core.schains.volume import get_filestorage_info
+from tools.helper import read_json
+from tools.configs.schains import FILESTORAGE_ARTIFACTS_FILEPATH
 
 
 FILESTORAGE_LIMIT_OPTION_NAME = 'max_file_storage_bytes'
+
+
+def get_filestorage_info():
+    return read_json(FILESTORAGE_ARTIFACTS_FILEPATH)
 
 
 def compose_filestorage_info(schin_internal_limits):

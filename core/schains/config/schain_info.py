@@ -20,8 +20,8 @@
 from dataclasses import dataclass
 
 from core.schains.config.helper import compose_public_key_info
-from core.schains.volume import (get_resource_allocation_info, get_allocation_option_name,
-                                 get_allocation_part_name)
+from core.schains.limits import get_schain_limit
+from core.schains.types import MetricType
 
 
 @dataclass
@@ -32,7 +32,7 @@ class SChainInfo:
     owner: str
     storage_limit: int
 
-    snapshot_interval_ms: int
+    snapshot_interval_sec: int
     empty_block_interval_ms: int
 
     max_consensus_storage_bytes: int
@@ -56,7 +56,7 @@ class SChainInfo:
             'schainName': self.name,
             'schainOwner': self.owner,
             'storageLimit': self.storage_limit,
-            'snapshotIntervalMs': self.snapshot_interval_ms,
+            'snapshotIntervalSec': self.snapshot_interval_sec,
             'emptyBlockIntervalMs': self.empty_block_interval_ms,
             'maxConsensusStorageBytes': self.max_consensus_storage_bytes,
             'maxSkaledLeveldbStorageBytes': self.max_skaled_leveldb_storage_bytes,
@@ -69,18 +69,15 @@ class SChainInfo:
 
 def generate_schain_info(schain_id: int, schain: dict, static_schain_params: dict,
                          previous_public_keys: list, nodes: dict) -> SChainInfo:
-    resource_allocation = get_resource_allocation_info()
-    schain_size_name = get_allocation_option_name(schain)
-    allocation_part_name = get_allocation_part_name(schain)
-    schin_internal_limits = resource_allocation['schain'][allocation_part_name]
-
+    volume_limits = get_schain_limit(schain, MetricType.volume_limits)
+    storage_limit = get_schain_limit(schain, MetricType.storage_limit)
     return SChainInfo(
         schain_id=schain_id,
         name=schain['name'],
         owner=schain['owner'],
-        storage_limit=resource_allocation['schain']['storage_limit'][schain_size_name],
+        storage_limit=storage_limit,
         previous_public_keys=previous_public_keys,
         nodes=nodes,
-        **schin_internal_limits,
+        **volume_limits,
         **static_schain_params['schain']
     )
