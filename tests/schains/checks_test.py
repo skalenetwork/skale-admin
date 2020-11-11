@@ -1,6 +1,7 @@
 import mock
 import pytest
 from time import sleep
+from http import HTTPStatus
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 
@@ -9,7 +10,7 @@ from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER
 
 
-from tests.utils import get_schain_contracts_data, run_simple_schain_container
+from tests.utils import response_mock, request_mock
 
 
 NOT_EXISTS_SCHAIN_NAME = 'qwerty123'
@@ -70,66 +71,46 @@ def test_container_check(sample_checks, sample_false_checks):
 
 
 def test_exit_code_ok_check(sample_checks, sample_false_checks):
-    with mock.patch('core.schains.checks.DockerUtils.container_exit_code', return_value=0):
+    with mock.patch('core.schains.checks.DockerUtils.container_exit_code', return_value=0), \
+            mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
         assert sample_checks.exit_code_ok
     with mock.patch('core.schains.checks.DockerUtils.container_exit_code',
-                    return_value=SkaledExitCodes.EC_STATE_ROOT_MISMATCH):
+                    return_value=SkaledExitCodes.EC_STATE_ROOT_MISMATCH), \
+            mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
         assert not sample_false_checks.exit_code_ok
 
 
-def check_firewall_rules_mock(self):
-    self._firewall_rules = True
+def test_ima_check(sample_checks, sample_false_checks):
+    with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
+        assert sample_checks.ima_container
+    with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_ERROR):
+        assert not sample_false_checks.ima_container
 
 
-def check_container_mock(self):
-    self._container = True
+def test_rpc_check(sample_checks, sample_false_checks):
+    res_mock = response_mock(HTTPStatus.OK, {
+        "id": 83,
+        "jsonrpc": "2.0",
+        "result": "0x4b7"
+    })
+    with mock.patch('requests.post', new=request_mock(res_mock)):
+        assert sample_checks.rpc
+    assert not sample_false_checks.rpc
+
+
+def test_blocks_check(sample_checks, sample_false_checks):
+    pass
+    # todo!
 
 
 def test_init_checks(skale):
     schain_name = 'name'
-    with mock.patch('core.schains.checks.SChainChecks.check_firewall_rules',
-                    new=check_firewall_rules_mock):
-        checks = SChainChecks(schain_name, TEST_NODE_ID)
+    checks = SChainChecks(schain_name, TEST_NODE_ID)
     assert checks.name == schain_name
     assert checks.node_id == TEST_NODE_ID
 
 
-def test_get_all_checks(skale, schain_config, dutils, cleanup_container):
-    schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
-    schain_data = get_schain_contracts_data(schain_name)
-    run_simple_schain_container(schain_data, dutils)
-
-    with mock.patch('core.schains.checks.SChainChecks.check_firewall_rules',
-                    new=check_firewall_rules_mock):
-        # skaled is restarting because of bad config permissions
-        # TODO: Check permissions and remove mock
-        with mock.patch('core.schains.checks.SChainChecks.check_container',
-                        new=check_container_mock):
-            checks = SChainChecks(schain_name, node_id, log=True).get_all()
-
-    assert checks['data_dir']
-    assert checks['dkg']
-    assert checks['config']
-    assert checks['container']
-    # assert not checks['ima_container']
-    assert checks['firewall_rules']
-    assert not checks['rpc']
-
-
-def test_get_all_false_checks(skale):
-    checks = SChainChecks(NOT_EXISTS_SCHAIN_NAME, TEST_NODE_ID, log=True).get_all()
-    assert not checks['data_dir']
-    assert not checks['dkg']
-    assert not checks['config']
-    assert not checks['container']
-    # assert not checks['ima_container']
-    assert not checks['firewall_rules']
-    assert not checks['rpc']
-    assert checks['exit_code_ok']
-
-
-def _test_exit_code_ok_check(skale, dutils):
+def test_exit_code(skale, dutils):
     test_schain_name = 'exit_code_ok_test'
     image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, test_schain_name)
     dutils.safe_rm(container_name)
@@ -140,8 +121,8 @@ def _test_exit_code_ok_check(skale, dutils):
             entrypoint='bash -c "exit 200"'
         )
         sleep(10)
-        checks = SChainChecks(test_schain_name, TEST_NODE_ID, log=True).get_all()
-        assert not checks['exit_code_ok']
+        checks = SChainChecks(test_schain_name, TEST_NODE_ID)
+        assert not checks.exit_code_ok
     except Exception as e:
         dutils.safe_rm(container_name)
         raise e
