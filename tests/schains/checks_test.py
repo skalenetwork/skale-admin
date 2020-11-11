@@ -21,6 +21,9 @@ REMOVING_CONTAINER_WAITING_INTERVAL = 2
 CONTAINER_INFO_OK = {'status': 'running'}
 CONTAINER_INFO_ERROR = {'status': 'exited'}
 
+TEST_TIMESTAMP_HEX = '0x55ba467c'
+TEST_TIMESTAMP = int(TEST_TIMESTAMP_HEX, 16)
+
 ETH_GET_BLOCK_RESULT = {
     "jsonrpc": "2.0",
     "id": 1,
@@ -40,7 +43,7 @@ ETH_GET_BLOCK_RESULT = {
         "sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
         "size": "0x220",
         "stateRoot": "0xddc8b0234c2e0cad087c8b389aa7ef01f7d79b2570bccb77ce48648aa61c904d",
-        "timestamp": "0x55ba467c",
+        "timestamp": TEST_TIMESTAMP_HEX,
         "totalDifficulty": "0x78ed983323d",
         "transactions": [
         ],
@@ -125,13 +128,13 @@ def test_rpc_check(sample_checks, sample_false_checks):
     assert not sample_false_checks.rpc
 
 
-# def test_blocks_check(sample_checks, sample_false_checks):
-#     res_mock = response_mock(HTTPStatus.OK, ETH_GET_BLOCK_RESULT)
-#     with mock.patch('requests.post', return_value=res_mock):
-#         print(sample_checks.blocks)
-#         assert sample_checks.blocks
-#         assert False
-#     assert not sample_false_checks.blocks
+def test_blocks_check(sample_checks, sample_false_checks):
+    res_mock = response_mock(HTTPStatus.OK, ETH_GET_BLOCK_RESULT)
+    with mock.patch('requests.post', return_value=res_mock), \
+            mock.patch('time.time', return_value=TEST_TIMESTAMP):
+        assert sample_checks.blocks
+    with mock.patch('requests.post', return_value=res_mock):
+        assert not sample_false_checks.blocks
 
 
 def test_init_checks(skale):

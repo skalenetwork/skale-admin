@@ -17,6 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import time
+
+from tools.configs import MAX_ALLOWED_TIMESTAMP_DIFF
 from tools.helper import post_request
 
 
@@ -34,6 +37,7 @@ def check_endpoint_alive(http_endpoint):
 
 def check_endpoint_blocks(http_endpoint):
     res = make_rpc_call(http_endpoint, 'eth_getBlockByNumber', ['latest', False])
-    print('res')
-    print(res.json['result']['timestamp'])
-    return res.json['result']['timestamp']
+    latest_schain_timestamp_hex = res.json['result']['timestamp']
+    latest_schain_timestamp = int(latest_schain_timestamp_hex, 16)
+    admin_timestamp = int(time.time())
+    return abs(latest_schain_timestamp - admin_timestamp) < MAX_ALLOWED_TIMESTAMP_DIFF
