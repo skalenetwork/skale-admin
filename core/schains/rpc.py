@@ -33,5 +33,7 @@ def check_endpoint_alive(http_endpoint):
 
 
 def check_endpoint_blocks(http_endpoint):
-    _ = make_rpc_call(http_endpoint, 'eth_getBlockByNumber', ['latest', False])
-    # todo: check
+    res = make_rpc_call(http_endpoint, 'eth_getBlockByNumber', ['latest', False])
+    print('res')
+    print(res.json['result']['timestamp'])
+    return res.json['result']['timestamp']

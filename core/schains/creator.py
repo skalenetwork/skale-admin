@@ -159,7 +159,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     schain_record = upsert_schain_record(name)
     mode = get_monitor_mode(schain_record, rotation)
 
-    checks = SChainChecks(name, node_id, rotation_id=rotation_id, log=True)
+    checks = SChainChecks(name, node_id, rotation_id=rotation_id)
     checks_dict = checks.get_all()
 
     if schain_record.repair_mode or not checks_dict['exit_code_ok']:
