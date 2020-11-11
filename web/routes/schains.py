@@ -71,7 +71,10 @@ def construct_schains_bp(skale, config, docker_utils):
         node_id = config.id
         if node_id is None:
             return construct_err_response(msg='No node installed')
-        schains_list = skale.schains.get_schains_for_node(node_id)
+        schains_list = list(filter(
+            lambda s: s.get('name'),
+            skale.schains.get_schains_for_node(node_id)
+        ))
         return construct_ok_response(schains_list)
 
     @schains_bp.route('/api/dkg/statuses', methods=['GET'])
