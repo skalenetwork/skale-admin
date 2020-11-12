@@ -61,11 +61,13 @@ def construct_wallet_bp(skale):
                 f'gas_price: {gas_price} Wei, '
                 f'gas_limit: {gas_limit}'
             )
-            send_eth_with_skale(skale, address, wei_amount,
-                                gas_limit=gas_limit, gas_price=gas_price)
+            send_eth_with_skale(
+                skale, address, wei_amount,
+                gas_limit=gas_limit, gas_price=gas_price)
         except Exception:
             logger.exception('Funds were not sent due to error')
             return construct_err_response(msg='Funds sending failed')
+        logger.info(f'Sending finished successfuly')
         return construct_ok_response()
 
     return wallet_bp

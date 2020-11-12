@@ -35,9 +35,7 @@ def ensure_sgx_key(config):
     logger.info('Trying to ensure that sgx key is generated ...')
     if not SGX_SERVER_URL:
         raise SGXConnectionError('SGX server URL is not provided')
-    logger.info(f'IVD sgx key {config.sgx_key_name}')
     if not config.sgx_key_name:
-        logger.info('IVD darova')
         sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
         key_info = sgx.generate_key()
         logger.info(arguments_list_string({
