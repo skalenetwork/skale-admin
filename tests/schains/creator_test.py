@@ -46,6 +46,14 @@ CHECK_MOCK = {
 }
 
 
+class ChecksMock:
+    def __init__(self, schain_name: str, node_id: int, rotation_id=0):
+        pass
+
+    def __getattr__(self, name):
+        return True
+
+
 def test_exiting_monitor(skale, node_config, db):
     rotation_info = {
         'in_progress': True,
@@ -59,8 +67,7 @@ def test_exiting_monitor(skale, node_config, db):
     schain = get_schain_contracts_data(schain_name=schain_name)
     CHECK_MOCK['rotation_in_progress'] = rotation_info
     with mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
-        mock.patch('core.schains.creator.SChainChecks.get_all',
-                   new=mock.Mock(return_value=CHECK_MOCK)),\
+        mock.patch('core.schains.creator.SChainChecks', new=ChecksMock), \
             mock.patch('core.schains.creator.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
@@ -86,8 +93,7 @@ def test_rotating_monitor(skale, node_config, db):
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
             mock.patch('core.schains.creator.generate_schain_config_with_skale',
                        new=mock.Mock(return_value=True)), \
-            mock.patch('core.schains.creator.SChainChecks.get_all',
-                       new=mock.Mock(return_value=CHECK_MOCK)), \
+            mock.patch('core.schains.creator.SChainChecks', new=ChecksMock), \
             mock.patch('core.schains.creator.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
@@ -111,8 +117,7 @@ def test_new_schain_monitor(skale, node_config, db):
     schain = get_schain_contracts_data(schain_name=schain_name)
     with mock.patch('core.schains.creator.run_dkg'), \
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
-            mock.patch('core.schains.creator.SChainChecks.get_all',
-                       new=mock.Mock(return_value=CHECK_MOCK)), \
+            mock.patch('core.schains.creator.SChainChecks', new=ChecksMock), \
             mock.patch('core.schains.creator.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.monitor_sync_schain_container',
