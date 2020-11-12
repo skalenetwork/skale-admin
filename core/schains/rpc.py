@@ -37,8 +37,9 @@ def check_endpoint_alive(http_endpoint):
 
 def check_endpoint_blocks(http_endpoint):
     res = make_rpc_call(http_endpoint, 'eth_getBlockByNumber', ['latest', False])
-    if res and res.json:
-        latest_schain_timestamp_hex = res.json['result']['timestamp']
+    if res and res.json() and res.json()['data']:
+        res_data = res.json()['data']
+        latest_schain_timestamp_hex = res_data['result']['timestamp']
         latest_schain_timestamp = int(latest_schain_timestamp_hex, 16)
         admin_timestamp = int(time.time())
         return abs(latest_schain_timestamp - admin_timestamp) < MAX_ALLOWED_TIMESTAMP_DIFF
