@@ -65,3 +65,5 @@ if not NODE_CONFIG_LOCK_PATH:
     NODE_CONFIG_LOCK_PATH = '/tmp/skale_node_config.lock'
 
 ROTATION_FLAG_FILENAME = '.rotation'
+
+MAX_ALLOWED_TIMESTAMP_DIFF = os.getenv('MAX_ALLOWED_LOG_TIME_DIFF', 120)
