@@ -204,6 +204,10 @@ def is_everyone_broadcasted(dkg_client):
     return dkg_client.is_everyone_broadcasted()
 
 
+def is_everyone_sent_algright(dkg_client):
+    return dkg_client.is_everyone_sent_algright()
+
+
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):
     for i in range(dkg_client.n):
         if not is_recieved[i]:

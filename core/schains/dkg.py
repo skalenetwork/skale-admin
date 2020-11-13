@@ -27,7 +27,8 @@ from tools.bls.dkg_utils import (
     generate_bls_key, get_bls_public_keys, generate_bls_key_name, generate_poly_name,
     get_secret_key_share_filepath, is_all_data_received, is_everyone_broadcasted,
     check_response, check_no_complaints, check_failed_dkg, wait_for_fail, broadcast_and_check_data,
-    get_complaint_data, get_alright_started_time, get_channel_started_time
+    get_complaint_data, get_alright_started_time, get_channel_started_time,
+    is_everyone_sent_algright
 )
 from tools.helper import write_json
 
@@ -78,6 +79,9 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         for i in range(dkg_client.n):
             if not is_alright_sent_list[i] and i != dkg_client.node_id_dkg:
                 send_complaint(dkg_client, i, "alright")
+
+    if not is_everyone_sent_algright(dkg_client):
+        wait_for_fail(dkg_client, channel_started_time, "alright")
 
     check_response(dkg_client)
 

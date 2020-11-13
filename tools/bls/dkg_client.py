@@ -412,6 +412,10 @@ class DKGClient:
             {'from': self.skale.wallet.address}
         )
 
+    def is_everyone_sent_algright(self):
+        get_number_of_completed_function = self.dkg_contract_functions.getNumberOfCompleted
+        return get_number_of_completed_function(self.group_index).call() == self.n
+
     def get_channel_started_time(self):
         get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
         return get_channel_started_time_function(self.group_index).call()
