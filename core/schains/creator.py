@@ -53,7 +53,7 @@ from core.schains.dkg import run_dkg
 from core.schains.runner import get_container_name
 from core.schains.utils import notify_if_not_enough_balance
 
-from tools.bls.dkg_client import DkgError
+from tools.bls.dkg_client import DkgError, get_dkg_timeout
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
@@ -68,7 +68,6 @@ from web.models.schain import upsert_schain_record
 logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
-JOIN_TIMEOUT = 3800
 
 
 class MonitorMode(Enum):
@@ -80,8 +79,9 @@ class MonitorMode(Enum):
 
 def run_creator(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
+    join_timeout = get_dkg_timeout(skale)
     process.start()
-    process.join(JOIN_TIMEOUT)
+    process.join(join_timeout)
     process.terminate()
     process.join()
 
