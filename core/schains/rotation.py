@@ -17,27 +17,20 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import logging
-import secrets
-
-from tools.str_formatters import arguments_list_string
-from tools.helper import write_json, read_json
-from tools.configs import TOKENS_FILEPATH
-
-logger = logging.getLogger(__name__)
+# TODO: move rotation-related methods here
 
 
-def init_user_token():
-    if not os.path.exists(TOKENS_FILEPATH):
-        token = generate_user_token()
-        logger.info(arguments_list_string({'Token': token}, 'Generated registration token'))
-        write_json(TOKENS_FILEPATH, {'token': token})
-        return token
-    else:
-        tokens = read_json(TOKENS_FILEPATH)
-        return tokens['token']
-
-
-def generate_user_token(token_len=40):
-    return secrets.token_hex(token_len)
+def get_rotation_state(skale, schain_name, node_id):
+    rotation_data = skale.node_rotation.get_rotation(schain_name)
+    rotation_in_progress = skale.node_rotation.is_rotation_in_progress(schain_name)
+    finish_ts = rotation_data['finish_ts']
+    rotation_id = rotation_data['rotation_id']
+    new_schain = rotation_data['new_node'] == node_id
+    exiting_node = rotation_data['leaving_node'] == node_id
+    return {
+        'in_progress': rotation_in_progress,
+        'new_schain': new_schain,
+        'exiting_node': exiting_node,
+        'finish_ts': finish_ts,
+        'rotation_id': rotation_id
+    }

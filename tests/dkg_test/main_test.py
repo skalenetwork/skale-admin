@@ -142,7 +142,7 @@ def check_schain_info(nodes, schain_info):
     check_keys(
         schain_info,
         ['schainID', 'schainName', 'schainOwner', 'storageLimit',
-         'snapshotIntervalMs', 'emptyBlockIntervalMs',
+         'snapshotIntervalSec', 'emptyBlockIntervalMs',
          'maxConsensusStorageBytes', 'maxSkaledLeveldbStorageBytes',
          'maxFileStorageBytes', 'maxReservedStorageBytes',
          'nodes']

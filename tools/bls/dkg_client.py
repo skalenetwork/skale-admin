@@ -128,6 +128,10 @@ def sgx_unreachable_retry(func):
     return wrapper
 
 
+def get_dkg_timeout(skale):
+    return skale.constants_holder.contract.functions.complaintTimelimit().call()
+
+
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
                  node_ids_dkg, node_ids_contract, eth_key_name):
@@ -147,7 +151,7 @@ class DKGClient:
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
         self.dkg_contract_functions = self.skale.dkg.contract.functions
-        self.dkg_timeout = skale.constants_holder.contract.functions.complaintTimelimit().call()
+        self.dkg_timeout = get_dkg_timeout(self.skale)
         self.complaint_error_event_hash = self.skale.web3.toHex(self.skale.web3.sha3(
             text="ComplaintError(string)"
         ))
@@ -259,7 +263,7 @@ class DKGClient:
                                             self.node_id_dkg)
 
     @sgx_unreachable_retry
-    def generate_key(self, bls_key_name):
+    def generate_bls_key(self, bls_key_name):
         received_secret_key_contribution = "".join(to_verify(
                                                     self.incoming_secret_key_contribution[j]
                                                     )
@@ -410,6 +414,10 @@ class DKGClient:
         return is_everyone_broadcasted_function(self.group_index).call(
             {'from': self.skale.wallet.address}
         )
+
+    def is_everyone_sent_algright(self):
+        get_number_of_completed_function = self.dkg_contract_functions.getNumberOfCompleted
+        return get_number_of_completed_function(self.group_index).call() == self.n
 
     def get_channel_started_time(self):
         get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
