@@ -40,7 +40,7 @@ class Filter:
         logs = receipt['logs']
         if len(logs) == 0:
             return False
-        if len(logs[0]['topics']) != 2:
+        if len(logs[0]['topics']) < 2:
             return False
         if logs[0]['topics'][0].hex() != self.event_hash:
             return False
