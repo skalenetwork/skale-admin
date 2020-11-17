@@ -263,7 +263,7 @@ class DKGClient:
                                             self.node_id_dkg)
 
     @sgx_unreachable_retry
-    def generate_key(self, bls_key_name):
+    def generate_bls_key(self, bls_key_name):
         received_secret_key_contribution = "".join(to_verify(
                                                     self.incoming_secret_key_contribution[j]
                                                     )
@@ -414,6 +414,10 @@ class DKGClient:
         return is_everyone_broadcasted_function(self.group_index).call(
             {'from': self.skale.wallet.address}
         )
+
+    def is_everyone_sent_algright(self):
+        get_number_of_completed_function = self.dkg_contract_functions.getNumberOfCompleted
+        return get_number_of_completed_function(self.group_index).call() == self.n
 
     def get_channel_started_time(self):
         get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
