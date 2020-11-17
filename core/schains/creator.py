@@ -46,13 +46,14 @@ from core.schains.config.helper import (get_allowed_endpoints,
                                         save_schain_config,
                                         update_schain_config)
 from core.schains.volume import init_data_volume
-from core.schains.checks import get_rotation_state, SChainChecks
+from core.schains.checks import SChainChecks
+from core.schains.rotation import get_rotation_state
 from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
 from core.schains.utils import notify_if_not_enough_balance
 
-from tools.bls.dkg_client import DkgError
+from tools.bls.dkg_client import DkgError, get_dkg_timeout
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
@@ -67,7 +68,6 @@ from web.models.schain import upsert_schain_record
 logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
-JOIN_TIMEOUT = 3800
 
 
 class MonitorMode(Enum):
@@ -79,8 +79,9 @@ class MonitorMode(Enum):
 
 def run_creator(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
+    join_timeout = get_dkg_timeout(skale)
     process.start()
-    process.join(JOIN_TIMEOUT)
+    process.join(join_timeout)
     process.terminate()
     process.join()
 
@@ -158,24 +159,19 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     schain_record = upsert_schain_record(name)
     mode = get_monitor_mode(schain_record, rotation)
 
-    checks = SChainChecks(name, node_id, rotation_id=rotation_id, log=True)
-    checks_dict = checks.get_all()
+    checks = SChainChecks(name, node_id, rotation_id=rotation_id)
 
-    if schain_record.repair_mode or not checks_dict['exit_code_ok']:
+    if schain_record.repair_mode or not checks.exit_code_ok:
         logger.info(f'REPAIR MODE was toggled for schain {schain["name"]}')
         notify_repair_mode(node_info, name)
         cleanup_schain_docker_entity(name)
         schain_record.set_repair_mode(False)
 
-        checks.check_volume()
-        checks.check_container()
-        checks_dict = checks.get_all()
-
-    if not checks_dict['exit_code_ok']:
+    if not checks.exit_code_ok:
         mode = MonitorMode.SYNC
 
     if not schain_record.first_run:
-        notify_checks(name, node_info, checks_dict)
+        notify_checks(name, node_info, checks.get_all())
 
     schain_record.set_first_run(False)
     schain_record.set_new_schain(False)
@@ -184,7 +180,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     if mode == MonitorMode.EXIT:
         logger.info(f'Finish time: {finish_time}')
         # ensure containers are working after update
-        if not checks_dict['container']:
+        if not checks.container:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
         set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
@@ -193,7 +189,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         monitor_checks(
             skale=skale,
             schain=schain,
-            checks=checks_dict,
+            checks=checks,
             node_id=node_id,
             sgx_key_name=sgx_key_name,
             rotation=rotation,
@@ -204,7 +200,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
 
     elif mode == MonitorMode.RESTART:
         # ensure containers are working after update
-        if not checks_dict['container']:
+        if not checks.container:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
 
@@ -224,7 +220,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         monitor_checks(
             skale=skale,
             schain=schain,
-            checks=checks_dict,
+            checks=checks,
             node_id=node_id,
             sgx_key_name=sgx_key_name,
             rotation=rotation,
@@ -326,9 +322,9 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
 def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
                    rotation, schain_record, ecdsa_sgx_key_name, sync=False):
     name = schain['name']
-    if not checks['data_dir']:
+    if not checks.data_dir:
         init_schain_dir(name)
-    if not checks['dkg']:
+    if not checks.dkg:
         is_dkg_done = safe_run_dkg(
             skale=skale,
             schain_name=name,
@@ -341,13 +337,13 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             remove_config_dir(name)
             return
 
-    if not checks['config']:
+    if not checks.config:
         init_schain_config(skale, node_id, name, ecdsa_sgx_key_name)
-    if not checks['volume']:
+    if not checks.volume:
         init_data_volume(schain)
-    if not checks['firewall_rules']:
+    if not checks.firewall_rules:
         add_firewall_rules(name)
-    if not checks['container']:
+    if not checks.container:
         if sync:
             finish_ts = rotation['finish_ts']
             monitor_sync_schain_container(skale, schain,
@@ -369,10 +365,9 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         else:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
-    if not checks['ima_container']:
-        pass
-    #     copy_schain_ima_abi(name)
-    #     monitor_ima_container(schain)
+    if not checks.ima_container:
+        copy_schain_ima_abi(name)
+        monitor_ima_container(schain)
 
 
 def check_schain_rotated(schain_name):
