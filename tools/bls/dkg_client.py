@@ -263,7 +263,7 @@ class DKGClient:
                                             self.node_id_dkg)
 
     @sgx_unreachable_retry
-    def generate_key(self, bls_key_name):
+    def generate_bls_key(self, bls_key_name):
         received_secret_key_contribution = "".join(to_verify(
                                                     self.incoming_secret_key_contribution[j]
                                                     )
