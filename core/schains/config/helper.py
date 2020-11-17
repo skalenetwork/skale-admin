@@ -284,6 +284,11 @@ def get_schain_rpc_ports(schain_id):
     return int(node_info["httpRpcPort"]), int(node_info["wsRpcPort"])
 
 
+def get_local_schain_http_endpoint(name):
+    http_port, _ = get_schain_rpc_ports(name)
+    return f'http://0.0.0.0:{http_port}'
+
+
 def get_schain_ssl_rpc_ports(schain_id):
     schain_config = get_schain_config(schain_id)
     node_info = schain_config["skaleConfig"]["nodeInfo"]

@@ -105,7 +105,7 @@ def construct_schains_bp(skale, config, docker_utils):
         checks = [
             {
                 'name': schain['name'],
-                'healthchecks': SChainChecks(schain['name'], node_id, log=True).get_all()
+                'healthchecks': SChainChecks(schain['name'], node_id).get_all()
             }
             for schain in schains
         ]

@@ -23,7 +23,7 @@ from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_schain_volume_config
 from core.schains.limits import get_schain_limit, get_ima_limit
-from core.schains.types import MetricType
+from core.schains.types import MetricType, ContainerType
 from core.schains.config.helper import (
     get_schain_container_cmd,
     get_schain_env,
@@ -188,10 +188,11 @@ def is_exited_with_zero(schain_name, dutils=None):
     return dutils.is_container_exited_with_zero(info)
 
 
-def is_exited(schain_name, dutils=None):
+def is_exited(schain_name, container_type=ContainerType.schain, dutils=None):
     if not dutils:
         dutils = docker_utils
-    info = get_schain_container_info(schain_name, dutils)
+    name = get_container_name(container_type.name, schain_name)
+    info = dutils.get_info(name)
     return dutils.is_container_exited(info)
 
 
