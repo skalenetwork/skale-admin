@@ -168,6 +168,7 @@ def report_bad_data(dkg_client, index):
                         'Complainted node did not send a response.'
                         f'Sending complaint once again')
             dkg_client.send_complaint(index)
+            wait_for_fail(dkg_client, channel_started_time, "response")
     except DkgTransactionError:
         pass
 
