@@ -366,8 +366,10 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
     if not checks.ima_container:
-        copy_schain_ima_abi(name)
-        monitor_ima_container(schain)
+        pass
+        # logger.warning(f'Skipping IMA container creation')
+        # copy_schain_ima_abi(name)
+        # monitor_ima_container(schain)
 
 
 def check_schain_rotated(schain_name):
