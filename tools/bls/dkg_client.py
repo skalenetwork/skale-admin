@@ -173,6 +173,7 @@ class DKGClient:
             ]
         else:
             self.incoming_verification_vector[from_node] = convert_hex_to_g2_array(data[0])
+            self.sent_secret_key_contribution = data[1]
             self.incoming_secret_key_contribution[from_node] = data[1][
                 192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
             ]
