@@ -158,6 +158,7 @@ class DKGClient:
         logger.info(
             f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
             f'Node id on contract is {self.node_id_contract}')
+        logger.info(f'sChain: {self.schain_name}. DKG timeout is {selg.dkg_timeout}')
 
     def is_channel_opened(self):
         return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
