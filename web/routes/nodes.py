@@ -47,6 +47,8 @@ def construct_nodes_bp(skale, node, docker_utils):
         public_ip = request.json.get('publicIP')
         port = request.json.get('port')
         name = request.json.get('name')
+        gas_price = request.json.get('gas_price')
+        gas_limit = request.json.get('gas_limit')
 
         is_node_name_available = skale.nodes.is_node_name_available(name)
         if not is_node_name_available:
@@ -60,10 +62,13 @@ def construct_nodes_bp(skale, node, docker_utils):
             logger.error(error_msg)
             return construct_err_response(error_msg)
 
-        res = node.register(ip, public_ip, port, name)
+        res = node.register(ip, public_ip, port, name,
+                            gas_price=gas_price, gas_limit=gas_limit)
         if res['status'] != 1:
-            return construct_err_response(msg=res['errors'],
-                                          status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+            return construct_err_response(
+                msg=res['errors'],
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            )
         return construct_ok_response({'node_data': res['data']})
 
     @nodes_bp.route('/node-signature', methods=['GET'])
