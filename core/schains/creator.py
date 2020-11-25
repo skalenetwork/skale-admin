@@ -170,9 +170,10 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     if not checks.exit_code_ok:
         mode = MonitorMode.SYNC
 
-    checks_dict = checks.get_all()
-    if not schain_record.first_run and not is_checks_passed(checks_dict):
-        notify_checks(name, node_info, checks_dict)
+    if not schain_record.first_run:
+        checks_dict = checks.get_all()
+        if not is_checks_passed(checks_dict):
+            notify_checks(name, node_info, checks_dict)
 
     schain_record.set_first_run(False)
     schain_record.set_new_schain(False)

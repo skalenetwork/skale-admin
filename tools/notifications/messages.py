@@ -65,10 +65,6 @@ def cleanup_notification_state(*, client=None):
         client.delete(*keys)
 
 
-def bool_to_emoji_lights(value):
-    return GREEN_LIGHT if value else RED_LIGHT
-
-
 def is_checks_passed(checks):
     return all(checks.values())
 
