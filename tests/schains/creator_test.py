@@ -38,6 +38,20 @@ class ChecksMock:
     def __init__(self, schain_name: str, node_id: int, rotation_id=0):
         pass
 
+    def get_all(self):
+        return {
+            'data_dir': True,
+            'dkg': True,
+            'config': True,
+            'volume': True,
+            'firewall_rules': True,
+            'container': True,
+            'exit_code_ok': True,
+            'ima_container': True,
+            'rpc': True,
+            'blocks': True
+        }
+
     def __getattr__(self, name):
         return True
 
