@@ -27,29 +27,10 @@ NODE_INFO = {'node_id': 1, 'node_ip': '1.1.1.1'}
 def test_send_message(task_mock):
     message = ['key1: value1', 'key2: value2']
     send_message(message)
-    expected_call = ('key1: value1\nkey2: value2\nTimestamp: 1594903080\n'
+    expected_call = ('key1: value1\nkey2: value2\n\nTimestamp: 1594903080\n'
                      'Datetime: Thu Jul 16 12:38:00 2020')
     called_with = task_mock.delay.call_args[0][2]
     assert called_with == expected_call
-
-
-def test_compose_checks_message():
-    checks = {
-        'dkg': False,
-        'config': True,
-        'data_dir': True,
-        'volume': True,
-        'container': False,
-        'firewall_rules': True,
-        'rpc': False
-    }
-    schain_name = 'test-schain'
-    result = compose_checks_message(schain_name, NODE_INFO, checks)
-    expected = ['\u2757 Checks failed \n', 'Node id: 1', 'Node ip: 1.1.1.1',
-                'sChain name: test-schain', 'Data directory: \u2705',
-                'DKG: \u274C', 'Config: \u2705', 'Volume: \u2705',
-                'Container: \u274C', 'Firewall: \u2705', 'RPC: \u274C']
-    assert result == expected
 
 
 def test_compose_checks_message_raw():
@@ -84,29 +65,58 @@ def test_compose_checks_message_success():
         'volume': True,
         'container': True,
         'firewall_rules': True,
-        'rpc': True
+        'rpc': True,
+        'blocks': True,
+        'ima': True
     }
     schain_name = 'test-schain'
     result = compose_checks_message(schain_name, NODE_INFO, checks)
-    expected = ['\u2705 Checks passed \n', 'Node id: 1', 'Node ip: 1.1.1.1',
-                'sChain name: test-schain', 'Data directory: \u2705',
-                'DKG: \u2705', 'Config: \u2705', 'Volume: \u2705', 'Container: \u2705',
-                'Firewall: \u2705', 'RPC: \u2705']
+    expected = [
+        'Node ID: 1, IP: 1.1.1.1',
+        'sChain name: test-schain',
+        '\n\u2705 All checks passed'
+    ]
+    assert result == expected
+
+
+def test_compose_checks_message_fail():
+    checks = {
+        'dkg': True,
+        'config': True,
+        'data_dir': True,
+        'volume': True,
+        'container': False,
+        'firewall_rules': True,
+        'rpc': False,
+        'blocks': False,
+        'ima': False
+    }
+    schain_name = 'test-schain'
+    result = compose_checks_message(schain_name, NODE_INFO, checks)
+    expected = [
+        'Node ID: 1, IP: 1.1.1.1',
+        'sChain name: test-schain',
+        '\n\u2757 Some checks failed\n',
+        '\u274C container',
+        '\u274C rpc',
+        '\u274C blocks',
+        '\u274C ima'
+    ]
     assert result == expected
 
 
 def test_compose_balance_message():
     balance, required_balance = 1, 2
     result = compose_balance_message(NODE_INFO, balance, required_balance)
-    assert result == ['\u2757 Balance on node is too low \n', 'Node id: 1',
-                      'Node ip: 1.1.1.1', 'Balance: 1 ETH', 'Required: 2 ETH']
+    assert result == ['\u2757 Balance on node is too low \n', 'Node ID: 1, IP: 1.1.1.1',
+                      'Balance: 1 ETH', 'Required: 2 ETH']
 
 
 def test_compose_balance_message_success():
     balance, required_balance = 1, 0.5
     result = compose_balance_message(NODE_INFO, balance, required_balance)
-    assert result == ['\u2705 Node id: has enough balance \n', 'Node id: 1',
-                      'Node ip: 1.1.1.1', 'Balance: 1 ETH', 'Required: 0.5 ETH']
+    assert result == ['\u2705 Node id: has enough balance \n', 'Node ID: 1, IP: 1.1.1.1',
+                      'Balance: 1 ETH', 'Required: 0.5 ETH']
 
 
 @pytest.fixture
