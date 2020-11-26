@@ -49,6 +49,7 @@ def construct_nodes_bp(skale, node, docker_utils):
         name = request.json.get('name')
         gas_price = request.json.get('gas_price')
         gas_limit = request.json.get('gas_limit')
+        skip_dry_run = request.json.get('skip_dry_run')
 
         is_node_name_available = skale.nodes.is_node_name_available(name)
         if not is_node_name_available:
@@ -62,8 +63,12 @@ def construct_nodes_bp(skale, node, docker_utils):
             logger.error(error_msg)
             return construct_err_response(error_msg)
 
-        res = node.register(ip, public_ip, port, name,
-                            gas_price=gas_price, gas_limit=gas_limit)
+        res = node.register(
+            ip, public_ip, port, name,
+            gas_price=gas_price,
+            gas_limit=gas_limit,
+            skip_dry_run=skip_dry_run
+        )
         if res['status'] != 1:
             return construct_err_response(
                 msg=res['errors'],

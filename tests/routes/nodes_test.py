@@ -79,7 +79,8 @@ def test_node_info(skale_bp, node):
     assert data == {'status': 'ok', 'payload': {'node_info': node.info}}
 
 
-def register_mock(self, ip, public_ip, port, name):
+def register_mock(self, ip, public_ip, port, name, gas_limit=None,
+                  gas_price=None, skip_dry_run=False):
     return {'status': 1, 'data': 1}
 
 
@@ -125,7 +126,10 @@ def test_node_create(skale_bp, node_config):
     assert data == {'status': 'ok', 'payload': {'node_data': 1}}
 
 
-def failed_register_mock(self, ip, public_ip, port, name):
+def failed_register_mock(
+    self, ip, public_ip, port, name, gas_limit=None,
+    gas_price=None, skip_dry_run=False
+):
     return {'status': 0, 'errors': ['Already registered']}
 
 

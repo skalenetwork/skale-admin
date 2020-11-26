@@ -66,7 +66,8 @@ class Node:
         self.skale = skale
         self.config = config
 
-    def register(self, ip, public_ip, port, name):
+    def register(self, ip, public_ip, port, name,
+                 gas_limit=None, gas_price=None, skip_dry_run=False):
         """
         Main node registration function.
 
@@ -90,6 +91,9 @@ class Node:
                 port=int(port),
                 name=name,
                 public_ip=public_ip,
+                gas_limit=gas_limit,
+                gas_price=gas_price,
+                skip_dry_run=skip_dry_run,
                 wait_for=True,
                 confirmation_blocks=NODE_REGISTER_CONFIRMATION_BLOCKS
             )
@@ -102,7 +106,8 @@ class Node:
                 ]
             }
 
-        self._log_node_info('Node successfully created', ip, public_ip, port, name)
+        self._log_node_info('Node successfully created', ip,
+                            public_ip, port, name)
         self.config.name = name
         self.config.id = self.skale.nodes.node_name_to_index(name)
         self.config.ip = ip
@@ -111,7 +116,8 @@ class Node:
         return {'status': 1, 'data': self.config.all()}
 
     def exit(self, opts):
-        schains_list = self.skale.schains.get_active_schains_for_node(self.config.id)
+        schains_list = self.skale.schains.get_active_schains_for_node(
+            self.config.id)
         exit_count = len(schains_list) or 1
         for _ in range(exit_count):
             try:
@@ -120,7 +126,8 @@ class Node:
                 logger.exception('Node rotation failed')
 
     def get_exit_status(self):
-        active_schains = self.skale.schains.get_active_schains_for_node(self.config.id)
+        active_schains = self.skale.schains.get_active_schains_for_node(
+            self.config.id)
         schain_statuses = [
             {
                 'name': schain['name'],
@@ -128,7 +135,8 @@ class Node:
             }
             for schain in active_schains
         ]
-        rotated_schains = self.skale.node_rotation.get_leaving_history(self.config.id)
+        rotated_schains = self.skale.node_rotation.get_leaving_history(
+            self.config.id)
         current_time = time.time()
         for schain in rotated_schains:
             if current_time > schain['finished_rotation']:
@@ -138,12 +146,17 @@ class Node:
             schain_name = self.skale.schains.get(schain['id'])['name']
             if not schain_name:
                 schain_name = '[REMOVED]'
-            schain_statuses.append({'name': schain_name, 'status': status.name})
-        node_status = NodeExitStatuses(self.skale.nodes.get_node_status(self.config.id))
+            schain_statuses.append(
+                {'name': schain_name, 'status': status.name}
+            )
+        node_status = NodeExitStatuses(
+            self.skale.nodes.get_node_status(self.config.id))
         exit_time = self.skale.nodes.get_node_finish_time(self.config.id)
-        if node_status == NodeExitStatuses.WAIT_FOR_ROTATIONS and current_time >= exit_time:
+        if node_status == NodeExitStatuses.WAIT_FOR_ROTATIONS and \
+                current_time >= exit_time:
             node_status = NodeExitStatuses.COMPLETED
-        return {'status': node_status.name, 'data': schain_statuses, 'exit_time': exit_time}
+        return {'status': node_status.name, 'data': schain_statuses,
+                'exit_time': exit_time}
 
     def set_maintenance_on(self):
         if NodeStatuses(self.info['status']) != NodeStatuses.ACTIVE:
@@ -177,12 +190,16 @@ class Node:
         return {'status': 0, 'errors': [err_msg]}
 
     def _node_already_exist(self):
-        err_msg = f'Node is already installed on this machine. Node ID: {self.config.id}'
+        err_msg = (
+            f'Node is already installed on this machine. '
+            f'Node ID: {self.config.id}'
+        )
         logger.error(err_msg)
         return {'status': 0, 'errors': [err_msg]}
 
     def _log_node_info(self, title, ip, public_ip, port, name):
-        log_params = {'IP': ip, 'Public IP': public_ip, 'Port': port, 'Name': name}
+        log_params = {'IP': ip, 'Public IP': public_ip,
+                      'Port': port, 'Name': name}
         logger.info(arguments_list_string(log_params, title))
 
     @property
