@@ -39,13 +39,13 @@ from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 
 from web.models.schain import create_tables
 from web.routes.logs import web_logs
-from web.routes.nodes import construct_nodes_bp
+from web.routes.node import construct_node_bp
 from web.routes.schains import construct_schains_bp
 from web.routes.wallet import construct_wallet_bp
-from web.routes.node_info import construct_node_info_bp
 from web.routes.security import construct_security_bp
 from web.routes.node_exit import construct_node_exit_bp
 from web.routes.sgx import construct_sgx_bp
+from web.routes.health import construct_health_bp
 
 init_api_logger()
 logger = logging.getLogger(__name__)
@@ -63,13 +63,13 @@ logger.info('Node inited')
 
 app = Flask(__name__)
 app.register_blueprint(web_logs)
-app.register_blueprint(construct_nodes_bp(skale, node, docker_utils))
+app.register_blueprint(construct_node_bp(skale, node, docker_utils))
 app.register_blueprint(construct_schains_bp(skale, node_config, docker_utils))
 app.register_blueprint(construct_wallet_bp(skale))
-app.register_blueprint(construct_node_info_bp(skale, docker_utils))
 app.register_blueprint(construct_security_bp(docker_utils))
 app.register_blueprint(construct_node_exit_bp(node))
 app.register_blueprint(construct_sgx_bp(node_config))
+app.register_blueprint(construct_health_bp(node_config, skale, docker_utils))
 
 
 @app.before_request

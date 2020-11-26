@@ -21,27 +21,24 @@ import logging
 
 from flask import Blueprint
 from tools.custom_thread import CustomThread
-from web.helper import construct_ok_response
+from web.helper import construct_ok_response, get_api_url
 
 logger = logging.getLogger(__name__)
+BLUEPRINT_NAME = 'exit'
 
 
 def construct_node_exit_bp(node):
-    node_exit_bp = Blueprint('node_exit', __name__)
+    node_exit_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
-    @node_exit_bp.route('/api/exit/start', methods=['POST'])
+    @node_exit_bp.route(get_api_url(BLUEPRINT_NAME, 'start'), methods=['POST'])
     def node_exit_start():
         exit_thread = CustomThread('Start node exit', node.exit, once=True)
         exit_thread.start()
         return construct_ok_response()
 
-    @node_exit_bp.route('/api/exit/status', methods=['GET'])
+    @node_exit_bp.route(get_api_url(BLUEPRINT_NAME, 'status'), methods=['GET'])
     def node_exit_status():
         exit_status_data = node.get_exit_status()
         return construct_ok_response(exit_status_data)
-
-    @node_exit_bp.route('/api/exit/finalize', methods=['POST'])
-    def node_exit_finalize():
-        pass
 
     return node_exit_bp
