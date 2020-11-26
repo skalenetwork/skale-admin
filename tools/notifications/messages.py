@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import copy
 import logging
 import time
 from datetime import datetime
@@ -66,48 +65,31 @@ def cleanup_notification_state(*, client=None):
         client.delete(*keys)
 
 
-def convert_bool_to_emoji_lights(checks):
-    checks_emojis = copy.deepcopy(checks)
-    for check in checks:
-        checks_emojis[check] = GREEN_LIGHT if checks[check] else RED_LIGHT
-    return checks_emojis
-
-
 def is_checks_passed(checks):
     return all(checks.values())
 
 
 def compose_checks_message(schain_name, node, checks, raw=False):
     if raw:
-        message = {
+        msg = {
             'schain_name': schain_name,
             'node_id': node['node_id'],
             'node_ip': node['node_ip'],
             'checks': checks,
         }
     else:
-        formated_checks = convert_bool_to_emoji_lights(checks)
-
-        if is_checks_passed(checks):
-            header = f'{GREEN_LIGHT} Checks passed \n'
-        else:
-            header = f'{EXCLAMATION_MARK} Checks failed \n' \
-
-        message = [
-            header,
-            f'Node id: {node["node_id"]}',
-            f'Node ip: {node["node_ip"]}',
-            f'sChain name: {schain_name}',
-            f'Data directory: {formated_checks["data_dir"]}',
-            f'DKG: {formated_checks["dkg"]}',
-            f'Config: {formated_checks["config"]}',
-            f'Volume: {formated_checks["volume"]}',
-            f'Container: {formated_checks["container"]}',
-            # f'IMA container: {formated_checks["ima_container"]}\n'
-            f'Firewall: {formated_checks["firewall_rules"]}',
-            f'RPC: {formated_checks["rpc"]}'
+        msg = [
+            f'Node ID: {node["node_id"]}, IP: {node["node_ip"]}',
+            f'sChain name: {schain_name}'
         ]
-    return message
+        if is_checks_passed(checks):
+            msg.append(f'\n{GREEN_LIGHT} All checks passed')
+            return msg
+        msg.append(f'\n{EXCLAMATION_MARK} Some checks failed\n')
+        for check in checks:
+            if not checks[check]:
+                msg.append(f'{RED_LIGHT} {check}')
+    return msg
 
 
 def get_state_from_checks(checks):
@@ -144,8 +126,7 @@ def compose_balance_message(node_info, balance, required_balance):
         header = f'{GREEN_LIGHT} Node id: has enough balance \n'
     return [
         header,
-        f'Node id: {node_info["node_id"]}',
-        f'Node ip: {node_info["node_ip"]}',
+        f'Node ID: {node_info["node_id"]}, IP: {node_info["node_ip"]}',
         f'Balance: {balance} ETH',
         f'Required: {required_balance} ETH'
     ]
@@ -187,14 +168,14 @@ def compose_repair_mode_notification(node_info: dict, schain_name: str) -> list:
 @notifications_enabled
 def notify_repair_mode(node_info: dict, schain_name: str) -> None:
     message = compose_repair_mode_notification(node_info, schain_name)
-    logger.info('Sending repair mode notificaton')
+    logger.info('Sending repair mode notification')
     send_message(message)
 
 
 def send_message(message: list, api_key: str = TG_API_KEY,
                  chat_id: str = TG_CHAT_ID):
     message.extend([
-        f'Timestamp: {int(time.time())}',
+        f'\nTimestamp: {int(time.time())}',
         f'Datetime: {datetime.utcnow().ctime()}'
     ])
     plain_message = '\n'.join(message)

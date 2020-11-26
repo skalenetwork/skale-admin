@@ -60,7 +60,7 @@ from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.configs.ima import IMA_DATA_FILEPATH
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
-from tools.notifications.messages import notify_checks, notify_repair_mode
+from tools.notifications.messages import notify_checks, notify_repair_mode, is_checks_passed
 from tools.str_formatters import arguments_list_string
 from web.models.schain import upsert_schain_record
 
@@ -171,7 +171,9 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         mode = MonitorMode.SYNC
 
     if not schain_record.first_run:
-        notify_checks(name, node_info, checks.get_all())
+        checks_dict = checks.get_all()
+        if not is_checks_passed(checks_dict):
+            notify_checks(name, node_info, checks_dict)
 
     schain_record.set_first_run(False)
     schain_record.set_new_schain(False)
