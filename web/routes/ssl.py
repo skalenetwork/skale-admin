@@ -39,13 +39,13 @@ CERTS_HAS_INVALID_FORMAT = 'Certificates have invalid format'
 SSL_KEY_NAME = 'ssl_key'
 SSL_CRT_NAME = 'ssl_cert'
 
-BLUEPRINT_NAME = 'security'
+BLUEPRINT_NAME = 'ssl'
 
 
-def construct_security_bp(docker_utils):
-    security_bp = Blueprint(BLUEPRINT_NAME, __name__)
+def construct_ssl_bp(docker_utils):
+    ssl_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
-    @security_bp.route(get_api_url(BLUEPRINT_NAME, 'status'), methods=['GET'])
+    @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'status'), methods=['GET'])
     def status():
         logger.debug(request)
         if is_ssl_folder_empty():
@@ -72,7 +72,7 @@ def construct_security_bp(docker_utils):
                 'status': 1
             })
 
-    @security_bp.route(get_api_url(BLUEPRINT_NAME, 'upload'), methods=['POST'])
+    @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'upload'), methods=['POST'])
     def upload():
         request_json = json.loads(request.form['json'])
         force = request_json.get('force') is True
@@ -91,4 +91,4 @@ def construct_security_bp(docker_utils):
 
         return construct_ok_response()
 
-    return security_bp
+    return ssl_bp
