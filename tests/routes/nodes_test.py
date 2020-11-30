@@ -79,7 +79,8 @@ def test_node_info(skale_bp, node):
     assert data == {'status': 'ok', 'payload': {'node_info': node.info}}
 
 
-def register_mock(self, ip, public_ip, port, name):
+def register_mock(self, ip, public_ip, port, name, gas_limit=None,
+                  gas_price=None, skip_dry_run=False):
     return {'status': 1, 'data': 1}
 
 
@@ -90,17 +91,45 @@ def set_maintenance_mock(self):
 @patch.object(Node, 'register', register_mock)
 def test_node_create(skale_bp, node_config):
     ip, public_ip, port, name = generate_random_node_data()
+    # Test with gas_limit and gas_price
     json_data = {
         'name': name,
         'ip': ip,
         'publicIP': public_ip,
-        'port': port
+        'port': port,
+        'gas_limit': 8000000,
+        'gas_price': 2 * 10 ** 9
+    }
+    data = post_bp_data(skale_bp, '/create-node', json_data)
+    assert data == {'status': 'ok', 'payload': {'node_data': 1}}
+
+    # Without gas_limit
+    json_data = {
+        'name': name,
+        'ip': ip,
+        'publicIP': public_ip,
+        'port': port,
+        'gas_price': 2 * 10 ** 9
+    }
+    data = post_bp_data(skale_bp, '/create-node', json_data)
+    assert data == {'status': 'ok', 'payload': {'node_data': 1}}
+
+    # Without gas_limit and gas_price
+    json_data = {
+        'name': name,
+        'ip': ip,
+        'publicIP': public_ip,
+        'port': port,
+        'gas_price': 2 * 10 ** 9
     }
     data = post_bp_data(skale_bp, '/create-node', json_data)
     assert data == {'status': 'ok', 'payload': {'node_data': 1}}
 
 
-def failed_register_mock(self, ip, public_ip, port, name):
+def failed_register_mock(
+    self, ip, public_ip, port, name, gas_limit=None,
+    gas_price=None, skip_dry_run=False
+):
     return {'status': 0, 'errors': ['Already registered']}
 
 
