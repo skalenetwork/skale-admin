@@ -18,9 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from decimal import Decimal
 from http import HTTPStatus
 
 from flask import Blueprint, request, abort
+from web3 import Web3
 
 from web.helper import construct_ok_response, construct_err_response
 
@@ -47,6 +49,12 @@ def construct_nodes_bp(skale, node, docker_utils):
         public_ip = request.json.get('publicIP')
         port = request.json.get('port')
         name = request.json.get('name')
+        gas_price = request.json.get('gas_price')
+        gas_limit = request.json.get('gas_limit')
+        skip_dry_run = request.json.get('skip_dry_run')
+
+        if gas_price is not None:
+            gas_price = Web3.toWei(Decimal(gas_price), 'gwei')
 
         is_node_name_available = skale.nodes.is_node_name_available(name)
         if not is_node_name_available:
@@ -60,10 +68,17 @@ def construct_nodes_bp(skale, node, docker_utils):
             logger.error(error_msg)
             return construct_err_response(error_msg)
 
-        res = node.register(ip, public_ip, port, name)
+        res = node.register(
+            ip, public_ip, port, name,
+            gas_price=gas_price,
+            gas_limit=gas_limit,
+            skip_dry_run=skip_dry_run
+        )
         if res['status'] != 1:
-            return construct_err_response(msg=res['errors'],
-                                          status_code=HTTPStatus.INTERNAL_SERVER_ERROR)
+            return construct_err_response(
+                msg=res['errors'],
+                status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            )
         return construct_ok_response({'node_data': res['data']})
 
     @nodes_bp.route('/node-signature', methods=['GET'])
