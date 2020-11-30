@@ -54,3 +54,4 @@ test_abi.json
 *.key
 *.crt
 *.csr
+logs.tar.gz
