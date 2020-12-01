@@ -100,6 +100,10 @@ def convert_str_to_key_share(sent_secret_key_contribution, n):
     return return_value
 
 
+def convert_key_share_to_str(data, n):
+    return "".join(to_verify(s) for s in [data[i * 192:(i + 1) * 192] for i in range(n)])
+
+
 def to_verify(share):
     return share[128:192] + share[:128]
 
@@ -158,6 +162,7 @@ class DKGClient:
         logger.info(
             f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
             f'Node id on contract is {self.node_id_contract}')
+        logger.info(f'sChain: {self.schain_name}. DKG timeout is {self.dkg_timeout}')
 
     def is_channel_opened(self):
         return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
@@ -165,17 +170,15 @@ class DKGClient:
     def check_complaint_logs(self, logs):
         return logs['topics'][0].hex() != self.complaint_error_event_hash
 
-    def store_broadcasted_data(self, data, from_node, receive_for_itself=False):
-        if not receive_for_itself:
-            self.incoming_verification_vector[from_node] = data[0]
-            self.incoming_secret_key_contribution[from_node] = data[1][
-                192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
-            ]
-        else:
+    def store_broadcasted_data(self, data, from_node):
+        self.incoming_secret_key_contribution[from_node] = data[1][
+            192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
+        ]
+        if from_node == self.node_id_dkg:
             self.incoming_verification_vector[from_node] = convert_hex_to_g2_array(data[0])
-            self.incoming_secret_key_contribution[from_node] = data[1][
-                192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
-            ]
+            self.sent_secret_key_contribution = convert_key_share_to_str(data[1], self.n)
+        else:
+            self.incoming_verification_vector[from_node] = data[0]
 
     @sgx_unreachable_retry
     def generate_polynomial(self, poly_name):
@@ -230,11 +233,9 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
     def receive_from_node(self, from_node, broadcasted_data):
+        self.store_broadcasted_data(broadcasted_data, from_node)
         if from_node == self.node_id_dkg:
-            self.store_broadcasted_data(broadcasted_data, from_node, True)
             return
-        else:
-            self.store_broadcasted_data(broadcasted_data, from_node)
 
         try:
             if not self.verification(from_node):
