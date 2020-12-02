@@ -3,7 +3,7 @@
 import logging
 
 from skale.utils.contracts_provision.main import (
-    setup_validator, _skip_evm_time
+    setup_validator, _skip_evm_time, create_nodes, cleanup_nodes_schains
 )
 from skale.utils.contracts_provision import MONTH_IN_SECONDS
 from tests.utils import init_skale
@@ -27,6 +27,8 @@ def cleanup_contracts(skale):
 
 if __name__ == "__main__":
     skale = init_skale()
+    cleanup_nodes_schains(skale)
     cleanup_contracts(skale)
     setup_validator(skale)
+    create_nodes(skale)
     _skip_evm_time(skale.web3, MONTH_IN_SECONDS)

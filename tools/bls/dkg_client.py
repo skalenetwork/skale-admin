@@ -129,7 +129,8 @@ def sgx_unreachable_retry(func):
 
 
 def get_dkg_timeout(skale):
-    return skale.constants_holder.contract.functions.complaintTimelimit().call()
+    return 100000
+    # return skale.constants_holder.contract.functions.complaintTimelimit().call()
 
 
 class DKGClient:
