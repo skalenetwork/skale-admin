@@ -271,7 +271,7 @@ def is_container_exists(schain_name,
     return dutils.is_container_exists(container_name)
 
 
-def monitor_schain_container(schain, dutils=None, volume_required=True):
+def monitor_schain_container(schain, volume_required=True, dutils=None):
     schain_name = schain['name']
     if volume_required and not is_volume_exists(schain_name):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
