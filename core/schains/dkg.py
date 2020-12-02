@@ -78,10 +78,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             if not is_alright_sent_list[i] and i != dkg_client.node_id_dkg:
                 send_complaint(dkg_client, i, "alright")
 
-    if not dkg_client.is_everyone_sent_algright():
-        wait_for_fail(dkg_client, channel_started_time, "alright")
-
     check_response(dkg_client)
+
+    if not dkg_client.is_everyone_sent_algright() and check_no_complaints(dkg_client):
+        wait_for_fail(dkg_client, channel_started_time, "alright")
 
     if not check_no_complaints(dkg_client):
         check_response(dkg_client)
@@ -89,13 +89,14 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         complaint_data = dkg_client.get_complaint_data()
         complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
 
-        wait_for_fail(dkg_client, channel_started_time, "either correct data or alright")
+        wait_for_fail(dkg_client, channel_started_time, "correct data")
 
         complaint_itself = complainted_node_index == dkg_client.node_id_dkg
         if check_failed_dkg(dkg_client) and not complaint_itself:
             logger.info(f'sChain: {schain_name}. '
                         'Accused node has not sent response. Sending complaint...')
             send_complaint(dkg_client, complainted_node_index, "response")
+            wait_for_fail(dkg_client, channel_started_time, "response")
 
     if False not in is_alright_sent_list:
         logger.info(f'sChain: {schain_name}: Everyone sent alright')

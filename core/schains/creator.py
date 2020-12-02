@@ -68,6 +68,7 @@ from web.models.schain import upsert_schain_record
 logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
+TIMEOUT_COEFFICIENT = 1.5
 
 
 class MonitorMode(Enum):
@@ -79,7 +80,7 @@ class MonitorMode(Enum):
 
 def run_creator(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
-    join_timeout = get_dkg_timeout(skale)
+    join_timeout = TIMEOUT_COEFFICIENT * get_dkg_timeout(skale)
     process.start()
     process.join(join_timeout)
     process.terminate()

@@ -116,10 +116,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
             events = dkg_filter.get_events()
         for event in events:
             from_node = dkg_client.node_ids_contract[event["nodeIndex"]]
-            secret_key_contribution, verification_vector = (
-                event["secretKeyContribution"], event["verificationVector"]
-            )
-            broadcasted_data = [verification_vector, secret_key_contribution]
+            broadcasted_data = [event["verificationVector"], event["secretKeyContribution"]]
             is_received[from_node] = True
             if from_node != dkg_client.node_id_dkg:
                 logger.info(f'sChain {schain_name}: receiving from node {from_node}')
@@ -168,6 +165,7 @@ def report_bad_data(dkg_client, index):
                         'Complainted node did not send a response.'
                         f'Sending complaint once again')
             dkg_client.send_complaint(index)
+            wait_for_fail(dkg_client, channel_started_time, "response")
     except DkgTransactionError:
         pass
 
