@@ -50,6 +50,6 @@ jobs:
     - name: Deploy manager contracts
       run: |
         bash ./helper-scripts/deploy_test_manager.sh
-    - name: Run core tests
+    - name: Run rotation tests
       run: |
         bash ./scripts/run_rotation_tests.sh

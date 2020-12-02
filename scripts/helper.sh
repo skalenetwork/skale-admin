@@ -23,10 +23,10 @@ export_test_env () {
 
 tests_cleanup () {
     export_test_env
-    docker rm -f skale_schain_test && docker volume rm test
-    rm tests/skale-data/node_data/node_config.json
+    docker rm -f skale_schain_test && docker volume rm test || true
+    rm tests/skale-data/node_data/node_config.json || true
     docker rm -f skale_schain_test1 skale_schain_test2 skale_schain_test3 || true
-    find . -name \*.pyc -delete
-    mkdir -p $SGX_CERTIFICATES_FOLDER
-    rm -rf $SGX_CERTIFICATES_FOLDER/sgx.*
+    find . -name \*.pyc -delete || true
+    mkdir -p $SGX_CERTIFICATES_FOLDER || true
+    rm -rf $SGX_CERTIFICATES_FOLDER/sgx.* || true
 }
