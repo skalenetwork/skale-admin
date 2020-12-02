@@ -13,6 +13,7 @@ export_test_env
 run_sgx_simulator $SGX_WALLET_TAG
 bash scripts/run_redis.sh
 
+python tests/prepare_data.py
 py.test tests/rotation_test/
 
 tests_cleanup

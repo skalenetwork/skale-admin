@@ -14,6 +14,7 @@ run_sgx_simulator $SGX_WALLET_TAG
 bash scripts/run_redis.sh
 
 python tests/prepare_data.py
+py.test tests/ --ignore=tests/firewall --ignore=tests/rotation_test
 scripts/run_firewall_test.sh
 
 tests_cleanup
