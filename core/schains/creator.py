@@ -278,8 +278,7 @@ def monitor_schain_container(schain, volume_required=True, dutils=None):
         return
 
     if not is_container_exists(schain_name):
-        run_schain_container(schain,
-                             container_type=SCHAIN_CONTAINER, dutils=dutils)
+        run_schain_container(schain, dutils=dutils)
 
 
 def monitor_ima_container(schain: dict, dutils=None):
