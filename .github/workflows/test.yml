@@ -27,9 +27,9 @@ jobs:
     - name: Deploy manager contracts
       run: |
         bash ./helper-scripts/deploy_test_manager.sh
-    # - name: Run core tests
-    #   run: |
-    #     bash ./scripts/run_core_tests.sh
+    - name: Run core tests
+      run: |
+        bash ./scripts/run_core_tests.sh
     - name: Run codecov
       run: |
         codecov -t $CODECOV_TOKEN
