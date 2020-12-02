@@ -3,7 +3,7 @@ on: [push, pull_request]
 env:
   ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-  MANAGER_TAG: "1.5.2-develop.20"
+  MANAGER_TAG: "1.6.2-stable.0"
   SGX_WALLET_TAG: "1.58.0-develop.5"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   PYTHON_VERSION: 3.8

@@ -6,6 +6,7 @@ source $DIR/helper.sh
 source $DIR/../helper-scripts/helper.sh
 
 : "${SGX_WALLET_TAG?Need to set SGX_WALLET_TAG}"
+: "${SCHAIN_TYPE?Need to set SCHAIN_TYPE - test2, test4 or tiny}"
 
 tests_cleanup
 export_test_env
