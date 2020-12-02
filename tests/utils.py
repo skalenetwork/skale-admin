@@ -21,7 +21,7 @@ DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
 TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
-    DIR_PATH, 'test_abi.json')
+    DIR_PATH, 'contracts_data', 'unique.json')
 
 
 class FailedAPICall(Exception):

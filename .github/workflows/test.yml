@@ -26,7 +26,7 @@ jobs:
       run: flake8 .
     - name: Deploy manager contracts
       run: |
-        bash ./helper-scripts/deploy_manager.sh
+        bash ./helper-scripts/deploy_test_manager.sh
     # - name: Run core tests
     #   run: |
     #     bash ./scripts/run_core_tests.sh
@@ -49,7 +49,7 @@ jobs:
       run: bash ./scripts/install_python_dependencies.sh
     - name: Deploy manager contracts
       run: |
-        bash ./helper-scripts/deploy_manager.sh
-    # - name: Run core tests
-    #   run: |
-    #     bash ./scripts/run_rotation_tests.sh
+        bash ./helper-scripts/deploy_test_manager.sh
+    - name: Run core tests
+      run: |
+        bash ./scripts/run_rotation_tests.sh
