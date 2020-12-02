@@ -17,19 +17,18 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 import sys
-import functools
-import logging
-import time
 
-from skale.transactions.result import TransactionFailedError
-from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from sgx import SgxClient
-from sgx.sgx_rpc_handler import DkgPolyStatus
 from sgx.http import SgxUnreachableError
-
+from sgx.sgx_rpc_handler import DkgPolyStatus
 from skale.contracts.manager.dkg import G2Point, KeyShare
+from skale.transactions.result import TransactionFailedError
+
+from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
+from tools.sgx_utils import sgx_unreachable_retry
 
 sys.path.insert(0, NODE_DATA_PATH)
 
@@ -102,30 +101,6 @@ def convert_str_to_key_share(sent_secret_key_contribution, n):
 
 def to_verify(share):
     return share[128:192] + share[:128]
-
-
-RETRY_ATTEMPTS = 9
-TIMEOUTS = [2 ** p for p in range(RETRY_ATTEMPTS)]
-
-
-def sgx_unreachable_retry(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        result, error = None, None
-        for i, timeout in enumerate(TIMEOUTS):
-            try:
-                result = func(*args, **kwargs)
-            except SgxUnreachableError as err:
-                logger.info(f'Sgx server is unreachable during try {i}')
-                error = err
-                time.sleep(timeout)
-            else:
-                error = None
-                break
-        if error is not None:
-            raise error
-        return result
-    return wrapper
 
 
 def get_dkg_timeout(skale):
