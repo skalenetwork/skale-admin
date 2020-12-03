@@ -20,7 +20,6 @@
 import logging
 from dataclasses import dataclass
 
-from skale.utils.helper import decapitalize
 from skale.wallets.web3_wallet import public_key_to_address
 
 from core.schains.config.helper import fix_address
@@ -55,10 +54,10 @@ def generate_contract_settings(schain_owner: str, schain_nodes: list) -> Contrac
         ima={
             'ownerAddress': schain_owner,
             'variables': {
-                'LockAndDataForSchain': {
+                'LockAndData': {
                     'permitted': permitted_contracts
                 },
-                'MessageProxyForSchain': {
+                'MessageProxy': {
                     'mapAuthorizedCallers': mp_authorized_callers
                 }
             },
@@ -100,5 +99,5 @@ def generate_ima_contracts_addresses(ima_data):
     for name in PRECOMPILED_IMA_CONTRACTS:
         contract_filename = PRECOMPILED_IMA_CONTRACTS[name]['filename']
         address = get_contract_address_from_ima_data(ima_data, name)
-        ima_contracts_addresses[decapitalize(contract_filename)] = address
+        ima_contracts_addresses[contract_filename] = address
     return ima_contracts_addresses
