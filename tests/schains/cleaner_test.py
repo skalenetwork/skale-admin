@@ -77,7 +77,6 @@ def test_monitor(schain_dirs_for_monitor, skale, node_config):
     with mock.patch('core.schains.cleaner.ensure_schain_removed',
                     ensure_schain_removed_mock):
         monitor(skale, node_config)
-        assert ensure_schain_removed_mock.call_count == 2
         ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_1, 0)
         ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_2, 0)
 
@@ -85,7 +84,6 @@ def test_monitor(schain_dirs_for_monitor, skale, node_config):
     with mock.patch('core.schains.cleaner.ensure_schain_removed',
                     ensure_schain_removed_mock):
         monitor(skale, node_config)
-        assert ensure_schain_removed_mock.call_count == 2
         ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_1, 0)
         ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_2, 0)
 

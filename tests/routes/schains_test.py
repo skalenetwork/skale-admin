@@ -42,7 +42,7 @@ def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):
     with open(filename, 'w') as f:
         text = {'skaleConfig': {'nodeInfo': {'nodeID': 1}}}
         f.write(json.dumps(text))
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'config'), {'schain-name': name})
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'config'), {'schain_name': name})
     assert data == {'payload': {'nodeInfo': {'nodeID': 1}},
                     'status': 'ok'}
     os.remove(filename)
@@ -50,7 +50,7 @@ def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):
 
 
 def test_schains_list(skale_bp, skale):
-    data = get_bp_data(skale_bp, '/schains/list')
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'list'))
     assert data == {'payload': [], 'status': 'ok'}
 
 
@@ -106,14 +106,14 @@ def test_firewall_rules(skale_bp):
 def test_repair(skale_bp, schain_db):
     schain_name = schain_db
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'repair'),
-                        params={'schain': schain_name})
+                        params={'schain_name': schain_name})
     assert data == {
         'payload': {},
         'status': 'ok'
     }
 
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'repair'),
-                        params={'schain': 'undefined-schain'})
+                        params={'schain_name': 'undefined-schain'})
     assert data == {
         'payload': 'No schain with name undefined-schain',
         'status': 'error'
@@ -126,7 +126,7 @@ def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
     schain_id = '0x' + keccak_hash.hexdigest()
 
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'get'),
-                       params={'schain': schain_name})
+                       params={'schain_name': schain_name})
     assert data == {
         'status': 'ok',
         'payload': {
@@ -139,7 +139,7 @@ def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
     }
 
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'get'),
-                       params={'schain': 'undefined-schain'})
+                       params={'schain_name': 'undefined-schain'})
     assert data == {
         'payload': 'No schain with name undefined-schain',
         'status': 'error'
