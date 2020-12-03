@@ -152,9 +152,7 @@ def test_schains_healthchecks(skale_bp, skale):
             }
 
     def get_schains_for_node_mock(node_id):
-        return [{
-            'name': 'test-schain'
-        }]
+        return [{'name': 'test-schain'}, {'name': ''}]
 
     with mock.patch('web.routes.schains.SChainChecks', SChainChecksMock):
         with mock.patch.object(skale.schains, 'get_schains_for_node',
@@ -162,6 +160,7 @@ def test_schains_healthchecks(skale_bp, skale):
             data = get_bp_data(skale_bp, '/api/schains/healthchecks')
             assert data['status'] == 'ok'
             payload = data['payload']
+            assert len(payload) == 1
             test_schain_checks = payload[0]['healthchecks']
             assert test_schain_checks == {
                 'data_dir': False,
