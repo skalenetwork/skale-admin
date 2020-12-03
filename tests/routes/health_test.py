@@ -62,7 +62,7 @@ def test_schains_checks(skale_bp, skale):
     def get_schains_for_node_mock(node_id):
         return [{'name': 'test-schain'}, {'name': ''}]
 
-    with mock.patch('web.routes.schains.SChainChecks', SChainChecksMock):
+    with mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
         with mock.patch.object(skale.schains, 'get_schains_for_node',
                                get_schains_for_node_mock):
             data = get_bp_data(skale_bp, get_api_url('health', 'schains-checks'))
