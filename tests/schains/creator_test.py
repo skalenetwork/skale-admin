@@ -10,13 +10,14 @@ import mock
 from core.node_config import NodeConfig
 from core.schains.creator import (check_schain_rotated,
                                   cleanup_schain_docker_entity,
+                                  monitor_ima_container,
                                   monitor_schain,
                                   monitor_schain_container,
                                   monitor_sync_schain_container)
 from core.schains.helper import get_schain_rotation_filepath
 from core.schains.runner import get_container_name
 from tests.utils import get_schain_contracts_data
-from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
 from web.models.schain import SChainRecord
@@ -161,19 +162,35 @@ def dutils():
 
 
 @pytest.fixture
-def cleanup_container(dutils, schain_config):
+def cleanup_schain_container(dutils, schain_config):
     yield
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     dutils.safe_rm(get_container_name(SCHAIN_CONTAINER, schain_name),
                    force=True)
 
 
+@pytest.fixture
+def cleanup_ima_container(dutils, schain_config):
+    yield
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    dutils.safe_rm(get_container_name(IMA_CONTAINER, schain_name),
+                   force=True)
+
+
 def test_monitor_sync_schain_container(skale, schain_config, dutils,
-                                       cleanup_container):
+                                       cleanup_schain_container):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
     start_ts, rotation_id = 0, 0
-    monitor_sync_schain_container(skale, schain, start_ts, rotation_id, dutils=dutils)
+    monitor_sync_schain_container(skale, schain,
+                                  start_ts, rotation_id, volume_required=True,
+                                  dutils=dutils)
+    containers = dutils.get_all_schain_containers()
+    assert len(containers) == 0
+
+    monitor_sync_schain_container(skale, schain,
+                                  start_ts, rotation_id,
+                                  volume_required=False, dutils=dutils)
     containers = dutils.get_all_schain_containers()
     assert containers[0].name == f'skale_schain_{schain_name}'
     res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
@@ -184,13 +201,28 @@ def test_monitor_sync_schain_container(skale, schain_config, dutils,
     assert len(containers) == 0
 
 
-def test_monitor_schain_container(skale, schain_config, dutils,
-                                  cleanup_container):
+def test_monitor_ima_container(skale, schain_config, dutils,
+                               cleanup_ima_container):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
-    monitor_schain_container(schain)
+    monitor_ima_container(schain, dutils=dutils)
+    containers = dutils.get_all_ima_containers()
+    assert containers[0].name == f'skale_ima_{schain_name}'
+
+
+def test_monitor_schain_container(skale, schain_config, dutils,
+                                  cleanup_schain_container):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain = get_schain_contracts_data(schain_name=schain_name)
+
+    monitor_schain_container(schain, volume_required=True)
+    containers = dutils.get_all_schain_containers()
+    assert len(containers) == 0
+
+    monitor_schain_container(schain, volume_required=False)
     containers = dutils.get_all_schain_containers()
     assert containers[0].name == f'skale_schain_{schain_name}'
+
     res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
     inspection = json.loads(res.stdout.decode('utf-8'))
     assert '--download-snapshot' not in inspection[0]['Args']
