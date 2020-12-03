@@ -259,51 +259,55 @@ def remove_firewall_rules(schain_name):
     remove_iptables_rules(endpoints)
 
 
-def check_container(schain_name, volume_required=False, dutils=None):
+def is_volume_exists(schain_name, dutils=None):
     dutils = dutils or DockerUtils()
-    name = get_container_name(SCHAIN_CONTAINER, schain_name)
-    info = dutils.get_info(name)
-    if not dutils.container_found(info):
-        logger.warning(f'sChain: {schain_name}. '
-                       f'sChain container: {name} not found, trying to create.')
-        if volume_required and not dutils.is_data_volume_exists(schain_name):
-            logger.error(
-                f'sChain: {schain_name}. Cannot create sChain container without data volume'
-            )
-        return True
+    return dutils.is_data_volume_exists(schain_name)
 
 
-def monitor_schain_container(schain, dutils=None):
-    if check_container(schain['name'], volume_required=True):
+def is_container_exists(schain_name,
+                        container_type=SCHAIN_CONTAINER, dutils=None):
+    dutils = dutils or DockerUtils()
+    container_name = get_container_name(container_type, schain_name)
+    return dutils.is_container_exists(container_name)
+
+
+def monitor_schain_container(schain, volume_required=True, dutils=None):
+    schain_name = schain['name']
+    if volume_required and not is_volume_exists(schain_name):
+        logger.error(f'Data volume for sChain {schain_name} does not exist')
+        return
+
+    if not is_container_exists(schain_name):
         run_schain_container(schain, dutils=dutils)
 
 
 def monitor_ima_container(schain: dict, dutils=None):
-    dutils = dutils or DockerUtils()
-    ima_conainer_name = get_container_name(IMA_CONTAINER, schain['name'])
-    dutils.safe_rm(ima_conainer_name)
-    run_ima_container(schain)
+    if not is_container_exists(schain['name'],
+                               container_type=IMA_CONTAINER, dutils=dutils):
+        run_ima_container(schain)
+
+
+def get_schain_public_key(skale, schain_name, rotation_id):
+    if rotation_id:
+        method = skale.key_storage.get_previous_public_key
+    else:
+        method = skale.key_storage.get_common_public_key
+    group_idx = skale.schains.name_to_id(schain_name)
+    raw_public_key = method(group_idx)
+    public_key_array = [*raw_public_key[0], *raw_public_key[1]]
+    return ':'.join(map(str, public_key_array))
 
 
 def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0,
+                                  volume_required=True,
                                   dutils=None):
-    def get_schain_public_key(schain_name, method):
-        group_idx = skale.schains.name_to_id(schain_name)
-        raw_public_key = method(group_idx)
-        public_key_array = [*raw_public_key[0], *raw_public_key[1]]
-        return ':'.join(map(str, public_key_array))
+    schain_name = schain['name']
+    if volume_required and not is_volume_exists(schain_name):
+        logger.error(f'Data volume for sChain {schain_name} does not exist')
+        return
 
-    if check_container(schain['name'], volume_required=True):
-        if not rotation_id:
-            public_key = get_schain_public_key(
-                schain['name'],
-                skale.key_storage.get_common_public_key
-            )
-        else:
-            public_key = get_schain_public_key(
-                schain['name'],
-                skale.key_storage.get_previous_public_key
-            )
+    if not is_container_exists(schain_name):
+        public_key = get_schain_public_key(skale, schain_name, rotation_id)
         run_schain_container(schain, public_key=public_key, start_ts=start_ts,
                              dutils=dutils)
 

@@ -106,6 +106,10 @@ class DockerUtils:
     def get_containers_info(self, _all=False, name_filter='*', format=False) -> list:
         return self.client.containers.list(all=_all, filters={'name': name_filter})
 
+    @format_containers
+    def get_all_ima_containers(self, all=False, format=False) -> list:
+        return self.client.containers.list(all=all, filters={'name': 'skale_ima_*'})
+
     def get_info(self, container_id: str) -> dict:
         container_info = {}
         try:

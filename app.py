@@ -27,12 +27,12 @@ from skale.wallets import RPCWallet
 from core.node import Node
 from core.node_config import NodeConfig
 
-from tools.configs import FLASK_SECRET_KEY_FILE
+from tools.configs import FLASK_SECRET_KEY_FILE, SGX_SERVER_URL
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
 from tools.db import get_database
 from tools.docker_utils import DockerUtils
 from tools.logger import init_api_logger
-from tools.sgx_utils import generate_sgx_key, sgx_server_text
+from tools.sgx_utils import generate_sgx_key
 from tools.str_formatters import arguments_list_string
 
 from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
@@ -94,7 +94,7 @@ def main():
     logger.info(arguments_list_string({
         'Endpoint': ENDPOINT,
         'Transaction manager': TM_URL,
-        'SGX Server': sgx_server_text()
+        'SGX Server': SGX_SERVER_URL or 'Not connected'
         }, 'Starting Flask server'))
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST)
 

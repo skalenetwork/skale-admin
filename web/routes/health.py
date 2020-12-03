@@ -59,14 +59,15 @@ def construct_health_bp(config, skale, docker_utils):
         logger.debug(request)
         node_id = config.id
         if node_id is None:
-            return construct_err_response(HTTPStatus.BAD_REQUEST, ['No node installed'])
+            return construct_err_response(HTTPStatus.BAD_REQUEST,
+                                          ['No node installed'])
         schains = skale.schains.get_schains_for_node(node_id)
         checks = [
             {
                 'name': schain['name'],
                 'healthchecks': SChainChecks(schain['name'], node_id).get_all()
             }
-            for schain in schains
+            for schain in schains if schain.get('name') != ''
         ]
         return construct_ok_response(checks)
 

@@ -103,7 +103,7 @@ def test_firewall_rules(skale_bp):
     }
 
 
-def test_repair(skale_bp, schain_db):
+def test_enable_repair_mode(skale_bp, schain_db):
     schain_name = schain_db
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'repair'),
                         params={'schain_name': schain_name})
