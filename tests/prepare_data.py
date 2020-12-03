@@ -23,8 +23,5 @@ if __name__ == "__main__":
     if skale.constants_holder.get_launch_timestamp() != 0:
         skale.constants_holder.set_launch_timestamp(0, wait_for=True)
 
-    print('skale.wallet.address skale skale skale ->>')
-    print(skale.wallet.address)
-
     create_nodes(skale)
     _skip_evm_time(skale.web3, MONTH_IN_SECONDS)
