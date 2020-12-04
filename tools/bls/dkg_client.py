@@ -399,4 +399,4 @@ class DKGClient:
         return self.skale.dkg.get_complaint_data(self.group_index)
 
     def get_time_of_last_successful_dkg(self):
-        return self.skale.dkg.time_of_last_successful_dkg(self.group_index)
+        return self.skale.dkg.get_time_of_last_successful_dkg(self.group_index)
