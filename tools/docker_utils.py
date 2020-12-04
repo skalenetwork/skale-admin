@@ -104,6 +104,10 @@ class DockerUtils:
     def get_all_schain_containers(self, all=False, format=False) -> list:
         return self.client.containers.list(all=all, filters={'name': 'skale_schain_*'})
 
+    @format_containers
+    def get_all_ima_containers(self, all=False, format=False) -> list:
+        return self.client.containers.list(all=all, filters={'name': 'skale_ima_*'})
+
     def get_info(self, container_id: str) -> dict:
         container_info = {}
         try:
