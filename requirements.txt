@@ -13,8 +13,7 @@ simple-crypt==4.1.7
 pycryptodome==3.9.9
 python-iptables==0.14.0
 
-# skale.py==4.1dev19
-git+git://github.com/skalenetwork/skale.py.git@enhancement/SKALE-3169-move-all-dkg-functions-to-skale.py#egg=skale.py
+skale.py==4.1dev21
 sgx.py==0.6dev14
 
 PyYAML==5.3.1
