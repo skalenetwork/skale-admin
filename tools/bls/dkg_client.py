@@ -385,18 +385,3 @@ class DKGClient:
 
     def is_everyone_sent_algright(self):
         return self.skale.dkg.get_number_of_completed(self.group_index) == self.n
-
-    def get_channel_started_time(self):
-        return self.skale.dkg.get_channel_started_time(self.group_index)
-
-    def get_complaint_started_time(self):
-        return self.skale.dkg.get_complaint_started_time(self.group_index)
-
-    def get_alright_started_time(self):
-        return self.skale.dkg.get_alright_started_time(self.group_index)
-
-    def get_complaint_data(self):
-        return self.skale.dkg.get_complaint_data(self.group_index)
-
-    def get_time_of_last_successful_dkg(self):
-        return self.skale.dkg.get_time_of_last_successful_dkg(self.group_index)
