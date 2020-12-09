@@ -23,7 +23,7 @@ from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
 from core.schains.config.ima import get_message_proxy_addresses
 from core.schains.limits import get_schain_type
-from tools.configs import SGX_SERVER_URL
+from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.ima import IMA_ENDPOINT
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
@@ -93,15 +93,18 @@ def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
     )
 
 
-def generate_wallets_config(schain_name, rotation_id):
+def generate_wallets_config(schain_name: str, rotation_id: int) -> dict:
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
     secret_key_share_config = read_json(secret_key_share_filepath)
+
     wallets = {
         'ima': {
             'url': SGX_SERVER_URL,
             'keyShareName': secret_key_share_config['key_share_name'],
             't': secret_key_share_config['t'],
-            'n': secret_key_share_config['n']
+            'n': secret_key_share_config['n'],
+            'certFile': SGX_SSL_CERT_FILEPATH,
+            'keyFile': SGX_SSL_KEY_FILEPATH
         }
     }
     common_public_keys = secret_key_share_config['common_public_key']
