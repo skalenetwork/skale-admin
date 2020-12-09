@@ -252,7 +252,7 @@ def get_schain_container_sync_opts(schain_name: str, public_key: str,
     ]
 
 
-def get_schain_container_base_opts(schain_name: str, log_level: int = 4,
+def get_schain_container_base_opts(schain_name: str, log_level: int = 2,
                                    enable_ssl: bool = True) -> list:
     config_filepath = get_schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key, ssl_cert = get_ssl_filepath()
