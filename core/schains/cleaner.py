@@ -27,6 +27,7 @@ from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name, is_exited
 from core.schains.config.helper import get_allowed_endpoints
+from core.schains.types import ContainerType
 
 from sgx import SgxClient
 
@@ -147,17 +148,18 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
 
 
 def cleanup_schain(node_id, schain_name, dutils=None):
-    checks = SChainChecks(schain_name, node_id).get_all()
-    if checks['container'] or is_exited(schain_name, dutils=dutils):
+    checks = SChainChecks(schain_name, node_id)
+    if checks.container or is_exited(schain_name, container_type=ContainerType.schain,
+                                     dutils=dutils):
         remove_schain_container(schain_name)
-    if checks['volume']:
+    if checks.volume:
         remove_schain_volume(schain_name)
-    if checks['firewall_rules']:
+    if checks.firewall_rules:
         remove_firewall_rules(schain_name)
-    # TODO: Test IMA
-    # if checks['ima_container']:
-    #     remove_ima_container(schain_name)
-    if checks['data_dir']:
+    if checks.ima_container or is_exited(schain_name, container_type=ContainerType.ima,
+                                         dutils=dutils):
+        remove_ima_container(schain_name)
+    if checks.data_dir:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
 

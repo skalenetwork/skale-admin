@@ -56,7 +56,7 @@ def test_send_tg_notification(skale_bp):
         send_message_to_telegram_mock.delay.assert_called_once_with(
             TG_API_KEY,
             TG_CHAT_ID,
-            'test\nTimestamp: 1594903080\n'
+            'test\n\nTimestamp: 1594903080\n'
             'Datetime: Thu Jul 16 12:38:00 2020'
         )
 

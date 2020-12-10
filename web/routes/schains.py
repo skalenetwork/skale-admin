@@ -27,7 +27,8 @@ from core.schains.config.helper import get_allowed_endpoints, get_schain_config
 from core.schains.helper import schain_config_exists
 from core.schains.info import get_schain_info_by_name
 from web.models.schain import SChainRecord, toggle_schain_repair_mode
-from web.helper import construct_ok_response, construct_err_response, construct_key_error_response
+from web.helper import (construct_ok_response, construct_err_response,
+                        construct_key_error_response)
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,10 @@ def construct_schains_bp(skale, config, docker_utils):
         node_id = config.id
         if node_id is None:
             return construct_err_response(msg='No node installed')
-        schains_list = skale.schains.get_schains_for_node(node_id)
+        schains_list = list(filter(
+            lambda s: s.get('name'),
+            skale.schains.get_schains_for_node(node_id)
+        ))
         return construct_ok_response(schains_list)
 
     @schains_bp.route('/api/dkg/statuses', methods=['GET'])
@@ -97,14 +101,15 @@ def construct_schains_bp(skale, config, docker_utils):
         logger.debug(request)
         node_id = config.id
         if node_id is None:
-            return construct_err_response(HTTPStatus.BAD_REQUEST, ['No node installed'])
+            return construct_err_response(HTTPStatus.BAD_REQUEST,
+                                          ['No node installed'])
         schains = skale.schains.get_schains_for_node(node_id)
         checks = [
             {
                 'name': schain['name'],
-                'healthchecks': SChainChecks(schain['name'], node_id, log=True).get_all()
+                'healthchecks': SChainChecks(schain['name'], node_id).get_all()
             }
-            for schain in schains
+            for schain in schains if schain.get('name') != ''
         ]
         return construct_ok_response(checks)
 
