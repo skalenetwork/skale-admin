@@ -140,7 +140,7 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. DKG timeout is {self.dkg_timeout}')
 
     def is_channel_opened(self):
-        return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
+        return self.skale.dkg.is_channel_opened(self.group_index)
 
     def check_complaint_logs(self, logs):
         return logs['topics'][0].hex() != self.complaint_error_event_hash
@@ -182,9 +182,9 @@ class DKGClient:
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
 
-        is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
-        is_broadcast_possible = is_broadcast_possible_function(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+        is_broadcast_possible = self.skale.dkg.is_broadcast_possible(
+            self.group_index, self.node_id_contract, self.skale.wallet.address
+        )
 
         channel_opened = self.is_channel_opened()
         if not is_broadcast_possible or not channel_opened:
@@ -261,9 +261,8 @@ class DKGClient:
         return self.sgx.calculate_all_bls_public_keys(self.incoming_verification_vector)
 
     def alright(self):
-        is_alright_possible_function = self.dkg_contract_functions.isAlrightPossible
-        is_alright_possible = is_alright_possible_function(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+        is_alright_possible = self.skale.dkg.is_alright_possible(
+            self.group_index, self.node_id_contract, self.skale.wallet.address)
 
         if not is_alright_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
@@ -286,10 +285,11 @@ class DKGClient:
             reason = "complaint_bad_data"
         logger.info(f'sChain: {self.schain_name}. '
                     f'{self.node_id_dkg} is trying to sent a {reason} on {to_node} node')
-        is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
-        is_complaint_possible = is_complaint_possible_function(
-            self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]).call(
-                {'from': self.skale.wallet.address})
+
+        is_complaint_possible = self.skale.dkg.is_complaint_possible(
+            self.group_index, self.node_id_contract, self.node_ids_dkg[to_node],
+            self.skale.wallet.address
+        )
 
         if not is_complaint_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
@@ -337,9 +337,8 @@ class DKGClient:
         return share, dh_key, verification_vector_mult
 
     def response(self, to_node_index):
-        is_pre_response_possible_function = self.dkg_contract_functions.isPreResponsePossible
-        is_pre_response_possible = is_pre_response_possible_function(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+        is_pre_response_possible = self.skale.dkg.is_pre_response_possible(
+            self.group_index, self.node_id_contract, self.skale.wallet.address)
 
         if not is_pre_response_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
@@ -358,9 +357,8 @@ class DKGClient:
                 wait_for=True
             )
 
-            is_response_possible_function = self.dkg_contract_functions.isResponsePossible
-            is_response_possible = is_response_possible_function(
-                self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+            is_response_possible = self.skale.dkg.is_response_possible(
+                self.group_index, self.node_id_contract, self.skale.wallet.address)
 
             if not is_response_possible or not self.is_channel_opened():
                 logger.info(f'sChain: {self.schain_name}. '
@@ -380,37 +378,10 @@ class DKGClient:
             raise DkgTransactionError(e)
 
     def is_all_data_received(self, from_node):
-        is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
-        return is_all_data_received_function(
-            self.group_index, self.node_ids_dkg[from_node]
-        ).call({'from': self.skale.wallet.address})
+        return self.skale.dkg.is_all_data_received(self.group_index, self.node_ids_dkg[from_node])
 
     def is_everyone_broadcasted(self):
-        is_everyone_broadcasted_function = self.dkg_contract_functions.isEveryoneBroadcasted
-        return is_everyone_broadcasted_function(self.group_index).call(
-            {'from': self.skale.wallet.address}
-        )
+        return self.skale.dkg.is_everyone_broadcasted(self.group_index, self.skale.wallet.address)
 
     def is_everyone_sent_algright(self):
-        get_number_of_completed_function = self.dkg_contract_functions.getNumberOfCompleted
-        return get_number_of_completed_function(self.group_index).call() == self.n
-
-    def get_channel_started_time(self):
-        get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
-        return get_channel_started_time_function(self.group_index).call()
-
-    def get_complaint_started_time(self):
-        get_complaint_started_time_function = self.dkg_contract_functions.getComplaintStartedTime
-        return get_complaint_started_time_function(self.group_index).call()
-
-    def get_alright_started_time(self):
-        get_alright_started_time_function = self.dkg_contract_functions.getAlrightStartedTime
-        return get_alright_started_time_function(self.group_index).call()
-
-    def get_complaint_data(self):
-        get_complaint_data_function = self.dkg_contract_functions.getComplaintData
-        return get_complaint_data_function(self.group_index).call()
-
-    def get_time_of_last_successful_dkg(self):
-        time_of_last_successful_dkg_function = self.dkg_contract_functions.getTimeOfLastSuccesfulDKG
-        return time_of_last_successful_dkg_function(self.group_index).call()
+        return self.skale.dkg.get_number_of_completed(self.group_index) == self.n
