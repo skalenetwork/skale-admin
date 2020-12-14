@@ -24,6 +24,7 @@ from http import HTTPStatus
 from flask import Blueprint, request, abort
 from web3 import Web3
 
+from tools.custom_thread import CustomThread
 from tools.notifications.messages import tg_notifications_enabled, send_message
 from web.helper import construct_ok_response, construct_err_response, get_api_url
 
@@ -123,5 +124,16 @@ def construct_node_bp(skale, node, docker_utils):
             logger.exception('Message was not send due to error')
             construct_err_response(['Message sending failed'])
         return construct_ok_response('Message was sent successfully')
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/start'), methods=['POST'])
+    def exit_start():
+        exit_thread = CustomThread('Start node exit', node.exit, once=True)
+        exit_thread.start()
+        return construct_ok_response()
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/status'), methods=['GET'])
+    def exit_status():
+        exit_status_data = node.get_exit_status()
+        return construct_ok_response(exit_status_data)
 
     return node_bp

@@ -34,7 +34,7 @@ def test_containers(skale_bp):
     expected = {
         'status': 'ok',
         'payload': dutils.get_containers_info(
-            _all=False,
+            all=False,
             name_filter='',
             format=True
         )

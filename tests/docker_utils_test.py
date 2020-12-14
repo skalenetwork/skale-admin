@@ -22,7 +22,7 @@ def mocked_client():
     dutils = DockerUtils(volume_driver='local')
     dutils.get_all_schain_containers = partial(
         dutils.get_all_schain_containers,
-        _all=True
+        all=True
     )
     return dutils
 

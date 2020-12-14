@@ -115,7 +115,7 @@ def get_schains_on_node(dutils=None):
     schain_dirs = os.listdir(SCHAINS_DIR_PATH)
     # get all schain containers
 
-    schain_containers = dutils.get_all_schain_containers(_all=True)
+    schain_containers = dutils.get_all_schain_containers(all=True)
     schain_containers_names = []
     for container in schain_containers:
         schain_name = container.name.replace('skale_schain_', '', 1)

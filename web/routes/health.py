@@ -45,10 +45,10 @@ def construct_health_bp(config, skale, docker_utils):
     @health_bp.route(get_api_url(BLUEPRINT_NAME, 'containers'), methods=['GET'])
     def containers():
         logger.debug(request)
-        _all = request.args.get('all') == 'True'
+        all = request.args.get('all') == 'True'
         name_filter = request.args.get('name_filter') or ''
         containers_list = docker_utils.get_containers_info(
-            _all=_all,
+            all=all,
             name_filter=name_filter,
             format=True
         )
