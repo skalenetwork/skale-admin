@@ -26,7 +26,7 @@ from core.schains.checks import SChainChecks
 from core.schains.config.helper import get_allowed_endpoints, get_schain_config
 from core.schains.helper import schain_config_exists
 from core.schains.info import get_schain_info_by_name
-from web.models.schain import SChainRecord, toggle_schain_repair_mode
+from web.models.schain import get_schains_statuses, toggle_schain_repair_mode
 from web.helper import (construct_ok_response, construct_err_response,
                         construct_key_error_response)
 
@@ -82,7 +82,7 @@ def construct_schains_bp(skale, config, docker_utils):
     def dkg_status():
         logger.debug(request)
         _all = request.args.get('all') == 'True'
-        dkg_statuses = SChainRecord.get_statuses(_all)
+        dkg_statuses = get_schains_statuses(_all)
         return construct_ok_response(dkg_statuses)
 
     @schains_bp.route('/api/schains/firewall/show', methods=['GET'])
