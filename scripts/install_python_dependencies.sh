@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-bash scripts/run_sgx_simulator.sh
-python tests/prepare_data.py
-
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
