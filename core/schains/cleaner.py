@@ -121,7 +121,6 @@ def get_schains_on_node(dutils=None):
     schains_with_dirs = os.listdir(SCHAINS_DIR_PATH)
     schains_with_container = get_schains_with_containers(dutils)
     schains_active_records = get_schains_names()
-    print(schains_with_dirs, schains_with_container, schains_active_records)
     return sorted(merged_unique(
         schains_with_dirs,
         schains_with_container,
