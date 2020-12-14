@@ -17,8 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import logging
+import os
 import shutil
 from multiprocessing import Process
 
@@ -37,10 +37,10 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.iptables import remove_rules as remove_iptables_rules
-from tools.helper import read_json
+from tools.helper import merged_unique, read_json
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
-from web.models.schain import mark_schain_deleted
+from web.models.schain import get_schains_names, mark_schain_deleted
 
 
 logger = logging.getLogger(__name__)
@@ -109,19 +109,24 @@ def get_schain_names_from_contract(skale, node_id):
     return list(map(lambda schain: schain['name'], schains_on_contract))
 
 
+def get_schains_with_containers(dutils=None):
+    return [
+        c.name.replace('skale_schain_', '', 1)
+        for c in dutils.get_all_schain_containers(all=True)
+    ]
+
+
 def get_schains_on_node(dutils=None):
     dutils = dutils or docker_utils
-    # get all schain dirs
-    schain_dirs = os.listdir(SCHAINS_DIR_PATH)
-    # get all schain containers
-
-    schain_containers = dutils.get_all_schain_containers(all=True)
-    schain_containers_names = []
-    for container in schain_containers:
-        schain_name = container.name.replace('skale_schain_', '', 1)
-        schain_containers_names.append(schain_name)
-    # merge 2 lists without duplicates
-    return sorted(list(set(schain_dirs + schain_containers_names)))
+    schains_with_dirs = os.listdir(SCHAINS_DIR_PATH)
+    schains_with_container = get_schains_with_containers(dutils)
+    schains_active_records = get_schains_names()
+    print(schains_with_dirs, schains_with_container, schains_active_records)
+    return sorted(merged_unique(
+        schains_with_dirs,
+        schains_with_container,
+        schains_active_records
+    ))
 
 
 def schain_names_to_ids(skale, schain_names):
