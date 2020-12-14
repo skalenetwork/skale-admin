@@ -10,6 +10,14 @@ env:
 jobs:
   test_core:
     runs-on: ubuntu-latest
+    env:
+      ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
+      ENDPOINT: ${{ secrets.ENDPOINT }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      IMA_ENDPOINT: ${{ secrets.IMA_ENDPOINT }}
+      SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
+      MANAGER_TAG: "1.6.2-develop.3"
+      SGX_WALLET_TAG: "1.58.0-develop.5"
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ env.PYTHON_VERSION }}
