@@ -54,7 +54,7 @@ def construct_health_bp(config, skale, docker_utils):
         )
         return construct_ok_response(containers_list)
 
-    @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains-checks'), methods=['GET'])
+    @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
     def schains_checks():
         logger.debug(request)
         node_id = config.id

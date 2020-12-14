@@ -65,7 +65,7 @@ def test_schains_checks(skale_bp, skale):
     with mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
         with mock.patch.object(skale.schains, 'get_schains_for_node',
                                get_schains_for_node_mock):
-            data = get_bp_data(skale_bp, get_api_url('health', 'schains-checks'))
+            data = get_bp_data(skale_bp, get_api_url('health', 'schains'))
             assert data['status'] == 'ok'
             payload = data['payload']
             assert len(payload) == 1
