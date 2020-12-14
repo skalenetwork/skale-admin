@@ -86,6 +86,7 @@ def test_toggle_repair_mode_schain_not_exists(db, upsert_db):
 
 
 def test_get_schains_names(db, upsert_db):
+    mark_schain_deleted('schain-0')
     result = get_schains_names()
     assert result == ['schain-1', 'schain-2', 'schain-3', 'schain-4',
                       'schain-5', 'schain-6', 'schain-7']
@@ -98,4 +99,4 @@ def test_get_schains_names(db, upsert_db):
 def test_get_schains_statuses(db, upsert_db):
     mark_schain_deleted('schain-0')
     assert len(get_schains_statuses()) == 7
-    assert len(get_schains_statuses(include_deleted=True)) == 0
+    assert len(get_schains_statuses(include_deleted=True)) == 8
