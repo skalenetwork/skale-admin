@@ -32,7 +32,7 @@ def make_rpc_call(http_endpoint, method, params=[]) -> bool:
 
 def check_endpoint_alive(http_endpoint):
     res = make_rpc_call(http_endpoint, 'eth_blockNumber')
-    return res and res.status_code == 200
+    return (res and res.status_code == 200) or False
 
 
 def check_endpoint_blocks(http_endpoint):
