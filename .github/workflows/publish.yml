@@ -36,6 +36,7 @@ jobs:
         echo "Version $VERSION"
         export RELEASE=true
         echo "RELEASE=$RELEASE" >> $GITHUB_ENV
+        export CONTAINER_NAME="admin"
         bash ./helper-scripts/build_and_publish.sh
     - name: Checkout code
       uses: actions/checkout@master
