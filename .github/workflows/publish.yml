@@ -21,16 +21,22 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@master
+      with:
+        remote: true
     - name: Build and publish container
       run: |
         export BRANCH=${GITHUB_REF##*/}
-        echo "Branch $BRANCH"
-        export VERSION=$(bash ./scripts/calculate_version.sh)
+        export VERSION=$(cat VERSION)
+        echo "Branch: $BRANCH"
+        echo "Base version: $VERSION"
+        export VERSION=$(bash ./helper-scripts/calculate_version.sh)
         echo "VERSION=$VERSION" >> $GITHUB_ENV
         echo "Version $VERSION"
         export RELEASE=true
         echo "RELEASE=$RELEASE" >> $GITHUB_ENV
-        bash ./scripts/build_and_publish.sh
+        bash ./helper-scripts/build_and_publish.sh
     - name: Checkout code
       uses: actions/checkout@master
     - name: Create Release
