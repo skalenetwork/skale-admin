@@ -49,12 +49,15 @@ def construct_node_bp(skale, node, docker_utils):
             abort(400)
 
         ip = request.json.get('ip')
-        public_ip = request.json.get('public_ip')
+        public_ip = request.json.get('public_ip', None)
         port = request.json.get('port')
         name = request.json.get('name')
         gas_price = request.json.get('gas_price')
         gas_limit = request.json.get('gas_limit')
         skip_dry_run = request.json.get('skip_dry_run')
+
+        if not public_ip:
+            public_ip = ip
 
         if gas_price is not None:
             gas_price = Web3.toWei(Decimal(gas_price), 'gwei')
@@ -87,9 +90,7 @@ def construct_node_bp(skale, node, docker_utils):
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'signature'), methods=['GET'])
     def signature():
         logger.debug(request)
-
         validator_id = int(request.args.get('validator_id'))
-
         signature = skale.validator_service.get_link_node_signature(
             validator_id)
         return construct_ok_response(data={'signature': signature})
