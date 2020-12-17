@@ -24,6 +24,7 @@ from core.schains.config.helper import get_schain_ports, get_schain_config
 
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
+from tools.configs.web3 import TM_URL
 
 
 @dataclass
@@ -45,6 +46,8 @@ class ImaEnv:
     sgx_ssl_cert_path: str
     node_address: str
 
+    tm_url_mainnet: str
+
     def to_dict(self):
         """Returns upper-case representation of the ImaEnv object"""
         return {
@@ -61,6 +64,7 @@ class ImaEnv:
             'SGX_SSL_KEY_PATH': self.sgx_ssl_key_path,
             'SGX_SSL_CERT_PATH': self.sgx_ssl_cert_path,
             'NODE_ADDRESS': self.node_address,
+            'TM_URL_MAIN_NET': self.tm_url_mainnet,
         }
 
 
@@ -69,20 +73,20 @@ def get_local_http_endpoint(node_info, schain_name):
     return f'http://{node_info["bindIP"]}:{ports["http"]}'
 
 
+def schain_index_to_node_number(node):
+    return int(node['schainIndex']) - 1
+
+
 def get_ima_env(schain_name: str) -> ImaEnv:
     schain_config = get_schain_config(schain_name)
     node_info = schain_config["skaleConfig"]["nodeInfo"]
     schain_nodes = schain_config["skaleConfig"]["sChain"]
 
-    schain_index = None
     for node in schain_nodes['nodes']:
         if node['nodeID'] == node_info['nodeID']:
-            schain_index = node['schainIndex']
+            schain_index = schain_index_to_node_number(node)
             node_address = node['owner']
             break
-
-    if not schain_index:
-        schain_index = 0
 
     return ImaEnv(
         schain_dir=get_schain_dir_path(schain_name),
@@ -98,4 +102,5 @@ def get_ima_env(schain_name: str) -> ImaEnv:
         sgx_ssl_key_path=SGX_SSL_KEY_FILEPATH,
         sgx_ssl_cert_path=SGX_SSL_CERT_FILEPATH,
         node_address=node_address,
+        tm_url_mainnet=TM_URL
     )
