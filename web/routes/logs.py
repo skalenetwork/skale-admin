@@ -24,15 +24,16 @@ import logging
 from flask import Blueprint, request, send_file, after_this_request
 
 from core.logs import Logs
-from web.helper import construct_err_response
+from web.helper import construct_err_response, get_api_url
 
 logger = logging.getLogger(__name__)
 
 logs = Logs()
-web_logs = Blueprint('logs', __name__)
+BLUEPRINT_NAME = 'logs'
+web_logs = Blueprint(BLUEPRINT_NAME, __name__)
 
 
-@web_logs.route('/logs/dump', methods=['GET'])
+@web_logs.route(get_api_url(BLUEPRINT_NAME, 'dump'), methods=['GET'])
 def dump():
     @after_this_request
     def cleanup_logs_dump(response):  # todo: move it to utils

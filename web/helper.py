@@ -17,10 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import logging
 import json
 from http import HTTPStatus
 from flask import Response
+
+from web import API_VERSION_PREFIX
 
 
 logger = logging.getLogger(__name__)
@@ -50,3 +53,7 @@ def construct_key_error_response(absent_keys):
     keys_str = ', '.join(absent_keys)
     msg = f'Required arguments: {keys_str}'
     return construct_err_response(msg=msg)
+
+
+def get_api_url(blueprint_name, method_name):
+    return os.path.join(API_VERSION_PREFIX, blueprint_name, method_name)

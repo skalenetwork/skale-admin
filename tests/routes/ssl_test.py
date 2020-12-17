@@ -6,14 +6,18 @@ from flask import Flask
 from tests.utils import get_bp_data, post_bp_data
 
 from tools.docker_utils import DockerUtils
-from web.routes.security import construct_security_bp
+from web.routes.ssl import construct_ssl_bp
+from web.helper import get_api_url
+
+
+BLUEPRINT_NAME = 'ssl'
 
 
 @pytest.fixture
 def skale_bp(skale):
     app = Flask(__name__)
     dutils = DockerUtils(volume_driver='local')
-    app.register_blueprint(construct_security_bp(dutils))
+    app.register_blueprint(construct_ssl_bp(dutils))
     yield app.test_client()
 
 
@@ -46,9 +50,9 @@ class RequestMock:
         self.files = {'ssl_key': file, 'ssl_cert': file}
 
 
-@mock.patch('web.routes.security.crypto.load_certificate', new=load_certificate_mock)
+@mock.patch('web.routes.ssl.crypto.load_certificate', new=load_certificate_mock)
 def test_status(skale_bp):
-    data = get_bp_data(skale_bp, '/api/ssl/status')
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'status'))
     assert data == {
         'status': 'ok',
         'payload': {
@@ -59,7 +63,7 @@ def test_status(skale_bp):
     }, data
 
 
-@mock.patch('web.routes.security.request', new=RequestMock())
+@mock.patch('web.routes.ssl.request', new=RequestMock())
 def test_upload(skale_bp):
-    response = post_bp_data(skale_bp, '/api/ssl/upload', full_response=True)
+    response = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'upload'), full_response=True)
     assert response == {'status': 'ok', 'payload': {}}
