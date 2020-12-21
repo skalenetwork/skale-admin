@@ -50,7 +50,7 @@ def generate_contract_settings(schain_owner: str, schain_nodes: list) -> Contrac
                                                            schain_nodes)
     ima_contracts_addresses = generate_ima_contracts_addresses(ima_data)
     return ContractSettings(
-        common={'enableContractLogMessages': False},
+        common={'enableContractLogMessages': True},
         ima={
             'ownerAddress': schain_owner,
             'variables': {
