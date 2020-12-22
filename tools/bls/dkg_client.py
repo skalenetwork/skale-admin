@@ -168,7 +168,7 @@ class DKGClient:
 
     @sgx_unreachable_retry
     def secret_key_contribution(self):
-        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
+        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution_v2(self.poly_name,
                                                                                  self.public_keys)
         self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
             self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
@@ -231,7 +231,7 @@ class DKGClient:
 
     @sgx_unreachable_retry
     def verification(self, from_node):
-        return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
+        return self.sgx.verify_secret_share_v2(self.incoming_verification_vector[from_node],
                                             self.eth_key_name,
                                             to_verify(
                                                 self.incoming_secret_key_contribution[from_node]
@@ -246,7 +246,7 @@ class DKGClient:
                                                    for j in range(self.sgx.n))
         logger.info(f'sChain: {self.schain_name}. '
                     f'DKGClient is going to create BLS private key with name {bls_key_name}')
-        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name,
+        bls_private_key = self.sgx.create_bls_private_key_v2(self.poly_name, bls_key_name,
                                                           self.eth_key_name,
                                                           received_secret_key_contribution)
         logger.info(f'sChain: {self.schain_name}. '
