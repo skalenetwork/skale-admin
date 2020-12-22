@@ -130,7 +130,7 @@ def test_get_schain_container_cmd(schain_config):
     ssl_key_path, ssl_cert_path = get_ssl_filepath()
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
-        f'--https-port 10008 --ws-port 10002 --wss-port 10007 -v 2 '
+        f'--https-port 10008 --ws-port 10002 --wss-port 10007 -v 4 '
         f'--web3-trace --enable-debug-behavior-apis '
         f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path}'
     )
