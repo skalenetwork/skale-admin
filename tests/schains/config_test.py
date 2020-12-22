@@ -140,7 +140,7 @@ def test_get_schain_container_cmd(schain_config):
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
         f'--https-port 10008 --ws-port 10002 --wss-port 10007 '
-        f'-v 2 --web3-trace --enable-debug-behavior-apis --aa no'
+        f'-v 4 --web3-trace --enable-debug-behavior-apis --aa no'
     )
     assert container_opts == expected_opts
 
