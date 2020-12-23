@@ -162,14 +162,14 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
 
     checks = SChainChecks(name, node_id, rotation_id=rotation_id)
 
+    if not checks.exit_code_ok:
+        mode = MonitorMode.SYNC
+
     if schain_record.repair_mode or not checks.exit_code_ok:
         logger.info(f'REPAIR MODE was toggled for schain {schain["name"]}')
         notify_repair_mode(node_info, name)
         cleanup_schain_docker_entity(name)
         schain_record.set_repair_mode(False)
-
-    if not checks.exit_code_ok:
-        mode = MonitorMode.SYNC
 
     if not schain_record.first_run:
         checks_dict = checks.get_all()
