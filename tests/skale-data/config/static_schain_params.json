@@ -54,5 +54,8 @@
     "schain": {
         "snapshot_interval_sec": 0,
         "empty_block_interval_ms": 10
+    },
+    "schain_cmd": {
+        "logs_verbosity": 2
     }
 }
