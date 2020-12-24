@@ -42,7 +42,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 
-    channel_started_time = dkg_client.get_channel_started_time()
+    channel_started_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
 
     broadcast_and_check_data(dkg_client, poly_name)
 
@@ -61,7 +61,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
     check_response(dkg_client)
 
-    start_time_alright = dkg_client.get_alright_started_time()
+    start_time_alright = skale.dkg.get_alright_started_time(dkg_client.group_index)
     while False in is_alright_sent_list:
         check_failed_dkg(dkg_client)
         if not check_no_complaints(dkg_client):
@@ -86,7 +86,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     if not check_no_complaints(dkg_client):
         check_response(dkg_client)
 
-        complaint_data = dkg_client.get_complaint_data()
+        complaint_data = skale.dkg.get_complaint_data(dkg_client.group_index)
         complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
 
         wait_for_fail(dkg_client, channel_started_time, "correct data")

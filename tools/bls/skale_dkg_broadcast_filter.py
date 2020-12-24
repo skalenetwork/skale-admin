@@ -17,8 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from eth_account.datastructures import AttributeDict
+from dataclasses import dataclass
+
 from web3.exceptions import TransactionNotFound
+
+
+@dataclass
+class DKGEvent:
+    nodeIndex: str
+    secretKeyContribution: str
+    verificationVector: str
 
 
 class Filter:
@@ -53,7 +61,7 @@ class Filter:
         node_index = int(receipt['logs'][0]['topics'][2].hex()[2:], 16)
         vv = event_data[192: 192 + self.t * 256]
         skc = event_data[192 + 64 + self.t * 256: 192 + 64 + self.t * 256 + 192 * self.n]
-        return AttributeDict({
+        return DKGEvent(**{
             'nodeIndex': node_index, "secretKeyContribution": skc, "verificationVector": vv
             })
 
