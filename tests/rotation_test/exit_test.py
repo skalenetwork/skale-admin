@@ -17,14 +17,13 @@ from core.schains.cleaner import (monitor as cleaner_monitor,
                                   remove_schain_container,
                                   remove_schain_volume)
 from core.schains.creator import monitor
-from tests.prepare_data import cleanup_contracts
-# from tools.configs import SSL_CERTIFICATES_FILEPATH
+from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from tools.configs.schains import SCHAINS_DIR_PATH
 
 
 @pytest.fixture
 def exiting_node(skale, db):
-    cleanup_contracts(skale)
+    cleanup_nodes_schains(skale)
 
     nodes, schain_name = set_up_rotated_schain(skale)
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)

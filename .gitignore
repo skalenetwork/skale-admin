@@ -50,7 +50,7 @@ dkgpython.so
 # tests
 node_config.json
 unique.json
-test_abi.json
 *.key
 *.crt
 *.csr
+logs.tar.gz
