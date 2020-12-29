@@ -35,6 +35,8 @@ class SChainInfo:
     snapshot_interval_sec: int
     empty_block_interval_ms: int
 
+    free_contract_deployment: bool
+
     max_consensus_storage_bytes: int
     max_skaled_leveldb_storage_bytes: int
     max_file_storage_bytes: int
@@ -58,6 +60,7 @@ class SChainInfo:
             'storageLimit': self.storage_limit,
             'snapshotIntervalSec': self.snapshot_interval_sec,
             'emptyBlockIntervalMs': self.empty_block_interval_ms,
+            'freeContractDeployment': self.free_contract_deployment,
             'maxConsensusStorageBytes': self.max_consensus_storage_bytes,
             'maxSkaledLeveldbStorageBytes': self.max_skaled_leveldb_storage_bytes,
             'maxFileStorageBytes': self.max_file_storage_bytes,
