@@ -107,10 +107,6 @@ def to_verify(share):
     return share[128:192] + share[:128]
 
 
-def get_dkg_timeout(skale):
-    return skale.constants_holder.contract.functions.complaintTimelimit().call()
-
-
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
                  node_ids_dkg, node_ids_contract, eth_key_name):
@@ -130,7 +126,7 @@ class DKGClient:
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
         self.dkg_contract_functions = self.skale.dkg.contract.functions
-        self.dkg_timeout = get_dkg_timeout(self.skale)
+        self.dkg_timeout = self.skale.constants_holder.get_dkg_timeout()
         self.complaint_error_event_hash = self.skale.web3.toHex(self.skale.web3.sha3(
             text="ComplaintError(string)"
         ))
@@ -285,7 +281,7 @@ class DKGClient:
         if report_bad_data:
             reason = "complaint_bad_data"
         logger.info(f'sChain: {self.schain_name}. '
-                    f'{self.node_id_dkg} is trying to sent a {reason} on {to_node} node')
+                    f'{self.node_id_dkg} node is trying to sent a {reason} on {to_node} node')
 
         is_complaint_possible = self.skale.dkg.is_complaint_possible(
             self.group_index, self.node_id_contract, self.node_ids_dkg[to_node],
