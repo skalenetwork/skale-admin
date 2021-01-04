@@ -252,11 +252,14 @@ def get_schain_container_sync_opts(schain_name: str, public_key: str,
     ]
 
 
-def get_schain_container_base_opts(schain_name: str, log_level: int = 4,
+def get_schain_container_base_opts(schain_name: str,
                                    enable_ssl: bool = True) -> list:
     config_filepath = get_schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
+
+    static_schain_params = get_static_schain_params()
+    logs_verbosity = static_schain_params['schain_cmd']['logs_verbosity']
     cmd = [
         f'--config {config_filepath}',
         f'-d {DATA_DIR_CONTAINER_PATH}',
@@ -265,7 +268,7 @@ def get_schain_container_base_opts(schain_name: str, log_level: int = 4,
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
         f'--wss-port {ports["wss"]}',
-        f'-v {log_level}',
+        f'-v {logs_verbosity}',
         '--web3-trace',
         '--enable-debug-behavior-apis',
         '--aa no'
