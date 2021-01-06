@@ -107,10 +107,6 @@ def to_verify(share):
     return share[128:192] + share[:128]
 
 
-def get_dkg_timeout(skale):
-    return skale.constants_holder.contract.functions.complaintTimelimit().call()
-
-
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
                  node_ids_dkg, node_ids_contract, eth_key_name):
@@ -130,7 +126,7 @@ class DKGClient:
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
         self.dkg_contract_functions = self.skale.dkg.contract.functions
-        self.dkg_timeout = get_dkg_timeout(self.skale)
+        self.dkg_timeout = self.skale.constants_holder.get_dkg_timeout()
         self.complaint_error_event_hash = self.skale.web3.toHex(self.skale.web3.sha3(
             text="ComplaintError(string)"
         ))
@@ -168,8 +164,9 @@ class DKGClient:
 
     @sgx_unreachable_retry
     def secret_key_contribution(self):
-        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
-                                                                                 self.public_keys)
+        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution_v2(self.poly_name,
+                                                                                    self.public_keys
+                                                                                    )
         self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
             self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
         ]
@@ -231,12 +228,12 @@ class DKGClient:
 
     @sgx_unreachable_retry
     def verification(self, from_node):
-        return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
-                                            self.eth_key_name,
-                                            to_verify(
+        return self.sgx.verify_secret_share_v2(self.incoming_verification_vector[from_node],
+                                               self.eth_key_name,
+                                               to_verify(
                                                 self.incoming_secret_key_contribution[from_node]
-                                            ),
-                                            self.node_id_dkg)
+                                               ),
+                                               self.node_id_dkg)
 
     @sgx_unreachable_retry
     def generate_bls_key(self, bls_key_name):
@@ -246,9 +243,9 @@ class DKGClient:
                                                    for j in range(self.sgx.n))
         logger.info(f'sChain: {self.schain_name}. '
                     f'DKGClient is going to create BLS private key with name {bls_key_name}')
-        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name,
-                                                          self.eth_key_name,
-                                                          received_secret_key_contribution)
+        bls_private_key = self.sgx.create_bls_private_key_v2(self.poly_name, bls_key_name,
+                                                             self.eth_key_name,
+                                                             received_secret_key_contribution)
         logger.info(f'sChain: {self.schain_name}. '
                     'DKGClient is going to fetch BLS public key with name {bls_key_name}')
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
@@ -284,7 +281,7 @@ class DKGClient:
         if report_bad_data:
             reason = "complaint_bad_data"
         logger.info(f'sChain: {self.schain_name}. '
-                    f'{self.node_id_dkg} is trying to sent a {reason} on {to_node} node')
+                    f'{self.node_id_dkg} node is trying to sent a {reason} on {to_node} node')
 
         is_complaint_possible = self.skale.dkg.is_complaint_possible(
             self.group_index, self.node_id_contract, self.node_ids_dkg[to_node],
