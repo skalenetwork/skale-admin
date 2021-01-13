@@ -325,8 +325,8 @@ class DKGClient:
             self.poly_name,
             self.node_ids_contract[to_node_index]
         )
-        share, dh_key = response['share'], response['dh_key']
-        verification_vector_mult = response['verification_vector_mult']
+        share, dh_key = response.share, response.dh_key
+        verification_vector_mult = response.verification_vector_mult
         share = share.split(':')
         for i in range(4):
             share[i] = int(share[i])
