@@ -13,7 +13,8 @@ simple-crypt==4.1.7
 pycryptodome==3.9.9
 python-iptables==0.14.0
 
-skale.py==4.1b6
+# skale.py==4.1b6
+git+git://github.com/skalenetwork/skale.py.git@bug/SKALE-3699-rpc-directly-sgx#egg=skale.py
 
 PyYAML==5.3.1
 psutil==5.7.0

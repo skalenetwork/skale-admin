@@ -21,7 +21,6 @@ import logging
 import time
 
 from skale import Skale
-from skale.wallets import RPCWallet
 
 from core.node_config import NodeConfig
 from core.schains.creator import run_creator
@@ -29,9 +28,10 @@ from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
 
 from tools.configs import BACKUP_RUN
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
+from tools.wallet_utils import init_wallet
 
 from web.models.schain import set_schains_first_run
 from web.migrations import run_migrations
@@ -60,8 +60,8 @@ def main():
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
-    rpc_wallet = RPCWallet(TM_URL, retry_if_failed=True)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+    wallet = init_wallet(node_config, retry_if_failed=True)
+    skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
 
     soft_updates(skale, node_config)
     run_migrations()
