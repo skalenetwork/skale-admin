@@ -84,3 +84,11 @@ def test_about(skale_bp, skale):
     }
     data = get_bp_data(skale_bp, '/about-node')
     assert data == expected
+
+
+def test_endpoint_info(skale_bp, skale):
+    data = get_bp_data(skale_bp, '/endpoint-info')
+    assert data['status'] == 'ok'
+    payload = data['payload']
+    assert payload['syncing'] is False
+    assert payload['block_number'] > 1
