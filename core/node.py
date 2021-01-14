@@ -18,6 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import platform
+import psutil
 import time
 from enum import Enum
 
@@ -27,10 +29,11 @@ from skale.wallets.web3_wallet import public_key_to_address
 
 from core.filebeat import run_filebeat_service
 
+from tools.configs.filebeat import MONITORING_CONTAINERS
+from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
+from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
-from tools.configs.filebeat import MONITORING_CONTAINERS
-from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 
 logger = logging.getLogger(__name__)
 
@@ -226,3 +229,29 @@ def _get_node_status(node_info):
     if status == NodeStatuses.FROZEN and finish_time < time.time():
         return NodeStatuses.LEFT.value
     return status.value
+
+
+def get_block_device_size(device: str) -> int:
+    """ Returns block device size in bytes """
+    with open(f'/sys/block{device}/size') as sys_stats:
+        return int(sys_stats.read()) // 2
+
+
+def get_attached_storage_block_device():
+    with open(DISK_MOUNTPOINT_FILEPATH) as dm_file:
+        return dm_file.read().strip()
+
+
+def get_node_hardware_info() -> dict:
+    system_release = f'{platform.system()}-{platform.release()}'
+    uname_version = platform.uname().version
+    attached_device = get_attached_storage_block_device()
+    attached_storage_size = get_block_device_size(attached_device)
+    return {
+        'CPU': psutil.cpu_count(logical=False),
+        'memory': psutil.virtual_memory().total,
+        'swap': psutil.swap_memory().total,
+        'system_release': system_release,
+        'uname_version': uname_version,
+        'attached_storage_size': attached_storage_size
+    }
