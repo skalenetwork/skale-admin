@@ -233,13 +233,15 @@ def _get_node_status(node_info):
 
 def get_block_device_size(device: str) -> int:
     """ Returns block device size in bytes """
-    with open(f'/sys/block{device}/size') as sys_stats:
+    with open(f'/sys/block/{device}/size') as sys_stats:
         return int(sys_stats.read()) // 2
 
 
 def get_attached_storage_block_device():
     with open(DISK_MOUNTPOINT_FILEPATH) as dm_file:
-        return dm_file.read().strip()
+        full_name = dm_file.read().strip()
+        name = full_name[4:]  # remove /dev prefix
+        return name
 
 
 def get_node_hardware_info() -> dict:
