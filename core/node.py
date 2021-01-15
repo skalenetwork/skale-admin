@@ -250,7 +250,8 @@ def get_node_hardware_info() -> dict:
     attached_device = get_attached_storage_block_device()
     attached_storage_size = get_block_device_size(attached_device)
     return {
-        'CPU': psutil.cpu_count(logical=False),
+        'cpu_total_cores': psutil.cpu_count(logical=True),
+        'cpu_physical_cores': psutil.cpu_count(logical=False),
         'memory': psutil.virtual_memory().total,
         'swap': psutil.swap_memory().total,
         'system_release': system_release,
