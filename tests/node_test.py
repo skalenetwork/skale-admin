@@ -134,7 +134,7 @@ def test_get_node_hardware_info(get_block_device_size_mock, block_device_file):
     info = get_node_hardware_info()
     assert isinstance(info['cpu_total_cores'], int)
     assert isinstance(info['cpu_physical_cores'], int)
-    assert info['cpu_physical_cores'] < info['cpu_total_cores']
+    assert info['cpu_physical_cores'] <= info['cpu_total_cores']
     assert isinstance(info['swap'], int)
     assert isinstance(info['memory'], int)
     assert isinstance(info['system_release'], str)
