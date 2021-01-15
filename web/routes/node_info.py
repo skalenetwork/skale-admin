@@ -22,10 +22,11 @@ import pkg_resources
 
 from flask import Blueprint, request
 
-from web.helper import construct_ok_response, construct_err_response
+from core.node import get_node_hardware_info
 from tools.configs.flask import SKALE_LIB_NAME
 from tools.configs.web3 import ENDPOINT
 from tools.notifications.messages import tg_notifications_enabled, send_message
+from web.helper import construct_ok_response, construct_err_response
 
 logger = logging.getLogger(__name__)
 
@@ -81,5 +82,22 @@ def construct_node_info_bp(skale, docker_utils):
             },
         }
         return construct_ok_response(node_about)
+
+    @node_info_bp.route('/hardware', methods=['GET'])
+    def hardware():
+        logger.debug(request)
+        hardware_info = get_node_hardware_info()
+        return construct_ok_response(hardware_info)
+
+    @node_info_bp.route('/endpoint-info', methods=['GET'])
+    def endpoint_info():
+        logger.debug(request)
+        block_number = skale.web3.eth.blockNumber
+        syncing = skale.web3.eth.syncing
+        info = {
+            'block_number': block_number,
+            'syncing': syncing
+        }
+        return construct_ok_response(info)
 
     return node_info_bp

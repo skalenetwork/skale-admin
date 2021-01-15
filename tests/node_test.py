@@ -1,12 +1,16 @@
 import os
 
 import mock
+import psutil
 import pytest
 
 from skale.utils.contracts_provision.main import generate_random_node_data
 
-from core.node import Node, NodeExitStatuses, NodeStatuses
+from core.node import (
+    get_node_hardware_info, Node, NodeExitStatuses, NodeStatuses
+)
 from core.node_config import NodeConfig
+from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -114,3 +118,25 @@ def test_node_maintenance_error(active_node, skale):
     active_node.set_maintenance_on()
     res = active_node.set_maintenance_on()
     assert res == {'status': 1, 'errors': ['Node should be active']}
+
+
+@pytest.fixture
+def block_device_file():
+    device = psutil.disk_partitions()[0].device
+    with open(DISK_MOUNTPOINT_FILEPATH, 'w') as dm_file:
+        dm_file.write(device)
+    yield DISK_MOUNTPOINT_FILEPATH
+    os.remove(DISK_MOUNTPOINT_FILEPATH)
+
+
+@mock.patch('core.node.get_block_device_size', return_value=300)
+def test_get_node_hardware_info(get_block_device_size_mock, block_device_file):
+    info = get_node_hardware_info()
+    assert isinstance(info['cpu_total_cores'], int)
+    assert isinstance(info['cpu_physical_cores'], int)
+    assert info['cpu_physical_cores'] <= info['cpu_total_cores']
+    assert isinstance(info['swap'], int)
+    assert isinstance(info['memory'], int)
+    assert isinstance(info['system_release'], str)
+    assert isinstance(info['uname_version'], str)
+    assert info['attached_storage_size'] == 300
