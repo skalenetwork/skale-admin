@@ -117,7 +117,8 @@ def test_get_skaled_rpc_endpoinds_from_config():
         NodeEndpoint(ip=None, port=10013),
         NodeEndpoint(ip=None, port=10014),
         NodeEndpoint(ip=None, port=10018),
-        NodeEndpoint(ip=None, port=10019)
+        NodeEndpoint(ip=None, port=10019),
+        NodeEndpoint(ip=None, port=10020)
     ]
 
 
