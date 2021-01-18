@@ -69,7 +69,7 @@ class Node:
         self.skale = skale
         self.config = config
 
-    def register(self, ip, public_ip, port, name,
+    def register(self, ip, public_ip, port, name, domain_name,
                  gas_limit=None, gas_price=None, skip_dry_run=False):
         """
         Main node registration function.
@@ -79,6 +79,7 @@ class Node:
         public_ip (str): Public IP address that will be assigned to the node
         port (int): Base port that will be used for sChains on the node
         name (str): Node name
+        domain_name (str): Domain name
 
         Returns:
         dict: Execution status and node config
@@ -94,6 +95,7 @@ class Node:
                 port=int(port),
                 name=name,
                 public_ip=public_ip,
+                domain_name=domain_name,
                 gas_limit=gas_limit,
                 gas_price=gas_price,
                 skip_dry_run=skip_dry_run,
