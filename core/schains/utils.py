@@ -21,10 +21,9 @@
 import logging
 
 from tools.notifications.messages import notify_balance
+from tools.configs import REQUIRED_BALANCE_WEI
 
 logger = logging.getLogger(__name__)
-
-REQUIRED_BALANCE_WEI = 10 ** 17
 
 
 def notify_if_not_enough_balance(skale, node_info):
