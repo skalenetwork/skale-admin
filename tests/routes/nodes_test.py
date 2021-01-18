@@ -12,6 +12,7 @@ from tests.utils import get_bp_data, post_bp_data
 from web.routes.nodes import construct_nodes_bp
 
 from skale.utils.contracts_provision.utils import generate_random_node_data
+from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 
 @pytest.fixture
@@ -37,7 +38,7 @@ def test_check_node_name(skale_bp, skale):
     data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': 'test'})
     assert data == {'status': 'ok', 'payload': {'name_available': True}}
     ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name, wait_for=True)
+    skale.manager.create_node(ip, port, name, domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
     data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': name})
     assert data == {'status': 'ok', 'payload': {'name_available': False}}
     node_idx = skale.nodes.node_name_to_index(name)
@@ -48,7 +49,7 @@ def test_check_node_ip(skale_bp, skale):
     data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': '0.0.0.0'})
     assert data == {'status': 'ok', 'payload': {'ip_available': True}}
     ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name, wait_for=True)
+    skale.manager.create_node(ip, port, name, domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
     data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': ip})
     assert data == {'status': 'ok', 'payload': {'ip_available': False}}
     node_idx = skale.nodes.node_name_to_index(name)
