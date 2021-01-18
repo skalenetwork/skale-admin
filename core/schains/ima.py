@@ -68,6 +68,22 @@ class ImaEnv:
         }
 
 
+def get_current_node_from_nodes(node_id, schain_nodes):
+    for node in schain_nodes['nodes']:
+        if node['nodeID'] == node_id:
+            return node
+
+
+def get_localhost_http_endpoint(schain_name):
+    ports = get_schain_ports(schain_name)
+    return f'http://127.0.0.1:{ports["http"]}'
+
+
+def get_public_http_endpoint(public_node_info, schain_name):
+    ports = get_schain_ports(schain_name)
+    return f'http://{public_node_info["ip"]}:{ports["http"]}'
+
+
 def get_local_http_endpoint(node_info, schain_name):
     ports = get_schain_ports(schain_name)
     return f'http://{node_info["bindIP"]}:{ports["http"]}'
@@ -81,19 +97,17 @@ def get_ima_env(schain_name: str) -> ImaEnv:
     schain_config = get_schain_config(schain_name)
     node_info = schain_config["skaleConfig"]["nodeInfo"]
     schain_nodes = schain_config["skaleConfig"]["sChain"]
+    public_node_info = get_current_node_from_nodes(node_info['nodeID'], schain_nodes)
 
-    for node in schain_nodes['nodes']:
-        if node['nodeID'] == node_info['nodeID']:
-            schain_index = schain_index_to_node_number(node)
-            node_address = node['owner']
-            break
+    schain_index = schain_index_to_node_number(public_node_info)
+    node_address = public_node_info['owner']
 
     return ImaEnv(
         schain_dir=get_schain_dir_path(schain_name),
         mainnet_proxy_path=MAINNET_PROXY_PATH,
         schain_proxy_path=get_schain_proxy_file_path(schain_name),
         schain_name=schain_name,
-        schain_rpc_url=get_local_http_endpoint(node_info, schain_name),
+        schain_rpc_url=get_localhost_http_endpoint(schain_name),
         mainnet_rpc_url=IMA_ENDPOINT,
         node_number=schain_index,
         nodes_count=len(schain_nodes['nodes']),
