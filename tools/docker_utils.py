@@ -117,7 +117,7 @@ class DockerUtils:
             container_info['stats'] = self.cli.inspect_container(container.id)
             container_info['status'] = container.status
         except docker.errors.NotFound:
-            logger.warning(
+            logger.debug(
                 f'Can not get info - no such container: {container_id}')
             container_info['status'] = CONTAINER_NOT_FOUND
         return container_info
