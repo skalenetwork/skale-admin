@@ -53,7 +53,7 @@ def monitor(skale, node_config):
         time.sleep(MONITOR_INTERVAL)
 
 
-def main():
+def worker():
     time.sleep(INITIAL_SLEEP_INTERVAL)
     node_config = NodeConfig()
     while node_config.id is None:
@@ -71,6 +71,14 @@ def main():
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
     monitor(skale, node_config)
+
+
+def main():
+    while True:
+        try:
+            worker()
+        except Exception:
+            logger.exception('Admin worker failed')
 
 
 if __name__ == '__main__':

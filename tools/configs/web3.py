@@ -19,9 +19,11 @@
 
 import os
 from tools.configs import CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME
+from tools.configs import NODE_DATA_PATH
 
 TM_URL = os.environ['TM_URL']
 ENDPOINT = os.environ['ENDPOINT']
 ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME)
+STATE_FILEPATH = os.path.join(NODE_DATA_PATH, 'eth-last-block')
 
 NODE_REGISTER_CONFIRMATION_BLOCKS = 5
