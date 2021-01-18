@@ -74,6 +74,11 @@ def get_current_node_from_nodes(node_id, schain_nodes):
             return node
 
 
+def get_localhost_http_endpoint(schain_name):
+    ports = get_schain_ports(schain_name)
+    return f'http://127.0.0.1:{ports["http"]}'
+
+
 def get_public_http_endpoint(public_node_info, schain_name):
     ports = get_schain_ports(schain_name)
     return f'http://{public_node_info["ip"]}:{ports["http"]}'
@@ -102,7 +107,7 @@ def get_ima_env(schain_name: str) -> ImaEnv:
         mainnet_proxy_path=MAINNET_PROXY_PATH,
         schain_proxy_path=get_schain_proxy_file_path(schain_name),
         schain_name=schain_name,
-        schain_rpc_url=get_public_http_endpoint(public_node_info, schain_name),
+        schain_rpc_url=get_localhost_http_endpoint(schain_name),
         mainnet_rpc_url=IMA_ENDPOINT,
         node_number=schain_index,
         nodes_count=len(schain_nodes['nodes']),
