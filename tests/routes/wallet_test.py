@@ -4,6 +4,10 @@ from skale.wallets.web3_wallet import to_checksum_address
 
 from tests.utils import get_bp_data, post_bp_data
 from web.routes.wallet import construct_wallet_bp
+from web.helper import get_api_url
+
+
+BLUEPRINT_NAME = 'wallet'
 
 
 @pytest.fixture
@@ -14,7 +18,7 @@ def skale_bp(skale):
 
 
 def test_load_wallet(skale_bp, skale):
-    data = get_bp_data(skale_bp, '/load-wallet')
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'info'))
     address = skale.wallet.address
     eth_balance_wei = skale.web3.eth.getBalance(address)
     expected_data = {
@@ -43,7 +47,7 @@ def test_send_eth(skale_bp, skale):
         'address': receiver_0,
         'amount': amount
     }
-    data = post_bp_data(skale_bp, '/api/send-eth', json_data)
+    data = post_bp_data(skale_bp,  get_api_url(BLUEPRINT_NAME, 'send-eth'), json_data)
     balance_1 = skale.web3.eth.getBalance(address)
     assert data == {'status': 'ok', 'payload': {}}
     assert balance_1 < balance_0
@@ -55,7 +59,7 @@ def test_send_eth(skale_bp, skale):
         'address': receiver_1,
         'amount': amount
     }
-    data = post_bp_data(skale_bp, '/api/send-eth', json_data)
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'send-eth'), json_data)
     assert data == {'status': 'ok', 'payload': {}}
     assert skale.web3.eth.getBalance(address) < balance_1
     assert skale.web3.eth.getBalance(receiver_1) - receiver_balance_1 == amount_wei
@@ -66,5 +70,5 @@ def test_send_eth_with_error(skale_bp, skale):
         'address': '0x0000000',
         'amount': '0.1'
     }
-    data = post_bp_data(skale_bp, '/api/send-eth', json_data)
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'send-eth'), json_data)
     assert data == {'status': 'error', 'payload': 'Funds sending failed'}
