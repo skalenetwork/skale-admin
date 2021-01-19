@@ -116,8 +116,11 @@ def broadcast_and_check_data(dkg_client, poly_name):
             events = dkg_filter.get_events()
         for event in events:
             from_node = dkg_client.node_ids_contract[event.nodeIndex]
+            if is_received[from_node]:
+                continue
+            else:
+                is_received[from_node] = True
             broadcasted_data = [event.verificationVector, event.secretKeyContribution]
-            is_received[from_node] = True
             if from_node != dkg_client.node_id_dkg:
                 logger.info(f'sChain {schain_name}: receiving from node {from_node}')
             try:
