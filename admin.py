@@ -41,20 +41,19 @@ init_admin_logger()
 logger = logging.getLogger(__name__)
 
 INITIAL_SLEEP_INTERVAL = 135
-SLEEP_INTERVAL = 50
-MONITOR_INTERVAL = 45
+SLEEP_INTERVAL = 45
+WORKER_RESTART_SLEEP_INTERVAL = 2
 
 
 def monitor(skale, node_config):
     while True:
         run_creator(skale, node_config)
-        time.sleep(MONITOR_INTERVAL)
+        time.sleep(SLEEP_INTERVAL)
         run_cleaner(skale, node_config)
-        time.sleep(MONITOR_INTERVAL)
+        time.sleep(SLEEP_INTERVAL)
 
 
 def worker():
-    time.sleep(INITIAL_SLEEP_INTERVAL)
     node_config = NodeConfig()
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
@@ -75,11 +74,13 @@ def worker():
 
 
 def main():
+    time.sleep(INITIAL_SLEEP_INTERVAL)
     while True:
         try:
             worker()
         except Exception:
             logger.exception('Admin worker failed')
+        time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
 
 
 if __name__ == '__main__':
