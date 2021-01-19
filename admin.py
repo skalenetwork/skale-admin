@@ -29,7 +29,7 @@ from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
 
 from tools.configs import BACKUP_RUN
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 
@@ -61,7 +61,8 @@ def worker():
         time.sleep(SLEEP_INTERVAL)
 
     rpc_wallet = RPCWallet(TM_URL, retry_if_failed=True)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+    skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet,
+                  state_path=STATE_FILEPATH)
 
     soft_updates(skale, node_config)
     run_migrations()
