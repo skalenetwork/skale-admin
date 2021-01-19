@@ -24,6 +24,8 @@ from tools.configs import NODE_DATA_PATH
 TM_URL = os.environ['TM_URL']
 ENDPOINT = os.environ['ENDPOINT']
 ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME)
-STATE_FILEPATH = os.path.join(NODE_DATA_PATH, 'eth-last-block')
+STATE_FILENAME = os.getenv('STATE_FILENAME')
+STATE_FILEPATH = None if not STATE_FILENAME \
+                    else os.path.join(NODE_DATA_PATH, STATE_FILENAME)
 
 NODE_REGISTER_CONFIRMATION_BLOCKS = 5
