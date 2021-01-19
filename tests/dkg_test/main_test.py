@@ -133,6 +133,7 @@ def check_node_info(node_data, info):
     check_keys(info, keys)
     assert info['nodeID'] == node_data['node_id']
     check_node_ports(info)
+    assert info['infoHttpRpcPort'] == info['basePort'] + 9
     assert info['ecdsaKeyName'] == node_data['wallet']._key_name
 
 
