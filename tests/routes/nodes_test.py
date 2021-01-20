@@ -12,6 +12,7 @@ from tests.utils import get_bp_data, post_bp_data
 from web.routes.nodes import construct_nodes_bp
 
 from skale.utils.contracts_provision.utils import generate_random_node_data
+from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 
 @pytest.fixture
@@ -37,7 +38,7 @@ def test_check_node_name(skale_bp, skale):
     data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': 'test'})
     assert data == {'status': 'ok', 'payload': {'name_available': True}}
     ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name, wait_for=True)
+    skale.manager.create_node(ip, port, name, domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
     data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': name})
     assert data == {'status': 'ok', 'payload': {'name_available': False}}
     node_idx = skale.nodes.node_name_to_index(name)
@@ -48,7 +49,7 @@ def test_check_node_ip(skale_bp, skale):
     data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': '0.0.0.0'})
     assert data == {'status': 'ok', 'payload': {'ip_available': True}}
     ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name, wait_for=True)
+    skale.manager.create_node(ip, port, name, domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
     data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': ip})
     assert data == {'status': 'ok', 'payload': {'ip_available': False}}
     node_idx = skale.nodes.node_name_to_index(name)
@@ -79,12 +80,16 @@ def test_node_info(skale_bp, node):
     assert data == {'status': 'ok', 'payload': {'node_info': node.info}}
 
 
-def register_mock(self, ip, public_ip, port, name, gas_limit=None,
+def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
                   gas_price=None, skip_dry_run=False):
     return {'status': 1, 'data': 1}
 
 
 def set_maintenance_mock(self):
+    return {'status': 0}
+
+
+def set_domain_name_mock(self, data):
     return {'status': 0}
 
 
@@ -98,7 +103,8 @@ def test_node_create(skale_bp, node_config):
         'publicIP': public_ip,
         'port': port,
         'gas_limit': 8000000,
-        'gas_price': 2 * 10 ** 9
+        'gas_price': 2 * 10 ** 9,
+        'domain_name': DEFAULT_DOMAIN_NAME
     }
     data = post_bp_data(skale_bp, '/create-node', json_data)
     assert data == {'status': 'ok', 'payload': {'node_data': 1}}
@@ -127,7 +133,7 @@ def test_node_create(skale_bp, node_config):
 
 
 def failed_register_mock(
-    self, ip, public_ip, port, name, gas_limit=None,
+    self, ip, public_ip, port, name, domain_name, gas_limit=None,
     gas_price=None, skip_dry_run=False
 ):
     return {'status': 0, 'errors': ['Already registered']}
@@ -140,7 +146,8 @@ def test_create_with_errors(skale_bp, node_config):
         'name': name,
         'ip': ip,
         'publicIP': public_ip,
-        'port': port
+        'port': port,
+        'domain_name': DEFAULT_DOMAIN_NAME
     }
     data = post_bp_data(skale_bp, '/create-node', json_data)
     assert data == {'payload': ['Already registered'], 'status': 'error'}
@@ -170,4 +177,11 @@ def test_set_maintenance_on(skale_bp, skale, node_config):
 @patch.object(Node, 'set_maintenance_off', set_maintenance_mock)
 def test_set_maintenance_off(skale_bp, skale, node_config):
     data = post_bp_data(skale_bp, '/api/node/maintenance-off')
+    assert data == {'payload': {}, 'status': 'ok'}
+
+
+@patch.object(Node, 'set_domain_name', set_domain_name_mock)
+def test_set_domain_name(skale_bp, skale, node_config):
+    json_data = {'domain_name': 'skale.test'}
+    data = post_bp_data(skale_bp, '/api/node/set-domain-name', json_data)
     assert data == {'payload': {}, 'status': 'ok'}
