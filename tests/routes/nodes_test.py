@@ -80,7 +80,7 @@ def test_node_info(skale_bp, node):
     assert data == {'status': 'ok', 'payload': {'node_info': node.info}}
 
 
-def register_mock(self, ip, public_ip, port, name, gas_limit=None,
+def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
                   gas_price=None, skip_dry_run=False):
     return {'status': 1, 'data': 1}
 
@@ -89,7 +89,7 @@ def set_maintenance_mock(self):
     return {'status': 0}
 
 
-def set_domain_name_mock(self):
+def set_domain_name_mock(self, data):
     return {'status': 0}
 
 
@@ -103,7 +103,8 @@ def test_node_create(skale_bp, node_config):
         'publicIP': public_ip,
         'port': port,
         'gas_limit': 8000000,
-        'gas_price': 2 * 10 ** 9
+        'gas_price': 2 * 10 ** 9,
+        'domain_name': DEFAULT_DOMAIN_NAME
     }
     data = post_bp_data(skale_bp, '/create-node', json_data)
     assert data == {'status': 'ok', 'payload': {'node_data': 1}}
@@ -132,7 +133,7 @@ def test_node_create(skale_bp, node_config):
 
 
 def failed_register_mock(
-    self, ip, public_ip, port, name, gas_limit=None,
+    self, ip, public_ip, port, name, domain_name, gas_limit=None,
     gas_price=None, skip_dry_run=False
 ):
     return {'status': 0, 'errors': ['Already registered']}
@@ -145,7 +146,8 @@ def test_create_with_errors(skale_bp, node_config):
         'name': name,
         'ip': ip,
         'publicIP': public_ip,
-        'port': port
+        'port': port,
+        'domain_name': DEFAULT_DOMAIN_NAME
     }
     data = post_bp_data(skale_bp, '/create-node', json_data)
     assert data == {'payload': ['Already registered'], 'status': 'error'}

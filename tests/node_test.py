@@ -33,7 +33,7 @@ def test_create_insufficient_funds(node):
     name = 'test-insuff'
     with mock.patch('core.node.check_required_balance',
                     new=mock.Mock(return_value=False)):
-        res = node.register(ip, public_ip, port, name)
+        res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
         assert res['status'] == 0
         assert res['errors'] == ['Insufficient funds, re-check your wallet']
 
@@ -44,7 +44,7 @@ def test_register_info(node):
 
     # Register new node and check that it successfully created on contracts
     with mock.patch('core.node.run_filebeat_service'):
-        res = node.register(ip, public_ip, port, name)
+        res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
     assert res['status'] == 1
     res_data = res.get('data')
 
