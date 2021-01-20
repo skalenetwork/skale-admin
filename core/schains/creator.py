@@ -318,7 +318,7 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
     try:
         if not skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
             schain_record.dkg_failed()
-            return
+            return False
         run_dkg(skale, schain_name, node_id,
                 sgx_key_name, rotation_id)
     except DkgError as err:
