@@ -54,3 +54,5 @@ unique.json
 *.crt
 *.csr
 logs.tar.gz
+
+tests/skale-data/node_data/schains/*

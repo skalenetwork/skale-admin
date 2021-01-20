@@ -74,6 +74,7 @@ def generate_schain_config(schain_name):
                 "httpsRpcPort": 10008,
                 "wsRpcPort": 10002,
                 "wssRpcPort": 10007,
+                "infoHttpRpcPort": 10008,
                 "bindIP": "0.0.0.0",
                 "ecdsaKeyName": "NEK:518"
             },
@@ -90,6 +91,7 @@ def generate_schain_config(schain_name):
                         "httpsRpcPort": 10008,
                         "wsRpcPort": 10002,
                         "wssRpcPort": 10007,
+                        "infoHttpRpcPort": 10008,
                         "schainIndex": 1,
                         "ip": "127.0.0.1",
                         "owner": "0x41",
@@ -103,6 +105,7 @@ def generate_schain_config(schain_name):
                         "httpsRpcPort": 10017,
                         "wsRpcPort": 10012,
                         "wssRpcPort": 10018,
+                        "infoHttpRpcPort": 10019,
                         "schainIndex": 1,
                         "ip": "127.0.0.1",
                         "owner": "0x42",
