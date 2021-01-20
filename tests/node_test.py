@@ -55,7 +55,7 @@ def test_register_info(node):
 
     # Register the same node again
     old_config_id = node.config.id
-    res = node.register(ip, public_ip, port, name)
+    res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
     assert res['status'] == 0
     assert node.config.id == old_config_id
 
