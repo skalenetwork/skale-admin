@@ -189,6 +189,14 @@ class Node:
             return {'status': 1, 'errors': [err_msg]}
         return {'status': 0}
 
+    def set_domain_name(self, domain_name: str) -> dict:
+        try:
+            self.skale.nodes.set_domain_name(domain_name)
+        except TransactionFailedError as err:
+            logger.exception(err)
+            return {'status': 1, 'errors': [err]}
+        return {'status': 0}
+
     def _insufficient_funds(self):
         err_msg = 'Insufficient funds, re-check your wallet'
         logger.error(err_msg)

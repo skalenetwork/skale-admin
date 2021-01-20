@@ -89,6 +89,10 @@ def set_maintenance_mock(self):
     return {'status': 0}
 
 
+def set_domain_name_mock(self):
+    return {'status': 0}
+
+
 @patch.object(Node, 'register', register_mock)
 def test_node_create(skale_bp, node_config):
     ip, public_ip, port, name = generate_random_node_data()
@@ -171,4 +175,11 @@ def test_set_maintenance_on(skale_bp, skale, node_config):
 @patch.object(Node, 'set_maintenance_off', set_maintenance_mock)
 def test_set_maintenance_off(skale_bp, skale, node_config):
     data = post_bp_data(skale_bp, '/api/node/maintenance-off')
+    assert data == {'payload': {}, 'status': 'ok'}
+
+
+@patch.object(Node, 'set_domain_name', set_domain_name_mock)
+def test_set_domain_name(skale_bp, skale, node_config):
+    json_data = {'domain_name': 'skale.test'}
+    data = post_bp_data(skale_bp, '/api/node/set-domain-name', json_data)
     assert data == {'payload': {}, 'status': 'ok'}

@@ -134,4 +134,13 @@ def construct_nodes_bp(skale, node, docker_utils):
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
 
+    @nodes_bp.route('/api/node/set-domain-name', methods=['POST'])
+    def set_domain_name():
+        logger.debug(request)
+        domain_name = request.json['domain_name']
+        res = node.set_domain_name(domain_name)
+        if res['status'] != 0:
+            return construct_err_response(msg=res['errors'])
+        return construct_ok_response()
+
     return nodes_bp
