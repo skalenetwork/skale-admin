@@ -3,6 +3,8 @@ from concurrent.futures import ProcessPoolExecutor as pexec
 import pytest
 
 from web.models.schain import (
+    get_schains_names,
+    get_schains_statuses,
     mark_schain_deleted,
     set_schains_first_run,
     toggle_schain_repair_mode,
@@ -21,7 +23,6 @@ def upsert_db(db):
     """ Fixture: db with filled records """
     for i in range(RECORDS_NUMBER):
         upsert_schain_record(f'schain-{i}')
-    return
 
 
 def test_upsert_schain_record(db):
@@ -82,3 +83,20 @@ def test_toggle_repair_mode_schain_not_exists(db, upsert_db):
     assert not result
     assert SChainRecord.select().where(
         SChainRecord.repair_mode == True).count() == 0  # noqa: E712
+
+
+def test_get_schains_names(db, upsert_db):
+    mark_schain_deleted('schain-0')
+    result = get_schains_names()
+    assert result == ['schain-1', 'schain-2', 'schain-3', 'schain-4',
+                      'schain-5', 'schain-6', 'schain-7']
+    result = get_schains_names(include_deleted=True)
+    assert result == ['schain-0',
+                      'schain-1', 'schain-2', 'schain-3', 'schain-4',
+                      'schain-5', 'schain-6', 'schain-7']
+
+
+def test_get_schains_statuses(db, upsert_db):
+    mark_schain_deleted('schain-0')
+    assert len(get_schains_statuses()) == 7
+    assert len(get_schains_statuses(include_deleted=True)) == 8

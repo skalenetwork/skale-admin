@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2020 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -19,15 +19,19 @@
 
 import logging
 from enum import Enum
+from http import HTTPStatus
+
 
 from flask import Blueprint, request
 from sgx import SgxClient
 
-from web.helper import construct_ok_response
+from web.helper import construct_ok_response, get_api_url, construct_err_response
+from core.schains.checks import SChainChecks
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs import SGX_CERTIFICATES_FOLDER
 
 logger = logging.getLogger(__name__)
+BLUEPRINT_NAME = 'health'
 
 
 class SGXStatus(Enum):
@@ -35,10 +39,39 @@ class SGXStatus(Enum):
     NOT_CONNECTED = 1
 
 
-def construct_sgx_bp(config):
-    sgx_bp = Blueprint('sgx', __name__)
+def construct_health_bp(config, skale, docker_utils):
+    health_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
-    @sgx_bp.route('/api/sgx/info', methods=['GET'])
+    @health_bp.route(get_api_url(BLUEPRINT_NAME, 'containers'), methods=['GET'])
+    def containers():
+        logger.debug(request)
+        all = request.args.get('all') == 'True'
+        name_filter = request.args.get('name_filter') or ''
+        containers_list = docker_utils.get_containers_info(
+            all=all,
+            name_filter=name_filter,
+            format=True
+        )
+        return construct_ok_response(containers_list)
+
+    @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
+    def schains_checks():
+        logger.debug(request)
+        node_id = config.id
+        if node_id is None:
+            return construct_err_response(HTTPStatus.BAD_REQUEST,
+                                          ['No node installed'])
+        schains = skale.schains.get_schains_for_node(node_id)
+        checks = [
+            {
+                'name': schain['name'],
+                'healthchecks': SChainChecks(schain['name'], node_id).get_all()
+            }
+            for schain in schains if schain.get('name') != ''
+        ]
+        return construct_ok_response(checks)
+
+    @health_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx'), methods=['GET'])
     def sgx_info():
         logger.debug(request)
         sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
@@ -57,4 +90,4 @@ def construct_sgx_bp(config):
         }
         return construct_ok_response(data=res)
 
-    return sgx_bp
+    return health_bp

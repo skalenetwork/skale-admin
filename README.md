@@ -4,89 +4,15 @@
 ![Build and publish](https://github.com/skalenetwork/skale-admin/workflows/Build%20and%20publish/badge.svg)
 [![Discord](https://img.shields.io/discord/534485763354787851.svg)](https://discord.gg/vvUtWJB)
 
-SKALE Admin is the container that manages all operations on the SKALE node.
+This repo contains source code for 3 core SKALE Node containers:
 
-## API Reference
+- `skale_admin` - worker that manages sChains creation and node rotation
+- `skale_api` - webserver that provides node API
+- `celery` - distributed task queue
 
-1.  [SSL](#schains-ssl-api)
+## API reference
 
-### sChains SSL API
-
-#### Status
-
-> Login required
-
-    [GET] /api/ssl/status
-
-##### Response
-
-Success:
-
-> Status: `200`
-
-```json
-{
-    "res": 1,
-    "data": {
-        "status": 1,
-        "expiration_date": "2020-02-19T09:59:16",
-        "issued_to": "*.abc.com"
-    }
-}
-```
-
-No certs:
-
-> Status: `200`
-
-```json
-{
-    "res": 1,
-    "data": {
-        "status": 0
-    }
-}
-```
-
-#### Upload
-
-> Login required
-
-    [POST] /api/ssl/upload
-
-Form content:
-
-```json
-{
-    "force": "True/False",
-    "ssl_key": "[KEY_FILE]",
-    "ssl_cert": "[CERT_FILE]",
-}
-```
-
-##### Response
-
-OK:
-
-> Status: `200`
-
-```json
-{
-    "res": 1,
-    "data": null
-}
-```
-
-Certificates are already uploaded/Wrong form content:
-
-> Status: `400`
-
-```json
-{
-    "res": 0,
-    "error_msg": "[ERR_MESSAGE_STRING]"
-}
-```
+SKALE API reference could be found in the docs repo: [SKALE Node API](http://docs.skalenetwork.com/).
 
 ## Development
 

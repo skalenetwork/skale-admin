@@ -24,35 +24,42 @@ from http import HTTPStatus
 from flask import Blueprint, request, abort
 from web3 import Web3
 
-from web.helper import construct_ok_response, construct_err_response
+from core.node import get_node_hardware_info
+from tools.custom_thread import CustomThread
+from tools.notifications.messages import tg_notifications_enabled, send_message
+from web.helper import construct_ok_response, construct_err_response, get_api_url
 
 
 logger = logging.getLogger(__name__)
+BLUEPRINT_NAME = 'node'
 
 
-def construct_nodes_bp(skale, node, docker_utils):
-    nodes_bp = Blueprint('nodes', __name__)
+def construct_node_bp(skale, node, docker_utils):
+    node_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
-    @nodes_bp.route('/node-info', methods=['GET'])
-    def node_info():
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'info'), methods=['GET'])
+    def info():
         logger.debug(request)
         data = {'node_info': node.info}
         return construct_ok_response(data=data)
 
-    @nodes_bp.route('/create-node', methods=['POST'])
-    def register_node():
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'register'), methods=['POST'])
+    def register():
         logger.debug(request)
         if not request.json:
             abort(400)
 
         ip = request.json.get('ip')
-        public_ip = request.json.get('publicIP')
+        public_ip = request.json.get('public_ip', None)
         port = request.json.get('port')
         name = request.json.get('name')
         domain_name = request.json.get('domain_name')
         gas_price = request.json.get('gas_price')
         gas_limit = request.json.get('gas_limit')
         skip_dry_run = request.json.get('skip_dry_run')
+
+        if not public_ip:
+            public_ip = ip
 
         if gas_price is not None:
             gas_price = Web3.toWei(Decimal(gas_price), 'gwei')
@@ -86,39 +93,15 @@ def construct_nodes_bp(skale, node, docker_utils):
             )
         return construct_ok_response({'node_data': res['data']})
 
-    @nodes_bp.route('/node-signature', methods=['GET'])
-    def node_signature():
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'signature'), methods=['GET'])
+    def signature():
         logger.debug(request)
-
         validator_id = int(request.args.get('validator_id'))
-
         signature = skale.validator_service.get_link_node_signature(
             validator_id)
         return construct_ok_response(data={'signature': signature})
 
-    @nodes_bp.route('/check-node-name', methods=['GET'])
-    def check_node_name():
-        logger.debug(request)
-        node_name = request.args.get('nodeName')
-        res = skale.nodes.is_node_name_available(node_name)
-        return construct_ok_response(data={'name_available': res})
-
-    @nodes_bp.route('/check-node-ip', methods=['GET'])
-    def check_node_ip():
-        logger.debug(request)
-        node_ip = request.args.get('nodeIp')
-        res = skale.nodes.is_node_ip_available(node_ip)
-        return construct_ok_response(data={'ip_available': res})
-
-    @nodes_bp.route('/containers/list', methods=['GET'])
-    def skale_containers_list():
-        logger.debug(request)
-        all = request.args.get('all') == 'True'
-        containers_list = docker_utils.get_all_skale_containers(
-            all=all, format=True)
-        return construct_ok_response(data={'containers': containers_list})
-
-    @nodes_bp.route('/api/node/maintenance-on', methods=['POST'])
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-on'), methods=['POST'])
     def set_node_maintenance_on():
         logger.debug(request)
         res = node.set_maintenance_on()
@@ -126,7 +109,7 @@ def construct_nodes_bp(skale, node, docker_utils):
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
 
-    @nodes_bp.route('/api/node/maintenance-off', methods=['POST'])
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-off'), methods=['POST'])
     def set_node_maintenance_off():
         logger.debug(request)
         res = node.set_maintenance_off()
@@ -134,7 +117,33 @@ def construct_nodes_bp(skale, node, docker_utils):
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
 
-    @nodes_bp.route('/api/node/set-domain-name', methods=['POST'])
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'send-tg-notification'), methods=['POST'])
+    def send_tg_notification():
+        logger.debug(request)
+        message = request.json.get('message')
+        if not message:
+            return construct_err_response('Message is empty')
+        if not tg_notifications_enabled():
+            return construct_err_response('TG_API_KEY or TG_CHAT_ID not found')
+        try:
+            send_message(message)
+        except Exception:
+            logger.exception('Message was not send due to error')
+            construct_err_response(['Message sending failed'])
+        return construct_ok_response('Message was sent successfully')
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/start'), methods=['POST'])
+    def exit_start():
+        exit_thread = CustomThread('Start node exit', node.exit, once=True)
+        exit_thread.start()
+        return construct_ok_response()
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/status'), methods=['GET'])
+    def exit_status():
+        exit_status_data = node.get_exit_status()
+        return construct_ok_response(exit_status_data)
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'set-domain-name'), methods=['POST'])
     def set_domain_name():
         logger.debug(request)
         domain_name = request.json['domain_name']
@@ -143,4 +152,21 @@ def construct_nodes_bp(skale, node, docker_utils):
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
 
-    return nodes_bp
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'hardware'), methods=['GET'])
+    def hardware():
+        logger.debug(request)
+        hardware_info = get_node_hardware_info()
+        return construct_ok_response(hardware_info)
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'endpoint-info'), methods=['GET'])
+    def endpoint_info():
+        logger.debug(request)
+        block_number = skale.web3.eth.blockNumber
+        syncing = skale.web3.eth.syncing
+        info = {
+            'block_number': block_number,
+            'syncing': syncing
+        }
+        return construct_ok_response(info)
+
+    return node_bp

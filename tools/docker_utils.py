@@ -96,13 +96,15 @@ class DockerUtils:
         )
         return volume
 
-    @format_containers
     def get_all_skale_containers(self, all=False, format=False) -> list:
-        return self.client.containers.list(all=all, filters={'name': 'skale_*'})
+        return self.get_containers_info(all=all, name_filter='skale_*')
+
+    def get_all_schain_containers(self, all=False, format=False) -> list:
+        return self.get_containers_info(all=all, name_filter='skale_schain_*')
 
     @format_containers
-    def get_all_schain_containers(self, all=False, format=False) -> list:
-        return self.client.containers.list(all=all, filters={'name': 'skale_schain_*'})
+    def get_containers_info(self, all=False, name_filter='*', format=False) -> list:
+        return self.client.containers.list(all=all, filters={'name': name_filter})
 
     @format_containers
     def get_all_ima_containers(self, all=False, format=False) -> list:

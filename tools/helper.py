@@ -17,12 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+import itertools
 import json
 import logging
+import os
+import requests
 import subprocess
 import time
-import requests
 from subprocess import PIPE
 
 from jinja2 import Environment
@@ -81,6 +82,14 @@ def run_cmd(cmd, env={}, shell=False):
 
 def format_output(res):
     return res.stdout.decode('UTF-8').rstrip(), res.stderr.decode('UTF-8').rstrip()
+
+
+def merged_unique(*args):
+    seen = set()
+    for item in itertools.chain(*args):
+        if item not in seen:
+            yield item
+            seen.add(item)
 
 
 def read_file(path):
