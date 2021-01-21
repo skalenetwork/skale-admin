@@ -1,5 +1,5 @@
-import json
 import os
+import json
 import time
 from functools import partial
 from pathlib import Path
@@ -96,11 +96,14 @@ def test_rotating_monitor(skale, node_config, db):
     }
     schain_name = 'test'
     schain = get_schain_contracts_data(schain_name=schain_name)
+    skale.dkg.is_channel_opened = lambda: True
     with mock.patch('core.schains.creator.run_dkg'),\
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
             mock.patch('core.schains.creator.generate_schain_config_with_skale',
                        new=mock.Mock(return_value=True)), \
             mock.patch('core.schains.creator.SChainChecks', new=ChecksMock), \
+            mock.patch('core.schains.creator.get_rotation_state',
+                       new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
