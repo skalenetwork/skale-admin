@@ -113,7 +113,7 @@ def test_rotating_monitor(skale, node_config, db):
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
-            mock.patch('skale.skale_manager.spawn_skale_manager_lib',
+            mock.patch('core.schains.creator.spawn_skale_manager_lib',
                        spawn_skale_lib_mock), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
