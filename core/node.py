@@ -94,7 +94,7 @@ class Node:
         node_id = self.get_node_id_from_contracts()
         if node_id < 0:
             node_id = self.create_node_on_contracts(
-                ip, public_ip, port, name,
+                ip, public_ip, port, name, domain_name,
                 gas_limit, gas_price, skip_dry_run
             )
         if node_id < 0:
@@ -112,7 +112,7 @@ class Node:
                 run_filebeat_service(public_ip, self.config.id, self.skale)
             return {'status': 1, 'data': self.config.all()}
 
-    def create_node_on_contracts(self, ip, public_ip, port, name,
+    def create_node_on_contracts(self, ip, public_ip, port, name, domain_name,
                                  gas_limit=None, gas_price=None,
                                  skip_dry_run=False):
         try:
