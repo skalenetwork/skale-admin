@@ -54,3 +54,5 @@ test_abi.json
 *.key
 *.crt
 *.csr
+
+tests/skale-data/node_data/schains/*
