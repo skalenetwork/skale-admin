@@ -28,7 +28,6 @@ from multiprocessing import Process
 
 from skale.skale_manager import spawn_skale_manager_lib
 
-from core.schains.ima import init_skale_ima
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
                                  is_exited_with_zero)
