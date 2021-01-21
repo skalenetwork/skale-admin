@@ -87,11 +87,36 @@ class Node:
         self._log_node_info('Node create started', ip, public_ip, port, name)
         if self.config.id is not None:
             return self._node_already_exist()
+        node_id = self.get_node_id_from_contracts()
+        if node_id >= 0:
+            return {'status': 1, 'data': self.config.all()}
+
         if not check_required_balance(self.skale):
             return self._insufficient_funds()
+        is_node_name_available = self.skale.nodes.is_node_name_available(name)
+        if not is_node_name_available:
+            error_msg = f'Node IP is already taken: {ip}'
+            logger.error(error_msg)
+            return {
+                'status': 0,
+                'errors': [
+                    error_msg
+                ]
+            }
+
+        is_node_ip_available = self.skale.nodes.is_node_ip_available(ip)
+        if not is_node_ip_available:
+            error_msg = f'Node IP is already taken: {ip}'
+            logger.error(error_msg)
+            return {
+                'status': 0,
+                'errors': [
+                    error_msg
+                ]
+            }
+
         self.config.name = name
         self.config.ip = ip
-        node_id = self.get_node_id_from_contracts()
         if node_id < 0:
             node_id = self.create_node_on_contracts(
                 ip, public_ip, port, name, domain_name,
