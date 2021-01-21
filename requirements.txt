@@ -13,9 +13,7 @@ simple-crypt==4.1.7
 pycryptodome==3.9.9
 python-iptables==0.14.0
 
-# skale.py==4.1b7
-git+git://github.com/skalenetwork/skale.py.git@enhancement/SKALE-3753-call-block-check#egg=skale.py
-
+skale.py==4.1b10
 
 PyYAML==5.3.1
 psutil==5.7.0
