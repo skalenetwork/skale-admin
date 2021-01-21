@@ -25,7 +25,7 @@ from enum import Enum
 
 from skale.transactions.result import TransactionFailedError
 from skale.utils.helper import ip_from_bytes
-from skale.wallets.web3_wallet import public_key_to_address
+from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.filebeat import run_filebeat_service
 
@@ -88,6 +88,32 @@ class Node:
             return self._node_already_exist()
         if not check_required_balance(self.skale):
             return self._insufficient_funds()
+        self.config.name = name
+        self.config.ip = ip
+        node_id = self.get_node_id_from_contracts()
+        if node_id < 0:
+            node_id = self.create_node_on_contracts(
+                ip, public_ip, port, name,
+                gas_limit, gas_price, skip_dry_run
+            )
+        if node_id < 0:
+            return {
+                'status': 0,
+                'errors': [
+                    f'node creation failed: {ip}:{port}, name: {name}'
+                ]
+            }
+        else:
+            self._log_node_info('Node successfully created', ip,
+                                public_ip, port, name)
+            self.config.id = self.skale.nodes.node_name_to_index(name)
+            if MONITORING_CONTAINERS:
+                run_filebeat_service(public_ip, self.config.id, self.skale)
+            return {'status': 1, 'data': self.config.all()}
+
+    def create_node_on_contracts(self, ip, public_ip, port, name,
+                                 gas_limit=None, gas_price=None,
+                                 skip_dry_run=False):
         try:
             self.skale.manager.create_node(
                 ip=ip,
@@ -102,21 +128,24 @@ class Node:
             )
         except TransactionFailedError:
             logger.exception('Node creation failed')
-            return {
-                'status': 0,
-                'errors': [
-                    f'node creation failed: {ip}:{port}, name: {name}'
-                ]
-            }
+            return -1
+        return self.skale.nodes.node_name_to_index(name)
 
-        self._log_node_info('Node successfully created', ip,
-                            public_ip, port, name)
-        self.config.name = name
-        self.config.id = self.skale.nodes.node_name_to_index(name)
-        self.config.ip = ip
-        if MONITORING_CONTAINERS:
-            run_filebeat_service(public_ip, self.config.id, self.skale)
-        return {'status': 1, 'data': self.config.all()}
+    def get_node_id_from_contracts(self):
+        node_id = self.skale.nodes.node_name_to_index(self.config.name)
+        if node_id == 0:
+            node_data = self.skale.nodes.get(node_id)
+            public_key = node_data['publicKey']
+            data_address = to_checksum_address(
+                public_key_to_address(public_key)
+            )
+            if data_address == self.skale.wallet.address and \
+                self.config.name == node_data['name'] and \
+                    self.config.ip == node_data['ip']:
+                node_id = 0
+            else:
+                node_id = -1
+        return node_id
 
     def exit(self, opts):
         schains_list = self.skale.schains.get_active_schains_for_node(
