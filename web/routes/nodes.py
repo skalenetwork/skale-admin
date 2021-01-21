@@ -49,6 +49,7 @@ def construct_nodes_bp(skale, node, docker_utils):
         public_ip = request.json.get('publicIP')
         port = request.json.get('port')
         name = request.json.get('name')
+        domain_name = request.json.get('domain_name')
         gas_price = request.json.get('gas_price')
         gas_limit = request.json.get('gas_limit')
         skip_dry_run = request.json.get('skip_dry_run')
@@ -69,7 +70,11 @@ def construct_nodes_bp(skale, node, docker_utils):
             return construct_err_response(error_msg)
 
         res = node.register(
-            ip, public_ip, port, name,
+            ip=ip,
+            public_ip=public_ip,
+            port=port,
+            name=name,
+            domain_name=domain_name,
             gas_price=gas_price,
             gas_limit=gas_limit,
             skip_dry_run=skip_dry_run
@@ -125,6 +130,15 @@ def construct_nodes_bp(skale, node, docker_utils):
     def set_node_maintenance_off():
         logger.debug(request)
         res = node.set_maintenance_off()
+        if res['status'] != 0:
+            return construct_err_response(msg=res['errors'])
+        return construct_ok_response()
+
+    @nodes_bp.route('/api/node/set-domain-name', methods=['POST'])
+    def set_domain_name():
+        logger.debug(request)
+        domain_name = request.json['domain_name']
+        res = node.set_domain_name(domain_name)
         if res['status'] != 0:
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()

@@ -5,6 +5,7 @@ import psutil
 import pytest
 
 from skale.utils.contracts_provision.main import generate_random_node_data
+from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.node import (
     get_node_hardware_info, Node, NodeExitStatuses, NodeStatuses
@@ -32,7 +33,7 @@ def test_create_insufficient_funds(node):
     name = 'test-insuff'
     with mock.patch('core.node.check_required_balance',
                     new=mock.Mock(return_value=False)):
-        res = node.register(ip, public_ip, port, name)
+        res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
         assert res['status'] == 0
         assert res['errors'] == ['Insufficient funds, re-check your wallet']
 
@@ -43,7 +44,7 @@ def test_register_info(node):
 
     # Register new node and check that it successfully created on contracts
     with mock.patch('core.node.run_filebeat_service'):
-        res = node.register(ip, public_ip, port, name)
+        res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
     assert res['status'] == 1
     res_data = res.get('data')
 
@@ -54,7 +55,7 @@ def test_register_info(node):
 
     # Register the same node again
     old_config_id = node.config.id
-    res = node.register(ip, public_ip, port, name)
+    res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
     assert res['status'] == 0
     assert node.config.id == old_config_id
 
@@ -72,7 +73,14 @@ def test_register_info(node):
 @pytest.fixture
 def active_node(skale):
     ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
+    skale.manager.create_node(
+        ip=ip,
+        port=port,
+        name=name,
+        public_ip=public_ip,
+        domain_name=DEFAULT_DOMAIN_NAME,
+        wait_for=True
+    )
     config = NodeConfig()
     node_id = skale.nodes.node_name_to_index(name)
     config.id = node_id
