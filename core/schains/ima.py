@@ -19,6 +19,8 @@
 
 from dataclasses import dataclass
 
+from skale import SkaleIma
+
 from core.schains.helper import get_schain_dir_path, get_schain_proxy_file_path
 from core.schains.config.helper import get_schain_ports, get_schain_config
 
@@ -104,3 +106,7 @@ def get_ima_env(schain_name: str) -> ImaEnv:
         node_address=node_address,
         tm_url_mainnet=TM_URL
     )
+
+
+def init_skale_ima(wallet):
+    return SkaleIma(IMA_ENDPOINT, MAINNET_PROXY_PATH, wallet)

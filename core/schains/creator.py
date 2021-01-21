@@ -28,7 +28,7 @@ from multiprocessing import Process
 
 from skale.skale_manager import spawn_skale_manager_lib
 
-
+from core.schains.ima import init_skale_ima
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
                                  is_exited_with_zero)
@@ -46,7 +46,7 @@ from core.schains.config.helper import (get_allowed_endpoints,
                                         save_schain_config,
                                         update_schain_config)
 from core.schains.volume import init_data_volume
-from core.schains.checks import SChainChecks
+from core.schains.checks import SChainChecks, check_ima_register
 from core.schains.rotation import get_rotation_state
 from core.schains.dkg import run_dkg
 
@@ -373,8 +373,11 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
     if not checks.ima_container:
-        copy_schain_ima_abi(name)
-        monitor_ima_container(schain)
+        if check_ima_register(skale, name):
+            copy_schain_ima_abi(name)
+            monitor_ima_container(schain)
+        else:
+            logger.warning(f'sChain {name} is not registered in IMA')
 
 
 def check_schain_rotated(schain_name):
