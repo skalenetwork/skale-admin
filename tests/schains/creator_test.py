@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 import mock
 
+from skale.skale_manager import spawn_skale_manager_lib
 from core.node_config import NodeConfig
 from core.schains.creator import (check_schain_rotated,
                                   cleanup_schain_docker_entity,
@@ -96,6 +97,12 @@ def test_rotating_monitor(skale, node_config, db):
     }
     schain_name = 'test'
     schain = get_schain_contracts_data(schain_name=schain_name)
+
+    def spawn_skale_lib_mock(skale):
+        mocked_skale = spawn_skale_manager_lib(skale)
+        mocked_skale.dkg.is_channel_opened = lambda x: True
+        return mocked_skale
+
     with mock.patch('core.schains.creator.run_dkg'),\
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
             mock.patch('core.schains.creator.generate_schain_config_with_skale',
@@ -103,6 +110,10 @@ def test_rotating_monitor(skale, node_config, db):
             mock.patch('core.schains.creator.SChainChecks', new=ChecksMock), \
             mock.patch('core.schains.creator.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
+            mock.patch('core.schains.creator.get_rotation_state',
+                       new=mock.Mock(return_value=rotation_info)), \
+            mock.patch('core.schains.creator.spawn_skale_manager_lib',
+                       spawn_skale_lib_mock), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
         monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name='test')
