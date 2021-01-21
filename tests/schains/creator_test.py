@@ -97,11 +97,10 @@ def test_rotating_monitor(skale, node_config, db):
     }
     schain_name = 'test'
     schain = get_schain_contracts_data(schain_name=schain_name)
-    skale.dkg.is_channel_opened = lambda: True
 
     def spawn_skale_lib_mock(skale):
         mocked_skale = spawn_skale_manager_lib(skale)
-        mocked_skale.dkg.is_channel_opened = lambda: True
+        mocked_skale.dkg.is_channel_opened = lambda x: True
         return mocked_skale
 
     with mock.patch('core.schains.creator.run_dkg'),\
