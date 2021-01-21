@@ -18,6 +18,7 @@ jobs:
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
       MANAGER_TAG: "1.7.0-stable.0"
       SGX_WALLET_TAG: "1.65.0-develop.0"
+      IMA_TAG: "1.0.0-beta.0"
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ env.PYTHON_VERSION }}
@@ -32,9 +33,9 @@ jobs:
       run: bash ./scripts/install_python_dependencies.sh
     - name: Lint with flake8
       run: flake8 .
-    - name: Deploy manager contracts
+    - name: Deploy manager & ima contracts
       run: |
-        bash ./helper-scripts/deploy_test_manager.sh
+        bash ./helper-scripts/deploy_test_ima.sh
     - name: Run core tests
       run: |
         bash ./scripts/run_core_tests.sh
