@@ -28,7 +28,7 @@ from core.node import Node
 from core.node_config import NodeConfig
 
 from tools.configs import FLASK_SECRET_KEY_FILE, SGX_SERVER_URL
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
 from tools.db import get_database
 from tools.docker_utils import DockerUtils
 from tools.logger import init_api_logger
@@ -51,7 +51,7 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 rpc_wallet = RPCWallet(TM_URL)
-skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet, state_path=STATE_FILEPATH)
 logger.info('Skale inited')
 
 docker_utils = DockerUtils()

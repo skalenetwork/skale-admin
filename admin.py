@@ -29,7 +29,7 @@ from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
 
 from tools.configs import BACKUP_RUN
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 
@@ -41,27 +41,27 @@ init_admin_logger()
 logger = logging.getLogger(__name__)
 
 INITIAL_SLEEP_INTERVAL = 135
-SLEEP_INTERVAL = 50
-MONITOR_INTERVAL = 45
+SLEEP_INTERVAL = 45
+WORKER_RESTART_SLEEP_INTERVAL = 2
 
 
 def monitor(skale, node_config):
     while True:
         run_creator(skale, node_config)
-        time.sleep(MONITOR_INTERVAL)
+        time.sleep(SLEEP_INTERVAL)
         run_cleaner(skale, node_config)
-        time.sleep(MONITOR_INTERVAL)
+        time.sleep(SLEEP_INTERVAL)
 
 
-def main():
-    time.sleep(INITIAL_SLEEP_INTERVAL)
+def worker():
     node_config = NodeConfig()
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
     rpc_wallet = RPCWallet(TM_URL, retry_if_failed=True)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+    skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet,
+                  state_path=STATE_FILEPATH)
 
     soft_updates(skale, node_config)
     run_migrations()
@@ -71,6 +71,16 @@ def main():
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
     monitor(skale, node_config)
+
+
+def main():
+    time.sleep(INITIAL_SLEEP_INTERVAL)
+    while True:
+        try:
+            worker()
+        except Exception:
+            logger.exception('Admin worker failed')
+        time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
 
 
 if __name__ == '__main__':
