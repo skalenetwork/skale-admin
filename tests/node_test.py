@@ -74,13 +74,51 @@ def active_node(skale):
     ip, public_ip, port, name = generate_random_node_data()
     skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
     config = NodeConfig()
-    config.id = skale.nodes.node_name_to_index(name)
+    node_id = skale.nodes.node_name_to_index(name)
+    config.id = node_id
+    config.ip = ip
+    config.name = name
     yield Node(skale, config)
+    skale.manager.node_exit(node_id)
+
+
+def test_get_config_data_active_node(active_node):
+    node_id = active_node.get_node_id_from_contracts()
+    assert node_id == active_node.config.id
+
+
+@pytest.fixture
+def broken_node(skale):
+    ip, public_ip, port, name = generate_random_node_data()
+    skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
+    node_id = skale.nodes.node_name_to_index(name)
+    config = NodeConfig()
+    config.name = name
+    config.ip = ip
+    yield Node(skale, config)
+    skale.manager.node_exit(node_id)
+
+
+def test_get_config_data_broken_node(broken_node):
+    nid = broken_node.get_node_id_from_contracts()
+    assert broken_node.skale.nodes.get(nid)['name'] == broken_node.config.name
+
+
+@pytest.fixture
+def not_registered_node(skale):
+    config = NodeConfig()
+    return Node(skale, config)
+
+
+def test_get_config_data_node_not_registered(not_registered_node):
+    nid = not_registered_node.get_node_id_from_contracts()
+    assert nid == -1
 
 
 def test_start_exit(active_node):
     active_node.exit({})
-    status = NodeExitStatuses(active_node.skale.nodes.get_node_status(active_node.config.id))
+    status = NodeExitStatuses(
+        active_node.skale.nodes.get_node_status(active_node.config.id))
 
     assert status != NodeExitStatuses.ACTIVE
 
@@ -94,19 +132,22 @@ def test_exit_status(active_node):
     active_node.exit({})
     exit_status_data = active_node.get_exit_status()
     assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
-    assert exit_status_data['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
+    assert exit_status_data['status'] == \
+        NodeExitStatuses.WAIT_FOR_ROTATIONS.name
     assert exit_status_data['exit_time'] != 0
     assert active_node.info['status'] == NodeStatuses.FROZEN.value
 
 
 def test_node_maintenance(active_node, skale):
     res = active_node.set_maintenance_on()
-    node_status = NodeStatuses(skale.nodes.get_node_status(active_node.config.id))
+    node_status = NodeStatuses(
+        skale.nodes.get_node_status(active_node.config.id))
     assert res == {'status': 0}
     assert node_status == NodeStatuses.IN_MAINTENANCE
 
     res = active_node.set_maintenance_off()
-    node_status = NodeStatuses(skale.nodes.get_node_status(active_node.config.id))
+    node_status = NodeStatuses(
+        skale.nodes.get_node_status(active_node.config.id))
     assert res == {'status': 0}
     assert node_status == NodeStatuses.ACTIVE
 
