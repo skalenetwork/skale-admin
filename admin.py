@@ -45,9 +45,9 @@ SLEEP_INTERVAL = 50
 MONITOR_INTERVAL = 45
 
 
-def monitor(skale, node_config, skale_ima):
+def monitor(skale, skale_ima, node_config):
     while True:
-        run_creator(skale, node_config, skale_ima)
+        run_creator(skale, skale_ima, node_config)
         time.sleep(MONITOR_INTERVAL)
         run_cleaner(skale, node_config)
         time.sleep(MONITOR_INTERVAL)
@@ -71,7 +71,7 @@ def main():
     cleanup_notification_state()
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
-    monitor(skale, node_config, skale_ima)
+    monitor(skale, skale_ima, node_config)
 
 
 if __name__ == '__main__':

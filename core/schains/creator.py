@@ -77,8 +77,8 @@ class MonitorMode(Enum):
     EXIT = 3
 
 
-def run_creator(skale, node_config, skale_ima):
-    process = Process(target=monitor, args=(skale, node_config, skale_ima))
+def run_creator(skale, skale_ima, node_config):
+    process = Process(target=monitor, args=(skale, skale_ima, node_config))
     join_timeout = TIMEOUT_COEFFICIENT * skale.constants_holder.get_dkg_timeout()
     process.start()
     process.join(join_timeout)
@@ -86,7 +86,7 @@ def run_creator(skale, node_config, skale_ima):
     process.join()
 
 
-def monitor(skale, node_config, skale_ima):
+def monitor(skale, skale_ima, node_config):
     logger.info('Creator procedure started')
     skale = spawn_skale_manager_lib(skale)
     logger.info('Spawned new skale lib')
@@ -116,10 +116,10 @@ def monitor(skale, node_config, skale_ima):
             executor.submit(
                 monitor_schain,
                 skale,
+                skale_ima,
                 node_info,
                 schain,
-                ecdsa_sgx_key_name,
-                skale_ima
+                ecdsa_sgx_key_name
             )
             for schain in schains if schain['active']
         ]
@@ -145,7 +145,7 @@ def get_monitor_mode(schain_record, rotation_state):
     return MonitorMode.REGULAR
 
 
-def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name, skale_ima):
+def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     logger.info(f"Monitor for sChain {schain['name']}")
     skale = spawn_skale_manager_lib(skale)
     name = schain['name']
@@ -191,6 +191,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name, skale_ima):
     elif mode == MonitorMode.SYNC:
         monitor_checks(
             skale=skale,
+            skale_ima=skale_ima,
             schain=schain,
             checks=checks,
             node_id=node_id,
@@ -198,7 +199,6 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name, skale_ima):
             rotation=rotation,
             schain_record=schain_record,
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
-            skale_ima=skale_ima,
             sync=True
         )
 
@@ -223,14 +223,14 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name, skale_ima):
     else:
         monitor_checks(
             skale=skale,
+            skale_ima=skale_ima,
             schain=schain,
             checks=checks,
             node_id=node_id,
             sgx_key_name=sgx_key_name,
             rotation=rotation,
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
-            schain_record=schain_record,
-            skale_ima=skale_ima
+            schain_record=schain_record
         )
 
 
@@ -328,9 +328,8 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
     return True
 
 
-def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
-                   rotation, schain_record, ecdsa_sgx_key_name,
-                   skale_ima, sync=False):
+def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
+                   rotation, schain_record, ecdsa_sgx_key_name, sync=False):
     name = schain['name']
     if not checks.data_dir:
         init_schain_dir(name)
