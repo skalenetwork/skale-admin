@@ -63,7 +63,7 @@ class ChecksNoContainerMock(ChecksMock):
         return False
 
 
-def test_exiting_monitor(skale, node_config, db):
+def test_exiting_monitor(skale, skale_ima, node_config, db):
     rotation_info = {
         'in_progress': True,
         'new_schain': True,
@@ -80,13 +80,13 @@ def test_exiting_monitor(skale, node_config, db):
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
-        monitor_schain(skale, node_info, schain,
+        monitor_schain(skale, skale_ima, node_info, schain,
                        ecdsa_sgx_key_name=node_config.sgx_key_name)
         rotation.assert_called_with(schain_name=schain_name,
                                     timestamp=rotation_info['finish_ts'])
 
 
-def test_rotating_monitor(skale, node_config, db):
+def test_rotating_monitor(skale, skale_ima, node_config, db):
     rotation_info = {
         'in_progress': True,
         'new_schain': False,
@@ -105,12 +105,12 @@ def test_rotating_monitor(skale, node_config, db):
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
-        monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name='test')
+        monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name='test')
         rotation.assert_called_with(schain_name=schain_name,
                                     timestamp=rotation_info['finish_ts'])
 
 
-def test_new_schain_monitor(skale, node_config, db):
+def test_new_schain_monitor(skale, skale_ima, node_config, db):
     rotation_info = {
         'in_progress': True,
         'new_schain': True,
@@ -128,7 +128,7 @@ def test_new_schain_monitor(skale, node_config, db):
             mock.patch('core.schains.creator.monitor_sync_schain_container',
                        new=mock.Mock()) as sync:
         node_info = node_config.all()
-        monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name='test')
+        monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name='test')
         args, kwargs = sync.call_args
         assert args[1] == schain
         assert args[2] == rotation_info['finish_ts']
