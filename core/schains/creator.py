@@ -27,6 +27,7 @@ from enum import Enum
 from multiprocessing import Process
 
 from skale.skale_manager import spawn_skale_manager_lib
+from skale.skale_ima import spawn_skale_ima_lib
 
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
@@ -148,6 +149,7 @@ def get_monitor_mode(schain_record, rotation_state):
 def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     logger.info(f"Monitor for sChain {schain['name']}")
     skale = spawn_skale_manager_lib(skale)
+    skale_ima = spawn_skale_ima_lib(skale_ima)
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
