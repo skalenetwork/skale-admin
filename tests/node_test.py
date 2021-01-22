@@ -150,23 +150,24 @@ def test_node_maintenance(active_node, skale):
     res = active_node.set_maintenance_on()
     node_status = NodeStatuses(
         skale.nodes.get_node_status(active_node.config.id))
-    assert res == {'status': 0}
+    assert res == {'status': 'ok'}
     assert node_status == NodeStatuses.IN_MAINTENANCE
 
     res = active_node.set_maintenance_off()
     node_status = NodeStatuses(
         skale.nodes.get_node_status(active_node.config.id))
-    assert res == {'status': 0}
+    assert res == {'status': 'ok'}
     assert node_status == NodeStatuses.ACTIVE
 
 
 def test_node_maintenance_error(active_node, skale):
     res = active_node.set_maintenance_off()
-    assert res == {'status': 1, 'errors': ['Node is not in maintenance mode']}
+    assert res == {'status': 'error',
+                   'errors': ['Node is not in maintenance mode']}
 
     active_node.set_maintenance_on()
     res = active_node.set_maintenance_on()
-    assert res == {'status': 1, 'errors': ['Node should be active']}
+    assert res == {'status': 'error', 'errors': ['Node should be active']}
 
 
 @pytest.fixture
