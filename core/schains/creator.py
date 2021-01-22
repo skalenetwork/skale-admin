@@ -375,11 +375,15 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
     if not checks.ima_container:
-        if skale_ima.lock_and_data_for_mainnet.has_schain(name):
-            copy_schain_ima_abi(name)
-            monitor_ima_container(schain)
-        else:
-            logger.warning(f'sChain {name} is not registered in IMA')
+        monitor_ima(skale_ima, schain)
+
+
+def monitor_ima(skale_ima, schain, dutils=None):
+    if skale_ima.lock_and_data_for_mainnet.has_schain(schain['name']):
+        copy_schain_ima_abi(schain['name'])
+        monitor_ima_container(schain, dutils=dutils)
+    else:
+        logger.warning(f'sChain {schain["name"]} is not registered in IMA')
 
 
 def check_schain_rotated(schain_name):

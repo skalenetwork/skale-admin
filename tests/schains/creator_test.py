@@ -13,7 +13,7 @@ from core.schains.creator import (check_schain_rotated,
                                   monitor_ima_container,
                                   monitor_schain,
                                   monitor_schain_container,
-                                  monitor_sync_schain_container)
+                                  monitor_sync_schain_container, monitor_ima)
 from core.schains.helper import get_schain_rotation_filepath
 from core.schains.runner import get_container_name
 from tests.utils import get_schain_contracts_data
@@ -324,3 +324,17 @@ def test_get_monitor_mode_backup_sync(skale, schain_db):
     }
     record = SChainRecord.get_by_name(schain_name)
     assert get_monitor_mode(record, rotation_state) == MonitorMode.SYNC
+
+
+def test_monitor_ima(skale_ima, schain_on_contracts, schain_config, dutils):
+    schain_name = schain_on_contracts
+    schain = get_schain_contracts_data(schain_name=schain_name)
+    monitor_ima(skale_ima, schain, dutils=dutils)
+    containers = dutils.get_all_ima_containers()
+    assert len(containers) == 0
+
+    skale_ima.lock_and_data_for_mainnet.add_schain(schain_name)
+    with mock.patch('core.schains.creator.copy_schain_ima_abi', return_value=True):
+        monitor_ima(skale_ima, schain, dutils=dutils)
+        containers = dutils.get_all_ima_containers()
+        assert containers[0].name == f'skale_ima_{schain_name}'
