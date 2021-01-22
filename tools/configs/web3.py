@@ -18,10 +18,12 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME
+from tools.configs import (CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME,
+                           IMA_CONTRACTS_INFO_NAME)
 
 TM_URL = os.environ['TM_URL']
 ENDPOINT = os.environ['ENDPOINT']
 ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME)
+IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
 
 NODE_REGISTER_CONFIRMATION_BLOCKS = 5

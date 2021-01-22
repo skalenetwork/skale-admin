@@ -20,7 +20,6 @@
 import os
 import logging
 
-from core.schains.ima import init_skale_ima
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
 from core.schains.config.helper import get_allowed_endpoints, get_local_schain_http_endpoint
@@ -131,11 +130,6 @@ class SChainChecks:
     def is_healthy(self):
         checks = self.get_all()
         return False not in checks.values()
-
-
-def check_ima_register(skale, schain_name):
-    skale_ima = init_skale_ima(skale.wallet)
-    return skale_ima.lock_and_data_for_mainnet.hasSchain(schain_name)
 
 
 def log_checks_dict(schain_name, checks_dict):

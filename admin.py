@@ -20,7 +20,7 @@
 import logging
 import time
 
-from skale import Skale
+from skale import Skale, SkaleIma
 from skale.wallets import RPCWallet
 
 from core.node_config import NodeConfig
@@ -29,7 +29,7 @@ from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
 
 from tools.configs import BACKUP_RUN
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL, IMA_ABI_FILEPATH
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 
@@ -45,9 +45,9 @@ SLEEP_INTERVAL = 50
 MONITOR_INTERVAL = 45
 
 
-def monitor(skale, node_config):
+def monitor(skale, node_config, skale_ima):
     while True:
-        run_creator(skale, node_config)
+        run_creator(skale, node_config, skale_ima)
         time.sleep(MONITOR_INTERVAL)
         run_cleaner(skale, node_config)
         time.sleep(MONITOR_INTERVAL)
@@ -62,6 +62,7 @@ def main():
 
     rpc_wallet = RPCWallet(TM_URL, retry_if_failed=True)
     skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
+    skale_ima = SkaleIma(ENDPOINT, IMA_ABI_FILEPATH, rpc_wallet)
 
     soft_updates(skale, node_config)
     run_migrations()
@@ -70,7 +71,7 @@ def main():
     cleanup_notification_state()
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
-    monitor(skale, node_config)
+    monitor(skale, node_config, skale_ima)
 
 
 if __name__ == '__main__':
