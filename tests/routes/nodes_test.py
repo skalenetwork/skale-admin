@@ -82,15 +82,15 @@ def test_node_info(skale_bp, node):
 
 def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
                   gas_price=None, skip_dry_run=False):
-    return {'status': 1, 'data': 1}
+    return {'status': 'ok', 'data': 1}
 
 
 def set_maintenance_mock(self):
-    return {'status': 0}
+    return {'status': 'ok'}
 
 
 def set_domain_name_mock(self, data):
-    return {'status': 0}
+    return {'status': 'ok'}
 
 
 @patch.object(Node, 'register', register_mock)
@@ -136,7 +136,7 @@ def failed_register_mock(
     self, ip, public_ip, port, name, domain_name, gas_limit=None,
     gas_price=None, skip_dry_run=False
 ):
-    return {'status': 0, 'errors': ['Already registered']}
+    return {'status': 'error', 'errors': ['Already registered']}
 
 
 @patch.object(Node, 'register', failed_register_mock)

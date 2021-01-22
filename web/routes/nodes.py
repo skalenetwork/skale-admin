@@ -67,7 +67,7 @@ def construct_nodes_bp(skale, node, docker_utils):
             gas_limit=gas_limit,
             skip_dry_run=skip_dry_run
         )
-        if res['status'] != 1:
+        if res['status'] != 'ok':
             return construct_err_response(
                 msg=res['errors'],
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR
@@ -110,7 +110,7 @@ def construct_nodes_bp(skale, node, docker_utils):
     def set_node_maintenance_on():
         logger.debug(request)
         res = node.set_maintenance_on()
-        if res['status'] != 0:
+        if res['status'] != 'ok':
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
 
@@ -118,7 +118,7 @@ def construct_nodes_bp(skale, node, docker_utils):
     def set_node_maintenance_off():
         logger.debug(request)
         res = node.set_maintenance_off()
-        if res['status'] != 0:
+        if res['status'] != 'ok':
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
 
@@ -127,7 +127,7 @@ def construct_nodes_bp(skale, node, docker_utils):
         logger.debug(request)
         domain_name = request.json['domain_name']
         res = node.set_domain_name(domain_name)
-        if res['status'] != 0:
+        if res['status'] != 'ok':
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
 
