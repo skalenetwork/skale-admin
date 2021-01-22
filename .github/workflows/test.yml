@@ -56,9 +56,9 @@ jobs:
         remote: true
     - name: Install python dependencies
       run: bash ./scripts/install_python_dependencies.sh
-    - name: Deploy manager contracts
+    - name: Deploy manager & ima contracts
       run: |
-        bash ./helper-scripts/deploy_test_manager.sh
+        bash ./helper-scripts/deploy_test_ima.sh
     - name: Run rotation tests
       run: |
         bash ./scripts/run_rotation_tests.sh
