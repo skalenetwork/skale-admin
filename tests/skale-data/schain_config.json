@@ -56,6 +56,7 @@
             "wsRpcPort": 10003,
             "wssRpcPort": 10008,
             "infoHttpRpcPort": 10009,
+            "info-acceptors": 1,
             "bindIP": "0.0.0.0"
         },
         "sChain": {
