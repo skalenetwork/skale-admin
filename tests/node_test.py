@@ -27,9 +27,10 @@ def test_create_insufficient_funds(node):
     public_ip = '2.2.2.3'
     port = 8081
     name = 'test-insuff'
+    domain_name = 'test'
     with mock.patch('core.node.check_required_balance',
                     new=mock.Mock(return_value=False)):
-        res = node.register(ip, public_ip, port, name)
+        res = node.register(ip, public_ip, port, name, domain_name)
         assert res['status'] == 0
         assert res['errors'] == ['Insufficient funds, re-check your wallet']
 
