@@ -4,6 +4,7 @@ import mock
 import psutil
 import pytest
 
+from skale.transactions.result import DryRunFailedError
 from skale.utils.contracts_provision.main import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
@@ -34,7 +35,7 @@ def test_create_insufficient_funds(node):
     with mock.patch('core.node.check_required_balance',
                     new=mock.Mock(return_value=False)):
         res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
-        assert res['status'] == 0
+        assert res['status'] == 'error'
         assert res['errors'] == ['Insufficient funds, re-check your wallet']
 
 
@@ -44,8 +45,9 @@ def test_register_info(node):
 
     # Register new node and check that it successfully created on contracts
     with mock.patch('core.node.run_filebeat_service'):
-        res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
-    assert res['status'] == 1
+        res = node.register(ip, public_ip, port, name,
+                            domain_name=DEFAULT_DOMAIN_NAME)
+    assert res['status'] == 'ok'
     res_data = res.get('data')
 
     skalepy_data = node.skale.nodes.get_by_name(name)
@@ -56,7 +58,7 @@ def test_register_info(node):
     # Register the same node again
     old_config_id = node.config.id
     res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
-    assert res['status'] == 0
+    assert res['status'] == 'error'
     assert node.config.id == old_config_id
 
     # Test info
@@ -87,11 +89,18 @@ def active_node(skale):
     config.ip = ip
     config.name = name
     yield Node(skale, config)
-    skale.manager.node_exit(node_id)
+    status = skale.nodes.get_node_status(node_id)
+    if status not in (NodeStatuses.FROZEN.value, NodeStatuses.FROZEN.value):
+        if skale.nodes.get_node_status(node_id) == \
+                NodeStatuses.IN_MAINTENANCE.value:
+            skale.nodes.remove_node_from_in_maintenance(node_id)
+        skale.manager.node_exit(node_id)
 
 
 def test_get_config_data_active_node(active_node):
-    node_id = active_node.get_node_id_from_contracts()
+    node_id = active_node.get_node_id_from_contracts(
+        active_node.config.name, active_node.config.ip
+    )
     assert node_id == active_node.config.id
 
 
@@ -108,7 +117,9 @@ def broken_node(skale):
 
 
 def test_get_config_data_broken_node(broken_node):
-    nid = broken_node.get_node_id_from_contracts()
+    nid = broken_node.get_node_id_from_contracts(
+        broken_node.config.name, broken_node.config.ip
+    )
     assert broken_node.skale.nodes.get(nid)['name'] == broken_node.config.name
 
 
@@ -119,7 +130,8 @@ def not_registered_node(skale):
 
 
 def test_get_config_data_node_not_registered(not_registered_node):
-    nid = not_registered_node.get_node_id_from_contracts()
+    nid = not_registered_node.get_node_id_from_contracts(
+        'undefined_name', '0.0.0.0')
     assert nid == -1
 
 
@@ -148,15 +160,15 @@ def test_exit_status(active_node):
 
 def test_node_maintenance(active_node, skale):
     res = active_node.set_maintenance_on()
+    assert res == {'data': None, 'status': 'ok'}
     node_status = NodeStatuses(
         skale.nodes.get_node_status(active_node.config.id))
-    assert res == {'status': 'ok'}
     assert node_status == NodeStatuses.IN_MAINTENANCE
 
     res = active_node.set_maintenance_off()
+    assert res == {'data': None, 'status': 'ok'}
     node_status = NodeStatuses(
         skale.nodes.get_node_status(active_node.config.id))
-    assert res == {'status': 'ok'}
     assert node_status == NodeStatuses.ACTIVE
 
 
@@ -165,9 +177,10 @@ def test_node_maintenance_error(active_node, skale):
     assert res == {'status': 'error',
                    'errors': ['Node is not in maintenance mode']}
 
-    active_node.set_maintenance_on()
     res = active_node.set_maintenance_on()
-    assert res == {'status': 'error', 'errors': ['Node should be active']}
+    assert res == {'data': None, 'status': 'ok'}
+    with pytest.raises(DryRunFailedError):
+        res = active_node.set_maintenance_on()
 
 
 @pytest.fixture
