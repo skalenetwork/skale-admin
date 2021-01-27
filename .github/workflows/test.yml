@@ -10,7 +10,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       IMA_ENDPOINT: ${{ secrets.IMA_ENDPOINT }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-      MANAGER_TAG: "1.7.1-develop.4"
+      MANAGER_TAG: "1.8.0-develop.2"
       SGX_WALLET_TAG: "1.59.1-stable.6"
     steps:
     - uses: actions/checkout@v2
