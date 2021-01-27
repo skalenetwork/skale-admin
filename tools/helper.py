@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 def post_request(url, json, cookies=None):
     try:
         return requests.post(url, json=json, cookies=cookies, timeout=10)
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.RequestException:
         print(f'Could not connect to {url}')
         return None
 
