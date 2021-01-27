@@ -17,6 +17,7 @@ from skale.utils.helper import init_default_logger
 from skale.utils.account_tools import send_ether
 from skale.wallets import SgxWallet
 from skale.utils.contracts_provision.main import cleanup_nodes_schains
+from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.schains.cleaner import remove_schain_container
 from core.schains.config.generator import generate_schain_config_with_skale
@@ -82,7 +83,14 @@ def register_node(skale, wallet):
     skale.wallet = wallet
     ip, public_ip, port, name = generate_random_node_data()
     port = 10000
-    skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
+    skale.manager.create_node(
+        ip=ip,
+        port=port,
+        name=name,
+        public_ip=public_ip,
+        domain_name=DEFAULT_DOMAIN_NAME,
+        wait_for=True
+    )
     node_id = skale.nodes.node_name_to_index(name)
     logger.info(f'Registered node {name}, ID: {node_id}')
     return {

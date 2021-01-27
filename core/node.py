@@ -18,6 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import platform
+import psutil
 import time
 from enum import Enum
 
@@ -27,10 +29,11 @@ from skale.wallets.web3_wallet import public_key_to_address
 
 from core.filebeat import run_filebeat_service
 
+from tools.configs.filebeat import MONITORING_CONTAINERS
+from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
+from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
-from tools.configs.filebeat import MONITORING_CONTAINERS
-from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +69,7 @@ class Node:
         self.skale = skale
         self.config = config
 
-    def register(self, ip, public_ip, port, name,
+    def register(self, ip, public_ip, port, name, domain_name,
                  gas_limit=None, gas_price=None, skip_dry_run=False):
         """
         Main node registration function.
@@ -76,6 +79,7 @@ class Node:
         public_ip (str): Public IP address that will be assigned to the node
         port (int): Base port that will be used for sChains on the node
         name (str): Node name
+        domain_name (str): Domain name
 
         Returns:
         dict: Execution status and node config
@@ -91,6 +95,7 @@ class Node:
                 port=int(port),
                 name=name,
                 public_ip=public_ip,
+                domain_name=domain_name,
                 gas_limit=gas_limit,
                 gas_price=gas_price,
                 skip_dry_run=skip_dry_run,
@@ -184,6 +189,14 @@ class Node:
             return {'status': 1, 'errors': [err_msg]}
         return {'status': 0}
 
+    def set_domain_name(self, domain_name: str) -> dict:
+        try:
+            self.skale.nodes.set_domain_name(self.config.id, domain_name)
+        except TransactionFailedError as err:
+            logger.exception(err)
+            return {'status': 1, 'errors': [err]}
+        return {'status': 0}
+
     def _insufficient_funds(self):
         err_msg = 'Insufficient funds, re-check your wallet'
         logger.error(err_msg)
@@ -226,3 +239,32 @@ def _get_node_status(node_info):
     if status == NodeStatuses.FROZEN and finish_time < time.time():
         return NodeStatuses.LEFT.value
     return status.value
+
+
+def get_block_device_size(device: str) -> int:
+    """ Returns block device size in bytes """
+    with open(f'/sys/block/{device}/size') as sys_stats:
+        return int(sys_stats.read()) // 2
+
+
+def get_attached_storage_block_device():
+    with open(DISK_MOUNTPOINT_FILEPATH) as dm_file:
+        full_name = dm_file.read().strip()
+        name = full_name[4:]  # remove /dev prefix
+        return name
+
+
+def get_node_hardware_info() -> dict:
+    system_release = f'{platform.system()}-{platform.release()}'
+    uname_version = platform.uname().version
+    attached_device = get_attached_storage_block_device()
+    attached_storage_size = get_block_device_size(attached_device)
+    return {
+        'cpu_total_cores': psutil.cpu_count(logical=True),
+        'cpu_physical_cores': psutil.cpu_count(logical=False),
+        'memory': psutil.virtual_memory().total,
+        'swap': psutil.swap_memory().total,
+        'system_release': system_release,
+        'uname_version': uname_version,
+        'attached_storage_size': attached_storage_size
+    }

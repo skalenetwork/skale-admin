@@ -24,6 +24,7 @@ from http import HTTPStatus
 from flask import Blueprint, request, abort
 from web3 import Web3
 
+from core.node import get_node_hardware_info
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import tg_notifications_enabled, send_message
 from web.helper import construct_ok_response, construct_err_response, get_api_url
@@ -52,6 +53,7 @@ def construct_node_bp(skale, node, docker_utils):
         public_ip = request.json.get('public_ip', None)
         port = request.json.get('port')
         name = request.json.get('name')
+        domain_name = request.json.get('domain_name')
         gas_price = request.json.get('gas_price')
         gas_limit = request.json.get('gas_limit')
         skip_dry_run = request.json.get('skip_dry_run')
@@ -75,7 +77,11 @@ def construct_node_bp(skale, node, docker_utils):
             return construct_err_response(error_msg)
 
         res = node.register(
-            ip, public_ip, port, name,
+            ip=ip,
+            public_ip=public_ip,
+            port=port,
+            name=name,
+            domain_name=domain_name,
             gas_price=gas_price,
             gas_limit=gas_limit,
             skip_dry_run=skip_dry_run
@@ -136,5 +142,31 @@ def construct_node_bp(skale, node, docker_utils):
     def exit_status():
         exit_status_data = node.get_exit_status()
         return construct_ok_response(exit_status_data)
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'set-domain-name'), methods=['POST'])
+    def set_domain_name():
+        logger.debug(request)
+        domain_name = request.json['domain_name']
+        res = node.set_domain_name(domain_name)
+        if res['status'] != 0:
+            return construct_err_response(msg=res['errors'])
+        return construct_ok_response()
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'hardware'), methods=['GET'])
+    def hardware():
+        logger.debug(request)
+        hardware_info = get_node_hardware_info()
+        return construct_ok_response(hardware_info)
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'endpoint-info'), methods=['GET'])
+    def endpoint_info():
+        logger.debug(request)
+        block_number = skale.web3.eth.blockNumber
+        syncing = skale.web3.eth.syncing
+        info = {
+            'block_number': block_number,
+            'syncing': syncing
+        }
+        return construct_ok_response(info)
 
     return node_bp
