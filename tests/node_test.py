@@ -1,14 +1,15 @@
 import os
 
 import mock
-import psutil
 import pytest
 
 from skale.utils.contracts_provision.main import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.node import (
-    get_node_hardware_info, Node, NodeExitStatuses, NodeStatuses
+    get_attached_storage_block_device,
+    get_node_hardware_info, get_sys_block_size_path,
+    Node, NodeExitStatuses, NodeStatuses
 )
 from core.node_config import NodeConfig
 from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
@@ -130,7 +131,7 @@ def test_node_maintenance_error(active_node, skale):
 
 @pytest.fixture
 def block_device_file():
-    device = psutil.disk_partitions()[0].device
+    device = '/dev/xvdd'
     with open(DISK_MOUNTPOINT_FILEPATH, 'w') as dm_file:
         dm_file.write(device)
     yield DISK_MOUNTPOINT_FILEPATH
@@ -148,3 +149,12 @@ def test_get_node_hardware_info(get_block_device_size_mock, block_device_file):
     assert isinstance(info['system_release'], str)
     assert isinstance(info['uname_version'], str)
     assert info['attached_storage_size'] == 300
+
+
+def test_get_attached_storage_block_device(block_device_file) -> int:
+    assert get_attached_storage_block_device() == 'xvdd'
+
+
+def test_get_sys_block_size_path():
+    assert get_sys_block_size_path('sdb1') == '/sys/block/sdb1/size'
+    assert get_sys_block_size_path('/xvdd/') == '/sys/block/xvdd/size'

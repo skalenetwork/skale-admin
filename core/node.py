@@ -241,16 +241,22 @@ def _get_node_status(node_info):
     return status.value
 
 
+def get_sys_block_size_path(device: str) -> str:
+    device = device.strip('/')
+    return f'/sys/block/{device}/size'
+
+
 def get_block_device_size(device: str) -> int:
     """ Returns block device size in bytes """
-    with open(f'/sys/block/{device}/size') as sys_stats:
-        return int(sys_stats.read()) // 2
+    sys_block_path = get_sys_block_size_path(device)
+    with open(sys_block_path) as sys_stats:
+        return int(sys_stats.read()) * 512
 
 
 def get_attached_storage_block_device():
     with open(DISK_MOUNTPOINT_FILEPATH) as dm_file:
         full_name = dm_file.read().strip()
-        name = full_name[4:]  # remove /dev prefix
+        name = full_name[5:]  # remove /dev/ prefix
         return name
 
 
