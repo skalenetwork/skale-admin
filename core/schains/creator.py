@@ -82,7 +82,10 @@ def run_creator(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
     join_timeout = TIMEOUT_COEFFICIENT * get_dkg_timeout(skale)
     process.start()
+    logger.info('Creator process started')
     process.join(join_timeout)
+    logger.info('Creator process is joined.')
+    logger.info('Terminating the process')
     process.terminate()
     process.join()
 

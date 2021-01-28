@@ -20,6 +20,7 @@
 import logging
 import time
 
+from filelock import FileLock
 from skale import Skale
 from skale.wallets import RPCWallet
 
@@ -28,12 +29,13 @@ from core.schains.creator import run_creator
 from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
 
-from tools.configs import BACKUP_RUN
+from tools.configs import BACKUP_RUN, INIT_LOCK_PATH
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
+from tools.sgx_utils import generate_sgx_key
 
-from web.models.schain import set_schains_first_run
+from web.models.schain import create_tables, set_schains_first_run
 from web.migrations import run_migrations
 
 
@@ -58,23 +60,30 @@ def worker():
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
-
-    rpc_wallet = RPCWallet(TM_URL, retry_if_failed=True)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet,
-                  state_path=STATE_FILEPATH)
-
-    soft_updates(skale, node_config)
-    run_migrations()
-
-    set_schains_first_run()
-    cleanup_notification_state()
+    wallet = RPCWallet(TM_URL, retry_if_failed=True)
+    skale = Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
     monitor(skale, node_config)
 
 
+def init():
+    wallet = RPCWallet(TM_URL, retry_if_failed=True)
+    skale = Skale(ENDPOINT, ABI_FILEPATH, wallet,
+                  state_path=STATE_FILEPATH)
+    node_config = NodeConfig()
+    init_lock = FileLock(INIT_LOCK_PATH)
+    with init_lock:
+        generate_sgx_key(node_config)
+        soft_updates(skale, node_config)
+        create_tables()
+        run_migrations()
+        set_schains_first_run()
+        cleanup_notification_state()
+
+
 def main():
-    time.sleep(INITIAL_SLEEP_INTERVAL)
+    init()
     while True:
         try:
             worker()

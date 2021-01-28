@@ -31,13 +31,13 @@ from tools.configs import FLASK_SECRET_KEY_FILE, SGX_SERVER_URL
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
 from tools.db import get_database
 from tools.docker_utils import DockerUtils
+from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
-from tools.sgx_utils import generate_sgx_key
 from tools.str_formatters import arguments_list_string
 
-from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
+from tools.configs.flask import (FLASK_APP_HOST,
+                                 FLASK_APP_PORT, FLASK_DEBUG_MODE)
 
-from web.models.schain import create_tables
 from web.routes.logs import web_logs
 from web.routes.nodes import construct_nodes_bp
 from web.routes.schains import construct_schains_bp
@@ -49,6 +49,8 @@ from web.routes.sgx import construct_sgx_bp
 
 init_api_logger()
 logger = logging.getLogger(__name__)
+
+wait_until_admin_inited()
 
 rpc_wallet = RPCWallet(TM_URL)
 skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet, state_path=STATE_FILEPATH)
@@ -85,8 +87,6 @@ def teardown_request(response):
     return response
 
 
-create_tables()
-generate_sgx_key(node_config)
 app.secret_key = FLASK_SECRET_KEY_FILE
 app.use_reloader = False
 logger.info('Starting api')

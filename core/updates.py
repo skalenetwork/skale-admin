@@ -17,10 +17,14 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 from skale import Skale
 from skale.utils.helper import ip_from_bytes
 
 from core.node_config import NodeConfig
+
+
+logger = logging.getLogger(__name__)
 
 
 def soft_updates(skale: Skale, node_config: NodeConfig) -> None:
@@ -33,6 +37,7 @@ def soft_updates(skale: Skale, node_config: NodeConfig) -> None:
     wallet (Wallet): Instance of skale.py wallet
     node_config (NodeConfig): Instance of NodeConfig class
     """
+    logger.info('Performing soft updates ...')
     update_node_config_file(skale, node_config)
 
 

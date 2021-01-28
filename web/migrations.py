@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 def run_migrations():
-    logging.info('Running migrations...')
+    logging.info('Running migrations ...')
     db = get_database()
     migrator = SqliteMigrator(db)
     add_new_schain_field(db, migrator)
