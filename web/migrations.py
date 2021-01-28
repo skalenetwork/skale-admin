@@ -17,10 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# This file will include all migrations for the SQLite database
-# To add a new field create a new method named `add_FIELD_NAME_field` to this file and invoke it
-# the `run_migrations` method
-
 import logging
 
 from playhouse.migrate import SqliteMigrator, migrate
@@ -32,6 +28,10 @@ logger = logging.getLogger(__name__)
 
 
 def run_migrations():
+    """ This function will include all migrations for the SQLite database
+        To add a new field create a new method named `add_FIELD_NAME_field`
+        to this file and run it from `run_migrations` method
+    """
     logging.info('Running migrations ...')
     db = get_database()
     migrator = SqliteMigrator(db)
@@ -39,7 +39,17 @@ def run_migrations():
 
 
 def add_new_schain_field(db, migrator):
-    add_column(db, migrator, 'SChainRecord', 'new_schain', BooleanField(default=True))
+    add_column(
+        db, migrator, 'SChainRecord', 'new_schain',
+        BooleanField(default=True)
+    )
+
+
+def add_repair_mode_field(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'repair_mode',
+        BooleanField(default=False)
+    )
 
 
 def find_column(db, table_name, column_name):
