@@ -155,7 +155,7 @@ def test_schains_healthchecks(skale_bp, skale):
         return [{'name': 'test-schain'}, {'name': ''}]
 
     def get_rotation_mock(schain_name):
-        {'rotation_id': 1}
+        return {'rotation_id': 1}
 
     with mock.patch('web.routes.schains.SChainChecks', SChainChecksMock), \
         mock.patch.object(skale.schains, 'get_schains_for_node', get_schains_for_node_mock), \
