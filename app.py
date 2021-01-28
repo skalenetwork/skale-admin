@@ -18,17 +18,14 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 
 from flask import Flask, g
 
-from skale import Skale
-from skale.wallets import RPCWallet
-
-from core.node import Node
 from core.node_config import NodeConfig
 
 from tools.configs import FLASK_SECRET_KEY_FILE, SGX_SERVER_URL
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, TM_URL
 from tools.db import get_database
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
@@ -52,36 +49,31 @@ logger = logging.getLogger(__name__)
 
 wait_until_admin_inited()
 
-rpc_wallet = RPCWallet(TM_URL)
-skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet, state_path=STATE_FILEPATH)
-logger.info('Skale inited')
-
-docker_utils = DockerUtils()
-logger.info('Docker utils inited')
-
-node_config = NodeConfig()
-node = Node(skale, node_config)
-logger.info('Node inited')
-
 app = Flask(__name__)
 app.register_blueprint(web_logs)
-app.register_blueprint(construct_nodes_bp(skale, node, docker_utils))
-app.register_blueprint(construct_schains_bp(skale, node_config, docker_utils))
-app.register_blueprint(construct_wallet_bp(skale))
-app.register_blueprint(construct_node_info_bp(skale, docker_utils))
-app.register_blueprint(construct_security_bp(docker_utils))
-app.register_blueprint(construct_node_exit_bp(node))
-app.register_blueprint(construct_sgx_bp(node_config))
+app.register_blueprint(construct_nodes_bp())
+app.register_blueprint(construct_schains_bp())
+app.register_blueprint(construct_wallet_bp())
+app.register_blueprint(construct_node_info_bp())
+app.register_blueprint(construct_security_bp())
+app.register_blueprint(construct_node_exit_bp())
+app.register_blueprint(construct_sgx_bp())
 
 
 @app.before_request
 def before_request():
+    wait_until_admin_inited()
     g.db = get_database()
+    g.request_start_time = time.time()
     g.db.connect(reuse_if_open=True)
+    g.docker_utils = DockerUtils()
+    g.config = NodeConfig()
 
 
 @app.teardown_request
 def teardown_request(response):
+    elapsed = int(time.time() - g.request_start_time)
+    logger.info(f'Request time elapsed: {elapsed}s')
     if not g.db.is_closed():
         g.db.close()
     return response
@@ -89,7 +81,7 @@ def teardown_request(response):
 
 app.secret_key = FLASK_SECRET_KEY_FILE
 app.use_reloader = False
-logger.info('Starting api')
+logger.info('Starting api ...')
 
 
 def main():

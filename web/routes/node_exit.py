@@ -19,24 +19,31 @@
 
 import logging
 
-from flask import Blueprint
+from flask import g, Blueprint
+
+from core.node import Node
 from tools.custom_thread import CustomThread
+from tools.helper import init_default_skale
 from web.helper import construct_ok_response
 
 logger = logging.getLogger(__name__)
 
 
-def construct_node_exit_bp(node):
+def construct_node_exit_bp():
     node_exit_bp = Blueprint('node_exit', __name__)
 
     @node_exit_bp.route('/api/exit/start', methods=['POST'])
     def node_exit_start():
+        skale = init_default_skale()
+        node = Node(skale, g.config)
         exit_thread = CustomThread('Start node exit', node.exit, once=True)
         exit_thread.start()
         return construct_ok_response()
 
     @node_exit_bp.route('/api/exit/status', methods=['GET'])
     def node_exit_status():
+        skale = init_default_skale()
+        node = Node(skale, g.config)
         exit_status_data = node.get_exit_status()
         return construct_ok_response(exit_status_data)
 

@@ -24,7 +24,7 @@ import logging
 from dateutil import parser
 from OpenSSL import crypto
 
-from flask import Blueprint, request
+from flask import Blueprint, g, request
 
 from core.schains.ssl import is_ssl_folder_empty
 from web.helper import construct_ok_response, construct_err_response
@@ -40,7 +40,7 @@ SSL_KEY_NAME = 'ssl_key'
 SSL_CRT_NAME = 'ssl_cert'
 
 
-def construct_security_bp(docker_utils):
+def construct_security_bp():
     security_bp = Blueprint('security', __name__)
 
     @security_bp.route('/api/ssl/status', methods=['GET'])
@@ -85,7 +85,7 @@ def construct_security_bp(docker_utils):
         ssl_key.save(os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_KEY_NAME))
         ssl_cert.save(os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_CRT_NAME))
 
-        docker_utils.restart_all_schains()
+        g.docker_utils.restart_all_schains()
 
         return construct_ok_response()
 

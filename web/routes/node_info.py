@@ -20,18 +20,19 @@
 import logging
 import pkg_resources
 
-from flask import Blueprint, request
+from flask import Blueprint, g, request
 
 from core.node import get_node_hardware_info
 from tools.configs.flask import SKALE_LIB_NAME
 from tools.configs.web3 import ENDPOINT
 from tools.notifications.messages import tg_notifications_enabled, send_message
+from tools.helper import init_default_skale
 from web.helper import construct_ok_response, construct_err_response
 
 logger = logging.getLogger(__name__)
 
 
-def construct_node_info_bp(skale, docker_utils):
+def construct_node_info_bp():
     node_info_bp = Blueprint('node_info', __name__)
 
     @node_info_bp.route('/get-rpc-credentials', methods=['GET'])
@@ -46,7 +47,7 @@ def construct_node_info_bp(skale, docker_utils):
     @node_info_bp.route('/healthchecks/containers', methods=['GET'])
     def containers_healthcheck():
         logger.debug(request)
-        containers_list = docker_utils.get_all_skale_containers(all=all, format=True)
+        containers_list = g.docker_utils.get_all_skale_containers(all=all, format=True)
         return construct_ok_response(containers_list)
 
     @node_info_bp.route('/send-tg-notification', methods=['POST'])
@@ -67,6 +68,7 @@ def construct_node_info_bp(skale, docker_utils):
     @node_info_bp.route('/about-node', methods=['GET'])
     def about_node():
         logger.debug(request)
+        skale = init_default_skale()
 
         node_about = {
             'libraries': {
@@ -92,6 +94,7 @@ def construct_node_info_bp(skale, docker_utils):
     @node_info_bp.route('/endpoint-info', methods=['GET'])
     def endpoint_info():
         logger.debug(request)
+        skale = init_default_skale()
         block_number = skale.web3.eth.blockNumber
         syncing = skale.web3.eth.syncing
         info = {
