@@ -36,6 +36,7 @@ def run_migrations():
     db = get_database()
     migrator = SqliteMigrator(db)
     add_new_schain_field(db, migrator)
+    add_repair_mode_field(db, migrator)
 
 
 def add_new_schain_field(db, migrator):
