@@ -136,7 +136,7 @@ def test_get_firewall_rules(skale_bp):
 
 def test_schains_healthchecks(skale_bp, skale):
     class SChainChecksMock:
-        def __init__(self, name, node_id, log=False, failhook=None):
+        def __init__(self, name, node_id, rotation_id=0):
             pass
 
         def get_all(self):
@@ -154,24 +154,27 @@ def test_schains_healthchecks(skale_bp, skale):
     def get_schains_for_node_mock(node_id):
         return [{'name': 'test-schain'}, {'name': ''}]
 
-    with mock.patch('web.routes.schains.SChainChecks', SChainChecksMock):
-        with mock.patch.object(skale.schains, 'get_schains_for_node',
-                               get_schains_for_node_mock):
-            data = get_bp_data(skale_bp, '/api/schains/healthchecks')
-            assert data['status'] == 'ok'
-            payload = data['payload']
-            assert len(payload) == 1
-            test_schain_checks = payload[0]['healthchecks']
-            assert test_schain_checks == {
-                'data_dir': False,
-                'dkg': False,
-                'config': True,
-                'volume': False,
-                'container': True,
-                'ima_container': False,
-                'firewall_rules': True,
-                'rpc': False
-            }
+    def get_rotation_mock(schain_name):
+        return {'rotation_id': 1}
+
+    with mock.patch('web.routes.schains.SChainChecks', SChainChecksMock), \
+        mock.patch.object(skale.schains, 'get_schains_for_node', get_schains_for_node_mock), \
+            mock.patch.object(skale.node_rotation, 'get_rotation', get_rotation_mock):
+        data = get_bp_data(skale_bp, '/api/schains/healthchecks')
+        assert data['status'] == 'ok'
+        payload = data['payload']
+        assert len(payload) == 1
+        test_schain_checks = payload[0]['healthchecks']
+        assert test_schain_checks == {
+            'data_dir': False,
+            'dkg': False,
+            'config': True,
+            'volume': False,
+            'container': True,
+            'ima_container': False,
+            'firewall_rules': True,
+            'rpc': False
+        }
 
 
 def test_enable_repair_mode(skale_bp, schain_db):
