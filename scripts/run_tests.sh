@@ -22,21 +22,22 @@ export FLASK_DEBUG_MODE=True
 export TM_URL=http://localhost:3009
 export TG_CHAT_ID=-1231232
 export TG_API_KEY=123
+export ABI_FILEPATH=$TEST_ABI_FILEPATH
 
 docker rm -f skale_schain_test1 skale_schain_test2 skale_schain_test3 || true
 rm -rf $PWD/tests/dkg_test/sgx.*
 
-# bash scripts/run_sgx_simulator.sh
-# bash scripts/run_redis.sh
+bash scripts/run_sgx_simulator.sh
+bash scripts/run_redis.sh
 
 python tests/prepare_data.py
 
 py.test tests/routes/ --ignore=tests/firewall --ignore=tests/rotation_test $@
-# export SGX_CERTIFICATES_FOLDER=$PWD/tests/skale-data/node_data/sgx_certs
-# mkdir -p $SGX_CERTIFICATES_FOLDER
-# rm -rf $SGX_CERTIFICATES_FOLDER/sgx.*
-# # todo: tmp, until skaled fix for single-node sChains:
-# py.test tests/rotation_test/ --ignore=tests/rotation_test/exit_test.py --ignore=tests/rotation_test/restart_test.py
-# find . -name \*.pyc -delete
-# scripts/run_firewall_test.sh
-# rm -r $SGX_CERTIFICATES_FOLDER
+export SGX_CERTIFICATES_FOLDER=$PWD/tests/skale-data/node_data/sgx_certs
+mkdir -p $SGX_CERTIFICATES_FOLDER
+rm -rf $SGX_CERTIFICATES_FOLDER/sgx.*
+# todo: tmp, until skaled fix for single-node sChains:
+py.test tests/rotation_test/ --ignore=tests/rotation_test/exit_test.py --ignore=tests/rotation_test/restart_test.py
+find . -name \*.pyc -delete
+scripts/run_firewall_test.sh
+rm -r $SGX_CERTIFICATES_FOLDER
