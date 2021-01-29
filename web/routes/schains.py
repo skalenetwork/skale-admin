@@ -24,9 +24,11 @@ from http import HTTPStatus
 
 from core.schains.checks import SChainChecks
 from core.schains.config.helper import get_allowed_endpoints, get_schain_config
-from core.schains.helper import schain_config_exists
+from core.schains.helper import (
+    get_cleaned_schains_for_node, schain_config_exists
+)
 from core.schains.info import get_schain_info_by_name
-from tools.helper import init_default_skale
+from tools.helper import init_skale
 from web.models.schain import SChainRecord, toggle_schain_repair_mode
 from web.helper import (construct_ok_response, construct_err_response,
                         construct_key_error_response)
@@ -40,7 +42,7 @@ def construct_schains_bp():
     @schains_bp.route('/get-owner-schains', methods=['GET'])
     def owner_schains():
         logger.debug(request)
-        skale = init_default_skale()
+        skale = init_skale(g.wallet)
         schains = skale.schains.get_schains_for_owner(
             skale.wallet.address)
         return construct_ok_response(schains)
@@ -70,7 +72,7 @@ def construct_schains_bp():
 
     @schains_bp.route('/schains/list', methods=['GET'])
     def node_schains_list():
-        skale = init_default_skale()
+        skale = init_skale(g.wallet)
         logger.debug(request)
         node_id = g.config.id
         if node_id is None:
@@ -102,18 +104,19 @@ def construct_schains_bp():
     @schains_bp.route('/api/schains/healthchecks', methods=['GET'])
     def schains_healthchecks():
         logger.debug(request)
-        skale = init_default_skale()
+        skale = init_skale(g.wallet)
         node_id = g.config.id
         if node_id is None:
             return construct_err_response(HTTPStatus.BAD_REQUEST,
                                           ['No node installed'])
-        schains = skale.schains.get_schains_for_node(node_id)
+
+        schains = get_cleaned_schains_for_node(skale, node_id)
         checks = [
             {
                 'name': schain['name'],
                 'healthchecks': SChainChecks(schain['name'], node_id).get_all()
             }
-            for schain in schains if schain.get('name') != ''
+            for schain in schains
         ]
         return construct_ok_response(checks)
 
@@ -133,7 +136,7 @@ def construct_schains_bp():
     def get_schain():
         logger.debug(request)
         schain = request.args.get('schain')
-        skale = init_default_skale()
+        skale = init_skale(g.wallet)
         info = get_schain_info_by_name(skale, schain)
         if not info:
             return construct_err_response(

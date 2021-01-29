@@ -23,7 +23,8 @@ from tools.configs import NODE_DATA_PATH
 
 TM_URL = os.environ['TM_URL']
 ENDPOINT = os.environ['ENDPOINT']
-ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME)
+ABI_FILEPATH = os.getenv('ABI_FILEPATH') or \
+            os.path.join(CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME)
 STATE_FILENAME = os.getenv('STATE_FILENAME')
 STATE_BASE_PATH = os.path.join(NODE_DATA_PATH, 'eth-state')
 STATE_FILEPATH = None if not STATE_FILENAME \

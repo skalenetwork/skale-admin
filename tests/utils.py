@@ -106,11 +106,15 @@ def run_simple_ima_container(schain: dict, dutils: DockerUtils):
     run_ima_container(schain, dutils=dutils)
 
 
-def init_skale():
-    print(ENDPOINT, TEST_ABI_FILEPATH)
+def init_web3_skale() -> Skale:
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
     return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
+
+
+def init_web3_wallet() -> Web3Wallet:
+    web3 = init_web3(ENDPOINT)
+    return Web3Wallet(ETH_PRIVATE_KEY, web3)
 
 
 def response_mock(status_code=0, json_data=None, cookies=None,

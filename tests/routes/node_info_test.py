@@ -3,9 +3,9 @@ import mock
 import pkg_resources
 import pytest
 from datetime import datetime
-from flask import Flask
+from flask import Flask, appcontext_pushed, g
 
-from tests.utils import get_bp_data, post_bp_data
+from tests.utils import get_bp_data, init_web3_wallet, post_bp_data
 from tools.configs.flask import SKALE_LIB_NAME
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from tools.configs.web3 import ENDPOINT
@@ -19,9 +19,14 @@ CURRENT_DATETIME = datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 @pytest.fixture
 def skale_bp(skale):
     app = Flask(__name__)
-    dutils = DockerUtils(volume_driver='local')
-    app.register_blueprint(construct_node_info_bp(skale, dutils))
-    return app.test_client()
+    app.register_blueprint(construct_node_info_bp())
+
+    def handler(sender, **kwargs):
+        g.docker_utils = DockerUtils()
+        g.wallet = init_web3_wallet()
+
+    with appcontext_pushed.connected_to(handler, app):
+        yield app.test_client()
 
 
 def test_rpc_healthcheck(skale_bp):
@@ -71,7 +76,8 @@ def test_about(skale_bp, skale):
         'payload': {
             'libraries': {
                 'javascript': 'N/A',  # get_js_package_version(),
-                'skale.py': pkg_resources.get_distribution(SKALE_LIB_NAME).version
+                'skale.py': pkg_resources.get_distribution(
+                    SKALE_LIB_NAME).version
             },
             'contracts': {
                 'token': skale.token.address,

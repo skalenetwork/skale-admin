@@ -20,13 +20,13 @@
 import logging
 from decimal import Decimal
 
-from flask import Blueprint, request
+from flask import Blueprint, g, request
 from skale.transactions.tools import send_eth_with_skale
 from skale.utils.web3_utils import to_checksum_address
 from web3 import Web3
 
 from web.helper import construct_ok_response, construct_err_response
-from tools.helper import init_default_skale
+from tools.helper import init_skale
 from tools.wallet_utils import wallet_with_balance
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def construct_wallet_bp():
     @wallet_bp.route('/load-wallet', methods=['GET'])
     def load_wallet():
         logger.debug(request)
-        skale = init_default_skale()
+        skale = init_skale(g.wallet)
         res = wallet_with_balance(skale)
         return construct_ok_response(data=res)
 
@@ -63,7 +63,7 @@ def construct_wallet_bp():
                 f'gas_price: {gas_price} Wei, '
                 f'gas_limit: {gas_limit}'
             )
-            skale = init_default_skale()
+            skale = init_skale(g.wallet)
             send_eth_with_skale(skale, address, wei_amount,
                                 gas_limit=gas_limit, gas_price=gas_price)
         except Exception:

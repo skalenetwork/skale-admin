@@ -2,7 +2,7 @@ import pytest
 import mock
 import json
 
-from flask import Flask
+from flask import Flask, appcontext_pushed, g
 from tests.utils import get_bp_data, post_bp_data
 
 from tools.docker_utils import DockerUtils
@@ -12,9 +12,13 @@ from web.routes.security import construct_security_bp
 @pytest.fixture
 def skale_bp(skale):
     app = Flask(__name__)
-    dutils = DockerUtils(volume_driver='local')
-    app.register_blueprint(construct_security_bp(dutils))
-    yield app.test_client()
+    app.register_blueprint(construct_security_bp())
+
+    def handler(sender, **kwargs):
+        g.docker_utils = DockerUtils()
+
+    with appcontext_pushed.connected_to(handler, app):
+        yield app.test_client()
 
 
 def load_certificate_mock(type, buffer):
@@ -46,7 +50,8 @@ class RequestMock:
         self.files = {'ssl_key': file, 'ssl_cert': file}
 
 
-@mock.patch('web.routes.security.crypto.load_certificate', new=load_certificate_mock)
+@mock.patch('web.routes.security.crypto.load_certificate',
+            new=load_certificate_mock)
 def test_status(skale_bp):
     data = get_bp_data(skale_bp, '/api/ssl/status')
     assert data == {

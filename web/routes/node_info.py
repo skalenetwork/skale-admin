@@ -26,7 +26,7 @@ from core.node import get_node_hardware_info
 from tools.configs.flask import SKALE_LIB_NAME
 from tools.configs.web3 import ENDPOINT
 from tools.notifications.messages import tg_notifications_enabled, send_message
-from tools.helper import init_default_skale
+from tools.helper import init_skale
 from web.helper import construct_ok_response, construct_err_response
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ def construct_node_info_bp():
     @node_info_bp.route('/about-node', methods=['GET'])
     def about_node():
         logger.debug(request)
-        skale = init_default_skale()
+        skale = init_skale(g.wallet)
 
         node_about = {
             'libraries': {
@@ -94,7 +94,7 @@ def construct_node_info_bp():
     @node_info_bp.route('/endpoint-info', methods=['GET'])
     def endpoint_info():
         logger.debug(request)
-        skale = init_default_skale()
+        skale = init_skale(wallet=g.wallet)
         block_number = skale.web3.eth.blockNumber
         syncing = skale.web3.eth.syncing
         info = {
