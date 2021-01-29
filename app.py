@@ -47,7 +47,6 @@ from web.routes.sgx import construct_sgx_bp
 init_api_logger()
 logger = logging.getLogger(__name__)
 
-wait_until_admin_inited()
 
 app = Flask(__name__)
 app.register_blueprint(web_logs)
