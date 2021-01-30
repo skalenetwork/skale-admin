@@ -19,7 +19,7 @@
 
 import logging
 
-from playhouse.migrate import SqliteMigrator, migrate
+from playhouse.migrate import SqliteMigrator, migrate as playhouse_migrate
 from peewee import BooleanField
 from tools.db import get_database
 
@@ -66,6 +66,6 @@ def add_column(db, migrator, table_name, column_name, field):
     logging.info(f'Add column: {table_name}.{column_name}')
     if not find_column(db, table_name, column_name):
         logging.info(f'Going to add: {table_name}.{column_name}')
-        migrate(
+        playhouse_migrate(
             migrator.add_column(table_name, column_name, field)
         )

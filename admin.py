@@ -36,7 +36,7 @@ from tools.notifications.messages import cleanup_notification_state
 from tools.sgx_utils import generate_sgx_key
 
 from web.models.schain import create_tables, set_schains_first_run
-from web.migrations import run_migrations
+from web.migrations import migrate
 
 
 init_admin_logger()
@@ -77,7 +77,7 @@ def init():
         generate_sgx_key(node_config)
         soft_updates(skale, node_config)
         create_tables()
-        run_migrations()
+        migrate()
         set_schains_first_run()
         cleanup_notification_state()
 
