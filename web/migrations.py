@@ -27,14 +27,18 @@ from tools.db import get_database
 logger = logging.getLogger(__name__)
 
 
-def run_migrations():
+def migrate():
     """ This function will include all migrations for the SQLite database
         To add a new field create a new method named `add_FIELD_NAME_field`
         to this file and run it from `run_migrations` method
     """
-    logging.info('Running migrations ...')
     db = get_database()
     migrator = SqliteMigrator(db)
+    run_migrations(db, migrator)
+
+
+def run_migrations(db, migrator):
+    logging.info('Running migrations ...')
     add_new_schain_field(db, migrator)
     add_repair_mode_field(db, migrator)
 
