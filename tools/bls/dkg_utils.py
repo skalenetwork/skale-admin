@@ -116,7 +116,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
             events = dkg_filter.get_events()
         for event in events:
             from_node = dkg_client.node_ids_contract[event["nodeIndex"]]
-            if is_received[from_node]:
+            if is_received[from_node] and from_node != dkg_client.node_id_dkg:
                 continue
             else:
                 is_received[from_node] = True

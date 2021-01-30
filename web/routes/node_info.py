@@ -24,7 +24,7 @@ from flask import Blueprint, g, request
 
 from core.node import get_node_hardware_info
 from tools.configs.flask import SKALE_LIB_NAME
-from tools.configs.web3 import ENDPOINT
+from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.notifications.messages import tg_notifications_enabled, send_message
 from tools.helper import init_skale
 from web.helper import construct_ok_response, construct_err_response
@@ -97,9 +97,11 @@ def construct_node_info_bp():
         skale = init_skale(wallet=g.wallet)
         block_number = skale.web3.eth.blockNumber
         syncing = skale.web3.eth.syncing
+        trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
         info = {
             'block_number': block_number,
-            'syncing': syncing
+            'syncing': syncing,
+            'trusted': trusted
         }
         return construct_ok_response(info)
 

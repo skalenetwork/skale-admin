@@ -109,15 +109,17 @@ def construct_schains_bp():
         if node_id is None:
             return construct_err_response(HTTPStatus.BAD_REQUEST,
                                           ['No node installed'])
-
+        schains = skale.schains.get_schains_for_node(node_id)
         schains = get_cleaned_schains_for_node(skale, node_id)
-        checks = [
-            {
+        checks = []
+        for schain in schains:
+            rotation_data = skale.node_rotation.get_rotation(schain['name'])
+            rotation_id = rotation_data['rotation_id']
+            checks.append({
                 'name': schain['name'],
-                'healthchecks': SChainChecks(schain['name'], node_id).get_all()
-            }
-            for schain in schains
-        ]
+                'healthchecks': SChainChecks(schain['name'],
+                                             node_id, rotation_id).get_all()
+            })
         return construct_ok_response(checks)
 
     @schains_bp.route('/api/schains/repair', methods=['POST'])
