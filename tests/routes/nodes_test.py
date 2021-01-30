@@ -13,6 +13,7 @@ from web.routes.nodes import construct_nodes_bp
 
 from skale.utils.contracts_provision.utils import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
+from skale.utils.helper import ip_from_bytes
 
 
 @pytest.fixture
@@ -29,28 +30,37 @@ def skale_bp(skale):
         yield app.test_client()
 
 
-def test_check_node_name(skale_bp, skale):
+@pytest.fixture
+def node_contracts(skale):
+    ip, public_ip, port, name = generate_random_node_data()
+    skale.manager.create_node(ip, port, name,
+                              domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
+    node_id = skale.nodes.node_name_to_index(name)
+    yield node_id
+    skale.manager.node_exit(node_id, wait_for=True)
+
+
+@pytest.fixture
+def node_config():
+    return NodeConfig()
+
+
+def test_check_node_name(skale_bp, skale, node_contracts):
     data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': 'test'})
     assert data == {'status': 'ok', 'payload': {'name_available': True}}
-    ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name,
-                              domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
+    node_id = node_contracts
+    name = skale.nodes.get(node_id)['name']
     data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': name})
     assert data == {'status': 'ok', 'payload': {'name_available': False}}
-    node_idx = skale.nodes.node_name_to_index(name)
-    skale.manager.node_exit(node_idx, wait_for=True)
 
 
-def test_check_node_ip(skale_bp, skale):
+def test_check_node_ip(skale_bp, skale, node_contracts):
     data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': '0.0.0.0'})
     assert data == {'status': 'ok', 'payload': {'ip_available': True}}
-    ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name,
-                              domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
+    node_id = node_contracts
+    ip = ip_from_bytes(skale.nodes.get(node_id)['ip'])
     data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': ip})
     assert data == {'status': 'ok', 'payload': {'ip_available': False}}
-    node_idx = skale.nodes.node_name_to_index(name)
-    skale.manager.node_exit(node_idx, wait_for=True)
 
 
 def test_containers_list(skale_bp):
@@ -72,10 +82,16 @@ def test_containers_list(skale_bp):
     assert data == expected
 
 
-def test_node_info(skale_bp):
+def test_node_info(skale_bp, skale, node_contracts, node_config):
+    node_id = node_contracts
+    node_config.id = node_id
     data = get_bp_data(skale_bp, '/node-info')
-    s = NodeStatus.NOT_CREATED.value
-    assert data == {'status': 'ok', 'payload': {'node_info': {'status': s}}}
+    status = NodeStatus.ACTIVE.value
+    assert data['status'] == 'ok'
+    node_info = data['payload']['node_info']
+    assert node_info['id'] == node_id
+    assert node_info['status'] == status
+    assert node_info['owner'] == skale.wallet.address
 
 
 def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
