@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import logging
 import re
 from functools import wraps
@@ -27,7 +28,9 @@ from docker.client import DockerClient
 from docker.models.containers import Container
 from docker.models.volumes import Volume
 
-from tools.configs.containers import CONTAINER_NOT_FOUND, RUNNING_STATUS, EXITED_STATUS
+from tools.configs.containers import (CONTAINER_NOT_FOUND, RUNNING_STATUS, EXITED_STATUS,
+                                      DOCKER_DEFAULT_TAIL_LINES, DOCKER_DEFAULT_STOP_TIMEOUT)
+from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -150,8 +153,28 @@ class DockerUtils:
             logger.info(f'Going to remove volume {name}')
             volume.remove(force=True)
 
-    def safe_rm(self, container_name: str, **kwargs):
+    def safe_get_container(self, container_name: str):
+        logger.info(f'Trying to get container: {container_name}')
+        try:
+            return self.client.containers.get(container_name)
+        except docker.errors.APIError:
+            logger.error(f'No such container: {container_name}')
+
+    def safe_rm(self, container_name: str, stop_timeout=DOCKER_DEFAULT_STOP_TIMEOUT, **kwargs):
+        """
+        Saves docker container logs (last N lines) in the .skale/node_data/log/.removed_containers
+        folder. Then stops and removes container with specified params.
+        """
         logger.info(f'Removing container: {container_name}')
+        container = self.safe_get_container(container_name)
+        if not container:
+            return
+        self.backup_container_logs(container)
+        logger.debug(f'Stopping container: {container_name}, timeout: {stop_timeout}')
+        container.stop(timeout=stop_timeout)
+        logger.debug(f'Removing container: {container_name}, kwargs: {kwargs}')
+        container.remove(**kwargs)
+
         try:
             container = self.client.containers.get(container_name)
             res = container.remove(**kwargs)
@@ -159,6 +182,19 @@ class DockerUtils:
             return res
         except docker.errors.APIError:
             logger.error(f'No such container: {container_name}')
+
+    def backup_container_logs(self, container: Container, tail=DOCKER_DEFAULT_TAIL_LINES) -> None:
+        logs_backup_filepath = self.get_logs_backup_filepath(container)
+        print('container.logs(tail=tail)')
+        print(container.logs(tail=tail))
+        with open(logs_backup_filepath, "wb") as out:
+            out.write(container.logs(tail=tail))
+
+    def get_logs_backup_filepath(self, container: Container) -> str:
+        container_index = sum(1 for f in os.listdir(REMOVED_CONTAINERS_FOLDER_PATH)
+                              if f.startswith(f'{container.name}-'))
+        log_file_name = f'{container.name}-{container_index}.log'
+        return os.path.join(REMOVED_CONTAINERS_FOLDER_PATH, log_file_name)
 
     def restart(self, container_name: str, **kwargs):
         logger.info(f'Restarting container: {container_name}')
