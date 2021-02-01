@@ -52,7 +52,10 @@ JOIN_TIMEOUT = 1800
 def run_cleaner(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
     process.start()
+    logger.info('Cleaner process started')
     process.join(JOIN_TIMEOUT)
+    logger.info('Cleaner process is joined.')
+    logger.info('Terminating the process')
     process.terminate()
     process.join()
 
