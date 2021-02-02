@@ -166,7 +166,6 @@ class DockerUtils:
         Saves docker container logs (last N lines) in the .skale/node_data/log/.removed_containers
         folder. Then stops and removes container with specified params.
         """
-        logger.info(f'Removing container: {container_name}')
         container = self.safe_get_container(container_name)
         if not container:
             return
