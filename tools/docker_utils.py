@@ -175,14 +175,7 @@ class DockerUtils:
         container.stop(timeout=stop_timeout)
         logger.info(f'Removing container: {container_name}, kwargs: {kwargs}')
         container.remove(**kwargs)
-
-        try:
-            container = self.client.containers.get(container_name)
-            res = container.remove(**kwargs)
-            logger.info(f'Container removed: {container_name}')
-            return res
-        except docker.errors.APIError:
-            logger.error(f'No such container: {container_name}')
+        logger.info(f'Container removed: {container_name}')
 
     def backup_container_logs(self, container: Container, tail=DOCKER_DEFAULT_TAIL_LINES) -> None:
         logger.info(f'Going to backup container logs: {container.name}')
