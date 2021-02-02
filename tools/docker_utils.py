@@ -157,8 +157,9 @@ class DockerUtils:
         logger.info(f'Trying to get container: {container_name}')
         try:
             return self.client.containers.get(container_name)
-        except docker.errors.APIError:
-            logger.error(f'No such container: {container_name}')
+        except docker.errors.APIError as e:
+            logger.warning(e)
+            logger.warning(f'No such container: {container_name}')
 
     def safe_rm(self, container_name: str, stop_timeout=DOCKER_DEFAULT_STOP_TIMEOUT, **kwargs):
         """
@@ -185,8 +186,6 @@ class DockerUtils:
 
     def backup_container_logs(self, container: Container, tail=DOCKER_DEFAULT_TAIL_LINES) -> None:
         logs_backup_filepath = self.get_logs_backup_filepath(container)
-        print('container.logs(tail=tail)')
-        print(container.logs(tail=tail))
         with open(logs_backup_filepath, "wb") as out:
             out.write(container.logs(tail=tail))
 
