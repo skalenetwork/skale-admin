@@ -17,13 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# This file will include all migrations for the SQLite database
-# To add a new field create a new method named `add_FIELD_NAME_field` to this file and invoke it
-# the `run_migrations` method
-
 import logging
 
-from playhouse.migrate import SqliteMigrator, migrate
+from playhouse.migrate import SqliteMigrator, migrate as playhouse_migrate
 from peewee import BooleanField
 from tools.db import get_database
 
@@ -31,15 +27,34 @@ from tools.db import get_database
 logger = logging.getLogger(__name__)
 
 
-def run_migrations():
-    logging.info('Running migrations...')
+def migrate():
+    """ This function will include all migrations for the SQLite database
+        To add a new field create a new method named `add_FIELD_NAME_field`
+        to this file and run it from `run_migrations` method
+    """
     db = get_database()
     migrator = SqliteMigrator(db)
+    run_migrations(db, migrator)
+
+
+def run_migrations(db, migrator):
+    logging.info('Running migrations ...')
     add_new_schain_field(db, migrator)
+    add_repair_mode_field(db, migrator)
 
 
 def add_new_schain_field(db, migrator):
-    add_column(db, migrator, 'SChainRecord', 'new_schain', BooleanField(default=True))
+    add_column(
+        db, migrator, 'SChainRecord', 'new_schain',
+        BooleanField(default=True)
+    )
+
+
+def add_repair_mode_field(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'repair_mode',
+        BooleanField(default=False)
+    )
 
 
 def find_column(db, table_name, column_name):
@@ -51,6 +66,6 @@ def add_column(db, migrator, table_name, column_name, field):
     logging.info(f'Add column: {table_name}.{column_name}')
     if not find_column(db, table_name, column_name):
         logging.info(f'Going to add: {table_name}.{column_name}')
-        migrate(
+        playhouse_migrate(
             migrator.add_column(table_name, column_name, field)
         )

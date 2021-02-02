@@ -25,7 +25,7 @@ from core.schains.helper import init_schain_dir
 from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (generate_random_node_data,
-                         generate_random_schain_data, init_skale)
+                         generate_random_schain_data, init_web3_skale)
 from tests.prepare_data import cleanup_contracts
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -33,7 +33,7 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 
 MAX_WORKERS = 5
 
-owner_skale = init_skale()
+owner_skale = init_web3_skale()
 
 
 logger = logging.getLogger(__name__)

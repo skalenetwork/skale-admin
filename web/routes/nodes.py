@@ -21,21 +21,25 @@ import logging
 from decimal import Decimal
 from http import HTTPStatus
 
-from flask import Blueprint, request, abort
+from flask import Blueprint, abort, g, request
 from web3 import Web3
 
+from core.node import Node
+from tools.helper import init_skale
 from web.helper import construct_ok_response, construct_err_response
 
 
 logger = logging.getLogger(__name__)
 
 
-def construct_nodes_bp(skale, node, docker_utils):
+def construct_nodes_bp():
     nodes_bp = Blueprint('nodes', __name__)
 
     @nodes_bp.route('/node-info', methods=['GET'])
     def node_info():
         logger.debug(request)
+        skale = init_skale(g.wallet)
+        node = Node(skale, g.config)
         data = {'node_info': node.info}
         return construct_ok_response(data=data)
 
@@ -44,6 +48,8 @@ def construct_nodes_bp(skale, node, docker_utils):
         logger.debug(request)
         if not request.json:
             abort(400)
+
+        skale = init_skale(g.wallet)
 
         ip = request.json.get('ip')
         public_ip = request.json.get('publicIP')
@@ -69,6 +75,7 @@ def construct_nodes_bp(skale, node, docker_utils):
             logger.error(error_msg)
             return construct_err_response(error_msg)
 
+        node = Node(skale, g.config)
         res = node.register(
             ip=ip,
             public_ip=public_ip,
@@ -91,6 +98,7 @@ def construct_nodes_bp(skale, node, docker_utils):
         logger.debug(request)
 
         validator_id = int(request.args.get('validator_id'))
+        skale = init_skale(g.wallet)
 
         signature = skale.validator_service.get_link_node_signature(
             validator_id)
@@ -99,12 +107,14 @@ def construct_nodes_bp(skale, node, docker_utils):
     @nodes_bp.route('/check-node-name', methods=['GET'])
     def check_node_name():
         logger.debug(request)
+        skale = init_skale(g.wallet)
         node_name = request.args.get('nodeName')
         res = skale.nodes.is_node_name_available(node_name)
         return construct_ok_response(data={'name_available': res})
 
     @nodes_bp.route('/check-node-ip', methods=['GET'])
     def check_node_ip():
+        skale = init_skale(g.wallet)
         logger.debug(request)
         node_ip = request.args.get('nodeIp')
         res = skale.nodes.is_node_ip_available(node_ip)
@@ -114,13 +124,15 @@ def construct_nodes_bp(skale, node, docker_utils):
     def skale_containers_list():
         logger.debug(request)
         all = request.args.get('all') == 'True'
-        containers_list = docker_utils.get_all_skale_containers(
+        containers_list = g.docker_utils.get_all_skale_containers(
             all=all, format=True)
         return construct_ok_response(data={'containers': containers_list})
 
     @nodes_bp.route('/api/node/maintenance-on', methods=['POST'])
     def set_node_maintenance_on():
         logger.debug(request)
+        skale = init_skale(g.wallet)
+        node = Node(skale, g.config)
         res = node.set_maintenance_on()
         if res['status'] != 0:
             return construct_err_response(msg=res['errors'])
@@ -129,6 +141,8 @@ def construct_nodes_bp(skale, node, docker_utils):
     @nodes_bp.route('/api/node/maintenance-off', methods=['POST'])
     def set_node_maintenance_off():
         logger.debug(request)
+        skale = init_skale(g.wallet)
+        node = Node(skale, g.config)
         res = node.set_maintenance_off()
         if res['status'] != 0:
             return construct_err_response(msg=res['errors'])
@@ -138,6 +152,8 @@ def construct_nodes_bp(skale, node, docker_utils):
     def set_domain_name():
         logger.debug(request)
         domain_name = request.json['domain_name']
+        skale = init_skale(g.wallet)
+        node = Node(skale, g.config)
         res = node.set_domain_name(domain_name)
         if res['status'] != 0:
             return construct_err_response(msg=res['errors'])

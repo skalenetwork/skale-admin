@@ -20,7 +20,6 @@ DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 TEST_SKALE_DATA_DIR = os.path.join(DIR_PATH, 'skale-data')
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
-TEST_ABI_FILEPATH = os.path.join(DIR_PATH, 'test_abi.json')
 
 LOGS_TEST_TEXT = 'Hello, SKALE!'
 

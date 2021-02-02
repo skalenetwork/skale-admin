@@ -19,13 +19,16 @@
 
 import logging
 
-from flask import Blueprint, request
+from flask import Blueprint, g, request
 from http import HTTPStatus
 
 from core.schains.checks import SChainChecks
 from core.schains.config.helper import get_allowed_endpoints, get_schain_config
-from core.schains.helper import schain_config_exists
+from core.schains.helper import (
+    get_cleaned_schains_for_node, schain_config_exists
+)
 from core.schains.info import get_schain_info_by_name
+from tools.helper import init_skale
 from web.models.schain import SChainRecord, toggle_schain_repair_mode
 from web.helper import (construct_ok_response, construct_err_response,
                         construct_key_error_response)
@@ -33,12 +36,13 @@ from web.helper import (construct_ok_response, construct_err_response,
 logger = logging.getLogger(__name__)
 
 
-def construct_schains_bp(skale, config, docker_utils):
+def construct_schains_bp():
     schains_bp = Blueprint('schains', __name__)
 
     @schains_bp.route('/get-owner-schains', methods=['GET'])
     def owner_schains():
         logger.debug(request)
+        skale = init_skale(g.wallet)
         schains = skale.schains.get_schains_for_owner(
             skale.wallet.address)
         return construct_ok_response(schains)
@@ -62,14 +66,15 @@ def construct_schains_bp(skale, config, docker_utils):
     def schains_containers_list():
         logger.debug(request)
         _all = request.args.get('all') == 'True'
-        containers_list = docker_utils.get_all_schain_containers(
+        containers_list = g.docker_utils.get_all_schain_containers(
             all=_all, format=True)
         return construct_ok_response(containers_list)
 
     @schains_bp.route('/schains/list', methods=['GET'])
     def node_schains_list():
+        skale = init_skale(g.wallet)
         logger.debug(request)
-        node_id = config.id
+        node_id = g.config.id
         if node_id is None:
             return construct_err_response(msg='No node installed')
         schains_list = list(filter(
@@ -99,20 +104,22 @@ def construct_schains_bp(skale, config, docker_utils):
     @schains_bp.route('/api/schains/healthchecks', methods=['GET'])
     def schains_healthchecks():
         logger.debug(request)
-        node_id = config.id
+        skale = init_skale(g.wallet)
+        node_id = g.config.id
         if node_id is None:
             return construct_err_response(HTTPStatus.BAD_REQUEST,
                                           ['No node installed'])
         schains = skale.schains.get_schains_for_node(node_id)
+        schains = get_cleaned_schains_for_node(skale, node_id)
         checks = []
         for schain in schains:
-            if schain.get('name') != '':
-                rotation_data = skale.node_rotation.get_rotation(schain['name'])
-                rotation_id = rotation_data['rotation_id']
-                checks.append({
-                    'name': schain['name'],
-                    'healthchecks': SChainChecks(schain['name'], node_id, rotation_id).get_all()
-                })
+            rotation_data = skale.node_rotation.get_rotation(schain['name'])
+            rotation_id = rotation_data['rotation_id']
+            checks.append({
+                'name': schain['name'],
+                'healthchecks': SChainChecks(schain['name'],
+                                             node_id, rotation_id).get_all()
+            })
         return construct_ok_response(checks)
 
     @schains_bp.route('/api/schains/repair', methods=['POST'])
@@ -131,6 +138,7 @@ def construct_schains_bp(skale, config, docker_utils):
     def get_schain():
         logger.debug(request)
         schain = request.args.get('schain')
+        skale = init_skale(g.wallet)
         info = get_schain_info_by_name(skale, schain)
         if not info:
             return construct_err_response(

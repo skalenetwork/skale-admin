@@ -103,7 +103,7 @@ def test_rotating_monitor(skale, node_config, db):
         mocked_skale.dkg.is_channel_opened = lambda x: True
         return mocked_skale
 
-    with mock.patch('core.schains.creator.run_dkg'),\
+    with mock.patch('core.schains.creator.safe_run_dkg', return_value=True),\
             mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
             mock.patch('core.schains.creator.generate_schain_config_with_skale',
                        new=mock.Mock(return_value=True)), \

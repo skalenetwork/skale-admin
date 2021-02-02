@@ -19,7 +19,8 @@
 
 import logging
 import datetime
-from peewee import CharField, DateTimeField, IntegrityError, IntegerField, BooleanField
+from peewee import (CharField, DateTimeField,
+                    IntegrityError, IntegerField, BooleanField)
 
 from core.schains.dkg_status import DKGStatus
 from web.models.base import BaseModel

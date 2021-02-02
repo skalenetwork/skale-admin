@@ -82,7 +82,10 @@ def run_creator(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
     join_timeout = TIMEOUT_COEFFICIENT * get_dkg_timeout(skale)
     process.start()
+    logger.info('Creator process started')
     process.join(join_timeout)
+    logger.info('Creator process is joined.')
+    logger.info('Terminating the process')
     process.terminate()
     process.join()
 
@@ -115,7 +118,7 @@ def monitor(skale, node_config):
     with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
         futures = [
             executor.submit(
-                monitor_schain,
+                run_monitor_for_schain,
                 skale,
                 node_info,
                 schain,
@@ -145,9 +148,16 @@ def get_monitor_mode(schain_record, rotation_state):
     return MonitorMode.REGULAR
 
 
+def run_monitor_for_schain(skale, node_info, schain, ecdsa_sgx_key_name):
+    try:
+        logger.info(f'Monitor for sChain {schain["name"]}')
+        skale = spawn_skale_manager_lib(skale)
+        monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name)
+    except Exception:
+        logger.exception('Monitor for schain {schain["name"]} failed')
+
+
 def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
-    logger.info(f"Monitor for sChain {schain['name']}")
-    skale = spawn_skale_manager_lib(skale)
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
