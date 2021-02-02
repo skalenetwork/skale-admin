@@ -185,9 +185,11 @@ class DockerUtils:
             logger.error(f'No such container: {container_name}')
 
     def backup_container_logs(self, container: Container, tail=DOCKER_DEFAULT_TAIL_LINES) -> None:
+        logger.debug(f'Going to backup container logs: {container.name}')
         logs_backup_filepath = self.get_logs_backup_filepath(container)
         with open(logs_backup_filepath, "wb") as out:
             out.write(container.logs(tail=tail))
+        logger.debug(f'Old container logs saved to {logs_backup_filepath}, tail: {tail}')
 
     def get_logs_backup_filepath(self, container: Container) -> str:
         container_index = sum(1 for f in os.listdir(REMOVED_CONTAINERS_FOLDER_PATH)
