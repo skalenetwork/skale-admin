@@ -21,14 +21,14 @@ import logging
 from decimal import Decimal
 from http import HTTPStatus
 
-from flask import Blueprint, request, abort
+from flask import Blueprint, abort, request
 from web3 import Web3
 
 from core.node import get_node_hardware_info
-from tools.custom_thread import CustomThread
-from tools.notifications.messages import tg_notifications_enabled, send_message
-from web.helper import construct_ok_response, construct_err_response, get_api_url
 from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
+from tools.custom_thread import CustomThread
+from tools.notifications.messages import send_message, tg_notifications_enabled
+from web.helper import construct_err_response, construct_ok_response, get_api_url
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'node'
