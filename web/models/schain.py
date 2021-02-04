@@ -36,6 +36,7 @@ class SChainRecord(BaseModel):
     first_run = BooleanField(default=True)
     new_schain = BooleanField(default=True)
     repair_mode = BooleanField(default=False)
+    needs_reload = BooleanField(default=False)
 
     @classmethod
     def add(cls, name):
@@ -80,6 +81,7 @@ class SChainRecord(BaseModel):
             'is_deleted': record.is_deleted,
             'first_run': record.first_run,
             'new_schain': record.new_schain,
+            'needs_reload': record.needs_reload,
         }
 
     def dkg_started(self):
@@ -115,6 +117,11 @@ class SChainRecord(BaseModel):
         self.new_schain = value
         self.save()
 
+    def set_needs_reload(self, value):
+        logger.info(f'Changing needs_reload for {self.name} to {value}')
+        self.needs_reload = value
+        self.save()
+
 
 def create_tables():
     logger.info('Creating schainrecord table...')
@@ -126,6 +133,13 @@ def set_schains_first_run():
     logger.info('Setting first_run=True for all sChain records')
     query = SChainRecord.update(first_run=True).where(
         SChainRecord.first_run == False)  # noqa
+    query.execute()
+
+
+def set_schains_needs_reload():
+    logger.info('Setting needs_reload=True for all sChain records')
+    query = SChainRecord.update(needs_reload=True).where(
+        SChainRecord.needs_reload == False)  # noqa
     query.execute()
 
 

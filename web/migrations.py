@@ -41,6 +41,7 @@ def run_migrations(db, migrator):
     logging.info('Running migrations ...')
     add_new_schain_field(db, migrator)
     add_repair_mode_field(db, migrator)
+    add_needs_reload_field(db, migrator)
 
 
 def add_new_schain_field(db, migrator):
@@ -53,6 +54,13 @@ def add_new_schain_field(db, migrator):
 def add_repair_mode_field(db, migrator):
     add_column(
         db, migrator, 'SChainRecord', 'repair_mode',
+        BooleanField(default=False)
+    )
+
+
+def add_needs_reload_field(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'needs_reload',
         BooleanField(default=False)
     )
 
