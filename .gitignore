@@ -57,3 +57,5 @@ test_abi.json
 *.csr
 
 tests/skale-data/node_data/schains/*
+
+*.lock

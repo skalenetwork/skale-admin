@@ -180,7 +180,6 @@ def schain_config(_schain_name):
 @pytest.fixture
 def db():
     create_tables()
-    upsert_schain_record
     yield
     SChainRecord.drop_table()
 
