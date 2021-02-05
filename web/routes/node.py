@@ -164,10 +164,11 @@ def construct_node_bp(skale, node, docker_utils):
         block_number = skale.web3.eth.blockNumber
         syncing = skale.web3.eth.syncing
         trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
+        geth_client = 'Geth' in skale.web3.clientVersion
         info = {
             'block_number': block_number,
             'syncing': syncing,
-            'trusted': trusted
+            'trusted': trusted and geth_client
         }
         return construct_ok_response(info)
 
