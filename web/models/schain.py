@@ -136,7 +136,7 @@ def set_schains_first_run():
     query.execute()
 
 
-def set_schains_needs_reload():
+def set_schains_need_reload():
     logger.info('Setting needs_reload=True for all sChain records')
     query = SChainRecord.update(needs_reload=True).where(
         SChainRecord.needs_reload == False)  # noqa

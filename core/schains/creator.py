@@ -176,10 +176,9 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     if schain_record.needs_reload:
         logger.warning(f'Going to reload {schain["name"]}')
         remove_schain_container(schain["name"])
-        monitor_schain_container(schain)
         schain_record.set_needs_reload(False)
-        logger.warning(f'{schain["name"]} was reloaded')
-        return
+        mode = MonitorMode.REGULAR
+        logger.warning(f'sChain container {schain["name"]} was removed, going to run checks')
 
     if schain_record.repair_mode or not checks.exit_code_ok:
         logger.info(f'REPAIR MODE was toggled for schain {schain["name"]}')
