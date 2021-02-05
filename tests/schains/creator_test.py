@@ -21,7 +21,7 @@ from tests.utils import get_schain_contracts_data
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
-from web.models.schain import SChainRecord
+from web.models.schain import SChainRecord, upsert_schain_record
 from core.schains.creator import get_monitor_mode, MonitorMode
 
 
@@ -335,3 +335,33 @@ def test_get_monitor_mode_backup_sync(skale, schain_db):
     }
     record = SChainRecord.get_by_name(schain_name)
     assert get_monitor_mode(record, rotation_state) == MonitorMode.SYNC
+
+
+def test_monitor_needs_reload(skale, node_config, db):
+    rotation_info = {
+        'in_progress': False,
+        'new_schain': False,
+        'exiting_node': False,
+        'finish_ts': time.time(),
+        'rotation_id': 0
+    }
+
+    schain_name = 'test'
+    schain = get_schain_contracts_data(schain_name=schain_name)
+
+    schain_record = upsert_schain_record(schain_name)
+
+    schain_record.set_needs_reload(True)
+    assert schain_record.needs_reload is True
+
+    with mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
+        mock.patch('core.schains.creator.SChainChecks', new=ChecksMock), \
+            mock.patch('core.schains.creator.get_rotation_state',
+                       new=mock.Mock(return_value=rotation_info)), \
+            mock.patch('core.schains.creator.set_rotation_for_schain'), \
+            mock.patch('core.schains.creator.monitor_schain_container'):
+        node_info = node_config.all()
+        monitor_schain(skale, node_info, schain,
+                       ecdsa_sgx_key_name=node_config.sgx_key_name)
+        schain_record = upsert_schain_record(schain_name)
+        assert schain_record.needs_reload is False

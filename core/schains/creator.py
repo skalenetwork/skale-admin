@@ -62,7 +62,7 @@ from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode, is_checks_passed
 from tools.str_formatters import arguments_list_string
-from web.models.schain import upsert_schain_record
+from web.models.schain import upsert_schain_record, SChainRecord
 
 
 logger = logging.getLogger(__name__)
@@ -169,14 +169,20 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
 
     schain_record = upsert_schain_record(name)
     mode = get_monitor_mode(schain_record, rotation)
-
     checks = SChainChecks(name, node_id, rotation_id=rotation_id)
 
-    if not checks.exit_code_ok:
-        mode = MonitorMode.SYNC
+    logger.debug(f'sChain record: {SChainRecord.to_dict(schain_record)}')
+
+    if schain_record.needs_reload:
+        logger.warning(f'Going to reload {schain["name"]}')
+        remove_schain_container(schain["name"])
+        schain_record.set_needs_reload(False)
+        mode = MonitorMode.REGULAR
+        logger.warning(f'sChain container {schain["name"]} was removed, going to run checks')
 
     if schain_record.repair_mode or not checks.exit_code_ok:
         logger.info(f'REPAIR MODE was toggled for schain {schain["name"]}')
+        mode = MonitorMode.SYNC
         notify_repair_mode(node_info, name)
         cleanup_schain_docker_entity(name)
         schain_record.set_repair_mode(False)
