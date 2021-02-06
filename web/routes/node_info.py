@@ -22,7 +22,7 @@ import pkg_resources
 
 from flask import Blueprint, g, request
 
-from core.node import get_node_hardware_info
+from core.node import get_meta_info, get_node_hardware_info
 from tools.configs.flask import SKALE_LIB_NAME
 from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.notifications.messages import tg_notifications_enabled, send_message
@@ -105,5 +105,11 @@ def construct_node_info_bp():
             'trusted': trusted and geth_client
         }
         return construct_ok_response(info)
+
+    @node_info_bp.route('/meta-info', methods=['GET'])
+    def meta_info():
+        logger.debug(request)
+        version_data = get_meta_info()
+        return construct_ok_response(version_data)
 
     return node_info_bp

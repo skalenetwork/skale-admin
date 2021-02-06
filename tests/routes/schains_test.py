@@ -225,3 +225,14 @@ def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
         'payload': 'No schain with name undefined-schain',
         'status': 'error'
     }
+
+
+def test_skaled_version(skale_bp):
+    version = '3.4.1-beta.0'
+    with mock.patch(
+        'web.routes.schains.get_skaled_version',
+        return_value=version
+
+    ):
+        data = get_bp_data(skale_bp, '/skaled-version')
+        assert data == {'status': 'ok', 'payload': {'version': version}}

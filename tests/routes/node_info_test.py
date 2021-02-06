@@ -99,3 +99,14 @@ def test_endpoint_info(skale_bp, skale):
     assert payload['syncing'] is False
     assert payload['block_number'] > 1
     assert payload['trusted'] is False
+
+
+def test_meta_info(skale_bp):
+    meta_info = {"version": "0.0.0", "config_stream": "1.4.1-testnet"}
+
+    with mock.patch(
+        'web.routes.node_info.get_meta_info',
+        return_value=meta_info
+    ):
+        data = get_bp_data(skale_bp, '/meta-info')
+        assert data == {'status': 'ok', 'payload': meta_info}

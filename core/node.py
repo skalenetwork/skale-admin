@@ -29,9 +29,11 @@ from skale.wallets.web3_wallet import public_key_to_address
 
 from core.filebeat import run_filebeat_service
 
+from tools.configs import META_FILEPATH
 from tools.configs.filebeat import MONITORING_CONTAINERS
 from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
+from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
@@ -274,3 +276,7 @@ def get_node_hardware_info() -> dict:
         'uname_version': uname_version,
         'attached_storage_size': attached_storage_size
     }
+
+
+def get_meta_info() -> dict:
+    return read_json(META_FILEPATH)
