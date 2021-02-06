@@ -20,6 +20,7 @@
 import os
 import logging
 import re
+import time
 from functools import wraps
 
 import docker
@@ -33,6 +34,8 @@ from tools.configs.containers import (CONTAINER_NOT_FOUND, RUNNING_STATUS, EXITE
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
 
 logger = logging.getLogger(__name__)
+
+MAX_RETRIES = 12
 
 
 def format_containers(f):
@@ -144,14 +147,32 @@ class DockerUtils:
         else:
             return -1
 
-    def rm_vol(self, name: str) -> None:
+    def rm_vol(self, name: str, retry_lvmpy_error=True) -> None:
         try:
             volume = self.client.volumes.get(name)
         except docker.errors.NotFound:
             logger.warning(f'Volume {name} is not exist')
+            return
+        logger.info(f'Going to remove volume {name}')
+        if retry_lvmpy_error:
+            timeouts = [2 ** power for power in range(MAX_RETRIES)]
         else:
-            logger.info(f'Going to remove volume {name}')
-            volume.remove(force=True)
+            timeouts = [0]
+        error = None
+        for i, timeout in enumerate(timeouts):
+            try:
+                logger.info(f'Removing volume attempt {i}')
+                volume.remove(force=True)
+            except Exception as err:
+                error = err
+                logger.error(
+                    f'Removing volume failed with {err}. Sleeping {timeout}s')
+                time.sleep(timeout)
+            else:
+                error = None
+                break
+        if error:
+            raise error
 
     def safe_get_container(self, container_name: str):
         logger.info(f'Trying to get container: {container_name}')

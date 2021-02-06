@@ -167,3 +167,9 @@ def run_test_schain_container(client):
             container.remove(v=True, force=True)
         raise e
     return test_schain_name, container_name
+
+
+def test_remove_volume(client):
+    name = 'test'
+    client.client.volumes.create(name=name)
+    client.rm_vol(name)
