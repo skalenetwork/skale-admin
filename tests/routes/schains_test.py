@@ -227,12 +227,19 @@ def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
     }
 
 
-def test_skaled_version(skale_bp):
-    version = '3.4.1-beta.0'
+def test_schain_containers_versions(skale_bp):
+    skaled_version = '3.4.1-beta.0'
+    ima_version = '1.1.0-beta.0'
     with mock.patch(
         'web.routes.schains.get_skaled_version',
-        return_value=version
-
-    ):
-        data = get_bp_data(skale_bp, '/skaled-version')
-        assert data == {'status': 'ok', 'payload': {'version': version}}
+        return_value=skaled_version
+    ), mock.patch('web.routes.schains.get_ima_version',
+                  return_value=ima_version):
+        data = get_bp_data(skale_bp, '/schain-containers-versions')
+        assert data == {
+            'status': 'ok',
+            'payload': {
+                'skaled_version': skaled_version,
+                'ima_version': ima_version
+            }
+        }
