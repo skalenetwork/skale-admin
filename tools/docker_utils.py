@@ -155,9 +155,6 @@ class DockerUtils:
             return None
 
     def rm_vol(self, name: str, retry_lvmpy_error: bool = True) -> None:
-        volume = self.get_vol(name)
-        if volume is None:
-            return
         logger.info(f'Going to remove volume {name}')
         if retry_lvmpy_error:
             timeouts = [2 ** power for power in range(MAX_RETRIES)]
@@ -165,19 +162,24 @@ class DockerUtils:
             timeouts = [0]
         error = None
         for i, timeout in enumerate(timeouts):
+            volume = self.get_vol(name)
+            if volume is None:
+                return
             try:
                 logger.info(f'Removing volume attempt {i}')
                 volume.remove(force=True)
             except Exception as err:
                 error = err
                 logger.error(
-                    f'Removing volume failed with {err}. Sleeping {timeout}s')
+                    f'Removing volume returned {err}. Sleeping {timeout}s')
                 time.sleep(timeout)
             else:
                 error = None
                 break
         if error:
             raise error
+        else:
+            logger.info(f'Volume {name} was successfuly removed')
 
     def safe_get_container(self, container_name: str):
         logger.info(f'Trying to get container: {container_name}')
