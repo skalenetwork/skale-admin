@@ -147,11 +147,16 @@ class DockerUtils:
         else:
             return -1
 
-    def rm_vol(self, name: str, retry_lvmpy_error=True) -> None:
+    def get_vol(self, name: str) -> Volume:
         try:
-            volume = self.client.volumes.get(name)
+            return self.client.volumes.get(name)
         except docker.errors.NotFound:
             logger.warning(f'Volume {name} is not exist')
+            return None
+
+    def rm_vol(self, name: str, retry_lvmpy_error: bool = True) -> None:
+        volume = self.get_vol(name)
+        if volume is None:
             return
         logger.info(f'Going to remove volume {name}')
         if retry_lvmpy_error:

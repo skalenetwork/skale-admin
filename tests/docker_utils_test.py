@@ -1,7 +1,9 @@
 import os
 from functools import partial
 
+import docker
 import pytest
+from mock import Mock
 from types import SimpleNamespace
 
 from core.schains.runner import get_container_name, get_image_name, get_container_info
@@ -173,3 +175,15 @@ def test_remove_volume(client):
     name = 'test'
     client.client.volumes.create(name=name)
     client.rm_vol(name)
+    with pytest.raises(docker.errors.APIError):
+        client.client.volumes.get(name)
+
+
+def test_remove_volume_error(client):
+    name = 'test'
+    client.client.volumes.create(name=name)
+    volume_mock = Mock()
+    volume_mock.remove = Mock(side_effect=docker.errors.APIError('test error'))
+    client.get_vol = Mock(return_value=volume_mock)
+    with pytest.raises(docker.errors.APIError):
+        client.rm_vol(name, retry_lvmpy_error=False)
