@@ -252,7 +252,7 @@ def repair_schain(skale, schain, start_ts, rotation_id, dutils=None):
     remove_schain_container(schain['name'])
     remove_schain_volume(schain['name'])
     logger.info(f'Running fresh container for {schain["name"]}')
-    monitor_sync_schain_container(skale, schain, start_ts, rotation_id, dutils)
+    monitor_sync_schain_container(skale, schain, start_ts, dutils)
 
 
 def cleanup_schain_docker_entity(schain_name: str) -> None:
@@ -303,18 +303,17 @@ def monitor_ima_container(schain: dict, dutils=None):
         run_ima_container(schain)
 
 
-def get_schain_public_key(skale, schain_name, rotation_id):
-    if rotation_id:
-        method = skale.key_storage.get_previous_public_key
-    else:
-        method = skale.key_storage.get_common_public_key
+def get_schain_public_key(skale, schain_name):
     group_idx = skale.schains.name_to_id(schain_name)
-    raw_public_key = method(group_idx)
+    raw_public_key = skale.key_storage.get_previous_public_key(group_idx)
     public_key_array = [*raw_public_key[0], *raw_public_key[1]]
+    if public_key_array == ['0', '0', '1', '0']:  # zero public key
+        raw_public_key = skale.key_storage.get_common_public_key(group_idx)
+        public_key_array = [*raw_public_key[0], *raw_public_key[1]]
     return ':'.join(map(str, public_key_array))
 
 
-def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0,
+def monitor_sync_schain_container(skale, schain, start_ts,
                                   volume_required=True,
                                   dutils=None):
     schain_name = schain['name']
@@ -323,7 +322,7 @@ def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0,
         return
 
     if not is_container_exists(schain_name):
-        public_key = get_schain_public_key(skale, schain_name, rotation_id)
+        public_key = get_schain_public_key(skale, schain_name)
         run_schain_container(schain, public_key=public_key, start_ts=start_ts,
                              dutils=dutils)
 
@@ -372,8 +371,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
     if not checks.container:
         if sync:
             finish_ts = rotation['finish_ts']
-            monitor_sync_schain_container(skale, schain,
-                                          finish_ts, rotation['rotation_id'])
+            monitor_sync_schain_container(skale, schain, finish_ts)
         elif check_schain_rotated(name):
             logger.info(
                 f'sChain {name} is stopped after rotation. Going to restart')

@@ -192,15 +192,15 @@ def test_monitor_sync_schain_container(skale, schain_config, dutils,
                                        cleanup_schain_container):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
-    start_ts, rotation_id = 0, 0
+    start_ts = 0
     monitor_sync_schain_container(skale, schain,
-                                  start_ts, rotation_id, volume_required=True,
+                                  start_ts, volume_required=True,
                                   dutils=dutils)
     containers = dutils.get_all_schain_containers()
     assert len(containers) == 0
 
     monitor_sync_schain_container(skale, schain,
-                                  start_ts, rotation_id,
+                                  start_ts,
                                   volume_required=False, dutils=dutils)
     containers = dutils.get_all_schain_containers()
     assert containers[0].name == f'skale_schain_{schain_name}'
