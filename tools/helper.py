@@ -54,7 +54,6 @@ def read_json(path, mode='r'):
 def write_json(path, content):
     with open(path, 'w') as outfile:
         json.dump(content, outfile, indent=4)
-        outfile.close()
 
 
 def init_file(path, content=None):
@@ -113,7 +112,7 @@ def process_template(source, destination, data):
 
 
 def wait_until_admin_inited():
-    logger.info('Waiting for skale admin to be inited ...')
+    logger.info('Checking if skale-admin inited ...')
     lock = FileLock(INIT_LOCK_PATH)
     with lock:
         logger.info('Skale admin inited')

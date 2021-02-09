@@ -27,7 +27,8 @@ from core.schains.config.helper import get_allowed_endpoints, get_schain_config
 from core.schains.helper import (
     get_cleaned_schains_for_node, schain_config_exists
 )
-from core.schains.info import get_schain_info_by_name
+from core.schains.ima import get_ima_version
+from core.schains.info import get_schain_info_by_name, get_skaled_version
 from tools.helper import init_skale
 from web.models.schain import SChainRecord, toggle_schain_repair_mode
 from web.helper import (construct_ok_response, construct_err_response,
@@ -146,5 +147,14 @@ def construct_schains_bp():
             )
         response = info.to_dict()
         return construct_ok_response(response)
+
+    @schains_bp.route('/schain-containers-versions', methods=['GET'])
+    def schain_containers_versions():
+        logger.debug(request)
+        version_data = {
+            'skaled_version': get_skaled_version(),
+            'ima_version': get_ima_version()
+        }
+        return construct_ok_response(version_data)
 
     return schains_bp
