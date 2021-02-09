@@ -261,7 +261,7 @@ def get_schain_container_base_opts(schain_name: str,
     ports = get_schain_ports(schain_name)
 
     static_schain_params = get_static_schain_params()
-    logs_verbosity = static_schain_params['schain_cmd']['logs_verbosity']
+    static_schain_cmd = static_schain_params['schain_cmd']
     cmd = [
         f'--config {config_filepath}',
         f'-d {DATA_DIR_CONTAINER_PATH}',
@@ -269,12 +269,8 @@ def get_schain_container_base_opts(schain_name: str,
         f'--http-port {ports["http"]}',
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
-        f'--wss-port {ports["wss"]}',
-        f'-v {logs_verbosity}',
-        '--web3-trace',
-        '--enable-debug-behavior-apis',
-        '--aa no'
-    ]
+        f'--wss-port {ports["wss"]}'
+    ].extend(static_schain_cmd)
     if enable_ssl:
         cmd.extend([
             f'--ssl-key {ssl_key}',
