@@ -257,6 +257,7 @@ def repair_schain(skale, schain, start_ts, rotation_id, dutils=None):
 
 def cleanup_schain_docker_entity(schain_name: str) -> None:
     remove_schain_container(schain_name)
+    time.sleep(10)
     remove_schain_volume(schain_name)
 
 
