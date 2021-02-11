@@ -14,14 +14,13 @@ from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
 from core.schains.runner import run_schain_container, run_ima_container
+from tools.configs.web3 import ABI_FILEPATH
 from tools.docker_utils import DockerUtils
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
-TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
-    DIR_PATH, 'test_abi.json')
 
 
 class FailedAPICall(Exception):
@@ -106,11 +105,15 @@ def run_simple_ima_container(schain: dict, dutils: DockerUtils):
     run_ima_container(schain, dutils=dutils)
 
 
-def init_skale():
-    print(ENDPOINT, TEST_ABI_FILEPATH)
+def init_web3_skale() -> Skale:
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
+    return Skale(ENDPOINT, ABI_FILEPATH, wallet)
+
+
+def init_web3_wallet() -> Web3Wallet:
+    web3 = init_web3(ENDPOINT)
+    return Web3Wallet(ETH_PRIVATE_KEY, web3)
 
 
 def response_mock(status_code=0, json_data=None, cookies=None,

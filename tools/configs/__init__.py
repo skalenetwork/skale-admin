@@ -60,11 +60,16 @@ else:
     SGX_SSL_KEY_FILEPATH = None
     SGX_SSL_CERT_FILEPATH = None
 
-NODE_CONFIG_LOCK_PATH = os.getenv('LOCK_PATH')
+NODE_CONFIG_LOCK_PATH = os.getenv('NODE_CONFIG_LOCK_PATH')
 if not NODE_CONFIG_LOCK_PATH:
-    NODE_CONFIG_LOCK_PATH = '/tmp/skale_node_config.lock'
+    NODE_CONFIG_LOCK_PATH = os.path.join(NODE_DATA_PATH,
+                                         'node_config.lock')
+INIT_LOCK_PATH = os.getenv('INIT_LOCK_PATH')
+if not INIT_LOCK_PATH:
+    INIT_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'init.lock')
 
 ROTATION_FLAG_FILENAME = '.rotation'
+META_FILEPATH = os.path.join(NODE_DATA_PATH, 'meta.json')
 
 D_ALLOWED_TIMESTAMP_DIFF = 120
 ALLOWED_TIMESTAMP_DIFF = os.getenv('ALLOWED_TIMESTAMP_DIFF', D_ALLOWED_TIMESTAMP_DIFF)
