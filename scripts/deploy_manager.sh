@@ -11,9 +11,11 @@ export DOCKER_NETWORK_ENDPOINT=http://ganache:8545
 docker rm -f ganache || true
 docker network create testnet || true
 
+rm $DIR/contracts_data/skale-manager-* || true
+
 docker run -d --network testnet -p 8545:8545 -p 8546:8546 \
     --name ganache trufflesuite/ganache-cli:v6.8.1-beta.0 \
-    --account="0x${ETH_PRIVATE_KEY},100000000000000000000000000" -l 10000000 -b 1
+    --account="0x${ETH_PRIVATE_KEY},100000000000000000000000000" -l 10000000 -b 0.1
 
 docker pull skalenetwork/skale-manager:$MANAGER_TAG
 docker run \
