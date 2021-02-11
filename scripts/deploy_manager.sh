@@ -22,6 +22,6 @@ docker run \
     -e ENDPOINT=$DOCKER_NETWORK_ENDPOINT \
     -e PRIVATE_KEY=$ETH_PRIVATE_KEY \
     skalenetwork/skale-manager:$MANAGER_TAG \
-    npx truffle migrate --network unique
+    npx hardhat run migrations/deploy.ts --network custom
 
-cp $DIR/contracts_data/unique.json $DIR/../tests/test_abi.json
+cp $DIR/contracts_data/skale-manager-* $DIR/../tests/test_abi.json
