@@ -18,25 +18,22 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 
 from flask import Flask, g
 
-from skale import Skale
-
-from core.node import Node
 from core.node_config import NodeConfig
 
 from tools.configs import FLASK_SECRET_KEY_FILE, SGX_SERVER_URL
-from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, TM_URL
 from tools.db import get_database
 from tools.docker_utils import DockerUtils
+from tools.helper import init_defualt_wallet, wait_until_admin_inited
 from tools.logger import init_api_logger
-from tools.sgx_utils import generate_sgx_key
 from tools.str_formatters import arguments_list_string
-from tools.wallet_utils import init_wallet
+from tools.configs.flask import (FLASK_APP_HOST,
+                                 FLASK_APP_PORT, FLASK_DEBUG_MODE)
 
-from web.models.schain import create_tables
 from web.routes.logs import web_logs
 from web.routes.nodes import construct_nodes_bp
 from web.routes.schains import construct_schains_bp
@@ -49,47 +46,40 @@ from web.routes.sgx import construct_sgx_bp
 init_api_logger()
 logger = logging.getLogger(__name__)
 
-logger.info('Skale inited')
-
-docker_utils = DockerUtils()
-logger.info('Docker utils inited')
-
-node_config = NodeConfig()
-generate_sgx_key(node_config)
-wallet = init_wallet(node_config)
-skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
-node = Node(skale, node_config)
-logger.info('Node inited')
-
 app = Flask(__name__)
 app.register_blueprint(web_logs)
-app.register_blueprint(construct_nodes_bp(skale, node, docker_utils))
-app.register_blueprint(construct_schains_bp(skale, node_config, docker_utils))
-app.register_blueprint(construct_wallet_bp(skale))
-app.register_blueprint(construct_node_info_bp(skale, docker_utils))
-app.register_blueprint(construct_security_bp(docker_utils))
-app.register_blueprint(construct_node_exit_bp(node))
-app.register_blueprint(construct_sgx_bp(node_config))
+app.register_blueprint(construct_nodes_bp())
+app.register_blueprint(construct_schains_bp())
+app.register_blueprint(construct_wallet_bp())
+app.register_blueprint(construct_node_info_bp())
+app.register_blueprint(construct_security_bp())
+app.register_blueprint(construct_node_exit_bp())
+app.register_blueprint(construct_sgx_bp())
 
 
 @app.before_request
 def before_request():
+    wait_until_admin_inited()
+    g.wallet = init_defualt_wallet()
     g.db = get_database()
+    g.request_start_time = time.time()
     g.db.connect(reuse_if_open=True)
+    g.docker_utils = DockerUtils()
+    g.config = NodeConfig()
 
 
 @app.teardown_request
 def teardown_request(response):
+    elapsed = int(time.time() - g.request_start_time)
+    logger.info(f'Request time elapsed: {elapsed}s')
     if not g.db.is_closed():
         g.db.close()
     return response
 
 
-create_tables()
-
 app.secret_key = FLASK_SECRET_KEY_FILE
 app.use_reloader = False
-logger.info('Starting api')
+logger.info('Starting api ...')
 
 
 def main():

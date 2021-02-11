@@ -20,7 +20,7 @@
 import logging
 from enum import Enum
 
-from flask import Blueprint, request
+from flask import Blueprint, g, request
 from sgx import SgxClient
 
 from web.helper import construct_ok_response
@@ -35,7 +35,7 @@ class SGXStatus(Enum):
     NOT_CONNECTED = 1
 
 
-def construct_sgx_bp(config):
+def construct_sgx_bp():
     sgx_bp = Blueprint('sgx', __name__)
 
     @sgx_bp.route('/api/sgx/info', methods=['GET'])
@@ -52,7 +52,7 @@ def construct_sgx_bp(config):
             'status': status,
             'status_name': SGXStatus(status).name,
             'sgx_server_url': SGX_SERVER_URL,
-            'sgx_keyname': config.sgx_key_name,
+            'sgx_keyname': g.config.sgx_key_name,
             'sgx_wallet_version': version
         }
         return construct_ok_response(data=res)

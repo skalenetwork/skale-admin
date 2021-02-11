@@ -117,7 +117,8 @@ def get_schain_ports_from_config(config):
         'http': int(node_info["httpRpcPort"]),
         'ws': int(node_info["wsRpcPort"]),
         'https': int(node_info["httpsRpcPort"]),
-        'wss': int(node_info["wssRpcPort"])
+        'wss': int(node_info["wssRpcPort"]),
+        'info_http': int(node_info["infoHttpRpcPort"]),
     }
 
 
@@ -129,7 +130,8 @@ def get_skaled_rpc_endpoints_from_config(config):
         NodeEndpoint(ip=None, port=node_info['httpRpcPort']),
         NodeEndpoint(ip=None, port=node_info['wsRpcPort']),
         NodeEndpoint(ip=None, port=node_info['httpsRpcPort']),
-        NodeEndpoint(ip=None, port=node_info['wssRpcPort'])
+        NodeEndpoint(ip=None, port=node_info['wssRpcPort']),
+        NodeEndpoint(ip=None, port=node_info['infoHttpRpcPort']),
     ]
 
 
@@ -259,7 +261,7 @@ def get_schain_container_base_opts(schain_name: str,
     ports = get_schain_ports(schain_name)
 
     static_schain_params = get_static_schain_params()
-    logs_verbosity = static_schain_params['schain_cmd']['logs_verbosity']
+    static_schain_cmd = static_schain_params.get('schain_cmd', None)
     cmd = [
         f'--config {config_filepath}',
         f'-d {DATA_DIR_CONTAINER_PATH}',
@@ -267,12 +269,12 @@ def get_schain_container_base_opts(schain_name: str,
         f'--http-port {ports["http"]}',
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
-        f'--wss-port {ports["wss"]}',
-        f'-v {logs_verbosity}',
-        '--web3-trace',
-        '--enable-debug-behavior-apis',
-        '--aa no'
+        f'--wss-port {ports["wss"]}'
     ]
+
+    if static_schain_cmd:
+        cmd.extend(static_schain_cmd)
+
     if enable_ssl:
         cmd.extend([
             f'--ssl-key {ssl_key}',
