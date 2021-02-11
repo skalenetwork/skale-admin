@@ -59,3 +59,5 @@ test_abi.json
 tests/skale-data/node_data/schains/*
 
 *.lock
+
+skale-manager-*
