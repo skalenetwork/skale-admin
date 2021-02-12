@@ -32,6 +32,7 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 
 
 MAX_WORKERS = 5
+TEST_SRW_FUND_VALUE = 3000000000000000000
 
 owner_skale = init_web3_skale()
 
@@ -230,15 +231,18 @@ def run_node_dkg(opts):
 
 
 def create_schain(skale: Skale, name: str, lifetime_seconds: int) -> None:
-    price_in_wei = skale.schains.get_schain_price(
+    _ = skale.schains.get_schain_price(
         TYPE_OF_NODES, lifetime_seconds
     )
-    skale.manager.create_schain(
+    skale.schains.grant_role(skale.schains.schain_creator_role(),
+                             skale.wallet.address)
+    skale.schains.add_schain_by_foundation(
         lifetime_seconds,
         TYPE_OF_NODES,
-        price_in_wei,
+        0,
         name,
-        wait_for=True
+        wait_for=True,
+        value=TEST_SRW_FUND_VALUE
     )
 
 

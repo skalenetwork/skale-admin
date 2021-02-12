@@ -43,15 +43,17 @@ init_admin_logger()
 logger = logging.getLogger(__name__)
 
 INITIAL_SLEEP_INTERVAL = 135
-SLEEP_INTERVAL = 45
+SLEEP_INTERVAL = 10
 WORKER_RESTART_SLEEP_INTERVAL = 2
 
 
 def monitor(skale, node_config):
     while True:
         run_creator(skale, node_config)
+        print(f'Sleeping for {SLEEP_INTERVAL}s ...')
         time.sleep(SLEEP_INTERVAL)
         run_cleaner(skale, node_config)
+        print(f'Sleeping for {SLEEP_INTERVAL}s ...')
         time.sleep(SLEEP_INTERVAL)
 
 

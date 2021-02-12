@@ -154,7 +154,7 @@ def run_monitor_for_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         skale = spawn_skale_manager_lib(skale)
         monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name)
     except Exception:
-        logger.exception(f'Monitor for schain {schain["name"]} failed')
+        logger.exception(f'Monitor for sChain {schain["name"]} failed')
 
 
 def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
