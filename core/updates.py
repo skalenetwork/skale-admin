@@ -47,9 +47,6 @@ def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:
     - Add node name field to node config
     """
     if node_config.id is not None:
-        if node_config.id == 0:
-            active_node_ids = skale.nodes.get_active_node_ids_by_address(skale.wallet.address)
-            node_config.id = active_node_ids[0]
         if node_config.name is None:
             node_info = skale.nodes.get(node_config.id)
             node_config.name = node_info['name']
