@@ -21,14 +21,14 @@ import logging
 from decimal import Decimal
 from http import HTTPStatus
 
-from flask import Blueprint, request, abort
+from flask import Blueprint, abort, request
 from web3 import Web3
 
 from core.node import get_node_hardware_info
+from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.custom_thread import CustomThread
-from tools.notifications.messages import tg_notifications_enabled, send_message
-from web.helper import construct_ok_response, construct_err_response, get_api_url
-
+from tools.notifications.messages import send_message, tg_notifications_enabled
+from web.helper import construct_err_response, construct_ok_response, get_api_url
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'node'
@@ -163,9 +163,12 @@ def construct_node_bp(skale, node, docker_utils):
         logger.debug(request)
         block_number = skale.web3.eth.blockNumber
         syncing = skale.web3.eth.syncing
+        trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
+        geth_client = 'Geth' in skale.web3.clientVersion
         info = {
             'block_number': block_number,
-            'syncing': syncing
+            'syncing': syncing,
+            'trusted': trusted and geth_client
         }
         return construct_ok_response(info)
 
