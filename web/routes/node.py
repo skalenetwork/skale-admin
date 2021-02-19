@@ -173,7 +173,8 @@ def construct_node_bp(skale, node, docker_utils):
         info = {
             'block_number': block_number,
             'syncing': syncing,
-            'trusted': trusted and geth_client
+            'trusted': trusted and geth_client,
+            'client': eth_client_version
         }
         return construct_ok_response(info)
 
