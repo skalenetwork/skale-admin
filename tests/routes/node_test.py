@@ -186,4 +186,4 @@ def test_endpoint_info(skale_bp, skale):
     assert payload['syncing'] is False
     assert payload['block_number'] > 1
     assert payload['trusted'] is False
-    assert payload['client'] is not 'unknown'
+    assert payload['client'] != 'unknown'
