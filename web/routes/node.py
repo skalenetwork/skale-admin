@@ -166,8 +166,8 @@ def construct_node_bp(skale, node, docker_utils):
         trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
         try:
             eth_client_version = skale.web3.clientVersion
-        except Exception as err:
-            logger.exception(err)
+        except Exception:
+            logger.exception('Cannot get client version')
             eth_client_version = 'unknown'
         geth_client = 'Geth' in eth_client_version
         info = {
