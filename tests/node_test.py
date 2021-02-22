@@ -8,7 +8,8 @@ from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.node import (
     get_attached_storage_block_device,
-    get_node_hardware_info, get_sys_block_size_path,
+    get_block_device_size,
+    get_node_hardware_info,
     Node, NodeExitStatus, NodeStatus
 )
 from core.node_config import NodeConfig
@@ -155,6 +156,15 @@ def test_get_attached_storage_block_device(block_device_file) -> int:
     assert get_attached_storage_block_device() == 'xvdd'
 
 
-def test_get_sys_block_size_path():
-    assert get_sys_block_size_path('sdb1') == '/sys/block/sdb1/size'
-    assert get_sys_block_size_path('/xvdd/') == '/sys/block/xvdd/size'
+def test_get_block_device_size():
+    device = '/dev/test'
+    size = 41224
+    response_mock = mock.Mock()
+    response_mock.json = mock.Mock(
+        return_value={'Name': device, 'Size': size, 'Err': ''})
+    with mock.patch('requests.get', return_value=response_mock):
+        assert get_block_device_size(device) == size
+
+    response_mock.json = mock.Mock(return_value={'Err': 'Test error'})
+    with mock.patch('requests.get', return_value=response_mock):
+        assert get_block_device_size(device) == -1
