@@ -98,11 +98,17 @@ def construct_node_info_bp():
         block_number = skale.web3.eth.blockNumber
         syncing = skale.web3.eth.syncing
         trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
-        geth_client = 'Geth' in skale.web3.clientVersion
+        try:
+            eth_client_version = skale.web3.clientVersion
+        except Exception:
+            logger.exception('Cannot get client version')
+            eth_client_version = 'unknown'
+        geth_client = 'Geth' in eth_client_version
         info = {
             'block_number': block_number,
             'syncing': syncing,
-            'trusted': trusted and geth_client
+            'trusted': trusted and geth_client,
+            'client': eth_client_version
         }
         return construct_ok_response(info)
 
