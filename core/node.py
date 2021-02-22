@@ -66,6 +66,9 @@ class SchainExitStatus(Enum):
     LEFT = 2
 
 
+DOCKER_LVMPY_BLOCK_SIZE_URL = 'http://127.0.0.1:7373/physical-volume-size'
+
+
 class Node:
     """This class contains node registration logic"""
     def __init__(self, skale, config):
@@ -247,7 +250,7 @@ def _get_node_status(node_info):
 def get_block_device_size(device: str) -> int:
     """ Returns block device size in bytes """
     response = requests.get(
-        'http://127.0.0.1:7373/physical-volume-size',
+        DOCKER_LVMPY_BLOCK_SIZE_URL,
         json={'Name': None}
     )
     data = response.json()
