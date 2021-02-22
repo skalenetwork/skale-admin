@@ -57,6 +57,7 @@ unique.json
 logs.tar.gz
 
 tests/skale-data/node_data/schains/*
+test_abi.json
 
 *.lock
 
