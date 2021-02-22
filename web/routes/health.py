@@ -22,13 +22,15 @@ from enum import Enum
 from http import HTTPStatus
 
 
-from flask import Blueprint, request
+from flask import Blueprint, g, request
 from sgx import SgxClient
+
 
 from web.helper import construct_ok_response, get_api_url, construct_err_response
 from core.schains.checks import SChainChecks
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs import SGX_CERTIFICATES_FOLDER
+from tools.helper import init_skale
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'health'
@@ -39,7 +41,7 @@ class SGXStatus(Enum):
     NOT_CONNECTED = 1
 
 
-def construct_health_bp(config, skale, docker_utils):
+def construct_health_bp():
     health_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
     @health_bp.route(get_api_url(BLUEPRINT_NAME, 'containers'), methods=['GET'])
@@ -47,7 +49,7 @@ def construct_health_bp(config, skale, docker_utils):
         logger.debug(request)
         all = request.args.get('all') == 'True'
         name_filter = request.args.get('name_filter') or ''
-        containers_list = docker_utils.get_containers_info(
+        containers_list = g.docker_utils.get_containers_info(
             all=all,
             name_filter=name_filter,
             format=True
@@ -57,7 +59,8 @@ def construct_health_bp(config, skale, docker_utils):
     @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
     def schains_checks():
         logger.debug(request)
-        node_id = config.id
+        skale = init_skale(wallet=g.wallet)
+        node_id = g.config.id
         if node_id is None:
             return construct_err_response(HTTPStatus.BAD_REQUEST,
                                           ['No node installed'])
@@ -85,7 +88,7 @@ def construct_health_bp(config, skale, docker_utils):
             'status': status,
             'status_name': SGXStatus(status).name,
             'sgx_server_url': SGX_SERVER_URL,
-            'sgx_keyname': config.sgx_key_name,
+            'sgx_keyname': g.config.sgx_key_name,
             'sgx_wallet_version': version
         }
         return construct_ok_response(data=res)

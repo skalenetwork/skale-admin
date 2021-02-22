@@ -20,24 +20,26 @@
 import logging
 from decimal import Decimal
 
-from flask import Blueprint, request
+from flask import Blueprint, g, request
 from skale.transactions.tools import send_eth_with_skale
 from skale.utils.web3_utils import to_checksum_address
 from web3 import Web3
 
 from web.helper import construct_ok_response, construct_err_response, get_api_url
+from tools.helper import init_skale
 from tools.wallet_utils import wallet_with_balance
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'wallet'
 
 
-def construct_wallet_bp(skale):
+def construct_wallet_bp():
     wallet_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
     @wallet_bp.route(get_api_url(BLUEPRINT_NAME, 'info'), methods=['GET'])
     def info():
         logger.debug(request)
+        skale = init_skale(g.wallet)
         res = wallet_with_balance(skale)
         return construct_ok_response(data=res)
 
@@ -50,7 +52,7 @@ def construct_wallet_bp(skale):
         gas_price = request.json.get('gas_price', None)
         if gas_price is not None:
             gas_price = Web3.toWei(Decimal(gas_price), 'gwei')
-        wei_amount = skale.web3.toWei(eth_amount, 'ether')
+        wei_amount = Web3.toWei(eth_amount, 'ether')
         if not raw_address:
             return construct_err_response('Address is empty')
         if not eth_amount:
@@ -62,6 +64,7 @@ def construct_wallet_bp(skale):
                 f'gas_price: {gas_price} Wei, '
                 f'gas_limit: {gas_limit}'
             )
+            skale = init_skale(g.wallet)
             send_eth_with_skale(skale, address, wei_amount,
                                 gas_limit=gas_limit, gas_price=gas_price)
         except Exception:

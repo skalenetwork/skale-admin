@@ -1,14 +1,15 @@
 import os
 
 import mock
-import psutil
 import pytest
 
 from skale.utils.contracts_provision.main import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.node import (
-    get_node_hardware_info, Node, NodeExitStatuses, NodeStatuses
+    get_attached_storage_block_device,
+    get_node_hardware_info, get_sys_block_size_path,
+    Node, NodeExitStatus, NodeStatus
 )
 from core.node_config import NodeConfig
 from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
@@ -88,35 +89,35 @@ def active_node(skale):
 
 def test_start_exit(active_node):
     active_node.exit({})
-    status = NodeExitStatuses(active_node.skale.nodes.get_node_status(active_node.config.id))
+    status = NodeExitStatus(active_node.skale.nodes.get_node_status(active_node.config.id))
 
-    assert status != NodeExitStatuses.ACTIVE
+    assert status != NodeExitStatus.ACTIVE
 
 
 def test_exit_status(active_node):
     active_status_data = active_node.get_exit_status()
     assert list(active_status_data.keys()) == ['status', 'data', 'exit_time']
-    assert active_status_data['status'] == NodeExitStatuses.ACTIVE.name
+    assert active_status_data['status'] == NodeExitStatus.ACTIVE.name
     assert active_status_data['exit_time'] == 0
 
     active_node.exit({})
     exit_status_data = active_node.get_exit_status()
     assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
-    assert exit_status_data['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
+    assert exit_status_data['status'] == NodeExitStatus.WAIT_FOR_ROTATIONS.name
     assert exit_status_data['exit_time'] != 0
-    assert active_node.info['status'] == NodeStatuses.FROZEN.value
+    assert active_node.info['status'] == NodeStatus.FROZEN.value
 
 
 def test_node_maintenance(active_node, skale):
     res = active_node.set_maintenance_on()
-    node_status = NodeStatuses(skale.nodes.get_node_status(active_node.config.id))
+    node_status = NodeStatus(skale.nodes.get_node_status(active_node.config.id))
     assert res == {'status': 0}
-    assert node_status == NodeStatuses.IN_MAINTENANCE
+    assert node_status == NodeStatus.IN_MAINTENANCE
 
     res = active_node.set_maintenance_off()
-    node_status = NodeStatuses(skale.nodes.get_node_status(active_node.config.id))
+    node_status = NodeStatus(skale.nodes.get_node_status(active_node.config.id))
     assert res == {'status': 0}
-    assert node_status == NodeStatuses.ACTIVE
+    assert node_status == NodeStatus.ACTIVE
 
 
 def test_node_maintenance_error(active_node, skale):
@@ -130,7 +131,7 @@ def test_node_maintenance_error(active_node, skale):
 
 @pytest.fixture
 def block_device_file():
-    device = psutil.disk_partitions()[0].device
+    device = '/dev/xvdd'
     with open(DISK_MOUNTPOINT_FILEPATH, 'w') as dm_file:
         dm_file.write(device)
     yield DISK_MOUNTPOINT_FILEPATH
@@ -148,3 +149,12 @@ def test_get_node_hardware_info(get_block_device_size_mock, block_device_file):
     assert isinstance(info['system_release'], str)
     assert isinstance(info['uname_version'], str)
     assert info['attached_storage_size'] == 300
+
+
+def test_get_attached_storage_block_device(block_device_file) -> int:
+    assert get_attached_storage_block_device() == 'xvdd'
+
+
+def test_get_sys_block_size_path():
+    assert get_sys_block_size_path('sdb1') == '/sys/block/sdb1/size'
+    assert get_sys_block_size_path('/xvdd/') == '/sys/block/xvdd/size'

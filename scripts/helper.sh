@@ -18,6 +18,7 @@ export_test_env () {
     export TM_URL=http://localhost:3009
     export TG_CHAT_ID=-1231232
     export TG_API_KEY=123
+    export ABI_FILEPATH=tests/test_abi.json
 }
 
 

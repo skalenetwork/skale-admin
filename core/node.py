@@ -29,16 +29,18 @@ from skale.wallets.web3_wallet import public_key_to_address
 
 from core.filebeat import run_filebeat_service
 
+from tools.configs import META_FILEPATH
 from tools.configs.filebeat import MONITORING_CONTAINERS
 from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
+from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
 logger = logging.getLogger(__name__)
 
 
-class NodeStatuses(Enum):
+class NodeStatus(Enum):
     """This class contains possible node statuses"""
     ACTIVE = 0
     LEAVING = 1
@@ -48,7 +50,7 @@ class NodeStatuses(Enum):
     NOT_CREATED = 5
 
 
-class NodeExitStatuses(Enum):
+class NodeExitStatus(Enum):
     """This class contains possible node exit statuses"""
     ACTIVE = 0
     IN_PROGRESS = 1
@@ -56,7 +58,7 @@ class NodeExitStatuses(Enum):
     COMPLETED = 3
 
 
-class SchainExitStatuses(Enum):
+class SchainExitStatus(Enum):
     """This class contains possible schain exit statuses"""
     ACTIVE = 0
     LEAVING = 1
@@ -136,7 +138,7 @@ class Node:
         schain_statuses = [
             {
                 'name': schain['name'],
-                'status': SchainExitStatuses.ACTIVE.name
+                'status': SchainExitStatus.ACTIVE.name
             }
             for schain in active_schains
         ]
@@ -145,26 +147,26 @@ class Node:
         current_time = time.time()
         for schain in rotated_schains:
             if current_time > schain['finished_rotation']:
-                status = SchainExitStatuses.LEFT
+                status = SchainExitStatus.LEFT
             else:
-                status = SchainExitStatuses.LEAVING
+                status = SchainExitStatus.LEAVING
             schain_name = self.skale.schains.get(schain['id'])['name']
             if not schain_name:
                 schain_name = '[REMOVED]'
             schain_statuses.append(
                 {'name': schain_name, 'status': status.name}
             )
-        node_status = NodeExitStatuses(
+        node_status = NodeExitStatus(
             self.skale.nodes.get_node_status(self.config.id))
         exit_time = self.skale.nodes.get_node_finish_time(self.config.id)
-        if node_status == NodeExitStatuses.WAIT_FOR_ROTATIONS and \
+        if node_status == NodeExitStatus.WAIT_FOR_ROTATIONS and \
                 current_time >= exit_time:
-            node_status = NodeExitStatuses.COMPLETED
+            node_status = NodeExitStatus.COMPLETED
         return {'status': node_status.name, 'data': schain_statuses,
                 'exit_time': exit_time}
 
     def set_maintenance_on(self):
-        if NodeStatuses(self.info['status']) != NodeStatuses.ACTIVE:
+        if NodeStatus(self.info['status']) != NodeStatus.ACTIVE:
             err_msg = 'Node should be active'
             logger.error(err_msg)
             return {'status': 1, 'errors': [err_msg]}
@@ -177,7 +179,7 @@ class Node:
         return {'status': 0}
 
     def set_maintenance_off(self):
-        if NodeStatuses(self.info['status']) != NodeStatuses.IN_MAINTENANCE:
+        if NodeStatus(self.info['status']) != NodeStatus.IN_MAINTENANCE:
             err_msg = 'Node is not in maintenance mode'
             logger.error(err_msg)
             return {'status': 1, 'errors': [err_msg]}
@@ -221,7 +223,7 @@ class Node:
         if _id is not None:
             raw_info = self.skale.nodes.get(_id)
             return self._transform_node_info(raw_info, _id)
-        return {'status': NodeStatuses.NOT_CREATED.value}
+        return {'status': NodeStatus.NOT_CREATED.value}
 
     def _transform_node_info(self, node_info, node_id):
         node_info['ip'] = ip_from_bytes(node_info['ip'])
@@ -235,22 +237,28 @@ class Node:
 
 def _get_node_status(node_info):
     finish_time = node_info['finish_time']
-    status = NodeStatuses(node_info['status'])
-    if status == NodeStatuses.FROZEN and finish_time < time.time():
-        return NodeStatuses.LEFT.value
+    status = NodeStatus(node_info['status'])
+    if status == NodeStatus.FROZEN and finish_time < time.time():
+        return NodeStatus.LEFT.value
     return status.value
+
+
+def get_sys_block_size_path(device: str) -> str:
+    device = device.strip('/')
+    return f'/sys/block/{device}/size'
 
 
 def get_block_device_size(device: str) -> int:
     """ Returns block device size in bytes """
-    with open(f'/sys/block/{device}/size') as sys_stats:
-        return int(sys_stats.read()) // 2
+    sys_block_path = get_sys_block_size_path(device)
+    with open(sys_block_path) as sys_stats:
+        return int(sys_stats.read()) * 512
 
 
 def get_attached_storage_block_device():
     with open(DISK_MOUNTPOINT_FILEPATH) as dm_file:
         full_name = dm_file.read().strip()
-        name = full_name[4:]  # remove /dev prefix
+        name = full_name[5:]  # remove /dev/ prefix
         return name
 
 
@@ -268,3 +276,7 @@ def get_node_hardware_info() -> dict:
         'uname_version': uname_version,
         'attached_storage_size': attached_storage_size
     }
+
+
+def get_meta_info() -> dict:
+    return read_json(META_FILEPATH)

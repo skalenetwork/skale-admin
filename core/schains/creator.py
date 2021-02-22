@@ -62,7 +62,7 @@ from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode, is_checks_passed
 from tools.str_formatters import arguments_list_string
-from web.models.schain import upsert_schain_record
+from web.models.schain import upsert_schain_record, SChainRecord
 
 
 logger = logging.getLogger(__name__)
@@ -82,7 +82,10 @@ def run_creator(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
     join_timeout = TIMEOUT_COEFFICIENT * skale.constants_holder.get_dkg_timeout()
     process.start()
+    logger.info('Creator process started')
     process.join(join_timeout)
+    logger.info('Creator process is joined.')
+    logger.info('Terminating the process')
     process.terminate()
     process.join()
 
@@ -115,7 +118,7 @@ def monitor(skale, node_config):
     with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
         futures = [
             executor.submit(
-                monitor_schain,
+                run_monitor_for_schain,
                 skale,
                 node_info,
                 schain,
@@ -145,9 +148,16 @@ def get_monitor_mode(schain_record, rotation_state):
     return MonitorMode.REGULAR
 
 
+def run_monitor_for_schain(skale, node_info, schain, ecdsa_sgx_key_name):
+    try:
+        logger.info(f'Monitor for sChain {schain["name"]}')
+        skale = spawn_skale_manager_lib(skale)
+        monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name)
+    except Exception:
+        logger.exception(f'Monitor for sChain {schain["name"]} failed')
+
+
 def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
-    logger.info(f"Monitor for sChain {schain['name']}")
-    skale = spawn_skale_manager_lib(skale)
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
@@ -159,14 +169,20 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
 
     schain_record = upsert_schain_record(name)
     mode = get_monitor_mode(schain_record, rotation)
-
     checks = SChainChecks(name, node_id, rotation_id=rotation_id)
 
-    if not checks.exit_code_ok:
-        mode = MonitorMode.SYNC
+    logger.debug(f'sChain record: {SChainRecord.to_dict(schain_record)}')
+
+    if schain_record.needs_reload:
+        logger.warning(f'Going to reload {schain["name"]}')
+        remove_schain_container(schain["name"])
+        schain_record.set_needs_reload(False)
+        mode = MonitorMode.REGULAR
+        logger.warning(f'sChain container {schain["name"]} was removed, going to run checks')
 
     if schain_record.repair_mode or not checks.exit_code_ok:
         logger.info(f'REPAIR MODE was toggled for schain {schain["name"]}')
+        mode = MonitorMode.SYNC
         notify_repair_mode(node_info, name)
         cleanup_schain_docker_entity(name)
         schain_record.set_repair_mode(False)
@@ -236,11 +252,12 @@ def repair_schain(skale, schain, start_ts, rotation_id, dutils=None):
     remove_schain_container(schain['name'])
     remove_schain_volume(schain['name'])
     logger.info(f'Running fresh container for {schain["name"]}')
-    monitor_sync_schain_container(skale, schain, start_ts, rotation_id, dutils)
+    monitor_sync_schain_container(skale, schain, start_ts, dutils)
 
 
 def cleanup_schain_docker_entity(schain_name: str) -> None:
     remove_schain_container(schain_name)
+    time.sleep(10)
     remove_schain_volume(schain_name)
 
 
@@ -287,18 +304,17 @@ def monitor_ima_container(schain: dict, dutils=None):
         run_ima_container(schain)
 
 
-def get_schain_public_key(skale, schain_name, rotation_id):
-    if rotation_id:
-        method = skale.key_storage.get_previous_public_key
-    else:
-        method = skale.key_storage.get_common_public_key
+def get_schain_public_key(skale, schain_name):
     group_idx = skale.schains.name_to_id(schain_name)
-    raw_public_key = method(group_idx)
+    raw_public_key = skale.key_storage.get_previous_public_key(group_idx)
     public_key_array = [*raw_public_key[0], *raw_public_key[1]]
+    if public_key_array == ['0', '0', '1', '0']:  # zero public key
+        raw_public_key = skale.key_storage.get_common_public_key(group_idx)
+        public_key_array = [*raw_public_key[0], *raw_public_key[1]]
     return ':'.join(map(str, public_key_array))
 
 
-def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0,
+def monitor_sync_schain_container(skale, schain, start_ts,
                                   volume_required=True,
                                   dutils=None):
     schain_name = schain['name']
@@ -307,7 +323,7 @@ def monitor_sync_schain_container(skale, schain, start_ts, rotation_id=0,
         return
 
     if not is_container_exists(schain_name):
-        public_key = get_schain_public_key(skale, schain_name, rotation_id)
+        public_key = get_schain_public_key(skale, schain_name)
         run_schain_container(schain, public_key=public_key, start_ts=start_ts,
                              dutils=dutils)
 
@@ -316,6 +332,9 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
                  rotation_id, schain_record):
     schain_record.dkg_started()
     try:
+        if not skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
+            schain_record.dkg_failed()
+            return False
         run_dkg(skale, schain_name, node_id,
                 sgx_key_name, rotation_id)
     except DkgError as err:
@@ -353,8 +372,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
     if not checks.container:
         if sync:
             finish_ts = rotation['finish_ts']
-            monitor_sync_schain_container(skale, schain,
-                                          finish_ts, rotation['rotation_id'])
+            monitor_sync_schain_container(skale, schain, finish_ts)
         elif check_schain_rotated(name):
             logger.info(
                 f'sChain {name} is stopped after rotation. Going to restart')

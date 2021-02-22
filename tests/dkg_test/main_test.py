@@ -26,14 +26,15 @@ from core.schains.helper import init_schain_dir
 from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (generate_random_node_data,
-                         generate_random_schain_data, init_skale)
+                         generate_random_schain_data, init_web3_skale)
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 
 
 MAX_WORKERS = 5
+TEST_SRW_FUND_VALUE = 3000000000000000000
 
-owner_skale = init_skale()
+owner_skale = init_web3_skale()
 
 
 logger = logging.getLogger(__name__)
@@ -230,15 +231,18 @@ def run_node_dkg(opts):
 
 
 def create_schain(skale: Skale, name: str, lifetime_seconds: int) -> None:
-    price_in_wei = skale.schains.get_schain_price(
+    _ = skale.schains.get_schain_price(
         TYPE_OF_NODES, lifetime_seconds
     )
-    skale.manager.create_schain(
+    skale.schains.grant_role(skale.schains.schain_creator_role(),
+                             skale.wallet.address)
+    skale.schains.add_schain_by_foundation(
         lifetime_seconds,
         TYPE_OF_NODES,
-        price_in_wei,
+        0,
         name,
-        wait_for=True
+        wait_for=True,
+        value=TEST_SRW_FUND_VALUE
     )
 
 
