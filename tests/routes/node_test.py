@@ -204,10 +204,15 @@ def test_endpoint_info(skale_bp, skale):
     assert payload['syncing'] is False
     assert payload['block_number'] > 1
     assert payload['trusted'] is False
+    assert payload['client'] != 'unknown'
 
 
 def test_meta_info(skale_bp):
-    meta_info = {"version": "0.0.0", "config_stream": "1.4.1-testnet"}
+    meta_info = {
+        "version": "0.0.0",
+        "config_stream": "1.4.1-testnet",
+        "docker_lvmpy_stream": "1.1.1"
+    }
 
     with mock.patch(
         'web.routes.node.get_meta_info',
