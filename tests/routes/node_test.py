@@ -8,7 +8,7 @@ import freezegun
 from flask import Flask, appcontext_pushed, g
 from web3 import Web3
 
-from core.node import Node
+from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
 
 from web.routes.node import construct_node_bp
@@ -53,9 +53,21 @@ def node_contracts(skale):
     skale.manager.node_exit(node_id, wait_for=True)
 
 
-def test_node_info(skale_bp, node):
+@pytest.fixture
+def node_config():
+    return NodeConfig()
+
+
+def test_node_info(skale_bp, skale, node_contracts, node_config):
+    node_id = node_contracts
+    node_config.id = node_id
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'info'))
-    assert data == {'status': 'ok', 'payload': {'node_info': node.info}}
+    status = NodeStatus.ACTIVE.value
+    assert data['status'] == 'ok'
+    node_info = data['payload']['node_info']
+    assert node_info['id'] == node_id
+    assert node_info['status'] == status
+    assert node_info['owner'] == skale.wallet.address
 
 
 def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
@@ -198,7 +210,7 @@ def test_meta_info(skale_bp):
     meta_info = {"version": "0.0.0", "config_stream": "1.4.1-testnet"}
 
     with mock.patch(
-        'web.routes.node_info.get_meta_info',
+        'web.routes.node.get_meta_info',
         return_value=meta_info
     ):
         data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'meta-info'))

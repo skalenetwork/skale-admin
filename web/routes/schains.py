@@ -40,15 +40,7 @@ def construct_schains_bp():
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'config'), methods=['GET'])
     def schain_config():
         logger.debug(request)
-        skale = init_skale(g.wallet)
-        schains = skale.schains.get_schains_for_owner(
-            skale.wallet.address)
-        return construct_ok_response(schains)
-
-    @schains_bp.route('/schain-config', methods=['GET'])
-    def get_schain_config_route():
-        logger.debug(request)
-        key = 'schain-name'
+        key = 'schain_name'
         schain_name = request.args.get(key)
         if not schain_name:
             return construct_key_error_response([key])
