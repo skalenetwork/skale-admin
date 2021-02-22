@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'node'
 
 
-def construct_nodes_bp():
+def construct_node_bp():
     node_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'info'), methods=['GET'])

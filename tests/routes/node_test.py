@@ -11,7 +11,7 @@ from web3 import Web3
 from core.node import Node
 from core.node_config import NodeConfig
 
-from web.routes.nodes import construct_nodes_bp
+from web.routes.node import construct_node_bp
 from web.helper import get_api_url
 
 from tools.docker_utils import DockerUtils
@@ -32,7 +32,7 @@ BLUEPRINT_NAME = 'node'
 @pytest.fixture
 def skale_bp(skale):
     app = Flask(__name__)
-    app.register_blueprint(construct_nodes_bp())
+    app.register_blueprint(construct_node_bp())
 
     def handler(sender, **kwargs):
         g.docker_utils = DockerUtils(volume_driver='local')
