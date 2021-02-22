@@ -153,7 +153,7 @@ def test_get_node_hardware_info(get_block_device_size_mock, block_device_file):
 
 
 def test_get_attached_storage_block_device(block_device_file) -> int:
-    assert get_attached_storage_block_device() == 'xvdd'
+    assert get_attached_storage_block_device() == '/dev/xvdd'
 
 
 def test_get_block_device_size():
