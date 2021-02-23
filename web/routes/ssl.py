@@ -27,6 +27,7 @@ from OpenSSL import crypto
 from flask import Blueprint, request
 
 from core.schains.ssl import is_ssl_folder_empty
+from web.models.schain import set_schains_need_reload
 from web.helper import construct_ok_response, construct_err_response, get_api_url
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 
@@ -42,7 +43,7 @@ SSL_CRT_NAME = 'ssl_cert'
 BLUEPRINT_NAME = 'ssl'
 
 
-def construct_ssl_bp(docker_utils):
+def construct_ssl_bp():
     ssl_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
     @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'status'), methods=['GET'])
@@ -86,9 +87,7 @@ def construct_ssl_bp(docker_utils):
         ssl_cert = request.files[SSL_CRT_NAME]
         ssl_key.save(os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_KEY_NAME))
         ssl_cert.save(os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_CRT_NAME))
-
-        docker_utils.restart_all_schains()
-
+        set_schains_need_reload()
         return construct_ok_response()
 
     return ssl_bp

@@ -23,6 +23,8 @@ import json
 import requests
 from pathlib import Path
 
+from skale import Skale
+
 from tools.configs import SCHAIN_DATA_PATH, ROTATION_FLAG_FILENAME
 from tools.configs.schains import (SCHAINS_DIR_PATH, DATA_DIR_NAME,
                                    BASE_SCHAIN_CONFIG_FILEPATH,
@@ -126,3 +128,10 @@ def send_rotation_request(url, timestamp):
     ).json()
     if response.get('error'):
         raise Exception(response['error']['message'])
+
+
+def get_cleaned_schains_for_node(skale: Skale, node_id: int) -> list:
+    return list(filter(
+            lambda s: s['name'] != '',
+            skale.schains.get_schains_for_node(node_id)
+        ))

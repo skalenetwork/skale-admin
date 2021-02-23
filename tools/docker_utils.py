@@ -17,8 +17,10 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import logging
 import re
+import time
 from functools import wraps
 
 import docker
@@ -27,9 +29,13 @@ from docker.client import DockerClient
 from docker.models.containers import Container
 from docker.models.volumes import Volume
 
-from tools.configs.containers import CONTAINER_NOT_FOUND, RUNNING_STATUS, EXITED_STATUS
+from tools.configs.containers import (CONTAINER_NOT_FOUND, RUNNING_STATUS, EXITED_STATUS,
+                                      DOCKER_DEFAULT_TAIL_LINES, DOCKER_DEFAULT_STOP_TIMEOUT)
+from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
 
 logger = logging.getLogger(__name__)
+
+MAX_RETRIES = 12
 
 
 def format_containers(f):
@@ -143,24 +149,75 @@ class DockerUtils:
         else:
             return -1
 
-    def rm_vol(self, name: str) -> None:
+    def get_vol(self, name: str) -> Volume:
         try:
-            volume = self.client.volumes.get(name)
+            return self.client.volumes.get(name)
         except docker.errors.NotFound:
             logger.warning(f'Volume {name} is not exist')
-        else:
-            logger.info(f'Going to remove volume {name}')
-            volume.remove(force=True)
+            return None
 
-    def safe_rm(self, container_name: str, **kwargs):
-        logger.info(f'Removing container: {container_name}')
+    def rm_vol(self, name: str, retry_lvmpy_error: bool = True) -> None:
+        logger.info(f'Going to remove volume {name}')
+        if retry_lvmpy_error:
+            timeouts = [2 ** power for power in range(MAX_RETRIES)]
+        else:
+            timeouts = [0]
+        error = None
+        for i, timeout in enumerate(timeouts):
+            volume = self.get_vol(name)
+            if volume is None:
+                return
+            try:
+                logger.info(f'Removing volume attempt {i}')
+                volume.remove(force=True)
+            except Exception as err:
+                error = err
+                logger.error(
+                    f'Removing volume returned {err}. Sleeping {timeout}s')
+                time.sleep(timeout)
+            else:
+                error = None
+                break
+        if error:
+            raise error
+        else:
+            logger.info(f'Volume {name} was successfuly removed')
+
+    def safe_get_container(self, container_name: str):
+        logger.info(f'Trying to get container: {container_name}')
         try:
-            container = self.client.containers.get(container_name)
-            res = container.remove(**kwargs)
-            logger.info(f'Container removed: {container_name}')
-            return res
-        except docker.errors.APIError:
-            logger.error(f'No such container: {container_name}')
+            return self.client.containers.get(container_name)
+        except docker.errors.APIError as e:
+            logger.warning(e)
+            logger.warning(f'No such container: {container_name}')
+
+    def safe_rm(self, container_name: str, stop_timeout=DOCKER_DEFAULT_STOP_TIMEOUT, **kwargs):
+        """
+        Saves docker container logs (last N lines) in the .skale/node_data/log/.removed_containers
+        folder. Then stops and removes container with specified params.
+        """
+        container = self.safe_get_container(container_name)
+        if not container:
+            return
+        self.backup_container_logs(container)
+        logger.info(f'Stopping container: {container_name}, timeout: {stop_timeout}')
+        container.stop(timeout=stop_timeout)
+        logger.info(f'Removing container: {container_name}, kwargs: {kwargs}')
+        container.remove(**kwargs)
+        logger.info(f'Container removed: {container_name}')
+
+    def backup_container_logs(self, container: Container, tail=DOCKER_DEFAULT_TAIL_LINES) -> None:
+        logger.info(f'Going to backup container logs: {container.name}')
+        logs_backup_filepath = self.get_logs_backup_filepath(container)
+        with open(logs_backup_filepath, "wb") as out:
+            out.write(container.logs(tail=tail))
+        logger.info(f'Old container logs saved to {logs_backup_filepath}, tail: {tail}')
+
+    def get_logs_backup_filepath(self, container: Container) -> str:
+        container_index = sum(1 for f in os.listdir(REMOVED_CONTAINERS_FOLDER_PATH)
+                              if f.startswith(f'{container.name}-'))
+        log_file_name = f'{container.name}-{container_index}.log'
+        return os.path.join(REMOVED_CONTAINERS_FOLDER_PATH, log_file_name)
 
     def restart(self, container_name: str, **kwargs):
         logger.info(f'Restarting container: {container_name}')

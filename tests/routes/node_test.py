@@ -5,21 +5,22 @@ import mock
 from mock import patch
 import freezegun
 
-from flask import Flask
+from flask import Flask, appcontext_pushed, g
 from web3 import Web3
-from skale.utils.contracts_provision.utils import generate_random_node_data
-from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
-from core.node import Node
+from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
+
 from web.routes.node import construct_node_bp
 from web.helper import get_api_url
-
 
 from tools.docker_utils import DockerUtils
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 
 from tests.utils import get_bp_data, post_bp_data
+
+from skale.utils.contracts_provision.utils import generate_random_node_data
+from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 
 CURRENT_TIMESTAMP = 1594903080
@@ -29,27 +30,44 @@ BLUEPRINT_NAME = 'node'
 
 
 @pytest.fixture
-def node_config(skale):
+def skale_bp(skale):
+    app = Flask(__name__)
+    app.register_blueprint(construct_node_bp())
+
+    def handler(sender, **kwargs):
+        g.docker_utils = DockerUtils(volume_driver='local')
+        g.wallet = skale.wallet
+        g.config = NodeConfig()
+
+    with appcontext_pushed.connected_to(handler, app):
+        yield app.test_client()
+
+
+@pytest.fixture
+def node_contracts(skale):
+    ip, public_ip, port, name = generate_random_node_data()
+    skale.manager.create_node(ip, port, name,
+                              domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
+    node_id = skale.nodes.node_name_to_index(name)
+    yield node_id
+    skale.manager.node_exit(node_id, wait_for=True)
+
+
+@pytest.fixture
+def node_config():
     return NodeConfig()
 
 
-@pytest.fixture
-def node(skale, node_config):
-    node = Node(skale, node_config)
-    return node
-
-
-@pytest.fixture
-def skale_bp(skale, node):
-    app = Flask(__name__)
-    dutils = DockerUtils(volume_driver='local')
-    app.register_blueprint(construct_node_bp(skale, node, dutils))
-    return app.test_client()
-
-
-def test_node_info(skale_bp, node):
+def test_node_info(skale_bp, skale, node_contracts, node_config):
+    node_id = node_contracts
+    node_config.id = node_id
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'info'))
-    assert data == {'status': 'ok', 'payload': {'node_info': node.info}}
+    status = NodeStatus.ACTIVE.value
+    assert data['status'] == 'ok'
+    node_info = data['payload']['node_info']
+    assert node_info['id'] == node_id
+    assert node_info['status'] == status
+    assert node_info['owner'] == skale.wallet.address
 
 
 def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
@@ -66,7 +84,7 @@ def set_domain_name_mock(self, data):
 
 
 @patch.object(Node, 'register', register_mock)
-def test_register(skale_bp, node_config):
+def test_node_create(skale_bp):
     ip, public_ip, port, name = generate_random_node_data()
     # Test with gas_limit and gas_price
     json_data = {
@@ -112,7 +130,7 @@ def failed_register_mock(
 
 
 @patch.object(Node, 'register', failed_register_mock)
-def test_create_with_errors(skale_bp, node_config):
+def test_create_with_errors(skale_bp):
     ip, public_ip, port, name = generate_random_node_data()
     json_data = {
         'name': name,
@@ -141,19 +159,19 @@ def test_node_signature(skale_bp, skale):
 
 
 @patch.object(Node, 'set_maintenance_on', set_maintenance_mock)
-def test_set_maintenance_on(skale_bp, skale, node_config):
+def test_set_maintenance_on(skale_bp, skale):
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'maintenance-on'))
     assert data == {'payload': {}, 'status': 'ok'}
 
 
 @patch.object(Node, 'set_maintenance_off', set_maintenance_mock)
-def test_set_maintenance_off(skale_bp, skale, node_config):
+def test_set_maintenance_off(skale_bp, skale):
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'maintenance-off'))
     assert data == {'payload': {}, 'status': 'ok'}
 
 
 @patch.object(Node, 'set_domain_name', set_domain_name_mock)
-def test_set_domain_name(skale_bp, skale, node_config):
+def test_set_domain_name(skale_bp, skale):
     json_data = {'domain_name': 'skale.test'}
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'set-domain-name'), json_data)
     assert data == {'payload': {}, 'status': 'ok'}
@@ -186,3 +204,19 @@ def test_endpoint_info(skale_bp, skale):
     assert payload['syncing'] is False
     assert payload['block_number'] > 1
     assert payload['trusted'] is False
+    assert payload['client'] != 'unknown'
+
+
+def test_meta_info(skale_bp):
+    meta_info = {
+        "version": "0.0.0",
+        "config_stream": "1.4.1-testnet",
+        "docker_lvmpy_stream": "1.1.1"
+    }
+
+    with mock.patch(
+        'web.routes.node.get_meta_info',
+        return_value=meta_info
+    ):
+        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'meta-info'))
+        assert data == {'status': 'ok', 'payload': meta_info}
