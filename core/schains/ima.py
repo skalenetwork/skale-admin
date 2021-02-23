@@ -22,8 +22,9 @@ from dataclasses import dataclass
 from core.schains.helper import get_schain_dir_path, get_schain_proxy_file_path
 from core.schains.config.helper import get_schain_ports, get_schain_config
 
-from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
+from tools.configs.containers import CONTAINERS_INFO
+from tools.configs.ima import IMA_ENDPOINT, MAINNET_PROXY_PATH
 from tools.configs.web3 import TM_URL
 
 
@@ -118,3 +119,7 @@ def get_ima_env(schain_name: str) -> ImaEnv:
         node_address=node_address,
         tm_url_mainnet=TM_URL
     )
+
+
+def get_ima_version() -> str:
+    return CONTAINERS_INFO['ima']['version']
