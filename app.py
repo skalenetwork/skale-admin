@@ -22,6 +22,7 @@ import time
 
 from flask import Flask, g
 
+
 from core.node_config import NodeConfig
 
 from tools.configs import FLASK_SECRET_KEY_FILE, SGX_SERVER_URL
@@ -29,7 +30,8 @@ from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from tools.configs.web3 import ENDPOINT, TM_URL
 from tools.db import get_database
 from tools.docker_utils import DockerUtils
-from tools.helper import init_defualt_wallet, wait_until_admin_inited
+from tools.helper import wait_until_admin_inited
+from tools.wallet_utils import init_wallet
 from tools.logger import init_api_logger
 from tools.str_formatters import arguments_list_string
 
@@ -55,12 +57,12 @@ app.register_blueprint(construct_health_bp())
 @app.before_request
 def before_request():
     wait_until_admin_inited()
-    g.wallet = init_defualt_wallet()
-    g.db = get_database()
     g.request_start_time = time.time()
+    g.config = NodeConfig()
+    g.wallet = init_wallet(node_config=g.config)
+    g.db = get_database()
     g.db.connect(reuse_if_open=True)
     g.docker_utils = DockerUtils()
-    g.config = NodeConfig()
 
 
 @app.teardown_request
