@@ -29,10 +29,10 @@ import requests
 from filelock import FileLock
 from jinja2 import Environment
 from skale import Skale
-from skale.wallets import BaseWallet, RPCWallet
+from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +130,3 @@ def wait_until_admin_inited():
 
 def init_skale(wallet: BaseWallet) -> Skale:
     return Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
-
-
-def init_defualt_wallet() -> Skale:
-    return RPCWallet(TM_URL)

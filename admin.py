@@ -22,7 +22,6 @@ import time
 
 from filelock import FileLock
 from skale import Skale
-from skale.wallets import RPCWallet
 
 from core.node_config import NodeConfig
 from core.schains.creator import run_creator
@@ -30,10 +29,11 @@ from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 from tools.sgx_utils import generate_sgx_key
+from tools.wallet_utils import init_wallet
 
 from web.models.schain import create_tables, set_schains_first_run
 from web.migrations import migrate
@@ -62,7 +62,10 @@ def worker():
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
-    wallet = RPCWallet(TM_URL, retry_if_failed=True)
+    wallet = init_wallet(
+        node_config=node_config,
+        retry_if_failed=True
+    )
     skale = Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
@@ -70,9 +73,7 @@ def worker():
 
 
 def init():
-    wallet = RPCWallet(TM_URL, retry_if_failed=True)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, wallet,
-                  state_path=STATE_FILEPATH)
+    skale = Skale(ENDPOINT, ABI_FILEPATH, state_path=STATE_FILEPATH)
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:
