@@ -3,7 +3,7 @@ import os
 import mock
 import pytest
 
-from skale.transactions.result import DryRunFailedError
+from skale.transactions.result import RevertError
 from skale.utils.contracts_provision.main import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
@@ -180,7 +180,7 @@ def test_node_maintenance_error(active_node, skale):
 
     res = active_node.set_maintenance_on()
     assert res == {'data': None, 'status': 'ok'}
-    with pytest.raises(DryRunFailedError):
+    with pytest.raises(RevertError):
         res = active_node.set_maintenance_on()
 
 

@@ -4,23 +4,20 @@ import pytest
 import mock
 from mock import patch
 import freezegun
-
 from flask import Flask, appcontext_pushed, g
 from web3 import Web3
 
-from core.node import Node, NodeStatus
-from core.node_config import NodeConfig
-
-from web.routes.node import construct_node_bp
-from web.helper import get_api_url
-
-from tools.docker_utils import DockerUtils
-from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
-
-from tests.utils import get_bp_data, post_bp_data
-
 from skale.utils.contracts_provision.utils import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
+from skale.utils.web3_utils import to_checksum_address
+
+from core.node import Node, NodeStatus
+from core.node_config import NodeConfig
+from tests.utils import get_bp_data, post_bp_data
+from tools.docker_utils import DockerUtils
+from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from web.routes.node import construct_node_bp
+from web.helper import get_api_url
 
 
 CURRENT_TIMESTAMP = 1594903080
@@ -67,7 +64,7 @@ def test_node_info(skale_bp, skale, node_contracts, node_config):
     node_info = data['payload']['node_info']
     assert node_info['id'] == node_id
     assert node_info['status'] == status
-    assert node_info['owner'] == skale.wallet.address
+    assert to_checksum_address(node_info['owner']) == skale.wallet.address
 
 
 def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
