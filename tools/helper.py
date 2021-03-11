@@ -17,20 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+import itertools
 import json
 import logging
+import os
 import subprocess
-import requests
 from subprocess import PIPE
+
+import requests
 
 from filelock import FileLock
 from jinja2 import Environment
 from skale import Skale
-from skale.wallets import BaseWallet, RPCWallet
+from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +93,14 @@ def format_output(res):
             res.stderr.decode('UTF-8').rstrip()
 
 
+def merged_unique(*args):
+    seen = set()
+    for item in itertools.chain(*args):
+        if item not in seen:
+            yield item
+            seen.add(item)
+
+
 def read_file(path):
     file = open(path, 'r')
     text = file.read()
@@ -120,7 +130,3 @@ def wait_until_admin_inited():
 
 def init_skale(wallet: BaseWallet) -> Skale:
     return Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
-
-
-def init_defualt_wallet() -> Skale:
-    return RPCWallet(TM_URL)

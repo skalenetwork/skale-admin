@@ -53,7 +53,7 @@ from core.schains.dkg import run_dkg
 from core.schains.runner import get_container_name
 from core.schains.utils import notify_if_not_enough_balance
 
-from tools.bls.dkg_client import DkgError, get_dkg_timeout
+from tools.bls.dkg_client import DkgError
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
@@ -80,7 +80,7 @@ class MonitorMode(Enum):
 
 def run_creator(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
-    join_timeout = TIMEOUT_COEFFICIENT * get_dkg_timeout(skale)
+    join_timeout = TIMEOUT_COEFFICIENT * skale.constants_holder.get_dkg_timeout()
     process.start()
     logger.info('Creator process started')
     process.join(join_timeout)
@@ -154,7 +154,7 @@ def run_monitor_for_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         skale = spawn_skale_manager_lib(skale)
         monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name)
     except Exception:
-        logger.exception(f'Monitor for schain {schain["name"]} failed')
+        logger.exception(f'Monitor for sChain {schain["name"]} failed')
 
 
 def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
@@ -181,10 +181,10 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         logger.warning(f'sChain container {schain["name"]} was removed, going to run checks')
 
     if schain_record.repair_mode or not checks.exit_code_ok:
-        logger.info(f'REPAIR MODE was toggled for schain {schain["name"]}')
+        logger.warning(f'REPAIR MODE was toggled for schain {schain["name"]}, \
+repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
         mode = MonitorMode.SYNC
         notify_repair_mode(node_info, name)
-        cleanup_schain_docker_entity(name)
         schain_record.set_repair_mode(False)
 
     if not schain_record.first_run:
@@ -205,6 +205,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
         set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     elif mode == MonitorMode.SYNC:
+        cleanup_schain_docker_entity(name)
         monitor_checks(
             skale=skale,
             schain=schain,
@@ -246,13 +247,6 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
             schain_record=schain_record
         )
-
-
-def repair_schain(skale, schain, start_ts, rotation_id, dutils=None):
-    remove_schain_container(schain['name'])
-    remove_schain_volume(schain['name'])
-    logger.info(f'Running fresh container for {schain["name"]}')
-    monitor_sync_schain_container(skale, schain, start_ts, dutils)
 
 
 def cleanup_schain_docker_entity(schain_name: str) -> None:

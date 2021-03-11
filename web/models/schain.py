@@ -61,15 +61,11 @@ class SChainRecord(BaseModel):
         return cls.select().where(cls.name == name).exists()
 
     @classmethod
-    def get_statuses(cls, all=False):
-        if all:
-            records = cls.select()
+    def get_all_records(cls, include_deleted=False):
+        if include_deleted:
+            return cls.select()
         else:
-            records = cls.select().where(cls.is_deleted == False)  # noqa: E712
-        dkg_statuses = []
-        for record in records:
-            dkg_statuses.append(cls.to_dict(record))
-        return dkg_statuses
+            return cls.select().where(cls.is_deleted == False)  # noqa: E712
 
     @classmethod
     def to_dict(cls, record):
@@ -155,6 +151,15 @@ def mark_schain_deleted(name):
     if SChainRecord.added(name):
         schain_record = SChainRecord.get_by_name(name)
         schain_record.set_deleted()
+
+
+def get_schains_names(include_deleted=False):
+    return [r.name for r in SChainRecord.get_all_records(include_deleted)]
+
+
+def get_schains_statuses(include_deleted=False):
+    return [SChainRecord.to_dict(r)
+            for r in SChainRecord.get_all_records(include_deleted)]
 
 
 def toggle_schain_repair_mode(name):

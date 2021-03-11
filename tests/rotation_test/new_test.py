@@ -6,7 +6,7 @@ import os
 
 from core.schains.checks import SChainChecks
 from core.schains.creator import monitor
-from tests.prepare_data import cleanup_contracts
+from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from tests.rotation_test.utils import (set_up_rotated_schain, wait_for_contract_exiting,
                                        init_data_volume_mock, run_dkg_mock)
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -18,7 +18,7 @@ dutils = DockerUtils(volume_driver='local')
 
 @pytest.fixture
 def rotated_nodes(skale, schain_config, schain_db):
-    cleanup_contracts(skale)
+    cleanup_nodes_schains(skale)
     SChainRecord.create_table()
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
 

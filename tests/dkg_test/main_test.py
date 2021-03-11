@@ -16,6 +16,7 @@ from skale import Skale
 from skale.utils.helper import init_default_logger
 from skale.utils.account_tools import send_ether
 from skale.wallets import SgxWallet
+from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.schains.cleaner import remove_schain_container
@@ -26,12 +27,12 @@ from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (generate_random_node_data,
                          generate_random_schain_data, init_web3_skale)
-from tests.prepare_data import cleanup_contracts
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 
 
 MAX_WORKERS = 5
+TEST_SRW_FUND_VALUE = 3000000000000000000
 
 owner_skale = init_web3_skale()
 
@@ -230,15 +231,18 @@ def run_node_dkg(opts):
 
 
 def create_schain(skale: Skale, name: str, lifetime_seconds: int) -> None:
-    price_in_wei = skale.schains.get_schain_price(
+    _ = skale.schains.get_schain_price(
         TYPE_OF_NODES, lifetime_seconds
     )
-    skale.manager.create_schain(
+    skale.schains.grant_role(skale.schains.schain_creator_role(),
+                             skale.wallet.address)
+    skale.schains.add_schain_by_foundation(
         lifetime_seconds,
         TYPE_OF_NODES,
-        price_in_wei,
+        0,
         name,
-        wait_for=True
+        wait_for=True,
+        value=TEST_SRW_FUND_VALUE
     )
 
 
@@ -293,7 +297,7 @@ def schain_creation_data():
 
 def test_init_bls(skale, schain_creation_data, cleanup_dkg):
     schain_name, lifetime = schain_creation_data
-    cleanup_contracts(skale)
+    cleanup_nodes_schains(skale)
     wallets = generate_sgx_wallets(skale, N_OF_NODES)
     transfer_eth_to_wallets(skale, wallets)
     link_addresses_to_validator(skale, wallets)

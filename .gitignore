@@ -51,11 +51,14 @@ dkgpython.so
 # tests
 node_config.json
 unique.json
-test_abi.json
 *.key
 *.crt
 *.csr
+logs.tar.gz
 
 tests/skale-data/node_data/schains/*
+test_abi.json
 
 *.lock
+
+skale-manager-*

@@ -28,7 +28,7 @@ from flask import Blueprint, request
 
 from core.schains.ssl import is_ssl_folder_empty
 from web.models.schain import set_schains_need_reload
-from web.helper import construct_ok_response, construct_err_response
+from web.helper import construct_ok_response, construct_err_response, get_api_url
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 logger = logging.getLogger(__name__)
@@ -40,11 +40,13 @@ CERTS_HAS_INVALID_FORMAT = 'Certificates have invalid format'
 SSL_KEY_NAME = 'ssl_key'
 SSL_CRT_NAME = 'ssl_cert'
 
+BLUEPRINT_NAME = 'ssl'
 
-def construct_security_bp():
-    security_bp = Blueprint('security', __name__)
 
-    @security_bp.route('/api/ssl/status', methods=['GET'])
+def construct_ssl_bp():
+    ssl_bp = Blueprint(BLUEPRINT_NAME, __name__)
+
+    @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'status'), methods=['GET'])
     def status():
         logger.debug(request)
         if is_ssl_folder_empty():
@@ -71,7 +73,7 @@ def construct_security_bp():
                 'status': 1
             })
 
-    @security_bp.route('/api/ssl/upload', methods=['POST'])
+    @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'upload'), methods=['POST'])
     def upload():
         request_json = json.loads(request.form['json'])
         force = request_json.get('force') is True
@@ -88,4 +90,4 @@ def construct_security_bp():
         set_schains_need_reload()
         return construct_ok_response()
 
-    return security_bp
+    return ssl_bp

@@ -22,52 +22,47 @@ import time
 
 from flask import Flask, g
 
+
 from core.node_config import NodeConfig
 
 from tools.configs import FLASK_SECRET_KEY_FILE, SGX_SERVER_URL
+from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from tools.configs.web3 import ENDPOINT, TM_URL
 from tools.db import get_database
 from tools.docker_utils import DockerUtils
-from tools.helper import init_defualt_wallet, wait_until_admin_inited
+from tools.helper import wait_until_admin_inited
+from tools.wallet_utils import init_wallet
 from tools.logger import init_api_logger
 from tools.str_formatters import arguments_list_string
 
-from tools.configs.flask import (FLASK_APP_HOST,
-                                 FLASK_APP_PORT, FLASK_DEBUG_MODE)
-
 from web.routes.logs import web_logs
-from web.routes.nodes import construct_nodes_bp
+from web.routes.node import construct_node_bp
 from web.routes.schains import construct_schains_bp
 from web.routes.wallet import construct_wallet_bp
-from web.routes.node_info import construct_node_info_bp
-from web.routes.security import construct_security_bp
-from web.routes.node_exit import construct_node_exit_bp
-from web.routes.sgx import construct_sgx_bp
+from web.routes.ssl import construct_ssl_bp
+from web.routes.health import construct_health_bp
 
 init_api_logger()
 logger = logging.getLogger(__name__)
 
-
 app = Flask(__name__)
 app.register_blueprint(web_logs)
-app.register_blueprint(construct_nodes_bp())
+app.register_blueprint(construct_node_bp())
 app.register_blueprint(construct_schains_bp())
 app.register_blueprint(construct_wallet_bp())
-app.register_blueprint(construct_node_info_bp())
-app.register_blueprint(construct_security_bp())
-app.register_blueprint(construct_node_exit_bp())
-app.register_blueprint(construct_sgx_bp())
+app.register_blueprint(construct_ssl_bp())
+app.register_blueprint(construct_health_bp())
 
 
 @app.before_request
 def before_request():
     wait_until_admin_inited()
-    g.wallet = init_defualt_wallet()
-    g.db = get_database()
     g.request_start_time = time.time()
+    g.config = NodeConfig()
+    g.wallet = init_wallet(node_config=g.config)
+    g.db = get_database()
     g.db.connect(reuse_if_open=True)
     g.docker_utils = DockerUtils()
-    g.config = NodeConfig()
 
 
 @app.teardown_request
