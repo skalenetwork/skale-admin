@@ -71,18 +71,6 @@ def construct_node_bp():
         if gas_price is not None:
             gas_price = Web3.toWei(Decimal(gas_price), 'gwei')
 
-        is_node_name_available = skale.nodes.is_node_name_available(name)
-        if not is_node_name_available:
-            error_msg = f'Node name is already taken: {name}'
-            logger.error(error_msg)
-            return construct_err_response(msg=error_msg)
-
-        is_node_ip_available = skale.nodes.is_node_ip_available(ip)
-        if not is_node_ip_available:
-            error_msg = f'Node IP is already taken: {ip}'
-            logger.error(error_msg)
-            return construct_err_response(error_msg)
-
         node = Node(skale, g.config)
         res = node.register(
             ip=ip,
