@@ -71,18 +71,6 @@ def construct_node_bp():
         if gas_price is not None:
             gas_price = Web3.toWei(Decimal(gas_price), 'gwei')
 
-        is_node_name_available = skale.nodes.is_node_name_available(name)
-        if not is_node_name_available:
-            error_msg = f'Node name is already taken: {name}'
-            logger.error(error_msg)
-            return construct_err_response(msg=error_msg)
-
-        is_node_ip_available = skale.nodes.is_node_ip_available(ip)
-        if not is_node_ip_available:
-            error_msg = f'Node IP is already taken: {ip}'
-            logger.error(error_msg)
-            return construct_err_response(error_msg)
-
         node = Node(skale, g.config)
         res = node.register(
             ip=ip,
@@ -94,7 +82,7 @@ def construct_node_bp():
             gas_limit=gas_limit,
             skip_dry_run=skip_dry_run
         )
-        if res['status'] != 1:
+        if res['status'] != 'ok':
             return construct_err_response(
                 msg=res['errors'],
                 status_code=HTTPStatus.INTERNAL_SERVER_ERROR
@@ -116,7 +104,7 @@ def construct_node_bp():
         skale = init_skale(g.wallet)
         node = Node(skale, g.config)
         res = node.set_maintenance_on()
-        if res['status'] != 0:
+        if res['status'] != 'ok':
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
 
@@ -126,7 +114,7 @@ def construct_node_bp():
         skale = init_skale(g.wallet)
         node = Node(skale, g.config)
         res = node.set_maintenance_off()
-        if res['status'] != 0:
+        if res['status'] != 'ok':
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
 
@@ -167,7 +155,7 @@ def construct_node_bp():
         skale = init_skale(g.wallet)
         node = Node(skale, g.config)
         res = node.set_domain_name(domain_name)
-        if res['status'] != 0:
+        if res['status'] != 'ok':
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
 
