@@ -21,7 +21,7 @@ DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
 TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
-    DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'unique.json')
+    DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'manager.json')
 TEST_IMA_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
     DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'ima.json')
 
@@ -108,8 +108,7 @@ def run_simple_ima_container(schain: dict, dutils: DockerUtils):
     run_ima_container(schain, dutils=dutils)
 
 
-def init_skale():
-    print(ENDPOINT, TEST_ABI_FILEPATH)
+def init_web3_skale() -> Skale:
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
     return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
@@ -120,6 +119,11 @@ def init_skale_ima():
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
     return SkaleIma(ENDPOINT, TEST_IMA_ABI_FILEPATH, wallet)
+
+
+def init_web3_wallet() -> Web3Wallet:
+    web3 = init_web3(ENDPOINT)
+    return Web3Wallet(ETH_PRIVATE_KEY, web3)
 
 
 def response_mock(status_code=0, json_data=None, cookies=None,

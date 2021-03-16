@@ -13,7 +13,7 @@ from skale.utils.contracts_provision.main import (create_nodes, create_schain,
 from core.schains.cleaner import remove_schain_container
 from core.schains.cleaner import remove_schain_volume
 
-from tests.utils import init_skale, init_skale_ima
+from tests.utils import init_skale_ima, init_web3_skale
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 
@@ -22,7 +22,7 @@ from web.models.schain import create_tables, SChainRecord, upsert_schain_record
 
 @pytest.fixture
 def skale():
-    return init_skale()
+    return init_web3_skale()
 
 
 @pytest.fixture
@@ -185,7 +185,6 @@ def schain_config(_schain_name):
 @pytest.fixture
 def db():
     create_tables()
-    upsert_schain_record
     yield
     SChainRecord.drop_table()
 

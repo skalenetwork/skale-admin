@@ -3,7 +3,7 @@ on: [push, pull_request]
 env:
   ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-  MANAGER_TAG: "1.7.1-develop.4"
+  MANAGER_TAG: "1.8.0-develop.15"
   IMA_TAG: "1.0.0-beta.0"
   SGX_WALLET_TAG: "1.65.0-develop.0"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -17,8 +17,6 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       IMA_ENDPOINT: ${{ secrets.IMA_ENDPOINT }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-      MANAGER_TAG: "1.7.1-develop.4"
-      SGX_WALLET_TAG: "1.65.0-develop.0"
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ env.PYTHON_VERSION }}

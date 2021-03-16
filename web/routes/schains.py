@@ -19,11 +19,13 @@
 
 import logging
 
-from flask import Blueprint, request
+from flask import Blueprint, g, request
 
 from core.schains.config.helper import get_allowed_endpoints, get_schain_config
 from core.schains.helper import schain_config_exists
-from core.schains.info import get_schain_info_by_name
+from core.schains.ima import get_ima_version
+from core.schains.info import get_schain_info_by_name, get_skaled_version
+from tools.helper import init_skale
 from web.models.schain import get_schains_statuses, toggle_schain_repair_mode
 from web.helper import (construct_ok_response, construct_err_response,
                         construct_key_error_response, get_api_url)
@@ -32,7 +34,7 @@ logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'schains'
 
 
-def construct_schains_bp(skale, config, docker_utils):
+def construct_schains_bp():
     schains_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'config'), methods=['GET'])
@@ -53,7 +55,16 @@ def construct_schains_bp(skale, config, docker_utils):
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'list'), methods=['GET'])
     def schains_list():
         logger.debug(request)
-        node_id = config.id
+        _all = request.args.get('all') == 'True'
+        containers_list = g.docker_utils.get_all_schain_containers(
+            all=_all, format=True)
+        return construct_ok_response(containers_list)
+
+    @schains_bp.route('/schains/list', methods=['GET'])
+    def node_schains_list():
+        skale = init_skale(g.wallet)
+        logger.debug(request)
+        node_id = g.config.id
         if node_id is None:
             return construct_err_response(msg='Node is not registered')
         schains_list = list(filter(
@@ -96,6 +107,7 @@ def construct_schains_bp(skale, config, docker_utils):
     def get_schain():
         logger.debug(request)
         schain_name = request.args.get('schain_name')
+        skale = init_skale(g.wallet)
         info = get_schain_info_by_name(skale, schain_name)
         if not info:
             return construct_err_response(
@@ -103,5 +115,14 @@ def construct_schains_bp(skale, config, docker_utils):
             )
         response = info.to_dict()
         return construct_ok_response(response)
+
+    @schains_bp.route('/schain-containers-versions', methods=['GET'])
+    def schain_containers_versions():
+        logger.debug(request)
+        version_data = {
+            'skaled_version': get_skaled_version(),
+            'ima_version': get_ima_version()
+        }
+        return construct_ok_response(version_data)
 
     return schains_bp

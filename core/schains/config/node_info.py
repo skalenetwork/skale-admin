@@ -70,6 +70,7 @@ class CurrentNodeInfo(NodeInfo):
                 'collectionDuration': self.collection_duration,
                 'transactionQueueSize': self.transaction_queue_size,
                 'maxOpenLeveldbFiles': self.max_open_leveldb_files,
+                'info-acceptors': 1
             }
         }
 

@@ -19,7 +19,12 @@
 
 import logging
 
+from skale.wallets import RPCWallet
 from skale.wallets.web3_wallet import to_checksum_address
+from skale.utils.web3_utils import init_web3
+
+from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.configs.web3 import ENDPOINT, TM_URL
 
 logger = logging.getLogger(__name__)
 
@@ -43,3 +48,15 @@ def wallet_with_balance(skale):  # todo: move to the skale.py
 def check_required_balance(skale):  # todo: move to the skale.py
     balances = wallet_with_balance(skale)
     return int(balances['eth_balance_wei']) >= DEPOSIT_AMOUNT_ETH_WEI
+
+
+def init_wallet(node_config, retry_if_failed=False):
+    web3 = init_web3(ENDPOINT)
+    return RPCWallet(
+        url=TM_URL,
+        sgx_endpoint=SGX_SERVER_URL,
+        web3=web3,
+        key_name=node_config.sgx_key_name,
+        path_to_cert=SGX_CERTIFICATES_FOLDER,
+        retry_if_failed=retry_if_failed
+    )

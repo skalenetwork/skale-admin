@@ -11,7 +11,7 @@ from tests.rotation_test.utils import (wait_for_contract_exiting, wait_for_schai
                                        init_data_volume_mock, run_schain_container_mock,
                                        delete_bls_keys_mock)
 
-from core.node import NodeExitStatuses, SchainExitStatuses
+from core.node import NodeExitStatus, SchainExitStatus
 from core.schains.checks import SChainChecks
 from core.schains.cleaner import (monitor as cleaner_monitor,
                                   remove_schain_container,
@@ -59,8 +59,8 @@ def test_node_exit(skale, skale_ima, exiting_node):
         wait_for_contract_exiting(skale, node.config.id)
 
         exit_status = node.get_exit_status()
-        assert exit_status['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
-        assert exit_status['data'][0]['status'] == SchainExitStatuses.LEAVING.name
+        assert exit_status['status'] == NodeExitStatus.WAIT_FOR_ROTATIONS.name
+        assert exit_status['data'][0]['status'] == SchainExitStatus.LEAVING.name
 
         wait_for_schain_alive(schain_name)
 
