@@ -351,7 +351,7 @@ def test_monitor_ima(skale_ima, schain_on_contracts, schain_config, dutils):
         assert containers[0].name == f'skale_ima_{schain_name}'
 
 
-def test_monitor_needs_reload(skale, node_config, db):
+def test_monitor_needs_reload(skale, skale_ima, node_config, db):
     rotation_info = {
         'in_progress': False,
         'new_schain': False,
@@ -375,7 +375,7 @@ def test_monitor_needs_reload(skale, node_config, db):
             mock.patch('core.schains.creator.set_rotation_for_schain'), \
             mock.patch('core.schains.creator.monitor_schain_container'):
         node_info = node_config.all()
-        monitor_schain(skale, node_info, schain,
+        monitor_schain(skale, skale_ima, node_info, schain,
                        ecdsa_sgx_key_name=node_config.sgx_key_name)
         schain_record = upsert_schain_record(schain_name)
         assert schain_record.needs_reload is False
