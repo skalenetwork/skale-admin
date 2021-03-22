@@ -159,9 +159,9 @@ def cleanup_schain(node_id, schain_name, dutils=None):
         remove_schain_volume(schain_name)
     if checks.firewall_rules:
         remove_firewall_rules(schain_name)
-    if checks.ima_container or is_exited(schain_name, container_type=ContainerType.ima,
-                                         dutils=dutils):
-        remove_ima_container(schain_name)
+    # if checks.ima_container or is_exited(schain_name, container_type=ContainerType.ima,
+    #                                      dutils=dutils):
+    #     remove_ima_container(schain_name)
     if checks.data_dir:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)

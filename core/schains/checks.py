@@ -119,7 +119,7 @@ class SChainChecks:
             'firewall_rules': self.firewall_rules,
             'container': self.container,
             'exit_code_ok': self.exit_code_ok,
-            'ima_container': self.ima_container,
+            # 'ima_container': self.ima_container,
             'rpc': self.rpc,
             'blocks': self.blocks
         }
