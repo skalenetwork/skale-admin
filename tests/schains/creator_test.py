@@ -212,6 +212,7 @@ def test_monitor_sync_schain_container(skale, schain_config, dutils,
     assert len(containers) == 0
 
 
+@pytest.mark.skip(reason="IMA commented out in this version")
 def test_monitor_ima_container(skale, schain_config, dutils,
                                cleanup_ima_container):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
