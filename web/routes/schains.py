@@ -108,8 +108,8 @@ def construct_schains_bp():
         skale = init_skale(g.wallet)
         node_id = g.config.id
         if node_id is None:
-            return construct_err_response(HTTPStatus.BAD_REQUEST,
-                                          ['No node installed'])
+            return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
+                                          msg='No node installed')
         schains = skale.schains.get_schains_for_node(node_id)
         schains = get_cleaned_schains_for_node(skale, node_id)
         checks = []
