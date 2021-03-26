@@ -22,6 +22,7 @@ import logging
 import shutil
 from multiprocessing import Process
 
+from sgx import SgxClient
 
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
@@ -29,12 +30,12 @@ from core.schains.runner import get_container_name, is_exited
 from core.schains.config.helper import get_allowed_endpoints
 from core.schains.types import ContainerType
 
-from sgx import SgxClient
-
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from tools.configs.containers import (
+    SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
+)
 from tools.docker_utils import DockerUtils
 from tools.iptables import remove_rules as remove_iptables_rules
 from tools.helper import read_json
@@ -74,7 +75,12 @@ def remove_schain_container(schain_name: str, dutils: DockerUtils = None):
     dutils = dutils or docker_utils
     log_remove('container', schain_name)
     schain_container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
-    return dutils.safe_rm(schain_container_name, v=True, force=True)
+    return dutils.safe_rm(
+        schain_container_name,
+        v=True,
+        force=True,
+        stop_timeout=SCHAIN_STOP_TIMEOUT
+    )
 
 
 def remove_ima_container(schain_name: str, dutils: DockerUtils = None):
