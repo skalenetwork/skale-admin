@@ -110,7 +110,6 @@ def test_exit_code_ok_check(sample_checks, sample_false_checks):
         assert not sample_false_checks.exit_code_ok
 
 
-@pytest.mark.skip(reason="IMA commented out in this version")
 def test_ima_check(sample_checks, sample_false_checks):
     with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
         assert sample_checks.ima_container

@@ -36,6 +36,7 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
     SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
 )
+from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 from tools.iptables import remove_rules as remove_iptables_rules
 from tools.helper import read_json
@@ -165,9 +166,10 @@ def cleanup_schain(node_id, schain_name, dutils=None):
         remove_schain_volume(schain_name)
     if checks.firewall_rules:
         remove_firewall_rules(schain_name)
-    # if checks.ima_container or is_exited(schain_name, container_type=ContainerType.ima,
-    #                                      dutils=dutils):
-    #     remove_ima_container(schain_name)
+    if not DISABLE_IMA:
+        if checks.ima_container or is_exited(schain_name, container_type=ContainerType.ima,
+                                             dutils=dutils):
+            remove_ima_container(schain_name)
     if checks.data_dir:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)

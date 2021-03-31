@@ -27,6 +27,7 @@ from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
+from tools.configs.ima import DISABLE_IMA
 from tools.iptables import apsent_rules as apsent_iptables_rules
 
 from tools.docker_utils import DockerUtils
@@ -119,10 +120,11 @@ class SChainChecks:
             'firewall_rules': self.firewall_rules,
             'container': self.container,
             'exit_code_ok': self.exit_code_ok,
-            # 'ima_container': self.ima_container,
             'rpc': self.rpc,
             'blocks': self.blocks
         }
+        if not DISABLE_IMA:
+            checks_dict['ima_container'] = self.ima_container
         if log:
             log_checks_dict(self.name, checks_dict)
         return checks_dict

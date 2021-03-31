@@ -20,6 +20,9 @@
 import os
 from tools.configs import CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME, CONFIG_FOLDER
 
+
+DISABLE_IMA = os.getenv('DISABLE_IMA') == 'True'
+
 IMA_ENDPOINT = os.environ['IMA_ENDPOINT']
 
 PROXY_ABI_FILENAME = 'proxy.json'

@@ -57,7 +57,7 @@ from tools.bls.dkg_client import DkgError, get_dkg_timeout
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
-from tools.configs.ima import IMA_DATA_FILEPATH
+from tools.configs.ima import IMA_DATA_FILEPATH, DISABLE_IMA
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode, is_checks_passed
@@ -384,9 +384,9 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
         else:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
-    # if not checks.ima_container:
-    #     copy_schain_ima_abi(name)
-    #     monitor_ima_container(schain)
+    if not DISABLE_IMA and not checks.ima_container:
+        copy_schain_ima_abi(name)
+        monitor_ima_container(schain)
 
 
 def check_schain_rotated(schain_name):
