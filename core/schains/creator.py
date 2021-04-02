@@ -292,10 +292,10 @@ def monitor_schain_container(schain, volume_required=True, dutils=None):
         run_schain_container(schain, dutils=dutils)
 
 
-def monitor_ima_container(schain: dict, dutils=None):
+def monitor_ima_container(schain: dict, mainnet_chain_id: int, dutils=None):
     if not is_container_exists(schain['name'],
                                container_type=IMA_CONTAINER, dutils=dutils):
-        run_ima_container(schain)
+        run_ima_container(schain, mainnet_chain_id)
 
 
 def get_schain_public_key(skale, schain_name):
@@ -342,6 +342,8 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
 def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
                    rotation, schain_record, ecdsa_sgx_key_name, sync=False):
     name = schain['name']
+    mainnet_chain_id = skale.web3.eth.chainId
+    logger.debug(f'Mainnet chainId: {mainnet_chain_id}')
     if not checks.data_dir:
         init_schain_dir(name)
     if not checks.dkg:
@@ -386,7 +388,7 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             time.sleep(CONTAINERS_DELAY)
     if not DISABLE_IMA and not checks.ima_container:
         copy_schain_ima_abi(name)
-        monitor_ima_container(schain)
+        monitor_ima_container(schain, mainnet_chain_id)
 
 
 def check_schain_rotated(schain_name):

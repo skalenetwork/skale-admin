@@ -102,7 +102,7 @@ def run_simple_schain_container_in_sync_mode(schain_data: dict,
 
 
 def run_simple_ima_container(schain: dict, dutils: DockerUtils):
-    run_ima_container(schain, dutils=dutils)
+    run_ima_container(schain, mainnet_chain_id=1, dutils=dutils)
 
 
 def init_web3_skale() -> Skale:
