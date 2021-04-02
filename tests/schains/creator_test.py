@@ -216,7 +216,8 @@ def test_monitor_ima_container(skale, schain_config, dutils,
                                cleanup_ima_container):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
-    monitor_ima_container(schain, dutils=dutils)
+    mainnet_chain_id = skale.web3.eth.chainId
+    monitor_ima_container(schain, mainnet_chain_id=mainnet_chain_id, dutils=dutils)
     containers = dutils.get_all_ima_containers()
     assert containers[0].name == f'skale_ima_{schain_name}'
 
