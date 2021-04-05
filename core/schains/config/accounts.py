@@ -67,8 +67,8 @@ def generate_precompiled_accounts() -> dict:
     precompileds = get_precompiled_contracts()
     filestorage_address = get_filestorage_info()['address']
     for address, precompiled in precompileds.items():
-        if precompiled.get('restrictAccess'):
-            precompiled['restrictAccess'] = [filestorage_address]
+        if precompiled['precompiled'].get('restrictAccess'):
+            precompiled['precompiled']['restrictAccess'] = [filestorage_address]
         add_to_accounts(accounts, address, precompiled)
     return accounts
 
