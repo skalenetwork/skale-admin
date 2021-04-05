@@ -19,6 +19,7 @@
 
 import os
 import json
+import yaml
 import logging
 import subprocess
 import requests
@@ -124,3 +125,8 @@ def init_skale(wallet: BaseWallet) -> Skale:
 
 def init_defualt_wallet() -> Skale:
     return RPCWallet(TM_URL)
+
+
+def safe_load_yml(filepath):
+    with open(filepath, 'r') as stream:
+        return yaml.safe_load(stream)
