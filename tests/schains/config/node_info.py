@@ -48,23 +48,38 @@ def test_get_rotate_after_block():
 
 def test_generate_current_node_info():
     static_schain_params = get_static_schain_params()
-    current_node_info = generate_current_node_info(
-        node={'name': 'test', 'port': 10000},
-        node_id=1,
-        ecdsa_key_name='123',
-        static_schain_params=static_schain_params,
-        schain={'name': 'chain_test', 'partOfNode': 1},
-        schains_on_node=[{'name': 'chain_test', 'port': 10000}],
-        rotation_id=0
-    )
+    with mock.patch('core.schains.config.node_info.ENV_TYPE', new='testnet'):
+        current_node_info = generate_current_node_info(
+            node={'name': 'test', 'port': 10000},
+            node_id=1,
+            ecdsa_key_name='123',
+            static_schain_params=static_schain_params,
+            schain={'name': 'chain_test', 'partOfNode': 4},
+            schains_on_node=[{'name': 'chain_test', 'port': 10000}],
+            rotation_id=0
+        )
     current_node_info_dict = current_node_info.to_dict()
     assert current_node_info_dict['nodeID'] == 1
     assert current_node_info_dict['nodeName'] == 'test'
     assert current_node_info_dict['basePort'] == 10000
     assert current_node_info_dict['httpRpcPort'] == 10003
     assert current_node_info_dict['httpsRpcPort'] == 10008
-    assert current_node_info_dict['wsRpcPort'] == 10007
+    assert current_node_info_dict['wsRpcPort'] == 10002
     assert current_node_info_dict['infoHttpRpcPort'] == 10009
-    assert current_node_info_dict['minCacheSize'] == 1000000
-    assert current_node_info_dict['maxCacheSize'] == 2000000
-    assert current_node_info_dict['collectionQueueSize'] == 2
+    assert current_node_info_dict['minCacheSize'] == 32000000
+    assert current_node_info_dict['maxCacheSize'] == 64000000
+    assert current_node_info_dict['collectionQueueSize'] == 20
+    assert current_node_info_dict['rotateAfterBlock'] == 102400
+
+    with mock.patch('core.schains.config.node_info.ENV_TYPE', new='mainnet'):
+        current_node_info = generate_current_node_info(
+            node={'name': 'test', 'port': 10000},
+            node_id=1,
+            ecdsa_key_name='123',
+            static_schain_params=static_schain_params,
+            schain={'name': 'chain_test', 'partOfNode': 4},
+            schains_on_node=[{'name': 'chain_test', 'port': 10000}],
+            rotation_id=0
+        )
+    current_node_info_dict = current_node_info.to_dict()
+    assert current_node_info_dict['rotateAfterBlock'] == 1024000
