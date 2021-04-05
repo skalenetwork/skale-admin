@@ -47,6 +47,23 @@ def generate_account(balance, code=None, storage={}, nonce=0):
         account['nonce'] = str(nonce)
     return account
 
+# { "precompiled": { "name": "createFile", "linear": { "base": 15, "word": 0 },"startingBlock" : "0x0", "restrictAccess": ["69362535ec535F0643cBf62D16aDeDCAf32Ee6F7"] } }
+def generate_precompiled(name, nonce=0, base=15, word=0, starting_block='0x0', restrict_access=None):
+    precompiled_object = {
+        'name': name,
+        'linear': {
+            'base': base,
+            'word': 0
+        },
+        'startingBlock': starting_block
+    }
+    if restrict_access:
+        precompiled_object['restrictAccess'] = restrict_access
+    precompiled = {
+        'precompiled': precompiled_object
+    }
+    return precompiled
+
 
 def add_to_accounts(accounts: dict, address: str, account: dict) -> None:
     accounts[fix_address(address)] = account
