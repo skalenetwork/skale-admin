@@ -29,7 +29,8 @@ from core.schains.helper import read_ima_data
 from core.schains.limits import get_schain_limit
 from core.schains.types import MetricType
 
-from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC, PRECOMPILED_CONTRACTS_FILEPATH
+from tools.configs.schains import (SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC,
+                                   PRECOMPILED_CONTRACTS_FILEPATH)
 from tools.configs.ima import PRECOMPILED_IMA_CONTRACTS
 from tools.helper import read_json
 
