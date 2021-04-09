@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import iptc
-except FileNotFoundError:
+except (FileNotFoundError, AttributeError):
     logger.warning('Unable to import iptc')
 
 

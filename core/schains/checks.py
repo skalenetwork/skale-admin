@@ -20,13 +20,15 @@
 import os
 import logging
 
-from core.schains.config.helper import get_allowed_endpoints, get_schain_rpc_ports
+from core.schains.skaled_exit_codes import SkaledExitCodes
+from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
+from core.schains.config.helper import get_allowed_endpoints, get_local_schain_http_endpoint
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
+from tools.configs.ima import DISABLE_IMA
 from tools.iptables import apsent_rules as apsent_iptables_rules
-from tools.helper import post_request
 
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -35,124 +37,114 @@ logger = logging.getLogger(__name__)
 dutils = DockerUtils()
 
 
-# TODO: Fix IMA
 class SChainChecks:
-    def __init__(self, schain_name: str, node_id: int, rotation_id=0, log=False, failhook=None):
+    def __init__(self, schain_name: str, node_id: int, rotation_id=0):
         self.name = schain_name
         self.node_id = node_id
-        self.failhook = failhook
         self.rotation_id = rotation_id
-        self.run_checks()
-        if log:
-            self.log_health_check()
-        if not self.is_healthy() and self.failhook:
-            self.failhook(
-                f'sChain checks failed: {self.name}, {self.get_all()}, node_id: {node_id}',
-                level='warning')
+        self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
 
-    def run_checks(self):
-        self.check_data_dir()
-        self.check_config()
-        self.check_dkg()
-        self.check_volume()
-        self.check_firewall_rules()
-        self.check_container()
-        # self.check_ima_container()
-        self.check_rpc()
-
-    def check_data_dir(self):
+    @property
+    def data_dir(self) -> bool:
+        """Checks that sChain data dir exists"""
         schain_dir_path = get_schain_dir_path(self.name)
-        self._data_dir = os.path.isdir(schain_dir_path)
+        return os.path.isdir(schain_dir_path)
 
-    def check_dkg(self):
+    @property
+    def dkg(self) -> bool:
+        """Checks that DKG procedure is completed"""
         secret_key_share_filepath = get_secret_key_share_filepath(self.name, self.rotation_id)
-        self._dkg = os.path.isfile(secret_key_share_filepath)
+        return os.path.isfile(secret_key_share_filepath)
 
-    def check_config(self):
+    @property
+    def config(self) -> bool:
+        """Checks that sChain config file exists"""
         config_filepath = get_schain_config_filepath(self.name)
-        self._config = os.path.isfile(config_filepath)
+        return os.path.isfile(config_filepath)
 
-    def check_volume(self):
-        self._volume = dutils.data_volume_exists(self.name)
+    @property
+    def volume(self) -> bool:
+        """Checks that sChain volume exists"""
+        return dutils.is_data_volume_exists(self.name)
 
-    def check_container(self):
-        name = get_container_name(SCHAIN_CONTAINER, self.name)
-        info = dutils.get_info(name)
-        self._container = dutils.container_running(info)
+    @property
+    def firewall_rules(self) -> bool:
+        """Checks that firewall rules are setted correctly"""
+        if self.config:
+            ips_ports = get_allowed_endpoints(self.name)
+            return len(apsent_iptables_rules(ips_ports)) == 0
+        return False
 
-    def check_ima_container(self):
+    @property
+    def container(self) -> bool:
+        """Checks that skaled container is running"""
+        info = dutils.get_info(self.container_name)
+        return dutils.container_running(info)
+
+    @property
+    def exit_code_ok(self) -> bool:
+        """Checks that skaled exit code is OK"""
+        info = dutils.get_info(self.container_name)
+        exit_code = dutils.container_exit_code(info)
+        return int(exit_code) != SkaledExitCodes.EC_STATE_ROOT_MISMATCH
+
+    @property
+    def ima_container(self) -> bool:
+        """Checks that IMA container is running"""
         name = get_container_name(IMA_CONTAINER, self.name)
         info = dutils.get_info(name)
-        self._ima_container = dutils.container_running(info)
+        return dutils.container_running(info)
 
-    def check_rpc(self):
-        self._rpc = False
-        if self._config:
-            http_port, _ = get_schain_rpc_ports(self.name)
-            http_endpoint = f'http://127.0.0.1:{http_port}'
-            self._rpc = check_endpoint_alive(http_endpoint)
+    @property
+    def rpc(self) -> bool:
+        """Checks that local skaled RPC is accessible"""
+        if self.config:
+            http_endpoint = get_local_schain_http_endpoint(self.name)
+            return check_endpoint_alive(http_endpoint)
+        return False
 
-    def check_firewall_rules(self):
-        self._firewall_rules = False
-        if self._config:
-            ips_ports = get_allowed_endpoints(self.name)
-            self._firewall_rules = len(apsent_iptables_rules(ips_ports)) == 0
+    @property
+    def blocks(self) -> bool:
+        """Checks that local skaled is mining blocks"""
+        if self.config:
+            http_endpoint = get_local_schain_http_endpoint(self.name)
+            return check_endpoint_blocks(http_endpoint)
+        return False
+
+    def get_all(self, log=True):
+        checks_dict = {
+            'data_dir': self.data_dir,
+            'dkg': self.dkg,
+            'config': self.config,
+            'volume': self.volume,
+            'firewall_rules': self.firewall_rules,
+            'container': self.container,
+            'exit_code_ok': self.exit_code_ok,
+            'rpc': self.rpc,
+            'blocks': self.blocks
+        }
+        if not DISABLE_IMA:
+            checks_dict['ima_container'] = self.ima_container
+        if log:
+            log_checks_dict(self.name, checks_dict)
+        return checks_dict
 
     def is_healthy(self):
         checks = self.get_all()
         return False not in checks.values()
 
-    def get_all(self):
-        return {
-            'data_dir': self._data_dir,
-            'dkg': self._dkg,
-            'config': self._config,
-            'volume': self._volume,
-            'container': self._container,
-            # TODO: Test IMA
-            # 'ima_container': self._ima_container,
-            'firewall_rules': self._firewall_rules,
-            'rpc': self._rpc
-        }
 
-    def log_health_check(self):
-        checks = self.get_all()
-        logger.info(f'sChain {self.name} checks: {checks}')
-        failed_checks = []
-        for check in checks:
-            if not checks[check]:
-                failed_checks.append(check)
-        if len(failed_checks) != 0:
-            failed_checks_str = ", ".join(failed_checks)
-            logger.info(
-                arguments_list_string(
-                    {'sChain name': self.name, 'Failed checks': failed_checks_str},
-                    'Failed sChain checks', 'error'
-                )
+def log_checks_dict(schain_name, checks_dict):
+    logger.info(f'sChain {schain_name} checks: {checks_dict}')
+    failed_checks = []
+    for check in checks_dict:
+        if not checks_dict[check]:
+            failed_checks.append(check)
+    if len(failed_checks) != 0:
+        failed_checks_str = ", ".join(failed_checks)
+        logger.info(
+            arguments_list_string(
+                {'sChain name': schain_name, 'Failed checks': failed_checks_str},
+                'Failed sChain checks', 'error'
             )
-
-
-def check_for_rotation(skale, schain_name, node_id):
-    rotation_data = skale.node_rotation.get_rotation(schain_name)
-    rotation_in_progress = skale.node_rotation.is_rotation_in_progress(schain_name)
-    finish_ts = rotation_data['finish_ts']
-    rotation_id = rotation_data['rotation_id']
-    new_schain = rotation_data['new_node'] == node_id
-    exiting_node = rotation_data['leaving_node'] == node_id
-    return {
-        'result': rotation_in_progress,
-        'new_schain': new_schain,
-        'exiting_node': exiting_node,
-        'finish_ts': finish_ts,
-        'rotation_id': rotation_id
-    }
-
-
-def check_endpoint_alive(http_endpoint):
-    res = post_request(
-        http_endpoint,
-        json={"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 1}
-    )
-    if res and res.status_code == 200:
-        return True
-    return False
+        )

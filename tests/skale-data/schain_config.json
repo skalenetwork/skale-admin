@@ -20,6 +20,20 @@
     "durationLimit": "0x0d",
     "blockReward": "0x4563918244F40000"
   },
+  "unddos": {
+		"origins": [
+			{
+				"origin": [
+					"*"
+				],
+				"ban_lengthy": 120,
+				"ban_peak": 15,
+				"max_calls_per_minute": 1000000000,
+				"max_calls_per_second": 1000000000,
+				"max_ws_conn": 20000
+			}
+		]
+	},
   "genesis": {
     "nonce": "0x0000000000000042",
     "difficulty": "0x020000",
@@ -41,6 +55,8 @@
             "httpsRpcPort": 10002,
             "wsRpcPort": 10003,
             "wssRpcPort": 10008,
+            "infoHttpRpcPort": 10009,
+            "info-acceptors": 1,
             "bindIP": "0.0.0.0"
         },
         "sChain": {

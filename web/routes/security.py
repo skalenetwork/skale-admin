@@ -27,6 +27,7 @@ from OpenSSL import crypto
 from flask import Blueprint, request
 
 from core.schains.ssl import is_ssl_folder_empty
+from web.models.schain import set_schains_need_reload
 from web.helper import construct_ok_response, construct_err_response
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 
@@ -40,7 +41,7 @@ SSL_KEY_NAME = 'ssl_key'
 SSL_CRT_NAME = 'ssl_cert'
 
 
-def construct_security_bp(docker_utils):
+def construct_security_bp():
     security_bp = Blueprint('security', __name__)
 
     @security_bp.route('/api/ssl/status', methods=['GET'])
@@ -60,11 +61,8 @@ def construct_security_bp(docker_utils):
                 expiration_date_raw = cert.get_notAfter()
                 expiration_date = parser.parse(
                     expiration_date_raw).strftime('%Y-%m-%dT%H:%M:%S')
-            except Exception as err:
-                logger.error(
-                    'Error during parsing certs. May be they are invalid',
-                    exc_info=err
-                )
+            except Exception:
+                logger.exception('Error during parsing certs. May be they are invalid')
                 return construct_err_response(msg=CERTS_HAS_INVALID_FORMAT)
 
             return construct_ok_response(data={
@@ -87,9 +85,7 @@ def construct_security_bp(docker_utils):
         ssl_cert = request.files[SSL_CRT_NAME]
         ssl_key.save(os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_KEY_NAME))
         ssl_cert.save(os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_CRT_NAME))
-
-        docker_utils.restart_all_schains()
-
+        set_schains_need_reload()
         return construct_ok_response()
 
     return security_bp

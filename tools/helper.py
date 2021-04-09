@@ -19,23 +19,31 @@
 
 import os
 import json
+import yaml
 import logging
 import subprocess
-import time
 import requests
 from subprocess import PIPE
 
+from filelock import FileLock
 from jinja2 import Environment
+from skale import Skale
+from skale.wallets import BaseWallet, RPCWallet
 
+from tools.configs import INIT_LOCK_PATH
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
 
 logger = logging.getLogger(__name__)
+
+POST_REQUEST_TIMEOUT = 30
 
 
 def post_request(url, json, cookies=None):
     try:
-        return requests.post(url, json=json, cookies=cookies, timeout=10)
-    except requests.exceptions.ConnectionError:
-        print(f'Could not connect to {url}')
+        return requests.post(url, json=json, cookies=cookies,
+                             timeout=POST_REQUEST_TIMEOUT)
+    except requests.exceptions.RequestException as err:
+        logger.error(f'Post request failed with: {err}')
         return None
 
 
@@ -47,7 +55,6 @@ def read_json(path, mode='r'):
 def write_json(path, content):
     with open(path, 'w') as outfile:
         json.dump(content, outfile, indent=4)
-        outfile.close()
 
 
 def init_file(path, content=None):
@@ -71,7 +78,8 @@ def namedtuple_to_dict(tuple):
 
 def run_cmd(cmd, env={}, shell=False):
     logger.info(f'Running: {cmd}')
-    res = subprocess.run(cmd, shell=shell, stdout=PIPE, stderr=PIPE, env={**env, **os.environ})
+    res = subprocess.run(cmd, shell=shell, stdout=PIPE,
+                         stderr=PIPE, env={**env, **os.environ})
     if res.returncode:
         logger.error('Error during shell execution:')
         logger.error(res.stderr.decode('UTF-8').rstrip())
@@ -80,7 +88,8 @@ def run_cmd(cmd, env={}, shell=False):
 
 
 def format_output(res):
-    return res.stdout.decode('UTF-8').rstrip(), res.stderr.decode('UTF-8').rstrip()
+    return res.stdout.decode('UTF-8').rstrip(), \
+            res.stderr.decode('UTF-8').rstrip()
 
 
 def read_file(path):
@@ -103,41 +112,21 @@ def process_template(source, destination, data):
         f.write(processed_template)
 
 
-class SkaleFilterError(Exception):
-    pass
+def wait_until_admin_inited():
+    logger.info('Checking if skale-admin inited ...')
+    lock = FileLock(INIT_LOCK_PATH)
+    with lock:
+        logger.info('Skale admin inited')
 
 
-class SkaleFilter:
-    def __init__(self, event_class, from_block, argument_filters,
-                 to_block='latest',
-                 timeout=4, retries=35):
-        self.event_class = event_class
-        self.from_block = from_block
-        self.argument_filters = argument_filters
-        self.to_block = to_block
-        self.timeout = timeout
-        self.retries = retries
-        self.web3_filter = self.create_filter()
+def init_skale(wallet: BaseWallet) -> Skale:
+    return Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
 
-    def create_filter(self):
-        return self.event_class.createFilter(
-            fromBlock=self.from_block,
-            toBlock=self.to_block,
-            argument_filters=self.argument_filters
-        )
 
-    def get_events(self):
-        events = None
-        for _ in range(self.retries):
-            try:
-                events = self.web3_filter.get_all_entries()
-            except Exception:
-                self.web3_filter = self.create_filter()
-                time.sleep(self.timeout)
-                logger.error('Retreiving events from filter failed')
-            else:
-                break
+def init_defualt_wallet() -> Skale:
+    return RPCWallet(TM_URL)
 
-        if events is None:
-            raise SkaleFilterError('Filter get_events timed out')
-        return events
+
+def safe_load_yml(filepath):
+    with open(filepath, 'r') as stream:
+        return yaml.safe_load(stream)

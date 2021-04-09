@@ -25,7 +25,8 @@ server/*_tmp*
 *_tmp*
 *.db
 
-log/
+# log/
+*.log
 config/data.json
 
 # terraform files
@@ -54,3 +55,9 @@ test_abi.json
 *.key
 *.crt
 *.csr
+
+tests/skale-data/node_data/schains/*
+
+*.lock
+
+skale-manager-*

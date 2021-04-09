@@ -19,7 +19,8 @@
 
 import logging
 import datetime
-from peewee import CharField, DateTimeField, IntegrityError, IntegerField, BooleanField
+from peewee import (CharField, DateTimeField,
+                    IntegrityError, IntegerField, BooleanField)
 
 from core.schains.dkg_status import DKGStatus
 from web.models.base import BaseModel
@@ -33,6 +34,9 @@ class SChainRecord(BaseModel):
     dkg_status = IntegerField()
     is_deleted = BooleanField(default=False)
     first_run = BooleanField(default=True)
+    new_schain = BooleanField(default=True)
+    repair_mode = BooleanField(default=False)
+    needs_reload = BooleanField(default=False)
 
     @classmethod
     def add(cls, name):
@@ -41,7 +45,8 @@ class SChainRecord(BaseModel):
                 schain = cls.create(
                     name=name,
                     added_at=datetime.datetime.now(),
-                    dkg_status=DKGStatus.NOT_STARTED.value
+                    dkg_status=DKGStatus.NOT_STARTED.value,
+                    new_schain=True
                 )
             return (schain, None)
         except IntegrityError as err:
@@ -74,7 +79,9 @@ class SChainRecord(BaseModel):
             'dkg_status': record.dkg_status,
             'dkg_status_name': DKGStatus(record.dkg_status).name,
             'is_deleted': record.is_deleted,
-            'first_run': record.first_run
+            'first_run': record.first_run,
+            'new_schain': record.new_schain,
+            'needs_reload': record.needs_reload,
         }
 
     def dkg_started(self):
@@ -100,6 +107,21 @@ class SChainRecord(BaseModel):
         self.first_run = val
         self.save()
 
+    def set_repair_mode(self, value):
+        logger.info(f'Changing repair_mode for {self.name} to {value}')
+        self.repair_mode = value
+        self.save()
+
+    def set_new_schain(self, value):
+        logger.info(f'Changing new_schain for {self.name} to {value}')
+        self.new_schain = value
+        self.save()
+
+    def set_needs_reload(self, value):
+        logger.info(f'Changing needs_reload for {self.name} to {value}')
+        self.needs_reload = value
+        self.save()
+
 
 def create_tables():
     logger.info('Creating schainrecord table...')
@@ -111,6 +133,13 @@ def set_schains_first_run():
     logger.info('Setting first_run=True for all sChain records')
     query = SChainRecord.update(first_run=True).where(
         SChainRecord.first_run == False)  # noqa
+    query.execute()
+
+
+def set_schains_need_reload():
+    logger.info('Setting needs_reload=True for all sChain records')
+    query = SChainRecord.update(needs_reload=True).where(
+        SChainRecord.needs_reload == False)  # noqa
     query.execute()
 
 
@@ -126,3 +155,11 @@ def mark_schain_deleted(name):
     if SChainRecord.added(name):
         schain_record = SChainRecord.get_by_name(name)
         schain_record.set_deleted()
+
+
+def toggle_schain_repair_mode(name):
+    logger.info(f'Toggling repair mode for schain {name}')
+    query = SChainRecord.update(repair_mode=True).where(
+        SChainRecord.name == name)
+    count = query.execute()
+    return count > 0

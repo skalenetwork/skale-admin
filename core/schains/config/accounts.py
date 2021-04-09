@@ -23,12 +23,16 @@ from web3 import Web3
 from skale.wallets.web3_wallet import public_key_to_address
 
 from core.schains.config.helper import fix_address, _string_to_storage, get_context_contract
-from core.schains.filestorage import compose_filestorage_info
+from core.schains.filestorage import compose_filestorage_info, get_filestorage_info
 from core.schains.helper import read_ima_data
-from core.schains.volume import get_resource_allocation_info, get_allocation_part_name
 
-from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC
+from core.schains.limits import get_schain_limit
+from core.schains.types import MetricType
+
+from tools.configs.schains import (SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC,
+                                   PRECOMPILED_CONTRACTS_FILEPATH)
 from tools.configs.ima import PRECOMPILED_IMA_CONTRACTS
+from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +50,28 @@ def generate_account(balance, code=None, storage={}, nonce=0):
     return account
 
 
+def get_precompiled_contracts():
+    return read_json(PRECOMPILED_CONTRACTS_FILEPATH)
+
+
 def add_to_accounts(accounts: dict, address: str, account: dict) -> None:
     accounts[fix_address(address)] = account
+
+
+def generate_precompiled_accounts() -> dict:
+    """Generates accounts for SKALE precompiled contracts
+
+    :returns: Dictionary with accounts
+    :rtype: dict
+    """
+    accounts = {}
+    precompileds = get_precompiled_contracts()
+    filestorage_address = get_filestorage_info()['address']
+    for address, precompiled in precompileds.items():
+        if precompiled['precompiled'].get('restrictAccess'):
+            precompiled['precompiled']['restrictAccess'] = [filestorage_address]
+        add_to_accounts(accounts, address, precompiled)
+    return accounts
 
 
 def generate_owner_accounts(schain_owner: str, schain_nodes: list) -> dict:
@@ -101,11 +125,8 @@ def generate_fs_accounts(schain: dict) -> dict:
     :returns: Dictionary with accounts
     :rtype: dict
     """
-    resource_allocation = get_resource_allocation_info()
-    allocation_part_name = get_allocation_part_name(schain)
-    schin_internal_limits = resource_allocation['schain'][allocation_part_name]
-
-    filestorage_info = compose_filestorage_info(schin_internal_limits)
+    volume_limits = get_schain_limit(schain, MetricType.volume_limits)
+    filestorage_info = compose_filestorage_info(volume_limits)
     accounts = {}
     account = generate_account(
         balance=0,
@@ -148,6 +169,7 @@ def generate_dynamic_accounts(schain: dict, schain_nodes: list) -> dict:
     :rtype: dict
     """
     return {
+        **generate_precompiled_accounts(),
         **generate_owner_accounts(schain['owner'], schain_nodes),
         **generate_context_accounts(schain),
         **generate_fs_accounts(schain),

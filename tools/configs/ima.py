@@ -20,6 +20,9 @@
 import os
 from tools.configs import CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME, CONFIG_FOLDER
 
+
+DISABLE_IMA = os.getenv('DISABLE_IMA') == 'True'
+
 IMA_ENDPOINT = os.environ['IMA_ENDPOINT']
 
 PROXY_ABI_FILENAME = 'proxy.json'
@@ -33,7 +36,7 @@ PRECOMPILED_IMA_CONTRACTS = {
         'filename': 'SkaleFeatures'
     },
     'lock_and_data_for_schain': {
-        'filename': 'LockAndDataForSchain'
+        'filename': 'LockAndData'
     },
     'eth_erc20': {
         'filename': 'EthERC20'
@@ -42,21 +45,21 @@ PRECOMPILED_IMA_CONTRACTS = {
         'filename': 'TokenManager'
     },
     'lock_and_data_for_schain_erc20': {
-        'filename': 'LockAndDataForSchainERC20'
+        'filename': 'LockAndDataERC20'
     },
     'erc20_module_for_schain': {
-        'filename': 'ERC20ModuleForSchain'
+        'filename': 'ERC20Module'
     },
     'lock_and_data_for_schain_erc721': {
-        'filename': 'LockAndDataForSchainERC721'
+        'filename': 'LockAndDataERC721'
     },
     'erc721_module_for_schain': {
-        'filename': 'ERC721ModuleForSchain'
+        'filename': 'ERC721Module'
     },
     'token_factory': {
         'filename': 'TokenFactory'
     },
     'message_proxy_chain': {
-        'filename': 'MessageProxyForSchain'
+        'filename': 'MessageProxy'
     }
 }

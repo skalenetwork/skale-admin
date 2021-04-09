@@ -20,9 +20,23 @@
 from enum import Enum
 
 
-class SchainTypes(Enum):
+class SchainType(Enum):
     test = 0
     test4 = 32
     large = 128
-    medium = 16
+    medium = 4
     small = 1
+
+
+class ContainerType(Enum):
+    base = 0
+    schain = 1
+    ima = 2
+
+
+class MetricType(Enum):
+    cpu_shares = 0
+    mem = 1
+    disk = 2
+    volume_limits = 3
+    storage_limit = 4

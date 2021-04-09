@@ -3,34 +3,27 @@ from functools import partial
 
 import docker
 import pytest
-import time
-import mock
+from mock import Mock
+from types import SimpleNamespace
 
-from tools.docker_utils import DockerUtils
-from core.schains.runner import (run_schain_container, run_ima_container,
-                                 get_container_name, get_image_name)
+from core.schains.runner import get_container_name, get_image_name, get_container_info
+from tests.utils import (get_schain_contracts_data,
+                         run_simple_schain_container,
+                         run_simple_schain_container_in_sync_mode)
 from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs import NODE_DATA_PATH
+from tools.docker_utils import DockerUtils
+from tools.helper import read_file
+
+from unittest import mock
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 TEST_SKALE_DATA_DIR = os.path.join(DIR_PATH, 'skale-data')
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
-TEST_ABI_FILEPATH = os.path.join(DIR_PATH, 'test_abi.json')
 
-
-SCHAIN_NAME = 'test'
-SCHAIN = {
-    'name': SCHAIN_NAME,
-    'owner': '0x1213123091i230923123213123',
-    'indexInOwnerList': 0,
-    'partOfNode': 0,
-    'lifetime': 3600,
-    'startDate': 1575448438,
-    'deposit': 1000000000000000000,
-    'index': 0,
-    'active': True
-}
+LOGS_TEST_TEXT = 'Hello, SKALE!'
 
 
 @pytest.fixture
@@ -48,31 +41,8 @@ def client():
     return DockerUtils(volume_driver='local')
 
 
-def run_simple_schain_container(dutils):
-    run_schain_container(SCHAIN, dutils=dutils)
-
-
-def run_simple_schain_container_in_sync_mode(dutils):
-    public_key = "1:1:1:1"
-    timestamp = time.time()
-
-    class SnapshotAddressMock:
-        def __init__(self):
-            self.ip = '0.0.0.0'
-            self.port = '8080'
-
-    # Run schain container
-    with mock.patch('core.schains.config.helper.get_skaled_http_snapshot_address',
-                    return_value=SnapshotAddressMock()):
-        run_schain_container(SCHAIN, public_key, timestamp, dutils=dutils)
-
-
-def run_simple_ima_container(dutils):
-    run_ima_container(SCHAIN, dutils=dutils)
-
-
-def check_schain_container(client):
-    assert client.data_volume_exists(SCHAIN_NAME)
+def check_schain_container(schain_name: str, client: DockerUtils):
+    assert client.is_data_volume_exists(schain_name)
 
     containers = client.get_all_schain_containers()
     assert len(containers) == 1
@@ -86,45 +56,53 @@ def check_schain_container(client):
     assert containers[0].name
 
 
-def remove_schain_container(client):
+@pytest.fixture
+def cleanup_container(schain_config, client):
+    yield
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    client.safe_rm(get_container_name(SCHAIN_CONTAINER, schain_name),
+                   force=True)
+
+
+def remove_schain_container(schain_name, client):
     containers = client.get_all_schain_containers()
-    name = containers[0].name
-    client.safe_rm(name, force=True)
-    client.rm_vol(SCHAIN_NAME)
+    if containers:
+        name = containers[0].name
+        client.safe_rm(name, force=True)
+    client.rm_vol(schain_name)
 
 
-def test_run_schain_container(client, schain_dir):
+def test_run_schain_container(client, schain_config, cleanup_container):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain_data = get_schain_contracts_data(schain_name)
     # Run schain container
-    run_simple_schain_container(client)
+    run_simple_schain_container(schain_data, client)
 
     # Perform container checks
-    check_schain_container(client)
-
-    # Remove container and volume
-    remove_schain_container(client)
+    check_schain_container(schain_name, client)
 
 
-def test_run_schain_container_in_sync_mode(client, schain_dir):
+def test_run_schain_container_in_sync_mode(client, schain_config,
+                                           cleanup_container):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain_data = get_schain_contracts_data(schain_name)
     # Run schain container
-    run_simple_schain_container_in_sync_mode(client)
+    run_simple_schain_container_in_sync_mode(schain_data, client)
 
     # Perform container checks
-    check_schain_container(client)
-
-    # Remove container and volume
-    remove_schain_container(client)
+    check_schain_container(schain_name, client)
 
 
 def test_not_existed_docker_objects(client):
     # Not existed volume
-    assert not client.data_volume_exists('random_name')
-    with pytest.raises(docker.errors.NotFound):
-        client.rm_vol('random_name')
+    assert not client.is_data_volume_exists('random_name')
+    # No exception
+    client.rm_vol('random_name')
 
     # Not existed container
     info = client.get_info('random_id')
     assert info['status'] == 'not_found'
-    assert client.to_start_container(info)
+    assert not client.container_found(info)
     client.safe_rm('random_name')
 
 
@@ -146,3 +124,66 @@ def test_restart_all_schains(mocked_client):
         assert get_schain_time(cont_name) != start_time[cont_name]
     for cont_name in cont_names:
         mocked_client.client.containers.get(cont_name).remove(force=True)
+
+
+def test_safe_rm(client):
+    _, container_name = run_test_schain_container(client)
+    container = client.client.containers.get(container_name)
+    path = client.get_logs_backup_filepath(container)
+    assert not os.path.isfile(path)
+    assert client.safe_get_container(container_name)
+    client.safe_rm(container_name)
+    assert os.path.isfile(path)
+    assert str(read_file(path)) == f'{LOGS_TEST_TEXT}\n'
+    assert not client.safe_get_container(container_name)
+
+
+def test_get_logs_backup_filepath(client):
+    ls = []
+    container_mock = SimpleNamespace(name='skale_schain_test')
+    with mock.patch('os.listdir', return_value=ls):
+        path = client.get_logs_backup_filepath(container_mock)
+    assert path == os.path.join(NODE_DATA_PATH, 'log/.removed_containers/skale_schain_test-0.log')
+
+    ls = ['skale_schain_test-0.log', 'skale_schain_test-1.log', 'skale_schain_testgg-0.log']
+    with mock.patch('os.listdir', return_value=ls):
+        path = client.get_logs_backup_filepath(container_mock)
+    assert path == os.path.join(NODE_DATA_PATH, 'log/.removed_containers/skale_schain_test-2.log')
+
+
+def run_test_schain_container(client):
+    test_schain_name = 'test_container'
+    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, test_schain_name)
+    container = client.safe_get_container(container_name)
+    if container:
+        container.remove(v=True, force=True)
+    try:
+        client.run_container(
+            image_name=image_name,
+            name=container_name,
+            entrypoint=f'echo {LOGS_TEST_TEXT}'
+        )
+    except Exception as e:
+        container = client.safe_get_container(container_name)
+        if container:
+            container.remove(v=True, force=True)
+        raise e
+    return test_schain_name, container_name
+
+
+def test_remove_volume(client):
+    name = 'test'
+    client.client.volumes.create(name=name)
+    client.rm_vol(name)
+    with pytest.raises(docker.errors.APIError):
+        client.client.volumes.get(name)
+
+
+def test_remove_volume_error(client):
+    name = 'test'
+    client.client.volumes.create(name=name)
+    volume_mock = Mock()
+    volume_mock.remove = Mock(side_effect=docker.errors.APIError('test error'))
+    client.get_vol = Mock(return_value=volume_mock)
+    with pytest.raises(docker.errors.APIError):
+        client.rm_vol(name, retry_lvmpy_error=False)

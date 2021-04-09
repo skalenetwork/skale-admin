@@ -4,9 +4,16 @@ import mock
 import pytest
 
 from skale.utils.contracts_provision.main import generate_random_node_data
+from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
-from core.node import Node, NodeExitStatuses, NodeStatuses
+from core.node import (
+    get_attached_storage_block_device,
+    get_block_device_size,
+    get_node_hardware_info,
+    Node, NodeExitStatus, NodeStatus
+)
 from core.node_config import NodeConfig
+from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -28,7 +35,7 @@ def test_create_insufficient_funds(node):
     name = 'test-insuff'
     with mock.patch('core.node.check_required_balance',
                     new=mock.Mock(return_value=False)):
-        res = node.register(ip, public_ip, port, name)
+        res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
         assert res['status'] == 0
         assert res['errors'] == ['Insufficient funds, re-check your wallet']
 
@@ -39,7 +46,7 @@ def test_register_info(node):
 
     # Register new node and check that it successfully created on contracts
     with mock.patch('core.node.run_filebeat_service'):
-        res = node.register(ip, public_ip, port, name)
+        res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
     assert res['status'] == 1
     res_data = res.get('data')
 
@@ -50,7 +57,7 @@ def test_register_info(node):
 
     # Register the same node again
     old_config_id = node.config.id
-    res = node.register(ip, public_ip, port, name)
+    res = node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
     assert res['status'] == 0
     assert node.config.id == old_config_id
 
@@ -68,7 +75,14 @@ def test_register_info(node):
 @pytest.fixture
 def active_node(skale):
     ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name, public_ip, wait_for=True)
+    skale.manager.create_node(
+        ip=ip,
+        port=port,
+        name=name,
+        public_ip=public_ip,
+        domain_name=DEFAULT_DOMAIN_NAME,
+        wait_for=True
+    )
     config = NodeConfig()
     config.id = skale.nodes.node_name_to_index(name)
     yield Node(skale, config)
@@ -76,35 +90,35 @@ def active_node(skale):
 
 def test_start_exit(active_node):
     active_node.exit({})
-    status = NodeExitStatuses(active_node.skale.nodes.get_node_status(active_node.config.id))
+    status = NodeExitStatus(active_node.skale.nodes.get_node_status(active_node.config.id))
 
-    assert status != NodeExitStatuses.ACTIVE
+    assert status != NodeExitStatus.ACTIVE
 
 
 def test_exit_status(active_node):
     active_status_data = active_node.get_exit_status()
     assert list(active_status_data.keys()) == ['status', 'data', 'exit_time']
-    assert active_status_data['status'] == NodeExitStatuses.ACTIVE.name
+    assert active_status_data['status'] == NodeExitStatus.ACTIVE.name
     assert active_status_data['exit_time'] == 0
 
     active_node.exit({})
     exit_status_data = active_node.get_exit_status()
     assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
-    assert exit_status_data['status'] == NodeExitStatuses.WAIT_FOR_ROTATIONS.name
+    assert exit_status_data['status'] == NodeExitStatus.WAIT_FOR_ROTATIONS.name
     assert exit_status_data['exit_time'] != 0
-    assert active_node.info['status'] == NodeStatuses.FROZEN.value
+    assert active_node.info['status'] == NodeStatus.FROZEN.value
 
 
 def test_node_maintenance(active_node, skale):
     res = active_node.set_maintenance_on()
-    node_status = NodeStatuses(skale.nodes.get_node_status(active_node.config.id))
+    node_status = NodeStatus(skale.nodes.get_node_status(active_node.config.id))
     assert res == {'status': 0}
-    assert node_status == NodeStatuses.IN_MAINTENANCE
+    assert node_status == NodeStatus.IN_MAINTENANCE
 
     res = active_node.set_maintenance_off()
-    node_status = NodeStatuses(skale.nodes.get_node_status(active_node.config.id))
+    node_status = NodeStatus(skale.nodes.get_node_status(active_node.config.id))
     assert res == {'status': 0}
-    assert node_status == NodeStatuses.ACTIVE
+    assert node_status == NodeStatus.ACTIVE
 
 
 def test_node_maintenance_error(active_node, skale):
@@ -114,3 +128,43 @@ def test_node_maintenance_error(active_node, skale):
     active_node.set_maintenance_on()
     res = active_node.set_maintenance_on()
     assert res == {'status': 1, 'errors': ['Node should be active']}
+
+
+@pytest.fixture
+def block_device_file():
+    device = '/dev/xvdd'
+    with open(DISK_MOUNTPOINT_FILEPATH, 'w') as dm_file:
+        dm_file.write(device)
+    yield DISK_MOUNTPOINT_FILEPATH
+    os.remove(DISK_MOUNTPOINT_FILEPATH)
+
+
+@mock.patch('core.node.get_block_device_size', return_value=300)
+def test_get_node_hardware_info(get_block_device_size_mock, block_device_file):
+    info = get_node_hardware_info()
+    assert isinstance(info['cpu_total_cores'], int)
+    assert isinstance(info['cpu_physical_cores'], int)
+    assert info['cpu_physical_cores'] <= info['cpu_total_cores']
+    assert isinstance(info['swap'], int)
+    assert isinstance(info['memory'], int)
+    assert isinstance(info['system_release'], str)
+    assert isinstance(info['uname_version'], str)
+    assert info['attached_storage_size'] == 300
+
+
+def test_get_attached_storage_block_device(block_device_file) -> int:
+    assert get_attached_storage_block_device() == '/dev/xvdd'
+
+
+def test_get_block_device_size():
+    device = '/dev/test'
+    size = 41224
+    response_mock = mock.Mock()
+    response_mock.json = mock.Mock(
+        return_value={'Name': device, 'Size': size, 'Err': ''})
+    with mock.patch('requests.get', return_value=response_mock):
+        assert get_block_device_size(device) == size
+
+    response_mock.json = mock.Mock(return_value={'Err': 'Test error'})
+    with mock.patch('requests.get', return_value=response_mock):
+        assert get_block_device_size(device) == -1

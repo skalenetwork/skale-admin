@@ -5,29 +5,53 @@ import shutil
 
 import docker
 import pytest
-from flask import Flask
+from flask import Flask, appcontext_pushed, g
 
 from core.node_config import NodeConfig
 from core.schains.runner import get_image_name
 from core.schains.config.helper import get_schain_config_filepath
-from tests.utils import get_bp_data
+from tests.utils import get_bp_data, post_bp_data
 from tools.docker_utils import DockerUtils
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.iptables import NodeEndpoint
 from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 
+from Crypto.Hash import keccak
+
 
 @pytest.fixture
 def skale_bp(skale):
     app = Flask(__name__)
-    config = NodeConfig()
-    config.id = 1  # skale.nodes.get_active_node_ids()[0]
-    dutils = DockerUtils(volume_driver='local')
-    app.register_blueprint(construct_schains_bp(skale, config, dutils))
-    SChainRecord.create_table()
-    yield app.test_client()
-    SChainRecord.drop_table()
+    app.register_blueprint(construct_schains_bp())
+
+    def handler(sender, **kwargs):
+        g.docker_utils = DockerUtils(volume_driver='local')
+        g.wallet = skale.wallet
+        g.config = NodeConfig()
+        g.config.id = 1
+
+    with appcontext_pushed.connected_to(handler, app):
+        SChainRecord.create_table()
+        yield app.test_client()
+        SChainRecord.drop_table()
+
+
+@pytest.fixture
+def unregistered_skale_bp(skale):
+    app = Flask(__name__)
+
+    def handler(sender, **kwargs):
+        g.docker_utils = DockerUtils(volume_driver='local')
+        g.wallet = skale.wallet
+        g.config = NodeConfig()
+        g.config.id = None
+
+    with appcontext_pushed.connected_to(handler, app):
+        SChainRecord.create_table()
+        app.register_blueprint(construct_schains_bp())
+        yield app.test_client()
+        SChainRecord.drop_table()
 
 
 def test_dkg_status(skale_bp):
@@ -56,9 +80,8 @@ def test_node_schains_list(skale_bp, skale):
     assert data == {'payload': [], 'status': 'ok'}
 
 
-def test_schain_config(skale_bp, skale):
-    sid = skale.schains_internal.get_all_schains_ids()[-1]
-    name = skale.schains.get(sid).get('name')
+def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):
+    name = schain_on_contracts
     filename = get_schain_config_filepath(name)
     dirname = os.path.dirname(filename)
     if not os.path.isdir(dirname):
@@ -95,7 +118,7 @@ def test_schains_containers_list(skale_bp, skale):
     cont1.remove(force=True)
 
 
-def test_owner_schains(skale_bp, skale):
+def test_owner_schains(skale_bp, skale, schain_on_contracts):
     data = get_bp_data(skale_bp, '/get-owner-schains')
     assert data['status'] == 'ok'
     payload = data['payload']
@@ -117,8 +140,10 @@ def schain_config_exists_mock(schain):
     return True
 
 
-@mock.patch('web.routes.schains.get_allowed_endpoints', get_allowed_endpoints_mock)
-@mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
+@mock.patch('web.routes.schains.get_allowed_endpoints',
+            get_allowed_endpoints_mock)
+@mock.patch('web.routes.schains.schain_config_exists',
+            schain_config_exists_mock)
 def test_get_firewall_rules(skale_bp):
     data = get_bp_data(skale_bp, '/api/schains/firewall/show',
                        params={'schain': 'schain-test'})
@@ -135,7 +160,7 @@ def test_get_firewall_rules(skale_bp):
 
 def test_schains_healthchecks(skale_bp, skale):
     class SChainChecksMock:
-        def __init__(self, name, node_id, log=False, failhook=None):
+        def __init__(self, name, node_id, rotation_id=0):
             pass
 
         def get_all(self):
@@ -150,25 +175,94 @@ def test_schains_healthchecks(skale_bp, skale):
                 'rpc': False
             }
 
-    def get_schains_for_node_mock(node_id):
-        return [{
-            'name': 'test-schain'
-        }]
+    def get_schains_for_node_mock(skale, node_id):
+        return [{'name': 'test-schain'}]
 
-    with mock.patch('web.routes.schains.SChainChecks', SChainChecksMock):
-        with mock.patch.object(skale.schains, 'get_schains_for_node',
-                               get_schains_for_node_mock):
-            data = get_bp_data(skale_bp, '/api/schains/healthchecks')
-            assert data['status'] == 'ok'
-            payload = data['payload']
-            test_schain_checks = payload[0]['healthchecks']
-            assert test_schain_checks == {
-                'data_dir': False,
-                'dkg': False,
-                'config': True,
-                'volume': False,
-                'container': True,
-                'ima_container': False,
-                'firewall_rules': True,
-                'rpc': False
+    def get_rotation_mock(schain_name):
+        return {'rotation_id': 1}
+
+    with mock.patch('web.routes.schains.SChainChecks', SChainChecksMock), \
+        mock.patch('web.routes.schains.get_cleaned_schains_for_node',
+                   get_schains_for_node_mock):
+        data = get_bp_data(skale_bp, '/api/schains/healthchecks')
+        assert data['status'] == 'ok'
+        payload = data['payload']
+        assert len(payload) == 1
+        test_schain_checks = payload[0]['healthchecks']
+        assert test_schain_checks == {
+            'data_dir': False,
+            'dkg': False,
+            'config': True,
+            'volume': False,
+            'container': True,
+            'ima_container': False,
+            'firewall_rules': True,
+            'rpc': False
+        }
+
+
+def test_schains_healthchecks_no_node(unregistered_skale_bp):
+    data = get_bp_data(unregistered_skale_bp, '/api/schains/healthchecks')
+    assert data['payload'] == 'No node installed'
+    assert data['status'] == 'error'
+
+
+def test_enable_repair_mode(skale_bp, schain_db):
+    schain_name = schain_db
+    data = post_bp_data(skale_bp, '/api/schains/repair',
+                        params={'schain': schain_name})
+    assert data == {
+        'payload': {},
+        'status': 'ok'
+    }
+
+    data = post_bp_data(skale_bp, '/api/schains/repair',
+                        params={'schain': 'undefined-schain'})
+    assert data == {
+        'payload': 'No schain with name undefined-schain',
+        'status': 'error'
+    }
+
+
+def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
+    schain_name = schain_on_contracts
+    keccak_hash = keccak.new(data=schain_name.encode("utf8"), digest_bits=256)
+    schain_id = '0x' + keccak_hash.hexdigest()
+
+    data = get_bp_data(skale_bp, '/api/schains/get',
+                       params={'schain': schain_name})
+    assert data == {
+        'status': 'ok',
+        'payload': {
+            'name': schain_name,
+            'id': schain_id,
+            'owner': skale.wallet.address,
+            'part_of_node': 1, 'dkg_status': 1, 'is_deleted': False,
+            'first_run': True, 'repair_mode': False
+        }
+    }
+
+    data = get_bp_data(skale_bp, '/api/schains/get',
+                       params={'schain': 'undefined-schain'})
+    assert data == {
+        'payload': 'No schain with name undefined-schain',
+        'status': 'error'
+    }
+
+
+def test_schain_containers_versions(skale_bp):
+    skaled_version = '3.4.1-beta.0'
+    ima_version = '1.1.0-beta.0'
+    with mock.patch(
+        'web.routes.schains.get_skaled_version',
+        return_value=skaled_version
+    ), mock.patch('web.routes.schains.get_ima_version',
+                  return_value=ima_version):
+        data = get_bp_data(skale_bp, '/schain-containers-versions')
+        assert data == {
+            'status': 'ok',
+            'payload': {
+                'skaled_version': skaled_version,
+                'ima_version': ima_version
             }
+        }

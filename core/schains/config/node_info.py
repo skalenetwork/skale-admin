@@ -22,12 +22,14 @@ from skale.dataclasses.node_info import NodeInfo
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
 from core.schains.config.ima import get_message_proxy_addresses
-from core.schains.volume import get_allocation_option_name
-from tools.configs import SGX_SERVER_URL
+from core.schains.limits import get_schain_type
+from tools.configs import (
+    SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL, ENV_TYPE, ALLOCATION_FILEPATH
+)
 from tools.configs.ima import IMA_ENDPOINT
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
-from tools.helper import read_json
+from tools.helper import read_json, safe_load_yml
 
 
 @dataclass
@@ -70,8 +72,14 @@ class CurrentNodeInfo(NodeInfo):
                 'collectionDuration': self.collection_duration,
                 'transactionQueueSize': self.transaction_queue_size,
                 'maxOpenLeveldbFiles': self.max_open_leveldb_files,
+                'info-acceptors': 1
             }
         }
+
+
+def get_rotate_after_block(schain_type_name: str) -> int:
+    schain_allocation_data = safe_load_yml(ALLOCATION_FILEPATH)
+    return schain_allocation_data[ENV_TYPE]['rotate_after_block'][schain_type_name]
 
 
 def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
@@ -79,7 +87,8 @@ def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
                                schains_on_node: list, rotation_id: int) -> CurrentNodeInfo:
     schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain['name'],
                                                             node['port'])
-    schain_size_name = get_allocation_option_name(schain)
+    schain_type_name = get_schain_type(schain).name
+    rotate_after_block = get_rotate_after_block(schain_type_name)
     return CurrentNodeInfo(
         node_id=node_id,
         name=node['name'],
@@ -87,21 +96,25 @@ def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
         ima_mainnet=IMA_ENDPOINT,
         ecdsa_key_name=ecdsa_key_name,
         wallets=generate_wallets_config(schain['name'], rotation_id),
+        rotate_after_block=rotate_after_block,
         **get_message_proxy_addresses(),
         **static_schain_params['current_node_info'],
-        **static_schain_params['cache_options'][schain_size_name]
+        **static_schain_params['cache_options'][schain_type_name]
     )
 
 
-def generate_wallets_config(schain_name, rotation_id):
+def generate_wallets_config(schain_name: str, rotation_id: int) -> dict:
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
     secret_key_share_config = read_json(secret_key_share_filepath)
+
     wallets = {
         'ima': {
             'url': SGX_SERVER_URL,
             'keyShareName': secret_key_share_config['key_share_name'],
             't': secret_key_share_config['t'],
-            'n': secret_key_share_config['n']
+            'n': secret_key_share_config['n'],
+            'certFile': SGX_SSL_CERT_FILEPATH,
+            'keyFile': SGX_SSL_KEY_FILEPATH
         }
     }
     common_public_keys = secret_key_share_config['common_public_key']
