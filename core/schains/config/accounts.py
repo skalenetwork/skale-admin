@@ -23,7 +23,7 @@ from web3 import Web3
 from skale.wallets.web3_wallet import public_key_to_address
 
 from core.schains.config.helper import fix_address, _string_to_storage, get_context_contract, \
-    get_deploy_controller_contract
+    get_deploy_controller_contract, calculate_deployment_owner_slot
 from core.schains.filestorage import compose_filestorage_info
 from core.schains.helper import read_ima_data
 
@@ -96,7 +96,7 @@ def generate_context_accounts(schain: dict) -> dict:
     return accounts
 
 
-def generate_deploy_controller_accounts(schain: dict) -> dict:
+def generate_deploy_controller_accounts(schain_owner: str) -> dict:
     """Generates accounts for the deploy controller predeployed SC
 
     :param schain_owner: Address of the sChain owner
@@ -105,16 +105,17 @@ def generate_deploy_controller_accounts(schain: dict) -> dict:
     :rtype: dict
     """
     accounts = {}
-    context_contract = get_deploy_controller_contract()
+    deploy_controller_contract = get_deploy_controller_contract()
+    owner_slot = calculate_deployment_owner_slot(schain_owner)
 
-    storage = {}
+    storage = {owner_slot: str(Web3.toChecksumAddress(schain_owner))}
 
     account = generate_account(
         balance=0,
-        code=context_contract['bytecode'],
+        code=deploy_controller_contract['bytecode'],
         storage=storage
     )
-    add_to_accounts(accounts, context_contract['address'], account)
+    add_to_accounts(accounts, deploy_controller_contract['address'], account)
     return accounts
 
 
@@ -172,6 +173,7 @@ def generate_dynamic_accounts(schain: dict, schain_nodes: list) -> dict:
     return {
         **generate_owner_accounts(schain['owner'], schain_nodes),
         **generate_context_accounts(schain),
+        **generate_deploy_controller_accounts(schain['owner']),
         **generate_fs_accounts(schain),
         **generate_ima_accounts()
     }

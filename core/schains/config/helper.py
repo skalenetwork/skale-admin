@@ -327,3 +327,18 @@ def compose_public_key_info(bls_public_key):
         'blsPublicKey2': str(bls_public_key[1][0]),
         'blsPublicKey3': str(bls_public_key[1][1])
     }
+
+
+def calculate_deployment_owner_slot(owner):
+    if owner[:2] == '0x':
+        owner = owner[2:]
+    leading_zeros_owner = '00' * 12 + owner
+    zero_slot = bytes.fromhex('0000000000000000000000000000000000000000000000000000000000000000')
+    keccak_members_slot = keccak.new(digest_bits=256)
+    keccak_members_slot.update(zero_slot + zero_slot)
+    members_slot = keccak_members_slot.hexdigest()
+    print(members_slot)
+    keccak_owner_slot = keccak.new(digest_bits=256)
+    keccak_owner_slot.update(bytes.fromhex(leading_zeros_owner) + bytes.fromhex(members_slot))
+    owner_slot = keccak_owner_slot.hexdigest()
+    return '0x' + owner_slot
