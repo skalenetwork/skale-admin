@@ -22,7 +22,8 @@ import logging
 from web3 import Web3
 from skale.wallets.web3_wallet import public_key_to_address
 
-from core.schains.config.helper import fix_address, _string_to_storage, get_context_contract
+from core.schains.config.helper import fix_address, _string_to_storage, get_context_contract, \
+    get_deploy_controller_contract
 from core.schains.filestorage import compose_filestorage_info
 from core.schains.helper import read_ima_data
 
@@ -85,6 +86,28 @@ def generate_context_accounts(schain: dict) -> dict:
 
     storage = {hex(0): str(Web3.toChecksumAddress(schain['owner']))}
     storage = {**storage, **_string_to_storage(1, schain['name'])}
+
+    account = generate_account(
+        balance=0,
+        code=context_contract['bytecode'],
+        storage=storage
+    )
+    add_to_accounts(accounts, context_contract['address'], account)
+    return accounts
+
+
+def generate_deploy_controller_accounts(schain: dict) -> dict:
+    """Generates accounts for the deploy controller predeployed SC
+
+    :param schain_owner: Address of the sChain owner
+    :type schain_owner: str
+    :returns: Dictionary with accounts
+    :rtype: dict
+    """
+    accounts = {}
+    context_contract = get_deploy_controller_contract()
+
+    storage = {}
 
     account = generate_account(
         balance=0,

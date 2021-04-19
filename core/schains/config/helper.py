@@ -50,6 +50,10 @@ def get_context_contract():
     return get_static_schain_params()['context_contract']
 
 
+def get_deploy_controller_contract():
+    return get_static_schain_params()['deploy_controller']
+
+
 def fix_address(address):
     return Web3.toChecksumAddress(address)
 
