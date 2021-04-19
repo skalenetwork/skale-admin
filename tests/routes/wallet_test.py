@@ -52,7 +52,7 @@ def test_send_eth(skale_bp, skale):
         'address': receiver_0,
         'amount': amount
     }
-    data = post_bp_data(skale_bp,  get_api_url(BLUEPRINT_NAME, 'send-eth'), json_data)
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'send-eth'), json_data)
     balance_1 = skale.web3.eth.getBalance(address)
     assert data == {'status': 'ok', 'payload': {}}
     assert balance_1 < balance_0

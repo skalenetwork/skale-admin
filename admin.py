@@ -20,8 +20,8 @@
 import logging
 import time
 
+from skale import Skale, SkaleIma
 from filelock import FileLock
-from skale import Skale
 
 from core.node_config import NodeConfig
 from core.schains.creator import run_creator
@@ -29,7 +29,8 @@ from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH
+from tools.configs.web3 import (
+    ENDPOINT, ABI_FILEPATH, IMA_ABI_FILEPATH, STATE_FILEPATH)
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 from tools.sgx_utils import generate_sgx_key
@@ -47,9 +48,9 @@ SLEEP_INTERVAL = 10
 WORKER_RESTART_SLEEP_INTERVAL = 2
 
 
-def monitor(skale, node_config):
+def monitor(skale, skale_ima, node_config):
     while True:
-        run_creator(skale, node_config)
+        run_creator(skale, skale_ima, node_config)
         print(f'Sleeping for {SLEEP_INTERVAL}s ...')
         time.sleep(SLEEP_INTERVAL)
         run_cleaner(skale, node_config)
@@ -62,14 +63,16 @@ def worker():
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
+
     wallet = init_wallet(
         node_config=node_config,
         retry_if_failed=True
     )
     skale = Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
+    skale_ima = SkaleIma(ENDPOINT, IMA_ABI_FILEPATH, wallet)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
-    monitor(skale, node_config)
+    monitor(skale, skale_ima, node_config)
 
 
 def init():

@@ -42,7 +42,7 @@ def rotated_nodes(skale, schain_config, schain_db):
     subprocess.run(['rm', '-rf', schain_dir_path])
 
 
-def test_new_node(skale, rotated_nodes):
+def test_new_node(skale, skale_ima, rotated_nodes):
     nodes, schain_name = rotated_nodes
     exited_node, restarted_node = nodes[0], nodes[1]
 
@@ -55,7 +55,7 @@ def test_new_node(skale, rotated_nodes):
             mock.patch('core.schains.creator.spawn_skale_manager_lib', spawn_skale_lib_mock), \
             mock.patch('core.schains.checks.apsent_iptables_rules',
                        new=mock.Mock(return_value=[True, True])):
-        monitor(restarted_node.skale, restarted_node.config)
+        monitor(restarted_node.skale, skale_ima, restarted_node.config)
         wait_for_schain_alive(schain_name)
 
         exited_node.exit({})
@@ -71,14 +71,14 @@ def test_new_node(skale, rotated_nodes):
         }
         with mock.patch('core.schains.creator.get_rotation_state',
                         new=mock.Mock(return_value=rotation_state_mock)):
-            monitor(restarted_node.skale, restarted_node.config)
+            monitor(restarted_node.skale, skale_ima, restarted_node.config)
             wait_for_schain_exiting(schain_name)
 
         rotation_state_mock['in_progress'] = False
         with mock.patch('core.schains.creator.remove_firewall_rules'), \
                 mock.patch('core.schains.creator.get_rotation_state',
                            new=mock.Mock(return_value=rotation_state_mock)):
-            monitor(restarted_node.skale, restarted_node.config)
+            monitor(restarted_node.skale, skale_ima, restarted_node.config)
             wait_for_schain_alive(schain_name)
             checks = SChainChecks(schain_name, restarted_node.config.id).get_all()
             assert checks['container']
