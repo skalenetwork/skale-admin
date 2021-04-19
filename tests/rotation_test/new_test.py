@@ -33,7 +33,7 @@ def rotated_nodes(skale, schain_config, schain_db):
         skale.manager.node_exit(nodes[i].config.id, wait_for=True)
 
 
-def test_new_node(skale, rotated_nodes):
+def test_new_node(skale, skale_ima, rotated_nodes):
     nodes, schain_name = rotated_nodes
 
     exited_node, new_node = nodes[0], nodes[2]
@@ -46,7 +46,7 @@ def test_new_node(skale, rotated_nodes):
             mock.patch('core.schains.creator.run_dkg', run_dkg_mock), \
             mock.patch('core.schains.checks.apsent_iptables_rules',
                        new=mock.Mock(return_value=[True, True])):
-        monitor(new_node.skale, new_node.config)
+        monitor(new_node.skale, skale_ima, new_node.config)
         checks = SChainChecks(schain_name, new_node.config.id).get_all()
         assert checks['container']
         assert checks['volume']

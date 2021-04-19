@@ -27,7 +27,7 @@ from enum import Enum
 from multiprocessing import Process
 
 from skale.skale_manager import spawn_skale_manager_lib
-
+from skale.skale_ima import spawn_skale_ima_lib
 
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
@@ -78,8 +78,8 @@ class MonitorMode(Enum):
     EXIT = 3
 
 
-def run_creator(skale, node_config):
-    process = Process(target=monitor, args=(skale, node_config))
+def run_creator(skale, skale_ima, node_config):
+    process = Process(target=monitor, args=(skale, skale_ima, node_config))
     join_timeout = TIMEOUT_COEFFICIENT * skale.constants_holder.get_dkg_timeout()
     process.start()
     logger.info('Creator process started')
@@ -90,7 +90,7 @@ def run_creator(skale, node_config):
     process.join()
 
 
-def monitor(skale, node_config):
+def monitor(skale, skale_ima, node_config):
     logger.info('Creator procedure started')
     skale = spawn_skale_manager_lib(skale)
     logger.info('Spawned new skale lib')
@@ -120,6 +120,7 @@ def monitor(skale, node_config):
             executor.submit(
                 run_monitor_for_schain,
                 skale,
+                skale_ima,
                 node_info,
                 schain,
                 ecdsa_sgx_key_name
@@ -148,16 +149,19 @@ def get_monitor_mode(schain_record, rotation_state):
     return MonitorMode.REGULAR
 
 
-def run_monitor_for_schain(skale, node_info, schain, ecdsa_sgx_key_name):
+def run_monitor_for_schain(
+        skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     try:
         logger.info(f'Monitor for sChain {schain["name"]}')
         skale = spawn_skale_manager_lib(skale)
-        monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name)
+        skale_ima = spawn_skale_ima_lib(skale_ima)
+        monitor_schain(
+            skale, skale_ima, node_info, schain, ecdsa_sgx_key_name)
     except Exception:
         logger.exception(f'Monitor for sChain {schain["name"]} failed')
 
 
-def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
+def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
@@ -208,6 +212,7 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
         cleanup_schain_docker_entity(name)
         monitor_checks(
             skale=skale,
+            skale_ima=skale_ima,
             schain=schain,
             checks=checks,
             node_id=node_id,
@@ -239,6 +244,7 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
     else:
         monitor_checks(
             skale=skale,
+            skale_ima=skale_ima,
             schain=schain,
             checks=checks,
             node_id=node_id,
@@ -339,7 +345,7 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
     return True
 
 
-def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
+def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
                    rotation, schain_record, ecdsa_sgx_key_name, sync=False):
     name = schain['name']
     if not checks.data_dir:
@@ -385,8 +391,15 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
     if not checks.ima_container:
-        copy_schain_ima_abi(name)
-        monitor_ima_container(schain)
+        monitor_ima(skale_ima, schain)
+
+
+def monitor_ima(skale_ima, schain, dutils=None):
+    if skale_ima.lock_and_data_for_mainnet.has_schain(schain['name']):
+        copy_schain_ima_abi(schain['name'])
+        monitor_ima_container(schain, dutils=dutils)
+    else:
+        logger.warning(f'sChain {schain["name"]} is not registered in IMA')
 
 
 def check_schain_rotated(schain_name):
