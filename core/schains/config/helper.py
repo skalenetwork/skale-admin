@@ -337,7 +337,6 @@ def calculate_deployment_owner_slot(owner):
     keccak_members_slot = keccak.new(digest_bits=256)
     keccak_members_slot.update(zero_slot + zero_slot)
     members_slot = keccak_members_slot.hexdigest()
-    print(members_slot)
     keccak_owner_slot = keccak.new(digest_bits=256)
     keccak_owner_slot.update(bytes.fromhex(leading_zeros_owner) + bytes.fromhex(members_slot))
     owner_slot = keccak_owner_slot.hexdigest()
