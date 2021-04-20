@@ -14,7 +14,7 @@ from core.schains.creator import (check_schain_rotated,
                                   monitor_ima_container,
                                   monitor_schain,
                                   monitor_schain_container,
-                                  monitor_sync_schain_container)
+                                  monitor_sync_schain_container, monitor_ima)
 from core.schains.helper import get_schain_rotation_filepath
 from core.schains.runner import get_container_name
 from tests.utils import get_schain_contracts_data
@@ -64,7 +64,7 @@ class ChecksNoContainerMock(ChecksMock):
         return False
 
 
-def test_exiting_monitor(skale, node_config, db):
+def test_exiting_monitor(skale, skale_ima, node_config, db):
     rotation_info = {
         'in_progress': True,
         'new_schain': True,
@@ -81,13 +81,13 @@ def test_exiting_monitor(skale, node_config, db):
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
-        monitor_schain(skale, node_info, schain,
+        monitor_schain(skale, skale_ima, node_info, schain,
                        ecdsa_sgx_key_name=node_config.sgx_key_name)
         rotation.assert_called_with(schain_name=schain_name,
                                     timestamp=rotation_info['finish_ts'])
 
 
-def test_rotating_monitor(skale, node_config, db):
+def test_rotating_monitor(skale, skale_ima, node_config, db):
     rotation_info = {
         'in_progress': True,
         'new_schain': False,
@@ -116,12 +116,12 @@ def test_rotating_monitor(skale, node_config, db):
                        spawn_skale_lib_mock), \
             mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
-        monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name='test')
+        monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name='test')
         rotation.assert_called_with(schain_name=schain_name,
                                     timestamp=rotation_info['finish_ts'])
 
 
-def test_new_schain_monitor(skale, node_config, db):
+def test_new_schain_monitor(skale, skale_ima, node_config, db):
     rotation_info = {
         'in_progress': True,
         'new_schain': True,
@@ -139,7 +139,7 @@ def test_new_schain_monitor(skale, node_config, db):
             mock.patch('core.schains.creator.monitor_sync_schain_container',
                        new=mock.Mock()) as sync:
         node_info = node_config.all()
-        monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name='test')
+        monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name='test')
         args, kwargs = sync.call_args
         assert args[1] == schain
         assert args[2] == rotation_info['finish_ts']
@@ -337,7 +337,21 @@ def test_get_monitor_mode_backup_sync(skale, schain_db):
     assert get_monitor_mode(record, rotation_state) == MonitorMode.SYNC
 
 
-def test_monitor_needs_reload(skale, node_config, db):
+def test_monitor_ima(skale_ima, schain_on_contracts, schain_config, dutils):
+    schain_name = schain_on_contracts
+    schain = get_schain_contracts_data(schain_name=schain_name)
+    monitor_ima(skale_ima, schain, dutils=dutils)
+    containers = dutils.get_all_ima_containers()
+    assert len(containers) == 0
+
+    skale_ima.lock_and_data_for_mainnet.add_schain(schain_name)
+    with mock.patch('core.schains.creator.copy_schain_ima_abi', return_value=True):
+        monitor_ima(skale_ima, schain, dutils=dutils)
+        containers = dutils.get_all_ima_containers()
+        assert containers[0].name == f'skale_ima_{schain_name}'
+
+
+def test_monitor_needs_reload(skale, skale_ima, node_config, db):
     rotation_info = {
         'in_progress': False,
         'new_schain': False,
@@ -361,7 +375,7 @@ def test_monitor_needs_reload(skale, node_config, db):
             mock.patch('core.schains.creator.set_rotation_for_schain'), \
             mock.patch('core.schains.creator.monitor_schain_container'):
         node_info = node_config.all()
-        monitor_schain(skale, node_info, schain,
+        monitor_schain(skale, skale_ima, node_info, schain,
                        ecdsa_sgx_key_name=node_config.sgx_key_name)
         schain_record = upsert_schain_record(schain_name)
         assert schain_record.needs_reload is False
