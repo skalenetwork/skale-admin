@@ -19,6 +19,7 @@
 
 import itertools
 import json
+import yaml
 import logging
 import os
 import subprocess
@@ -130,3 +131,8 @@ def wait_until_admin_inited():
 
 def init_skale(wallet: BaseWallet) -> Skale:
     return Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
+
+
+def safe_load_yml(filepath):
+    with open(filepath, 'r') as stream:
+        return yaml.safe_load(stream)

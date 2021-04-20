@@ -64,16 +64,16 @@ def test_dkg_status(skale_bp):
     SChainRecord.add("test2")
     SChainRecord.add("test3")
 
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'dkg-statuses'))
+    data = get_bp_data(skale_bp, '/api/dkg/statuses')
     assert data['status'] == 'ok'
     assert len(data['payload']) == 3, data
 
     SChainRecord.get_by_name("test3").set_deleted()
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'dkg-statuses'))
+    data = get_bp_data(skale_bp, '/api/dkg/statuses')
     assert data['status'] == 'ok'
     assert len(data['payload']) == 2
 
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'dkg-statuses'), {'all': True})
+    data = get_bp_data(skale_bp, '/api/dkg/statuses', {'all': True})
     assert data['status'] == 'ok'
     payload = data['payload']
     assert len(payload) == 3

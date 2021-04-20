@@ -36,6 +36,23 @@ def skale_bp(skale):
         SChainRecord.drop_table()
 
 
+@pytest.fixture
+def unregistered_skale_bp(skale):
+    app = Flask(__name__)
+    app.register_blueprint(construct_health_bp())
+
+    def handler(sender, **kwargs):
+        g.docker_utils = DockerUtils(volume_driver='local')
+        g.wallet = skale.wallet
+        g.config = NodeConfig()
+        g.config.id = None
+
+    with appcontext_pushed.connected_to(handler, app):
+        SChainRecord.create_table()
+        yield app.test_client()
+        SChainRecord.drop_table()
+
+
 def test_containers(skale_bp):
     data = get_bp_data(skale_bp, get_api_url('health', 'containers'))
     dutils = DockerUtils(volume_driver='local')
@@ -88,6 +105,12 @@ def test_schains_checks(skale_bp, skale):
                 'firewall_rules': True,
                 'rpc': False
             }
+
+
+def test_schains_checks_no_node(unregistered_skale_bp, skale):
+    data = get_bp_data(unregistered_skale_bp, get_api_url('health', 'schains'))
+    assert data['status'] == 'error'
+    assert data['payload'] == 'No node installed'
 
 
 def test_sgx(skale_bp, skale):
