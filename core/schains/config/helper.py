@@ -330,12 +330,21 @@ def compose_public_key_info(bls_public_key):
 
 
 def calculate_deployment_owner_slot(owner):
+    # Calculate owner slot by formula:
+    #
+    #    owner_slot = keccak256(OWNER ^ keccak256(ROLES_SLOT ^ MEMBERS_SLOT))
+    #
+    # where OWNER, ROLES_SLOT, MEMBERS_SLOT - bytes32; ^ - concatenation
+
     if owner[:2] == '0x':
         owner = owner[2:]
-    leading_zeros_owner = '00' * 12 + owner
-    zero_slot = bytes.fromhex('0000000000000000000000000000000000000000000000000000000000000000')
+    leading_zeros_owner = ''.join(['00' for _ in range(12)]) + owner
+    zero_hex = '0000000000000000000000000000000000000000000000000000000000000000'
+    roles_slot = bytes.fromhex(zero_hex)
+    internal_members_slot = bytes.fromhex(zero_hex)
+
     keccak_members_slot = keccak.new(digest_bits=256)
-    keccak_members_slot.update(zero_slot + zero_slot)
+    keccak_members_slot.update(roles_slot + internal_members_slot)
     members_slot = keccak_members_slot.hexdigest()
     keccak_owner_slot = keccak.new(digest_bits=256)
     keccak_owner_slot.update(bytes.fromhex(leading_zeros_owner) + bytes.fromhex(members_slot))

@@ -107,8 +107,9 @@ def generate_deploy_controller_accounts(schain_owner: str) -> dict:
     accounts = {}
     deploy_controller_contract = get_deploy_controller_contract()
     owner_slot = calculate_deployment_owner_slot(schain_owner)
+    bytes_true = '0x01'
 
-    storage = {owner_slot: str(Web3.toChecksumAddress(schain_owner))}
+    storage = {owner_slot: bytes_true}
 
     account = generate_account(
         balance=0,
