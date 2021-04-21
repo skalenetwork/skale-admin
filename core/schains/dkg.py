@@ -46,7 +46,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             skale.schains.name_to_group_id(schain_name)
         )
         wait_for_fail(dkg_client, channel_started_time, "broadcast")
-        raise DkgError(e)
+        raise
 
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
