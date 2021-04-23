@@ -77,3 +77,6 @@ try:
     ALLOWED_TIMESTAMP_DIFF = int(ALLOWED_TIMESTAMP_DIFF)
 except TypeError:
     ALLOWED_TIMESTAMP_DIFF = D_ALLOWED_TIMESTAMP_DIFF
+
+ENV_TYPE = os.environ.get('ENV_TYPE')
+ALLOCATION_FILEPATH = os.path.join(CONFIG_FOLDER, 'schain_allocation.yml')

@@ -62,8 +62,8 @@ def construct_health_bp():
         skale = init_skale(wallet=g.wallet)
         node_id = g.config.id
         if node_id is None:
-            return construct_err_response(HTTPStatus.BAD_REQUEST,
-                                          ['No node installed'])
+            return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
+                                          msg='No node installed')
         schains = skale.schains.get_schains_for_node(node_id)
         checks = [
             {
