@@ -49,6 +49,8 @@ class ImaEnv:
 
     tm_url_mainnet: str
 
+    cid_main_net: int
+
     def to_dict(self):
         """Returns upper-case representation of the ImaEnv object"""
         return {
@@ -66,6 +68,7 @@ class ImaEnv:
             'SGX_SSL_CERT_PATH': self.sgx_ssl_cert_path,
             'NODE_ADDRESS': self.node_address,
             'TM_URL_MAIN_NET': self.tm_url_mainnet,
+            'CID_MAIN_NET': self.cid_main_net,
         }
 
 
@@ -94,7 +97,7 @@ def schain_index_to_node_number(node):
     return int(node['schainIndex']) - 1
 
 
-def get_ima_env(schain_name: str) -> ImaEnv:
+def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
     schain_config = get_schain_config(schain_name)
     node_info = schain_config["skaleConfig"]["nodeInfo"]
     schain_nodes = schain_config["skaleConfig"]["sChain"]
@@ -117,7 +120,8 @@ def get_ima_env(schain_name: str) -> ImaEnv:
         sgx_ssl_key_path=SGX_SSL_KEY_FILEPATH,
         sgx_ssl_cert_path=SGX_SSL_CERT_FILEPATH,
         node_address=node_address,
-        tm_url_mainnet=TM_URL
+        tm_url_mainnet=TM_URL,
+        cid_main_net=mainnet_chain_id
     )
 
 

@@ -57,7 +57,7 @@ from tools.bls.dkg_client import DkgError
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
-from tools.configs.ima import IMA_DATA_FILEPATH
+from tools.configs.ima import IMA_DATA_FILEPATH, DISABLE_IMA
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode, is_checks_passed
@@ -298,10 +298,10 @@ def monitor_schain_container(schain, volume_required=True, dutils=None):
         run_schain_container(schain, dutils=dutils)
 
 
-def monitor_ima_container(schain: dict, dutils=None):
+def monitor_ima_container(schain: dict, mainnet_chain_id: int, dutils=None):
     if not is_container_exists(schain['name'],
                                container_type=IMA_CONTAINER, dutils=dutils):
-        run_ima_container(schain)
+        run_ima_container(schain, mainnet_chain_id)
 
 
 def get_schain_public_key(skale, schain_name):
@@ -348,6 +348,8 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
 def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
                    rotation, schain_record, ecdsa_sgx_key_name, sync=False):
     name = schain['name']
+    mainnet_chain_id = skale.web3.eth.chainId
+    logger.debug(f'Mainnet chainId: {mainnet_chain_id}')
     if not checks.data_dir:
         init_schain_dir(name)
     if not checks.dkg:
@@ -390,14 +392,14 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
         else:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
-    if not checks.ima_container:
-        monitor_ima(skale_ima, schain)
+    if not DISABLE_IMA and not checks.ima_container:
+        monitor_ima(skale_ima, schain, mainnet_chain_id)
 
 
-def monitor_ima(skale_ima, schain, dutils=None):
+def monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=None):
     if skale_ima.lock_and_data_for_mainnet.has_schain(schain['name']):
         copy_schain_ima_abi(schain['name'])
-        monitor_ima_container(schain, dutils=dutils)
+        monitor_ima_container(schain, mainnet_chain_id, dutils=dutils)
     else:
         logger.warning(f'sChain {schain["name"]} is not registered in IMA')
 

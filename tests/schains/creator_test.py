@@ -216,7 +216,8 @@ def test_monitor_ima_container(skale, schain_config, dutils,
                                cleanup_ima_container):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
-    monitor_ima_container(schain, dutils=dutils)
+    mainnet_chain_id = skale.web3.eth.chainId
+    monitor_ima_container(schain, mainnet_chain_id=mainnet_chain_id, dutils=dutils)
     containers = dutils.get_all_ima_containers()
     assert containers[0].name == f'skale_ima_{schain_name}'
 
@@ -340,13 +341,13 @@ def test_get_monitor_mode_backup_sync(skale, schain_db):
 def test_monitor_ima(skale_ima, schain_on_contracts, schain_config, dutils):
     schain_name = schain_on_contracts
     schain = get_schain_contracts_data(schain_name=schain_name)
-    monitor_ima(skale_ima, schain, dutils=dutils)
+    monitor_ima(skale_ima, schain, mainnet_chain_id=1, dutils=dutils)
     containers = dutils.get_all_ima_containers()
     assert len(containers) == 0
 
     skale_ima.lock_and_data_for_mainnet.add_schain(schain_name)
     with mock.patch('core.schains.creator.copy_schain_ima_abi', return_value=True):
-        monitor_ima(skale_ima, schain, dutils=dutils)
+        monitor_ima(skale_ima, schain, mainnet_chain_id=1, dutils=dutils)
         containers = dutils.get_all_ima_containers()
         assert containers[0].name == f'skale_ima_{schain_name}'
 
