@@ -22,8 +22,9 @@ import logging
 from web3 import Web3
 from skale.wallets.web3_wallet import public_key_to_address
 
-from core.schains.config.helper import (fix_address, _string_to_storage, get_context_contract, 
-                                        get_deploy_controller_contract, calculate_deployment_owner_slot)
+from core.schains.config.helper import (fix_address, _string_to_storage,
+                                        get_context_contract, get_deploy_controller_contract,
+                                        calculate_deployment_owner_slot)
 from core.schains.filestorage import compose_filestorage_info, get_filestorage_info
 from core.schains.helper import read_ima_data
 
