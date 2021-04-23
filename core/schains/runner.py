@@ -143,9 +143,9 @@ def set_rotation_for_schain(schain_name: str, timestamp: int) -> None:
     send_rotation_request(url, timestamp)
 
 
-def run_ima_container(schain: dict, dutils: DockerUtils = None) -> None:
+def run_ima_container(schain: dict, mainnet_chain_id: int, dutils: DockerUtils = None) -> None:
     dutils = dutils or docker_utils
-    env = get_ima_env(schain['name'])
+    env = get_ima_env(schain['name'], mainnet_chain_id)
 
     cpu_limit = get_ima_limit(schain, MetricType.cpu_shares)
     mem_limit = get_ima_limit(schain, MetricType.mem)
