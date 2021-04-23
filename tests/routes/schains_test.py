@@ -59,27 +59,6 @@ def test_schains_list(skale_bp, skale):
     assert data == {'payload': [], 'status': 'ok'}
 
 
-def test_dkg_status(skale_bp):
-    SChainRecord.add("test1")
-    SChainRecord.add("test2")
-    SChainRecord.add("test3")
-
-    data = get_bp_data(skale_bp, '/api/dkg/statuses')
-    assert data['status'] == 'ok'
-    assert len(data['payload']) == 3, data
-
-    SChainRecord.get_by_name("test3").set_deleted()
-    data = get_bp_data(skale_bp, '/api/dkg/statuses')
-    assert data['status'] == 'ok'
-    assert len(data['payload']) == 2
-
-    data = get_bp_data(skale_bp, '/api/dkg/statuses', {'all': True})
-    assert data['status'] == 'ok'
-    payload = data['payload']
-    assert len(payload) == 3
-    assert payload[2]['is_deleted'] is True
-
-
 def get_allowed_endpoints_mock(schain):
     return [
         NodeEndpoint(ip='11.11.11.11', port='1111'),
