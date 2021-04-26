@@ -70,8 +70,8 @@ class Filter:
         else:
             start_block = self.first_unseen_block
         current_block = self.skale.web3.eth.getBlock("latest")["number"]
-        logger.debug(f'sChain {self.group_index_str}: Parsing broadcast events from {start_block}'
-                     f'block to {current_block} block')
+        logger.info(f'sChain {self.group_index_str}: Parsing broadcast events from {start_block}'
+                    f'block to {current_block} block')
         events = []
         for block_number in range(start_block, current_block + 1):
             block = self.skale.web3.eth.getBlock(block_number, full_transactions=True)
