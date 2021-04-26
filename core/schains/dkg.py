@@ -24,7 +24,7 @@ from time import sleep
 from skale.schain_config.generator import get_nodes_for_schain
 from tools.bls.dkg_utils import (
     init_dkg_client, send_complaint, send_alright, get_latest_block_timestamp,
-    generate_bls_key_name, generate_poly_name,
+    generate_bls_key_name, generate_poly_name, DkgError,
     get_secret_key_share_filepath,
     check_response, check_no_complaints, check_failed_dkg, wait_for_fail, broadcast_and_check_data
 )
@@ -38,7 +38,16 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     n = len(schain_nodes)
     t = (2 * n + 1) // 3
 
-    dkg_client = init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_key_name)
+    try:
+        dkg_client = init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_key_name)
+    except DkgError as e:
+        logger.error(e)
+        channel_started_time = skale.dkg.get_channel_started_time(
+            skale.schains.name_to_group_id(schain_name)
+        )
+        wait_for_fail(dkg_client, channel_started_time, "broadcast")
+        raise
+
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
     poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 

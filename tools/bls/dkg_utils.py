@@ -37,11 +37,17 @@ class DkgFailedError(DkgError):
 
 
 def init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_eth_key_name):
+    if len(schain_nodes) < n:
+        raise DkgError(f'sChain: {schain_name}:'
+                       'Initialization failed, not enough nodes in schain.')
     node_id_dkg = -1
     public_keys = [0] * n
     node_ids_contract = dict()
     node_ids_dkg = dict()
     for i, node in enumerate(schain_nodes):
+        if not len(node):
+            raise DkgError(f'sChain: {schain_name}:'
+                           'Initialization failed, node info is empty.')
         if node['id'] == node_id:
             node_id_dkg = i
 
@@ -50,6 +56,9 @@ def init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_eth_key
 
         public_keys[i] = node["publicKey"]
 
+    if node_id_dkg == -1:
+        raise DkgError(f'sChain: {schain_name}:'
+                       'Initialization failed, nodeID not found for schain.')
     dkg_client = DKGClient(
         node_id_dkg, node_id, skale, t, n, schain_name,
         public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name
