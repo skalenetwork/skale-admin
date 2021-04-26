@@ -28,6 +28,7 @@ class Filter:
         self.group_index_str = self.skale.web3.toHex(self.group_index)
         self.first_unseen_block = -1
         self.dkg_contract = skale.dkg.contract
+        self.dkg_contract_address = skale.dkg.address
         self.event_hash = "0x47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d"
         self.n = n
         self.t = (2 * n + 1) // 3
@@ -67,11 +68,13 @@ class Filter:
         current_block = self.skale.web3.eth.getBlock("latest")["number"]
         events = []
         for block_number in range(start_block, current_block + 1):
-            block = self.skale.web3.eth.getBlock(block_number)
+            block = self.skale.web3.eth.getBlock(block_number, full_transactions=True)
             txns = block["transactions"]
             for tx in txns:
                 try:
-                    receipt = self.skale.web3.eth.getTransactionReceipt(tx)
+                    if tx["to"] != self.dkg_contract_address:
+                        continue
+                    receipt = self.skale.web3.eth.getTransactionReceipt(tx["hash"])
 
                     if not self.check_event(receipt):
                         continue
