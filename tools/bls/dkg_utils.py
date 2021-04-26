@@ -142,7 +142,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
             )
 
         logger.info(f'sChain {schain_name}: total received {len(broadcasts_found)} broadcasts'
-                    f'from nodes {*broadcasts_found}')
+                    f'from nodes {broadcasts_found}')
         sleep(30)
 
     check_broadcasted_data(dkg_client, is_correct, is_received)
