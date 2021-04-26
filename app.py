@@ -35,7 +35,6 @@ from tools.wallet_utils import init_wallet
 from tools.logger import init_api_logger
 from tools.str_formatters import arguments_list_string
 
-from web.routes.logs import web_logs
 from web.routes.node import construct_node_bp
 from web.routes.schains import construct_schains_bp
 from web.routes.wallet import construct_wallet_bp
@@ -46,7 +45,6 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.register_blueprint(web_logs)
 app.register_blueprint(construct_node_bp())
 app.register_blueprint(construct_schains_bp())
 app.register_blueprint(construct_wallet_bp())
