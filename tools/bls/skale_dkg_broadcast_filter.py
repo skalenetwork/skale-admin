@@ -18,8 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
+import logging
 
 from web3.exceptions import TransactionNotFound
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -73,6 +76,8 @@ class Filter:
         else:
             start_block = self.first_unseen_block
         current_block = self.skale.web3.eth.getBlock("latest")["number"]
+        logger.debug(f'sChain {self.group_index_str}: Parsing broadcast events from {start_block}'
+                     'block to {current_block} block')
         events = []
         for block_number in range(start_block, current_block + 1):
             block = self.skale.web3.eth.getBlock(block_number)
