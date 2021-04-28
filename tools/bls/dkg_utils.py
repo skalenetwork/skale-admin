@@ -111,6 +111,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
         wait_for_fail(dkg_client, start_time)
 
     dkg_filter = Filter(skale, schain_name, n)
+    broadcasts_found = []
 
     while False in is_received:
         time_gone = get_latest_block_timestamp(dkg_client) - start_time
@@ -136,6 +137,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
             try:
                 dkg_client.receive_from_node(from_node, broadcasted_data)
                 is_correct[from_node] = True
+                broadcasts_found.append(event["nodeIndex"])
             except DkgVerificationError as e:
                 logger.error(e)
                 continue
@@ -148,6 +150,8 @@ def broadcast_and_check_data(dkg_client, poly_name):
                 f'{from_node}'
             )
 
+        logger.info(f'sChain {schain_name}: total received {len(broadcasts_found)} broadcasts'
+                    f' from nodes {broadcasts_found}')
         sleep(30)
 
     check_broadcasted_data(dkg_client, is_correct, is_received)
