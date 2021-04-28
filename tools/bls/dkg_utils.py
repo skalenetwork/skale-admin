@@ -137,7 +137,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
             try:
                 dkg_client.receive_from_node(from_node, broadcasted_data)
                 is_correct[from_node] = True
-                broadcasts_found.append(event["nodeIndex"])
+                broadcasts_found.append(event.nodeIndex)
             except DkgVerificationError as e:
                 logger.error(e)
                 continue
