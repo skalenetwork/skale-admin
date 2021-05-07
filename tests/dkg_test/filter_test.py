@@ -29,8 +29,8 @@ def test_get_events(skale, filter_mock):
                            wraps=skale.web3.eth.getBlock) as block_mock:
         result = filter_mock.get_events()
         block_mock.assert_not_called_with(first - 1)
-        block_mock.assert_any_call(first)
-        block_mock.assert_any_call(latest)
+        block_mock.assert_any_call(first, full_transactions=True)
+        block_mock.assert_any_call(latest, full_transactions=True)
         assert filter_mock.first_unseen_block > latest
         assert isinstance(result, list)
 
@@ -42,7 +42,7 @@ def test_get_events_from_start(skale, filter_mock):
             mock.patch.object(skale.dkg.contract.functions.getChannelStartedBlock, 'call',
                               new=mock.Mock(return_value=0)):
         result = filter_mock.get_events(from_channel_started_block=True)
-        block_mock.assert_any_call(0)
-        block_mock.assert_any_call(latest)
+        block_mock.assert_any_call(0, full_transactions=True)
+        block_mock.assert_any_call(latest, full_transactions=True)
         assert filter_mock.first_unseen_block > latest
         assert isinstance(result, list)
