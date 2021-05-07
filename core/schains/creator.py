@@ -397,7 +397,7 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
 
 
 def monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=None):
-    if skale_ima.lock_and_data_for_mainnet.has_schain(schain['name']):
+    if skale_ima.linker.has_schain(schain['name']):
         copy_schain_ima_abi(schain['name'])
         monitor_ima_container(schain, mainnet_chain_id, dutils=dutils)
     else:
