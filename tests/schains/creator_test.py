@@ -345,7 +345,7 @@ def test_monitor_ima(skale_ima, schain_on_contracts, schain_config, dutils):
     containers = dutils.get_all_ima_containers()
     assert len(containers) == 0
 
-    skale_ima.lock_and_data_for_mainnet.add_schain(schain_name)
+    skale_ima.linker.connect_schain(schain_name)
     with mock.patch('core.schains.creator.copy_schain_ima_abi', return_value=True):
         monitor_ima(skale_ima, schain, mainnet_chain_id=1, dutils=dutils)
         containers = dutils.get_all_ima_containers()

@@ -4,7 +4,7 @@ env:
   ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
   MANAGER_TAG: "1.8.0-develop.15"
-  IMA_TAG: "1.0.0-beta.0"
+  IMA_TAG: "1.0.0-develop.181"
   SGX_WALLET_TAG: "1.65.0-develop.0"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   PYTHON_VERSION: 3.8
