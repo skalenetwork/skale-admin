@@ -277,6 +277,8 @@ def get_node_hardware_info() -> dict:
         'cpu_physical_cores': psutil.cpu_count(logical=False),
         'memory': psutil.virtual_memory().total,
         'swap': psutil.swap_memory().total,
+        'mem_used': psutil.virtual_memory().used,
+        'mem_available': psutil.virtual_memory().available,
         'system_release': system_release,
         'uname_version': uname_version,
         'attached_storage_size': attached_storage_size
