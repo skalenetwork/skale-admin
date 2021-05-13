@@ -117,7 +117,9 @@ def cleanup_container(schain_config, dutils):
                    force=True)
 
 
-def test_remove_schain_container(dutils, schain_config, cleanup_container):
+def test_remove_schain_container(
+    dutils, schain_config,
+        cleanup_container, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
     run_simple_schain_container(schain_data, dutils)

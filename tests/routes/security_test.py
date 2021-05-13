@@ -8,10 +8,9 @@ from datetime import datetime
 import pytest
 from flask import Flask, appcontext_pushed, g
 
-from tests.utils import get_bp_data
+from tests.utils import generate_cert, get_bp_data
 from tools.configs import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
 from tools.docker_utils import DockerUtils
-from tools.helper import run_cmd
 from web.routes.security import construct_security_bp
 
 
@@ -25,30 +24,6 @@ def skale_bp(skale):
 
     with appcontext_pushed.connected_to(handler, app):
         yield app.test_client()
-
-
-def generate_cert(cert_path, key_path):
-    return run_cmd([
-        'openssl', 'req',
-        '-newkey', 'rsa:4096',
-        '-x509',
-        '-sha256',
-        '-days', '365',
-        '-nodes',
-        '-subj', '/',
-        '-out', cert_path,
-        '-keyout', key_path
-    ])
-
-
-@pytest.fixture
-def cert_key_pair():
-    cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
-    generate_cert(cert_path, key_path)
-    yield cert_path, key_path
-    pathlib.Path(cert_path).unlink(missing_ok=True)
-    pathlib.Path(key_path).unlink(missing_ok=True)
 
 
 @pytest.fixture
