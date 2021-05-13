@@ -23,6 +23,7 @@ import psutil
 import requests
 import time
 from enum import Enum
+from sh import lsmod
 
 from skale.transactions.result import TransactionFailedError
 from skale.utils.helper import ip_from_bytes
@@ -33,7 +34,7 @@ from core.filebeat import update_filebeat_service
 from tools.configs import META_FILEPATH
 from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
-from tools.helper import read_json, is_btrfs_loaded
+from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
@@ -287,7 +288,14 @@ def get_meta_info() -> dict:
     return read_json(META_FILEPATH)
 
 
+def is_btrfs_loaded():
+    modules = list(
+        filter(lambda s: s.startswith('btrfs'), lsmod().split('\n'))
+    )
+    return modules != []
+
+
 def get_btrfs_info() -> dict:
     return {
-        'status': is_btrfs_loaded()
+        'kernel_module': is_btrfs_loaded()
     }

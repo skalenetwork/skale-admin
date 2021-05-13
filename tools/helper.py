@@ -130,11 +130,3 @@ def init_defualt_wallet() -> Skale:
 def safe_load_yml(filepath):
     with open(filepath, 'r') as stream:
         return yaml.safe_load(stream)
-
-
-def is_btrfs_loaded():
-    from sh import lsmod
-    modules = list(
-        filter(lambda s: s.startswith('btrfs'), lsmod().split('\n'))
-    )
-    return modules != []
