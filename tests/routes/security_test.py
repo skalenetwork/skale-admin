@@ -1,3 +1,4 @@
+import filecmp
 import json
 import os
 import pathlib
@@ -99,7 +100,7 @@ def post_bp_files_data(bp, request, file_data, full_response=False, **kwargs):
     return json.loads(data.decode('utf-8'))
 
 
-def test_upload(skale_bp, db, cert_key_pair_host):
+def test_upload(skale_bp, ssl_folder, db, cert_key_pair_host):
     cert_path, key_path = cert_key_pair_host
     with files_data(cert_path, key_path, force=False) as data:
         response = post_bp_files_data(
@@ -108,9 +109,13 @@ def test_upload(skale_bp, db, cert_key_pair_host):
             file_data=data
         )
     assert response == {'status': 'ok', 'payload': {}}
+    uploaded_cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+    uploaded_key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+    assert filecmp.cmp(cert_path, uploaded_cert_path)
+    assert filecmp.cmp(key_path, uploaded_key_path)
 
 
-def test_upload_bad_cert(skale_bp, db, bad_cert_host):
+def test_upload_bad_cert(skale_bp, db, ssl_folder, bad_cert_host):
     cert_path, key_path = bad_cert_host
     with files_data(cert_path, key_path, force=False) as data:
         response = post_bp_files_data(
