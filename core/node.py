@@ -287,7 +287,7 @@ def get_meta_info() -> dict:
     return read_json(META_FILEPATH)
 
 
-def get_btrfs_status() -> dict:
+def get_btrfs_info() -> dict:
     return {
         'status': is_btrfs_loaded()
     }
