@@ -53,8 +53,6 @@ class CurrentNodeInfo(NodeInfo):
     transaction_queue_size: int
     max_open_leveldb_files: int
 
-    ima_monitoring_port: int
-
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         return {
