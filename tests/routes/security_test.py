@@ -1,11 +1,17 @@
-import pytest
-import mock
 import json
+import os
+import pathlib
+import time
+from contextlib import contextmanager
+from datetime import datetime
 
+import pytest
 from flask import Flask, appcontext_pushed, g
-from tests.utils import get_bp_data, post_bp_data
 
+from tests.utils import get_bp_data
+from tools.configs import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
 from tools.docker_utils import DockerUtils
+from tools.helper import run_cmd
 from web.routes.security import construct_security_bp
 
 
@@ -21,51 +27,148 @@ def skale_bp(skale):
         yield app.test_client()
 
 
-def load_certificate_mock(type, buffer):
-    class CertificateMock:
-        @staticmethod
-        def get_subject():
-            class SubjectMock:
-                def __init__(self):
-                    self.CN = 1
-
-            return SubjectMock()
-
-        @staticmethod
-        def get_notAfter():
-            return '2020-01-01 00:00:00'
-
-    return CertificateMock
+def generate_cert(cert_path, key_path):
+    return run_cmd([
+        'openssl', 'req',
+        '-newkey', 'rsa:4096',
+        '-x509',
+        '-sha256',
+        '-days', '365',
+        '-nodes',
+        '-subj', '/',
+        '-out', cert_path,
+        '-keyout', key_path
+    ])
 
 
-class RequestMock:
-    def __init__(self):
-        class FileMock:
-            @staticmethod
-            def save(path):
-                pass
-
-        self.form = {'json': json.dumps({'force': True})}
-        file = FileMock()
-        self.files = {'ssl_key': file, 'ssl_cert': file}
+@pytest.fixture
+def cert_key_pair():
+    cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+    generate_cert(cert_path, key_path)
+    yield cert_path, key_path
+    pathlib.Path(cert_path).unlink(missing_ok=True)
+    pathlib.Path(key_path).unlink(missing_ok=True)
 
 
-@mock.patch('web.routes.security.crypto.load_certificate',
-            new=load_certificate_mock)
-def test_status(skale_bp):
+@pytest.fixture
+def bad_cert(cert_key_pair):
+    cert, key = cert_key_pair
+    with open(cert, 'w') as cert_file:
+        cert_file.write('WRONG CERT')
+    yield cert, key
+
+
+@pytest.fixture
+def cert_key_pair_host():
+    """ Creates cert-key pair in directory """
+    """ that is not used for storing uploaded ssl certificates """
+    cert_path = os.path.join(CONFIG_FOLDER, 'temp_ssl_cert')
+    key_path = os.path.join(CONFIG_FOLDER, 'temp_ssl_key')
+    generate_cert(cert_path, key_path)
+    yield cert_path, key_path
+    pathlib.Path(cert_path).unlink(missing_ok=True)
+    pathlib.Path(key_path).unlink(missing_ok=True)
+    # Ensure uploaded certs are removed
+    cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+    pathlib.Path(cert_path).unlink(missing_ok=True)
+    pathlib.Path(key_path).unlink(missing_ok=True)
+
+
+@pytest.fixture
+def bad_cert_host(cert_key_pair_host):
+    cert, key = cert_key_pair_host
+    with open(cert, 'w') as cert_file:
+        cert_file.write('WRONG CERT')
+    yield cert, key
+
+
+def test_status(skale_bp, cert_key_pair):
+    year = int(datetime.utcfromtimestamp(time.time()).strftime('%Y'))
+    month = datetime.utcfromtimestamp(time.time()).strftime('%m')
+    day = datetime.utcfromtimestamp(time.time()).strftime('%d')
+    year += 1
+    expire_day_line = f'{year}-{month}-{day}'
     data = get_bp_data(skale_bp, '/api/ssl/status')
-    assert data == {
-        'status': 'ok',
-        'payload': {
-            'expiration_date': '2020-01-01T00:00:00',
-            'issued_to': 1,
-            'status': 1
+    assert data['status'] == 'ok'
+    assert data['payload']['issued_to'] is None
+    assert data['payload']['expiration_date'].startswith(expire_day_line)
+
+
+def test_status_bad_cert(skale_bp, bad_cert):
+    data = get_bp_data(skale_bp, '/api/ssl/status')
+    assert data['status'] == 'error'
+    assert data['payload'] == 'Certificates have invalid format'
+
+
+@contextmanager
+def files_data(cert_path, key_path, force=False):
+    with open(key_path, 'rb') as key_file, open(cert_path, 'rb') as cert_file:
+        data = {
+            'ssl_key': (
+                key_file, os.path.basename(key_path),
+                'application/octet-stream'),
+            'ssl_cert': (
+                cert_file, os.path.basename(cert_path),
+                'application/octet-stream'),
+            'json': json.dumps({'force': force})
         }
-    }, data
+        yield data
 
 
-@mock.patch('web.routes.security.request', new=RequestMock())
-def test_upload(skale_bp):
-    with mock.patch('web.routes.security.set_schains_need_reload'):
-        response = post_bp_data(skale_bp, '/api/ssl/upload', full_response=True)
-        assert response == {'status': 'ok', 'payload': {}}
+def post_bp_files_data(bp, request, file_data, full_response=False, **kwargs):
+    data = bp.post(request, data=file_data).data
+    if full_response:
+        return data
+    return json.loads(data.decode('utf-8'))
+
+
+def test_upload(skale_bp, db, cert_key_pair_host):
+    cert_path, key_path = cert_key_pair_host
+    with files_data(cert_path, key_path, force=False) as data:
+        response = post_bp_files_data(
+            skale_bp,
+            '/api/ssl/upload',
+            file_data=data
+        )
+    assert response == {'status': 'ok', 'payload': {}}
+
+
+def test_upload_bad_cert(skale_bp, db, bad_cert_host):
+    cert_path, key_path = bad_cert_host
+    with files_data(cert_path, key_path, force=False) as data:
+        response = post_bp_files_data(
+            skale_bp,
+            '/api/ssl/upload',
+            file_data=data
+        )
+        assert response == {
+            'status': 'error',
+            'payload': 'Certificates have invalid format'
+        }
+
+
+def test_upload_cert_exist(skale_bp, db, cert_key_pair_host, cert_key_pair):
+    cert_path, key_path = cert_key_pair_host
+    with files_data(cert_path, key_path, force=False) as data:
+        response = post_bp_files_data(
+            skale_bp,
+            '/api/ssl/upload',
+            file_data=data
+        )
+        assert response == {
+            'status': 'error',
+            'payload': 'SSL Certificates are already uploaded'
+        }
+
+    with files_data(cert_path, key_path, force=True) as data:
+        response = post_bp_files_data(
+            skale_bp,
+            '/api/ssl/upload',
+            file_data=data
+        )
+        assert response == {
+            'status': 'ok',
+            'payload': {}
+        }

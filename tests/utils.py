@@ -61,8 +61,7 @@ def get_bp_data(bp, request, params=None, full_data=False, **kwargs):
 def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
     data = bp.post(request, json=params).data
     if full_response:
-        return json.loads(data.decode('utf-8'))
-
+        return data
     return json.loads(data.decode('utf-8'))
 
 
