@@ -28,10 +28,9 @@ from skale.transactions.result import TransactionFailedError
 from skale.utils.helper import ip_from_bytes
 from skale.wallets.web3_wallet import public_key_to_address
 
-from core.filebeat import run_filebeat_service
+from core.filebeat import update_filebeat_service
 
 from tools.configs import META_FILEPATH
-from tools.configs.filebeat import MONITORING_CONTAINERS
 from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 from tools.helper import read_json
@@ -122,8 +121,7 @@ class Node:
         self.config.name = name
         self.config.id = self.skale.nodes.node_name_to_index(name)
         self.config.ip = ip
-        if MONITORING_CONTAINERS:
-            run_filebeat_service(public_ip, self.config.id, self.skale)
+        update_filebeat_service(public_ip, self.config.id, self.skale)
         return {'status': 1, 'data': self.config.all()}
 
     def exit(self, opts):
@@ -277,6 +275,8 @@ def get_node_hardware_info() -> dict:
         'cpu_physical_cores': psutil.cpu_count(logical=False),
         'memory': psutil.virtual_memory().total,
         'swap': psutil.swap_memory().total,
+        'mem_used': psutil.virtual_memory().used,
+        'mem_available': psutil.virtual_memory().available,
         'system_release': system_release,
         'uname_version': uname_version,
         'attached_storage_size': attached_storage_size
