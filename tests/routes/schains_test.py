@@ -138,7 +138,7 @@ def test_schain_containers_versions(skale_bp):
         return_value=skaled_version
     ), mock.patch('web.routes.schains.get_ima_version',
                   return_value=ima_version):
-        data = get_bp_data(skale_bp, '/schain-containers-versions')
+        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'container-versions'))
         assert data == {
             'status': 'ok',
             'payload': {
