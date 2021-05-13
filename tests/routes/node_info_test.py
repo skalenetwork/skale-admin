@@ -102,6 +102,13 @@ def test_endpoint_info(skale_bp, skale):
     assert payload['client'] != 'unknown'
 
 
+def test_btrfs_info(skale_bp, skale):
+    data = get_bp_data(skale_bp, '/btrfs-info')
+    assert data['status'] == 'ok'
+    payload = data['payload']
+    assert payload['status'] is False
+
+
 def test_meta_info(skale_bp):
     meta_info = {
         "version": "0.0.0",
