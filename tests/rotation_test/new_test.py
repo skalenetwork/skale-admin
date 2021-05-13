@@ -1,5 +1,4 @@
 import shutil
-import time
 from unittest import mock
 
 import pytest
@@ -41,7 +40,6 @@ def test_new_node(skale, rotated_nodes):
     exited_node.exit({})
 
     wait_for_contract_exiting(skale, exited_node.config.id)
-    time.sleep(30)
 
     with mock.patch('core.schains.creator.add_firewall_rules'), \
             mock.patch('core.schains.creator.init_data_volume', init_data_volume_mock), \
