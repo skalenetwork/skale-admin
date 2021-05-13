@@ -60,19 +60,6 @@ def construct_schains_bp():
             all=_all, format=True)
         return construct_ok_response(containers_list)
 
-    @schains_bp.route('/schains/list', methods=['GET'])
-    def node_schains_list():
-        skale = init_skale(g.wallet)
-        logger.debug(request)
-        node_id = g.config.id
-        if node_id is None:
-            return construct_err_response(msg='Node is not registered')
-        schains_list = list(filter(
-            lambda s: s.get('name'),
-            skale.schains.get_schains_for_node(node_id)
-        ))
-        return construct_ok_response(schains_list)
-
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'dkg-statuses'), methods=['GET'])
     def dkg_statuses():
         logger.debug(request)
@@ -116,7 +103,7 @@ def construct_schains_bp():
         response = info.to_dict()
         return construct_ok_response(response)
 
-    @schains_bp.route('/schain-containers-versions', methods=['GET'])
+    @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'container-versions'), methods=['GET'])
     def schain_containers_versions():
         logger.debug(request)
         version_data = {
