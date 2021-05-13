@@ -17,7 +17,7 @@ dutils = DockerUtils(volume_driver='local')
 
 
 @pytest.fixture
-def rotated_nodes(skale, schain_config, schain_db):
+def rotated_nodes(skale, schain_config, schain_db, cert_key_pair):
     cleanup_contracts(skale)
     SChainRecord.create_table()
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
