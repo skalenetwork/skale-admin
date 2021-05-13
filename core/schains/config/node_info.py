@@ -20,6 +20,7 @@
 from dataclasses import dataclass
 from skale.dataclasses.node_info import NodeInfo
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
+from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.config.ima import get_message_proxy_addresses
 from core.schains.limits import get_schain_type
@@ -52,6 +53,8 @@ class CurrentNodeInfo(NodeInfo):
     transaction_queue_size: int
     max_open_leveldb_files: int
 
+    ima_monitoring_port: int
+
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         return {
@@ -72,7 +75,8 @@ class CurrentNodeInfo(NodeInfo):
                 'collectionDuration': self.collection_duration,
                 'transactionQueueSize': self.transaction_queue_size,
                 'maxOpenLeveldbFiles': self.max_open_leveldb_files,
-                'info-acceptors': 1
+                'info-acceptors': 1,
+                'imaMonitoringPort': self.base_port + SkaledPorts.IMA_MONITORING.value
             }
         }
 
