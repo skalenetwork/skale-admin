@@ -72,7 +72,9 @@ def remove_schain_container(schain_name, client):
     client.rm_vol(schain_name)
 
 
-def test_run_schain_container(client, schain_config, cleanup_container):
+def test_run_schain_container(
+    client, schain_config,
+        cleanup_container, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
     # Run schain container
@@ -82,8 +84,9 @@ def test_run_schain_container(client, schain_config, cleanup_container):
     check_schain_container(schain_name, client)
 
 
-def test_run_schain_container_in_sync_mode(client, schain_config,
-                                           cleanup_container):
+def test_run_schain_container_in_sync_mode(
+    client, schain_config,
+        cleanup_container, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
     # Run schain container

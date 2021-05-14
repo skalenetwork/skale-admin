@@ -29,7 +29,7 @@ from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
 
-RETRY_ATTEMPTS = 9
+RETRY_ATTEMPTS = 14
 TIMEOUTS = [2 ** p for p in range(RETRY_ATTEMPTS)]
 
 
