@@ -81,7 +81,8 @@ def generate_schain_config(schain_name):
                 "wssRpcPort": 10007,
                 "infoHttpRpcPort": 10008,
                 "bindIP": "0.0.0.0",
-                "ecdsaKeyName": "NEK:518"
+                "ecdsaKeyName": "NEK:518",
+                "imaMonitoringPort": 10006
             },
             "sChain": {
                 "schainID": 1,
