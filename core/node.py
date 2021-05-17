@@ -23,6 +23,7 @@ import psutil
 import requests
 import time
 from enum import Enum
+from sh import lsmod
 
 from skale.transactions.result import TransactionFailedError
 from skale.utils.helper import ip_from_bytes
@@ -285,3 +286,16 @@ def get_node_hardware_info() -> dict:
 
 def get_meta_info() -> dict:
     return read_json(META_FILEPATH)
+
+
+def is_btrfs_loaded():
+    modules = list(
+        filter(lambda s: s.startswith('btrfs'), lsmod().split('\n'))
+    )
+    return modules != []
+
+
+def get_btrfs_info() -> dict:
+    return {
+        'kernel_module': is_btrfs_loaded()
+    }
