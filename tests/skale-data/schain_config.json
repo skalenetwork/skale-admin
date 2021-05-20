@@ -57,7 +57,8 @@
             "wssRpcPort": 10008,
             "infoHttpRpcPort": 10009,
             "info-acceptors": 1,
-            "bindIP": "0.0.0.0"
+            "bindIP": "0.0.0.0",
+            "imaMonitoringPort": 10006
         },
         "sChain": {
             "schainID": 1,

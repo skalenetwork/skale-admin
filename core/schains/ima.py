@@ -51,6 +51,8 @@ class ImaEnv:
 
     cid_main_net: int
 
+    monitoring_port: int
+
     def to_dict(self):
         """Returns upper-case representation of the ImaEnv object"""
         return {
@@ -69,6 +71,7 @@ class ImaEnv:
             'NODE_ADDRESS': self.node_address,
             'TM_URL_MAIN_NET': self.tm_url_mainnet,
             'CID_MAIN_NET': self.cid_main_net,
+            'MONITORING_PORT': self.monitoring_port
         }
 
 
@@ -121,7 +124,8 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         sgx_ssl_cert_path=SGX_SSL_CERT_FILEPATH,
         node_address=node_address,
         tm_url_mainnet=TM_URL,
-        cid_main_net=mainnet_chain_id
+        cid_main_net=mainnet_chain_id,
+        monitoring_port=node_info['imaMonitoringPort']
     )
 
 
