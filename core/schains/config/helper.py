@@ -50,6 +50,10 @@ def get_context_contract():
     return get_static_schain_params()['context_contract']
 
 
+def get_deploy_controller_contract():
+    return get_static_schain_params()['deploy_controller']
+
+
 def fix_address(address):
     return Web3.toChecksumAddress(address)
 
@@ -323,3 +327,26 @@ def compose_public_key_info(bls_public_key):
         'blsPublicKey2': str(bls_public_key[1][0]),
         'blsPublicKey3': str(bls_public_key[1][1])
     }
+
+
+def calculate_deployment_owner_slot(owner):
+    # Calculate owner slot by formula:
+    #
+    #    owner_slot = keccak256(OWNER ^ keccak256(ROLES_SLOT ^ MEMBERS_SLOT))
+    #
+    # where OWNER, ROLES_SLOT, MEMBERS_SLOT - bytes32; ^ - concatenation
+
+    if owner[:2] == '0x':
+        owner = owner[2:]
+    leading_zeros_owner = ''.join(['00' for _ in range(12)]) + owner
+    zero_hex = '0000000000000000000000000000000000000000000000000000000000000000'
+    roles_slot = bytes.fromhex(zero_hex)
+    internal_members_slot = bytes.fromhex(zero_hex)
+
+    keccak_members_slot = keccak.new(digest_bits=256)
+    keccak_members_slot.update(roles_slot + internal_members_slot)
+    members_slot = keccak_members_slot.hexdigest()
+    keccak_owner_slot = keccak.new(digest_bits=256)
+    keccak_owner_slot.update(bytes.fromhex(leading_zeros_owner) + bytes.fromhex(members_slot))
+    owner_slot = keccak_owner_slot.hexdigest()
+    return '0x' + owner_slot
