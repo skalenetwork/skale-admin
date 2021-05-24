@@ -142,10 +142,8 @@ def set_schains_need_reload():
 def upsert_schain_record(name):
     if not SChainRecord.added(name):
         schain_record, _ = SChainRecord.add(name)
-        print(f'added!! {name}, {schain_record}')
     else:
         schain_record = SChainRecord.get_by_name(name)
-        print(f'get_by_name get_by_name!! {name}, {schain_record}')
     return schain_record
 
 
