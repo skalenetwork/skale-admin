@@ -19,8 +19,7 @@
 
 import os
 from tools.configs import (
-    CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME,
-    IMA_CONTRACTS_INFO_NAME
+    CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME
 )
 
 from tools.configs import NODE_DATA_PATH
@@ -31,7 +30,6 @@ ENDPOINT = os.environ['ENDPOINT']
 UNTRUSTED_PROVIDERS = ["infura.io", "gateway.pokt.network"]
 ABI_FILEPATH = os.getenv('ABI_FILEPATH') or \
             os.path.join(CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME)
-IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
 STATE_FILENAME = os.getenv('STATE_FILENAME')
 STATE_BASE_PATH = os.path.join(NODE_DATA_PATH, 'eth-state')
 STATE_FILEPATH = None if not STATE_FILENAME \

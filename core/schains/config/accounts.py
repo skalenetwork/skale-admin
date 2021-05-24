@@ -33,7 +33,7 @@ from core.schains.types import MetricType
 
 from tools.configs.schains import (SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC,
                                    PRECOMPILED_CONTRACTS_FILEPATH)
-from tools.configs.ima import PRECOMPILED_IMA_CONTRACTS
+from tools.configs.ima import SCHAIN_IMA_CONTRACTS
 from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
@@ -175,7 +175,7 @@ def generate_ima_accounts():
     """
     ima_data = read_ima_data()
     accounts = {}
-    for contract_name in PRECOMPILED_IMA_CONTRACTS:
+    for contract_name in SCHAIN_IMA_CONTRACTS:
         add_to_accounts(
             accounts=accounts,
             address=ima_data[f'{contract_name}_address'],
