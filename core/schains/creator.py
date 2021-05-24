@@ -172,13 +172,6 @@ def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     finish_time = datetime.fromtimestamp(finish_ts)
 
     schain_record = upsert_schain_record(name)
-    print('schain_record schain_record schain_record')
-    print(schain_record)
-    print(schain_record)
-    print(schain_record)
-    print(schain_record)
-    print(schain_record)
-    print('schain_record schain_record schain_record')
     mode = get_monitor_mode(schain_record, rotation)
     checks = SChainChecks(name, node_id, rotation_id=rotation_id)
 
