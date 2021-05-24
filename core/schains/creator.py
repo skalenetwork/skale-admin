@@ -21,11 +21,11 @@ import logging
 import os
 import shutil
 import time
-from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import datetime
 from enum import Enum
 from multiprocessing import Process
 
+from skale import Skale
 from skale.skale_manager import spawn_skale_manager_lib
 from skale.skale_ima import spawn_skale_ima_lib
 
@@ -62,6 +62,7 @@ from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode, is_checks_passed
 from tools.str_formatters import arguments_list_string
+from tools.helper import check_pid
 from web.models.schain import upsert_schain_record, SChainRecord
 
 
@@ -69,6 +70,7 @@ logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
 TIMEOUT_COEFFICIENT = 1.5
+SCHAIN_MONITOR_SLEEP_INTERVAL = 500
 
 
 class MonitorMode(Enum):
@@ -79,57 +81,65 @@ class MonitorMode(Enum):
 
 
 def run_creator(skale, skale_ima, node_config):
-    process = Process(target=monitor, args=(skale, skale_ima, node_config))
-    join_timeout = TIMEOUT_COEFFICIENT * skale.constants_holder.get_dkg_timeout()
-    process.start()
-    logger.info('Creator process started')
-    process.join(join_timeout)
-    logger.info('Creator process is joined.')
-    logger.info('Terminating the process')
-    process.terminate()
-    process.join()
-
-
-def monitor(skale, skale_ima, node_config):
     logger.info('Creator procedure started')
-    skale = spawn_skale_manager_lib(skale)
-    logger.info('Spawned new skale lib')
     node_id = node_config.id
     ecdsa_sgx_key_name = node_config.sgx_key_name
-    logger.info('Fetching schains ...')
-    schains = skale.schains.get_schains_for_node(node_id)
-    logger.info('Get leaving_history for node ...')
-    leaving_history = skale.node_rotation.get_leaving_history(node_id)
-    for leaving_schain in leaving_history:
-        schain = skale.schains.get(leaving_schain['id'])
-        if skale.node_rotation.is_rotation_in_progress(schain['name']) and schain['name']:
-            schain['active'] = True
-            schains.append(schain)
-    schains_on_node = sum(map(lambda schain: schain['active'], schains))
-    schains_holes = len(schains) - schains_on_node
-    logger.info(
-        arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
-                               'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
     node_info = node_config.all()
     notify_if_not_enough_balance(skale, node_info)
 
-    logger.info('Starting schains ThreadPoolExecutor')
+    schains_to_monitor = fetch_schains_to_monitor(skale, node_id)
 
-    with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
-        futures = [
-            executor.submit(
-                run_monitor_for_schain,
+    for schain in schains_to_monitor:
+        schain_record = upsert_schain_record(schain['name'])
+
+        monitor_for_schain_is_running = schain_record.monitor_id != 0 and check_pid(schain_record.monitor_id) # todo: add ts diss check!  # noqa
+
+        if not monitor_for_schain_is_running:
+            logger.info(f'Process for sChain {schain["name"]} wasn\'t found, doing to spawn')
+            process = Process(target=run_monitor_for_schain, args=(
                 skale,
                 skale_ima,
                 node_info,
                 schain,
                 ecdsa_sgx_key_name
-            )
-            for schain in schains if schain['active']
-        ]
-        for future in as_completed(futures):
-            future.result()
+            ))
+            process.start()
+            schain_record.set_monitor_id(process.ident)
+            logger.info(f'Process for sChain {schain["name"]} started: PID = {process.ident}')
+        else:
+            logger.info(f'Process for sChain {schain["name"]} already running: \
+PID = {schain_record.monitor_id}')
     logger.info('Creator procedure finished')
+
+
+def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
+    """
+    Returns list of sChain dicts that admin should monitor. This includes
+    """
+    logger.info('Fetching schains to monitor...')
+    schains = skale.schains.get_schains_for_node(node_id)
+    leaving_schains = get_leaving_schains_for_node(skale, node_id)
+    schains.extend(leaving_schains)
+    active_schains = list(filter(lambda schain: schain['active'], schains))
+    schains_holes = len(schains) - len(active_schains)
+    logger.info(
+        arguments_list_string({'Node ID': node_id, 'sChains on node': active_schains,
+                               'Number of sChains on node': len(active_schains),
+                               'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
+    return active_schains
+
+
+def get_leaving_schains_for_node(skale: Skale, node_id: int) -> list:
+    logger.info('Get leaving_history for node ...')
+    leaving_schains = []
+    leaving_history = skale.node_rotation.get_leaving_history(node_id)
+    for leaving_schain in leaving_history:
+        schain = skale.schains.get(leaving_schain['id'])
+        if skale.node_rotation.is_rotation_in_progress(schain['name']) and schain['name']:
+            schain['active'] = True
+            leaving_schains.append(schain)
+    logger.info(f'Got leaving sChains for the node: {leaving_schains}')
+    return leaving_schains
 
 
 def is_backup_run(schain_record):
@@ -155,8 +165,15 @@ def run_monitor_for_schain(
         logger.info(f'Monitor for sChain {schain["name"]}')
         skale = spawn_skale_manager_lib(skale)
         skale_ima = spawn_skale_ima_lib(skale_ima)
-        monitor_schain(
-            skale, skale_ima, node_info, schain, ecdsa_sgx_key_name)
+        while True:
+            monitor_schain(
+                skale,
+                skale_ima,
+                node_info,
+                schain,
+                ecdsa_sgx_key_name
+            )
+            time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
     except Exception:
         logger.exception(f'Monitor for sChain {schain["name"]} failed')
 
