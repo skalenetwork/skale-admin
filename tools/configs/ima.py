@@ -20,46 +20,59 @@
 import os
 from tools.configs import CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME, CONFIG_FOLDER
 
+IMA_ENDPOINT = os.environ['IMA_ENDPOINT']
+MAINNET_IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
 
 DISABLE_IMA = os.getenv('DISABLE_IMA') == 'True'
 
-IMA_ENDPOINT = os.environ['IMA_ENDPOINT']
-
 PROXY_ABI_FILENAME = 'proxy.json'
-MAINNET_PROXY_PATH = os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
 
 IMA_DATA_FILENAME = 'ima_data.json'
 IMA_DATA_FILEPATH = os.path.join(CONFIG_FOLDER, IMA_DATA_FILENAME)
 
-PRECOMPILED_IMA_CONTRACTS = {
+
+SCHAIN_IMA_CONTRACTS = {
     'skale_features': {
         'filename': 'SkaleFeatures'
     },
-    'lock_and_data_for_schain': {
-        'filename': 'LockAndData'
+    'token_manager_eth': {
+        'filename': 'TokenManagerEth'
+    },
+    'token_manager_erc20': {
+        'filename': 'TokenManagerERC20'
+    },
+    'token_manager_erc721': {
+        'filename': 'TokenManagerERC721'
+    },
+    'message_proxy_chain': {
+        'filename': 'MessageProxyForSchain'
+    },
+    'token_manager_linker': {
+        'filename': 'TokenManagerLinker'
+    },
+    'community_locker': {
+        'filename': 'CommunityLocker'
     },
     'eth_erc20': {
         'filename': 'EthERC20'
+    }
+}
+
+
+MAINNET_IMA_CONTRACTS = {
+    'message_proxy_mainnet': {
+        'filename': 'MessageProxyForMainnet'
     },
-    'token_manager': {
-        'filename': 'TokenManager'
+    'linker': {
+        'filename': 'Linker'
     },
-    'lock_and_data_for_schain_erc20': {
-        'filename': 'LockAndDataERC20'
+    'deposit_box_eth': {
+        'filename': 'DepositBoxEth'
     },
-    'erc20_module_for_schain': {
-        'filename': 'ERC20Module'
+    'deposit_box_erc20': {
+        'filename': 'DepositBoxERC20'
     },
-    'lock_and_data_for_schain_erc721': {
-        'filename': 'LockAndDataERC721'
-    },
-    'erc721_module_for_schain': {
-        'filename': 'ERC721Module'
-    },
-    'token_factory': {
-        'filename': 'TokenFactory'
-    },
-    'message_proxy_chain': {
-        'filename': 'MessageProxy'
+    'deposit_box_erc721': {
+        'filename': 'DepositBoxERC721'
     }
 }

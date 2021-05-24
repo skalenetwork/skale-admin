@@ -30,7 +30,8 @@ from core.updates import soft_updates
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH
 from tools.configs.web3 import (
-    ENDPOINT, ABI_FILEPATH, IMA_ABI_FILEPATH, STATE_FILEPATH)
+    ENDPOINT, ABI_FILEPATH, STATE_FILEPATH)
+from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 from tools.sgx_utils import generate_sgx_key
@@ -69,7 +70,7 @@ def worker():
         retry_if_failed=True
     )
     skale = Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
-    skale_ima = SkaleIma(ENDPOINT, IMA_ABI_FILEPATH, wallet)
+    skale_ima = SkaleIma(ENDPOINT, MAINNET_IMA_ABI_FILEPATH, wallet)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
     monitor(skale, skale_ima, node_config)

@@ -19,11 +19,11 @@
 
 
 from tools.helper import read_json
-from tools.configs.ima import MAINNET_PROXY_PATH, IMA_DATA_FILEPATH
+from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH, IMA_DATA_FILEPATH
 
 
 def get_message_proxy_addresses():
-    ima_abi = read_json(MAINNET_PROXY_PATH)
+    ima_abi = read_json(MAINNET_IMA_ABI_FILEPATH)
     schain_ima_abi = read_json(IMA_DATA_FILEPATH)
     ima_mp_schain = schain_ima_abi['message_proxy_chain_address']
     ima_mp_mainnet = ima_abi['message_proxy_mainnet_address']
