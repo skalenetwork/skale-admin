@@ -55,10 +55,16 @@ def construct_schains_bp():
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'list'), methods=['GET'])
     def schains_list():
         logger.debug(request)
-        _all = request.args.get('all') == 'True'
-        containers_list = g.docker_utils.get_all_schain_containers(
-            all=_all, format=True)
-        return construct_ok_response(containers_list)
+        skale = init_skale(g.wallet)
+        logger.debug(request)
+        node_id = g.config.id
+        if node_id is None:
+            return construct_err_response(msg='No node installed')
+        schains_list = list(filter(
+            lambda s: s.get('name'),
+            skale.schains.get_schains_for_node(node_id)
+        ))
+        return construct_ok_response(schains_list)
 
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'dkg-statuses'), methods=['GET'])
     def dkg_statuses():
