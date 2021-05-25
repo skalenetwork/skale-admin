@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 IPIFY_URL = 'https://api.ipify.org?format=json'
-GET_IP_ATTEMPS = 5
+GET_IP_ATTEMPTS = 5
 
 
 def construct_node_info_bp():
@@ -133,7 +133,7 @@ def construct_node_info_bp():
     @node_info_bp.route('/api/v1/node/public-ip', methods=['GET'])
     def public_ip():
         logger.debug(request)
-        for _ in range(GET_IP_ATTEMPS):
+        for _ in range(GET_IP_ATTEMPTS):
             try:
                 response = requests.get(IPIFY_URL)
                 ip = response.json()['ip']
