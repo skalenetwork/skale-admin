@@ -18,8 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import pkg_resources
 
+import pkg_resources
 from flask import Blueprint, g, request
 
 from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info

@@ -18,9 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 from decimal import Decimal
 from http import HTTPStatus
 
+import requests
 from flask import Blueprint, abort, g, request
 from web3 import Web3
 
@@ -30,6 +32,9 @@ from web.helper import construct_ok_response, construct_err_response
 
 
 logger = logging.getLogger(__name__)
+
+IPIFY_URL = 'https://api.ipify.org?format=json'
+GET_IP_ATTEMPTS = 5
 
 
 def construct_nodes_bp():
@@ -158,6 +163,19 @@ def construct_nodes_bp():
         if res['status'] != 0:
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
+
+    @nodes_bp.route('/api/v1/node/public-ip', methods=['GET'])
+    def public_ip():
+        logger.debug(request)
+        for _ in range(GET_IP_ATTEMPTS):
+            try:
+                response = requests.get(IPIFY_URL)
+                ip = response.json()['ip']
+                return construct_ok_response({'public_ip': ip})
+            except Exception:
+                logger.exception('Ip request failed')
+                time.sleep(1)
+        return construct_err_response(msg='Public ip request failed')
 
     @nodes_bp.route('/api/v1/health/validator-nodes', methods=['GET'])
     def _validator_nodes():
