@@ -327,7 +327,7 @@ def check_validator_nodes(skale, node_id):
 
         res = []
         for node_id in node_ids:
-            if skale.nodes.get_node_status(node_id) == NodeStatus.ACTIVE:
+            if str(skale.nodes.get_node_status(node_id)) == str(NodeStatus.ACTIVE.value):
                 ip_bytes = skale.nodes.contract.functions.getNodeIP(node_id).call()
                 ip = ip_from_bytes(ip_bytes)
                 res.append([node_id, ip, is_port_open(ip, WATCHDOG_PORT)])
