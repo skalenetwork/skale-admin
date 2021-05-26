@@ -320,15 +320,18 @@ def check_validator_nodes(skale, node_id):
         node = skale.nodes.get(node_id)
         node_ids = skale.nodes.get_validator_node_indices(node['validator_id'])
 
-        node_ips = []
-        for node_id in node_ids:
-            node_ips.append(skale.nodes.contract.functions.getNodeIP(node_id).call())
-        logger.info(f'validator_id: {node["validator_id"]}, node_ids: {node_ids}')
+        try:
+            node_ids.remove(node_id)
+        except ValueError:
+            logger.warning(f'node_id: {node_id} was not found in validator nodes: {node_ids}')
 
         res = []
-        for node_ip in node_ips:
-            res.append(is_port_open(ip_from_bytes(node_ip), WATCHDOG_PORT))
-        logger.info(f'validator_id: {node["validator_id"]}, res: {res}')
+        for node_id in node_ids:
+            if str(skale.nodes.get_node_status(node_id)) == str(NodeStatus.ACTIVE.value):
+                ip_bytes = skale.nodes.contract.functions.getNodeIP(node_id).call()
+                ip = ip_from_bytes(ip_bytes)
+                res.append([node_id, ip, is_port_open(ip, WATCHDOG_PORT)])
+        logger.info(f'validator_nodes check - node_id: {node_id}, res: {res}')
     except Exception as err:
         return {'status': 1, 'errors': [err]}
     return {'status': 0, 'data': res}
