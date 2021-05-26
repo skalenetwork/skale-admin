@@ -26,7 +26,7 @@ import requests
 from flask import Blueprint, abort, g, request
 from web3 import Web3
 
-from core.node import Node
+from core.node import Node, check_validator_nodes
 from tools.helper import init_skale
 from web.helper import construct_ok_response, construct_err_response
 
@@ -176,5 +176,14 @@ def construct_nodes_bp():
                 logger.exception('Ip request failed')
                 time.sleep(1)
         return construct_err_response(msg='Public ip request failed')
+
+    @nodes_bp.route('/api/v1/health/validator-nodes', methods=['GET'])
+    def _validator_nodes():
+        logger.debug(request)
+        skale = init_skale(g.wallet)
+        res = check_validator_nodes(skale, g.config.id)
+        if res['status'] != 0:
+            return construct_err_response(msg=res['errors'])
+        return construct_ok_response(data=res['data'])
 
     return nodes_bp
