@@ -17,11 +17,14 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import time
+import socket
+import psutil
 import logging
 import platform
-import psutil
+
 import requests
-import time
+
 from enum import Enum
 from sh import lsmod
 
@@ -31,7 +34,7 @@ from skale.wallets.web3_wallet import public_key_to_address
 
 from core.filebeat import update_filebeat_service
 
-from tools.configs import META_FILEPATH
+from tools.configs import META_FILEPATH, WATCHDOG_PORT
 from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 from tools.helper import read_json
@@ -299,3 +302,33 @@ def get_btrfs_info() -> dict:
     return {
         'kernel_module': is_btrfs_loaded()
     }
+
+
+def is_port_open(ip, port):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(1)
+    try:
+        s.connect((ip, int(port)))
+        s.shutdown(1)
+        return True
+    except Exception:
+        return False
+
+
+def check_validator_nodes(skale, node_id):
+    try:
+        node = skale.nodes.get(node_id)
+        node_ids = skale.nodes.get_validator_node_indices(node['validator_id'])
+
+        node_ips = []
+        for node_id in node_ids:
+            node_ips.append(skale.nodes.contract.functions.getNodeIP(node_id).call())
+        logger.info(f'validator_id: {node["validator_id"]}, node_ids: {node_ids}')
+
+        res = []
+        for node_ip in node_ips:
+            res.append(is_port_open(ip_from_bytes(node_ip), WATCHDOG_PORT))
+        logger.info(f'validator_id: {node["validator_id"]}, res: {res}')
+    except Exception as err:
+        return {'status': 1, 'errors': [err]}
+    return {'status': 0, 'data': res}

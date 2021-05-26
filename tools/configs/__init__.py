@@ -80,3 +80,5 @@ except TypeError:
 
 ENV_TYPE = os.environ.get('ENV_TYPE')
 ALLOCATION_FILEPATH = os.path.join(CONFIG_FOLDER, 'schain_allocation.yml')
+
+WATCHDOG_PORT = 3009
