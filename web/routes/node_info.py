@@ -18,10 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import time
 
 import pkg_resources
-import requests
 from flask import Blueprint, g, request
 
 from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info
@@ -32,10 +30,6 @@ from tools.helper import init_skale
 from web.helper import construct_ok_response, construct_err_response
 
 logger = logging.getLogger(__name__)
-
-
-IPIFY_URL = 'https://api.ipify.org?format=json'
-GET_IP_ATTEMPTS = 5
 
 
 def construct_node_info_bp():
@@ -129,18 +123,5 @@ def construct_node_info_bp():
         logger.debug(request)
         btrfs_data = get_btrfs_info()
         return construct_ok_response(btrfs_data)
-
-    @node_info_bp.route('/api/v1/node/public-ip', methods=['GET'])
-    def public_ip():
-        logger.debug(request)
-        for _ in range(GET_IP_ATTEMPTS):
-            try:
-                response = requests.get(IPIFY_URL)
-                ip = response.json()['ip']
-                return construct_ok_response({'public_ip': ip})
-            except Exception:
-                logger.exception('Ip request failed')
-                time.sleep(1)
-        return construct_err_response(msg='Public ip request failed')
 
     return node_info_bp
