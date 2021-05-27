@@ -25,6 +25,8 @@ from datetime import datetime
 from enum import Enum
 from multiprocessing import Process
 
+import psutil
+
 from skale import Skale
 from skale.skale_manager import spawn_skale_manager_lib
 from skale.skale_ima import spawn_skale_ima_lib
@@ -92,9 +94,10 @@ def run_creator(skale, skale_ima, node_config):
     for schain in schains_to_monitor:
         schain_record = upsert_schain_record(schain['name'])
 
-        monitor_for_schain_is_running = schain_record.monitor_id != 0 and check_pid(schain_record.monitor_id) # todo: add ts diss check!  # noqa
+        terminate_stuck_process(skale, schain_record, schain)
+        monitor_process_alive = is_monitor_process_alive(schain_record)
 
-        if not monitor_for_schain_is_running:
+        if not monitor_process_alive:
             logger.info(f'Process for sChain {schain["name"]} wasn\'t found, doing to spawn')
             process = Process(target=run_monitor_for_schain, args=(
                 skale,
@@ -110,6 +113,34 @@ def run_creator(skale, skale_ima, node_config):
             logger.info(f'Process for sChain {schain["name"]} already running: \
 PID = {schain_record.monitor_id}')
     logger.info('Creator procedure finished')
+
+
+def is_monitor_process_alive(monitor_id):
+    return monitor_id != 0 and check_pid(monitor_id)
+
+
+def calc_allowed_last_seen_time(skale):
+    return time.time() - TIMEOUT_COEFFICIENT * skale.constants_holder.get_dkg_timeout()
+
+
+def terminate_stuck_process(skale, schain_record, schain):
+    """
+    This function terminates the process if last_seen time is less than
+    DKG timeout * TIMEOUT_COEFFICIENT
+    """
+    allowed_last_seen_time = calc_allowed_last_seen_time(skale)
+    if allowed_last_seen_time > schain_record.monitor_last_seen:
+        logger.warning(f'schain: {schain["name"]}, process {schain_record.monitor_id} last seen is \
+{schain_record.monitor_last_seen}, while max allowed last_seen is {allowed_last_seen_time}, pid \
+{schain_record.monitor_id} will be terminated now!')
+        try:
+            p = psutil.Process(schain_record.monitor_id)
+            p.terminate()
+            logger.info(
+                f'schain: {schain["name"]}, process {schain_record.monitor_id} was terminated')
+        except Exception:
+            logging.exception(f'schain: {schain["name"]}, process {schain_record.monitor_id} - \
+termination failed!')
 
 
 def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
@@ -173,6 +204,8 @@ def run_monitor_for_schain(
                 schain,
                 ecdsa_sgx_key_name
             )
+            schain_record = upsert_schain_record(schain['name'])
+            schain_record.set_monitor_last_seen(time.time())
             time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
     except Exception:
         logger.exception(f'Monitor for sChain {schain["name"]} failed')
