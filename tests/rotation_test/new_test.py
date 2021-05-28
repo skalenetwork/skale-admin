@@ -5,7 +5,7 @@ import pytest
 import os
 
 from core.schains.checks import SChainChecks
-from core.schains.creator import monitor
+from core.schains.process_manager import run_process_manager
 from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from tests.rotation_test.utils import (set_up_rotated_schain, wait_for_contract_exiting,
                                        init_data_volume_mock, run_dkg_mock)
@@ -41,12 +41,12 @@ def test_new_node(skale, skale_ima, rotated_nodes):
 
     wait_for_contract_exiting(skale, exited_node.config.id)
 
-    with mock.patch('core.schains.creator.add_firewall_rules'), \
-            mock.patch('core.schains.creator.init_data_volume', init_data_volume_mock), \
-            mock.patch('core.schains.creator.run_dkg', run_dkg_mock), \
+    with mock.patch('core.schains.monitor.add_firewall_rules'), \
+            mock.patch('core.schains.monitor.init_data_volume', init_data_volume_mock), \
+            mock.patch('core.schains.monitor.run_dkg', run_dkg_mock), \
             mock.patch('core.schains.checks.apsent_iptables_rules',
                        new=mock.Mock(return_value=[True, True])):
-        monitor(new_node.skale, skale_ima, new_node.config)
+        run_process_manager(new_node.skale, skale_ima, new_node.config)
         checks = SChainChecks(schain_name, new_node.config.id).get_all()
         assert checks['container']
         assert checks['volume']

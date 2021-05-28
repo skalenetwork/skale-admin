@@ -23,11 +23,7 @@ import shutil
 import time
 from datetime import datetime
 from enum import Enum
-from multiprocessing import Process
 
-import psutil
-
-from skale import Skale
 from skale.skale_manager import spawn_skale_manager_lib
 from skale.skale_ima import spawn_skale_ima_lib
 
@@ -53,7 +49,6 @@ from core.schains.rotation import get_rotation_state
 from core.schains.dkg import run_dkg
 
 from core.schains.runner import get_container_name
-from core.schains.utils import notify_if_not_enough_balance
 
 from tools.bls.dkg_client import DkgError
 from tools.docker_utils import DockerUtils
@@ -63,15 +58,12 @@ from tools.configs.ima import IMA_DATA_FILEPATH, DISABLE_IMA
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode, is_checks_passed
-from tools.str_formatters import arguments_list_string
-from tools.helper import check_pid
 from web.models.schain import upsert_schain_record, SChainRecord
 
 
 logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
-TIMEOUT_COEFFICIENT = 1.5
 SCHAIN_MONITOR_SLEEP_INTERVAL = 500
 
 
@@ -80,76 +72,6 @@ class MonitorMode(Enum):
     SYNC = 1
     RESTART = 2
     EXIT = 3
-
-
-
-
-def is_monitor_process_alive(monitor_id):
-    return monitor_id != 0 and check_pid(monitor_id)
-
-
-def calc_allowed_last_seen_time(skale):
-    allowed_diff = skale.constants_holder.get_dkg_timeout() * TIMEOUT_COEFFICIENT
-    return datetime.now().timestamp() - allowed_diff
-
-
-def terminate_stuck_process(skale, schain_record, schain):
-    """
-    This function terminates the process if last_seen time is less than
-    DKG timeout * TIMEOUT_COEFFICIENT
-    """
-    allowed_last_seen_time = calc_allowed_last_seen_time(skale)
-    if allowed_last_seen_time > schain_record.monitor_last_seen.timestamp():
-        logger.warning(f'schain: {schain["name"]}, process {schain_record.monitor_id} last seen is \
-{schain_record.monitor_last_seen}, while max allowed last_seen is {allowed_last_seen_time}, pid \
-{schain_record.monitor_id} will be terminated now!')
-        terminate_schain_process(schain_record)
-
-
-def terminate_schain_process(schain_record):
-    log_prefix = f'schain: {schain_record.name}, process {schain_record.monitor_id}'
-    try:
-        logger.info(f'{log_prefix} - going to terminate')
-        p = psutil.Process(schain_record.monitor_id)
-        p.terminate()
-        logger.info(f'{log_prefix} was terminated')
-    except psutil.NoSuchProcess:
-        logger.info(f'{log_prefix} - no such process')
-    except Exception:
-        logging.exception(f'{log_prefix} - termination failed!')
-
-
-
-
-
-def get_leaving_schains_for_node(skale: Skale, node_id: int) -> list:
-    logger.info('Get leaving_history for node ...')
-    leaving_schains = []
-    leaving_history = skale.node_rotation.get_leaving_history(node_id)
-    for leaving_schain in leaving_history:
-        schain = skale.schains.get(leaving_schain['id'])
-        if skale.node_rotation.is_rotation_in_progress(schain['name']) and schain['name']:
-            schain['active'] = True
-            leaving_schains.append(schain)
-    logger.info(f'Got leaving sChains for the node: {leaving_schains}')
-    return leaving_schains
-
-
-def is_backup_run(schain_record):
-    return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
-
-
-def get_monitor_mode(schain_record, rotation_state):
-    if is_backup_run(schain_record) or schain_record.repair_mode:
-        return MonitorMode.SYNC
-    elif rotation_state['in_progress']:
-        if rotation_state['exiting_node']:
-            return MonitorMode.EXIT
-        elif rotation_state['new_schain']:
-            return MonitorMode.SYNC
-        else:
-            return MonitorMode.RESTART
-    return MonitorMode.REGULAR
 
 
 def run_monitor_for_schain(
@@ -266,6 +188,23 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
             schain_record=schain_record
         )
+
+
+def is_backup_run(schain_record):
+    return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
+
+
+def get_monitor_mode(schain_record, rotation_state):
+    if is_backup_run(schain_record) or schain_record.repair_mode:
+        return MonitorMode.SYNC
+    elif rotation_state['in_progress']:
+        if rotation_state['exiting_node']:
+            return MonitorMode.EXIT
+        elif rotation_state['new_schain']:
+            return MonitorMode.SYNC
+        else:
+            return MonitorMode.RESTART
+    return MonitorMode.REGULAR
 
 
 def cleanup_schain_docker_entity(schain_name: str) -> None:

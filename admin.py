@@ -24,7 +24,7 @@ from skale import Skale, SkaleIma
 from filelock import FileLock
 
 from core.node_config import NodeConfig
-from core.schains.creator import run_creator
+from core.schains.process_manager import run_process_manager
 from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
 
@@ -52,10 +52,10 @@ WORKER_RESTART_SLEEP_INTERVAL = 2
 def monitor(skale, skale_ima, node_config):
     while True:
         try:
-            run_creator(skale, skale_ima, node_config)
+            run_process_manager(skale, skale_ima, node_config)
         except Exception:
-            logger.exception(f'Creator procedure failed!')
-        logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_creator')
+            logger.exception('Process manager procedure failed!')
+        logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
         time.sleep(SLEEP_INTERVAL)
         run_cleaner(skale, node_config)
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_cleaner')
