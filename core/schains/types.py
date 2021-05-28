@@ -39,4 +39,4 @@ class MetricType(Enum):
     mem = 1
     disk = 2
     volume_limits = 3
-    storage_limit = 4
+    leveldb_limits = 4
