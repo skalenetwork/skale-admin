@@ -54,17 +54,6 @@ def get_ima_limit(schain: dict, metric_type: MetricType) -> int:
     return get_limit(metric_type, schain_type, ContainerType.ima, alloc)
 
 
-def get_schain_container_limits(schain):
-    alloc = _get_resource_allocation_info()
-    schain_type = get_schain_type(schain)
-    cpu_limit = get_limit(MetricType.cpu_shares, schain_type, ContainerType.schain, alloc)
-    mem_limit = get_limit(MetricType.mem, schain_type, ContainerType.schain, alloc)
-    disk_limit = get_limit(MetricType.disk, schain_type, ContainerType.schain, alloc)
-    volume_limits = get_limit(MetricType.volume_limits, schain_type, ContainerType.schain, alloc)
-    storage_limit = get_limit(MetricType.storage_limit, schain_type, ContainerType.schain, alloc)
-    return cpu_limit, mem_limit, disk_limit, volume_limits, storage_limit
-
-
 def get_ima_container_limits(schain):
     alloc = _get_resource_allocation_info()
     schain_type = get_schain_type(schain)
