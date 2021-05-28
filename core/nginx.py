@@ -9,7 +9,7 @@ dutils = DockerUtils()
 logger = logging.getLogger(__name__)
 
 
-def update_nginx():
+def reload_nginx():
     generate_nginx_config()
     restart_nginx_config()
 
