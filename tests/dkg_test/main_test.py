@@ -151,8 +151,8 @@ def check_schain_node_info(node_data, schain_node_info):
 def check_schain_info(nodes, schain_info):
     check_keys(
         schain_info,
-        ['schainID', 'schainName', 'schainOwner', 'storageLimit',
-         'snapshotIntervalSec', 'emptyBlockIntervalMs',
+        ['schainID', 'schainName', 'schainOwner', 'contractStorageLimit',
+         'dbStorageLimit', 'snapshotIntervalSec', 'emptyBlockIntervalMs',
          'maxConsensusStorageBytes', 'maxSkaledLeveldbStorageBytes',
          'maxFileStorageBytes', 'maxReservedStorageBytes',
          'nodes']
