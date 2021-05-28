@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from core.schains.dkg_status import DKGStatus
 import logging
 import os
 import shutil
@@ -26,11 +25,11 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import datetime
 from enum import Enum
 from multiprocessing import Process
-from tools.bls.dkg_utils import generate_bls_keys
 
 from skale.skale_manager import spawn_skale_manager_lib
 from skale.skale_ima import spawn_skale_ima_lib
 
+from core.schains.dkg_status import DKGStatus
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
                                  is_exited_with_zero)
@@ -56,7 +55,7 @@ from core.schains.runner import get_container_name
 from core.schains.utils import notify_if_not_enough_balance
 
 from tools.bls.dkg_client import DkgError, KeyGenerationError
-from tools.bls.dkg_utils import init_dkg_client, get_secret_key_share_filepath
+from tools.bls.dkg_utils import init_dkg_client, get_secret_key_share_filepath, generate_bls_keys
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
