@@ -25,12 +25,6 @@ def is_ssl_folder_empty():
     return len(os.listdir(SSL_CERTIFICATES_FILEPATH)) == 0
 
 
-def check_ssl_certs():
-    crt_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
-    return os.path.exists(crt_path) and os.path.exists(key_path)
-
-
 def get_ssl_filepath():
     if is_ssl_folder_empty():
         return 'NULL', 'NULL'

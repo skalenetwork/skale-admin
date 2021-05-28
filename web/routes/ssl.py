@@ -26,7 +26,7 @@ from OpenSSL import crypto
 
 from flask import Blueprint, request
 
-from core.nginx import generate_nginx_config
+from core.nginx import update_nginx
 from core.schains.ssl import is_ssl_folder_empty
 from web.models.schain import set_schains_need_reload
 from web.helper import construct_ok_response, construct_err_response, get_api_url
@@ -88,7 +88,7 @@ def construct_ssl_bp():
         ssl_cert = request.files[SSL_CRT_NAME]
         ssl_key.save(os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_KEY_NAME))
         ssl_cert.save(os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_CRT_NAME))
-        generate_nginx_config()
+        update_nginx()
         set_schains_need_reload()
         return construct_ok_response()
 
