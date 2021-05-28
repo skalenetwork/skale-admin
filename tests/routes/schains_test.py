@@ -131,7 +131,7 @@ def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
 
 
 def test_schain_containers_versions(skale_bp):
-    skaled_version = '3.4.1-beta.0'
+    skaled_version = '3.7.1-develop.2'
     ima_version = '1.1.0-beta.0'
     with mock.patch(
         'web.routes.schains.get_skaled_version',
