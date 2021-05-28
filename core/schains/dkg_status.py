@@ -25,3 +25,4 @@ class DKGStatus(Enum):
     IN_PROGRESS = 2
     DONE = 3
     FAILED = 4
+    KEY_GENERATION_ERROR = 5

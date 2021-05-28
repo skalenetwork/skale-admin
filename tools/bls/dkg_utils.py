@@ -21,6 +21,8 @@ import logging
 import os
 from time import sleep
 
+from skale.schain_config.generator import get_nodes_for_schain
+
 from tools.configs import NODE_DATA_PATH
 from tools.bls.dkg_client import DKGClient, DkgError, DkgVerificationError, DkgTransactionError
 from tools.bls.skale_dkg_broadcast_filter import Filter
@@ -36,10 +38,11 @@ class DkgFailedError(DkgError):
     pass
 
 
-def init_dkg_client(schain_nodes, node_id, schain_name, skale, n, t, sgx_eth_key_name):
-    if len(schain_nodes) < n:
-        raise DkgError(f'sChain: {schain_name}:'
-                       'Initialization failed, not enough nodes in schain.')
+def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name):
+    schain_nodes = get_nodes_for_schain(skale, schain_name)
+    n = len(schain_nodes)
+    t = (2 * n + 1) // 3
+
     node_id_dkg = -1
     public_keys = [0] * n
     node_ids_contract = dict()
@@ -155,6 +158,32 @@ def broadcast_and_check_data(dkg_client, poly_name):
         sleep(30)
 
     check_broadcasted_data(dkg_client, is_correct, is_received)
+
+
+def generate_bls_keys(dkg_client, rotation_id):
+    skale = dkg_client.skale
+    schain_name = dkg_client.schain_name
+    group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
+    bls_name = generate_bls_key_name(
+        group_index_str, dkg_client.node_id_dkg, rotation_id
+    )
+    encrypted_bls_key = dkg_client.generate_bls_key(bls_name)
+    logger.info(f'sChain: {schain_name}. '
+                f'Node`s encrypted bls key is: {encrypted_bls_key}')
+    bls_public_keys = dkg_client.get_bls_public_keys()
+    common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
+    formated_common_public_key = []
+    for coord in common_public_key:
+        for elem in coord:
+            formated_common_public_key.append(elem)
+    return {
+        'common_public_key': formated_common_public_key,
+        'public_key': dkg_client.public_key,
+        'bls_public_keys': bls_public_keys,
+        't': dkg_client.t,
+        'n': dkg_client.n,
+        'key_share_name': bls_name
+    }
 
 
 def broadcast(dkg_client, poly_name):

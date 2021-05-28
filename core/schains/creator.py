@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from core.schains.dkg_status import DKGStatus
 import logging
 import os
 import shutil
@@ -25,6 +26,7 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import datetime
 from enum import Enum
 from multiprocessing import Process
+from tools.bls.dkg_utils import generate_bls_keys
 
 from skale.skale_manager import spawn_skale_manager_lib
 from skale.skale_ima import spawn_skale_ima_lib
@@ -48,12 +50,13 @@ from core.schains.config.helper import (get_allowed_endpoints,
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.rotation import get_rotation_state
-from core.schains.dkg import run_dkg
+from core.schains.dkg import run_dkg, save_dkg_results
 
 from core.schains.runner import get_container_name
 from core.schains.utils import notify_if_not_enough_balance
 
-from tools.bls.dkg_client import DkgError
+from tools.bls.dkg_client import DkgError, KeyGenerationError
+from tools.bls.dkg_utils import init_dkg_client, get_secret_key_share_filepath
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
@@ -331,6 +334,29 @@ def monitor_sync_schain_container(skale, schain, start_ts,
 
 def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
                  rotation_id, schain_record):
+    if schain_record.dkg_status == DKGStatus.KEY_GENERATION_ERROR:
+        try:
+            dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name)
+        except DkgError as err:
+            logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
+            schain_record.dkg_failed()
+            return False
+
+        try:
+            dkg_results = generate_bls_keys(dkg_client, rotation_id)
+            secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
+            save_dkg_results(dkg_results, secret_key_share_filepath)
+        except KeyGenerationError as err:
+            logger.info(f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
+            schain_record.dkg_key_generation_error()
+            return False
+        except DkgError as err:
+            logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
+            schain_record.dkg_failed()
+            return False
+        schain_record.dkg_done()
+        return True
+
     schain_record.dkg_started()
     try:
         if not skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
@@ -338,6 +364,10 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
             return False
         run_dkg(skale, schain_name, node_id,
                 sgx_key_name, rotation_id)
+    except KeyGenerationError as err:
+        logger.info(f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
+        schain_record.dkg_key_generation_error()
+        return False
     except DkgError as err:
         logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
         schain_record.dkg_failed()
