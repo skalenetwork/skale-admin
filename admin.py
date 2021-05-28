@@ -51,11 +51,14 @@ WORKER_RESTART_SLEEP_INTERVAL = 2
 
 def monitor(skale, skale_ima, node_config):
     while True:
-        run_creator(skale, skale_ima, node_config)
-        print(f'Sleeping for {SLEEP_INTERVAL}s ...')
+        try:
+            run_creator(skale, skale_ima, node_config)
+        except Exception:
+            logger.exception(f'Creator procedure failed!')
+        logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_creator')
         time.sleep(SLEEP_INTERVAL)
         run_cleaner(skale, node_config)
-        print(f'Sleeping for {SLEEP_INTERVAL}s ...')
+        logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_cleaner')
         time.sleep(SLEEP_INTERVAL)
 
 

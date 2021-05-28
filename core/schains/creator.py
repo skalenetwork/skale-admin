@@ -82,37 +82,6 @@ class MonitorMode(Enum):
     EXIT = 3
 
 
-def run_creator(skale, skale_ima, node_config):
-    logger.info('Creator procedure started')
-    node_id = node_config.id
-    ecdsa_sgx_key_name = node_config.sgx_key_name
-    node_info = node_config.all()
-    notify_if_not_enough_balance(skale, node_info)
-
-    schains_to_monitor = fetch_schains_to_monitor(skale, node_id)
-
-    for schain in schains_to_monitor:
-        schain_record = upsert_schain_record(schain['name'])
-
-        terminate_stuck_process(skale, schain_record, schain)
-        monitor_process_alive = is_monitor_process_alive(schain_record)
-
-        if not monitor_process_alive:
-            logger.info(f'Process for sChain {schain["name"]} wasn\'t found, doing to spawn')
-            process = Process(target=run_monitor_for_schain, args=(
-                skale,
-                skale_ima,
-                node_info,
-                schain,
-                ecdsa_sgx_key_name
-            ))
-            process.start()
-            schain_record.set_monitor_id(process.ident)
-            logger.info(f'Process for sChain {schain["name"]} started: PID = {process.ident}')
-        else:
-            logger.info(f'Process for sChain {schain["name"]} already running: \
-PID = {schain_record.monitor_id}')
-    logger.info('Creator procedure finished')
 
 
 def is_monitor_process_alive(monitor_id):
@@ -120,7 +89,8 @@ def is_monitor_process_alive(monitor_id):
 
 
 def calc_allowed_last_seen_time(skale):
-    return time.time() - TIMEOUT_COEFFICIENT * skale.constants_holder.get_dkg_timeout()
+    allowed_diff = skale.constants_holder.get_dkg_timeout() * TIMEOUT_COEFFICIENT
+    return datetime.now().timestamp() - allowed_diff
 
 
 def terminate_stuck_process(skale, schain_record, schain):
@@ -129,35 +99,27 @@ def terminate_stuck_process(skale, schain_record, schain):
     DKG timeout * TIMEOUT_COEFFICIENT
     """
     allowed_last_seen_time = calc_allowed_last_seen_time(skale)
-    if allowed_last_seen_time > schain_record.monitor_last_seen:
+    if allowed_last_seen_time > schain_record.monitor_last_seen.timestamp():
         logger.warning(f'schain: {schain["name"]}, process {schain_record.monitor_id} last seen is \
 {schain_record.monitor_last_seen}, while max allowed last_seen is {allowed_last_seen_time}, pid \
 {schain_record.monitor_id} will be terminated now!')
-        try:
-            p = psutil.Process(schain_record.monitor_id)
-            p.terminate()
-            logger.info(
-                f'schain: {schain["name"]}, process {schain_record.monitor_id} was terminated')
-        except Exception:
-            logging.exception(f'schain: {schain["name"]}, process {schain_record.monitor_id} - \
-termination failed!')
+        terminate_schain_process(schain_record)
 
 
-def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
-    """
-    Returns list of sChain dicts that admin should monitor. This includes
-    """
-    logger.info('Fetching schains to monitor...')
-    schains = skale.schains.get_schains_for_node(node_id)
-    leaving_schains = get_leaving_schains_for_node(skale, node_id)
-    schains.extend(leaving_schains)
-    active_schains = list(filter(lambda schain: schain['active'], schains))
-    schains_holes = len(schains) - len(active_schains)
-    logger.info(
-        arguments_list_string({'Node ID': node_id, 'sChains on node': active_schains,
-                               'Number of sChains on node': len(active_schains),
-                               'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
-    return active_schains
+def terminate_schain_process(schain_record):
+    log_prefix = f'schain: {schain_record.name}, process {schain_record.monitor_id}'
+    try:
+        logger.info(f'{log_prefix} - going to terminate')
+        p = psutil.Process(schain_record.monitor_id)
+        p.terminate()
+        logger.info(f'{log_prefix} was terminated')
+    except psutil.NoSuchProcess:
+        logger.info(f'{log_prefix} - no such process')
+    except Exception:
+        logging.exception(f'{log_prefix} - termination failed!')
+
+
+
 
 
 def get_leaving_schains_for_node(skale: Skale, node_id: int) -> list:
@@ -205,7 +167,7 @@ def run_monitor_for_schain(
                 ecdsa_sgx_key_name
             )
             schain_record = upsert_schain_record(schain['name'])
-            schain_record.set_monitor_last_seen(time.time())
+            schain_record.set_monitor_last_seen(datetime.now())
             time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
     except Exception:
         logger.exception(f'Monitor for sChain {schain["name"]} failed')
