@@ -111,7 +111,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
         broadcast(dkg_client, poly_name)
     except SgxUnreachableError as e:
         logger.error(e)
-        wait_for_fail(dkg_client, start_time)
+        wait_for_fail(dkg_client.skale, schain_name, start_time)
 
     dkg_filter = Filter(skale, schain_name, n)
     broadcasts_found = []
@@ -146,7 +146,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
                 continue
             except SgxUnreachableError as e:
                 logger.error(e)
-                wait_for_fail(dkg_client, start_time)
+                wait_for_fail(dkg_client.skale, schain_name, start_time)
 
             logger.info(
                 f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
@@ -197,7 +197,7 @@ def send_complaint(dkg_client, index, reason=""):
     try:
         channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
         if dkg_client.send_complaint(index):
-            wait_for_fail(dkg_client, channel_started_time, reason)
+            wait_for_fail(dkg_client.skale, dkg_client.schain_name, channel_started_time, reason)
     except DkgTransactionError:
         pass
 
@@ -206,12 +206,14 @@ def report_bad_data(dkg_client, index):
     try:
         channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
         if dkg_client.send_complaint(index, True):
-            wait_for_fail(dkg_client, channel_started_time, "correct data")
+            wait_for_fail(dkg_client.skale, dkg_client.schain_name,
+                          channel_started_time, "correct data")
             logger.info(f'sChain {dkg_client.schain_name}:'
                         'Complainted node did not send a response.'
                         f'Sending complaint once again')
             dkg_client.send_complaint(index)
-            wait_for_fail(dkg_client, channel_started_time, "response")
+            wait_for_fail(dkg_client.skale, dkg_client.schain_name,
+                          channel_started_time, "response")
     except DkgTransactionError:
         pass
 
@@ -242,13 +244,12 @@ def check_broadcasted_data(dkg_client, is_correct, is_recieved):
             break
 
 
-def check_failed_dkg(dkg_client):
-    if not dkg_client.is_channel_opened():
-        if not dkg_client.skale.dkg.is_last_dkg_successful(dkg_client.group_index) \
-                and dkg_client.skale.dkg.get_time_of_last_successful_dkg(
-                    dkg_client.group_index
-                ) != 0:
-            raise DkgFailedError(f'sChain: {dkg_client.schain_name}. Dkg failed')
+def check_failed_dkg(skale, schain_name):
+    group_index = skale.schains.name_to_group_id(schain_name)
+    if not skale.dkg.is_channel_opened(group_index):
+        if not skale.dkg.is_last_dkg_successful(group_index) \
+                and skale.dkg.get_time_of_last_successful_dkg(group_index) != 0:
+            raise DkgFailedError(f'sChain: {schain_name}. Dkg failed')
     return True
 
 
@@ -260,7 +261,7 @@ def check_response(dkg_client):
         response(dkg_client, complaint_data[0])
         logger.info(f'sChain: {dkg_client.schain_name}: Response sent.'
                     ' Waiting for FailedDkg event ...')
-        wait_for_fail(dkg_client, channel_started_time)
+        wait_for_fail(dkg_client.skale, dkg_client.schain_name, channel_started_time)
 
 
 def check_no_complaints(dkg_client):
@@ -268,20 +269,20 @@ def check_no_complaints(dkg_client):
     return complaint_data[0] == UINT_CONSTANT and complaint_data[1] == UINT_CONSTANT
 
 
-def wait_for_fail(dkg_client, channel_started_time, reason=""):
-    start_time = get_latest_block_timestamp(dkg_client)
-    while get_latest_block_timestamp(dkg_client) - start_time < dkg_client.dkg_timeout:
+def wait_for_fail(skale, schain_name, channel_started_time, reason=""):
+    start_time = get_latest_block_timestamp(skale)
+    dkg_timeout = skale.constants_holder.get_dkg_timeout()
+    group_index = skale.schains.name_to_group_id(schain_name)
+    while get_latest_block_timestamp(skale) - start_time < dkg_timeout:
         if len(reason) > 0:
-            logger.info(f'sChain: {dkg_client.schain_name}.'
+            logger.info(f'sChain: {schain_name}.'
                         f' Not all nodes sent {reason}. Waiting for FailedDkg event...')
         else:
-            logger.info(f'sChain: {dkg_client.schain_name}. Waiting for FailedDkg event...')
-        check_failed_dkg(dkg_client)
-        if channel_started_time != dkg_client.skale.dkg.get_channel_started_time(
-            dkg_client.group_index
-        ):
+            logger.info(f'sChain: {schain_name}. Waiting for FailedDkg event...')
+        check_failed_dkg(skale, schain_name)
+        if channel_started_time != skale.dkg.get_channel_started_time(group_index):
             raise DkgFailedError(
-                f'sChain: {dkg_client.schain_name}. Dkg failed due to event FailedDKG'
+                f'sChain: {schain_name}. Dkg failed due to event FailedDKG'
             )
         sleep(30)
 

@@ -41,7 +41,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         channel_started_time = skale.dkg.get_channel_started_time(
             skale.schains.name_to_group_id(schain_name)
         )
-        wait_for_fail(dkg_client, channel_started_time, "broadcast")
+        wait_for_fail(skale, schain_name, channel_started_time, "broadcast")
         raise
 
     n = dkg_client.n
@@ -53,7 +53,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     broadcast_and_check_data(dkg_client, poly_name)
 
     if not dkg_client.is_everyone_broadcasted():
-        wait_for_fail(dkg_client, channel_started_time, "broadcast")
+        wait_for_fail(skale, schain_name, channel_started_time, "broadcast")
 
     check_failed_dkg(dkg_client)
 
@@ -87,7 +87,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     check_response(dkg_client)
 
     if not dkg_client.is_everyone_sent_algright() and check_no_complaints(dkg_client):
-        wait_for_fail(dkg_client, channel_started_time, "alright")
+        wait_for_fail(skale, schain_name, channel_started_time, "alright")
 
     if not check_no_complaints(dkg_client):
         check_response(dkg_client)
@@ -95,14 +95,14 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         complaint_data = skale.dkg.get_complaint_data(dkg_client.group_index)
         complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
 
-        wait_for_fail(dkg_client, channel_started_time, "correct data")
+        wait_for_fail(skale, schain_name, channel_started_time, "correct data")
 
         complaint_itself = complainted_node_index == dkg_client.node_id_dkg
         if check_failed_dkg(dkg_client) and not complaint_itself:
             logger.info(f'sChain: {schain_name}. '
                         'Accused node has not sent response. Sending complaint...')
             send_complaint(dkg_client, complainted_node_index, "response")
-            wait_for_fail(dkg_client, channel_started_time, "response")
+            wait_for_fail(skale, schain_name, channel_started_time, "response")
 
     if False not in is_alright_sent_list:
         logger.info(f'sChain: {schain_name}: Everyone sent alright')
