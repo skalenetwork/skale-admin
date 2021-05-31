@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 def reload_nginx():
     generate_nginx_config()
-    restart_nginx_config()
+    restart_nginx_container()
 
 
 def generate_nginx_config():
@@ -23,6 +23,6 @@ def generate_nginx_config():
     process_template(NGINX_TEMPLATE_FILEPATH, NGINX_CONFIG_FILEPATH, template_data)
 
 
-def restart_nginx_config():
+def restart_nginx_container():
     nginx_container = dutils.client.containers.get(NGINX_CONTAINER_NAME)
     nginx_container.restart()
