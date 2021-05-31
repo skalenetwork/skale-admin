@@ -29,6 +29,7 @@ from core.schains.helper import get_schain_dir_path
 from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
 from core.schains.config.helper import get_allowed_endpoints
 from core.schains.types import ContainerType
+from core.schains.process_manager_helper import terminate_schain_process
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs import SGX_CERTIFICATES_FOLDER
@@ -42,7 +43,7 @@ from tools.iptables import remove_rules as remove_iptables_rules
 from tools.helper import merged_unique, read_json
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
-from web.models.schain import get_schains_names, mark_schain_deleted
+from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
 
 
 logger = logging.getLogger(__name__)
@@ -155,6 +156,7 @@ def remove_firewall_rules(schain_name):
 def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
     is_schain_exist = skale.schains_internal.is_schain_exist(schain_name)
     exited_with_zero = is_exited_with_zero(schain_name, dutils=dutils)
+    schain_record = upsert_schain_record(schain_name)
 
     msg = arguments_list_string(
         {'sChain name': schain_name},
@@ -173,6 +175,7 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
 
     if exited_with_zero or not is_schain_exist:
         logger.warning(msg)
+        terminate_schain_process(schain_record)
         delete_bls_keys(skale, schain_name)
         cleanup_schain(node_id, schain_name)
         return

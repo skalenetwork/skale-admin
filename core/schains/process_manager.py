@@ -18,24 +18,21 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from datetime import datetime
 from multiprocessing import Process
 
-import psutil
 from skale import Skale
 
 from core.schains.monitor import run_monitor_for_schain
 from core.schains.utils import notify_if_not_enough_balance
+from core.schains.process_manager_helper import (
+    terminate_stuck_schain_process, is_monitor_process_alive
+)
 
 from web.models.schain import upsert_schain_record
 from tools.str_formatters import arguments_list_string
-from tools.helper import check_pid
 
 
 logger = logging.getLogger(__name__)
-
-
-TIMEOUT_COEFFICIENT = 1.5
 
 
 def run_process_manager(skale, skale_ima, node_config):
@@ -99,39 +96,3 @@ def get_leaving_schains_for_node(skale: Skale, node_id: int) -> list:
             leaving_schains.append(schain)
     logger.info(f'Got leaving sChains for the node: {leaving_schains}')
     return leaving_schains
-
-
-def terminate_stuck_schain_process(skale, schain_record, schain):
-    """
-    This function terminates the process if last_seen time is less than
-    DKG timeout * TIMEOUT_COEFFICIENT
-    """
-    allowed_last_seen_time = calc_allowed_last_seen_time(skale)
-    schain_monitor_last_seen = schain_record.monitor_last_seen.timestamp()
-    if allowed_last_seen_time > schain_monitor_last_seen:
-        logger.warning(f'schain: {schain["name"]}, pid {schain_record.monitor_id} last seen is \
-{schain_monitor_last_seen}, while max allowed last_seen is {allowed_last_seen_time}, pid \
-{schain_record.monitor_id} will be terminated now!')
-        terminate_schain_process(schain_record)
-
-
-def terminate_schain_process(schain_record):
-    log_prefix = f'schain: {schain_record.name}, pid {schain_record.monitor_id}'
-    try:
-        logger.info(f'{log_prefix} - going to terminate')
-        p = psutil.Process(schain_record.monitor_id)
-        p.terminate()
-        logger.info(f'{log_prefix} was terminated')
-    except psutil.NoSuchProcess:
-        logger.info(f'{log_prefix} - no such process')
-    except Exception:
-        logging.exception(f'{log_prefix} - termination failed!')
-
-
-def is_monitor_process_alive(monitor_id):
-    return monitor_id != 0 and check_pid(monitor_id)
-
-
-def calc_allowed_last_seen_time(skale):
-    allowed_diff = skale.constants_holder.get_dkg_timeout() * TIMEOUT_COEFFICIENT
-    return datetime.now().timestamp() - allowed_diff

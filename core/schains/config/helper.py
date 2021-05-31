@@ -228,7 +228,8 @@ def get_schain_config(schain_name):
 
 
 def get_schain_env(ulimit_check=True):
-    env = {'SEGFAULT_SIGNALS': 'all'}
+    env = {'SEGFAULT_SIGNALS': 'all', 'NO_NTP_CHECK': '1'}
+    # env = {'SEGFAULT_SIGNALS': 'all'}
     if not ulimit_check:
         env.update({
             'NO_ULIMIT_CHECK': 1

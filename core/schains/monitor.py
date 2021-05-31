@@ -77,10 +77,11 @@ class MonitorMode(Enum):
 def run_monitor_for_schain(
         skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     try:
-        logger.info(f'Monitor for sChain {schain["name"]}')
+        logger.info(f'Monitor for sChain {schain["name"]} created')
         skale = spawn_skale_manager_lib(skale)
         skale_ima = spawn_skale_ima_lib(skale_ima)
         while True:
+            logger.info(f'schain: {schain["name"]} - running monitor')
             monitor_schain(
                 skale,
                 skale_ima,
@@ -90,6 +91,7 @@ def run_monitor_for_schain(
             )
             schain_record = upsert_schain_record(schain['name'])
             schain_record.set_monitor_last_seen(datetime.now())
+            logger.info(f'schain: {schain["name"]} - sleeping {SCHAIN_MONITOR_SLEEP_INTERVAL}s...')
             time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
     except Exception:
         logger.exception(f'Monitor for sChain {schain["name"]} failed')
@@ -99,7 +101,6 @@ def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
-    logger.info(f'Rotation for {name}: {rotation}')
 
     rotation_id = rotation['rotation_id']
     finish_ts = rotation['finish_ts']
@@ -109,7 +110,7 @@ def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     mode = get_monitor_mode(schain_record, rotation)
     checks = SChainChecks(name, node_id, rotation_id=rotation_id)
 
-    logger.debug(f'sChain record: {SChainRecord.to_dict(schain_record)}')
+    logger.debug(f'schain_record: {SChainRecord.to_dict(schain_record)}, rotation: {rotation}')
 
     if schain_record.needs_reload:
         logger.warning(f'Going to reload {schain["name"]}')
