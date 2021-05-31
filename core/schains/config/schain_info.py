@@ -30,7 +30,9 @@ class SChainInfo:
     schain_id: int
     name: str
     owner: str
-    storage_limit: int
+
+    contract_storage_limit: int
+    db_storage_limit: int
 
     snapshot_interval_sec: int
     empty_block_interval_ms: int
@@ -57,7 +59,8 @@ class SChainInfo:
             'schainID': self.schain_id,
             'schainName': self.name,
             'schainOwner': self.owner,
-            'storageLimit': self.storage_limit,
+            'contractStorageLimit': self.contract_storage_limit,
+            'dbStorageLimit': self.db_storage_limit,
             'snapshotIntervalSec': self.snapshot_interval_sec,
             'emptyBlockIntervalMs': self.empty_block_interval_ms,
             'freeContractDeployment': self.free_contract_deployment,
@@ -73,12 +76,16 @@ class SChainInfo:
 def generate_schain_info(schain_id: int, schain: dict, static_schain_params: dict,
                          previous_public_keys: list, nodes: dict) -> SChainInfo:
     volume_limits = get_schain_limit(schain, MetricType.volume_limits)
-    storage_limit = get_schain_limit(schain, MetricType.storage_limit)
+    leveldb_limits = get_schain_limit(schain, MetricType.leveldb_limits)
+    contract_storage_limit = leveldb_limits['contract_storage']
+    db_storage_limit = leveldb_limits['db_storage']
+
     return SChainInfo(
         schain_id=schain_id,
         name=schain['name'],
         owner=schain['owner'],
-        storage_limit=storage_limit,
+        contract_storage_limit=contract_storage_limit,
+        db_storage_limit=db_storage_limit,
         previous_public_keys=previous_public_keys,
         nodes=nodes,
         **volume_limits,
