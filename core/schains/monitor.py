@@ -21,11 +21,11 @@ import logging
 import os
 import shutil
 import time
-from datetime import datetime
 from enum import Enum
+from importlib import reload
+from datetime import datetime
 
-from skale.skale_manager import spawn_skale_manager_lib
-from skale.skale_ima import spawn_skale_ima_lib
+from web3._utils import request
 
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
@@ -78,8 +78,7 @@ def run_monitor_for_schain(
         skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     try:
         logger.info(f'Monitor for sChain {schain["name"]} created')
-        skale = spawn_skale_manager_lib(skale)
-        skale_ima = spawn_skale_ima_lib(skale_ima)
+        reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
         while True:
             logger.info(f'schain: {schain["name"]} - running monitor')
             monitor_schain(
