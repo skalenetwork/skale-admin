@@ -34,6 +34,8 @@ from tools.configs.containers import DATA_DIR_CONTAINER_PATH
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.helper import read_json
+
+from tools.configs import SGX_SERVER_URL
 from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
 from tools.configs.containers import LOCAL_IP
 from tools.iptables import NodeEndpoint
@@ -273,7 +275,8 @@ def get_schain_container_base_opts(schain_name: str,
         f'--http-port {ports["http"]}',
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
-        f'--wss-port {ports["wss"]}'
+        f'--wss-port {ports["wss"]}',
+        f'--sgx-url {SGX_SERVER_URL}'
     ]
 
     if static_schain_cmd:
