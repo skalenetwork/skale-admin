@@ -29,7 +29,7 @@ def get_filestorage_info():
 
 
 def compose_filestorage_info(schain_internal_limits, schain_owner):
-    predeployed_config = get_filestorage_info()['predeployed_config']
+    predeployed_config = get_filestorage_info()['predeployedConfig']
     max_file_storage_bytes = schain_internal_limits[FILESTORAGE_LIMIT_OPTION_NAME]
     filestorage_info = {
         'implementation': predeployed_config['filestorageImplementation']

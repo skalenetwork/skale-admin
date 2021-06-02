@@ -152,18 +152,19 @@ def generate_fs_accounts(schain: dict) -> dict:
     :rtype: dict
     """
     volume_limits = get_schain_limit(schain, MetricType.volume_limits)
-    filestorage_info = compose_filestorage_info(volume_limits)
+    filestorage_accounts_info = compose_filestorage_info(volume_limits, schain['owner'])
     accounts = {}
-    account = generate_account(
-        balance=0,
-        code=filestorage_info['bytecode'],
-        storage=filestorage_info['storage']
-    )
-    add_to_accounts(
-        accounts=accounts,
-        address=filestorage_info['address'],
-        account=account
-    )
+    for account_info in filestorage_accounts_info.values():
+        account = generate_account(
+            balance=0,
+            code=account_info['bytecode'],
+            storage=account_info['storage']
+        )
+        add_to_accounts(
+            accounts=accounts,
+            address=account_info['address'],
+            account=account
+        )
     return accounts
 
 
