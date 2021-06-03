@@ -75,9 +75,10 @@ class MonitorMode(Enum):
 
 
 def run_monitor_for_schain(
-        skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
+        skale, skale_ima, node_info, schain, ecdsa_sgx_key_name, loop=True):
+    prefix = f'schain: {schain["name"]} -'
     try:
-        logger.info(f'Monitor for sChain {schain["name"]} created')
+        logger.info(f'{prefix} monitor created')
         reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
         while True:
             logger.info(f'schain: {schain["name"]} - running monitor')
@@ -90,10 +91,15 @@ def run_monitor_for_schain(
             )
             schain_record = upsert_schain_record(schain['name'])
             schain_record.set_monitor_last_seen(datetime.now())
-            logger.info(f'schain: {schain["name"]} - sleeping {SCHAIN_MONITOR_SLEEP_INTERVAL}s...')
+
+            if not loop:
+                logger.warning(f'{prefix} finishing monitor')
+                return
+
+            logger.info(f'{prefix} sleeping {SCHAIN_MONITOR_SLEEP_INTERVAL}s...')
             time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
     except Exception:
-        logger.exception(f'Monitor for sChain {schain["name"]} failed')
+        logger.exception(f'{prefix} monitor failed')
 
 
 def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
