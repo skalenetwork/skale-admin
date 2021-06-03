@@ -55,6 +55,10 @@ def terminate_schain_process(schain_record):
         logger.info(f'{log_prefix} was terminated')
     except psutil.NoSuchProcess:
         logger.info(f'{log_prefix} - no such process')
+    except psutil.TimeoutExpired:
+        logger.info(f'{log_prefix} - timout expired, going to kill')
+        p.kill()
+        logger.info(f'{log_prefix} -  process was killed')
     except Exception:
         logging.exception(f'{log_prefix} - termination failed!')
 
