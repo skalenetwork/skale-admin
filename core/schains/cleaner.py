@@ -26,9 +26,10 @@ from sgx import SgxClient
 
 from core.schains.checks import SChainChecks
 from core.schains.helper import get_schain_dir_path
-from core.schains.runner import get_container_name, is_exited
+from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
 from core.schains.config.helper import get_allowed_endpoints
 from core.schains.types import ContainerType
+from core.schains.process_manager_helper import terminate_schain_process
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs import SGX_CERTIFICATES_FOLDER
@@ -42,7 +43,7 @@ from tools.iptables import remove_rules as remove_iptables_rules
 from tools.helper import merged_unique, read_json
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
-from web.models.schain import get_schains_names, mark_schain_deleted
+from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
 
 
 logger = logging.getLogger(__name__)
@@ -100,17 +101,18 @@ def remove_config_dir(schain_name: str) -> None:
 def monitor(skale, node_config):
     logger.info('Cleaner procedure started.')
     schains_on_node = get_schains_on_node()
-    schain_names_on_contracts = get_schain_names_from_contract(skale,
-                                                               node_config.id)
-    logger.info(f'Found such schains on contracts: {schain_names_on_contracts}')
-    logger.info(f'Found such schains on node: {schains_on_node}')
-    for schain_name in schains_on_node:
-        try:
-            if schain_name not in schain_names_on_contracts:
-                ensure_schain_removed(skale, schain_name, node_config.id)
-        except Exception:
-            logger.exception(f'Removing schain {schain_name} failed')
+    schain_names_on_contracts = get_schain_names_from_contract(skale, node_config.id)
+    logger.info(f'\nsChains on contracts: {schain_names_on_contracts}\n\
+sChains on node: {schains_on_node}')
 
+    for schain_name in schains_on_node:
+        if schain_name not in schain_names_on_contracts:
+            logger.warning(f'sChain {schain_name} was found on node, but not on contracts: \
+{schain_names_on_contracts}, going to remove it!')
+            try:
+                ensure_schain_removed(skale, schain_name, node_config.id)
+            except Exception:
+                logger.exception(f'sChain removal {schain_name} failed')
     logger.info('Cleanup procedure finished')
 
 
@@ -152,13 +154,32 @@ def remove_firewall_rules(schain_name):
 
 
 def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
-    if not skale.schains_internal.is_schain_exist(schain_name) or \
-            is_exited(schain_name, dutils=dutils):
-        logger.info(arguments_list_string(
-            {'sChain name': schain_name}, 'Removed sChain found')
+    is_schain_exist = skale.schains_internal.is_schain_exist(schain_name)
+    exited_with_zero = is_exited_with_zero(schain_name, dutils=dutils)
+    schain_record = upsert_schain_record(schain_name)
+
+    msg = arguments_list_string(
+        {'sChain name': schain_name},
+        'sChain do not satisfy removal condidions'
+    )
+    if exited_with_zero:
+        msg = arguments_list_string(
+            {'sChain name': schain_name},
+            'Going to remove this sChain because it was rotated'
         )
+    if not is_schain_exist:
+        msg = arguments_list_string(
+            {'sChain name': schain_name},
+            'Going to remove this sChain because it was removed from contracts'
+        )
+
+    if exited_with_zero or not is_schain_exist:
+        logger.warning(msg)
+        terminate_schain_process(schain_record)
         delete_bls_keys(skale, schain_name)
         cleanup_schain(node_id, schain_name)
+        return
+    logger.info(msg)
 
 
 def cleanup_schain(node_id, schain_name, dutils=None):
