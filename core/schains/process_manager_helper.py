@@ -28,6 +28,7 @@ from tools.helper import check_pid
 logger = logging.getLogger(__name__)
 
 TIMEOUT_COEFFICIENT = 1.5
+P_KILL_WAIT_TIMEOUT = 60
 
 
 def terminate_stuck_schain_process(skale, schain_record, schain):
@@ -50,6 +51,7 @@ def terminate_schain_process(schain_record):
         logger.info(f'{log_prefix} - going to terminate')
         p = psutil.Process(schain_record.monitor_id)
         p.terminate()
+        p.wait(timeout=P_KILL_WAIT_TIMEOUT)
         logger.info(f'{log_prefix} was terminated')
     except psutil.NoSuchProcess:
         logger.info(f'{log_prefix} - no such process')
