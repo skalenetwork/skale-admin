@@ -91,6 +91,9 @@ class SChainRecord(BaseModel):
     def dkg_failed(self):
         self.set_dkg_status(DKGStatus.FAILED)
 
+    def dkg_key_generation_error(self):
+        self.set_dkg_status(DKGStatus.KEY_GENERATION_ERROR)
+
     def dkg_done(self):
         self.set_dkg_status(DKGStatus.DONE)
 
