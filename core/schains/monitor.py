@@ -21,13 +21,11 @@ import logging
 import os
 import shutil
 import time
-from concurrent.futures import as_completed, ThreadPoolExecutor
-from datetime import datetime
 from enum import Enum
-from multiprocessing import Process
+from importlib import reload
+from datetime import datetime
 
-from skale.skale_manager import spawn_skale_manager_lib
-from skale.skale_ima import spawn_skale_ima_lib
+from web3._utils import request
 
 from core.schains.dkg_status import DKGStatus
 from core.schains.runner import (run_schain_container, run_ima_container,
@@ -52,7 +50,6 @@ from core.schains.rotation import get_rotation_state
 from core.schains.dkg import run_dkg, save_dkg_results
 
 from core.schains.runner import get_container_name
-from core.schains.utils import notify_if_not_enough_balance
 
 from tools.bls.dkg_client import DkgError, KeyGenerationError
 from tools.bls.dkg_utils import init_dkg_client, get_secret_key_share_filepath, generate_bls_keys
@@ -63,14 +60,13 @@ from tools.configs.ima import IMA_DATA_FILEPATH, DISABLE_IMA
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode, is_checks_passed
-from tools.str_formatters import arguments_list_string
 from web.models.schain import upsert_schain_record, SChainRecord
 
 
 logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
-TIMEOUT_COEFFICIENT = 1.5
+SCHAIN_MONITOR_SLEEP_INTERVAL = 500
 
 
 class MonitorMode(Enum):
@@ -80,94 +76,38 @@ class MonitorMode(Enum):
     EXIT = 3
 
 
-def run_creator(skale, skale_ima, node_config):
-    process = Process(target=monitor, args=(skale, skale_ima, node_config))
-    join_timeout = TIMEOUT_COEFFICIENT * skale.constants_holder.get_dkg_timeout()
-    process.start()
-    logger.info('Creator process started')
-    process.join(join_timeout)
-    logger.info('Creator process is joined.')
-    logger.info('Terminating the process')
-    process.terminate()
-    process.join()
-
-
-def monitor(skale, skale_ima, node_config):
-    logger.info('Creator procedure started')
-    skale = spawn_skale_manager_lib(skale)
-    logger.info('Spawned new skale lib')
-    node_id = node_config.id
-    ecdsa_sgx_key_name = node_config.sgx_key_name
-    logger.info('Fetching schains ...')
-    schains = skale.schains.get_schains_for_node(node_id)
-    logger.info('Get leaving_history for node ...')
-    leaving_history = skale.node_rotation.get_leaving_history(node_id)
-    for leaving_schain in leaving_history:
-        schain = skale.schains.get(leaving_schain['id'])
-        if skale.node_rotation.is_rotation_in_progress(schain['name']) and schain['name']:
-            schain['active'] = True
-            schains.append(schain)
-    schains_on_node = sum(map(lambda schain: schain['active'], schains))
-    schains_holes = len(schains) - schains_on_node
-    logger.info(
-        arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
-                               'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
-    node_info = node_config.all()
-    notify_if_not_enough_balance(skale, node_info)
-
-    logger.info('Starting schains ThreadPoolExecutor')
-
-    with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
-        futures = [
-            executor.submit(
-                run_monitor_for_schain,
+def run_monitor_for_schain(
+        skale, skale_ima, node_info, schain, ecdsa_sgx_key_name, loop=True):
+    prefix = f'schain: {schain["name"]} -'
+    try:
+        logger.info(f'{prefix} monitor created')
+        reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
+        while True:
+            logger.info(f'schain: {schain["name"]} - running monitor')
+            monitor_schain(
                 skale,
                 skale_ima,
                 node_info,
                 schain,
                 ecdsa_sgx_key_name
             )
-            for schain in schains if schain['active']
-        ]
-        for future in as_completed(futures):
-            future.result()
-    logger.info('Creator procedure finished')
+            schain_record = upsert_schain_record(schain['name'])
+            schain_record.set_monitor_last_seen(datetime.now())
 
+            if not loop:
+                logger.warning(f'{prefix} finishing monitor')
+                return
 
-def is_backup_run(schain_record):
-    return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
-
-
-def get_monitor_mode(schain_record, rotation_state):
-    if is_backup_run(schain_record) or schain_record.repair_mode:
-        return MonitorMode.SYNC
-    elif rotation_state['in_progress']:
-        if rotation_state['exiting_node']:
-            return MonitorMode.EXIT
-        elif rotation_state['new_schain']:
-            return MonitorMode.SYNC
-        else:
-            return MonitorMode.RESTART
-    return MonitorMode.REGULAR
-
-
-def run_monitor_for_schain(
-        skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
-    try:
-        logger.info(f'Monitor for sChain {schain["name"]}')
-        skale = spawn_skale_manager_lib(skale)
-        skale_ima = spawn_skale_ima_lib(skale_ima)
-        monitor_schain(
-            skale, skale_ima, node_info, schain, ecdsa_sgx_key_name)
+            logger.info(f'{prefix} sleeping {SCHAIN_MONITOR_SLEEP_INTERVAL}s...')
+            time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
     except Exception:
-        logger.exception(f'Monitor for sChain {schain["name"]} failed')
+        logger.exception(f'{prefix} monitor failed')
 
 
 def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
-    logger.info(f'Rotation for {name}: {rotation}')
 
     rotation_id = rotation['rotation_id']
     finish_ts = rotation['finish_ts']
@@ -177,7 +117,7 @@ def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     mode = get_monitor_mode(schain_record, rotation)
     checks = SChainChecks(name, node_id, rotation_id=rotation_id)
 
-    logger.debug(f'sChain record: {SChainRecord.to_dict(schain_record)}')
+    logger.debug(f'schain_record: {SChainRecord.to_dict(schain_record)}, rotation: {rotation}')
 
     if schain_record.needs_reload:
         logger.warning(f'Going to reload {schain["name"]}')
@@ -256,6 +196,23 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
             schain_record=schain_record
         )
+
+
+def is_backup_run(schain_record):
+    return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
+
+
+def get_monitor_mode(schain_record, rotation_state):
+    if is_backup_run(schain_record) or schain_record.repair_mode:
+        return MonitorMode.SYNC
+    elif rotation_state['in_progress']:
+        if rotation_state['exiting_node']:
+            return MonitorMode.EXIT
+        elif rotation_state['new_schain']:
+            return MonitorMode.SYNC
+        else:
+            return MonitorMode.RESTART
+    return MonitorMode.REGULAR
 
 
 def cleanup_schain_docker_entity(schain_name: str) -> None:

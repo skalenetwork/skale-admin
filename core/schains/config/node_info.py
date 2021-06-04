@@ -25,7 +25,7 @@ from skale.dataclasses.skaled_ports import SkaledPorts
 from core.schains.config.ima import get_message_proxy_addresses
 from core.schains.limits import get_schain_type
 from tools.configs import (
-    SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL, ENV_TYPE, ALLOCATION_FILEPATH
+    SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, ENV_TYPE, ALLOCATION_FILEPATH
 )
 from tools.configs.ima import IMA_ENDPOINT
 
@@ -111,7 +111,6 @@ def generate_wallets_config(schain_name: str, rotation_id: int) -> dict:
 
     wallets = {
         'ima': {
-            'url': SGX_SERVER_URL,
             'keyShareName': secret_key_share_config['key_share_name'],
             't': secret_key_share_config['t'],
             'n': secret_key_share_config['n'],

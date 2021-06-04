@@ -69,7 +69,8 @@ def test_status(skale_bp):
 
 @mock.patch('web.routes.ssl.request', new=RequestMock())
 def test_upload(skale_bp):
-    with mock.patch('web.routes.ssl.set_schains_need_reload'):
+    with mock.patch('web.routes.ssl.set_schains_need_reload'), \
+            mock.patch('core.nginx.restart_nginx_container'):
         response = post_bp_data(
             skale_bp, get_api_url(BLUEPRINT_NAME, 'upload'), full_response=True)
         assert response == {'status': 'ok', 'payload': {}}

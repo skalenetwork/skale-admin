@@ -17,11 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import itertools
+import os
 import json
 import yaml
+import errno
 import logging
-import os
+import itertools
 import subprocess
 from subprocess import PIPE
 
@@ -136,3 +137,15 @@ def init_skale(wallet: BaseWallet) -> Skale:
 def safe_load_yml(filepath):
     with open(filepath, 'r') as stream:
         return yaml.safe_load(stream)
+
+
+def check_pid(pid):
+    try:
+        os.kill(pid, 0)
+    except OSError as err:
+        if err.errno == errno.ESRCH:
+            return False
+        else:
+            raise err
+    else:
+        return True

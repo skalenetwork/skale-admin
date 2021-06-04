@@ -40,4 +40,4 @@ LOG_FILE_SIZE_BYTES = LOG_FILE_SIZE_MB * 1000000
 
 LOG_BACKUP_COUNT = 3
 
-LOG_FORMAT = '[%(asctime)s %(levelname)s] %(name)s:%(lineno)d - %(threadName)s - %(message)s'
+LOG_FORMAT = '[%(asctime)s %(levelname)s] - %(process)d - %(threadName)s - %(name)s:%(lineno)d - %(message)s' # noqa
