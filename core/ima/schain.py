@@ -33,12 +33,6 @@ from tools.configs.ima import (
 logger = logging.getLogger(__name__)
 
 
-REQUIRED_MAINNET_CONTRACTS = [
-        'eth_deposit_box', 'erc20_deposit_box', 'erc721_deposit_box', 'erc1155_deposit_box',
-        'linker', 'community_pool'
-    ]
-
-
 def update_predeployed_ima():
     """
     Generates a new ABI for predeployed IMA using ima_predeployed library, saves the results
@@ -61,13 +55,12 @@ def get_schain_ima_abi_filepath(schain_name):
     return os.path.join(schain_dir_path, SCHAIN_IMA_ABI_FILENAME)
 
 
-def generate_ima_accounts(schain_name, schain_owner):
+def generate_ima_accounts(schain_owner, schain_name):
     mainnet_ima_abi = read_json(MAINNET_IMA_ABI_FILEPATH)
     return generate_contracts(
-        schain_owner,
-        schain_name,
-        {contract_name: mainnet_ima_abi[f'{contract_name}_address']
-         for contract_name in REQUIRED_MAINNET_CONTRACTS},
+        owner_address=schain_owner,
+        schain_name=schain_name,
+        contracts_on_mainnet=mainnet_ima_abi
     )
 
 
