@@ -19,8 +19,9 @@
 
 from dataclasses import dataclass
 
-from core.schains.helper import get_schain_dir_path, get_schain_proxy_file_path
+from core.schains.helper import get_schain_dir_path
 from core.schains.config.helper import get_schain_ports, get_schain_config
+from core.ima.schain import get_schain_ima_abi_filepath
 
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import CONTAINERS_INFO
@@ -112,7 +113,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
     return ImaEnv(
         schain_dir=get_schain_dir_path(schain_name),
         mainnet_proxy_path=MAINNET_IMA_ABI_FILEPATH,
-        schain_proxy_path=get_schain_proxy_file_path(schain_name),
+        schain_proxy_path=get_schain_ima_abi_filepath(schain_name),
         schain_name=schain_name,
         schain_rpc_url=get_localhost_http_endpoint(schain_name),
         mainnet_rpc_url=IMA_ENDPOINT,
