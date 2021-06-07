@@ -55,7 +55,9 @@ def monitor(skale, skale_ima, node_config):
             run_process_manager(skale, skale_ima, node_config)
         except Exception:
             logger.exception('Process manager procedure failed!')
-        logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
+        logger.info(
+            f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager'
+        )
         time.sleep(SLEEP_INTERVAL)
         run_cleaner(skale, node_config)
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_cleaner')
@@ -68,10 +70,7 @@ def worker():
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
-    wallet = init_wallet(
-        node_config=node_config,
-        retry_if_failed=True
-    )
+    wallet = init_wallet(node_config=node_config)
     skale = Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
     skale_ima = SkaleIma(ENDPOINT, MAINNET_IMA_ABI_FILEPATH, wallet)
     if BACKUP_RUN:
