@@ -23,7 +23,7 @@ import logging
 from redis import Redis
 
 from skale.utils.web3_utils import init_web3
-from skale.wallets import RedisWalletAdapter, SgxWallet
+from skale.wallets import BaseWallet, RedisWalletAdapter, SgxWallet
 from skale.wallets.web3_wallet import to_checksum_address
 
 from tools.configs import (
@@ -62,7 +62,7 @@ def init_wallet(
     node_config,
     rs: Redis = grs,
     pool: str = DEFAULT_POOL
-):
+) -> BaseWallet:
     web3 = init_web3(ENDPOINT)
     sgx_wallet = SgxWallet(
         web3=web3,
