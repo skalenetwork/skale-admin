@@ -8,6 +8,9 @@ from skale.utils.contracts_provision.main import (
     add_test_schain_type, add_test_permissions
 )
 from skale.utils.contracts_provision import MONTH_IN_SECONDS
+
+from core.ima.schain import update_predeployed_ima
+
 from tests.utils import init_web3_skale
 
 
@@ -25,6 +28,8 @@ if __name__ == "__main__":
 
     if skale.constants_holder.get_launch_timestamp() != 0:
         skale.constants_holder.set_launch_timestamp(0, wait_for=True)
+
+    update_predeployed_ima()
 
     create_nodes(skale)
     _skip_evm_time(skale.web3, MONTH_IN_SECONDS)
