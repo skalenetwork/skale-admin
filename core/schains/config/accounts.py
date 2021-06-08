@@ -26,14 +26,13 @@ from core.schains.config.helper import (fix_address, _string_to_storage,
                                         get_context_contract, get_deploy_controller_contract,
                                         calculate_deployment_owner_slot)
 from core.schains.filestorage import compose_filestorage_info, get_filestorage_info
-from core.schains.helper import read_ima_data
 
 from core.schains.limits import get_schain_limit
 from core.schains.types import MetricType
+from core.ima.schain import generate_ima_accounts
 
 from tools.configs.schains import (SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC,
                                    PRECOMPILED_CONTRACTS_FILEPATH)
-from tools.configs.ima import SCHAIN_IMA_CONTRACTS
 from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
@@ -167,26 +166,6 @@ def generate_fs_accounts(schain: dict) -> dict:
     return accounts
 
 
-def generate_ima_accounts():
-    """Generates accounts for the IMA
-
-    :returns: Dictionary with accounts
-    :rtype: dict
-    """
-    ima_data = read_ima_data()
-    accounts = {}
-    for contract_name in SCHAIN_IMA_CONTRACTS:
-        add_to_accounts(
-            accounts=accounts,
-            address=ima_data[f'{contract_name}_address'],
-            account=generate_account(
-                balance=0,
-                code=ima_data[f'{contract_name}_bytecode']
-            )
-        )
-    return accounts
-
-
 def generate_dynamic_accounts(schain: dict, schain_nodes: list) -> dict:
     """Main function used to generate dynamic accounts for the sChain config.
     For the params explanation please refer to the nested functions.
@@ -200,5 +179,5 @@ def generate_dynamic_accounts(schain: dict, schain_nodes: list) -> dict:
         **generate_context_accounts(schain),
         **generate_deploy_controller_accounts(schain['owner']),
         **generate_fs_accounts(schain),
-        **generate_ima_accounts()
+        **generate_ima_accounts(schain['owner'], schain['name'])
     }
