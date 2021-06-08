@@ -344,10 +344,12 @@ def test_monitor_ima(skale_ima, schain_on_contracts, schain_config, dutils):
     schain_ima_abi = read_json(SCHAIN_IMA_ABI_FILEPATH)
     skale_ima.linker.connect_schain(
         schain_name,
-        schain_ima_abi['community_locker_address'],
-        schain_ima_abi['token_manager_eth_address'],
-        schain_ima_abi['token_manager_erc20_address'],
-        schain_ima_abi['token_manager_erc721_address'],
+        [
+            schain_ima_abi['community_locker_address'],
+            schain_ima_abi['token_manager_eth_address'],
+            schain_ima_abi['token_manager_erc20_address'],
+            schain_ima_abi['token_manager_erc721_address']
+        ]
     )
     with mock.patch('core.schains.monitor.copy_schain_ima_abi', return_value=True):
         monitor_ima(skale_ima, schain, mainnet_chain_id=1, dutils=dutils)
