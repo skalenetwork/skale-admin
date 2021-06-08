@@ -38,7 +38,7 @@ class SChainRecord(BaseModel):
     repair_mode = BooleanField(default=False)
     needs_reload = BooleanField(default=False)
 
-    monitor_last_seen = DateTimeField(default=datetime.now())
+    monitor_last_seen = DateTimeField()
     monitor_id = IntegerField(default=0)
 
     @classmethod
@@ -49,7 +49,8 @@ class SChainRecord(BaseModel):
                     name=name,
                     added_at=datetime.now(),
                     dkg_status=DKGStatus.NOT_STARTED.value,
-                    new_schain=True
+                    new_schain=True,
+                    monitor_last_seen=datetime.now()
                 )
             return (schain, None)
         except IntegrityError as err:
