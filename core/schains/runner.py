@@ -34,7 +34,8 @@ from core.schains.helper import send_rotation_request, get_schain_dir_path_host
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
-                                      IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
+                                      IMA_CONTAINER, DATA_DIR_CONTAINER_PATH,
+                                      SHARED_SPACE_CONTAINER_PATH)
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
                            SKALE_VOLUME_PATH, SCHAIN_DATA_PATH)
 
@@ -123,6 +124,7 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
     volume_config = get_schain_volume_config(
         schain_name,
         DATA_DIR_CONTAINER_PATH,
+        SHARED_SPACE_CONTAINER_PATH,
         mode=volume_mode
     )
     env = get_schain_env(ulimit_check=ulimit_check)
