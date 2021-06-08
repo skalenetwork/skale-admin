@@ -22,7 +22,7 @@ export_test_env () {
     export ENV_TYPE=devnet
     export ENV=test
 
-    cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_data/ima.json
+    cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info
 }
 
 
