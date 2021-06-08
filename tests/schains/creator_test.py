@@ -23,8 +23,11 @@ from tools.helper import run_cmd
 from web.models.schain import SChainRecord, upsert_schain_record
 from core.schains.monitor import get_monitor_mode, MonitorMode
 
+from tools.helper import read_json
+from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH
 
 # TODO: Add exited container test
+
 
 @pytest.fixture
 def node_config(skale):
@@ -338,7 +341,14 @@ def test_monitor_ima(skale_ima, schain_on_contracts, schain_config, dutils):
     containers = dutils.get_all_ima_containers()
     assert len(containers) == 0
 
-    skale_ima.linker.connect_schain(schain_name)
+    schain_ima_abi = read_json(SCHAIN_IMA_ABI_FILEPATH)
+    skale_ima.linker.connect_schain(
+        schain_name,
+        schain_ima_abi['community_locker_address'],
+        schain_ima_abi['token_manager_eth_address'],
+        schain_ima_abi['token_manager_erc20_address'],
+        schain_ima_abi['token_manager_erc721_address'],
+    )
     with mock.patch('core.schains.monitor.copy_schain_ima_abi', return_value=True):
         monitor_ima(skale_ima, schain, mainnet_chain_id=1, dutils=dutils)
         containers = dutils.get_all_ima_containers()

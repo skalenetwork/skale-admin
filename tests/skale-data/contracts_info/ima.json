@@ -8,5 +8,7 @@
   "deposit_box_erc20_address": "0x0000000000000000000000000000000000000000",
   "deposit_box_erc20_bytecode": "0x0",
   "deposit_box_erc721_address": "0x0000000000000000000000000000000000000000",
-  "deposit_box_erc721_bytecode": "0x0"
+  "deposit_box_erc721_bytecode": "0x0",
+  "community_pool_address": "0x0000000000000000000000000000000000000000",
+  "community_pool_bytecode": "0x0"
 }
