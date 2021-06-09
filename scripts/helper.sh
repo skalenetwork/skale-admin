@@ -15,7 +15,6 @@ export_test_env () {
     export FLASK_APP_HOST=0.0.0.0
     export FLASK_APP_PORT=3008
     export FLASK_DEBUG_MODE=True
-    export TM_URL=http://localhost:3009
     export TG_CHAT_ID=-1231232
     export TG_API_KEY=123
     export ABI_FILEPATH=$PWD/helper-scripts/contracts_data/manager.json
