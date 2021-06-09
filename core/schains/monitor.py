@@ -19,7 +19,6 @@
 
 import logging
 import os
-import shutil
 import time
 from enum import Enum
 from importlib import reload
@@ -36,9 +35,9 @@ from core.schains.cleaner import (
     remove_schain_container,
     remove_schain_volume
 )
+from core.ima.schain import copy_schain_ima_abi
 from core.schains.helper import (init_schain_dir,
                                  get_schain_config_filepath,
-                                 get_schain_proxy_file_path,
                                  get_schain_rotation_filepath)
 from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.config.helper import (get_allowed_endpoints,
@@ -56,7 +55,7 @@ from tools.bls.dkg_utils import init_dkg_client, get_secret_key_share_filepath, 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
-from tools.configs.ima import IMA_DATA_FILEPATH, DISABLE_IMA
+from tools.configs.ima import DISABLE_IMA
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode, is_checks_passed
@@ -84,6 +83,8 @@ def run_monitor_for_schain(
         reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
         while True:
             logger.info(f'schain: {schain["name"]} - running monitor')
+            schain_record = upsert_schain_record(schain['name'])
+            schain_record.set_monitor_last_seen(datetime.now())
             monitor_schain(
                 skale,
                 skale_ima,
@@ -219,11 +220,6 @@ def cleanup_schain_docker_entity(schain_name: str) -> None:
     remove_schain_container(schain_name)
     time.sleep(10)
     remove_schain_volume(schain_name)
-
-
-def copy_schain_ima_abi(name):
-    abi_file_dest = get_schain_proxy_file_path(name)
-    shutil.copyfile(IMA_DATA_FILEPATH, abi_file_dest)
 
 
 def add_firewall_rules(schain_name):
@@ -384,7 +380,7 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
 
 
 def monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=None):
-    if skale_ima.linker.has_schain(schain['name']):
+    if skale_ima.linker.has_schain(schain['name']):  # todo: add IMA version check
         copy_schain_ima_abi(schain['name'])
         monitor_ima_container(schain, mainnet_chain_id, dutils=dutils)
     else:
