@@ -273,7 +273,8 @@ class DKGClient:
             self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,
-                gas_limit=ALRIGHT_GAS_LIMIT
+                gas_limit=ALRIGHT_GAS_LIMIT,
+                multiplier=2
             )
         except TransactionFailedError as e:
             logger.error(f'DKG alright failed: sChain {self.schain_name}')

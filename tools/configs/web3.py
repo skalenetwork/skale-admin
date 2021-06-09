@@ -24,7 +24,6 @@ from tools.configs import (
 
 from tools.configs import NODE_DATA_PATH
 
-TM_URL = os.environ['TM_URL']
 ENDPOINT = os.environ['ENDPOINT']
 
 UNTRUSTED_PROVIDERS = ["infura.io", "gateway.pokt.network"]

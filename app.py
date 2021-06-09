@@ -26,9 +26,13 @@ from flask import Flask, g
 from core.node_config import NodeConfig
 
 from tools.configs import FLASK_SECRET_KEY_FILE, SGX_SERVER_URL
-from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from tools.configs.web3 import ENDPOINT, TM_URL
-from tools.db import get_database
+from tools.configs.flask import (
+    FLASK_APP_HOST,
+    FLASK_APP_PORT,
+    FLASK_DEBUG_MODE
+)
+from tools.configs.web3 import ENDPOINT
+from tools.db import get_database, REDIS_URI
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
 from tools.wallet_utils import init_wallet
@@ -80,7 +84,7 @@ logger.info('Starting api ...')
 def main():
     logger.info(arguments_list_string({
         'Endpoint': ENDPOINT,
-        'Transaction manager': TM_URL,
+        'Redis uri': REDIS_URI,
         'SGX Server': SGX_SERVER_URL or 'Not connected'
         }, 'Starting Flask server'))
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST)
