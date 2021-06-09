@@ -83,6 +83,8 @@ def run_monitor_for_schain(
         reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
         while True:
             logger.info(f'schain: {schain["name"]} - running monitor')
+            schain_record = upsert_schain_record(schain['name'])
+            schain_record.set_monitor_last_seen(datetime.now())
             monitor_schain(
                 skale,
                 skale_ima,

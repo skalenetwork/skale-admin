@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from datetime import datetime
 
 from playhouse.migrate import SqliteMigrator, migrate as playhouse_migrate
 from peewee import DateTimeField, IntegerField, BooleanField
@@ -74,7 +73,7 @@ def add_needs_reload_field(db, migrator):
 def add_monitor_last_seen_field(db, migrator):
     add_column(
         db, migrator, 'SChainRecord', 'monitor_last_seen',
-        DateTimeField(default=datetime.now())
+        DateTimeField()
     )
 
 
