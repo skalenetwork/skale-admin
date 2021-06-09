@@ -22,6 +22,7 @@ from skale import Skale
 from skale.utils.helper import ip_from_bytes
 
 from core.node_config import NodeConfig
+from core.ima.schain import update_predeployed_ima
 
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,7 @@ def soft_updates(skale: Skale, node_config: NodeConfig) -> None:
     """
     logger.info('Performing soft updates ...')
     update_node_config_file(skale, node_config)
+    update_predeployed_ima()
 
 
 def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:

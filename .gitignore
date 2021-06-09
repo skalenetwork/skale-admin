@@ -62,3 +62,6 @@ test_abi.json
 *.lock
 
 skale-manager-*
+
+tests/skale-data/contracts_info/ima.json
+tests/skale-data/contracts_info/schain_ima_abi.json

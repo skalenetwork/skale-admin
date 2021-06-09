@@ -18,23 +18,17 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME, CONFIG_FOLDER
+from tools.configs import CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME
 
 IMA_ENDPOINT = os.environ['IMA_ENDPOINT']
 MAINNET_IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
 
 DISABLE_IMA = os.getenv('DISABLE_IMA') == 'True'
 
-PROXY_ABI_FILENAME = 'proxy.json'
-
-IMA_DATA_FILENAME = 'ima_data.json'
-IMA_DATA_FILEPATH = os.path.join(CONFIG_FOLDER, IMA_DATA_FILENAME)
-
+SCHAIN_IMA_ABI_FILENAME = 'schain_ima_abi.json'
+SCHAIN_IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, SCHAIN_IMA_ABI_FILENAME)
 
 SCHAIN_IMA_CONTRACTS = {
-    'skale_features': {
-        'filename': 'SkaleFeatures'
-    },
     'token_manager_eth': {
         'filename': 'TokenManagerEth'
     },
@@ -43,6 +37,9 @@ SCHAIN_IMA_CONTRACTS = {
     },
     'token_manager_erc721': {
         'filename': 'TokenManagerERC721'
+    },
+    'token_manager_erc1155': {
+        'filename': 'TokenManagerERC1155'
     },
     'message_proxy_chain': {
         'filename': 'MessageProxyForSchain'
@@ -74,5 +71,8 @@ MAINNET_IMA_CONTRACTS = {
     },
     'deposit_box_erc721': {
         'filename': 'DepositBoxERC721'
+    },
+    'deposit_box_erc1155': {
+        'filename': 'DepositBoxERC1155'
     }
 }
