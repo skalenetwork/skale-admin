@@ -22,7 +22,7 @@ from skale.dataclasses.node_info import NodeInfo
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.dataclasses.skaled_ports import SkaledPorts
 
-from core.schains.config.ima import get_message_proxy_addresses
+from core.ima.schain import get_message_proxy_addresses
 from core.schains.limits import get_schain_type
 from tools.configs import (
     SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, ENV_TYPE, ALLOCATION_FILEPATH

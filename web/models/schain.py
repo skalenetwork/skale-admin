@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import datetime
+from datetime import datetime
 from peewee import (CharField, DateTimeField,
                     IntegrityError, IntegerField, BooleanField)
 
@@ -38,15 +38,19 @@ class SChainRecord(BaseModel):
     repair_mode = BooleanField(default=False)
     needs_reload = BooleanField(default=False)
 
+    monitor_last_seen = DateTimeField()
+    monitor_id = IntegerField(default=0)
+
     @classmethod
     def add(cls, name):
         try:
             with cls.database.atomic():
                 schain = cls.create(
                     name=name,
-                    added_at=datetime.datetime.now(),
+                    added_at=datetime.now(),
                     dkg_status=DKGStatus.NOT_STARTED.value,
-                    new_schain=True
+                    new_schain=True,
+                    monitor_last_seen=datetime.now()
                 )
             return (schain, None)
         except IntegrityError as err:
@@ -78,6 +82,8 @@ class SChainRecord(BaseModel):
             'first_run': record.first_run,
             'new_schain': record.new_schain,
             'needs_reload': record.needs_reload,
+            'monitor_last_seen': record.monitor_last_seen.timestamp(),
+            'monitor_id': record.monitor_id
         }
 
     def dkg_started(self):
@@ -85,6 +91,9 @@ class SChainRecord(BaseModel):
 
     def dkg_failed(self):
         self.set_dkg_status(DKGStatus.FAILED)
+
+    def dkg_key_generation_error(self):
+        self.set_dkg_status(DKGStatus.KEY_GENERATION_ERROR)
 
     def dkg_done(self):
         self.set_dkg_status(DKGStatus.DONE)
@@ -116,6 +125,16 @@ class SChainRecord(BaseModel):
     def set_needs_reload(self, value):
         logger.info(f'Changing needs_reload for {self.name} to {value}')
         self.needs_reload = value
+        self.save()
+
+    def set_monitor_last_seen(self, value):
+        logger.info(f'Changing monitor_last_seen for {self.name} to {value}')
+        self.monitor_last_seen = value
+        self.save()
+
+    def set_monitor_id(self, value):
+        logger.info(f'Changing monitor_id for {self.name} to {value}')
+        self.monitor_id = value
         self.save()
 
 

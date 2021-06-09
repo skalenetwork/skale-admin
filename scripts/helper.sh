@@ -20,6 +20,9 @@ export_test_env () {
     export TG_API_KEY=123
     export ABI_FILEPATH=$PWD/helper-scripts/contracts_data/manager.json
     export ENV_TYPE=devnet
+    export ENV=test
+
+    cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info
 }
 
 

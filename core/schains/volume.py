@@ -21,6 +21,7 @@ import logging
 
 from core.schains.limits import get_schain_limit
 from core.schains.types import MetricType
+from tools.configs.containers import SHARED_SPACE_VOLUME_NAME, SHARED_SPACE_CONTAINER_PATH
 
 from tools.docker_utils import DockerUtils
 
@@ -42,4 +43,8 @@ def init_data_volume(schain, dutils=None):
 
 def get_schain_volume_config(name, mount_path, mode=None):
     mode = mode or 'rw'
-    return {f'{name}': {'bind': mount_path, 'mode': mode}}
+    config = {
+        f'{name}': {'bind': mount_path, 'mode': mode},
+        SHARED_SPACE_VOLUME_NAME: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': mode}
+    }
+    return config

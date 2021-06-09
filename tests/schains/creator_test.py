@@ -7,9 +7,8 @@ from pathlib import Path
 import pytest
 import mock
 
-from skale.skale_manager import spawn_skale_manager_lib
 from core.node_config import NodeConfig
-from core.schains.creator import (check_schain_rotated,
+from core.schains.monitor import (check_schain_rotated,
                                   cleanup_schain_docker_entity,
                                   monitor_ima_container,
                                   monitor_schain,
@@ -22,10 +21,13 @@ from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
 from web.models.schain import SChainRecord, upsert_schain_record
-from core.schains.creator import get_monitor_mode, MonitorMode
+from core.schains.monitor import get_monitor_mode, MonitorMode
 
+from tools.helper import read_json
+from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH
 
 # TODO: Add exited container test
+
 
 @pytest.fixture
 def node_config(skale):
@@ -75,11 +77,11 @@ def test_exiting_monitor(skale, skale_ima, node_config, db):
 
     schain_name = 'test'
     schain = get_schain_contracts_data(schain_name=schain_name)
-    with mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
-        mock.patch('core.schains.creator.SChainChecks', new=ChecksMock), \
-            mock.patch('core.schains.creator.get_rotation_state',
+    with mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0), \
+        mock.patch('core.schains.monitor.SChainChecks', new=ChecksMock), \
+            mock.patch('core.schains.monitor.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
-            mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
+            mock.patch('core.schains.monitor.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
         monitor_schain(skale, skale_ima, node_info, schain,
                        ecdsa_sgx_key_name=node_config.sgx_key_name)
@@ -98,23 +100,17 @@ def test_rotating_monitor(skale, skale_ima, node_config, db):
     schain_name = 'test'
     schain = get_schain_contracts_data(schain_name=schain_name)
 
-    def spawn_skale_lib_mock(skale):
-        mocked_skale = spawn_skale_manager_lib(skale)
-        mocked_skale.dkg.is_channel_opened = lambda x: True
-        return mocked_skale
-
-    with mock.patch('core.schains.creator.safe_run_dkg', return_value=True),\
-            mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
-            mock.patch('core.schains.creator.generate_schain_config_with_skale',
+    with mock.patch('core.schains.monitor.safe_run_dkg', return_value=True),\
+            mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0), \
+            mock.patch('core.schains.monitor.generate_schain_config_with_skale',
                        new=mock.Mock(return_value=True)), \
-            mock.patch('core.schains.creator.SChainChecks', new=ChecksMock), \
-            mock.patch('core.schains.creator.get_rotation_state',
+            mock.patch('core.schains.monitor.SChainChecks', new=ChecksMock), \
+            mock.patch('core.schains.monitor.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
-            mock.patch('core.schains.creator.get_rotation_state',
+            mock.patch('core.schains.monitor.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
-            mock.patch('core.schains.creator.spawn_skale_manager_lib',
-                       spawn_skale_lib_mock), \
-            mock.patch('core.schains.creator.set_rotation_for_schain') as rotation:
+            mock.patch.object(skale.dkg, 'is_channel_opened', return_value=True), \
+            mock.patch('core.schains.monitor.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
         monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name='test')
         rotation.assert_called_with(schain_name=schain_name,
@@ -131,12 +127,12 @@ def test_new_schain_monitor(skale, skale_ima, node_config, db):
     }
     schain_name = 'test'
     schain = get_schain_contracts_data(schain_name=schain_name)
-    with mock.patch('core.schains.creator.run_dkg'), \
-            mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
-            mock.patch('core.schains.creator.SChainChecks', new=ChecksNoContainerMock), \
-            mock.patch('core.schains.creator.get_rotation_state',
+    with mock.patch('core.schains.monitor.run_dkg'), \
+            mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0), \
+            mock.patch('core.schains.monitor.SChainChecks', new=ChecksNoContainerMock), \
+            mock.patch('core.schains.monitor.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
-            mock.patch('core.schains.creator.monitor_sync_schain_container',
+            mock.patch('core.schains.monitor.monitor_sync_schain_container',
                        new=mock.Mock()) as sync:
         node_info = node_config.all()
         monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name='test')
@@ -156,7 +152,7 @@ def test_check_schain_rotated(skale, schain_config):
             }
         }
     }
-    with mock.patch('core.schains.creator.DockerUtils.get_info',
+    with mock.patch('core.schains.monitor.DockerUtils.get_info',
                     new=mock.Mock(return_value=info_mock)):
         assert not check_schain_rotated(schain_name)
         path = get_schain_rotation_filepath(schain_name)
@@ -277,7 +273,7 @@ def test_get_monitor_mode_repair(skale, schain_db):
     assert get_monitor_mode(record, rotation_state) == MonitorMode.SYNC
 
 
-@mock.patch('core.schains.creator.BACKUP_RUN', True)
+@mock.patch('core.schains.monitor.BACKUP_RUN', True)
 def test_get_monitor_mode_backup_rotation(skale, schain_db):
     schain_name = schain_db
 
@@ -292,7 +288,7 @@ def test_get_monitor_mode_backup_rotation(skale, schain_db):
     assert get_monitor_mode(record, rotation_state) == MonitorMode.EXIT
 
 
-@mock.patch('core.schains.creator.BACKUP_RUN', True)
+@mock.patch('core.schains.monitor.BACKUP_RUN', True)
 def test_get_monitor_mode_backup_new_schain(skale, schain_db):
     schain_name = schain_db
 
@@ -306,7 +302,7 @@ def test_get_monitor_mode_backup_new_schain(skale, schain_db):
     assert get_monitor_mode(record, rotation_state) == MonitorMode.REGULAR
 
 
-@mock.patch('core.schains.creator.BACKUP_RUN', True)
+@mock.patch('core.schains.monitor.BACKUP_RUN', True)
 def test_get_monitor_mode_backup_regular(skale, schain_db):
     schain_name = schain_db
 
@@ -320,7 +316,7 @@ def test_get_monitor_mode_backup_regular(skale, schain_db):
     assert get_monitor_mode(record, rotation_state) == MonitorMode.REGULAR
 
 
-@mock.patch('core.schains.creator.BACKUP_RUN', True)
+@mock.patch('core.schains.monitor.BACKUP_RUN', True)
 def test_get_monitor_mode_backup_sync(skale, schain_db):
     schain_name = schain_db
 
@@ -345,8 +341,18 @@ def test_monitor_ima(skale_ima, schain_on_contracts, schain_config, dutils):
     containers = dutils.get_all_ima_containers()
     assert len(containers) == 0
 
-    skale_ima.linker.connect_schain(schain_name)
-    with mock.patch('core.schains.creator.copy_schain_ima_abi', return_value=True):
+    schain_ima_abi = read_json(SCHAIN_IMA_ABI_FILEPATH)
+    skale_ima.linker.connect_schain(
+        schain_name,
+        [
+            schain_ima_abi['community_locker_address'],
+            schain_ima_abi['token_manager_eth_address'],
+            schain_ima_abi['token_manager_erc20_address'],
+            schain_ima_abi['token_manager_erc721_address'],
+            schain_ima_abi['token_manager_erc1155_address']
+        ]
+    )
+    with mock.patch('core.schains.monitor.copy_schain_ima_abi', return_value=True):
         monitor_ima(skale_ima, schain, mainnet_chain_id=1, dutils=dutils)
         containers = dutils.get_all_ima_containers()
         assert containers[0].name == f'skale_ima_{schain_name}'
@@ -369,12 +375,12 @@ def test_monitor_needs_reload(skale, skale_ima, node_config, db):
     schain_record.set_needs_reload(True)
     assert schain_record.needs_reload is True
 
-    with mock.patch('core.schains.creator.CONTAINERS_DELAY', 0), \
-        mock.patch('core.schains.creator.SChainChecks', new=ChecksMock), \
-            mock.patch('core.schains.creator.get_rotation_state',
+    with mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0), \
+        mock.patch('core.schains.monitor.SChainChecks', new=ChecksMock), \
+            mock.patch('core.schains.monitor.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
-            mock.patch('core.schains.creator.set_rotation_for_schain'), \
-            mock.patch('core.schains.creator.monitor_schain_container'):
+            mock.patch('core.schains.monitor.set_rotation_for_schain'), \
+            mock.patch('core.schains.monitor.monitor_schain_container'):
         node_info = node_config.all()
         monitor_schain(skale, skale_ima, node_info, schain,
                        ecdsa_sgx_key_name=node_config.sgx_key_name)

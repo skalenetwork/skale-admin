@@ -53,6 +53,10 @@ class SgxDkgPolynomGenerationError(DkgError):
     pass
 
 
+class KeyGenerationError(Exception):
+    pass
+
+
 def convert_g2_points_to_array(data):
     g2_array = []
     for point in data:
