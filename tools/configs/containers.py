@@ -22,6 +22,8 @@ from tools.configs import CONFIG_FOLDER
 from tools.helper import read_json
 
 DATA_DIR_CONTAINER_PATH = '/data_dir'
+SHARED_SPACE_CONTAINER_PATH = '/shared-space'
+SHARED_SPACE_VOLUME_NAME = 'shared-space'
 
 SCHAIN_CONTAINER = 'schain'
 IMA_CONTAINER = 'ima'
