@@ -70,7 +70,7 @@ def is_monitor_process_alive(monitor_id):
 
 def _calc_allowed_last_seen_time(skale):
     dkg_timeout = skale.constants_holder.get_dkg_timeout()
-    allowed_diff = dkg_timeout * TIMEOUT_COEFFICIENT
+    allowed_diff = int(dkg_timeout * TIMEOUT_COEFFICIENT)
     logger.info(f'dkg_timeout: {dkg_timeout}, TIMEOUT_COEFFICIENT: {TIMEOUT_COEFFICIENT}, \
 allowed_diff: {allowed_diff}')
     return datetime.now().timestamp() - allowed_diff

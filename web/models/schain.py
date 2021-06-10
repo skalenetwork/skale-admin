@@ -27,6 +27,8 @@ from web.models.base import BaseModel
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_CONFIG_VERSION = '0.0.0'
+
 
 class SChainRecord(BaseModel):
     name = CharField(unique=True)
@@ -40,6 +42,8 @@ class SChainRecord(BaseModel):
 
     monitor_last_seen = DateTimeField()
     monitor_id = IntegerField(default=0)
+
+    config_version = CharField(default=DEFAULT_CONFIG_VERSION)
 
     @classmethod
     def add(cls, name):
@@ -83,7 +87,8 @@ class SChainRecord(BaseModel):
             'new_schain': record.new_schain,
             'needs_reload': record.needs_reload,
             'monitor_last_seen': record.monitor_last_seen.timestamp(),
-            'monitor_id': record.monitor_id
+            'monitor_id': record.monitor_id,
+            'config_version': record.config_version
         }
 
     def dkg_started(self):
@@ -137,6 +142,11 @@ class SChainRecord(BaseModel):
         self.monitor_id = value
         self.save()
 
+    def set_config_version(self, value):
+        logger.info(f'Changing config_version for {self.name} to {value}')
+        self.config_version = value
+        self.save()
+
 
 def create_tables():
     logger.info('Creating schainrecord table...')
@@ -158,11 +168,24 @@ def set_schains_need_reload():
     query.execute()
 
 
+def set_schains_monitor_id():
+    logger.info('Setting monitor_id=0 for all sChain records')
+    query = SChainRecord.update(monitor_id=0).where(
+        SChainRecord.monitor_id != 0)  # noqa
+    query.execute()
+
+
 def upsert_schain_record(name):
     if not SChainRecord.added(name):
+        logger.debug(f'Could not find sChain record: {name}, going to add')
         schain_record, _ = SChainRecord.add(name)
     else:
+        logger.debug(f'Getting sChain record by name: {name}')
         schain_record = SChainRecord.get_by_name(name)
+
+    if not schain_record:
+        logger.error(f'schain_record is None for {name}')
+
     return schain_record
 
 
