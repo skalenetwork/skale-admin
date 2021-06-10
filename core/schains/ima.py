@@ -25,8 +25,8 @@ from core.ima.schain import get_schain_ima_abi_filepath
 
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import CONTAINERS_INFO
+from tools.configs.db import REDIS_URI
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_IMA_ABI_FILEPATH
-from tools.configs.web3 import TM_URL
 
 
 @dataclass
@@ -124,7 +124,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         sgx_ssl_key_path=SGX_SSL_KEY_FILEPATH,
         sgx_ssl_cert_path=SGX_SSL_CERT_FILEPATH,
         node_address=node_address,
-        tm_url_mainnet=TM_URL,
+        tm_url_mainnet=REDIS_URI,
         cid_main_net=mainnet_chain_id,
         monitoring_port=node_info['imaMonitoringPort']
     )

@@ -31,3 +31,5 @@ DB_PRAGMAS = {
     'ignore_check_constraints': 0,
     'synchronous': 0
 }
+
+REDIS_URI: str = os.getenv('REDIS_URI', 'redis://@127.0.0.1:6379')

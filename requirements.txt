@@ -13,15 +13,15 @@ simple-crypt==4.1.7
 pycryptodome==3.9.9
 python-iptables==0.14.0
 
-skale.py==5.0dev24
+skale.py==5.1dev4
 ima-predeployed==1.0.0a208
 
-PyYAML==5.3.1
+pyyaml==5.4
 psutil==5.7.0
 
 colorful==0.5.4
 celery==4.4.6
-redis==3.2.1
+redis==3.5.3
 
 filelock==3.0.12
 

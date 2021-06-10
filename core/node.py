@@ -151,9 +151,7 @@ class Node:
         return self.skale.nodes.node_name_to_index(name)
 
     def get_node_id_from_contracts(self, name, ip) -> int:
-        if self.config.name is None:
-            return -1
-        node_id = self.skale.nodes.node_name_to_index(self.config.name)
+        node_id = self.skale.nodes.node_name_to_index(name)
         if node_id == 0:
             try:
                 node_data = self.skale.nodes.get(node_id)
