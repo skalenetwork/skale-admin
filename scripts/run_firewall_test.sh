@@ -6,7 +6,6 @@ docker build -t admin:base .
 docker build -f tests.Dockerfile -t test-firewall .
 docker run -v "$DIR/tests/skale-data/node_data":"/skale_node_data":Z \
     -v "$DIR/tests/skale-data":"/skale_vol":Z \
-    -e TM_URL="http://127.0.0.1:3007" \
     -e SGX_SERVER_URL="https://127.0.0.1:1026" \
     -e ENDPOINT="http://127.0.0.1:8545" \
     -e IMA_ENDPOINT="http://127.0.01:1000" \

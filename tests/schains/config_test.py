@@ -8,6 +8,7 @@ from core.schains.config.helper import (
 from core.schains.helper import get_schain_config_filepath
 from core.schains.ssl import get_ssl_filepath
 from core.schains.volume import get_schain_volume_config
+from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 
 from tools.iptables import NodeEndpoint
 from tools.configs import SGX_SERVER_URL
@@ -135,7 +136,8 @@ def test_get_schain_container_cmd(schain_config):
     ssl_key_path, ssl_cert_path = get_ssl_filepath()
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
-        f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} -v 2 '
+        f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data -v 2 '
         f'--web3-trace --enable-debug-behavior-apis '
         f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path}'
     )
@@ -145,7 +147,8 @@ def test_get_schain_container_cmd(schain_config):
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
         f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
-        f'-v 2 --web3-trace --enable-debug-behavior-apis --aa no'
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data -v 2 --web3-trace '
+        f'--enable-debug-behavior-apis --aa no'
     )
     assert container_opts == expected_opts
 
@@ -160,10 +163,12 @@ def test_get_schain_env():
 def test_get_schain_volume_config():
     volume_config = get_schain_volume_config('test_name', '/mnt/mount_path/')
     assert volume_config == {
-        'test_name': {'bind': '/mnt/mount_path/', 'mode': 'rw'}
+        'test_name': {'bind': '/mnt/mount_path/', 'mode': 'rw'},
+        SHARED_SPACE_VOLUME_NAME: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'rw'}
     }
     volume_config = get_schain_volume_config('test_name',
                                              '/mnt/mount_path/', mode='Z')
     assert volume_config == {
-        'test_name': {'bind': '/mnt/mount_path/', 'mode': 'Z'}
+        'test_name': {'bind': '/mnt/mount_path/', 'mode': 'Z'},
+        SHARED_SPACE_VOLUME_NAME: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'Z'}
     }

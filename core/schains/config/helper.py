@@ -29,7 +29,7 @@ from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
 from core.schains.helper import get_schain_config_filepath
-from tools.configs.containers import DATA_DIR_CONTAINER_PATH
+from tools.configs.containers import DATA_DIR_CONTAINER_PATH, SHARED_SPACE_CONTAINER_PATH
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.helper import read_json
@@ -259,7 +259,8 @@ def get_schain_container_base_opts(schain_name: str,
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
         f'--wss-port {ports["wss"]}',
-        f'--sgx-url {SGX_SERVER_URL}'
+        f'--sgx-url {SGX_SERVER_URL}',
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data'
     ]
 
     if static_schain_cmd:
