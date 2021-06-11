@@ -19,6 +19,8 @@
 
 import os
 import json
+import time
+
 import yaml
 import errno
 import logging
@@ -149,3 +151,14 @@ def check_pid(pid):
             raise err
     else:
         return True
+
+
+def get_endpoint_call_speed(skale):
+    scores = []
+    for _ in range(10):
+        start = time.time()
+        result = skale.web3.eth.gasPrice
+        if result:
+            scores.append(time.time() - start)
+    call_avg_speed = sum(scores) / len(scores)
+    return call_avg_speed
