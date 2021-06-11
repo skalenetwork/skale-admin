@@ -21,7 +21,9 @@ import os
 from celery import Celery
 from telegram import Bot
 
-REDIS_URI = os.getenv('REDIS_URI', 'redis://localhost:6379/0')
+from tools.configs.db import REDIS_URI
+
+
 # No more than 20 per minute
 NOTIFICATIONS_RATE_LIMIT = os.getenv('NOTIFICATIONS_RATE_LIMIT', '20/m')
 
