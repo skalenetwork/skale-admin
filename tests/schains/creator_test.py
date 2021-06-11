@@ -102,7 +102,7 @@ def test_rotating_monitor(skale, skale_ima, node_config, db):
 
     with mock.patch('core.schains.monitor.safe_run_dkg', return_value=True),\
             mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0), \
-            mock.patch('core.schains.monitor.generate_schain_config_with_skale',
+            mock.patch('core.schains.monitor.init_schain_config',
                        new=mock.Mock(return_value=True)), \
             mock.patch('core.schains.monitor.SChainChecks', new=ChecksMock), \
             mock.patch('core.schains.monitor.get_rotation_state',
