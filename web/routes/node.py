@@ -169,8 +169,8 @@ def construct_node_bp():
     def endpoint_info():
         logger.debug(request)
         skale = init_skale(wallet=g.wallet)
-        block_number = skale.web3.eth.blockNumber
         call_speed = get_endpoint_call_speed(skale)
+        block_number = skale.web3.eth.blockNumber
         syncing = skale.web3.eth.syncing
         trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
         try:

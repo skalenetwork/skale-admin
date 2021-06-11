@@ -163,4 +163,5 @@ def get_endpoint_call_speed(skale):
     if len(scores) == 0:
         return None
     call_avg_speed = round(sum(scores) / len(scores), 2)
+    logger.info(f'Endpoint call speed scores: {scores}, avg: {call_avg_speed}')
     return call_avg_speed
