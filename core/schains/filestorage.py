@@ -28,13 +28,27 @@ def get_filestorage_info():
     return read_json(FILESTORAGE_ARTIFACTS_FILEPATH)
 
 
-def compose_filestorage_info(schin_internal_limits):
-    filestorage_info = get_filestorage_info()
-    max_file_storage_bytes = schin_internal_limits[FILESTORAGE_LIMIT_OPTION_NAME]
+def compose_filestorage_info(schain_internal_limits, schain_owner):
+    predeployed_config = get_filestorage_info()['predeployedConfig']
+    max_file_storage_bytes = schain_internal_limits[FILESTORAGE_LIMIT_OPTION_NAME]
+    filestorage_info = {
+        'implementation': predeployed_config['filestorageImplementation']
+    }
+    upgradeable_info = compose_filestorage_upgradeable_info(predeployed_config,
+                                                            max_file_storage_bytes,
+                                                            schain_owner)
+    filestorage_info.update(upgradeable_info)
+    return filestorage_info
+
+
+def compose_filestorage_upgradeable_info(predeployed_info, allocated_storage, schain_owner):
+    proxy_admin = predeployed_info['proxyAdmin']
+    filestorage_proxy = predeployed_info['filestorageProxy']
+    proxy_admin_owner_slot = '0x0'
+    allocated_storage_slot = '0x0'
+    proxy_admin['storage'][proxy_admin_owner_slot] = schain_owner
+    filestorage_proxy['storage'][allocated_storage_slot] = str(allocated_storage)
     return {
-        'address': filestorage_info['address'],
-        'bytecode': filestorage_info['bytecode'],
-        'storage': {
-            '0x0': str(max_file_storage_bytes)
-        }
+        'proxy_admin': proxy_admin,
+        'proxy': filestorage_proxy
     }
