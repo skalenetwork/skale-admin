@@ -160,5 +160,7 @@ def get_endpoint_call_speed(skale):
         result = skale.web3.eth.gasPrice
         if result:
             scores.append(time.time() - start)
-    call_avg_speed = sum(scores) / len(scores)
+    if len(scores) == 0:
+        return None
+    call_avg_speed = round(sum(scores) / len(scores), 2)
     return call_avg_speed

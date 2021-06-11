@@ -25,7 +25,7 @@ from flask import Blueprint, abort, g, request
 from web3 import Web3
 
 from core.node import Node
-from tools.helper import init_skale
+from tools.helper import init_skale, get_endpoint_call_speed
 
 from core.node import get_meta_info, get_node_hardware_info
 from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
@@ -170,6 +170,7 @@ def construct_node_bp():
         logger.debug(request)
         skale = init_skale(wallet=g.wallet)
         block_number = skale.web3.eth.blockNumber
+        call_speed = get_endpoint_call_speed(skale)
         syncing = skale.web3.eth.syncing
         trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
         try:
@@ -182,7 +183,8 @@ def construct_node_bp():
             'block_number': block_number,
             'syncing': syncing,
             'trusted': trusted and geth_client,
-            'client': eth_client_version
+            'client': eth_client_version,
+            'call_speed': call_speed
         }
         return construct_ok_response(info)
 
