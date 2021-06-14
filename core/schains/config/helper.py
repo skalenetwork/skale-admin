@@ -259,7 +259,8 @@ def get_schain_container_base_opts(schain_name: str,
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
         f'--wss-port {ports["wss"]}',
-        f'--sgx-url {SGX_SERVER_URL}'
+        f'--sgx-url {SGX_SERVER_URL}',
+        f'--sgx-url {SGX_SERVER_URL}',
         # f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data'
     ]
 

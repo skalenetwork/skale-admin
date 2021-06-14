@@ -28,7 +28,6 @@ CONFIG = {
             "wssRpcPort": 10019,
             "infoHttpRpcPort": 10020,
             "bindIP": "127.0.0.1",
-            "imaMainNet": "wss://12.com",
             "imaMessageProxySChain": None,
             "imaMessageProxyMainNet": "0x",
             "wallets": {
