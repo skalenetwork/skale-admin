@@ -27,7 +27,6 @@ from core.schains.limits import get_schain_type
 from tools.configs import (
     SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, ENV_TYPE, ALLOCATION_FILEPATH
 )
-# from tools.configs.ima import IMA_ENDPOINT
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.helper import read_json, safe_load_yml
