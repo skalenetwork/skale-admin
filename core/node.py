@@ -319,3 +319,7 @@ def get_node_hardware_info() -> dict:
 
 def get_meta_info() -> dict:
     return read_json(META_FILEPATH)
+
+
+def get_skale_node_version():
+    return get_meta_info()['config_stream']

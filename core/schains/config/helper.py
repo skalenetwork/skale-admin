@@ -20,7 +20,6 @@
 import json
 import logging
 import os
-import shutil
 from itertools import chain
 
 from web3 import Web3
@@ -29,8 +28,8 @@ from Crypto.Hash import keccak
 from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
-from core.schains.helper import get_schain_config_filepath, get_tmp_schain_config_filepath
-from tools.configs.containers import DATA_DIR_CONTAINER_PATH, SHARED_SPACE_CONTAINER_PATH
+from core.schains.helper import get_schain_config_filepath
+from tools.configs.containers import DATA_DIR_CONTAINER_PATH, SHARED_SPACE_CONTAINER_PATH # noqa
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.helper import read_json
@@ -92,22 +91,6 @@ def _string_to_storage(slot: int, string: str) -> dict:
                 data += int(0).to_bytes(32 - len(data), 'big')
             storage[hex(offset + index)] = '0x' + data.hex()
     return storage
-
-
-def save_schain_config(schain_config, schain_name):
-    schain_config_filepath = get_schain_config_filepath(schain_name)
-    with open(schain_config_filepath, 'w') as outfile:
-        json.dump(schain_config, outfile, indent=4)
-
-    return schain_config_filepath
-
-
-def update_schain_config(schain_config, schain_name):
-    tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
-    with open(tmp_config_filepath, 'w') as outfile:
-        json.dump(schain_config, outfile, indent=4)
-    config_filepath = get_schain_config_filepath(schain_name)
-    shutil.move(tmp_config_filepath, config_filepath)
 
 
 def get_schain_ports(schain_name):
@@ -276,8 +259,8 @@ def get_schain_container_base_opts(schain_name: str,
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
         f'--wss-port {ports["wss"]}',
-        f'--sgx-url {SGX_SERVER_URL}',
-        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data'
+        f'--sgx-url {SGX_SERVER_URL}'
+        # f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data'
     ]
 
     if static_schain_cmd:

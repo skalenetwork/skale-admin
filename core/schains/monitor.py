@@ -36,13 +36,9 @@ from core.schains.cleaner import (
     remove_schain_volume
 )
 from core.ima.schain import copy_schain_ima_abi
-from core.schains.helper import (init_schain_dir,
-                                 get_schain_config_filepath,
-                                 get_schain_rotation_filepath)
-from core.schains.config.generator import generate_schain_config_with_skale
-from core.schains.config.helper import (get_allowed_endpoints,
-                                        save_schain_config,
-                                        update_schain_config)
+from core.schains.helper import init_schain_dir, get_schain_rotation_filepath
+from core.schains.config.generator import init_schain_config
+from core.schains.config.helper import get_allowed_endpoints
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.rotation import get_rotation_state
@@ -349,7 +345,14 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             return
 
     if not checks.config:
-        init_schain_config(skale, node_id, name, ecdsa_sgx_key_name)
+        rotation_id = skale.schains.get_last_rotation_id(name)
+        init_schain_config(
+            skale=skale,
+            node_id=node_id,
+            schain_name=name,
+            ecdsa_sgx_key_name=ecdsa_sgx_key_name,
+            rotation_id=rotation_id
+        )
     if not checks.volume:
         init_data_volume(schain)
     if not checks.firewall_rules:
@@ -362,14 +365,13 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             logger.info(
                 f'sChain {name} is stopped after rotation. Going to restart')
             remove_firewall_rules(name)
-            config = generate_schain_config_with_skale(
+            init_schain_config(
                 skale=skale,
                 schain_name=name,
                 node_id=node_id,
-                rotation_id=rotation['rotation_id'],
-                ecdsa_key_name=ecdsa_sgx_key_name
-            ).to_dict()
-            update_schain_config(config, name)
+                ecdsa_sgx_key_name=ecdsa_sgx_key_name,
+                rotation_id=rotation['rotation_id']
+            )
             add_firewall_rules(name)
             restart_container(SCHAIN_CONTAINER, schain)
         else:
@@ -392,22 +394,3 @@ def check_schain_rotated(schain_name):
     rotation_file_exists = os.path.exists(schain_rotation_filepath)
     zero_exit_code = is_exited_with_zero(schain_name)
     return rotation_file_exists and zero_exit_code
-
-
-# TODO: Check for rotation earlier
-def init_schain_config(skale, node_id, schain_name, ecdsa_sgx_key_name):
-    config_filepath = get_schain_config_filepath(schain_name)
-    if not os.path.isfile(config_filepath):
-        logger.warning(
-            f'sChain {schain_name}: sChain config not found: '
-            f'{config_filepath}, trying to create.'
-        )
-        rotation_id = skale.schains.get_last_rotation_id(schain_name)
-        schain_config = generate_schain_config_with_skale(
-            skale=skale,
-            schain_name=schain_name,
-            node_id=node_id,
-            rotation_id=rotation_id,
-            ecdsa_key_name=ecdsa_sgx_key_name
-        )
-        save_schain_config(schain_config.to_dict(), schain_name)

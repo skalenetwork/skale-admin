@@ -3,6 +3,8 @@ import pytest
 from time import sleep
 from http import HTTPStatus
 
+from collections import namedtuple
+
 from core.schains.skaled_exit_codes import SkaledExitCodes
 
 from core.schains.checks import SChainChecks
@@ -51,6 +53,8 @@ ETH_GET_BLOCK_RESULT = {
     }
 }
 
+SchainRecordMock = namedtuple('SchainRecord', ['config_version'])
+
 
 @pytest.fixture
 def sample_checks(schain_config):
@@ -75,8 +79,16 @@ def test_dkg_check(sample_checks, sample_false_checks):
 
 
 def test_config_check(sample_checks, sample_false_checks):
-    assert sample_checks.config
-    assert not sample_false_checks.config
+    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
+        assert sample_checks.config
+        assert not sample_false_checks.config
+
+
+def test_config_check_wrong_version(sample_checks, sample_false_checks):
+    schain_record_mock = SchainRecordMock('9.8.7')
+    with mock.patch('core.schains.config.generator.upsert_schain_record',
+                    return_value=schain_record_mock):
+        assert not sample_checks.config
 
 
 def test_volume_check(sample_checks, sample_false_checks):
@@ -87,9 +99,12 @@ def test_volume_check(sample_checks, sample_false_checks):
 
 
 def test_firewall_rules_check(sample_checks, sample_false_checks):
-    with mock.patch('core.schains.checks.apsent_iptables_rules', return_value=[]):
+    with mock.patch('core.schains.checks.apsent_iptables_rules', return_value=[]), \
+            mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
         assert sample_checks.firewall_rules
-    with mock.patch('core.schains.checks.apsent_iptables_rules', return_value=[('1.1.1.1', 1000)]):
+    with mock.patch('core.schains.checks.apsent_iptables_rules',
+                    return_value=[('1.1.1.1', 1000)]), \
+            mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
         assert not sample_false_checks.firewall_rules
 
 
@@ -123,18 +138,21 @@ def test_rpc_check(sample_checks, sample_false_checks):
         "jsonrpc": "2.0",
         "result": "0x4b7"
     })
-    with mock.patch('requests.post', new=request_mock(res_mock)):
+    with mock.patch('requests.post', new=request_mock(res_mock)), \
+            mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
         assert sample_checks.rpc
-    assert not sample_false_checks.rpc
+    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
+        assert not sample_false_checks.rpc
 
 
 def test_blocks_check(sample_checks, sample_false_checks):
     res_mock = response_mock(HTTPStatus.OK, ETH_GET_BLOCK_RESULT)
-    with mock.patch('requests.post', return_value=res_mock), \
-            mock.patch('time.time', return_value=TEST_TIMESTAMP):
-        assert sample_checks.blocks
-    with mock.patch('requests.post', return_value=res_mock):
-        assert not sample_false_checks.blocks
+    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
+        with mock.patch('requests.post', return_value=res_mock), \
+                mock.patch('time.time', return_value=TEST_TIMESTAMP):
+            assert sample_checks.blocks
+        with mock.patch('requests.post', return_value=res_mock):
+            assert not sample_false_checks.blocks
 
 
 def test_init_checks(skale):
