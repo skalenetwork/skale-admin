@@ -27,7 +27,6 @@ from core.schains.limits import get_schain_type
 from tools.configs import (
     SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, ENV_TYPE, ALLOCATION_FILEPATH
 )
-from tools.configs.ima import IMA_ENDPOINT
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.helper import read_json, safe_load_yml
@@ -39,7 +38,6 @@ class CurrentNodeInfo(NodeInfo):
     bind_ip: str
     log_level: str
     log_level_config: str
-    ima_mainnet: str
     ima_message_proxy_schain: str
     ima_message_proxy_mainnet: str
     rotate_after_block: int
@@ -61,7 +59,6 @@ class CurrentNodeInfo(NodeInfo):
                 'bindIP': self.bind_ip,
                 'logLevel': self.log_level,
                 'logLevelConfig': self.log_level_config,
-                'imaMainNet': self.ima_mainnet,
                 'imaMessageProxySChain': self.ima_message_proxy_schain,
                 'imaMessageProxyMainNet': self.ima_message_proxy_mainnet,
                 'rotateAfterBlock': self.rotate_after_block,
@@ -95,7 +92,6 @@ def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
         node_id=node_id,
         name=node['name'],
         base_port=schain_base_port_on_node,
-        ima_mainnet=IMA_ENDPOINT,
         ecdsa_key_name=ecdsa_key_name,
         wallets=generate_wallets_config(schain['name'], rotation_id),
         rotate_after_block=rotate_after_block,

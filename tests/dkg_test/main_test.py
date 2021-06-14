@@ -127,7 +127,7 @@ def check_node_ports(info):
 def check_node_info(node_data, info):
     keys = ['nodeID', 'nodeName', 'basePort', 'httpRpcPort', 'httpsRpcPort',
             'wsRpcPort', 'wssRpcPort', 'bindIP', 'logLevel', 'logLevelConfig',
-            'imaMainNet', 'imaMessageProxySChain', 'imaMessageProxyMainNet',
+            'imaMessageProxySChain', 'imaMessageProxyMainNet',
             'rotateAfterBlock', 'ecdsaKeyName', 'wallets', 'minCacheSize',
             'maxCacheSize', 'collectionQueueSize', 'collectionDuration',
             'transactionQueueSize', 'maxOpenLeveldbFiles']
