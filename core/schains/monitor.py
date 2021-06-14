@@ -26,7 +26,7 @@ from importlib import reload
 from datetime import datetime
 
 from skale.schain_config.generator import get_nodes_for_schain
-from web3.utils import request
+from web3. utils import request
 
 from core.schains.dkg_status import DKGStatus
 from core.schains.runner import (run_schain_container, run_ima_container,
