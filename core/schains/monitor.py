@@ -88,9 +88,10 @@ def run_monitor_for_schain(
                 schain_index = skale.schains.name_to_group_id(schain["name"])
                 num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
                 if skale.dkg.get_number_of_completed(schain_index) == num_of_nodes:
-                    schain_record.schain_record.dkg_key_generation_error()
+                    schain_record.dkg_key_generation_error()
                 else:
-                    schain_record.schain_record.failed()
+                    schain_record.failed()
+                os.kill(os.getpid(), signal.SIGTERM)
 
             signal.signal(signal.SIGTERM, signal_handler)
 
