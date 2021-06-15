@@ -33,6 +33,7 @@ from tools.configs.containers import (
     DATA_DIR_CONTAINER_PATH,
     SHARED_SPACE_CONTAINER_PATH
 )
+from tools.configs.ima import IMA_ENDPOINT
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.helper import read_json
@@ -264,6 +265,7 @@ def get_schain_container_base_opts(schain_name: str,
         f'--wss-port {ports["wss"]}',
         f'--sgx-url {SGX_SERVER_URL}',
         f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data'
+        f'--main-net-url {IMA_ENDPOINT}'
     ]
 
     if static_schain_cmd:

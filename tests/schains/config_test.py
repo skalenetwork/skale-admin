@@ -14,6 +14,7 @@ from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_V
 
 from tools.iptables import NodeEndpoint
 from tools.configs import SGX_SERVER_URL
+from tools.configs.ima import IMA_ENDPOINT
 
 
 CONFIG = {
@@ -28,7 +29,6 @@ CONFIG = {
             "wssRpcPort": 10019,
             "infoHttpRpcPort": 10020,
             "bindIP": "127.0.0.1",
-            "imaMainNet": "wss://12.com",
             "imaMessageProxySChain": None,
             "imaMessageProxyMainNet": "0x",
             "wallets": {
@@ -139,8 +139,8 @@ def test_get_schain_container_cmd(schain_config):
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
         f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
-        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data -v 2 '
-        f'-v 2 '
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data '
+        f'--main-net-url {IMA_ENDPOINT} -v 2 '
         f'--web3-trace --enable-debug-behavior-apis '
         f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path}'
     )
@@ -150,8 +150,8 @@ def test_get_schain_container_cmd(schain_config):
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
         f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
-        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data -v 2 --web3-trace '
-        f'-v 2 --web3-trace '
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data '
+        f'--main-net-url {IMA_ENDPOINT} -v 2 --web3-trace '
         f'--enable-debug-behavior-apis --aa no'
     )
     assert container_opts == expected_opts
