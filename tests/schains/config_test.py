@@ -139,7 +139,7 @@ def test_get_schain_container_cmd(schain_config):
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
         f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
-        # f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data -v 2 '
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data -v 2 '
         f'-v 2 '
         f'--web3-trace --enable-debug-behavior-apis '
         f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path}'
@@ -150,7 +150,7 @@ def test_get_schain_container_cmd(schain_config):
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
         f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
-        # f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data -v 2 --web3-trace '
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data -v 2 --web3-trace '
         f'-v 2 --web3-trace '
         f'--enable-debug-behavior-apis --aa no'
     )
