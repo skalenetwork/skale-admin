@@ -51,20 +51,26 @@ class Filter:
     def check_event(self, receipt):
         logs = receipt.get('logs')
         if not logs:
+            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
+                        f' does not have field "logs"')
             return False
         if len(logs) == 0:
             return False
-        data = logs[0].get('data')
-        if not data:
-            return False
         topics = logs[0].get('topics')
         if not topics:
+            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
+                        f' does not have field "topics"')
             return False
         if len(topics) < 2:
             return False
         if topics[0].hex() != self.event_hash:
             return False
         if topics[1].hex() != self.group_index_str:
+            return False
+        data = logs[0].get('data')
+        if not data:
+            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
+                        f' does not have field "data"')
             return False
         return True
 
@@ -100,6 +106,8 @@ class Filter:
                     if hash:
                         receipt = self.skale.web3.eth.getTransactionReceipt(hash)
                     else:
+                        logger.info(f'sChain {self.group_index_str}: tx {tx}'
+                                    f' does not have field "hash"')
                         continue
 
                     if not self.check_event(receipt):
