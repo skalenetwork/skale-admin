@@ -49,14 +49,28 @@ class Filter:
         #                 )
 
     def check_event(self, receipt):
-        logs = receipt['logs']
+        logs = receipt.get('logs')
+        if not logs:
+            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
+                        f' does not have field "logs"')
+            return False
         if len(logs) == 0:
             return False
-        if len(logs[0]['topics']) < 2:
+        topics = logs[0].get('topics')
+        if not topics:
+            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
+                        f' does not have field "topics"')
             return False
-        if logs[0]['topics'][0].hex() != self.event_hash:
+        if len(topics) < 2:
             return False
-        if logs[0]['topics'][1].hex() != self.group_index_str:
+        if topics[0].hex() != self.event_hash:
+            return False
+        if topics[1].hex() != self.group_index_str:
+            return False
+        data = logs[0].get('data')
+        if not data:
+            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
+                        f' does not have field "data"')
             return False
         return True
 
@@ -73,7 +87,7 @@ class Filter:
         if self.first_unseen_block == -1 or from_channel_started_block:
             start_block = self.dkg_contract.functions.getChannelStartedBlock(
                 self.group_index
-            ).call({'from': self.skale.wallet.address})
+            ).call()
         else:
             start_block = self.first_unseen_block
         current_block = self.skale.web3.eth.getBlock("latest")["number"]
@@ -85,9 +99,16 @@ class Filter:
             txns = block["transactions"]
             for tx in txns:
                 try:
-                    if tx["to"] != self.dkg_contract_address:
+                    if tx.get("to") != self.dkg_contract_address:
                         continue
-                    receipt = self.skale.web3.eth.getTransactionReceipt(tx["hash"])
+
+                    hash = tx.get("hash")
+                    if hash:
+                        receipt = self.skale.web3.eth.getTransactionReceipt(hash)
+                    else:
+                        logger.info(f'sChain {self.group_index_str}: tx {tx}'
+                                    f' does not have field "hash"')
+                        continue
 
                     if not self.check_event(receipt):
                         continue
