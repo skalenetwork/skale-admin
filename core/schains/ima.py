@@ -152,7 +152,7 @@ def get_ima_monitoring_port(schain_name):
 
 
 def get_ima_container_statuses():
-    containers_list = g.docker_utils.get_all_ima_containers()
+    containers_list = g.docker_utils.get_all_ima_containers(format=True)
     ima_containers = [{'name': container['name'], 'state': container['state']['Status']}
                       for container in containers_list]
     return ima_containers
