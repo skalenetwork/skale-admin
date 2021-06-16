@@ -23,10 +23,18 @@ from core.schains.helper import get_schain_dir_path
 from core.schains.config.helper import get_schain_ports, get_schain_config
 from core.ima.schain import get_schain_ima_abi_filepath
 
+import json
+import logging
+import os
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import CONTAINERS_INFO
 from tools.configs.db import REDIS_URI
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_IMA_ABI_FILEPATH
+from tools.configs.schains import SCHAINS_DIR_PATH
+from flask import g
+from websocket import create_connection
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -132,3 +140,74 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
 
 def get_ima_version() -> str:
     return CONTAINERS_INFO['ima']['version']
+
+
+def get_ima_monitoring_port(schain_name):
+    schain_config = get_schain_config(schain_name)
+    if schain_config:
+        node_info = schain_config["skaleConfig"]["nodeInfo"]
+        return int(node_info["imaMonitoringPort"])
+    else:
+        return None
+
+
+def get_ima_container_statuses():
+    containers_list = g.docker_utils.get_all_ima_containers(format=True)
+    ima_containers = [{'name': container['name'], 'state': container['state']['Status']}
+                      for container in containers_list]
+    return ima_containers
+
+
+def request_ima_healthcheck(endpoint):
+    result, ws = None, None
+    try:
+        ws = create_connection(endpoint, timeout=5)
+        ws.send('{ "id": 1, "method": "get_last_transfer_errors"}')
+        result = ws.recv()
+    finally:
+        if ws and ws.connected:
+            ws.close()
+    logger.debug(f'Received {result}')
+    if result:
+        data_json = json.loads(result)
+        data = data_json['last_transfer_errors']
+    else:
+        data = None
+    return data
+
+
+def get_ima_log_checks():
+    ima_containers = get_ima_container_statuses()
+    ima_healthchecks = []
+    for schain_name in os.listdir(SCHAINS_DIR_PATH):
+        error_text = None
+        ima_healthcheck = []
+        container_name = f'skale_ima_{schain_name}'
+
+        cont_data = next((item for item in ima_containers if item["name"] == container_name), None)
+        if cont_data is None:
+            continue
+        elif cont_data['state'] != 'running':
+            error_text = 'IMA docker container is not running'
+        else:
+            try:
+                ima_port = get_ima_monitoring_port(schain_name)
+            except KeyError as err:
+                logger.exception(err)
+                error_text = repr(err)
+            else:
+                if ima_port is None:
+                    continue
+                endpoint = f'ws://localhost:{ima_port}'
+                try:
+                    ima_healthcheck = request_ima_healthcheck(endpoint)
+                except Exception as err:
+                    logger.info(f'Error occurred while checking IMA state on {endpoint}')
+                    logger.exception(err)
+                    error_text = repr(err)
+        if ima_healthcheck is None:
+            ima_healthcheck = []
+            error_text = 'Request failed'
+        ima_healthchecks.append({schain_name: {'error': error_text,
+                                               'last_ima_errors': ima_healthcheck}})
+    return ima_healthchecks

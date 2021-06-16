@@ -28,6 +28,7 @@ from sgx import SgxClient
 
 from web.helper import construct_ok_response, get_api_url, construct_err_response
 from core.schains.checks import SChainChecks
+from core.schains.ima import get_ima_log_checks
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.helper import init_skale
@@ -72,6 +73,16 @@ def construct_health_bp():
             }
             for schain in schains if schain.get('name') != ''
         ]
+        return construct_ok_response(checks)
+
+    @health_bp.route(get_api_url(BLUEPRINT_NAME, 'ima'), methods=['GET'])
+    def ima_log_checks():
+        logger.debug(request)
+        node_id = g.config.id
+        if node_id is None:
+            return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
+                                          msg='No node installed')
+        checks = get_ima_log_checks()
         return construct_ok_response(checks)
 
     @health_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx'), methods=['GET'])
