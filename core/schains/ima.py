@@ -169,11 +169,11 @@ def request_ima_healthcheck(endpoint):
             ws.close()
     logger.debug(f'Received {result}')
     if result:
-        errs_json = json.loads(result)
-        errs = errs_json['last_transfer_errors']
+        data_json = json.loads(result)
+        data = data_json['last_transfer_errors']
     else:
-        errs = 'Request failed'
-    return errs
+        data = None
+    return data
 
 
 def get_ima_log_checks():
@@ -205,5 +205,9 @@ def get_ima_log_checks():
                     logger.info(f'Error occurred while checking IMA state on {endpoint}')
                     logger.exception(err)
                     error_text = repr(err)
+        if ima_healthcheck is None:
+            ima_healthcheck = []
+            error_text = 'Request failed'
         ima_healthchecks.append({schain_name: {'error': error_text,
                                                'last_ima_errors': ima_healthcheck}})
+    return ima_healthchecks
