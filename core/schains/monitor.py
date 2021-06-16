@@ -88,10 +88,18 @@ def run_monitor_for_schain(
                 schain_index = skale.schains.name_to_group_id(schain["name"])
                 num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
                 if skale.dkg.get_number_of_completed(schain_index) == num_of_nodes:
-                    schain_record.dkg_key_generation_error()
+                    rotation = get_rotation_state(skale, schain['name'], node_info['node_id'])
+                    rotation_id = rotation['rotation_id']
+                    secret_key_share_filepath = get_secret_key_share_filepath(
+                        schain["name"], rotation_id
+                    )
+                    if os.path.isfile(secret_key_share_filepath):
+                        schain_record.done()
+                    else:
+                        schain_record.dkg_key_generation_error()
                 else:
                     schain_record.failed()
-                os.kill(os.getpid(), signal.SIGTERM)
+                os.kill(schain_record.monitor_id, signal.SIGTERM)
 
             signal.signal(signal.SIGTERM, signal_handler)
 
