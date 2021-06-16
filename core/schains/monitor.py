@@ -20,10 +20,12 @@
 import logging
 import os
 import time
+import signal
 from enum import Enum
 from importlib import reload
 from datetime import datetime
 
+from skale.schain_config.generator import get_nodes_for_schain
 from web3._utils import request
 
 from core.schains.dkg_status import DKGStatus
@@ -79,8 +81,28 @@ def run_monitor_for_schain(
         reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
         while True:
             logger.info(f'schain: {schain["name"]} - running monitor')
-            schain_record = upsert_schain_record(schain['name'])
+            schain_record = upsert_schain_record(schain["name"])
             schain_record.set_monitor_last_seen(datetime.now())
+
+            def signal_handler(*args):
+                schain_index = skale.schains.name_to_group_id(schain["name"])
+                num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
+                if skale.dkg.get_number_of_completed(schain_index) == num_of_nodes:
+                    rotation = get_rotation_state(skale, schain['name'], node_info['node_id'])
+                    rotation_id = rotation['rotation_id']
+                    secret_key_share_filepath = get_secret_key_share_filepath(
+                        schain["name"], rotation_id
+                    )
+                    if os.path.isfile(secret_key_share_filepath):
+                        schain_record.done()
+                    else:
+                        schain_record.dkg_key_generation_error()
+                else:
+                    schain_record.failed()
+                os.kill(schain_record.monitor_id, signal.SIGTERM)
+
+            signal.signal(signal.SIGTERM, signal_handler)
+
             monitor_schain(
                 skale,
                 skale_ima,
