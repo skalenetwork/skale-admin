@@ -78,12 +78,10 @@ def construct_health_bp():
     @health_bp.route(get_api_url(BLUEPRINT_NAME, 'ima'), methods=['GET'])
     def ima_log_checks():
         logger.debug(request)
-        skale = init_skale(wallet=g.wallet)
         node_id = g.config.id
         if node_id is None:
             return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
                                           msg='No node installed')
-        # schains = skale.schains.get_schains_for_node(node_id)
         checks = get_ima_log_checks()
         return construct_ok_response(checks)
 
