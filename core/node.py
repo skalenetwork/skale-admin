@@ -26,7 +26,11 @@ import platform
 import requests
 
 from enum import Enum
-from sh import lsmod
+
+try:
+    from sh import lsmod
+except ImportError:
+    logging.warning('Could not import lsmod from sh package')
 
 from skale.transactions.result import TransactionFailedError
 from skale.utils.exceptions import InvalidNodeIdError

@@ -6,6 +6,8 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 
+import mock
+
 import pytest
 from flask import Flask, appcontext_pushed, g
 
@@ -106,12 +108,14 @@ def post_bp_files_data(bp, request, file_data, full_response=False, **kwargs):
 
 def test_upload(skale_bp, ssl_folder, db, cert_key_pair_host):
     cert_path, key_path = cert_key_pair_host
-    with files_data(cert_path, key_path, force=False) as data:
-        response = post_bp_files_data(
-            skale_bp,
-            get_api_url(BLUEPRINT_NAME, 'upload'),
-            file_data=data
-        )
+    with mock.patch('web.routes.ssl.set_schains_need_reload'), \
+            mock.patch('core.nginx.restart_nginx_container'):
+        with files_data(cert_path, key_path, force=False) as data:
+            response = post_bp_files_data(
+                skale_bp,
+                get_api_url(BLUEPRINT_NAME, 'upload'),
+                file_data=data
+            )
     assert response == {'status': 'ok', 'payload': {}}
     uploaded_cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
     uploaded_key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
@@ -121,16 +125,18 @@ def test_upload(skale_bp, ssl_folder, db, cert_key_pair_host):
 
 def test_upload_bad_cert(skale_bp, db, ssl_folder, bad_cert_host):
     cert_path, key_path = bad_cert_host
-    with files_data(cert_path, key_path, force=False) as data:
-        response = post_bp_files_data(
-            skale_bp,
-            get_api_url(BLUEPRINT_NAME, 'upload'),
-            file_data=data
-        )
-        assert response == {
-            'status': 'error',
-            'payload': 'Certificates have invalid format'
-        }
+    with mock.patch('web.routes.ssl.set_schains_need_reload'), \
+            mock.patch('core.nginx.restart_nginx_container'):
+        with files_data(cert_path, key_path, force=False) as data:
+            response = post_bp_files_data(
+                skale_bp,
+                get_api_url(BLUEPRINT_NAME, 'upload'),
+                file_data=data
+            )
+            assert response == {
+                'status': 'error',
+                'payload': 'Certificates have invalid format'
+            }
 
 
 def test_upload_cert_exist(skale_bp, db, cert_key_pair_host, cert_key_pair):
