@@ -184,8 +184,9 @@ def cleanup_ima_container(dutils, schain_config):
                    force=True)
 
 
-def test_monitor_sync_schain_container(skale, schain_config, dutils,
-                                       cleanup_schain_container):
+def test_monitor_sync_schain_container(
+    skale, schain_config, dutils, cleanup_schain_container, cert_key_pair
+):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
     start_ts = 0
@@ -219,7 +220,7 @@ def test_monitor_ima_container(skale, schain_config, dutils,
 
 
 def test_monitor_schain_container(skale, schain_config, dutils,
-                                  cleanup_schain_container):
+                                  cleanup_schain_container, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
 

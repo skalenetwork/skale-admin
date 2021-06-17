@@ -17,17 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import time
 import logging
 from decimal import Decimal
 from http import HTTPStatus
 
+import requests
 from flask import Blueprint, abort, g, request
 from web3 import Web3
 
 from core.node import Node
 from tools.helper import init_skale, get_endpoint_call_speed
 
-from core.node import get_meta_info, get_node_hardware_info
+from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info, check_validator_nodes
 from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
@@ -35,6 +37,10 @@ from web.helper import construct_err_response, construct_ok_response, get_api_ur
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'node'
+
+
+IPIFY_URL = 'https://api.ipify.org?format=json'
+GET_IP_ATTEMPTS = 5
 
 
 def construct_node_bp():
@@ -193,5 +199,33 @@ def construct_node_bp():
         logger.debug(request)
         version_data = get_meta_info()
         return construct_ok_response(version_data)
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'btrfs-info'), methods=['GET'])
+    def btrfs_info():
+        logger.debug(request)
+        btrfs_data = get_btrfs_info()
+        return construct_ok_response(btrfs_data)
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'public-ip'), methods=['GET'])
+    def public_ip():
+        logger.debug(request)
+        for _ in range(GET_IP_ATTEMPTS):
+            try:
+                response = requests.get(IPIFY_URL)
+                ip = response.json()['ip']
+                return construct_ok_response({'public_ip': ip})
+            except Exception:
+                logger.exception('Ip request failed')
+                time.sleep(1)
+        return construct_err_response(msg='Public ip request failed')
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'validator-nodes'), methods=['GET'])
+    def _validator_nodes():
+        logger.debug(request)
+        skale = init_skale(g.wallet)
+        res = check_validator_nodes(skale, g.config.id)
+        if res['status'] != 0:
+            return construct_err_response(msg=res['errors'])
+        return construct_ok_response(data=res['data'])
 
     return node_bp

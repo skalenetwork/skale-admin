@@ -29,7 +29,8 @@ dutils = DockerUtils()
 logger = logging.getLogger(__name__)
 
 
-def run_filebeat_service(node_ip, node_id, skale):
+def update_filebeat_service(node_ip, node_id, skale):
+    logger.info('Going to update filebeat service...')
     contract_address = skale.manager.address
     template_data = {
         'ip': node_ip,
@@ -42,3 +43,9 @@ def run_filebeat_service(node_ip, node_id, skale):
     process_template(FILEBEAT_TEMPLATE_PATH, FILEBEAT_CONFIG_PATH, template_data)
     filebeat_container = dutils.client.containers.get(FILEBEAT_CONTAINER_NAME)
     filebeat_container.restart()
+    logger.info('Filebeat service file updated, service restarted')
+
+
+def filebeat_config_processed() -> bool:
+    with open(FILEBEAT_CONFIG_PATH) as f:
+        return 'id: ' in f.read()
