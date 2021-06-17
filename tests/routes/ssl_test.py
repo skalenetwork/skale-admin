@@ -141,24 +141,26 @@ def test_upload_bad_cert(skale_bp, db, ssl_folder, bad_cert_host):
 
 def test_upload_cert_exist(skale_bp, db, cert_key_pair_host, cert_key_pair):
     cert_path, key_path = cert_key_pair_host
-    with files_data(cert_path, key_path, force=False) as data:
-        response = post_bp_files_data(
-            skale_bp,
-            get_api_url(BLUEPRINT_NAME, 'upload'),
-            file_data=data
-        )
-        assert response == {
-            'status': 'error',
-            'payload': 'SSL Certificates are already uploaded'
-        }
+    with mock.patch('web.routes.ssl.set_schains_need_reload'), \
+            mock.patch('core.nginx.restart_nginx_container'):
+        with files_data(cert_path, key_path, force=False) as data:
+            response = post_bp_files_data(
+                skale_bp,
+                get_api_url(BLUEPRINT_NAME, 'upload'),
+                file_data=data
+            )
+            assert response == {
+                'status': 'error',
+                'payload': 'SSL Certificates are already uploaded'
+            }
 
-    with files_data(cert_path, key_path, force=True) as data:
-        response = post_bp_files_data(
-            skale_bp,
-            get_api_url(BLUEPRINT_NAME, 'upload'),
-            file_data=data
-        )
-        assert response == {
-            'status': 'ok',
-            'payload': {}
-        }
+        with files_data(cert_path, key_path, force=True) as data:
+            response = post_bp_files_data(
+                skale_bp,
+                get_api_url(BLUEPRINT_NAME, 'upload'),
+                file_data=data
+            )
+            assert response == {
+                'status': 'ok',
+                'payload': {}
+            }
