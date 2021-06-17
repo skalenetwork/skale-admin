@@ -118,7 +118,7 @@ def test_remove_schain_volume(dutils, schain_config):
 
 
 @pytest.fixture
-def schain_container(schain_config, dutils):
+def schain_container(schain_config, ssl_folder, dutils):
     """ Creates and removes schain container """
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
