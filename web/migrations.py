@@ -76,7 +76,7 @@ def add_needs_reload_field(db, migrator):
 def add_monitor_last_seen_field(db, migrator):
     add_column(
         db, migrator, 'SChainRecord', 'monitor_last_seen',
-        DateTimeField()
+        DateTimeField(null=True)
     )
 
 
