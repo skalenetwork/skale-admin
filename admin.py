@@ -28,6 +28,7 @@ from core.node_config import NodeConfig
 from core.schains.creator import run_creator
 from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
+from core.filebeat import update_filebeat_service, filebeat_config_processed
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
@@ -66,6 +67,8 @@ def worker():
     skale = Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
+    if not filebeat_config_processed():
+        update_filebeat_service(node_config.ip, node_config.id, skale)
     monitor(skale, node_config)
 
 

@@ -1,3 +1,6 @@
+import socket
+
+import mock
 import pytest
 from mock import patch
 
@@ -199,3 +202,15 @@ def test_set_domain_name(skale_bp, skale):
     json_data = {'domain_name': 'skale.test'}
     data = post_bp_data(skale_bp, '/api/node/set-domain-name', json_data)
     assert data == {'payload': {}, 'status': 'ok'}
+
+
+def test_public_ip_info(skale_bp):
+    data = get_bp_data(skale_bp, '/api/v1/node/public-ip')
+    assert data['status'] == 'ok'
+    ip = data['payload']['public_ip']
+    socket.inet_aton(ip)
+    with mock.patch('web.routes.nodes.requests.get',
+                    side_effect=ValueError()):
+        data = get_bp_data(skale_bp, '/api/v1/node/public-ip')
+        assert data['status'] == 'error'
+        assert data['payload'] == 'Public ip request failed'

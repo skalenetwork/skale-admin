@@ -1,6 +1,6 @@
 FROM python:3.8-buster
 
-RUN apt-get update && apt-get install -y wget git libxslt-dev iptables
+RUN apt-get update && apt-get install -y wget git libxslt-dev iptables kmod
 
 RUN mkdir /usr/src/admin
 WORKDIR /usr/src/admin
