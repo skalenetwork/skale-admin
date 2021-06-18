@@ -37,7 +37,11 @@ def terminate_stuck_schain_process(skale, schain_record, schain):
     DKG timeout * TIMEOUT_COEFFICIENT
     """
     allowed_last_seen_time = _calc_allowed_last_seen_time(skale)
-    schain_monitor_last_seen = schain_record.monitor_last_seen.timestamp()
+    if schain_record.monitor_last_seen:
+        schain_monitor_last_seen = schain_record.monitor_last_seen.timestamp()
+    else:
+        logging.warning(f'schain: {schain["name"]}, monitor_last_seen is None, skipping...')
+        return
     if allowed_last_seen_time > schain_monitor_last_seen:
         logger.warning(f'schain: {schain["name"]}, pid {schain_record.monitor_id} last seen is \
 {schain_monitor_last_seen}, while max allowed last_seen is {allowed_last_seen_time}, pid \
