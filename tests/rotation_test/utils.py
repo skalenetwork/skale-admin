@@ -141,7 +141,7 @@ def wait_for_contract_exiting(skale, node_id):
     sum_time = 0
     while skale.nodes.get_node_status(node_id) != 2 and sum_time < TIMEOUT:
         sum_time += 10
-        sleep(10)
+        sleep(2)
     assert sum_time < TIMEOUT
 
 

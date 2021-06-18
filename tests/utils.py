@@ -15,6 +15,7 @@ from skale.wallets import Web3Wallet
 
 from core.schains.runner import run_schain_container, run_ima_container
 from tools.docker_utils import DockerUtils
+from tools.helper import run_cmd
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -47,6 +48,20 @@ def generate_random_node_data():
         generate_random_name()
 
 
+def generate_cert(cert_path, key_path):
+    return run_cmd([
+        'openssl', 'req',
+        '-newkey', 'rsa:4096',
+        '-x509',
+        '-sha256',
+        '-days', '365',
+        '-nodes',
+        '-subj', '/',
+        '-out', cert_path,
+        '-keyout', key_path
+    ])
+
+
 def generate_random_schain_data():
     lifetime_seconds = 3600  # 1 hour
     type_of_nodes = 1
@@ -64,8 +79,7 @@ def get_bp_data(bp, request, params=None, full_data=False, **kwargs):
 def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
     data = bp.post(request, json=params).data
     if full_response:
-        return json.loads(data.decode('utf-8'))
-
+        return data
     return json.loads(data.decode('utf-8'))
 
 

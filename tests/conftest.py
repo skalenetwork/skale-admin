@@ -1,21 +1,22 @@
-import os
 import json
+import os
+import pathlib
 import random
 import string
 import subprocess
-from pathlib import Path
 
 import pytest
-
 from skale.utils.contracts_provision.main import (create_nodes, create_schain,
                                                   cleanup_nodes_schains)
 
 from core.schains.cleaner import remove_schain_container
 from core.schains.cleaner import remove_schain_volume
 
-from tests.utils import init_skale_ima, init_web3_skale
+from tests.utils import init_skale_ima, init_web3_skale, generate_cert
+from tools.configs import SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
+
 
 from web.models.schain import create_tables, SChainRecord, upsert_schain_record
 
@@ -28,6 +29,23 @@ def skale():
 @pytest.fixture
 def skale_ima():
     return init_skale_ima()
+
+
+@pytest.fixture
+def ssl_folder():
+    pathlib.Path(SSL_CERTIFICATES_FILEPATH).mkdir(parents=True)
+    yield SSL_CERTIFICATES_FILEPATH
+    pathlib.Path(SSL_CERTIFICATES_FILEPATH).rmdir()
+
+
+@pytest.fixture
+def cert_key_pair(ssl_folder):
+    cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+    generate_cert(cert_path, key_path)
+    yield cert_path, key_path
+    pathlib.Path(cert_path).unlink(missing_ok=True)
+    pathlib.Path(key_path).unlink(missing_ok=True)
 
 
 def get_random_string(length=8):
@@ -169,7 +187,7 @@ def _schain_name():
 @pytest.fixture
 def schain_config(_schain_name):
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
-    Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+    pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
     config_path = os.path.join(schain_dir_path,
                                f'schain_{_schain_name}.json')
     secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')

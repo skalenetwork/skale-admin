@@ -1,3 +1,4 @@
+import socket
 import datetime
 
 import pytest
@@ -217,3 +218,22 @@ def test_meta_info(skale_bp):
     ):
         data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'meta-info'))
         assert data == {'status': 'ok', 'payload': meta_info}
+
+
+def test_public_ip_info(skale_bp):
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'public-ip'))
+    assert data['status'] == 'ok'
+    ip = data['payload']['public_ip']
+    socket.inet_aton(ip)
+    with mock.patch('web.routes.node.requests.get',
+                    side_effect=ValueError()):
+        data = get_bp_data(skale_bp, '/api/v1/node/public-ip')
+        assert data['status'] == 'error'
+        assert data['payload'] == 'Public ip request failed'
+
+
+def test_btrfs_info(skale_bp, skale):
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'btrfs-info'))
+    assert data['status'] == 'ok'
+    payload = data['payload']
+    assert payload['kernel_module'] is False

@@ -17,22 +17,29 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import time
+import socket
+import psutil
 import logging
 import platform
-import psutil
+
 import requests
-import time
+
 from enum import Enum
+
+try:
+    from sh import lsmod
+except ImportError:
+    logging.warning('Could not import lsmod from sh package')
 
 from skale.transactions.result import TransactionFailedError
 from skale.utils.exceptions import InvalidNodeIdError
 from skale.utils.helper import ip_from_bytes
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
-from core.filebeat import run_filebeat_service
+from core.filebeat import update_filebeat_service
 
-from tools.configs import META_FILEPATH
-from tools.configs.filebeat import MONITORING_CONTAINERS
+from tools.configs import META_FILEPATH, WATCHDOG_PORT
 from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 from tools.helper import read_json
@@ -121,8 +128,7 @@ class Node:
         self.config.name = name
         self.config.ip = ip
 
-        if MONITORING_CONTAINERS:
-            run_filebeat_service(public_ip, self.config.id, self.skale)
+        update_filebeat_service(public_ip, self.config.id, self.skale)
         return self._ok(data=self.config.all())
 
     def create_node_on_contracts(self, ip, public_ip, port, name, domain_name,
@@ -323,3 +329,49 @@ def get_meta_info() -> dict:
 
 def get_skale_node_version():
     return get_meta_info()['config_stream']
+
+
+def is_btrfs_loaded():
+    modules = list(
+        filter(lambda s: s.startswith('btrfs'), lsmod().split('\n'))
+    )
+    return modules != []
+
+
+def get_btrfs_info() -> dict:
+    return {
+        'kernel_module': is_btrfs_loaded()
+    }
+
+
+def is_port_open(ip, port):
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(1)
+    try:
+        s.connect((ip, int(port)))
+        s.shutdown(1)
+        return True
+    except Exception:
+        return False
+
+
+def check_validator_nodes(skale, node_id):
+    try:
+        node = skale.nodes.get(node_id)
+        node_ids = skale.nodes.get_validator_node_indices(node['validator_id'])
+
+        try:
+            node_ids.remove(node_id)
+        except ValueError:
+            logger.warning(f'node_id: {node_id} was not found in validator nodes: {node_ids}')
+
+        res = []
+        for node_id in node_ids:
+            if str(skale.nodes.get_node_status(node_id)) == str(NodeStatus.ACTIVE.value):
+                ip_bytes = skale.nodes.contract.functions.getNodeIP(node_id).call()
+                ip = ip_from_bytes(ip_bytes)
+                res.append([node_id, ip, is_port_open(ip, WATCHDOG_PORT)])
+        logger.info(f'validator_nodes check - node_id: {node_id}, res: {res}')
+    except Exception as err:
+        return {'status': 1, 'errors': [err]}
+    return {'status': 0, 'data': res}

@@ -75,4 +75,7 @@ ALLOWED_TIMESTAMP_DIFF = int(os.getenv('ALLOWED_TIMESTAMP_DIFF', 120))
 
 ENV_TYPE = os.environ.get('ENV_TYPE')
 ALLOCATION_FILEPATH = os.path.join(CONFIG_FOLDER, 'schain_allocation.yml')
+
 DEFAULT_POOL = 'transactions'
+
+WATCHDOG_PORT = 3009
