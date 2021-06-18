@@ -265,7 +265,8 @@ def get_schain_container_base_opts(schain_name: str,
         f'--wss-port {ports["wss"]}',
         f'--sgx-url {SGX_SERVER_URL}',
         f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data',
-        f'--main-net-url {IMA_ENDPOINT}'
+        f'--main-net-url {IMA_ENDPOINT}',
+        '--skip-dry-run'
     ]
 
     if static_schain_cmd:
