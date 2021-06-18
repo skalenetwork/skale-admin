@@ -7,8 +7,8 @@ from playhouse.migrate import SqliteMigrator
 from tests.utils import generate_random_name
 from tools.configs.db import DB_PRAGMAS
 from web.migrations import (
-    add_new_schain_field, add_repair_mode_field, add_needs_reload_field, add_monitor_last_seen_field,
-    add_monitor_id_field, add_config_version_field
+    add_new_schain_field, add_repair_mode_field, add_needs_reload_field,
+    add_monitor_last_seen_field, add_monitor_id_field, add_config_version_field
 )
 
 
