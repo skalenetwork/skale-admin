@@ -94,11 +94,13 @@ def run_monitor_for_schain(
                         schain["name"], rotation_id
                     )
                     if os.path.isfile(secret_key_share_filepath):
-                        schain_record.done()
+                        schain_record.dkg_done()
                     else:
                         schain_record.dkg_key_generation_error()
                 else:
-                    schain_record.failed()
+                    schain_record.dkg_failed()
+                logger.info(
+                    f'DKG status for {schain["name"]} was changed to {schain_record.dkg_status}')
                 os.kill(schain_record.monitor_id, signal.SIGTERM)
 
             signal.signal(signal.SIGTERM, signal_handler)
