@@ -21,7 +21,7 @@ from dataclasses import dataclass
 
 from core.schains.helper import get_schain_dir_path
 from core.schains.config.helper import get_schain_ports, get_schain_config
-from core.ima.schain import get_schain_ima_abi_filepath, get_schain_ima_state_filepath
+from core.ima.schain import get_schain_ima_abi_filepath
 
 import json
 import logging
@@ -29,7 +29,7 @@ import os
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import CONTAINERS_INFO
 from tools.configs.db import REDIS_URI
-from tools.configs.ima import IMA_ENDPOINT, MAINNET_IMA_ABI_FILEPATH
+from tools.configs.ima import IMA_ENDPOINT, MAINNET_IMA_ABI_FILEPATH, IMA_STATE_CONTAINER_PATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from flask import g
 from websocket import create_connection
@@ -125,7 +125,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         schain_dir=get_schain_dir_path(schain_name),
         mainnet_proxy_path=MAINNET_IMA_ABI_FILEPATH,
         schain_proxy_path=get_schain_ima_abi_filepath(schain_name),
-        state_file=get_schain_ima_state_filepath(schain_name),
+        state_file=IMA_STATE_CONTAINER_PATH,
         schain_name=schain_name,
         schain_rpc_url=get_localhost_http_endpoint(schain_name),
         mainnet_rpc_url=IMA_ENDPOINT,
