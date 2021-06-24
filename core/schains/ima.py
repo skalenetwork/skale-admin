@@ -21,7 +21,7 @@ from dataclasses import dataclass
 
 from core.schains.helper import get_schain_dir_path
 from core.schains.config.helper import get_schain_ports, get_schain_config
-from core.ima.schain import get_schain_ima_abi_filepath
+from core.ima.schain import get_schain_ima_abi_filepath, get_schain_ima_state_filepath
 
 import json
 import logging
@@ -43,6 +43,8 @@ class ImaEnv:
 
     mainnet_proxy_path: str
     schain_proxy_path: str
+
+    state_file: str
 
     schain_name: str
     schain_rpc_url: str
@@ -68,6 +70,7 @@ class ImaEnv:
             'SCHAIN_DIR': self.schain_dir,
             'MAINNET_PROXY_PATH': self.mainnet_proxy_path,
             'SCHAIN_PROXY_PATH': self.schain_proxy_path,
+            'STATE_FILE': self.state_file,
             'SCHAIN_NAME': self.schain_name,
             'SCHAIN_RPC_URL': self.schain_rpc_url,
             'MAINNET_RPC_URL': self.mainnet_rpc_url,
@@ -122,6 +125,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         schain_dir=get_schain_dir_path(schain_name),
         mainnet_proxy_path=MAINNET_IMA_ABI_FILEPATH,
         schain_proxy_path=get_schain_ima_abi_filepath(schain_name),
+        state_file=get_schain_ima_state_filepath(schain_name),
         schain_name=schain_name,
         schain_rpc_url=get_localhost_http_endpoint(schain_name),
         mainnet_rpc_url=IMA_ENDPOINT,

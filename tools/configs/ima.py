@@ -28,6 +28,8 @@ DISABLE_IMA = os.getenv('DISABLE_IMA') == 'True'
 SCHAIN_IMA_ABI_FILENAME = 'schain_ima_abi.json'
 SCHAIN_IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, SCHAIN_IMA_ABI_FILENAME)
 
+IMA_STATE_PATH = 'ima_state.json'
+
 SCHAIN_IMA_CONTRACTS = {
     'token_manager_eth': {
         'filename': 'TokenManagerEth'
