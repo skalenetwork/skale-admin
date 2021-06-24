@@ -26,7 +26,8 @@ from ima_predeployed.generator import generate_abi, generate_contracts
 from core.schains.helper import get_schain_dir_path
 from tools.helper import read_json
 from tools.configs.ima import (
-    SCHAIN_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILENAME, MAINNET_IMA_ABI_FILEPATH
+    SCHAIN_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILENAME, MAINNET_IMA_ABI_FILEPATH,
+    IMA_STATE_PATH
 )
 
 
@@ -53,6 +54,10 @@ def copy_schain_ima_abi(name):
 def get_schain_ima_abi_filepath(schain_name):
     schain_dir_path = get_schain_dir_path(schain_name)
     return os.path.join(schain_dir_path, SCHAIN_IMA_ABI_FILENAME)
+
+
+def get_schain_ima_state_filepath(schain_name):
+    return os.path.join(get_schain_dir_path(schain_name), IMA_STATE_PATH)
 
 
 def generate_ima_accounts(schain_owner, schain_name):
