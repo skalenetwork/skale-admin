@@ -24,7 +24,7 @@ class SchainType(Enum):
     test = 0
     test4 = 32
     large = 128
-    medium = 4
+    medium = 16
     small = 1
 
 
