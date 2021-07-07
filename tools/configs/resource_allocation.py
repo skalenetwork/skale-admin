@@ -20,10 +20,6 @@
 import os
 from tools.configs import NODE_DATA_PATH
 
-MEDIUM_DIVIDER = 1
-SMALL_DIVIDER = 8
-TINY_DIVIDER = 128
-
 TIMES = 1
 TIMEOUT = 1
 MEMORY_FACTOR = 0.9
