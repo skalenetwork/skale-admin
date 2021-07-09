@@ -17,18 +17,26 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
+import shutil
 import logging
 from dataclasses import dataclass
 
 from skale import Skale
 from skale.schain_config.generator import get_schain_nodes_with_schains
 
+from core.node import get_skale_node_version
 from core.schains.config.skale_config import SkaleConfig, generate_skale_config
 from core.schains.config.accounts import generate_dynamic_accounts
 from core.schains.config.helper import get_chain_id
+from core.schains.helper import get_tmp_schain_config_filepath
 
+from core.schains.helper import get_schain_config_filepath
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
+from tools.str_formatters import arguments_list_string
+
+from web.models.schain import upsert_schain_record
 
 
 logger = logging.getLogger(__name__)
@@ -148,3 +156,46 @@ def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: i
         schain_nodes_with_schains=schain_nodes_with_schains,
         previous_public_keys=previous_public_keys
     )
+
+
+def init_schain_config(skale, node_id, schain_name, ecdsa_sgx_key_name, rotation_id):
+    config_filepath = get_schain_config_filepath(schain_name)
+
+    logger.warning(arguments_list_string({
+        'sChain name': schain_name,
+        'config_filepath': config_filepath
+        }, 'Generating sChain config'))
+
+    schain_config = generate_schain_config_with_skale(
+        skale=skale,
+        schain_name=schain_name,
+        node_id=node_id,
+        rotation_id=rotation_id,
+        ecdsa_key_name=ecdsa_sgx_key_name
+    )
+    save_schain_config(schain_config.to_dict(), schain_name)
+    update_schain_config_version(schain_name)
+
+
+def save_schain_config(schain_config, schain_name):
+    tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
+    with open(tmp_config_filepath, 'w') as outfile:
+        json.dump(schain_config, outfile, indent=4)
+    config_filepath = get_schain_config_filepath(schain_name)
+    shutil.move(tmp_config_filepath, config_filepath)
+
+
+def update_schain_config_version(schain_name):
+    new_config_version = get_skale_node_version()
+    schain_record = upsert_schain_record(schain_name)
+    logger.info(f'Going to change config_version for {schain_name}: \
+{schain_record.config_version} -> {new_config_version}')
+    schain_record.set_config_version(new_config_version)
+
+
+def schain_config_version_match(schain_name):
+    schain_record = upsert_schain_record(schain_name)
+    skale_node_version = get_skale_node_version()
+    logger.debug(f'config check, schain: {schain_name}, config_version: \
+{schain_record.config_version}, skale_node_version: {skale_node_version}')
+    return schain_record.config_version == skale_node_version

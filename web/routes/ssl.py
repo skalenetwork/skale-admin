@@ -26,9 +26,10 @@ from OpenSSL import crypto
 
 from flask import Blueprint, request
 
+from core.nginx import reload_nginx
 from core.schains.ssl import is_ssl_folder_empty
 from web.models.schain import set_schains_need_reload
-from web.helper import construct_ok_response, construct_err_response
+from web.helper import construct_ok_response, construct_err_response, get_api_url
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,8 @@ CERTS_HAS_INVALID_FORMAT = 'Certificates have invalid format'
 
 SSL_KEY_NAME = 'ssl_key'
 SSL_CRT_NAME = 'ssl_cert'
+
+BLUEPRINT_NAME = 'ssl'
 
 
 def cert_from_file(cert_filepath):
@@ -76,10 +79,10 @@ def get_cert_info(cert):
     }
 
 
-def construct_security_bp():
-    security_bp = Blueprint('security', __name__)
+def construct_ssl_bp():
+    ssl_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
-    @security_bp.route('/api/ssl/status', methods=['GET'])
+    @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'status'), methods=['GET'])
     def status():
         logger.debug(request)
         if is_ssl_folder_empty():
@@ -96,7 +99,7 @@ def construct_security_bp():
                 'expiration_date': info['expiration_date']
             })
 
-    @security_bp.route('/api/ssl/upload', methods=['POST'])
+    @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'upload'), methods=['POST'])
     def upload():
         request_json = json.loads(request.form['json'])
         force = request_json.get('force') is True
@@ -115,6 +118,7 @@ def construct_security_bp():
 
         save_cert_key_pair(cert, key)
         set_schains_need_reload()
+        reload_nginx()
         return construct_ok_response()
 
-    return security_bp
+    return ssl_bp

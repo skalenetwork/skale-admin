@@ -20,7 +20,9 @@
 import logging
 
 from playhouse.migrate import SqliteMigrator, migrate as playhouse_migrate
-from peewee import BooleanField
+from peewee import DateTimeField, IntegerField, BooleanField, CharField
+
+from web.models.schain import DEFAULT_CONFIG_VERSION
 from tools.db import get_database
 
 
@@ -39,9 +41,15 @@ def migrate():
 
 def run_migrations(db, migrator):
     logging.info('Running migrations ...')
+    # 1.0 -> 1.2 update fields
     add_new_schain_field(db, migrator)
     add_repair_mode_field(db, migrator)
     add_needs_reload_field(db, migrator)
+
+    # 1.2 -> 2.0 update fields
+    add_monitor_last_seen_field(db, migrator)
+    add_monitor_id_field(db, migrator)
+    add_config_version_field(db, migrator)
 
 
 def add_new_schain_field(db, migrator):
@@ -62,6 +70,27 @@ def add_needs_reload_field(db, migrator):
     add_column(
         db, migrator, 'SChainRecord', 'needs_reload',
         BooleanField(default=False)
+    )
+
+
+def add_monitor_last_seen_field(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'monitor_last_seen',
+        DateTimeField(null=True)
+    )
+
+
+def add_monitor_id_field(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'monitor_id',
+        IntegerField(default=0)
+    )
+
+
+def add_config_version_field(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'config_version',
+        CharField(default=DEFAULT_CONFIG_VERSION)
     )
 
 

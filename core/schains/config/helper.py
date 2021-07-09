@@ -20,7 +20,6 @@
 import json
 import logging
 import os
-import shutil
 from itertools import chain
 
 from web3 import Web3
@@ -29,11 +28,17 @@ from Crypto.Hash import keccak
 from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
-from core.schains.helper import get_schain_config_filepath, get_tmp_schain_config_filepath
-from tools.configs.containers import DATA_DIR_CONTAINER_PATH
+from core.schains.helper import get_schain_config_filepath
+from tools.configs.containers import (
+    DATA_DIR_CONTAINER_PATH,
+    SHARED_SPACE_CONTAINER_PATH
+)
+from tools.configs.ima import IMA_ENDPOINT
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.helper import read_json
+
+from tools.configs import SGX_SERVER_URL
 from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
 from tools.configs.containers import LOCAL_IP
 from tools.iptables import NodeEndpoint
@@ -48,6 +53,10 @@ def get_static_schain_params():
 
 def get_context_contract():
     return get_static_schain_params()['context_contract']
+
+
+def get_deploy_controller_contract():
+    return get_static_schain_params()['deploy_controller']
 
 
 def fix_address(address):
@@ -86,22 +95,6 @@ def _string_to_storage(slot: int, string: str) -> dict:
                 data += int(0).to_bytes(32 - len(data), 'big')
             storage[hex(offset + index)] = '0x' + data.hex()
     return storage
-
-
-def save_schain_config(schain_config, schain_name):
-    schain_config_filepath = get_schain_config_filepath(schain_name)
-    with open(schain_config_filepath, 'w') as outfile:
-        json.dump(schain_config, outfile, indent=4)
-
-    return schain_config_filepath
-
-
-def update_schain_config(schain_config, schain_name):
-    tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
-    with open(tmp_config_filepath, 'w') as outfile:
-        json.dump(schain_config, outfile, indent=4)
-    config_filepath = get_schain_config_filepath(schain_name)
-    shutil.move(tmp_config_filepath, config_filepath)
 
 
 def get_schain_ports(schain_name):
@@ -155,8 +148,8 @@ def get_skaled_http_snapshot_address_from_config(config):
             break
 
     return NodeEndpoint(
-        from_node['ip'], from_node['basePort'] +
-        SkaledPorts.HTTP_JSON.value
+        from_node['ip'],
+        from_node['basePort'] + SkaledPorts.HTTP_JSON.value
     )
 
 
@@ -269,7 +262,10 @@ def get_schain_container_base_opts(schain_name: str,
         f'--http-port {ports["http"]}',
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
-        f'--wss-port {ports["wss"]}'
+        f'--wss-port {ports["wss"]}',
+        f'--sgx-url {SGX_SERVER_URL}',
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data',
+        f'--main-net-url {IMA_ENDPOINT}'
     ]
 
     if static_schain_cmd:
@@ -323,3 +319,26 @@ def compose_public_key_info(bls_public_key):
         'blsPublicKey2': str(bls_public_key[1][0]),
         'blsPublicKey3': str(bls_public_key[1][1])
     }
+
+
+def calculate_deployment_owner_slot(owner):
+    # Calculate owner slot by formula:
+    #
+    #    owner_slot = keccak256(OWNER ^ keccak256(ROLES_SLOT ^ MEMBERS_SLOT))
+    #
+    # where OWNER, ROLES_SLOT, MEMBERS_SLOT - bytes32; ^ - concatenation
+
+    if owner[:2] == '0x':
+        owner = owner[2:]
+    leading_zeros_owner = ''.join(['00' for _ in range(12)]) + owner
+    zero_hex = '0000000000000000000000000000000000000000000000000000000000000000'
+    roles_slot = bytes.fromhex(zero_hex)
+    internal_members_slot = bytes.fromhex(zero_hex)
+
+    keccak_members_slot = keccak.new(digest_bits=256)
+    keccak_members_slot.update(roles_slot + internal_members_slot)
+    members_slot = keccak_members_slot.hexdigest()
+    keccak_owner_slot = keccak.new(digest_bits=256)
+    keccak_owner_slot.update(bytes.fromhex(leading_zeros_owner) + bytes.fromhex(members_slot))
+    owner_slot = keccak_owner_slot.hexdigest()
+    return '0x' + owner_slot

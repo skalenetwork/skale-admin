@@ -22,6 +22,7 @@ import logging
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
+from core.schains.config.generator import schain_config_version_match
 from core.schains.config.helper import get_allowed_endpoints, get_local_schain_http_endpoint
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
@@ -60,7 +61,9 @@ class SChainChecks:
     def config(self) -> bool:
         """Checks that sChain config file exists"""
         config_filepath = get_schain_config_filepath(self.name)
-        return os.path.isfile(config_filepath)
+        if not os.path.isfile(config_filepath):
+            return False
+        return schain_config_version_match(self.name)
 
     @property
     def volume(self) -> bool:

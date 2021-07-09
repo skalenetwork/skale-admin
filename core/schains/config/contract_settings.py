@@ -23,8 +23,12 @@ from dataclasses import dataclass
 from skale.wallets.web3_wallet import public_key_to_address
 
 from core.schains.config.helper import fix_address
-from core.schains.helper import read_ima_data
-from tools.configs.ima import PRECOMPILED_IMA_CONTRACTS
+from tools.helper import read_json
+
+from tools.configs.ima import (
+    MAINNET_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILEPATH, MAINNET_IMA_CONTRACTS, SCHAIN_IMA_CONTRACTS
+)
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,44 +48,43 @@ class ContractSettings:
 
 
 def generate_contract_settings(schain_owner: str, schain_nodes: list) -> ContractSettings:
-    ima_data = read_ima_data()
-    permitted_contracts = generate_permitted_ima_contracts_info(ima_data)
-    mp_authorized_callers = generate_mp_authorized_callers(ima_data, schain_owner,
-                                                           schain_nodes)
-    ima_contracts_addresses = generate_ima_contracts_addresses(ima_data)
+    schain_ima_abi = read_json(SCHAIN_IMA_ABI_FILEPATH)
+    mainnet_ima_abi = read_json(MAINNET_IMA_ABI_FILEPATH)
+
+    # mp_authorized_callers = generate_mp_authorized_callers(  # todo: 2.1 - remove it
+    #     schain_ima_abi, schain_owner, schain_nodes)
+    ima_contracts_addresses = generate_ima_contracts_addresses(schain_ima_abi, mainnet_ima_abi)
+
     return ContractSettings(
         common={'enableContractLogMessages': True},
         ima={
             'ownerAddress': schain_owner,
-            'variables': {
-                'LockAndData': {
-                    'permitted': permitted_contracts
-                },
-                'MessageProxy': {
-                    'mapAuthorizedCallers': mp_authorized_callers
-                }
-            },
+            # 'variables': {
+            #     'MessageProxy': {
+            #         'mapAuthorizedCallers': mp_authorized_callers
+            #     }
+            # },
             **ima_contracts_addresses
         }
     )
 
 
-def get_contract_address_from_ima_data(ima_data, name):
-    return ima_data[f'{name}_address']
+def get_address_from_abi_data(abi_data, name):
+    return abi_data[f'{name}_address']
 
 
-def generate_permitted_ima_contracts_info(ima_data):
+def generate_permitted_ima_contracts_info(schain_ima_abi):
     permitted_contracts = {}
-    for name in PRECOMPILED_IMA_CONTRACTS:
-        contract_filename = PRECOMPILED_IMA_CONTRACTS[name]['filename']
-        permitted_contracts[contract_filename] = get_contract_address_from_ima_data(ima_data, name)
+    for name in SCHAIN_IMA_CONTRACTS:
+        contract_filename = SCHAIN_IMA_CONTRACTS[name]['filename']
+        permitted_contracts[contract_filename] = get_address_from_abi_data(schain_ima_abi, name)
     return permitted_contracts
 
 
-def generate_mp_authorized_callers(ima_data, schain_owner, schain_nodes):
+def generate_mp_authorized_callers(schain_ima_abi, schain_owner, schain_nodes):
     mp_authorized_callers = {}
-    for name in PRECOMPILED_IMA_CONTRACTS:
-        address = get_contract_address_from_ima_data(ima_data, name)
+    for name in SCHAIN_IMA_CONTRACTS:
+        address = get_address_from_abi_data(schain_ima_abi, name)
         mp_authorized_callers[address] = 1
     for node in schain_nodes:
         node_owner = public_key_to_address(node['publicKey'])
@@ -94,10 +97,11 @@ def generate_mp_authorized_callers(ima_data, schain_owner, schain_nodes):
     return mp_authorized_callers
 
 
-def generate_ima_contracts_addresses(ima_data):
-    ima_contracts_addresses = {}
-    for name in PRECOMPILED_IMA_CONTRACTS:
-        contract_filename = PRECOMPILED_IMA_CONTRACTS[name]['filename']
-        address = get_contract_address_from_ima_data(ima_data, name)
-        ima_contracts_addresses[contract_filename] = address
-    return ima_contracts_addresses
+def generate_ima_contracts_addresses(schain_ima_abi, mainnet_ima_abi):
+    addresses = {}
+    for contracts in [(SCHAIN_IMA_CONTRACTS, schain_ima_abi),
+                      (MAINNET_IMA_CONTRACTS, mainnet_ima_abi)]:
+        for name in contracts[0]:
+            contract_filename = contracts[0][name]['filename']
+            addresses[contract_filename] = get_address_from_abi_data(contracts[1], name)
+    return addresses

@@ -12,7 +12,7 @@ from skale.utils.contracts_provision.main import (create_nodes, create_schain,
 from core.schains.cleaner import remove_schain_container
 from core.schains.cleaner import remove_schain_volume
 
-from tests.utils import generate_cert, init_web3_skale
+from tests.utils import init_skale_ima, init_web3_skale, generate_cert
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
@@ -24,6 +24,11 @@ from web.models.schain import create_tables, SChainRecord, upsert_schain_record
 @pytest.fixture
 def skale():
     return init_web3_skale()
+
+
+@pytest.fixture
+def skale_ima():
+    return init_skale_ima()
 
 
 @pytest.fixture
@@ -94,7 +99,8 @@ def generate_schain_config(schain_name):
                 "wssRpcPort": 10007,
                 "infoHttpRpcPort": 10008,
                 "bindIP": "0.0.0.0",
-                "ecdsaKeyName": "NEK:518"
+                "ecdsaKeyName": "NEK:518",
+                "imaMonitoringPort": 10006
             },
             "sChain": {
                 "schainID": 1,

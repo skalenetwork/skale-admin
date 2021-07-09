@@ -1,3 +1,5 @@
+import pytest
+
 from core.schains.config.helper import (
     get_consensus_endpoints_from_config,
     get_schain_env,
@@ -8,8 +10,11 @@ from core.schains.config.helper import (
 from core.schains.helper import get_schain_config_filepath
 from core.schains.ssl import get_ssl_filepath
 from core.schains.volume import get_schain_volume_config
+from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 
 from tools.iptables import NodeEndpoint
+from tools.configs import SGX_SERVER_URL
+from tools.configs.ima import IMA_ENDPOINT
 
 
 CONFIG = {
@@ -24,7 +29,6 @@ CONFIG = {
             "wssRpcPort": 10019,
             "infoHttpRpcPort": 10020,
             "bindIP": "127.0.0.1",
-            "imaMainNet": "wss://12.com",
             "imaMessageProxySChain": None,
             "imaMessageProxyMainNet": "0x",
             "wallets": {
@@ -134,7 +138,9 @@ def test_get_schain_container_cmd(schain_config, cert_key_pair):
     ssl_key_path, ssl_cert_path = get_ssl_filepath()
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
-        f'--https-port 10008 --ws-port 10002 --wss-port 10007 -v 2 '
+        f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data '
+        f'--main-net-url {IMA_ENDPOINT} -v 2 '
         f'--web3-trace --enable-debug-behavior-apis '
         f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path}'
     )
@@ -143,8 +149,10 @@ def test_get_schain_container_cmd(schain_config, cert_key_pair):
     container_opts = get_schain_container_cmd(schain_name, enable_ssl=False)
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
-        f'--https-port 10008 --ws-port 10002 --wss-port 10007 '
-        f'-v 2 --web3-trace --enable-debug-behavior-apis --aa no'
+        f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data '
+        f'--main-net-url {IMA_ENDPOINT} -v 2 --web3-trace '
+        f'--enable-debug-behavior-apis --aa no'
     )
     assert container_opts == expected_opts
 
@@ -156,13 +164,16 @@ def test_get_schain_env():
     assert get_schain_env(ulimit_check=False) == expected_env
 
 
+@pytest.mark.skip(reason="shared space is temporarily disabled")
 def test_get_schain_volume_config():
     volume_config = get_schain_volume_config('test_name', '/mnt/mount_path/')
     assert volume_config == {
-        'test_name': {'bind': '/mnt/mount_path/', 'mode': 'rw'}
+        'test_name': {'bind': '/mnt/mount_path/', 'mode': 'rw'},
+        SHARED_SPACE_VOLUME_NAME: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'rw'}
     }
     volume_config = get_schain_volume_config('test_name',
                                              '/mnt/mount_path/', mode='Z')
     assert volume_config == {
-        'test_name': {'bind': '/mnt/mount_path/', 'mode': 'Z'}
+        'test_name': {'bind': '/mnt/mount_path/', 'mode': 'Z'},
+        SHARED_SPACE_VOLUME_NAME: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'Z'}
     }

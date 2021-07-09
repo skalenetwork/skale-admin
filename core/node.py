@@ -26,11 +26,16 @@ import platform
 import requests
 
 from enum import Enum
-from sh import lsmod
+
+try:
+    from sh import lsmod
+except ImportError:
+    logging.warning('Could not import lsmod from sh package')
 
 from skale.transactions.result import TransactionFailedError
+from skale.utils.exceptions import InvalidNodeIdError
 from skale.utils.helper import ip_from_bytes
-from skale.wallets.web3_wallet import public_key_to_address
+from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.filebeat import update_filebeat_service
 
@@ -93,11 +98,44 @@ class Node:
         Returns:
         dict: Execution status and node config
         """
-        self._log_node_info('Node create started', ip, public_ip, port, name)
         if self.config.id is not None:
-            return self._node_already_exist()
-        if not check_required_balance(self.skale):
-            return self._insufficient_funds()
+            return self._error(
+                f'Node is already installed on this machine. '
+                f'Node ID: {self.config.id}'
+            )
+        node_id = self.get_node_id_from_contracts(name, ip)
+        if node_id < 0:
+            if not check_required_balance(self.skale):
+                return self._error(
+                    'Insufficient funds, re-check your wallet')
+
+            if not self.skale.nodes.is_node_name_available(name):
+                return self._error(f'Node name is already taken: {name}')
+
+            if not self.skale.nodes.is_node_ip_available(ip):
+                return self._error(f'Node IP is already taken: {ip}')
+
+            node_id = self.create_node_on_contracts(
+                ip, public_ip, port, name, domain_name,
+                gas_limit, gas_price, skip_dry_run
+            )
+            if node_id < 0:
+                return self._error(
+                    f'Node registration failed: {ip}:{port}, name: {name}'
+                )
+        self.config.id = self.skale.nodes.node_name_to_index(name)
+
+        self.config.name = name
+        self.config.ip = ip
+
+        update_filebeat_service(public_ip, self.config.id, self.skale)
+        return self._ok(data=self.config.all())
+
+    def create_node_on_contracts(self, ip, public_ip, port, name, domain_name,
+                                 gas_limit=None, gas_price=None,
+                                 skip_dry_run=False):
+        self._log_node_info('Node registration started', ip,
+                            public_ip, port, name)
         try:
             self.skale.manager.create_node(
                 ip=ip,
@@ -113,20 +151,29 @@ class Node:
             )
         except TransactionFailedError:
             logger.exception('Node creation failed')
-            return {
-                'status': 0,
-                'errors': [
-                    f'node creation failed: {ip}:{port}, name: {name}'
-                ]
-            }
-
-        self._log_node_info('Node successfully created', ip,
+            return -1
+        self._log_node_info('Node successfully registered', ip,
                             public_ip, port, name)
-        self.config.name = name
-        self.config.id = self.skale.nodes.node_name_to_index(name)
-        self.config.ip = ip
-        update_filebeat_service(public_ip, self.config.id, self.skale)
-        return {'status': 1, 'data': self.config.all()}
+        return self.skale.nodes.node_name_to_index(name)
+
+    def get_node_id_from_contracts(self, name, ip) -> int:
+        node_id = self.skale.nodes.node_name_to_index(name)
+        if node_id == 0:
+            try:
+                node_data = self.skale.nodes.get(node_id)
+            except InvalidNodeIdError:
+                return -1
+            public_key = node_data['publicKey']
+            data_address = to_checksum_address(
+                public_key_to_address(public_key)
+            )
+            if data_address == self.skale.wallet.address and \
+                name == node_data['name'] and \
+                    ip == node_data['ip']:
+                node_id = 0
+            else:
+                node_id = -1
+        return node_id
 
     def exit(self, opts):
         schains_list = self.skale.schains.get_active_schains_for_node(
@@ -173,18 +220,16 @@ class Node:
 
     def set_maintenance_on(self):
         if NodeStatus(self.info['status']) != NodeStatus.ACTIVE:
-            err_msg = 'Node should be active'
-            logger.error(err_msg)
-            return {'status': 1, 'errors': [err_msg]}
+            self._error('Node should be active')
         try:
             self.skale.nodes.set_node_in_maintenance(self.config.id)
         except TransactionFailedError:
-            err_msg = 'Moving node to maintenance mode failed'
-            logger.exception(err_msg)
-            return {'status': 1, 'errors': [err_msg]}
-        return {'status': 0}
+            self._error('Moving node to maintenance mode failed')
+        return self._ok()
 
     def set_maintenance_off(self):
+        if NodeStatus(self.info['status']) != NodeStatus.IN_MAINTENANCE:
+            return self._error('Node is not in maintenance mode')
         if NodeStatus(self.info['status']) != NodeStatus.IN_MAINTENANCE:
             err_msg = 'Node is not in maintenance mode'
             logger.error(err_msg)
@@ -192,31 +237,22 @@ class Node:
         try:
             self.skale.nodes.remove_node_from_in_maintenance(self.config.id)
         except TransactionFailedError:
-            err_msg = 'Removing node from maintenance mode failed'
-            logger.exception(err_msg)
-            return {'status': 1, 'errors': [err_msg]}
-        return {'status': 0}
+            return self._error('Removing node from maintenance mode failed')
+        return self._ok()
 
     def set_domain_name(self, domain_name: str) -> dict:
         try:
             self.skale.nodes.set_domain_name(self.config.id, domain_name)
         except TransactionFailedError as err:
-            logger.exception(err)
-            return {'status': 1, 'errors': [err]}
-        return {'status': 0}
+            return self._error(str(err))
+        return self._ok()
 
-    def _insufficient_funds(self):
-        err_msg = 'Insufficient funds, re-check your wallet'
-        logger.error(err_msg)
-        return {'status': 0, 'errors': [err_msg]}
+    def _ok(self, data=None):
+        return {'status': 'ok', 'data': data}
 
-    def _node_already_exist(self):
-        err_msg = (
-            f'Node is already installed on this machine. '
-            f'Node ID: {self.config.id}'
-        )
+    def _error(self, err_msg):
         logger.error(err_msg)
-        return {'status': 0, 'errors': [err_msg]}
+        return {'status': 'error', 'errors': [err_msg]}
 
     def _log_node_info(self, title, ip, public_ip, port, name):
         log_params = {'IP': ip, 'Public IP': public_ip,
@@ -289,6 +325,10 @@ def get_node_hardware_info() -> dict:
 
 def get_meta_info() -> dict:
     return read_json(META_FILEPATH)
+
+
+def get_skale_node_version():
+    return get_meta_info()['config_stream']
 
 
 def is_btrfs_loaded():

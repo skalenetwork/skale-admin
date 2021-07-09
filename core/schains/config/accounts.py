@@ -22,16 +22,17 @@ import logging
 from web3 import Web3
 from skale.wallets.web3_wallet import public_key_to_address
 
-from core.schains.config.helper import fix_address, _string_to_storage, get_context_contract
+from core.schains.config.helper import (fix_address, _string_to_storage,
+                                        get_context_contract, get_deploy_controller_contract,
+                                        calculate_deployment_owner_slot)
 from core.schains.filestorage import compose_filestorage_info, get_filestorage_info
-from core.schains.helper import read_ima_data
 
 from core.schains.limits import get_schain_limit
 from core.schains.types import MetricType
+from core.ima.schain import generate_ima_accounts
 
 from tools.configs.schains import (SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC,
                                    PRECOMPILED_CONTRACTS_FILEPATH)
-from tools.configs.ima import PRECOMPILED_IMA_CONTRACTS
 from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
@@ -117,6 +118,30 @@ def generate_context_accounts(schain: dict) -> dict:
     return accounts
 
 
+def generate_deploy_controller_accounts(schain_owner: str) -> dict:
+    """Generates accounts for the deploy controller predeployed SC
+
+    :param schain_owner: Address of the sChain owner
+    :type schain_owner: str
+    :returns: Dictionary with accounts
+    :rtype: dict
+    """
+    accounts = {}
+    deploy_controller_contract = get_deploy_controller_contract()
+    owner_slot = calculate_deployment_owner_slot(schain_owner)
+    bytes_true = '0x01'
+
+    storage = {owner_slot: bytes_true}
+
+    account = generate_account(
+        balance=0,
+        code=deploy_controller_contract['bytecode'],
+        storage=storage
+    )
+    add_to_accounts(accounts, deploy_controller_contract['address'], account)
+    return accounts
+
+
 def generate_fs_accounts(schain: dict) -> dict:
     """Generates accounts for the Filestorage
 
@@ -126,37 +151,18 @@ def generate_fs_accounts(schain: dict) -> dict:
     :rtype: dict
     """
     volume_limits = get_schain_limit(schain, MetricType.volume_limits)
-    filestorage_info = compose_filestorage_info(volume_limits)
+    filestorage_accounts_info = compose_filestorage_info(volume_limits, schain['owner'])
     accounts = {}
-    account = generate_account(
-        balance=0,
-        code=filestorage_info['bytecode'],
-        storage=filestorage_info['storage']
-    )
-    add_to_accounts(
-        accounts=accounts,
-        address=filestorage_info['address'],
-        account=account
-    )
-    return accounts
-
-
-def generate_ima_accounts():
-    """Generates accounts for the IMA
-
-    :returns: Dictionary with accounts
-    :rtype: dict
-    """
-    ima_data = read_ima_data()
-    accounts = {}
-    for contract_name in PRECOMPILED_IMA_CONTRACTS:
+    for account_info in filestorage_accounts_info.values():
+        account = generate_account(
+            balance=0,
+            code=account_info['bytecode'],
+            storage=account_info['storage']
+        )
         add_to_accounts(
             accounts=accounts,
-            address=ima_data[f'{contract_name}_address'],
-            account=generate_account(
-                balance=0,
-                code=ima_data[f'{contract_name}_bytecode']
-            )
+            address=account_info['address'],
+            account=account
         )
     return accounts
 
@@ -172,6 +178,7 @@ def generate_dynamic_accounts(schain: dict, schain_nodes: list) -> dict:
         **generate_precompiled_accounts(),
         **generate_owner_accounts(schain['owner'], schain_nodes),
         **generate_context_accounts(schain),
+        **generate_deploy_controller_accounts(schain['owner']),
         **generate_fs_accounts(schain),
-        **generate_ima_accounts()
+        **generate_ima_accounts(schain['owner'], schain['name'])
     }

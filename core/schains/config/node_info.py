@@ -20,13 +20,13 @@
 from dataclasses import dataclass
 from skale.dataclasses.node_info import NodeInfo
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
+from skale.dataclasses.skaled_ports import SkaledPorts
 
-from core.schains.config.ima import get_message_proxy_addresses
+from core.ima.schain import get_message_proxy_addresses
 from core.schains.limits import get_schain_type
 from tools.configs import (
-    SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL, ENV_TYPE, ALLOCATION_FILEPATH
+    SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, ENV_TYPE, ALLOCATION_FILEPATH
 )
-from tools.configs.ima import IMA_ENDPOINT
 
 from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.helper import read_json, safe_load_yml
@@ -38,7 +38,6 @@ class CurrentNodeInfo(NodeInfo):
     bind_ip: str
     log_level: str
     log_level_config: str
-    ima_mainnet: str
     ima_message_proxy_schain: str
     ima_message_proxy_mainnet: str
     rotate_after_block: int
@@ -60,7 +59,6 @@ class CurrentNodeInfo(NodeInfo):
                 'bindIP': self.bind_ip,
                 'logLevel': self.log_level,
                 'logLevelConfig': self.log_level_config,
-                'imaMainNet': self.ima_mainnet,
                 'imaMessageProxySChain': self.ima_message_proxy_schain,
                 'imaMessageProxyMainNet': self.ima_message_proxy_mainnet,
                 'rotateAfterBlock': self.rotate_after_block,
@@ -72,7 +70,8 @@ class CurrentNodeInfo(NodeInfo):
                 'collectionDuration': self.collection_duration,
                 'transactionQueueSize': self.transaction_queue_size,
                 'maxOpenLeveldbFiles': self.max_open_leveldb_files,
-                'info-acceptors': 1
+                'info-acceptors': 1,
+                'imaMonitoringPort': self.base_port + SkaledPorts.IMA_MONITORING.value
             }
         }
 
@@ -93,7 +92,6 @@ def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
         node_id=node_id,
         name=node['name'],
         base_port=schain_base_port_on_node,
-        ima_mainnet=IMA_ENDPOINT,
         ecdsa_key_name=ecdsa_key_name,
         wallets=generate_wallets_config(schain['name'], rotation_id),
         rotate_after_block=rotate_after_block,
@@ -109,7 +107,6 @@ def generate_wallets_config(schain_name: str, rotation_id: int) -> dict:
 
     wallets = {
         'ima': {
-            'url': SGX_SERVER_URL,
             'keyShareName': secret_key_share_config['key_share_name'],
             't': secret_key_share_config['t'],
             'n': secret_key_share_config['n'],

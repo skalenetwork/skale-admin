@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import datetime
+from datetime import datetime
 from peewee import (CharField, DateTimeField,
                     IntegrityError, IntegerField, BooleanField)
 
@@ -26,6 +26,8 @@ from core.schains.dkg_status import DKGStatus
 from web.models.base import BaseModel
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_CONFIG_VERSION = '0.0.0'
 
 
 class SChainRecord(BaseModel):
@@ -38,15 +40,21 @@ class SChainRecord(BaseModel):
     repair_mode = BooleanField(default=False)
     needs_reload = BooleanField(default=False)
 
+    monitor_last_seen = DateTimeField()
+    monitor_id = IntegerField(default=0)
+
+    config_version = CharField(default=DEFAULT_CONFIG_VERSION)
+
     @classmethod
     def add(cls, name):
         try:
             with cls.database.atomic():
                 schain = cls.create(
                     name=name,
-                    added_at=datetime.datetime.now(),
+                    added_at=datetime.now(),
                     dkg_status=DKGStatus.NOT_STARTED.value,
-                    new_schain=True
+                    new_schain=True,
+                    monitor_last_seen=datetime.now()
                 )
             return (schain, None)
         except IntegrityError as err:
@@ -61,15 +69,11 @@ class SChainRecord(BaseModel):
         return cls.select().where(cls.name == name).exists()
 
     @classmethod
-    def get_statuses(cls, all=False):
-        if all:
-            records = cls.select()
+    def get_all_records(cls, include_deleted=False):
+        if include_deleted:
+            return cls.select()
         else:
-            records = cls.select().where(cls.is_deleted == False)  # noqa: E712
-        dkg_statuses = []
-        for record in records:
-            dkg_statuses.append(cls.to_dict(record))
-        return dkg_statuses
+            return cls.select().where(cls.is_deleted == False)  # noqa: E712
 
     @classmethod
     def to_dict(cls, record):
@@ -82,6 +86,9 @@ class SChainRecord(BaseModel):
             'first_run': record.first_run,
             'new_schain': record.new_schain,
             'needs_reload': record.needs_reload,
+            'monitor_last_seen': record.monitor_last_seen.timestamp(),
+            'monitor_id': record.monitor_id,
+            'config_version': record.config_version
         }
 
     def dkg_started(self):
@@ -89,6 +96,9 @@ class SChainRecord(BaseModel):
 
     def dkg_failed(self):
         self.set_dkg_status(DKGStatus.FAILED)
+
+    def dkg_key_generation_error(self):
+        self.set_dkg_status(DKGStatus.KEY_GENERATION_ERROR)
 
     def dkg_done(self):
         self.set_dkg_status(DKGStatus.DONE)
@@ -122,6 +132,21 @@ class SChainRecord(BaseModel):
         self.needs_reload = value
         self.save()
 
+    def set_monitor_last_seen(self, value):
+        logger.info(f'Changing monitor_last_seen for {self.name} to {value}')
+        self.monitor_last_seen = value
+        self.save()
+
+    def set_monitor_id(self, value):
+        logger.info(f'Changing monitor_id for {self.name} to {value}')
+        self.monitor_id = value
+        self.save()
+
+    def set_config_version(self, value):
+        logger.info(f'Changing config_version for {self.name} to {value}')
+        self.config_version = value
+        self.save()
+
 
 def create_tables():
     logger.info('Creating schainrecord table...')
@@ -143,11 +168,24 @@ def set_schains_need_reload():
     query.execute()
 
 
+def set_schains_monitor_id():
+    logger.info('Setting monitor_id=0 for all sChain records')
+    query = SChainRecord.update(monitor_id=0).where(
+        SChainRecord.monitor_id != 0)  # noqa
+    query.execute()
+
+
 def upsert_schain_record(name):
     if not SChainRecord.added(name):
+        logger.debug(f'Could not find sChain record: {name}, going to add')
         schain_record, _ = SChainRecord.add(name)
     else:
+        logger.debug(f'Getting sChain record by name: {name}')
         schain_record = SChainRecord.get_by_name(name)
+
+    if not schain_record:
+        logger.error(f'schain_record is None for {name}')
+
     return schain_record
 
 
@@ -155,6 +193,15 @@ def mark_schain_deleted(name):
     if SChainRecord.added(name):
         schain_record = SChainRecord.get_by_name(name)
         schain_record.set_deleted()
+
+
+def get_schains_names(include_deleted=False):
+    return [r.name for r in SChainRecord.get_all_records(include_deleted)]
+
+
+def get_schains_statuses(include_deleted=False):
+    return [SChainRecord.to_dict(r)
+            for r in SChainRecord.get_all_records(include_deleted)]
 
 
 def toggle_schain_repair_mode(name):

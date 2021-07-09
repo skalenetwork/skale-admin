@@ -6,19 +6,25 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 
+import mock
+
 import pytest
 from flask import Flask, appcontext_pushed, g
 
 from tests.utils import generate_cert, get_bp_data
 from tools.configs import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
 from tools.docker_utils import DockerUtils
-from web.routes.security import construct_security_bp
+from web.routes.ssl import construct_ssl_bp
+from web.helper import get_api_url
+
+
+BLUEPRINT_NAME = 'ssl'
 
 
 @pytest.fixture
 def skale_bp(skale):
     app = Flask(__name__)
-    app.register_blueprint(construct_security_bp())
+    app.register_blueprint(construct_ssl_bp())
 
     def handler(sender, **kwargs):
         g.docker_utils = DockerUtils()
@@ -66,14 +72,14 @@ def test_status(skale_bp, cert_key_pair):
     day = datetime.utcfromtimestamp(time.time()).strftime('%d')
     year += 1
     expire_day_line = f'{year}-{month}-{day}'
-    data = get_bp_data(skale_bp, '/api/ssl/status')
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'status'))
     assert data['status'] == 'ok'
     assert data['payload']['issued_to'] is None
     assert data['payload']['expiration_date'].startswith(expire_day_line)
 
 
 def test_status_bad_cert(skale_bp, bad_cert):
-    data = get_bp_data(skale_bp, '/api/ssl/status')
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'status'))
     assert data['status'] == 'error'
     assert data['payload'] == 'Certificates have invalid format'
 
@@ -102,12 +108,14 @@ def post_bp_files_data(bp, request, file_data, full_response=False, **kwargs):
 
 def test_upload(skale_bp, ssl_folder, db, cert_key_pair_host):
     cert_path, key_path = cert_key_pair_host
-    with files_data(cert_path, key_path, force=False) as data:
-        response = post_bp_files_data(
-            skale_bp,
-            '/api/ssl/upload',
-            file_data=data
-        )
+    with mock.patch('web.routes.ssl.set_schains_need_reload'), \
+            mock.patch('core.nginx.restart_nginx_container'):
+        with files_data(cert_path, key_path, force=False) as data:
+            response = post_bp_files_data(
+                skale_bp,
+                get_api_url(BLUEPRINT_NAME, 'upload'),
+                file_data=data
+            )
     assert response == {'status': 'ok', 'payload': {}}
     uploaded_cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
     uploaded_key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
@@ -117,38 +125,42 @@ def test_upload(skale_bp, ssl_folder, db, cert_key_pair_host):
 
 def test_upload_bad_cert(skale_bp, db, ssl_folder, bad_cert_host):
     cert_path, key_path = bad_cert_host
-    with files_data(cert_path, key_path, force=False) as data:
-        response = post_bp_files_data(
-            skale_bp,
-            '/api/ssl/upload',
-            file_data=data
-        )
-        assert response == {
-            'status': 'error',
-            'payload': 'Certificates have invalid format'
-        }
+    with mock.patch('web.routes.ssl.set_schains_need_reload'), \
+            mock.patch('core.nginx.restart_nginx_container'):
+        with files_data(cert_path, key_path, force=False) as data:
+            response = post_bp_files_data(
+                skale_bp,
+                get_api_url(BLUEPRINT_NAME, 'upload'),
+                file_data=data
+            )
+            assert response == {
+                'status': 'error',
+                'payload': 'Certificates have invalid format'
+            }
 
 
 def test_upload_cert_exist(skale_bp, db, cert_key_pair_host, cert_key_pair):
     cert_path, key_path = cert_key_pair_host
-    with files_data(cert_path, key_path, force=False) as data:
-        response = post_bp_files_data(
-            skale_bp,
-            '/api/ssl/upload',
-            file_data=data
-        )
-        assert response == {
-            'status': 'error',
-            'payload': 'SSL Certificates are already uploaded'
-        }
+    with mock.patch('web.routes.ssl.set_schains_need_reload'), \
+            mock.patch('core.nginx.restart_nginx_container'):
+        with files_data(cert_path, key_path, force=False) as data:
+            response = post_bp_files_data(
+                skale_bp,
+                get_api_url(BLUEPRINT_NAME, 'upload'),
+                file_data=data
+            )
+            assert response == {
+                'status': 'error',
+                'payload': 'SSL Certificates are already uploaded'
+            }
 
-    with files_data(cert_path, key_path, force=True) as data:
-        response = post_bp_files_data(
-            skale_bp,
-            '/api/ssl/upload',
-            file_data=data
-        )
-        assert response == {
-            'status': 'ok',
-            'payload': {}
-        }
+        with files_data(cert_path, key_path, force=True) as data:
+            response = post_bp_files_data(
+                skale_bp,
+                get_api_url(BLUEPRINT_NAME, 'upload'),
+                file_data=data
+            )
+            assert response == {
+                'status': 'ok',
+                'payload': {}
+            }

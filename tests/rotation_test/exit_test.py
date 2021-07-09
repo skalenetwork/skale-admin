@@ -16,14 +16,14 @@ from core.schains.checks import SChainChecks
 from core.schains.cleaner import (monitor as cleaner_monitor,
                                   remove_schain_container,
                                   remove_schain_volume)
-from core.schains.creator import monitor
-from tests.prepare_data import cleanup_contracts
+from core.schains.process_manager import run_process_manager
+from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from tools.configs.schains import SCHAINS_DIR_PATH
 
 
 @pytest.fixture
 def exiting_node(skale, db):
-    cleanup_contracts(skale)
+    cleanup_nodes_schains(skale)
 
     nodes, schain_name = set_up_rotated_schain(skale)
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
@@ -42,18 +42,18 @@ def exiting_node(skale, db):
 
 
 # TODO: Mock leaving history, check final exit status
-def test_node_exit(skale, exiting_node):
+def test_node_exit(skale, skale_ima, exiting_node):
     nodes, schain_name = exiting_node
     node = nodes[0]
     spawn_skale_lib_mock = get_spawn_skale_mock(node.config.id)
-    with mock.patch('core.schains.creator.add_firewall_rules'), \
-            mock.patch('core.schains.creator.run_dkg', run_dkg_mock),\
-            mock.patch('core.schains.creator.init_data_volume', init_data_volume_mock), \
-            mock.patch('core.schains.creator.run_schain_container', run_schain_container_mock), \
-            mock.patch('core.schains.creator.spawn_skale_manager_lib', spawn_skale_lib_mock), \
+    with mock.patch('core.schains.monitor.add_firewall_rules'), \
+            mock.patch('core.schains.monitor.run_dkg', run_dkg_mock),\
+            mock.patch('core.schains.monitor.init_data_volume', init_data_volume_mock), \
+            mock.patch('core.schains.monitor.run_schain_container', run_schain_container_mock), \
+            mock.patch('core.schains.monitor.spawn_skale_manager_lib', spawn_skale_lib_mock), \
             mock.patch('core.schains.checks.apsent_iptables_rules',
                        new=mock.Mock(return_value=[True, True])):
-        monitor(skale, node.config)
+        run_process_manager(skale, skale_ima, node.config)
         node.exit({})
 
         wait_for_contract_exiting(skale, node.config.id)
@@ -64,7 +64,7 @@ def test_node_exit(skale, exiting_node):
 
         wait_for_schain_alive(schain_name)
 
-        monitor(skale, node.config)
+        run_process_manager(skale, skale_ima, node.config)
         assert check_schain_alive(schain_name)
 
         finish_time = time.time()
@@ -75,10 +75,10 @@ def test_node_exit(skale, exiting_node):
             'finish_ts': finish_time,
             'rotation_id': 1
         }
-        with mock.patch('core.schains.creator.get_rotation_state',
+        with mock.patch('core.schains.monitor.get_rotation_state',
                         new=mock.Mock(return_value=rotation_state_mock)),\
                 mock.patch('core.schains.cleaner.SgxClient.delete_bls_key', delete_bls_keys_mock):
-            monitor(skale, node.config)
+            run_process_manager(skale, skale_ima, node.config)
             wait_for_schain_exiting(schain_name)
             cleaner_monitor(node.skale, node.config)
             checks = SChainChecks(schain_name, node.config.id).get_all()

@@ -19,19 +19,24 @@
 
 import os
 import json
+import time
+
 import yaml
+import errno
 import logging
+import itertools
 import subprocess
-import requests
 from subprocess import PIPE
+
+import requests
 
 from filelock import FileLock
 from jinja2 import Environment
 from skale import Skale
-from skale.wallets import BaseWallet, RPCWallet
+from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, TM_URL
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +97,14 @@ def format_output(res):
             res.stderr.decode('UTF-8').rstrip()
 
 
+def merged_unique(*args):
+    seen = set()
+    for item in itertools.chain(*args):
+        if item not in seen:
+            yield item
+            seen.add(item)
+
+
 def read_file(path):
     file = open(path, 'r')
     text = file.read()
@@ -123,10 +136,32 @@ def init_skale(wallet: BaseWallet) -> Skale:
     return Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
 
 
-def init_defualt_wallet() -> Skale:
-    return RPCWallet(TM_URL)
-
-
 def safe_load_yml(filepath):
     with open(filepath, 'r') as stream:
         return yaml.safe_load(stream)
+
+
+def check_pid(pid):
+    try:
+        os.kill(pid, 0)
+    except OSError as err:
+        if err.errno == errno.ESRCH:
+            return False
+        else:
+            raise err
+    else:
+        return True
+
+
+def get_endpoint_call_speed(skale):
+    scores = []
+    for _ in range(10):
+        start = time.time()
+        result = skale.web3.eth.gasPrice
+        if result:
+            scores.append(time.time() - start)
+    if len(scores) == 0:
+        return None
+    call_avg_speed = round(sum(scores) / len(scores), 2)
+    logger.info(f'Endpoint call speed scores: {scores}, avg: {call_avg_speed}')
+    return call_avg_speed

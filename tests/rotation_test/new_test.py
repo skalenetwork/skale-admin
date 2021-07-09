@@ -4,9 +4,9 @@ from unittest import mock
 import pytest
 import os
 
+from core.schains.monitor import run_monitor_for_schain
 from core.schains.checks import SChainChecks
-from core.schains.creator import monitor
-from tests.prepare_data import cleanup_contracts
+from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from tests.rotation_test.utils import (set_up_rotated_schain, wait_for_contract_exiting,
                                        init_data_volume_mock, run_dkg_mock)
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -18,7 +18,7 @@ dutils = DockerUtils(volume_driver='local')
 
 @pytest.fixture
 def rotated_nodes(skale, schain_config, schain_db, cert_key_pair):
-    cleanup_contracts(skale)
+    cleanup_nodes_schains(skale)
     SChainRecord.create_table()
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
 
@@ -33,7 +33,7 @@ def rotated_nodes(skale, schain_config, schain_db, cert_key_pair):
         skale.manager.node_exit(nodes[i].config.id, wait_for=True)
 
 
-def test_new_node(skale, rotated_nodes):
+def test_new_node(skale, skale_ima, rotated_nodes):
     nodes, schain_name = rotated_nodes
 
     exited_node, new_node = nodes[0], nodes[2]
@@ -41,12 +41,24 @@ def test_new_node(skale, rotated_nodes):
 
     wait_for_contract_exiting(skale, exited_node.config.id)
 
-    with mock.patch('core.schains.creator.add_firewall_rules'), \
-            mock.patch('core.schains.creator.init_data_volume', init_data_volume_mock), \
-            mock.patch('core.schains.creator.run_dkg', run_dkg_mock), \
+    with mock.patch('core.schains.monitor.add_firewall_rules'), \
+            mock.patch('core.schains.monitor.init_data_volume', init_data_volume_mock), \
+            mock.patch('core.schains.monitor.run_dkg', run_dkg_mock), \
             mock.patch('core.schains.checks.apsent_iptables_rules',
                        new=mock.Mock(return_value=[True, True])):
-        monitor(new_node.skale, new_node.config)
+
+        ecdsa_sgx_key_name = new_node.config.sgx_key_name
+        node_info = new_node.config.all()
+        schain = skale.schains.get_by_name(schain_name)
+
+        run_monitor_for_schain(
+            new_node.skale,
+            skale_ima,
+            node_info=node_info,
+            schain=schain,
+            ecdsa_sgx_key_name=ecdsa_sgx_key_name,
+            loop=False
+        )
         checks = SChainChecks(schain_name, new_node.config.id).get_all()
         assert checks['container']
         assert checks['volume']

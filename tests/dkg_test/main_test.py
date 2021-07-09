@@ -16,6 +16,7 @@ from skale import Skale
 from skale.utils.helper import init_default_logger
 from skale.utils.account_tools import send_ether
 from skale.wallets import SgxWallet
+from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.schains.cleaner import remove_schain_container
@@ -26,7 +27,6 @@ from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (generate_random_node_data,
                          generate_random_schain_data, init_web3_skale)
-from tests.prepare_data import cleanup_contracts
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 
@@ -127,7 +127,7 @@ def check_node_ports(info):
 def check_node_info(node_data, info):
     keys = ['nodeID', 'nodeName', 'basePort', 'httpRpcPort', 'httpsRpcPort',
             'wsRpcPort', 'wssRpcPort', 'bindIP', 'logLevel', 'logLevelConfig',
-            'imaMainNet', 'imaMessageProxySChain', 'imaMessageProxyMainNet',
+            'imaMessageProxySChain', 'imaMessageProxyMainNet',
             'rotateAfterBlock', 'ecdsaKeyName', 'wallets', 'minCacheSize',
             'maxCacheSize', 'collectionQueueSize', 'collectionDuration',
             'transactionQueueSize', 'maxOpenLeveldbFiles']
@@ -151,8 +151,8 @@ def check_schain_node_info(node_data, schain_node_info):
 def check_schain_info(nodes, schain_info):
     check_keys(
         schain_info,
-        ['schainID', 'schainName', 'schainOwner', 'storageLimit',
-         'snapshotIntervalSec', 'emptyBlockIntervalMs',
+        ['schainID', 'schainName', 'schainOwner', 'contractStorageLimit',
+         'dbStorageLimit', 'snapshotIntervalSec', 'emptyBlockIntervalMs',
          'maxConsensusStorageBytes', 'maxSkaledLeveldbStorageBytes',
          'maxFileStorageBytes', 'maxReservedStorageBytes',
          'nodes']
@@ -297,7 +297,7 @@ def schain_creation_data():
 
 def test_init_bls(skale, schain_creation_data, cleanup_dkg):
     schain_name, lifetime = schain_creation_data
-    cleanup_contracts(skale)
+    cleanup_nodes_schains(skale)
     wallets = generate_sgx_wallets(skale, N_OF_NODES)
     transfer_eth_to_wallets(skale, wallets)
     link_addresses_to_validator(skale, wallets)

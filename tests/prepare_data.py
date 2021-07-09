@@ -2,32 +2,34 @@
 
 import logging
 
+from skale.utils.helper import init_default_logger
 from skale.utils.contracts_provision.main import (
-    add_test_schain_type, setup_validator, _skip_evm_time
+    setup_validator, _skip_evm_time, create_nodes, cleanup_nodes_schains,
+    add_test_permissions, add_test_schain_type
 )
 from skale.utils.contracts_provision import MONTH_IN_SECONDS
+
+from core.ima.schain import update_predeployed_ima
+
 from tests.utils import init_web3_skale
 
 
 logger = logging.getLogger(__name__)
 
 
-def cleanup_contracts(skale):
-    for schain_id in skale.schains_internal.get_all_schains_ids():
-        schain_data = skale.schains.get(schain_id)
-        schain_name = schain_data.get('name', None)
-        if schain_name is not None:
-            skale.manager.delete_schain(schain_name, wait_for=True)
-
-    active_node_ids = skale.nodes.get_active_node_ids()
-    logger.info(f'Removing {len(active_node_ids)} nodes from contracts')
-    for node_id in active_node_ids:
-        skale.manager.node_exit(node_id, wait_for=True)
-
-
 if __name__ == "__main__":
+    init_default_logger()
     skale = init_web3_skale()
+    add_test_permissions(skale)
     add_test_schain_type(skale)
-    cleanup_contracts(skale)
+    cleanup_nodes_schains(skale)
     setup_validator(skale)
+    _skip_evm_time(skale.web3, MONTH_IN_SECONDS)
+
+    if skale.constants_holder.get_launch_timestamp() != 0:
+        skale.constants_holder.set_launch_timestamp(0, wait_for=True)
+
+    update_predeployed_ima()
+
+    create_nodes(skale)
     _skip_evm_time(skale.web3, MONTH_IN_SECONDS)
