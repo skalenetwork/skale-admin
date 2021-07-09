@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 app = Celery('tasks', broker=REDIS_URI)
 
-SEND_MSG_TIMEOUT = 5
+SEND_MSG_TIMEOUT = 30
 
 
 @app.task(rate_limit=NOTIFICATIONS_RATE_LIMIT)
