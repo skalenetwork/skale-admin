@@ -85,6 +85,13 @@ def run_monitor_for_schain(
             schain_record.set_monitor_last_seen(datetime.now())
 
             def signal_handler(*args):
+                logger.info(
+                    f'signal_handler was triggered for {schain["name"]},trying to stop gracefully')
+
+                if schain_record.dkg_status == DKGStatus.DONE.value:
+                    pass
+                    # todo: return if ok
+
                 schain_index = skale.schains.name_to_group_id(schain["name"])
                 num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
                 if skale.dkg.get_number_of_completed(schain_index) == num_of_nodes:
@@ -306,7 +313,7 @@ def monitor_sync_schain_container(skale, schain, start_ts,
 
 def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
                  rotation_id, schain_record):
-    if schain_record.dkg_status == DKGStatus.KEY_GENERATION_ERROR:
+    if schain_record.dkg_status == DKGStatus.KEY_GENERATION_ERROR.value:
         try:
             dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name)
         except DkgError as err:

@@ -35,6 +35,33 @@ from tools.str_formatters import arguments_list_string
 logger = logging.getLogger(__name__)
 
 
+def pm_signal_handler(*args):
+    """
+    This function is trigerred when SIGTERM signal is received by the main process of the app.
+    The purpose of the process manager signal handler is to forward SIGTERM signal to all sChain
+    processes so they can gracefully save DKG results before
+    """
+    pass
+
+    # schain_index = skale.schains.name_to_group_id(schain["name"])
+    # num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
+    # if skale.dkg.get_number_of_completed(schain_index) == num_of_nodes:
+    #     rotation = get_rotation_state(skale, schain['name'], node_info['node_id'])
+    #     rotation_id = rotation['rotation_id']
+    #     secret_key_share_filepath = get_secret_key_share_filepath(
+    #         schain["name"], rotation_id
+    #     )
+    #     if os.path.isfile(secret_key_share_filepath):
+    #         schain_record.dkg_done()
+    #     else:
+    #         schain_record.dkg_key_generation_error()
+    # else:
+    #     schain_record.dkg_failed()
+    # logger.info(
+    #     f'DKG status for {schain["name"]} was changed to {schain_record.dkg_status}')
+    # os.kill(schain_record.monitor_id, signal.SIGTERM)
+
+
 def run_process_manager(skale, skale_ima, node_config):
     logger.info('Process manager started')
     node_id = node_config.id
