@@ -66,13 +66,16 @@ def construct_health_bp():
             return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
                                           msg='No node installed')
         schains = skale.schains.get_schains_for_node(node_id)
-        checks = [
-            {
-                'name': schain['name'],
-                'healthchecks': SChainChecks(schain['name'], node_id).get_all()
-            }
-            for schain in schains if schain.get('name') != ''
-        ]
+        checks = []
+        for schain in schains:
+            if schain.get('name') != '':
+                rotation_data = skale.node_rotation.get_rotation(schain['name'])
+                rotation_id = rotation_data['rotation_id']
+                schain_checks = SChainChecks(schain['name'], node_id, rotation_id).get_all()
+                checks.append({
+                    'name': schain['name'],
+                    'healthchecks': schain_checks
+                })
         return construct_ok_response(checks)
 
     @health_bp.route(get_api_url(BLUEPRINT_NAME, 'ima'), methods=['GET'])
