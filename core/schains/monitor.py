@@ -17,10 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
 import os
+import sys
 import time
 import signal
+import logging
+
 from enum import Enum
 from importlib import reload
 from datetime import datetime
@@ -89,8 +91,8 @@ def run_monitor_for_schain(
                     f'signal_handler was triggered for {schain["name"]},trying to stop gracefully')
 
                 if schain_record.dkg_status == DKGStatus.DONE.value:
-                    pass
-                    # todo: return if ok
+                    logger.info(f'DKG is done for {schain["name"]}, exiting with 0')
+                    sys.exit(0)
 
                 schain_index = skale.schains.name_to_group_id(schain["name"])
                 num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
@@ -108,7 +110,9 @@ def run_monitor_for_schain(
                     schain_record.dkg_failed()
                 logger.info(
                     f'DKG status for {schain["name"]} was changed to {schain_record.dkg_status}')
-                os.kill(schain_record.monitor_id, signal.SIGTERM)
+
+                logger.info(f'Handler completed: {schain["name"]}, exiting with 0')
+                sys.exit(0)
 
             signal.signal(signal.SIGTERM, signal_handler)
 
