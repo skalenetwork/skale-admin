@@ -111,9 +111,31 @@ def to_verify(share):
     return share[128:192] + share[:128]
 
 
+def generate_poly_name(group_index_str, node_id, dkg_id):
+    return (
+            "POLY:SCHAIN_ID:"
+            f"{group_index_str}"
+            ":NODE_ID:"
+            f"{str(node_id)}"
+            ":DKG_ID:"
+            f"{str(dkg_id)}"
+        )
+
+
+def generate_bls_key_name(group_index_str, node_id, dkg_id):
+    return (
+            "BLS_KEY:SCHAIN_ID:"
+            f"{group_index_str}"
+            ":NODE_ID:"
+            f"{str(node_id)}"
+            ":DKG_ID:"
+            f"{str(dkg_id)}"
+        )
+
+
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
-                 node_ids_dkg, node_ids_contract, eth_key_name):
+                 node_ids_dkg, node_ids_contract, eth_key_name, rotation_id):
         self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t,
                              path_to_cert=SGX_CERTIFICATES_FOLDER)
         self.schain_name = schain_name
@@ -124,6 +146,9 @@ class DKGClient:
         self.t = t
         self.n = n
         self.eth_key_name = eth_key_name
+        group_index_str = str(int(skale.web3.toHex(self.group_index)[2:], 16))
+        self.poly_name = generate_poly_name(group_index_str, self.node_id_dkg, rotation_id)
+        self.bls_name = generate_bls_key_name(group_index_str, self.node_id_dkg, rotation_id)
         self.incoming_verification_vector = ['0' for _ in range(n)]
         self.incoming_secret_key_contribution = ['0' for _ in range(n)]
         self.public_keys = public_keys
@@ -176,8 +201,8 @@ class DKGClient:
         ]
         return convert_str_to_key_share(self.sent_secret_key_contribution, self.n)
 
-    def broadcast(self, poly_name):
-        poly_success = self.generate_polynomial(poly_name)
+    def broadcast(self):
+        poly_success = self.generate_polynomial(self.poly_name)
         if poly_success == DkgPolyStatus.FAIL:
             raise SgxDkgPolynomGenerationError(
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
@@ -240,19 +265,19 @@ class DKGClient:
                                                self.node_id_dkg)
 
     @sgx_unreachable_retry
-    def generate_bls_key(self, bls_key_name):
+    def generate_bls_key(self):
         received_secret_key_contribution = "".join(to_verify(
                                                     self.incoming_secret_key_contribution[j]
                                                     )
                                                    for j in range(self.sgx.n))
         logger.info(f'sChain: {self.schain_name}. '
-                    f'DKGClient is going to create BLS private key with name {bls_key_name}')
-        bls_private_key = self.sgx.create_bls_private_key_v2(self.poly_name, bls_key_name,
+                    f'DKGClient is going to create BLS private key with name {self.bls_name}')
+        bls_private_key = self.sgx.create_bls_private_key_v2(self.poly_name, self.bls_name,
                                                              self.eth_key_name,
                                                              received_secret_key_contribution)
         logger.info(f'sChain: {self.schain_name}. '
-                    'DKGClient is going to fetch BLS public key with name {bls_key_name}')
-        self.public_key = self.sgx.get_bls_public_key(bls_key_name)
+                    'DKGClient is going to fetch BLS public key with name {self.bls_name}')
+        self.public_key = self.sgx.get_bls_public_key(self.bls_name)
         return bls_private_key
 
     def get_bls_public_keys(self):
