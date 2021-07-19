@@ -1,28 +1,36 @@
 import socket
+import datetime
 
-import mock
 import pytest
+import mock
 from mock import patch
-
+import freezegun
 from flask import Flask, appcontext_pushed, g
 from web3 import Web3
 
+from skale.utils.contracts_provision.utils import generate_random_node_data
+from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
+from skale.utils.web3_utils import to_checksum_address
 
-from tools.docker_utils import DockerUtils
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, post_bp_data
-from web.routes.nodes import construct_nodes_bp
+from tools.docker_utils import DockerUtils
+from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from web.routes.node import construct_node_bp
+from web.helper import get_api_url
 
-from skale.utils.contracts_provision.utils import generate_random_node_data
-from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
-from skale.utils.helper import ip_from_bytes
+
+CURRENT_TIMESTAMP = 1594903080
+CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
+
+BLUEPRINT_NAME = 'node'
 
 
 @pytest.fixture
 def skale_bp(skale):
     app = Flask(__name__)
-    app.register_blueprint(construct_nodes_bp())
+    app.register_blueprint(construct_node_bp())
 
     def handler(sender, **kwargs):
         g.docker_utils = DockerUtils(volume_driver='local')
@@ -48,66 +56,29 @@ def node_config():
     return NodeConfig()
 
 
-def test_check_node_name(skale_bp, skale, node_contracts):
-    data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': 'test'})
-    assert data == {'status': 'ok', 'payload': {'name_available': True}}
-    node_id = node_contracts
-    name = skale.nodes.get(node_id)['name']
-    data = get_bp_data(skale_bp, '/check-node-name', {'nodeName': name})
-    assert data == {'status': 'ok', 'payload': {'name_available': False}}
-
-
-def test_check_node_ip(skale_bp, skale, node_contracts):
-    data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': '0.0.0.0'})
-    assert data == {'status': 'ok', 'payload': {'ip_available': True}}
-    node_id = node_contracts
-    ip = ip_from_bytes(skale.nodes.get(node_id)['ip'])
-    data = get_bp_data(skale_bp, '/check-node-ip', {'nodeIp': ip})
-    assert data == {'status': 'ok', 'payload': {'ip_available': False}}
-
-
-def test_containers_list(skale_bp):
-    dutils = DockerUtils(volume_driver='local')
-    data = get_bp_data(skale_bp, '/containers/list')
-    expected = {
-        'status': 'ok',
-        'payload': {
-            'containers': dutils.get_all_skale_containers(format=True)
-        }
-    }
-    assert data == expected
-    data = get_bp_data(skale_bp, '/containers/list', {'all': True})
-    expected = {'status': 'ok',
-                'payload': {
-                    'containers': dutils.get_all_skale_containers(all=True,
-                                                                  format=True)}
-                }
-    assert data == expected
-
-
 def test_node_info(skale_bp, skale, node_contracts, node_config):
     node_id = node_contracts
     node_config.id = node_id
-    data = get_bp_data(skale_bp, '/node-info')
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'info'))
     status = NodeStatus.ACTIVE.value
     assert data['status'] == 'ok'
     node_info = data['payload']['node_info']
     assert node_info['id'] == node_id
     assert node_info['status'] == status
-    assert node_info['owner'] == skale.wallet.address
+    assert to_checksum_address(node_info['owner']) == skale.wallet.address
 
 
 def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
                   gas_price=None, skip_dry_run=False):
-    return {'status': 1, 'data': 1}
+    return {'status': 'ok', 'data': 1}
 
 
 def set_maintenance_mock(self):
-    return {'status': 0}
+    return {'status': 'ok'}
 
 
 def set_domain_name_mock(self, data):
-    return {'status': 0}
+    return {'status': 'ok'}
 
 
 @patch.object(Node, 'register', register_mock)
@@ -123,7 +94,7 @@ def test_node_create(skale_bp):
         'gas_price': 2 * 10 ** 9,
         'domain_name': DEFAULT_DOMAIN_NAME
     }
-    data = post_bp_data(skale_bp, '/create-node', json_data)
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'register'), json_data)
     assert data == {'status': 'ok', 'payload': {'node_data': 1}}
 
     # Without gas_limit
@@ -134,7 +105,7 @@ def test_node_create(skale_bp):
         'port': port,
         'gas_price': 2 * 10 ** 9
     }
-    data = post_bp_data(skale_bp, '/create-node', json_data)
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'register'), json_data)
     assert data == {'status': 'ok', 'payload': {'node_data': 1}}
 
     # Without gas_limit and gas_price
@@ -145,7 +116,7 @@ def test_node_create(skale_bp):
         'port': port,
         'gas_price': 2 * 10 ** 9
     }
-    data = post_bp_data(skale_bp, '/create-node', json_data)
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'register'), json_data)
     assert data == {'status': 'ok', 'payload': {'node_data': 1}}
 
 
@@ -153,7 +124,7 @@ def failed_register_mock(
     self, ip, public_ip, port, name, domain_name, gas_limit=None,
     gas_price=None, skip_dry_run=False
 ):
-    return {'status': 0, 'errors': ['Already registered']}
+    return {'status': 'error', 'errors': ['Already registered']}
 
 
 @patch.object(Node, 'register', failed_register_mock)
@@ -166,7 +137,7 @@ def test_create_with_errors(skale_bp):
         'port': port,
         'domain_name': DEFAULT_DOMAIN_NAME
     }
-    data = post_bp_data(skale_bp, '/create-node', json_data)
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'register'), json_data)
     assert data == {'payload': ['Already registered'], 'status': 'error'}
 
 
@@ -179,7 +150,7 @@ def get_expected_signature(skale, validator_id):
 def test_node_signature(skale_bp, skale):
     validator_id = 1
     json_data = {'validator_id': validator_id}
-    data = get_bp_data(skale_bp, 'node-signature', json_data)
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'signature'), json_data)
     expected_signature = get_expected_signature(skale, validator_id)
     assert data == {'status': 'ok', 'payload': {
         'signature': expected_signature}}
@@ -187,30 +158,82 @@ def test_node_signature(skale_bp, skale):
 
 @patch.object(Node, 'set_maintenance_on', set_maintenance_mock)
 def test_set_maintenance_on(skale_bp, skale):
-    data = post_bp_data(skale_bp, '/api/node/maintenance-on')
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'maintenance-on'))
     assert data == {'payload': {}, 'status': 'ok'}
 
 
 @patch.object(Node, 'set_maintenance_off', set_maintenance_mock)
 def test_set_maintenance_off(skale_bp, skale):
-    data = post_bp_data(skale_bp, '/api/node/maintenance-off')
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'maintenance-off'))
     assert data == {'payload': {}, 'status': 'ok'}
 
 
 @patch.object(Node, 'set_domain_name', set_domain_name_mock)
 def test_set_domain_name(skale_bp, skale):
     json_data = {'domain_name': 'skale.test'}
-    data = post_bp_data(skale_bp, '/api/node/set-domain-name', json_data)
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'set-domain-name'), json_data)
     assert data == {'payload': {}, 'status': 'ok'}
 
 
+@freezegun.freeze_time(CURRENT_DATETIME)
+def test_send_tg_notification(skale_bp):
+    with mock.patch(
+        'tools.notifications.messages.send_message_to_telegram',
+        mock.Mock(return_value={'message': 'test'})
+    ) as send_message_to_telegram_mock:
+        data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'send-tg-notification'),
+                            {'message': ['test']})
+        send_message_to_telegram_mock.delay.assert_called_once_with(
+            TG_API_KEY,
+            TG_CHAT_ID,
+            'test\n\nTimestamp: 1594903080\n'
+            'Datetime: Thu Jul 16 12:38:00 2020'
+        )
+
+    expected = {'status': 'ok',
+                'payload': 'Message was sent successfully'}
+    assert data == expected
+
+
+def test_endpoint_info(skale_bp, skale):
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'endpoint-info'))
+    assert data['status'] == 'ok'
+    payload = data['payload']
+    assert payload['syncing'] is False
+    assert payload['block_number'] > 1
+    assert payload['trusted'] is False
+    assert payload['client'] != 'unknown'
+
+
+def test_meta_info(skale_bp):
+    meta_info = {
+        "version": "0.0.0",
+        "config_stream": "1.4.1-testnet",
+        "docker_lvmpy_stream": "1.1.1"
+    }
+
+    with mock.patch(
+        'web.routes.node.get_meta_info',
+        return_value=meta_info
+    ):
+        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'meta-info'))
+        assert data == {'status': 'ok', 'payload': meta_info}
+
+
 def test_public_ip_info(skale_bp):
-    data = get_bp_data(skale_bp, '/api/v1/node/public-ip')
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'public-ip'))
     assert data['status'] == 'ok'
     ip = data['payload']['public_ip']
     socket.inet_aton(ip)
-    with mock.patch('web.routes.nodes.requests.get',
+    with mock.patch('web.routes.node.requests.get',
                     side_effect=ValueError()):
         data = get_bp_data(skale_bp, '/api/v1/node/public-ip')
         assert data['status'] == 'error'
         assert data['payload'] == 'Public ip request failed'
+
+
+def test_btrfs_info(skale_bp, skale):
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'btrfs-info'))
+    assert data['status'] == 'ok'
+    payload = data['payload']
+    assert payload['kernel_module'] is False

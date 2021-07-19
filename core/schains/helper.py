@@ -29,7 +29,6 @@ from tools.configs import SCHAIN_DATA_PATH, ROTATION_FLAG_FILENAME
 from tools.configs.schains import (SCHAINS_DIR_PATH, DATA_DIR_NAME,
                                    BASE_SCHAIN_CONFIG_FILEPATH,
                                    SCHAINS_DIR_PATH_HOST)
-from tools.configs.ima import PROXY_ABI_FILENAME, IMA_DATA_FILEPATH
 
 logger = logging.getLogger(__name__)
 
@@ -82,19 +81,9 @@ def schain_config_exists(schain_name):
     return os.path.isfile(schain_config_filepath)
 
 
-def get_schain_proxy_file_path(schain_name):
-    schain_dir_path = get_schain_dir_path(schain_name)
-    return os.path.join(schain_dir_path, PROXY_ABI_FILENAME)
-
-
 def read_base_config():
     json_data = open(BASE_SCHAIN_CONFIG_FILEPATH).read()
     return json.loads(json_data)
-
-
-def read_ima_data():
-    with open(IMA_DATA_FILEPATH) as f:
-        return json.load(f)
 
 
 def get_schain_rpc_ports(schain_id):

@@ -17,12 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from dataclasses import dataclass
 import logging
 
-from eth_account.datastructures import AttributeDict
 from web3.exceptions import TransactionNotFound
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DKGEvent:
+    nodeIndex: str
+    secretKeyContribution: str
+    verificationVector: str
 
 
 class Filter:
@@ -42,14 +49,28 @@ class Filter:
         #                 )
 
     def check_event(self, receipt):
-        logs = receipt['logs']
+        logs = receipt.get('logs')
+        if not logs:
+            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
+                        f' does not have field "logs"')
+            return False
         if len(logs) == 0:
             return False
-        if len(logs[0]['topics']) < 2:
+        topics = logs[0].get('topics')
+        if not topics:
+            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
+                        f' does not have field "topics"')
             return False
-        if logs[0]['topics'][0].hex() != self.event_hash:
+        if len(topics) < 2:
             return False
-        if logs[0]['topics'][1].hex() != self.group_index_str:
+        if topics[0].hex() != self.event_hash:
+            return False
+        if topics[1].hex() != self.group_index_str:
+            return False
+        data = logs[0].get('data')
+        if not data:
+            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
+                        f' does not have field "data"')
             return False
         return True
 
@@ -58,7 +79,7 @@ class Filter:
         node_index = int(receipt['logs'][0]['topics'][2].hex()[2:], 16)
         vv = event_data[192: 192 + self.t * 256]
         skc = event_data[192 + 64 + self.t * 256: 192 + 64 + self.t * 256 + 192 * self.n]
-        return AttributeDict({
+        return DKGEvent(**{
             'nodeIndex': node_index, "secretKeyContribution": skc, "verificationVector": vv
             })
 
@@ -66,21 +87,28 @@ class Filter:
         if self.first_unseen_block == -1 or from_channel_started_block:
             start_block = self.dkg_contract.functions.getChannelStartedBlock(
                 self.group_index
-            ).call({'from': self.skale.wallet.address})
+            ).call()
         else:
             start_block = self.first_unseen_block
         current_block = self.skale.web3.eth.getBlock("latest")["number"]
         logger.info(f'sChain {self.group_index_str}: Parsing broadcast events from {start_block}'
-                    f'block to {current_block} block')
+                    f' block to {current_block} block')
         events = []
         for block_number in range(start_block, current_block + 1):
             block = self.skale.web3.eth.getBlock(block_number, full_transactions=True)
             txns = block["transactions"]
             for tx in txns:
                 try:
-                    if tx["to"] != self.dkg_contract_address:
+                    if tx.get("to") != self.dkg_contract_address:
                         continue
-                    receipt = self.skale.web3.eth.getTransactionReceipt(tx["hash"])
+
+                    hash = tx.get("hash")
+                    if hash:
+                        receipt = self.skale.web3.eth.getTransactionReceipt(hash)
+                    else:
+                        logger.info(f'sChain {self.group_index_str}: tx {tx}'
+                                    f' does not have field "hash"')
+                        continue
 
                     if not self.check_event(receipt):
                         continue

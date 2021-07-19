@@ -19,16 +19,16 @@
 
 import logging
 import os
-import shutil
 import time
-from concurrent.futures import as_completed, ThreadPoolExecutor
-from datetime import datetime
+import signal
 from enum import Enum
-from multiprocessing import Process
+from importlib import reload
+from datetime import datetime
 
-from skale.skale_manager import spawn_skale_manager_lib
+from skale.schain_config.generator import get_nodes_for_schain
+from web3._utils import request
 
-
+from core.schains.dkg_status import DKGStatus
 from core.schains.runner import (run_schain_container, run_ima_container,
                                  restart_container, set_rotation_for_schain,
                                  is_exited_with_zero)
@@ -37,38 +37,33 @@ from core.schains.cleaner import (
     remove_schain_container,
     remove_schain_volume
 )
-from core.schains.helper import (init_schain_dir,
-                                 get_schain_config_filepath,
-                                 get_schain_proxy_file_path,
-                                 get_schain_rotation_filepath)
-from core.schains.config.generator import generate_schain_config_with_skale
-from core.schains.config.helper import (get_allowed_endpoints,
-                                        save_schain_config,
-                                        update_schain_config)
+from core.ima.schain import copy_schain_ima_abi
+from core.schains.helper import init_schain_dir, get_schain_rotation_filepath
+from core.schains.config.generator import init_schain_config
+from core.schains.config.helper import get_allowed_endpoints
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.rotation import get_rotation_state
-from core.schains.dkg import run_dkg
+from core.schains.dkg import run_dkg, save_dkg_results
 
 from core.schains.runner import get_container_name
-from core.schains.utils import notify_if_not_enough_balance
 
-from tools.bls.dkg_client import DkgError, get_dkg_timeout
+from tools.bls.dkg_client import DkgError, KeyGenerationError
+from tools.bls.dkg_utils import init_dkg_client, get_secret_key_share_filepath, generate_bls_keys
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
-from tools.configs.ima import IMA_DATA_FILEPATH, DISABLE_IMA
+from tools.configs.ima import DISABLE_IMA
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
 from tools.notifications.messages import notify_checks, notify_repair_mode, is_checks_passed
-from tools.str_formatters import arguments_list_string
 from web.models.schain import upsert_schain_record, SChainRecord
 
 
 logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
-TIMEOUT_COEFFICIENT = 1.5
+SCHAIN_MONITOR_SLEEP_INTERVAL = 500
 
 
 class MonitorMode(Enum):
@@ -78,90 +73,62 @@ class MonitorMode(Enum):
     EXIT = 3
 
 
-def run_creator(skale, node_config):
-    process = Process(target=monitor, args=(skale, node_config))
-    join_timeout = TIMEOUT_COEFFICIENT * get_dkg_timeout(skale)
-    process.start()
-    logger.info('Creator process started')
-    process.join(join_timeout)
-    logger.info('Creator process is joined.')
-    logger.info('Terminating the process')
-    process.terminate()
-    process.join()
+def run_monitor_for_schain(
+        skale, skale_ima, node_info, schain, ecdsa_sgx_key_name, loop=True):
+    prefix = f'schain: {schain["name"]} -'
+    try:
+        logger.info(f'{prefix} monitor created')
+        reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
+        while True:
+            logger.info(f'schain: {schain["name"]} - running monitor')
+            schain_record = upsert_schain_record(schain["name"])
+            schain_record.set_monitor_last_seen(datetime.now())
 
+            def signal_handler(*args):
+                schain_index = skale.schains.name_to_group_id(schain["name"])
+                num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
+                if skale.dkg.get_number_of_completed(schain_index) == num_of_nodes:
+                    rotation = get_rotation_state(skale, schain['name'], node_info['node_id'])
+                    rotation_id = rotation['rotation_id']
+                    secret_key_share_filepath = get_secret_key_share_filepath(
+                        schain["name"], rotation_id
+                    )
+                    if os.path.isfile(secret_key_share_filepath):
+                        schain_record.dkg_done()
+                    else:
+                        schain_record.dkg_key_generation_error()
+                else:
+                    schain_record.dkg_failed()
+                logger.info(
+                    f'DKG status for {schain["name"]} was changed to {schain_record.dkg_status}')
+                os.kill(schain_record.monitor_id, signal.SIGTERM)
 
-def monitor(skale, node_config):
-    logger.info('Creator procedure started')
-    skale = spawn_skale_manager_lib(skale)
-    logger.info('Spawned new skale lib')
-    node_id = node_config.id
-    ecdsa_sgx_key_name = node_config.sgx_key_name
-    logger.info('Fetching schains ...')
-    schains = skale.schains.get_schains_for_node(node_id)
-    logger.info('Get leaving_history for node ...')
-    leaving_history = skale.node_rotation.get_leaving_history(node_id)
-    for leaving_schain in leaving_history:
-        schain = skale.schains.get(leaving_schain['id'])
-        if skale.node_rotation.is_rotation_in_progress(schain['name']) and schain['name']:
-            schain['active'] = True
-            schains.append(schain)
-    schains_on_node = sum(map(lambda schain: schain['active'], schains))
-    schains_holes = len(schains) - schains_on_node
-    logger.info(
-        arguments_list_string({'Node ID': node_id, 'sChains on node': schains_on_node,
-                               'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
-    node_info = node_config.all()
-    notify_if_not_enough_balance(skale, node_info)
+            signal.signal(signal.SIGTERM, signal_handler)
 
-    logger.info('Starting schains ThreadPoolExecutor')
-
-    with ThreadPoolExecutor(max_workers=max(1, schains_on_node)) as executor:
-        futures = [
-            executor.submit(
-                run_monitor_for_schain,
+            monitor_schain(
                 skale,
+                skale_ima,
                 node_info,
                 schain,
                 ecdsa_sgx_key_name
             )
-            for schain in schains if schain['active']
-        ]
-        for future in as_completed(futures):
-            future.result()
-    logger.info('Creator procedure finished')
+            schain_record = upsert_schain_record(schain['name'])
+            schain_record.set_monitor_last_seen(datetime.now())
 
+            if not loop:
+                logger.warning(f'{prefix} finishing monitor')
+                return
 
-def is_backup_run(schain_record):
-    return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
-
-
-def get_monitor_mode(schain_record, rotation_state):
-    if is_backup_run(schain_record) or schain_record.repair_mode:
-        return MonitorMode.SYNC
-    elif rotation_state['in_progress']:
-        if rotation_state['exiting_node']:
-            return MonitorMode.EXIT
-        elif rotation_state['new_schain']:
-            return MonitorMode.SYNC
-        else:
-            return MonitorMode.RESTART
-    return MonitorMode.REGULAR
-
-
-def run_monitor_for_schain(skale, node_info, schain, ecdsa_sgx_key_name):
-    try:
-        logger.info(f'Monitor for sChain {schain["name"]}')
-        skale = spawn_skale_manager_lib(skale)
-        monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name)
+            logger.info(f'{prefix} sleeping {SCHAIN_MONITOR_SLEEP_INTERVAL}s...')
+            time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
     except Exception:
-        logger.exception(f'Monitor for sChain {schain["name"]} failed')
+        logger.exception(f'{prefix} monitor failed')
 
 
-def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
+def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
-    logger.info(f'Rotation for {name}: {rotation}')
 
     rotation_id = rotation['rotation_id']
     finish_ts = rotation['finish_ts']
@@ -171,7 +138,7 @@ def monitor_schain(skale, node_info, schain, ecdsa_sgx_key_name):
     mode = get_monitor_mode(schain_record, rotation)
     checks = SChainChecks(name, node_id, rotation_id=rotation_id)
 
-    logger.debug(f'sChain record: {SChainRecord.to_dict(schain_record)}')
+    logger.debug(f'schain_record: {SChainRecord.to_dict(schain_record)}, rotation: {rotation}')
 
     if schain_record.needs_reload:
         logger.warning(f'Going to reload {schain["name"]}')
@@ -205,9 +172,11 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
         set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     elif mode == MonitorMode.SYNC:
-        cleanup_schain_docker_entity(name)
+        if not rotation['new_schain']:
+            cleanup_schain_docker_entity(name)
         monitor_checks(
             skale=skale,
+            skale_ima=skale_ima,
             schain=schain,
             checks=checks,
             node_id=node_id,
@@ -239,6 +208,7 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
     else:
         monitor_checks(
             skale=skale,
+            skale_ima=skale_ima,
             schain=schain,
             checks=checks,
             node_id=node_id,
@@ -249,15 +219,27 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
         )
 
 
+def is_backup_run(schain_record):
+    return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
+
+
+def get_monitor_mode(schain_record, rotation_state):
+    if is_backup_run(schain_record) or schain_record.repair_mode:
+        return MonitorMode.SYNC
+    elif rotation_state['in_progress']:
+        if rotation_state['exiting_node']:
+            return MonitorMode.EXIT
+        elif rotation_state['new_schain']:
+            return MonitorMode.SYNC
+        else:
+            return MonitorMode.RESTART
+    return MonitorMode.REGULAR
+
+
 def cleanup_schain_docker_entity(schain_name: str) -> None:
     remove_schain_container(schain_name)
     time.sleep(10)
     remove_schain_volume(schain_name)
-
-
-def copy_schain_ima_abi(name):
-    abi_file_dest = get_schain_proxy_file_path(name)
-    shutil.copyfile(IMA_DATA_FILEPATH, abi_file_dest)
 
 
 def add_firewall_rules(schain_name):
@@ -324,6 +306,29 @@ def monitor_sync_schain_container(skale, schain, start_ts,
 
 def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
                  rotation_id, schain_record):
+    if schain_record.dkg_status == DKGStatus.KEY_GENERATION_ERROR:
+        try:
+            dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name)
+        except DkgError as err:
+            logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
+            schain_record.dkg_failed()
+            return False
+
+        try:
+            dkg_results = generate_bls_keys(dkg_client, rotation_id)
+            secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
+            save_dkg_results(dkg_results, secret_key_share_filepath)
+        except KeyGenerationError as err:
+            logger.info(f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
+            schain_record.dkg_key_generation_error()
+            return False
+        except DkgError as err:
+            logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
+            schain_record.dkg_failed()
+            return False
+        schain_record.dkg_done()
+        return True
+
     schain_record.dkg_started()
     try:
         if not skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
@@ -331,6 +336,10 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
             return False
         run_dkg(skale, schain_name, node_id,
                 sgx_key_name, rotation_id)
+    except KeyGenerationError as err:
+        logger.info(f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
+        schain_record.dkg_key_generation_error()
+        return False
     except DkgError as err:
         logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
         schain_record.dkg_failed()
@@ -339,7 +348,7 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
     return True
 
 
-def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
+def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
                    rotation, schain_record, ecdsa_sgx_key_name, sync=False):
     name = schain['name']
     mainnet_chain_id = skale.web3.eth.chainId
@@ -360,7 +369,14 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             return
 
     if not checks.config:
-        init_schain_config(skale, node_id, name, ecdsa_sgx_key_name)
+        rotation_id = skale.schains.get_last_rotation_id(name)
+        init_schain_config(
+            skale=skale,
+            node_id=node_id,
+            schain_name=name,
+            ecdsa_sgx_key_name=ecdsa_sgx_key_name,
+            rotation_id=rotation_id
+        )
     if not checks.volume:
         init_data_volume(schain)
     if not checks.firewall_rules:
@@ -373,22 +389,28 @@ def monitor_checks(skale, schain, checks, node_id, sgx_key_name,
             logger.info(
                 f'sChain {name} is stopped after rotation. Going to restart')
             remove_firewall_rules(name)
-            config = generate_schain_config_with_skale(
+            init_schain_config(
                 skale=skale,
                 schain_name=name,
                 node_id=node_id,
-                rotation_id=rotation['rotation_id'],
-                ecdsa_key_name=ecdsa_sgx_key_name
-            ).to_dict()
-            update_schain_config(config, name)
+                ecdsa_sgx_key_name=ecdsa_sgx_key_name,
+                rotation_id=rotation['rotation_id']
+            )
             add_firewall_rules(name)
             restart_container(SCHAIN_CONTAINER, schain)
         else:
             monitor_schain_container(schain)
             time.sleep(CONTAINERS_DELAY)
     if not DISABLE_IMA and not checks.ima_container:
-        copy_schain_ima_abi(name)
-        monitor_ima_container(schain, mainnet_chain_id)
+        monitor_ima(skale_ima, schain, mainnet_chain_id)
+
+
+def monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=None):
+    if skale_ima.linker.has_schain(schain['name']):  # todo: add IMA version check
+        copy_schain_ima_abi(schain['name'])
+        monitor_ima_container(schain, mainnet_chain_id, dutils=dutils)
+    else:
+        logger.warning(f'sChain {schain["name"]} is not registered in IMA')
 
 
 def check_schain_rotated(schain_name):
@@ -396,22 +418,3 @@ def check_schain_rotated(schain_name):
     rotation_file_exists = os.path.exists(schain_rotation_filepath)
     zero_exit_code = is_exited_with_zero(schain_name)
     return rotation_file_exists and zero_exit_code
-
-
-# TODO: Check for rotation earlier
-def init_schain_config(skale, node_id, schain_name, ecdsa_sgx_key_name):
-    config_filepath = get_schain_config_filepath(schain_name)
-    if not os.path.isfile(config_filepath):
-        logger.warning(
-            f'sChain {schain_name}: sChain config not found: '
-            f'{config_filepath}, trying to create.'
-        )
-        rotation_id = skale.schains.get_last_rotation_id(schain_name)
-        schain_config = generate_schain_config_with_skale(
-            skale=skale,
-            schain_name=schain_name,
-            node_id=node_id,
-            rotation_id=rotation_id,
-            ecdsa_key_name=ecdsa_sgx_key_name
-        )
-        save_schain_config(schain_config.to_dict(), schain_name)

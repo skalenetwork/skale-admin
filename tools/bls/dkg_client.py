@@ -53,6 +53,10 @@ class SgxDkgPolynomGenerationError(DkgError):
     pass
 
 
+class KeyGenerationError(Exception):
+    pass
+
+
 def convert_g2_points_to_array(data):
     g2_array = []
     for point in data:
@@ -107,10 +111,6 @@ def to_verify(share):
     return share[128:192] + share[:128]
 
 
-def get_dkg_timeout(skale):
-    return skale.constants_holder.contract.functions.complaintTimelimit().call()
-
-
 class DKGClient:
     def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
                  node_ids_dkg, node_ids_contract, eth_key_name):
@@ -130,7 +130,7 @@ class DKGClient:
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
         self.dkg_contract_functions = self.skale.dkg.contract.functions
-        self.dkg_timeout = get_dkg_timeout(self.skale)
+        self.dkg_timeout = self.skale.constants_holder.get_dkg_timeout()
         self.complaint_error_event_hash = self.skale.web3.toHex(self.skale.web3.sha3(
             text="ComplaintError(string)"
         ))
@@ -140,7 +140,7 @@ class DKGClient:
         logger.info(f'sChain: {self.schain_name}. DKG timeout is {self.dkg_timeout}')
 
     def is_channel_opened(self):
-        return self.dkg_contract_functions.isChannelOpened(self.group_index).call()
+        return self.skale.dkg.is_channel_opened(self.group_index)
 
     def check_complaint_logs(self, logs):
         return logs['topics'][0].hex() != self.complaint_error_event_hash
@@ -168,8 +168,9 @@ class DKGClient:
 
     @sgx_unreachable_retry
     def secret_key_contribution(self):
-        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution(self.poly_name,
-                                                                                 self.public_keys)
+        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution_v2(self.poly_name,
+                                                                                    self.public_keys
+                                                                                    )
         self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
             self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
         ]
@@ -182,9 +183,9 @@ class DKGClient:
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
 
-        is_broadcast_possible_function = self.dkg_contract_functions.isBroadcastPossible
-        is_broadcast_possible = is_broadcast_possible_function(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+        is_broadcast_possible = self.skale.dkg.is_broadcast_possible(
+            self.group_index, self.node_id_contract, self.skale.wallet.address
+        )
 
         channel_opened = self.is_channel_opened()
         if not is_broadcast_possible or not channel_opened:
@@ -231,12 +232,12 @@ class DKGClient:
 
     @sgx_unreachable_retry
     def verification(self, from_node):
-        return self.sgx.verify_secret_share(self.incoming_verification_vector[from_node],
-                                            self.eth_key_name,
-                                            to_verify(
+        return self.sgx.verify_secret_share_v2(self.incoming_verification_vector[from_node],
+                                               self.eth_key_name,
+                                               to_verify(
                                                 self.incoming_secret_key_contribution[from_node]
-                                            ),
-                                            self.node_id_dkg)
+                                               ),
+                                               self.node_id_dkg)
 
     @sgx_unreachable_retry
     def generate_bls_key(self, bls_key_name):
@@ -246,9 +247,9 @@ class DKGClient:
                                                    for j in range(self.sgx.n))
         logger.info(f'sChain: {self.schain_name}. '
                     f'DKGClient is going to create BLS private key with name {bls_key_name}')
-        bls_private_key = self.sgx.create_bls_private_key(self.poly_name, bls_key_name,
-                                                          self.eth_key_name,
-                                                          received_secret_key_contribution)
+        bls_private_key = self.sgx.create_bls_private_key_v2(self.poly_name, bls_key_name,
+                                                             self.eth_key_name,
+                                                             received_secret_key_contribution)
         logger.info(f'sChain: {self.schain_name}. '
                     'DKGClient is going to fetch BLS public key with name {bls_key_name}')
         self.public_key = self.sgx.get_bls_public_key(bls_key_name)
@@ -261,9 +262,8 @@ class DKGClient:
         return self.sgx.calculate_all_bls_public_keys(self.incoming_verification_vector)
 
     def alright(self):
-        is_alright_possible_function = self.dkg_contract_functions.isAlrightPossible
-        is_alright_possible = is_alright_possible_function(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+        is_alright_possible = self.skale.dkg.is_alright_possible(
+            self.group_index, self.node_id_contract, self.skale.wallet.address)
 
         if not is_alright_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
@@ -273,7 +273,8 @@ class DKGClient:
             self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,
-                gas_limit=ALRIGHT_GAS_LIMIT
+                gas_limit=ALRIGHT_GAS_LIMIT,
+                multiplier=2
             )
         except TransactionFailedError as e:
             logger.error(f'DKG alright failed: sChain {self.schain_name}')
@@ -285,11 +286,12 @@ class DKGClient:
         if report_bad_data:
             reason = "complaint_bad_data"
         logger.info(f'sChain: {self.schain_name}. '
-                    f'{self.node_id_dkg} is trying to sent a {reason} on {to_node} node')
-        is_complaint_possible_function = self.dkg_contract_functions.isComplaintPossible
-        is_complaint_possible = is_complaint_possible_function(
-            self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]).call(
-                {'from': self.skale.wallet.address})
+                    f'{self.node_id_dkg} node is trying to sent a {reason} on {to_node} node')
+
+        is_complaint_possible = self.skale.dkg.is_complaint_possible(
+            self.group_index, self.node_id_contract, self.node_ids_dkg[to_node],
+            self.skale.wallet.address
+        )
 
         if not is_complaint_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
@@ -328,8 +330,8 @@ class DKGClient:
             self.poly_name,
             self.node_ids_contract[to_node_index]
         )
-        share, dh_key = response['share'], response['dh_key']
-        verification_vector_mult = response['verification_vector_mult']
+        share, dh_key = response.share, response.dh_key
+        verification_vector_mult = response.verification_vector_mult
         share = share.split(':')
         for i in range(4):
             share[i] = int(share[i])
@@ -337,9 +339,8 @@ class DKGClient:
         return share, dh_key, verification_vector_mult
 
     def response(self, to_node_index):
-        is_pre_response_possible_function = self.dkg_contract_functions.isPreResponsePossible
-        is_pre_response_possible = is_pre_response_possible_function(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+        is_pre_response_possible = self.skale.dkg.is_pre_response_possible(
+            self.group_index, self.node_id_contract, self.skale.wallet.address)
 
         if not is_pre_response_possible or not self.is_channel_opened():
             logger.info(f'sChain: {self.schain_name}. '
@@ -358,9 +359,8 @@ class DKGClient:
                 wait_for=True
             )
 
-            is_response_possible_function = self.dkg_contract_functions.isResponsePossible
-            is_response_possible = is_response_possible_function(
-                self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+            is_response_possible = self.skale.dkg.is_response_possible(
+                self.group_index, self.node_id_contract, self.skale.wallet.address)
 
             if not is_response_possible or not self.is_channel_opened():
                 logger.info(f'sChain: {self.schain_name}. '
@@ -380,37 +380,10 @@ class DKGClient:
             raise DkgTransactionError(e)
 
     def is_all_data_received(self, from_node):
-        is_all_data_received_function = self.dkg_contract_functions.isAllDataReceived
-        return is_all_data_received_function(
-            self.group_index, self.node_ids_dkg[from_node]
-        ).call({'from': self.skale.wallet.address})
+        return self.skale.dkg.is_all_data_received(self.group_index, self.node_ids_dkg[from_node])
 
     def is_everyone_broadcasted(self):
-        is_everyone_broadcasted_function = self.dkg_contract_functions.isEveryoneBroadcasted
-        return is_everyone_broadcasted_function(self.group_index).call(
-            {'from': self.skale.wallet.address}
-        )
+        return self.skale.dkg.is_everyone_broadcasted(self.group_index, self.skale.wallet.address)
 
     def is_everyone_sent_algright(self):
-        get_number_of_completed_function = self.dkg_contract_functions.getNumberOfCompleted
-        return get_number_of_completed_function(self.group_index).call() == self.n
-
-    def get_channel_started_time(self):
-        get_channel_started_time_function = self.dkg_contract_functions.getChannelStartedTime
-        return get_channel_started_time_function(self.group_index).call()
-
-    def get_complaint_started_time(self):
-        get_complaint_started_time_function = self.dkg_contract_functions.getComplaintStartedTime
-        return get_complaint_started_time_function(self.group_index).call()
-
-    def get_alright_started_time(self):
-        get_alright_started_time_function = self.dkg_contract_functions.getAlrightStartedTime
-        return get_alright_started_time_function(self.group_index).call()
-
-    def get_complaint_data(self):
-        get_complaint_data_function = self.dkg_contract_functions.getComplaintData
-        return get_complaint_data_function(self.group_index).call()
-
-    def get_time_of_last_successful_dkg(self):
-        last_successful_dkg_time_function = self.dkg_contract_functions.getTimeOfLastSuccessfulDKG
-        return last_successful_dkg_time_function(self.group_index).call()
+        return self.skale.dkg.get_number_of_completed(self.group_index) == self.n

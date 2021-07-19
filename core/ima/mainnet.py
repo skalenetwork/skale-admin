@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2021 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -16,18 +16,3 @@
 #
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-
-from tools.helper import read_json
-from tools.configs.ima import MAINNET_PROXY_PATH, IMA_DATA_FILEPATH
-
-
-def get_message_proxy_addresses():
-    ima_abi = read_json(MAINNET_PROXY_PATH)
-    schain_ima_abi = read_json(IMA_DATA_FILEPATH)
-    ima_mp_schain = schain_ima_abi['message_proxy_chain_address']
-    ima_mp_mainnet = ima_abi['message_proxy_mainnet_address']
-    return {
-        'ima_message_proxy_schain': ima_mp_schain,
-        'ima_message_proxy_mainnet': ima_mp_mainnet
-    }
