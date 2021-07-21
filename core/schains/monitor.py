@@ -308,14 +308,14 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
                  rotation_id, schain_record):
     if schain_record.dkg_status == DKGStatus.KEY_GENERATION_ERROR:
         try:
-            dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name)
+            dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
         except DkgError as err:
             logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
             schain_record.dkg_failed()
             return False
 
         try:
-            dkg_results = generate_bls_keys(dkg_client, rotation_id)
+            dkg_results = generate_bls_keys(dkg_client)
             secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
             save_dkg_results(dkg_results, secret_key_share_filepath)
         except KeyGenerationError as err:
@@ -334,8 +334,7 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
         if not skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
             schain_record.dkg_failed()
             return False
-        run_dkg(skale, schain_name, node_id,
-                sgx_key_name, rotation_id)
+        run_dkg(skale, schain_name, node_id, sgx_key_name, rotation_id)
     except KeyGenerationError as err:
         logger.info(f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
         schain_record.dkg_key_generation_error()
