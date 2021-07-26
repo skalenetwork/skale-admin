@@ -5,7 +5,7 @@ env:
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
   MANAGER_TAG: "1.8.1-develop.6"
   IMA_TAG: "1.0.0-develop.229"
-  SGX_WALLET_TAG: "1.76.0-develop.0"
+  SGX_WALLET_TAG: "1.77.0-beta.0"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   PYTHON_VERSION: 3.8
 jobs:
