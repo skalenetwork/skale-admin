@@ -43,13 +43,15 @@ def client():
 def check_schain_container(schain_name: str, client: DockerUtils):
     assert client.is_data_volume_exists(schain_name)
 
-    containers = client.get_all_schain_containers()
-    assert len(containers) == 1
     containers = client.get_all_skale_containers()
+    assert len(containers) == 1
+
+    containers = client.get_all_schain_containers()
     assert len(containers) == 1
 
     info = client.get_info(containers[0].id)
     assert 'stats' in info
+    print('DEBUG', containers[0].logs())
     assert info['status'] == 'running'
     assert client.container_running(info)
     assert containers[0].name

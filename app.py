@@ -17,7 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import binascii
 import logging
+import os
 import time
 
 from flask import Flask, g
@@ -45,6 +47,9 @@ from web.routes.wallet import construct_wallet_bp
 from web.routes.ssl import construct_ssl_bp
 from web.routes.health import construct_health_bp
 
+REQ_ID_SIZE = 10
+
+
 init_api_logger()
 logger = logging.getLogger(__name__)
 
@@ -62,15 +67,19 @@ def before_request():
     g.request_start_time = time.time()
     g.config = NodeConfig()
     g.wallet = init_wallet(node_config=g.config)
+    g.request_id = binascii.b2a_hex(
+        os.urandom(REQ_ID_SIZE // 2)
+    ).decode('utf-8')
     g.db = get_database()
     g.db.connect(reuse_if_open=True)
     g.docker_utils = DockerUtils()
+    logger.info(f'Processing request {g.request_id}')
 
 
 @app.teardown_request
 def teardown_request(response):
     elapsed = int(time.time() - g.request_start_time)
-    logger.info(f'Request time elapsed: {elapsed}s')
+    logger.info(f'Request finished {g.request_id}, time elapsed: {elapsed}s')
     if not g.db.is_closed():
         g.db.close()
     return response

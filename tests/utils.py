@@ -105,7 +105,7 @@ def run_simple_schain_container(schain_data: dict, dutils: DockerUtils):
 def run_simple_schain_container_in_sync_mode(schain_data: dict,
                                              dutils: DockerUtils):
     public_key = "1:1:1:1"
-    timestamp = time.time()
+    timestamp = int(time.time())
 
     class SnapshotAddressMock:
         def __init__(self):
