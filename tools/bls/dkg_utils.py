@@ -261,8 +261,8 @@ def wait_for_fail(skale, schain_name, channel_started_time, reason=""):
         sleep(30)
 
 
-def get_latest_block_timestamp(dkg_client):
-    return dkg_client.skale.web3.eth.getBlock("latest")["timestamp"]
+def get_latest_block_timestamp(skale):
+    return skale.web3.eth.getBlock("latest")["timestamp"]
 
 
 def get_secret_key_share_filepath(schain_name, rotation_id):
