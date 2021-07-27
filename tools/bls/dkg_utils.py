@@ -95,7 +95,7 @@ def broadcast_and_check_data(dkg_client):
     broadcasts_found = []
 
     while False in is_received:
-        time_gone = get_latest_block_timestamp(dkg_client) - start_time
+        time_gone = get_latest_block_timestamp(dkg_client.skale) - start_time
         if time_gone > dkg_client.dkg_timeout:
             break
         logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
