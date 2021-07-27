@@ -172,7 +172,8 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
         set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     elif mode == MonitorMode.SYNC:
-        if not rotation['new_schain']:
+        if not rotation['in_progress']:
+            logger.info('Reseting schain')
             cleanup_schain_docker_entity(name)
         monitor_checks(
             skale=skale,
