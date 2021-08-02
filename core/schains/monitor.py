@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import sys
+# import sys
 import time
 import signal
 import logging
@@ -88,11 +88,16 @@ def run_monitor_for_schain(
 
             def signal_handler(*args):
                 logger.info(
-                    f'signal_handler was triggered for {schain["name"]},trying to stop gracefully')
+                    f'signal_handler was triggered for {schain["name"]}, trying to stop gracefully')
 
                 if schain_record.dkg_status == DKGStatus.DONE.value:
                     logger.info(f'DKG is done for {schain["name"]}, exiting with 0')
-                    sys.exit(0)
+                    logger.info(f'SH - sleep - {schain["name"]}')
+                    for i in range(1, 4):
+                        print(i)
+                        time.sleep(i)
+                    logger.info(f'SH - done - {schain["name"]}')
+                    return
 
                 schain_index = skale.schains.name_to_group_id(schain["name"])
                 num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
@@ -112,7 +117,7 @@ def run_monitor_for_schain(
                     f'DKG status for {schain["name"]} was changed to {schain_record.dkg_status}')
 
                 logger.info(f'Handler completed: {schain["name"]}, exiting with 0')
-                sys.exit(0)
+                # sys.exit(0)
 
             signal.signal(signal.SIGTERM, signal_handler)
 

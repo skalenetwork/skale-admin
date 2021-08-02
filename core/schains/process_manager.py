@@ -17,8 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import sys
+# import os
+# import sys
 import signal
 import logging
 from multiprocessing import Process
@@ -28,7 +28,7 @@ from skale import Skale
 from core.schains.monitor import run_monitor_for_schain
 from core.schains.utils import notify_if_not_enough_balance
 from core.schains.process_manager_helper import (
-    terminate_stuck_schain_process, is_monitor_process_alive
+    terminate_stuck_schain_process, is_monitor_process_alive, terminate_process
 )
 
 from web.models.schain import upsert_schain_record, SChainRecord
@@ -45,11 +45,13 @@ def pm_signal_handler(*args):
     processes so they can gracefully save DKG results before
     """
     schain_records = SChainRecord.select()
+    print(f'schain_records: {len(schain_records)}')
+    print(f'schain_records: {list(schain_records)}')
     for schain_record in schain_records:
         logger.warning(f'Going to send SIGTERM to {schain_record.name}, {schain_record.monitor_id}')
-        os.kill(schain_record.monitor_id, signal.SIGTERM)
+        terminate_process(schain_record.monitor_id)
     logger.warning(f'All sChain processes stopped, exiting...')
-    sys.exit(0)
+    # sys.exit(0)
 
 
 def run_process_manager(skale, skale_ima, node_config):
