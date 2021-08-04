@@ -24,11 +24,16 @@ import sys
 from logging import Formatter, StreamHandler
 from logging.handlers import RotatingFileHandler
 
-from tools.configs.logs import (ADMIN_LOG_PATH,
-                                API_LOG_PATH,
-                                DEBUG_LOG_PATH,
-                                LOG_FILE_SIZE_BYTES,
-                                LOG_BACKUP_COUNT, LOG_FORMAT)
+from flask import has_request_context, request
+
+from tools.configs.logs import (
+    ADMIN_LOG_FORMAT,
+    ADMIN_LOG_PATH,
+    API_LOG_FORMAT, API_LOG_PATH,
+    DEBUG_LOG_PATH,
+    LOG_FILE_SIZE_BYTES,
+    LOG_BACKUP_COUNT
+)
 
 
 HIDING_PATTERNS = [
@@ -36,6 +41,16 @@ HIDING_PATTERNS = [
     r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
     r'ws[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
 ]
+
+
+class RequestFormatter(logging.Formatter):
+    def format(self, record):
+        if has_request_context():
+            record.url = request.full_path[:-1]
+        else:
+            record.url = None
+
+        return super().format(record)
 
 
 class HidingFormatter:
@@ -58,13 +73,21 @@ class HidingFormatter:
         return getattr(self.base_formatter, attr)
 
 
-def init_logger(log_file_path, debug_file_path=None):
+def init_logger(
+    log_file_path,
+    log_format,
+    base_formatter,
+    debug_file_path=None
+):
     handlers = []
 
-    base_formatter = Formatter(LOG_FORMAT)
+    base_formatter = base_formatter(log_format)
     formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
-    f_handler = RotatingFileHandler(log_file_path, maxBytes=LOG_FILE_SIZE_BYTES,
-                                    backupCount=LOG_BACKUP_COUNT)
+    f_handler = RotatingFileHandler(
+        log_file_path,
+        maxBytes=LOG_FILE_SIZE_BYTES,
+        backupCount=LOG_BACKUP_COUNT
+    )
 
     f_handler.setFormatter(formatter)
     f_handler.setLevel(logging.INFO)
@@ -87,8 +110,8 @@ def init_logger(log_file_path, debug_file_path=None):
 
 
 def init_admin_logger():
-    init_logger(ADMIN_LOG_PATH, DEBUG_LOG_PATH)
+    init_logger(ADMIN_LOG_PATH, ADMIN_LOG_FORMAT, Formatter, DEBUG_LOG_PATH)
 
 
 def init_api_logger():
-    init_logger(API_LOG_PATH)
+    init_logger(API_LOG_PATH, API_LOG_FORMAT, RequestFormatter)
