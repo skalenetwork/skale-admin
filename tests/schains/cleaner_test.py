@@ -24,7 +24,6 @@ from core.schains.helper import init_schain_dir
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.docker_utils import DockerUtils
 from web.models.schain import (
     SChainRecord, mark_schain_deleted, upsert_schain_record)
 
@@ -52,11 +51,6 @@ class ImaEnv:
 def container_running(dutils, container_name):
     info = dutils.get_info(container_name)
     return dutils.container_running(info)
-
-
-@pytest.fixture
-def dutils():
-    return DockerUtils(volume_driver='local')
 
 
 @pytest.fixture

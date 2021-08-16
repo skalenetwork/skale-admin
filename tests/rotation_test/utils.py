@@ -18,9 +18,7 @@ from tests.dkg_test.main_test import (create_schain,
                                       link_addresses_to_validator,
                                       register_nodes, run_dkg_all)
 from tools.bls.dkg_utils import get_secret_key_share_filepath
-from tools.docker_utils import DockerUtils
 
-docker_utils = DockerUtils(volume_driver='local')
 
 TIMEOUT = 240
 INSECURE_PRIVATE_KEY = "f253bad7b1f62b8ff60bbf451cf2e8e9ebb5d6e9bff450c55b8d5504b8c63d3"
@@ -78,7 +76,7 @@ def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
 
 
 def init_data_volume_mock(schain, dutils=None):
-    return init_data_volume(schain, docker_utils)
+    return init_data_volume(schain, dutils)
 
 
 def run_schain_container_mock(schain, public_key=None, start_ts=None,
@@ -86,7 +84,7 @@ def run_schain_container_mock(schain, public_key=None, start_ts=None,
     return run_schain_container(
         schain, public_key=public_key,
         start_ts=start_ts,
-        dutils=docker_utils,
+        dutils=dutils,
         volume_mode='Z',
         ulimit_check=False,
         enable_ssl=False
@@ -155,9 +153,9 @@ def wait_for_schain_alive(schain_name):
     assert sum_time < TIMEOUT
 
 
-def wait_for_schain_exiting(schain_name):
+def wait_for_schain_exiting(schain_name, dutils):
     sum_time = 0
-    while not is_exited(schain_name, dutils=docker_utils) and sum_time < TIMEOUT:
+    while not is_exited(schain_name, dutils=dutils) and sum_time < TIMEOUT:
         sum_time += 10
         sleep(10)
     assert sum_time < TIMEOUT

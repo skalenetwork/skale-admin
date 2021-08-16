@@ -1,7 +1,6 @@
 import os
 import json
 import time
-from functools import partial
 from pathlib import Path
 
 import pytest
@@ -18,7 +17,6 @@ from core.schains.helper import get_schain_rotation_filepath
 from core.schains.runner import get_container_name
 from tests.utils import get_schain_contracts_data
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
-from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
 from web.models.schain import SChainRecord, upsert_schain_record
 from core.schains.monitor import get_monitor_mode, MonitorMode
@@ -159,13 +157,6 @@ def test_check_schain_rotated(skale, schain_config):
         Path(path).touch()
         assert check_schain_rotated(schain_name)
         os.remove(path)
-
-
-@pytest.fixture
-def dutils():
-    c = DockerUtils(volume_driver='local')
-    c.run_container = partial(c.run_container)
-    return c
 
 
 @pytest.fixture

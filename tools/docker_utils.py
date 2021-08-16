@@ -58,13 +58,20 @@ def format_containers(f):
 
 
 class DockerUtils:
-    def __init__(self, volume_driver: str = 'lvmpy') -> None:
-        self.client = self.init_docker_client()
+    def __init__(
+        self,
+        volume_driver: str = 'lvmpy',
+        host: str = 'unix://var/run/skale/docker.sock'
+    ) -> None:
+        self.client = self.init_docker_client(host=host)
         self.cli = self.init_docker_cli()
         self.volume_driver = volume_driver
 
-    def init_docker_client(self) -> DockerClient:
-        return docker.from_env()
+    def init_docker_client(
+        self,
+        host: str = 'unix://var/run/skale/docker.sock'
+    ) -> DockerClient:
+        return docker.DockerClient(base_url=host)
 
     def init_docker_cli(self) -> APIClient:
         return APIClient()
@@ -200,7 +207,8 @@ class DockerUtils:
         if not container:
             return
         self.backup_container_logs(container)
-        logger.info(f'Stopping container: {container_name}, timeout: {stop_timeout}')
+        logger.info(
+            f'Stopping container: {container_name}, timeout: {stop_timeout}')
         container.stop(timeout=stop_timeout)
         logger.info(f'Removing container: {container_name}, kwargs: {kwargs}')
         container.remove(**kwargs)
@@ -211,7 +219,8 @@ class DockerUtils:
         logs_backup_filepath = self.get_logs_backup_filepath(container)
         with open(logs_backup_filepath, "wb") as out:
             out.write(container.logs(tail=tail))
-        logger.info(f'Old container logs saved to {logs_backup_filepath}, tail: {tail}')
+        logger.info(
+            f'Old container logs saved to {logs_backup_filepath}, tail: {tail}')
 
     def get_logs_backup_filepath(self, container: Container) -> str:
         container_index = sum(1 for f in os.listdir(REMOVED_CONTAINERS_FOLDER_PATH)

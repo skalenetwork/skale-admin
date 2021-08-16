@@ -42,7 +42,7 @@ def exiting_node(skale, db):
 
 
 # TODO: Mock leaving history, check final exit status
-def test_node_exit(skale, skale_ima, exiting_node):
+def test_node_exit(skale, skale_ima, exiting_node, dutils):
     nodes, schain_name = exiting_node
     node = nodes[0]
     spawn_skale_lib_mock = get_spawn_skale_mock(node.config.id)
@@ -79,7 +79,7 @@ def test_node_exit(skale, skale_ima, exiting_node):
                         new=mock.Mock(return_value=rotation_state_mock)),\
                 mock.patch('core.schains.cleaner.SgxClient.delete_bls_key', delete_bls_keys_mock):
             run_process_manager(skale, skale_ima, node.config)
-            wait_for_schain_exiting(schain_name)
+            wait_for_schain_exiting(schain_name, dutils)
             cleaner_monitor(node.skale, node.config)
             checks = SChainChecks(schain_name, node.config.id).get_all()
             assert not checks['container']
