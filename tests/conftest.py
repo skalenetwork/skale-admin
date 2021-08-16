@@ -228,7 +228,7 @@ def schain_on_contracts(skale, _schain_name) -> str:
 def dutils():
     return DockerUtils(
         volume_driver='local',
-        host='unix://var/run/docker.sock'
+        host='unix:///var/run/docker.sock'
     )
 
 
