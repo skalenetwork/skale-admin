@@ -226,10 +226,7 @@ def schain_on_contracts(skale, _schain_name) -> str:
 
 @pytest.fixture
 def dutils():
-    return DockerUtils(
-        volume_driver='local',
-        host='unix:///var/run/docker.sock'
-    )
+    return DockerUtils(volume_driver='local')
 
 
 @pytest.fixture

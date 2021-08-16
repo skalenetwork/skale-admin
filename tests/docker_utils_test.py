@@ -32,7 +32,7 @@ LOGS_TEST_TEXT = 'Hello, SKALE!'
 
 
 @pytest.fixture
-def mocked_client(dutils):
+def mocked_dutils(dutils):
     dutils.get_all_schain_containers = partial(
         dutils.get_all_schain_containers,
         all=True
@@ -201,7 +201,7 @@ def test_remove_volume(dutils):
     dutils.client.volumes.create(name=name)
     dutils.rm_vol(name)
     with pytest.raises(docker.errors.APIError):
-        dutils.dutils.volumes.get(name)
+        dutils.client.volumes.get(name)
 
 
 def test_remove_volume_error(dutils):
