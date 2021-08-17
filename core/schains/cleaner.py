@@ -98,10 +98,13 @@ def remove_config_dir(schain_name: str) -> None:
     shutil.rmtree(schain_dir_path)
 
 
-def monitor(skale, node_config):
+def monitor(skale, node_config, dutils):
     logger.info('Cleaner procedure started.')
-    schains_on_node = get_schains_on_node()
-    schain_names_on_contracts = get_schain_names_from_contract(skale, node_config.id)
+    schains_on_node = get_schains_on_node(dutils=dutils)
+    schain_names_on_contracts = get_schain_names_from_contract(
+        skale,
+        node_config.id
+    )
     logger.info(f'\nsChains on contracts: {schain_names_on_contracts}\n\
 sChains on node: {schains_on_node}')
 
@@ -110,7 +113,12 @@ sChains on node: {schains_on_node}')
             logger.warning(f'sChain {schain_name} was found on node, but not on contracts: \
 {schain_names_on_contracts}, going to remove it!')
             try:
-                ensure_schain_removed(skale, schain_name, node_config.id)
+                ensure_schain_removed(
+                    skale,
+                    schain_name,
+                    node_config.id,
+                    dutils=dutils
+                )
             except Exception:
                 logger.exception(f'sChain removal {schain_name} failed')
     logger.info('Cleanup procedure finished')
@@ -122,6 +130,7 @@ def get_schain_names_from_contract(skale, node_id):
 
 
 def get_schains_with_containers(dutils=None):
+    dutils = dutils or docker_utils
     return [
         c.name.replace('skale_schain_', '', 1)
         for c in dutils.get_all_schain_containers(all=True)
@@ -154,6 +163,7 @@ def remove_firewall_rules(schain_name):
 
 
 def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
+    dutils = dutils or docker_utils
     is_schain_exist = skale.schains_internal.is_schain_exist(schain_name)
     exited_with_zero = is_exited_with_zero(schain_name, dutils=dutils)
     schain_record = upsert_schain_record(schain_name)
@@ -183,9 +193,13 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
 
 
 def cleanup_schain(node_id, schain_name, dutils=None):
+    dutils = dutils or docker_utils
     checks = SChainChecks(schain_name, node_id)
-    if checks.container or is_exited(schain_name, container_type=ContainerType.schain,
-                                     dutils=dutils):
+    if checks.container or is_exited(
+        schain_name,
+        container_type=ContainerType.schain,
+        dutils=dutils
+    ):
         remove_schain_container(schain_name)
     if checks.volume:
         remove_schain_volume(schain_name)

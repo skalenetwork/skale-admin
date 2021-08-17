@@ -125,7 +125,15 @@ def run_monitor_for_schain(
         logger.exception(f'{prefix} monitor failed')
 
 
-def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
+def monitor_schain(
+    skale,
+    skale_ima,
+    node_info,
+    schain,
+    ecdsa_sgx_key_name,
+    dutils
+):
+    dutils = dutils or DockerUtils()
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
@@ -167,7 +175,7 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
         logger.info(f'Finish time: {finish_time}')
         # ensure containers are working after update
         if not checks.container:
-            monitor_schain_container(schain)
+            monitor_schain_container(schain, dutils=dutils)
             time.sleep(CONTAINERS_DELAY)
         set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
@@ -185,7 +193,8 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             rotation=rotation,
             schain_record=schain_record,
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
-            sync=True
+            sync=True,
+            dutils=dutils
         )
 
     elif mode == MonitorMode.RESTART:
@@ -216,7 +225,8 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             sgx_key_name=sgx_key_name,
             rotation=rotation,
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
-            schain_record=schain_record
+            schain_record=schain_record,
+            dutils=dutils
         )
 
 
@@ -349,7 +359,9 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
 
 
 def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
-                   rotation, schain_record, ecdsa_sgx_key_name, sync=False):
+                   rotation, schain_record, ecdsa_sgx_key_name, sync=False,
+                   dutils=None):
+    dutils = dutils or DockerUtils()
     name = schain['name']
     mainnet_chain_id = skale.web3.eth.chainId
     logger.debug(f'Mainnet chainId: {mainnet_chain_id}')
@@ -384,7 +396,12 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
     if not checks.container:
         if sync:
             finish_ts = rotation['finish_ts']
-            monitor_sync_schain_container(skale, schain, finish_ts)
+            monitor_sync_schain_container(
+                skale,
+                schain,
+                finish_ts,
+                dutils=dutils
+            )
         elif check_schain_rotated(name):
             logger.info(
                 f'sChain {name} is stopped after rotation. Going to restart')
@@ -399,10 +416,10 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             add_firewall_rules(name)
             restart_container(SCHAIN_CONTAINER, schain)
         else:
-            monitor_schain_container(schain)
+            monitor_schain_container(schain, dutils=dutils)
             time.sleep(CONTAINERS_DELAY)
     if not DISABLE_IMA and not checks.ima_container:
-        monitor_ima(skale_ima, schain, mainnet_chain_id)
+        monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=dutils)
 
 
 def monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=None):

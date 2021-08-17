@@ -77,19 +77,19 @@ def upsert_db(db):
         upsert_schain_record(name)
 
 
-def test_monitor(db, schain_dirs_for_monitor, skale, node_config):
+def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils):
     ensure_schain_removed_mock = mock.Mock()
 
     with mock.patch('core.schains.cleaner.ensure_schain_removed',
                     ensure_schain_removed_mock):
-        monitor(skale, node_config)
+        monitor(skale, node_config, dutils=dutils)
         ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_1, 0)
         ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_2, 0)
 
     ensure_schain_removed_mock = mock.Mock(side_effect=ValueError)
     with mock.patch('core.schains.cleaner.ensure_schain_removed',
                     ensure_schain_removed_mock):
-        monitor(skale, node_config)
+        monitor(skale, node_config, dutils=dutils)
         ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_1, 0)
         ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_2, 0)
 
@@ -107,7 +107,7 @@ def test_remove_schain_volume(dutils, schain_config):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     dutils.create_data_volume(schain_name)
     assert dutils.is_data_volume_exists(schain_name)
-    remove_schain_volume(schain_name)
+    remove_schain_volume(schain_name, dutils=dutils)
     assert not dutils.is_data_volume_exists(schain_name)
 
 
@@ -133,7 +133,7 @@ def test_remove_schain_container(
     run_simple_schain_container(schain_data, dutils)
     container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert container_running(dutils, container_name)
-    remove_schain_container(schain_name, dutils)
+    remove_schain_container(schain_name, dutils=dutils)
     assert not container_running(dutils, container_name)
 
 
@@ -146,7 +146,7 @@ def test_remove_ima_container(dutils, schain_container):
         run_simple_ima_container(schain_data, dutils)
     container_name = IMA_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert container_running(dutils, container_name)
-    remove_ima_container(schain_name, dutils)
+    remove_ima_container(schain_name, dutils=dutils)
     assert not container_running(dutils, container_name)
 
 
