@@ -33,7 +33,10 @@ def skale_ima():
 
 @pytest.fixture
 def ssl_folder():
-    pathlib.Path(SSL_CERTIFICATES_FILEPATH).mkdir(parents=True)
+    pathlib.Path(SSL_CERTIFICATES_FILEPATH).mkdir(
+        parents=True,
+        exist_ok=True
+    )
     yield SSL_CERTIFICATES_FILEPATH
     pathlib.Path(SSL_CERTIFICATES_FILEPATH).rmdir()
 

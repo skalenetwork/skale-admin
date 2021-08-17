@@ -164,7 +164,8 @@ def test_init_checks(skale):
 
 def test_exit_code(skale, dutils):
     test_schain_name = 'exit_code_ok_test'
-    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, test_schain_name)
+    image_name, container_name, _, _ = get_container_info(
+        SCHAIN_CONTAINER, test_schain_name)
     dutils.safe_rm(container_name)
     try:
         dutils.run_container(
@@ -173,7 +174,7 @@ def test_exit_code(skale, dutils):
             entrypoint='bash -c "exit 200"'
         )
         sleep(10)
-        checks = SChainChecks(test_schain_name, TEST_NODE_ID)
+        checks = SChainChecks(test_schain_name, TEST_NODE_ID, dutils=dutils)
         assert not checks.exit_code_ok
     except Exception as e:
         dutils.safe_rm(container_name)

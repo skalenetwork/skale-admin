@@ -37,7 +37,7 @@ def node_config(skale):
 
 
 class ChecksMock:
-    def __init__(self, schain_name: str, node_id: int, rotation_id=0):
+    def __init__(self, schain_name: str, node_id: int, rotation_id=0, dutils=None):
         pass
 
     def get_all(self):
@@ -64,7 +64,7 @@ class ChecksNoContainerMock(ChecksMock):
         return False
 
 
-def test_exiting_monitor(skale, skale_ima, node_config, db):
+def test_exiting_monitor(skale, skale_ima, node_config, db, dutils):
     rotation_info = {
         'in_progress': True,
         'new_schain': True,
@@ -81,13 +81,15 @@ def test_exiting_monitor(skale, skale_ima, node_config, db):
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch('core.schains.monitor.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
-        monitor_schain(skale, skale_ima, node_info, schain,
-                       ecdsa_sgx_key_name=node_config.sgx_key_name)
+        monitor_schain(
+            skale, skale_ima, node_info, schain,
+            ecdsa_sgx_key_name=node_config.sgx_key_name,
+            dutils=dutils)
         rotation.assert_called_with(schain_name=schain_name,
                                     timestamp=rotation_info['finish_ts'])
 
 
-def test_rotating_monitor(skale, skale_ima, node_config, db):
+def test_rotating_monitor(skale, skale_ima, node_config, db, dutils):
     rotation_info = {
         'in_progress': True,
         'new_schain': False,
@@ -110,12 +112,13 @@ def test_rotating_monitor(skale, skale_ima, node_config, db):
             mock.patch.object(skale.dkg, 'is_channel_opened', return_value=True), \
             mock.patch('core.schains.monitor.set_rotation_for_schain') as rotation:
         node_info = node_config.all()
-        monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name='test')
+        monitor_schain(skale, skale_ima, node_info,
+                       schain, ecdsa_sgx_key_name='test', dutils=dutils)
         rotation.assert_called_with(schain_name=schain_name,
                                     timestamp=rotation_info['finish_ts'])
 
 
-def test_new_schain_monitor(skale, skale_ima, node_config, db):
+def test_new_schain_monitor(skale, skale_ima, node_config, db, dutils):
     rotation_info = {
         'in_progress': True,
         'new_schain': True,
@@ -133,15 +136,17 @@ def test_new_schain_monitor(skale, skale_ima, node_config, db):
             mock.patch('core.schains.monitor.monitor_sync_schain_container',
                        new=mock.Mock()) as sync:
         node_info = node_config.all()
-        monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name='test')
+        monitor_schain(skale, skale_ima, node_info,
+                       schain, ecdsa_sgx_key_name='test', dutils=dutils)
         args, kwargs = sync.call_args
         assert args[1] == schain
         assert args[2] == rotation_info['finish_ts']
 
 
-def test_check_schain_rotated(skale, schain_config):
+def test_check_schain_rotated(skale, schain_config, dutils):
+
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    assert not check_schain_rotated(schain_name)
+    assert not check_schain_rotated(schain_name, dutils)
     info_mock = {
         'status': 'exited',
         'stats': {
@@ -150,13 +155,12 @@ def test_check_schain_rotated(skale, schain_config):
             }
         }
     }
-    with mock.patch('core.schains.monitor.DockerUtils.get_info',
-                    new=mock.Mock(return_value=info_mock)):
-        assert not check_schain_rotated(schain_name)
-        path = get_schain_rotation_filepath(schain_name)
-        Path(path).touch()
-        assert check_schain_rotated(schain_name)
-        os.remove(path)
+    dutils.get_info = mock.Mock(return_value=info_mock)
+    assert not check_schain_rotated(schain_name, dutils=dutils)
+    path = get_schain_rotation_filepath(schain_name)
+    Path(path).touch()
+    assert check_schain_rotated(schain_name, dutils=dutils)
+    os.remove(path)
 
 
 @pytest.fixture
@@ -181,21 +185,29 @@ def test_monitor_sync_schain_container(
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
     start_ts = 0
-    monitor_sync_schain_container(skale, schain,
-                                  start_ts, volume_required=True,
-                                  dutils=dutils)
+    monitor_sync_schain_container(
+        skale,
+        schain,
+        start_ts,
+        volume_required=True,
+        dutils=dutils
+    )
     containers = dutils.get_all_schain_containers()
     assert len(containers) == 0
 
-    monitor_sync_schain_container(skale, schain,
-                                  start_ts,
-                                  volume_required=False, dutils=dutils)
+    monitor_sync_schain_container(
+        skale,
+        schain,
+        start_ts,
+        volume_required=False,
+        dutils=dutils
+    )
     containers = dutils.get_all_schain_containers()
     assert containers[0].name == f'skale_schain_{schain_name}'
     res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
     inspection = json.loads(res.stdout.decode('utf-8'))
     assert '--download-snapshot' in inspection[0]['Args']
-    cleanup_schain_docker_entity(schain_name)
+    cleanup_schain_docker_entity(schain_name, dutils=dutils)
     containers = dutils.get_all_schain_containers()
     assert len(containers) == 0
 
@@ -205,7 +217,11 @@ def test_monitor_ima_container(skale, schain_config, dutils,
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
     mainnet_chain_id = skale.web3.eth.chainId
-    monitor_ima_container(schain, mainnet_chain_id=mainnet_chain_id, dutils=dutils)
+    monitor_ima_container(
+        schain,
+        mainnet_chain_id=mainnet_chain_id,
+        dutils=dutils
+    )
     containers = dutils.get_all_ima_containers()
     assert containers[0].name == f'skale_ima_{schain_name}'
 
@@ -215,18 +231,18 @@ def test_monitor_schain_container(skale, schain_config, dutils,
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
 
-    monitor_schain_container(schain, volume_required=True)
+    monitor_schain_container(schain, volume_required=True, dutils=dutils)
     containers = dutils.get_all_schain_containers()
     assert len(containers) == 0
 
-    monitor_schain_container(schain, volume_required=False)
+    monitor_schain_container(schain, volume_required=False, dutils=dutils)
     containers = dutils.get_all_schain_containers()
     assert containers[0].name == f'skale_schain_{schain_name}'
 
     res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
     inspection = json.loads(res.stdout.decode('utf-8'))
     assert '--download-snapshot' not in inspection[0]['Args']
-    cleanup_schain_docker_entity(schain_name)
+    cleanup_schain_docker_entity(schain_name, dutils=dutils)
     containers = dutils.get_all_schain_containers()
     assert len(containers) == 0
 
@@ -350,7 +366,7 @@ def test_monitor_ima(skale_ima, schain_on_contracts, schain_config, dutils):
         assert containers[0].name == f'skale_ima_{schain_name}'
 
 
-def test_monitor_needs_reload(skale, skale_ima, node_config, db):
+def test_monitor_needs_reload(skale, skale_ima, node_config, db, dutils):
     rotation_info = {
         'in_progress': False,
         'new_schain': False,
@@ -375,6 +391,6 @@ def test_monitor_needs_reload(skale, skale_ima, node_config, db):
             mock.patch('core.schains.monitor.monitor_schain_container'):
         node_info = node_config.all()
         monitor_schain(skale, skale_ima, node_info, schain,
-                       ecdsa_sgx_key_name=node_config.sgx_key_name)
+                       ecdsa_sgx_key_name=node_config.sgx_key_name, dutils=dutils)
         schain_record = upsert_schain_record(schain_name)
         assert schain_record.needs_reload is False

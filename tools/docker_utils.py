@@ -61,7 +61,7 @@ class DockerUtils:
     def __init__(
         self,
         volume_driver: str = 'lvmpy',
-        host: str = 'unix://var/run/skale/docker.sock'
+        host: str = 'unix:///var/run/skale/docker.sock'
     ) -> None:
         self.client = self.init_docker_client(host=host)
         self.cli = self.init_docker_cli()
@@ -69,7 +69,7 @@ class DockerUtils:
 
     def init_docker_client(
         self,
-        host: str = 'unix://var/run/skale/docker.sock'
+        host: str = 'unix:///var/run/skale/docker.sock'
     ) -> DockerClient:
         return docker.DockerClient(base_url=host)
 

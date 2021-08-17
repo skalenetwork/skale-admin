@@ -38,7 +38,6 @@ from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
-dutils = DockerUtils()
 
 
 class SChainChecks:
