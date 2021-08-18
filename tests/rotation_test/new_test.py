@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 import os
 
-from core.schains.monitor import run_monitor_for_schain, monitor_schain
+from core.schains.monitor import monitor_schain
 from core.schains.checks import SChainChecks
 from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from tests.rotation_test.utils import (
