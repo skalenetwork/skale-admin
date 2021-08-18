@@ -414,7 +414,7 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             rotation_id=rotation_id
         )
     if not checks.volume:
-        init_data_volume(schain)
+        init_data_volume(schain, dutils=dutils)
     if not checks.firewall_rules:
         add_firewall_rules(name)
     if not checks.container:
