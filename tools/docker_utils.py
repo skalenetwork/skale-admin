@@ -29,8 +29,14 @@ from docker.client import DockerClient
 from docker.models.containers import Container
 from docker.models.volumes import Volume
 
-from tools.configs.containers import (CONTAINER_NOT_FOUND, RUNNING_STATUS, EXITED_STATUS,
-                                      DOCKER_DEFAULT_TAIL_LINES, DOCKER_DEFAULT_STOP_TIMEOUT)
+from tools.configs.containers import (
+    CONTAINER_NOT_FOUND,
+    DEFAULT_DOCKER_HOST,
+    DOCKER_DEFAULT_TAIL_LINES,
+    DOCKER_DEFAULT_STOP_TIMEOUT,
+    EXITED_STATUS,
+    RUNNING_STATUS
+)
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
 
 logger = logging.getLogger(__name__)
@@ -61,7 +67,7 @@ class DockerUtils:
     def __init__(
         self,
         volume_driver: str = 'lvmpy',
-        host: str = 'unix:///var/run/skale/docker.sock'
+        host: str = DEFAULT_DOCKER_HOST
     ) -> None:
         self.client = self.init_docker_client(host=host)
         self.cli = self.init_docker_cli()
@@ -69,14 +75,14 @@ class DockerUtils:
 
     def init_docker_client(
         self,
-        host: str = 'unix:///var/run/skale/docker.sock'
+        host: str = DEFAULT_DOCKER_HOST
     ) -> DockerClient:
         logger.info(f'Initing docker client with host {host}')
         return docker.DockerClient(base_url=host)
 
     def init_docker_cli(
         self,
-        host: str = 'unix:///var/run/skale/docker.sock'
+        host: str = DEFAULT_DOCKER_HOST
     ) -> APIClient:
         return APIClient(base_url=host)
 
