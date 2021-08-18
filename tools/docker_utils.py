@@ -70,7 +70,7 @@ class DockerUtils:
         host: str = DEFAULT_DOCKER_HOST
     ) -> None:
         self.client = self.init_docker_client(host=host)
-        self.cli = self.init_docker_cli()
+        self.cli = self.init_docker_cli(host=host)
         self.volume_driver = volume_driver
 
     def init_docker_client(
