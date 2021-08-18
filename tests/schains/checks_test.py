@@ -1,3 +1,4 @@
+import docker
 import mock
 import pytest
 from time import sleep
@@ -57,15 +58,15 @@ SchainRecordMock = namedtuple('SchainRecord', ['config_version'])
 
 
 @pytest.fixture
-def sample_checks(schain_config):
+def sample_checks(schain_config, dutils):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
-    return SChainChecks(schain_name, node_id)
+    return SChainChecks(schain_name, node_id, dutils=dutils)
 
 
 @pytest.fixture
-def sample_false_checks():
-    return SChainChecks(NOT_EXISTS_SCHAIN_NAME, TEST_NODE_ID)
+def sample_false_checks(dutils):
+    return SChainChecks(NOT_EXISTS_SCHAIN_NAME, TEST_NODE_ID, dutils=dutils)
 
 
 def test_data_dir_check(sample_checks, sample_false_checks):
@@ -91,10 +92,12 @@ def test_config_check_wrong_version(sample_checks, sample_false_checks):
         assert not sample_checks.config
 
 
-def test_volume_check(sample_checks, sample_false_checks):
-    with mock.patch('docker.api.client.APIClient.inspect_volume',
-                    new=mock.Mock(return_value=True)):
-        assert sample_checks.volume
+def test_volume_check(sample_checks, sample_false_checks, dutils):
+    dutils.cli.inspect_volume = lambda _: True
+    assert sample_checks.volume
+    dutils.cli.inspect_volume = mock.Mock(
+        side_effect=docker.errors.NotFound('')
+    )
     assert not sample_false_checks.volume
 
 

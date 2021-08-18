@@ -46,6 +46,7 @@ class SChainChecks:
         schain_name: str,
         node_id: int,
         rotation_id: int = 0,
+        *,
         dutils: DockerUtils = None
     ):
         self.name = schain_name
