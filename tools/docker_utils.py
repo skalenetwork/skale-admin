@@ -71,10 +71,14 @@ class DockerUtils:
         self,
         host: str = 'unix:///var/run/skale/docker.sock'
     ) -> DockerClient:
+        logger.info(f'Initing docker client with host {host}')
         return docker.DockerClient(base_url=host)
 
-    def init_docker_cli(self) -> APIClient:
-        return APIClient()
+    def init_docker_cli(
+        self,
+        host: str = 'unix:///var/run/skale/docker.sock'
+    ) -> APIClient:
+        return APIClient(base_url=host)
 
     def is_data_volume_exists(self, name: str) -> bool:
         try:

@@ -188,7 +188,7 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
         logger.warning(msg)
         terminate_schain_process(schain_record)
         delete_bls_keys(skale, schain_name)
-        cleanup_schain(node_id, schain_name)
+        cleanup_schain(node_id, schain_name, dutils=dutils)
         return
     logger.info(msg)
 
@@ -201,15 +201,18 @@ def cleanup_schain(node_id, schain_name, dutils=None):
         container_type=ContainerType.schain,
         dutils=dutils
     ):
-        remove_schain_container(schain_name)
+        remove_schain_container(schain_name, dutils=dutils)
     if checks.volume:
-        remove_schain_volume(schain_name)
+        remove_schain_volume(schain_name, dutils=dutils)
     if checks.firewall_rules:
         remove_firewall_rules(schain_name)
     if not DISABLE_IMA:
-        if checks.ima_container or is_exited(schain_name, container_type=ContainerType.ima,
-                                             dutils=dutils):
-            remove_ima_container(schain_name)
+        if checks.ima_container or is_exited(
+            schain_name,
+            container_type=ContainerType.ima,
+            dutils=dutils
+        ):
+            remove_ima_container(schain_name, dutils=dutils)
     if checks.data_dir:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
