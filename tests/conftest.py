@@ -33,7 +33,10 @@ def skale_ima():
 
 @pytest.fixture
 def ssl_folder():
-    pathlib.Path(SSL_CERTIFICATES_FILEPATH).mkdir(parents=True)
+    pathlib.Path(SSL_CERTIFICATES_FILEPATH).mkdir(
+        parents=True,
+        exist_ok=True
+    )
     yield SSL_CERTIFICATES_FILEPATH
     pathlib.Path(SSL_CERTIFICATES_FILEPATH).rmdir()
 
@@ -226,7 +229,10 @@ def schain_on_contracts(skale, _schain_name) -> str:
 
 @pytest.fixture
 def dutils():
-    return DockerUtils(volume_driver='local')
+    return DockerUtils(
+        volume_driver='local',
+        host='unix://var/run/docker.sock'
+    )
 
 
 @pytest.fixture

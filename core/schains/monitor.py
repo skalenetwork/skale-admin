@@ -88,7 +88,8 @@ def run_monitor_for_schain(
                 schain_index = skale.schains.name_to_group_id(schain["name"])
                 num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
                 if skale.dkg.get_number_of_completed(schain_index) == num_of_nodes:
-                    rotation = get_rotation_state(skale, schain['name'], node_info['node_id'])
+                    rotation = get_rotation_state(
+                        skale, schain['name'], node_info['node_id'])
                     rotation_id = rotation['rotation_id']
                     secret_key_share_filepath = get_secret_key_share_filepath(
                         schain["name"], rotation_id
@@ -119,13 +120,22 @@ def run_monitor_for_schain(
                 logger.warning(f'{prefix} finishing monitor')
                 return
 
-            logger.info(f'{prefix} sleeping {SCHAIN_MONITOR_SLEEP_INTERVAL}s...')
+            logger.info(
+                f'{prefix} sleeping {SCHAIN_MONITOR_SLEEP_INTERVAL}s...')
             time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
     except Exception:
         logger.exception(f'{prefix} monitor failed')
 
 
-def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
+def monitor_schain(
+    skale,
+    skale_ima,
+    node_info,
+    schain,
+    ecdsa_sgx_key_name,
+    dutils=None
+):
+    dutils = dutils or DockerUtils()
     name = schain['name']
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
@@ -136,16 +146,23 @@ def monitor_schain(skale, skale_ima, node_info, schain, ecdsa_sgx_key_name):
 
     schain_record = upsert_schain_record(name)
     mode = get_monitor_mode(schain_record, rotation)
-    checks = SChainChecks(name, node_id, rotation_id=rotation_id)
+    checks = SChainChecks(
+        name,
+        node_id,
+        rotation_id=rotation_id,
+        dutils=dutils
+    )
 
-    logger.debug(f'schain_record: {SChainRecord.to_dict(schain_record)}, rotation: {rotation}')
+    logger.debug(
+        f'schain_record: {SChainRecord.to_dict(schain_record)}, rotation: {rotation}')
 
     if schain_record.needs_reload:
         logger.warning(f'Going to reload {schain["name"]}')
-        remove_schain_container(schain["name"])
+        remove_schain_container(schain["name"], dutils=dutils)
         schain_record.set_needs_reload(False)
         mode = MonitorMode.REGULAR
-        logger.warning(f'sChain container {schain["name"]} was removed, going to run checks')
+        logger.warning(
+            f'sChain container {schain["name"]} was removed, going to run checks')
 
     if schain_record.repair_mode or not checks.exit_code_ok:
         logger.warning(f'REPAIR MODE was toggled for schain {schain["name"]}, \
@@ -167,14 +184,14 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
         logger.info(f'Finish time: {finish_time}')
         # ensure containers are working after update
         if not checks.container:
-            monitor_schain_container(schain)
+            monitor_schain_container(schain, dutils=dutils)
             time.sleep(CONTAINERS_DELAY)
         set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     elif mode == MonitorMode.SYNC:
         if not rotation['in_progress']:
             logger.info('Reseting schain')
-            cleanup_schain_docker_entity(name)
+            cleanup_schain_docker_entity(name, dutils=dutils)
         monitor_checks(
             skale=skale,
             skale_ima=skale_ima,
@@ -185,13 +202,14 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             rotation=rotation,
             schain_record=schain_record,
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
-            sync=True
+            sync=True,
+            dutils=dutils
         )
 
     elif mode == MonitorMode.RESTART:
         # ensure containers are working after update
         if not checks.container:
-            monitor_schain_container(schain)
+            monitor_schain_container(schain, dutils=dutils)
             time.sleep(CONTAINERS_DELAY)
 
         is_dkg_done = safe_run_dkg(
@@ -216,7 +234,8 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             sgx_key_name=sgx_key_name,
             rotation=rotation,
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
-            schain_record=schain_record
+            schain_record=schain_record,
+            dutils=dutils
         )
 
 
@@ -237,10 +256,14 @@ def get_monitor_mode(schain_record, rotation_state):
     return MonitorMode.REGULAR
 
 
-def cleanup_schain_docker_entity(schain_name: str) -> None:
-    remove_schain_container(schain_name)
+def cleanup_schain_docker_entity(
+        schain_name: str,
+        dutils: DockerUtils = None
+) -> None:
+    dutils = dutils or DockerUtils()
+    remove_schain_container(schain_name, dutils=dutils)
     time.sleep(10)
-    remove_schain_volume(schain_name)
+    remove_schain_volume(schain_name, dutils=dutils)
 
 
 def add_firewall_rules(schain_name):
@@ -267,18 +290,22 @@ def is_container_exists(schain_name,
 
 def monitor_schain_container(schain, volume_required=True, dutils=None):
     schain_name = schain['name']
-    if volume_required and not is_volume_exists(schain_name):
+    if volume_required and not is_volume_exists(schain_name, dutils=dutils):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
         return
 
-    if not is_container_exists(schain_name):
+    if not is_container_exists(schain_name, dutils=dutils):
         run_schain_container(schain, dutils=dutils)
 
 
 def monitor_ima_container(schain: dict, mainnet_chain_id: int, dutils=None):
-    if not is_container_exists(schain['name'],
-                               container_type=IMA_CONTAINER, dutils=dutils):
-        run_ima_container(schain, mainnet_chain_id)
+    dutils = dutils or DockerUtils()
+    if not is_container_exists(
+            schain['name'],
+            container_type=IMA_CONTAINER,
+            dutils=dutils
+    ):
+        run_ima_container(schain, mainnet_chain_id, dutils=dutils)
 
 
 def get_schain_public_key(skale, schain_name):
@@ -294,12 +321,13 @@ def get_schain_public_key(skale, schain_name):
 def monitor_sync_schain_container(skale, schain, start_ts,
                                   volume_required=True,
                                   dutils=None):
+    dutils = dutils or DockerUtils()
     schain_name = schain['name']
-    if volume_required and not is_volume_exists(schain_name):
+    if volume_required and not is_volume_exists(schain_name, dutils=dutils):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
         return
 
-    if not is_container_exists(schain_name):
+    if not is_container_exists(schain_name, dutils=dutils):
         public_key = get_schain_public_key(skale, schain_name)
         run_schain_container(schain, public_key=public_key, start_ts=start_ts,
                              dutils=dutils)
@@ -309,22 +337,27 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
                  rotation_id, schain_record):
     if schain_record.dkg_status == DKGStatus.KEY_GENERATION_ERROR:
         try:
-            dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
+            dkg_client = init_dkg_client(
+                node_id, schain_name, skale, sgx_key_name, rotation_id)
         except DkgError as err:
-            logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
+            logger.info(
+                f'sChain {schain_name} Dkg procedure failed with {err}')
             schain_record.dkg_failed()
             return False
 
         try:
             dkg_results = generate_bls_keys(dkg_client)
-            secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
+            secret_key_share_filepath = get_secret_key_share_filepath(
+                schain_name, rotation_id)
             save_dkg_results(dkg_results, secret_key_share_filepath)
         except KeyGenerationError as err:
-            logger.info(f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
+            logger.info(
+                f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
             schain_record.dkg_key_generation_error()
             return False
         except DkgError as err:
-            logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
+            logger.info(
+                f'sChain {schain_name} Dkg procedure failed with {err}')
             schain_record.dkg_failed()
             return False
         schain_record.dkg_done()
@@ -337,7 +370,8 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
             return False
         run_dkg(skale, schain_name, node_id, sgx_key_name, rotation_id)
     except KeyGenerationError as err:
-        logger.info(f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
+        logger.info(
+            f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
         schain_record.dkg_key_generation_error()
         return False
     except DkgError as err:
@@ -349,7 +383,9 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
 
 
 def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
-                   rotation, schain_record, ecdsa_sgx_key_name, sync=False):
+                   rotation, schain_record, ecdsa_sgx_key_name, sync=False,
+                   dutils=None):
+    dutils = dutils or DockerUtils()
     name = schain['name']
     mainnet_chain_id = skale.web3.eth.chainId
     logger.debug(f'Mainnet chainId: {mainnet_chain_id}')
@@ -378,14 +414,19 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             rotation_id=rotation_id
         )
     if not checks.volume:
-        init_data_volume(schain)
+        init_data_volume(schain, dutils=dutils)
     if not checks.firewall_rules:
         add_firewall_rules(name)
     if not checks.container:
         if sync:
             finish_ts = rotation['finish_ts']
-            monitor_sync_schain_container(skale, schain, finish_ts)
-        elif check_schain_rotated(name):
+            monitor_sync_schain_container(
+                skale,
+                schain,
+                finish_ts,
+                dutils=dutils
+            )
+        elif check_schain_rotated(name, dutils=dutils):
             logger.info(
                 f'sChain {name} is stopped after rotation. Going to restart')
             remove_firewall_rules(name)
@@ -399,22 +440,25 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             add_firewall_rules(name)
             restart_container(SCHAIN_CONTAINER, schain)
         else:
-            monitor_schain_container(schain)
+            monitor_schain_container(schain, dutils=dutils)
             time.sleep(CONTAINERS_DELAY)
     if not DISABLE_IMA and not checks.ima_container:
-        monitor_ima(skale_ima, schain, mainnet_chain_id)
+        monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=dutils)
 
 
 def monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=None):
-    if skale_ima.linker.has_schain(schain['name']):  # todo: add IMA version check
+    dutils = dutils or DockerUtils()
+    # todo: add IMA version check
+    if skale_ima.linker.has_schain(schain['name']):
         copy_schain_ima_abi(schain['name'])
         monitor_ima_container(schain, mainnet_chain_id, dutils=dutils)
     else:
         logger.warning(f'sChain {schain["name"]} is not registered in IMA')
 
 
-def check_schain_rotated(schain_name):
+def check_schain_rotated(schain_name, dutils=None):
+    dutils = dutils or DockerUtils()
     schain_rotation_filepath = get_schain_rotation_filepath(schain_name)
     rotation_file_exists = os.path.exists(schain_rotation_filepath)
-    zero_exit_code = is_exited_with_zero(schain_name)
+    zero_exit_code = is_exited_with_zero(schain_name, dutils=dutils)
     return rotation_file_exists and zero_exit_code

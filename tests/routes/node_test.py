@@ -15,7 +15,6 @@ from skale.utils.web3_utils import to_checksum_address
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, post_bp_data
-from tools.docker_utils import DockerUtils
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from web.routes.node import construct_node_bp
 from web.helper import get_api_url
@@ -28,12 +27,12 @@ BLUEPRINT_NAME = 'node'
 
 
 @pytest.fixture
-def skale_bp(skale):
+def skale_bp(skale, dutils):
     app = Flask(__name__)
     app.register_blueprint(construct_node_bp())
 
     def handler(sender, **kwargs):
-        g.docker_utils = DockerUtils(volume_driver='local')
+        g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
 

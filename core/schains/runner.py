@@ -38,7 +38,6 @@ from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SC
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
                            SKALE_VOLUME_PATH, SCHAIN_DATA_PATH)
 
-docker_utils = DockerUtils()
 logger = logging.getLogger(__name__)
 
 
@@ -76,9 +75,9 @@ def get_ulimits_config(config):
 def run_container(type, schain_name, env, cmd=None, volume_config=None,
                   cpu_shares_limit=None, mem_limit=None,
                   dutils=None, volume_mode=None):
-    if not dutils:
-        dutils = docker_utils
-    image_name, container_name, run_args, custom_args = get_container_info(type, schain_name)
+    dutils = dutils or DockerUtils()
+    image_name, container_name, run_args, custom_args = get_container_info(
+        type, schain_name)
 
     add_config_volume(run_args, schain_name, mode=volume_mode)
 
@@ -104,13 +103,14 @@ def run_container(type, schain_name, env, cmd=None, volume_config=None,
     return cont
 
 
-def restart_container(type, schain):
+def restart_container(type, schain, dutils=None):
+    dutils = dutils or DockerUtils()
     schain_name = schain['name']
     container_name = get_container_name(type, schain_name)
 
     logger.info(arguments_list_string({'Container name': container_name},
                                       'Restarting container...'))
-    cont = docker_utils.restart(container_name)
+    cont = dutils.restart(container_name)
     return cont
 
 
@@ -144,7 +144,7 @@ def set_rotation_for_schain(schain_name: str, timestamp: int) -> None:
 
 
 def run_ima_container(schain: dict, mainnet_chain_id: int, dutils: DockerUtils = None) -> None:
-    dutils = dutils or docker_utils
+    dutils = dutils or DockerUtils()
     env = get_ima_env(schain['name'], mainnet_chain_id)
 
     cpu_limit = get_ima_limit(schain, MetricType.cpu_shares)
@@ -183,14 +183,13 @@ def add_config_volume(run_args, schain_name, mode=None):
 
 
 def is_exited_with_zero(schain_name, dutils=None):
-    dutils = dutils or docker_utils
+    dutils = dutils or DockerUtils()
     info = get_schain_container_info(schain_name, dutils)
     return dutils.is_container_exited_with_zero(info)
 
 
 def is_exited(schain_name, container_type=ContainerType.schain, dutils=None):
-    if not dutils:
-        dutils = docker_utils
+    dutils = dutils or DockerUtils()
     name = get_container_name(container_type.name, schain_name)
     info = dutils.get_info(name)
     return dutils.is_container_exited(info)
