@@ -26,12 +26,17 @@ from flask import Blueprint, g, request
 from sgx import SgxClient
 
 
-from web.helper import construct_ok_response, get_api_url, construct_err_response
+from core.node import get_check_report
 from core.schains.checks import SChainChecks
 from core.schains.ima import get_ima_log_checks
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.helper import init_skale
+from web.helper import (
+    construct_err_response,
+    construct_ok_response,
+    get_api_url
+)
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'health'
@@ -106,5 +111,14 @@ def construct_health_bp():
             'sgx_wallet_version': version
         }
         return construct_ok_response(data=res)
+
+    @health_bp.route(
+        get_api_url(BLUEPRINT_NAME, 'check-report'),
+        methods=['GET']
+    )
+    def check_report():
+        logger.debug(request)
+        report = get_check_report()
+        return construct_ok_response(data=report)
 
     return health_bp
