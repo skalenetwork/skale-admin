@@ -31,6 +31,7 @@ from core.schains.config.helper import (
 )
 from core.schains.ima import get_ima_env
 from core.schains.helper import send_rotation_request, get_schain_dir_path_host
+from core.schains.skaled_exit_codes import SkaledExitCodes
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
@@ -182,19 +183,27 @@ def add_config_volume(run_args, schain_name, mode=None):
     }
 
 
-def is_exited_with_zero(schain_name, dutils=None):
+def is_exited_with_zero(schain_name: str, dutils: DockerUtils = None) -> bool:
     dutils = dutils or DockerUtils()
-    info = get_schain_container_info(schain_name, dutils)
-    return dutils.is_container_exited_with_zero(info)
+    container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    return dutils.is_container_exited_with_zero(container_name)
 
 
-def is_exited(schain_name, container_type=ContainerType.schain, dutils=None):
+def is_exited(
+    schain_name: str,
+    container_type: ContainerType = ContainerType.schain,
+    dutils: DockerUtils = None
+):
     dutils = dutils or DockerUtils()
     name = get_container_name(container_type.name, schain_name)
-    info = dutils.get_info(name)
-    return dutils.is_container_exited(info)
+    return dutils.is_container_exited(name)
 
 
-def get_schain_container_info(schain_name, dutils):
+def is_schain_failed(schain_name: str, dutils: DockerUtils = None) -> bool:
+    dutils = dutils or DockerUtils()
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
-    return dutils.get_info(name)
+    return dutils.is_container_exited(name) and \
+        dutils.container_exit_code(name) not in [
+            SkaledExitCodes.EC_SUCCESS,
+            SkaledExitCodes.EC_STATE_ROOT_MISMATCH
+        ]

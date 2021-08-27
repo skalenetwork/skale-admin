@@ -53,7 +53,7 @@ def check_schain_container(schain_name: str, client: DockerUtils):
     assert 'stats' in info
     print('DEBUG', containers[0].logs())
     assert info['status'] == 'running'
-    assert client.container_running(info)
+    assert client.is_container_running(containers[0].id)
     assert containers[0].name
 
 
@@ -108,7 +108,7 @@ def test_not_existed_docker_objects(dutils):
     # Not existed container
     info = dutils.get_info('random_id')
     assert info['status'] == 'not_found'
-    assert not dutils.container_found(info)
+    assert dutils.is_container_found('random_id') is False
     dutils.safe_rm('random_name')
 
 

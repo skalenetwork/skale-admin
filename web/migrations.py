@@ -51,6 +51,9 @@ def run_migrations(db, migrator):
     add_monitor_id_field(db, migrator)
     add_config_version_field(db, migrator)
 
+    # 2.0 -> 2.1 update fields
+    add_restart_count_field(db, migrator)
+
 
 def add_new_schain_field(db, migrator):
     add_column(
@@ -91,6 +94,13 @@ def add_config_version_field(db, migrator):
     add_column(
         db, migrator, 'SChainRecord', 'config_version',
         CharField(default=DEFAULT_CONFIG_VERSION)
+    )
+
+
+def add_restart_count_field(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'restart_count',
+        IntegerField(default=0)
     )
 
 

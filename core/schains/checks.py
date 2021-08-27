@@ -94,22 +94,19 @@ class SChainChecks:
     @property
     def container(self) -> bool:
         """Checks that skaled container is running"""
-        info = self.dutils.get_info(self.container_name)
-        return self.dutils.container_running(info)
+        return self.dutils.is_container_running(self.container_name)
 
     @property
     def exit_code_ok(self) -> bool:
         """Checks that skaled exit code is OK"""
-        info = self.dutils.get_info(self.container_name)
-        exit_code = self.dutils.container_exit_code(info)
+        exit_code = self.dutils.container_exit_code(self.container_name)
         return int(exit_code) != SkaledExitCodes.EC_STATE_ROOT_MISMATCH
 
     @property
     def ima_container(self) -> bool:
         """Checks that IMA container is running"""
         name = get_container_name(IMA_CONTAINER, self.name)
-        info = self.dutils.get_info(name)
-        return self.dutils.container_running(info)
+        return self.dutils.is_container_running(name)
 
     @property
     def rpc(self) -> bool:

@@ -80,5 +80,6 @@ DEFAULT_POOL = 'transactions'
 
 WATCHDOG_PORT = 3009
 
-
 CHECK_REPORT_PATH = os.path.join(SKALE_VOLUME_PATH, 'reports', 'checks.json')
+
+MAX_SCHAIN_RESTART_COUNT = 5
