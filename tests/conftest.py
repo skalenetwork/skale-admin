@@ -235,6 +235,14 @@ def dutils():
     )
 
 
+@pytest.fixture(scope='package')
+def skale_mock_image(dutils):
+    name = 'skaled-mock'
+    dutils.client.image.build(tag=name, path='tests/skaled-mock')
+    yield name
+    dutils.client.image.remove(name)
+
+
 @pytest.fixture
 def cleanup_container(schain_config, dutils):
     yield
