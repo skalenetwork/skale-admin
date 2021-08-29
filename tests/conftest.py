@@ -12,13 +12,27 @@ from skale.utils.contracts_provision.main import (create_nodes, create_schain,
 from core.schains.cleaner import remove_schain_container
 from core.schains.cleaner import remove_schain_volume
 
-from tests.utils import init_skale_ima, init_web3_skale, generate_cert
+from tests.utils import (
+    CONTAINERS_JSON,
+    generate_cert,
+    init_skale_ima,
+    init_web3_skale
+)
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.docker_utils import DockerUtils
 
 
 from web.models.schain import create_tables, SChainRecord, upsert_schain_record
+
+
+@pytest.fixture
+def containers_json():
+    with open(CONTAINERS_FILEPATH, 'w') as cf:
+        json.dump(CONTAINERS_JSON, cf)
+    yield CONTAINERS_FILEPATH
+    os.remove(CONTAINERS_FILEPATH)
 
 
 @pytest.fixture
@@ -235,12 +249,21 @@ def dutils():
     )
 
 
-@pytest.fixture(scope='package')
-def skale_mock_image(dutils):
+@pytest.fixture
+def skaled_mock_image(scope='module'):
+    dutils = DockerUtils(
+        volume_driver='local',
+        host='unix://var/run/docker.sock'
+    )
     name = 'skaled-mock'
-    dutils.client.image.build(tag=name, path='tests/skaled-mock')
+    dutils.client.images.build(
+        tag=name,
+        rm=True,
+        nocache=True,
+        path='tests/skaled-mock'
+    )
     yield name
-    dutils.client.image.remove(name)
+    dutils.client.images.remove(name, force=True)
 
 
 @pytest.fixture

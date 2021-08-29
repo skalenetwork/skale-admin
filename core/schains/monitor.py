@@ -28,7 +28,6 @@ from datetime import datetime
 from skale.schain_config.generator import get_nodes_for_schain
 from web3._utils import request
 
-from configs import MAX_SCHAIN_RESTART_COUNT
 from core.schains.dkg_status import DKGStatus
 from core.schains.runner import (
     is_exited_with_zero,
@@ -58,7 +57,11 @@ from tools.bls.dkg_client import DkgError, KeyGenerationError
 from tools.bls.dkg_utils import init_dkg_client, get_secret_key_share_filepath, generate_bls_keys
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
-from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from tools.configs.containers import (
+    MAX_SCHAIN_RESTART_COUNT,
+    SCHAIN_CONTAINER,
+    IMA_CONTAINER
+)
 from tools.configs.ima import DISABLE_IMA
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
@@ -181,6 +184,8 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
         checks_dict = checks.get_all()
         if not is_checks_passed(checks_dict):
             notify_checks(name, node_info, checks_dict)
+    else:
+        schain_record.set_restart_count(0)
 
     schain_record.set_first_run(False)
     schain_record.set_new_schain(False)
@@ -304,10 +309,11 @@ def is_container_exists(schain_name,
 
 def monitor_schain_container(
     schain,
+    schain_record,
     volume_required=True,
-    schain_record=None,
     dutils=None
 ):
+    dutils = dutils or DockerUtils()
     schain_name = schain['name']
     if volume_required and not is_volume_exists(schain_name, dutils=dutils):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
@@ -316,10 +322,10 @@ def monitor_schain_container(
     if not is_container_exists(schain_name, dutils=dutils):
         run_schain_container(schain, dutils=dutils)
 
-    if is_schain_failed(schain_name, dutils=dutils) and \
-            schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
-        restart_container(schain_name)
-        schain_record.set_restart_count(schain_record.restart_count + 1)
+    if is_schain_failed(schain_name, dutils=dutils):
+        if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
+            restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
+            schain_record.set_restart_count(schain_record.restart_count + 1)
     else:
         schain_record.set_restart_count(0)
 
@@ -344,7 +350,7 @@ def get_schain_public_key(skale, schain_name):
     return ':'.join(map(str, public_key_array))
 
 
-def monitor_sync_schain_container(skale, schain, start_ts,
+def monitor_sync_schain_container(skale, schain, start_ts, schain_record,
                                   volume_required=True,
                                   dutils=None):
     dutils = dutils or DockerUtils()
@@ -355,6 +361,7 @@ def monitor_sync_schain_container(skale, schain, start_ts,
 
     if not is_container_exists(schain_name, dutils=dutils):
         public_key = get_schain_public_key(skale, schain_name)
+        schain_record.set_restart_count(0)
         run_schain_container(schain, public_key=public_key, start_ts=start_ts,
                              dutils=dutils)
 
@@ -450,6 +457,7 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
                 skale,
                 schain,
                 finish_ts,
+                schain_record=schain_record,
                 dutils=dutils
             )
         elif check_schain_rotated(name, dutils=dutils):
@@ -472,6 +480,12 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
                 dutils=dutils
             )
             time.sleep(CONTAINERS_DELAY)
+    elif not checks.rpc:
+        monitor_schain_container(
+            schain,
+            schain_record=schain_record,
+            dutils=dutils
+        )
     if not DISABLE_IMA and not checks.ima_container:
         monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=dutils)
 
