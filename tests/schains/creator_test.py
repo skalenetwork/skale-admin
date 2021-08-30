@@ -335,6 +335,7 @@ def test_monitor_maximum_restart_count(
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain = get_schain_contracts_data(schain_name=schain_name)
     record = SChainRecord.get_by_name(schain_name)
+    record.set_restart_count(MAX_SCHAIN_RESTART_COUNT)
     exit_code = 1
 
     monitor_schain_container(
@@ -346,6 +347,7 @@ def test_monitor_maximum_restart_count(
     containers = dutils.get_all_schain_containers()
     assert containers[0].name == f'skale_schain_{schain_name}'
     assert containers[0].status == 'running'
+    assert record.restart_count == 0
 
     record.set_restart_count(MAX_SCHAIN_RESTART_COUNT + 1)
 
