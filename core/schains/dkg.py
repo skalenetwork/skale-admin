@@ -69,7 +69,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         check_failed_dkg(skale, schain_name)
         if not check_no_complaints(dkg_client):
             break
-        if get_latest_block_timestamp(dkg_client) - start_time_alright > dkg_client.dkg_timeout:
+        if get_latest_block_timestamp(dkg_client.skale) - \
+                start_time_alright > dkg_client.dkg_timeout:
             break
         for from_node in range(dkg_client.n):
             if not is_alright_sent_list[from_node]:
