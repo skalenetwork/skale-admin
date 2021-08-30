@@ -425,7 +425,6 @@ def test_monitor_schain_container_cleanup_entity(
                           (True, True, False, MonitorMode.EXIT),
                           (True, False, True, MonitorMode.SYNC)])
 def test_get_monitor_mode_rotation(
-    get_image,
     skale,
     schain_db,
     in_progress,

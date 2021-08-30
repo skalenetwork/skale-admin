@@ -315,18 +315,25 @@ def monitor_schain_container(
 ):
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
+    logger.info(f'Monitoring container for sChain {schain_name}')
     if volume_required and not is_volume_exists(schain_name, dutils=dutils):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
         return
 
     if not is_container_exists(schain_name, dutils=dutils):
+        logger.info(f'SChain {schain_name}: container doesn\'t exits')
         run_schain_container(schain, dutils=dutils)
 
     if is_schain_failed(schain_name, dutils=dutils):
+        logger.info(f'SChain {schain_name}: container is not healthy')
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
+            logger.info(f'SChain {schain_name}: restarting container')
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
             schain_record.set_restart_count(schain_record.restart_count + 1)
+        else:
+            logger.warning(f'SChain {schain_name}: max restart count exceeded')
     else:
+        logger.info(f'SChain {schain_name}: container is healthy')
         schain_record.set_restart_count(0)
 
 
