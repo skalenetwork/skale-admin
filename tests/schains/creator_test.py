@@ -1,5 +1,4 @@
 import os
-import json
 import time
 from pathlib import Path
 
@@ -23,7 +22,6 @@ from tools.configs.containers import (
     SCHAIN_CONTAINER
 )
 from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
-from tools.helper import run_cmd
 from web.models.schain import SChainRecord, upsert_schain_record
 from core.schains.monitor import get_monitor_mode, MonitorMode
 
@@ -233,9 +231,6 @@ def test_monitor_sync_schain_container(
     )
     containers = dutils.get_all_schain_containers()
     assert containers[0].name == f'skale_schain_{schain_name}'
-    res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
-    inspection = json.loads(res.stdout.decode('utf-8'))
-    # assert '--download-snapshot' in inspection[0]['Args']
     assert '--download-snapshot' in containers[0].attrs['Args']
     assert record.restart_count == 0
     cleanup_schain_docker_entity(schain_name, dutils=dutils)
@@ -294,11 +289,6 @@ def test_monitor_schain_container_exit_code(
     containers = dutils.get_all_schain_containers()
     assert containers[0].name == f'skale_schain_{schain_name}'
     assert containers[0].status == 'running'
-
-    res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
-    inspection = json.loads(res.stdout.decode('utf-8'))
-    # assert '--download-snapshot' not in inspection[0]['Args']
-
     assert '--download-snapshot' not in containers[0].attrs['Args']
 
     time.sleep(2)
@@ -323,10 +313,6 @@ def test_monitor_schain_container_exit_code(
     assert containers[0].status == eventual_result
     if exit_code != 1:
         dutils.container_exit_code(containers[0].name) == exit_code
-
-    res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
-    inspection = json.loads(res.stdout.decode('utf-8'))
-    # assert '--download-snapshot' not in inspection[0]['Args']
     assert '--download-snapshot' not in containers[0].attrs['Args']
 
 
@@ -423,11 +409,6 @@ def test_monitor_schain_container_cleanup_entity(
     containers = dutils.get_all_schain_containers()
     assert containers[0].name == f'skale_schain_{schain_name}'
     assert containers[0].status == 'running'
-
-    res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
-    inspection = json.loads(res.stdout.decode('utf-8'))
-    # assert '--download-snapshot' not in inspection[0]['Args']
-    print(containers[0].attrs)
     assert '--download-snapshot' not in containers[0].attrs['Args']
 
     cleanup_schain_docker_entity(schain_name, dutils=dutils)
