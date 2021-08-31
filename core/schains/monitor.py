@@ -197,13 +197,23 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
     if mode == MonitorMode.EXIT:
         logger.info(f'Finish time: {finish_time}')
         # ensure containers are working after update
-        if not checks.container:
+        endpoint_alive = checks.rpc
+        container_running = checks.container
+        if not container_running:
             monitor_schain_container(
                 schain,
                 schain_record=schain_record,
                 dutils=dutils
             )
             time.sleep(CONTAINERS_DELAY)
+        elif not endpoint_alive:
+            monitor_schain_rpc(
+                schain,
+                schain_record=schain_record,
+                dutils=dutils
+            )
+        else:
+            schain_record.set_restart_count(0)
         set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     elif mode == MonitorMode.SYNC:
@@ -226,13 +236,23 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
 
     elif mode == MonitorMode.RESTART:
         # ensure containers are working after update
-        if not checks.container:
+        endpoint_alive = checks.rpc
+        container_running = checks.container
+        if not container_running:
             monitor_schain_container(
                 schain,
                 schain_record=schain_record,
                 dutils=dutils
             )
             time.sleep(CONTAINERS_DELAY)
+        elif not endpoint_alive:
+            monitor_schain_rpc(
+                schain,
+                schain_record=schain_record,
+                dutils=dutils
+            )
+        else:
+            schain_record.set_restart_count(0)
 
         is_dkg_done = safe_run_dkg(
             skale=skale,

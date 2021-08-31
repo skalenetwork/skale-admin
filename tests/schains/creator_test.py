@@ -347,7 +347,6 @@ def test_monitor_maximum_restart_count(
     containers = dutils.get_all_schain_containers()
     assert containers[0].name == f'skale_schain_{schain_name}'
     assert containers[0].status == 'running'
-    assert record.restart_count == 0
 
     record.set_restart_count(MAX_SCHAIN_RESTART_COUNT + 1)
 
