@@ -12,6 +12,7 @@ from core.schains.monitor import (check_schain_rotated,
                                   monitor_ima_container,
                                   monitor_schain,
                                   monitor_schain_container,
+                                  monitor_schain_rpc,
                                   monitor_sync_schain_container, monitor_ima)
 from core.schains.helper import get_schain_rotation_filepath
 from core.schains.runner import get_container_name
@@ -446,10 +447,9 @@ def test_monitor_schain_container_rpc_failed_restart(
     first_started_at = containers[0].attrs['State']['StartedAt']
 
     record.set_failed_rpc_count(MAX_SCHAIN_FAILED_RPC_COUNT + 1)
-    monitor_schain_container(
+    monitor_schain_rpc(
         schain,
         schain_record=record,
-        volume_required=False,
         dutils=dutils
     )
     time.sleep(1)
@@ -461,10 +461,9 @@ def test_monitor_schain_container_rpc_failed_restart(
 
     record.set_failed_rpc_count(MAX_SCHAIN_FAILED_RPC_COUNT)
 
-    monitor_schain_container(
+    monitor_schain_rpc(
         schain,
         schain_record=record,
-        volume_required=False,
         dutils=dutils
     )
     time.sleep(1)
