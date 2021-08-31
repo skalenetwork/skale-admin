@@ -41,6 +41,7 @@ def rotated_nodes(skale, schain_config, schain_db):
 
 def test_new_node(skale, skale_ima, rotated_nodes, dutils):
     nodes, schain_name = rotated_nodes
+    schain_record = SChainRecord.get_by_name(schain_name)
     exited_node, restarted_node = nodes[0], nodes[1]
 
     spawn_skale_lib_mock = get_spawn_skale_mock(restarted_node.config.id)
@@ -77,6 +78,11 @@ def test_new_node(skale, skale_ima, rotated_nodes, dutils):
                            new=mock.Mock(return_value=rotation_state_mock)):
             run_process_manager(restarted_node.skale, skale_ima, restarted_node.config)
             wait_for_schain_alive(schain_name)
-            checks = SChainChecks(schain_name, restarted_node.config.id).get_all()
+
+            checks = SChainChecks(
+                schain_name,
+                restarted_node.config.id,
+                schain_record=schain_record
+            ).get_all()
             assert checks['container']
             assert checks['rpc']

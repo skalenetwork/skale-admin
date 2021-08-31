@@ -53,6 +53,7 @@ def test_new_node(skale, skale_ima, rotated_nodes, dutils):
         ecdsa_sgx_key_name = new_node.config.sgx_key_name
         node_info = new_node.config.all()
         schain = skale.schains.get_by_name(schain_name)
+        schain_record = SChainRecord.get_by_name(schain_name)
 
         monitor_schain(
             new_node.skale,
@@ -65,6 +66,7 @@ def test_new_node(skale, skale_ima, rotated_nodes, dutils):
         checks = SChainChecks(
             schain_name,
             new_node.config.id,
+            schain_record=schain_record,
             dutils=dutils
         ).get_all()
         assert checks['container']
