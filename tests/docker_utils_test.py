@@ -75,9 +75,17 @@ def remove_schain_container(schain_name, client):
     client.rm_vol(schain_name)
 
 
+@mock.patch(
+    'core.schains.runner.get_image_name',
+    return_value='skaled-mock'
+)
 def test_run_schain_container(
-    dutils, schain_config,
-        cleanup_container, cert_key_pair):
+    get_image,
+    dutils,
+    schain_config,
+    cleanup_container,
+    cert_key_pair
+):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
     # Run schain container
@@ -87,9 +95,17 @@ def test_run_schain_container(
     check_schain_container(schain_name, dutils)
 
 
+@mock.patch(
+    'core.schains.runner.get_image_name',
+    return_value='skaled-mock'
+)
 def test_run_schain_container_in_sync_mode(
-    dutils, schain_config,
-        cleanup_container, cert_key_pair):
+    get_image,
+    dutils,
+    schain_config,
+    cleanup_container,
+    cert_key_pair
+):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
     # Run schain container
