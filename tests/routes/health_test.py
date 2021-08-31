@@ -65,9 +65,19 @@ def test_containers(skale_bp, dutils):
     assert data == expected
 
 
-def test_schains_checks(skale_bp, skale):
+def test_schains_checks(skale_bp, skale, schain_db):
+    schain_name = schain_db
+
     class SChainChecksMock:
-        def __init__(self, name, node_id, log=False, failhook=None):
+        def __init__(
+            self,
+            name,
+            node_id,
+            *args,
+            log=False,
+            failhook=None,
+            **kwargs
+        ):
             pass
 
         def get_all(self):
@@ -83,7 +93,11 @@ def test_schains_checks(skale_bp, skale):
             }
 
     def get_schains_for_node_mock(self, node_id):
-        return [{'name': 'test-schain'}, {'name': ''}]
+        return [
+            {'name': schain_name},
+            {'name': 'test-schain'},
+            {'name': ''}
+        ]
 
     with mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
         with mock.patch(

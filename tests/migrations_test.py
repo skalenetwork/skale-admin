@@ -7,8 +7,14 @@ from playhouse.migrate import SqliteMigrator
 from tests.utils import generate_random_name
 from tools.configs.db import DB_PRAGMAS
 from web.migrations import (
-    add_new_schain_field, add_repair_mode_field, add_needs_reload_field,
-    add_monitor_last_seen_field, add_monitor_id_field, add_config_version_field
+    add_new_schain_field,
+    add_repair_mode_field,
+    add_failed_rpc_count_field,
+    add_needs_reload_field,
+    add_monitor_last_seen_field,
+    add_monitor_id_field,
+    add_config_version_field,
+    add_restart_count_field
 )
 
 
@@ -92,3 +98,15 @@ def test_add_config_version_field(upserted_db, migrator, model):
     add_config_version_field(upserted_db, migrator)
     for r in model.select().execute():
         r.config_version == '0.0.0'
+
+
+def test_add_restart_count_field(upserted_db, migrator, model):
+    add_restart_count_field(upserted_db, migrator)
+    for r in model.select().execute():
+        r.restart_count == 0
+
+
+def test_add_failed_rpc_count_field(upserted_db, migrator, model):
+    add_failed_rpc_count_field(upserted_db, migrator)
+    for r in model.select().execute():
+        r.restart_count == 0

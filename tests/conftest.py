@@ -18,7 +18,7 @@ from tests.utils import (
     init_skale_ima,
     init_web3_skale
 )
-from tools.configs import SSL_CERTIFICATES_FILEPATH
+from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.docker_utils import DockerUtils
@@ -226,10 +226,25 @@ def db():
 
 
 @pytest.fixture
-def schain_db(db, _schain_name):
+def schain_db(db, _schain_name, meta_file):
     """ Database with default schain inserted """
-    upsert_schain_record(_schain_name)
+    config_version = meta_file['config_stream']
+    r = upsert_schain_record(_schain_name)
+    r.set_config_version(config_version)
     return _schain_name
+
+
+@pytest.fixture
+def meta_file():
+    meta_info = {
+        "version": "0.0.0",
+        "config_stream": "1.0.0-testnet",
+        "docker_lvmpy_stream": "1.1.1"
+    }
+    with open(META_FILEPATH, 'w') as meta_file:
+        json.dump(meta_info, meta_file)
+    yield meta_info
+    os.remove(META_FILEPATH)
 
 
 @pytest.fixture

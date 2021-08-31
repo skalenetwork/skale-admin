@@ -37,6 +37,8 @@ from tools.iptables import apsent_rules as apsent_iptables_rules
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
+from web.models.schain import SChainRecord
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,12 +47,14 @@ class SChainChecks:
         self,
         schain_name: str,
         node_id: int,
+        schain_record: SChainRecord,
         rotation_id: int = 0,
         *,
         dutils: DockerUtils = None
     ):
         self.name = schain_name
         self.node_id = node_id
+        self.schain_record = schain_record
         self.rotation_id = rotation_id
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
@@ -111,10 +115,17 @@ class SChainChecks:
     @property
     def rpc(self) -> bool:
         """Checks that local skaled RPC is accessible"""
+        res = False
         if self.config:
             http_endpoint = get_local_schain_http_endpoint(self.name)
-            return check_endpoint_alive(http_endpoint)
-        return False
+            res = check_endpoint_alive(http_endpoint)
+        if not res:
+            self.schain_record.set_failed_rpc_count(
+                self.schain_record.failed_rpc_count + 1
+            )
+        else:
+            self.schain_record.set_failed_rpc_count(0)
+        return res
 
     @property
     def blocks(self) -> bool:

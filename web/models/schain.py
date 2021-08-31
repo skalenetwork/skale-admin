@@ -45,6 +45,7 @@ class SChainRecord(BaseModel):
 
     config_version = CharField(default=DEFAULT_CONFIG_VERSION)
     restart_count = IntegerField(default=0)
+    failed_rpc_count = IntegerField(default=0)
 
     @classmethod
     def add(cls, name):
@@ -149,8 +150,13 @@ class SChainRecord(BaseModel):
         self.save()
 
     def set_restart_count(self, value: int) -> None:
-        logger.info(f'Reseting restart count for {self.name} to {value}')
+        logger.info(f'Changing restart count for {self.name} to {value}')
         self.restart_count = value
+        self.save()
+
+    def set_failed_rpc_count(self, value: int) -> None:
+        logger.info(f'Changing failed rpc count for {self.name} to {value}')
+        self.failed_rpc_count = value
         self.save()
 
 

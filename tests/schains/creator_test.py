@@ -22,10 +22,12 @@ from tools.configs.containers import (
     MAX_SCHAIN_RESTART_COUNT,
     SCHAIN_CONTAINER
 )
+from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
 from tools.helper import run_cmd
 from web.models.schain import SChainRecord, upsert_schain_record
 from core.schains.monitor import get_monitor_mode, MonitorMode
 
+from tools.docker_utils import DockerUtils
 from tools.helper import read_json
 from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH
 
@@ -42,7 +44,14 @@ def node_config(skale):
 
 
 class ChecksMock:
-    def __init__(self, schain_name: str, node_id: int, rotation_id=0, dutils=None):
+    def __init__(
+        self,
+        schain_name: str,
+        node_id: int,
+        schain_record: SChainRecord,
+        rotation_id: int = 0,
+        dutils: DockerUtils = None
+    ):
         pass
 
     def get_all(self):
@@ -226,7 +235,8 @@ def test_monitor_sync_schain_container(
     assert containers[0].name == f'skale_schain_{schain_name}'
     res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
     inspection = json.loads(res.stdout.decode('utf-8'))
-    assert '--download-snapshot' in inspection[0]['Args']
+    # assert '--download-snapshot' in inspection[0]['Args']
+    assert '--download-snapshot' in containers[0].attrs['Args']
     assert record.restart_count == 0
     cleanup_schain_docker_entity(schain_name, dutils=dutils)
     containers = dutils.get_all_schain_containers()
@@ -287,7 +297,9 @@ def test_monitor_schain_container_exit_code(
 
     res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
     inspection = json.loads(res.stdout.decode('utf-8'))
-    assert '--download-snapshot' not in inspection[0]['Args']
+    # assert '--download-snapshot' not in inspection[0]['Args']
+
+    assert '--download-snapshot' not in containers[0].attrs['Args']
 
     time.sleep(2)
     kill_schain_with_code(exit_code)
@@ -314,7 +326,8 @@ def test_monitor_schain_container_exit_code(
 
     res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
     inspection = json.loads(res.stdout.decode('utf-8'))
-    assert '--download-snapshot' not in inspection[0]['Args']
+    # assert '--download-snapshot' not in inspection[0]['Args']
+    assert '--download-snapshot' not in containers[0].attrs['Args']
 
 
 @mock.patch(
@@ -413,11 +426,71 @@ def test_monitor_schain_container_cleanup_entity(
 
     res = run_cmd(['docker', 'inspect', f'skale_schain_{schain_name}'])
     inspection = json.loads(res.stdout.decode('utf-8'))
-    assert '--download-snapshot' not in inspection[0]['Args']
+    # assert '--download-snapshot' not in inspection[0]['Args']
+    print(containers[0].attrs)
+    assert '--download-snapshot' not in containers[0].attrs['Args']
 
     cleanup_schain_docker_entity(schain_name, dutils=dutils)
     containers = dutils.get_all_schain_containers(all=True)
     assert len(containers) == 0
+
+
+@mock.patch(
+    'core.schains.runner.get_image_name',
+    return_value='skaled-mock'
+)
+def test_monitor_schain_container_rpc_failed_restart(
+    get_image,
+    skale,
+    schain_config,
+    dutils,
+    cleanup_schain_container,
+    cert_key_pair,
+    schain_db,
+    skaled_mock_image
+):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain = get_schain_contracts_data(schain_name=schain_name)
+    record = SChainRecord.get_by_name(schain_name)
+    monitor_schain_container(
+        schain,
+        schain_record=record,
+        volume_required=False,
+        dutils=dutils
+    )
+    containers = dutils.get_all_schain_containers()
+    assert containers[0].name == f'skale_schain_{schain_name}'
+    assert containers[0].status == 'running'
+    print(vars(containers[0]))
+    first_started_at = containers[0].attrs['State']['StartedAt']
+
+    record.set_failed_rpc_count(MAX_SCHAIN_FAILED_RPC_COUNT + 1)
+    monitor_schain_container(
+        schain,
+        schain_record=record,
+        volume_required=False,
+        dutils=dutils
+    )
+    time.sleep(1)
+    containers = dutils.get_all_schain_containers()
+    assert containers[0].name == f'skale_schain_{schain_name}'
+    assert containers[0].status == 'running'
+    restarted_first_run = containers[0].attrs['State']['StartedAt']
+    assert restarted_first_run > first_started_at
+
+    record.set_failed_rpc_count(MAX_SCHAIN_FAILED_RPC_COUNT)
+
+    monitor_schain_container(
+        schain,
+        schain_record=record,
+        volume_required=False,
+        dutils=dutils
+    )
+    time.sleep(1)
+    containers = dutils.get_all_schain_containers()
+    assert containers[0].name == f'skale_schain_{schain_name}'
+    assert containers[0].status == 'running'
+    assert containers[0].attrs['State']['StartedAt'] == restarted_first_run
 
 
 @pytest.mark.parametrize('in_progress,exiting_node,new_schain,mode',

@@ -62,6 +62,7 @@ from tools.configs.containers import (
     SCHAIN_CONTAINER,
     IMA_CONTAINER
 )
+from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
 from tools.configs.ima import DISABLE_IMA
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
@@ -158,6 +159,7 @@ def monitor_schain(
     checks = SChainChecks(
         name,
         node_id,
+        schain_record=schain_record,
         rotation_id=rotation_id,
         dutils=dutils
     )
@@ -180,12 +182,13 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
         notify_repair_mode(node_info, name)
         schain_record.set_repair_mode(False)
 
-    if not schain_record.first_run:
+    if schain_record.first_run:
+        schain_record.set_restart_count(0)
+        schain_record.set_failed_rpc_count(0)
+    else:
         checks_dict = checks.get_all()
         if not is_checks_passed(checks_dict):
             notify_checks(name, node_info, checks_dict)
-    else:
-        schain_record.set_restart_count(0)
 
     schain_record.set_first_run(False)
     schain_record.set_new_schain(False)
@@ -307,6 +310,10 @@ def is_container_exists(schain_name,
     return dutils.is_container_exists(container_name)
 
 
+def is_rpc_stuck(schain_record: SChainRecord):
+    return schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
+
+
 def monitor_schain_container(
     schain,
     schain_record,
@@ -323,18 +330,27 @@ def monitor_schain_container(
     if not is_container_exists(schain_name, dutils=dutils):
         logger.info(f'SChain {schain_name}: container doesn\'t exits')
         run_schain_container(schain, dutils=dutils)
+        schain_record.set_restart_count(0)
+        return
 
-    if is_schain_failed(schain_name, dutils=dutils):
-        logger.info(f'SChain {schain_name}: container is not healthy')
+    bad_exit = is_schain_failed(schain_name, dutils=dutils)
+    rpc_stuck = schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
+    logger.info(
+        'SChain %s, bad exit: %s, rpc stuck: %s',
+        schain_name,
+        bad_exit,
+        rpc_stuck
+    )
+    if not bad_exit and not rpc_stuck:
+        schain_record.set_restart_count(0)
+    else:
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
             logger.info(f'SChain {schain_name}: restarting container')
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
             schain_record.set_restart_count(schain_record.restart_count + 1)
+            schain_record.set_failed_rpc_count(0)
         else:
             logger.warning(f'SChain {schain_name}: max restart count exceeded')
-    else:
-        logger.info(f'SChain {schain_name}: container is healthy')
-        schain_record.set_restart_count(0)
 
 
 def monitor_ima_container(schain: dict, mainnet_chain_id: int, dutils=None):

@@ -204,19 +204,10 @@ def test_endpoint_info(skale_bp, skale):
     assert payload['client'] != 'unknown'
 
 
-def test_meta_info(skale_bp):
-    meta_info = {
-        "version": "0.0.0",
-        "config_stream": "1.4.1-testnet",
-        "docker_lvmpy_stream": "1.1.1"
-    }
-
-    with mock.patch(
-        'web.routes.node.get_meta_info',
-        return_value=meta_info
-    ):
-        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'meta-info'))
-        assert data == {'status': 'ok', 'payload': meta_info}
+def test_meta_info(skale_bp, meta_file):
+    meta_info = meta_file
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'meta-info'))
+    assert data == {'status': 'ok', 'payload': meta_info}
 
 
 def test_public_ip_info(skale_bp):
