@@ -84,7 +84,8 @@ def test_run_schain_container(
     dutils,
     schain_config,
     cleanup_container,
-    cert_key_pair
+    cert_key_pair,
+    skaled_mock_image
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
@@ -104,7 +105,8 @@ def test_run_schain_container_in_sync_mode(
     dutils,
     schain_config,
     cleanup_container,
-    cert_key_pair
+    cert_key_pair,
+    skaled_mock_image
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
