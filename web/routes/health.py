@@ -32,6 +32,7 @@ from core.schains.ima import get_ima_log_checks
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.helper import init_skale
+from web.models.schain import SChainRecord
 from web.helper import (
     construct_err_response,
     construct_ok_response,
@@ -70,17 +71,25 @@ def construct_health_bp():
         if node_id is None:
             return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
                                           msg='No node installed')
+
         schains = skale.schains.get_schains_for_node(node_id)
         checks = []
         for schain in schains:
             if schain.get('name') != '':
                 rotation_data = skale.node_rotation.get_rotation(schain['name'])
                 rotation_id = rotation_data['rotation_id']
-                schain_checks = SChainChecks(schain['name'], node_id, rotation_id).get_all()
-                checks.append({
-                    'name': schain['name'],
-                    'healthchecks': schain_checks
-                })
+                if SChainRecord.added(schain['name']):
+                    schain_record = SChainRecord.get_by_name(schain['name'])
+                    schain_checks = SChainChecks(
+                        schain['name'],
+                        node_id,
+                        schain_record=schain_record,
+                        rotation_id=rotation_id
+                    ).get_all()
+                    checks.append({
+                        'name': schain['name'],
+                        'healthchecks': schain_checks
+                    })
         return construct_ok_response(checks)
 
     @health_bp.route(get_api_url(BLUEPRINT_NAME, 'ima'), methods=['GET'])

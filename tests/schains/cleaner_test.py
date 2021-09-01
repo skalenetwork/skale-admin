@@ -48,9 +48,8 @@ class ImaEnv:
         return {}
 
 
-def container_running(dutils, container_name):
-    info = dutils.get_info(container_name)
-    return dutils.container_running(info)
+def is_container_running(dutils, container_name):
+    return dutils.is_container_running(container_name)
 
 
 @pytest.fixture
@@ -149,9 +148,9 @@ def test_remove_schain_container(
     schain_data = get_schain_contracts_data(schain_name)
     run_simple_schain_container(schain_data, dutils)
     container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
-    assert container_running(dutils, container_name)
+    assert is_container_running(dutils, container_name)
     remove_schain_container(schain_name, dutils=dutils)
-    assert not container_running(dutils, container_name)
+    assert not is_container_running(dutils, container_name)
 
 
 def test_remove_ima_container(dutils, schain_container):
@@ -162,9 +161,9 @@ def test_remove_ima_container(dutils, schain_container):
     )):
         run_simple_ima_container(schain_data, dutils)
     container_name = IMA_CONTAINER_NAME_TEMPLATE.format(schain_name)
-    assert container_running(dutils, container_name)
+    assert is_container_running(dutils, container_name)
     remove_ima_container(schain_name, dutils=dutils)
-    assert not container_running(dutils, container_name)
+    assert not is_container_running(dutils, container_name)
 
 
 def test_remove_schain_record():
@@ -230,7 +229,6 @@ def test_get_schains_on_node(schain_dirs_for_monitor,
                              dutils, schain_container, upsert_db):
     schain_name = schain_container
     result = get_schains_on_node(dutils)
-    print(result)
     print(sorted([
         TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
         PHANTOM_SCHAIN_NAME, schain_name

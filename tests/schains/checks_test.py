@@ -12,6 +12,8 @@ from core.schains.checks import SChainChecks
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER
 
+from web.models.schain import SChainRecord
+
 
 from tests.utils import response_mock, request_mock
 
@@ -58,15 +60,28 @@ SchainRecordMock = namedtuple('SchainRecord', ['config_version'])
 
 
 @pytest.fixture
-def sample_checks(schain_config, dutils):
+def sample_checks(schain_config, schain_db, dutils):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain_record = SChainRecord.get_by_name(schain_name)
     node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
-    return SChainChecks(schain_name, node_id, dutils=dutils)
+    return SChainChecks(
+        schain_name,
+        node_id,
+        schain_record=schain_record,
+        dutils=dutils
+    )
 
 
 @pytest.fixture
-def sample_false_checks(dutils):
-    return SChainChecks(NOT_EXISTS_SCHAIN_NAME, TEST_NODE_ID, dutils=dutils)
+def sample_false_checks(schain_config, schain_db, dutils):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain_record = SChainRecord.get_by_name(schain_name)
+    return SChainChecks(
+        NOT_EXISTS_SCHAIN_NAME,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        dutils=dutils
+    )
 
 
 def test_data_dir_check(sample_checks, sample_false_checks):
@@ -85,11 +100,9 @@ def test_config_check(sample_checks, sample_false_checks):
         assert not sample_false_checks.config
 
 
-def test_config_check_wrong_version(sample_checks, sample_false_checks):
-    schain_record_mock = SchainRecordMock('9.8.7')
-    with mock.patch('core.schains.config.generator.upsert_schain_record',
-                    return_value=schain_record_mock):
-        assert not sample_checks.config
+def test_config_check_wrong_version(sample_checks):
+    sample_checks.schain_record = SchainRecordMock('9.8.7')
+    assert not sample_checks.config
 
 
 def test_volume_check(sample_checks, sample_false_checks, dutils):
@@ -135,17 +148,20 @@ def test_ima_check(sample_checks, sample_false_checks):
         assert not sample_false_checks.ima_container
 
 
-def test_rpc_check(sample_checks, sample_false_checks):
+def test_rpc_check(sample_checks, schain_db):
     res_mock = response_mock(HTTPStatus.OK, {
         "id": 83,
         "jsonrpc": "2.0",
         "result": "0x4b7"
     })
-    with mock.patch('requests.post', new=request_mock(res_mock)), \
-            mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
+    with mock.patch('requests.post', new=request_mock(res_mock)):
         assert sample_checks.rpc
-    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert not sample_false_checks.rpc
+
+    for _ in range(4):
+        assert not sample_checks.rpc
+
+    with mock.patch('requests.post', new=request_mock(res_mock)):
+        assert sample_checks.rpc
 
 
 def test_blocks_check(sample_checks, sample_false_checks):
@@ -158,17 +174,24 @@ def test_blocks_check(sample_checks, sample_false_checks):
             assert not sample_false_checks.blocks
 
 
-def test_init_checks(skale):
-    schain_name = 'name'
-    checks = SChainChecks(schain_name, TEST_NODE_ID)
+def test_init_checks(skale, schain_db):
+    schain_name = schain_db
+    schain_record = SChainRecord.get_by_name(schain_name)
+    checks = SChainChecks(
+        schain_name,
+        TEST_NODE_ID,
+        schain_record=schain_record
+    )
     assert checks.name == schain_name
     assert checks.node_id == TEST_NODE_ID
 
 
-def test_exit_code(skale, dutils):
-    test_schain_name = 'exit_code_ok_test'
+def test_exit_code(skale, schain_db, dutils):
+    test_schain_name = schain_db
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, test_schain_name)
+
+    schain_record = SChainRecord.get_by_name(test_schain_name)
     dutils.safe_rm(container_name)
     try:
         dutils.run_container(
@@ -177,7 +200,12 @@ def test_exit_code(skale, dutils):
             entrypoint='bash -c "exit 200"'
         )
         sleep(10)
-        checks = SChainChecks(test_schain_name, TEST_NODE_ID, dutils=dutils)
+        checks = SChainChecks(
+            test_schain_name,
+            TEST_NODE_ID,
+            schain_record=schain_record,
+            dutils=dutils
+        )
         assert not checks.exit_code_ok
     except Exception as e:
         dutils.safe_rm(container_name)
