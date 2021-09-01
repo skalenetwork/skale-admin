@@ -360,9 +360,9 @@ def monitor_schain_rpc(
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
             logger.info(f'SChain {schain_name}: restarting container')
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
-            schain_record.set_failed_rpc_count(0)
         else:
             logger.warning(f'SChain {schain_name}: max restart count exceeded')
+        schain_record.set_failed_rpc_count(0)
 
 
 def monitor_schain_container(

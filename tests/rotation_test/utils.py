@@ -107,7 +107,7 @@ def set_up_rotated_schain(skale, schain_name=None):
     nodes_data = set_up_nodes(skale, 2)
 
     _, lifetime_seconds, new_name = generate_random_schain_data()
-    schain_name = schain_name or new_name
+    schain_name = new_name
     create_schain(skale, schain_name, lifetime_seconds)
     run_dkg_all(skale, schain_name, nodes_data)
 
