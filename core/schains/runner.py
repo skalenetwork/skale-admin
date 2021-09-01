@@ -199,11 +199,14 @@ def is_exited(
     return dutils.is_container_exited(name)
 
 
-def is_schain_failed(schain_name: str, dutils: DockerUtils = None) -> bool:
+def is_schain_container_failed(
+    schain_name: str,
+    dutils: DockerUtils = None
+) -> bool:
     dutils = dutils or DockerUtils()
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
     created = dutils.is_container_created(name)
-    exited = dutils.is_container_created(name)
+    exited = dutils.is_container_exited(name)
     exit_code = dutils.container_exit_code(name)
     logger.info(
         'SChain %s failure check: created: %s, exited %s, code: %d',

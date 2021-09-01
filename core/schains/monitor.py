@@ -31,7 +31,7 @@ from web3._utils import request
 from core.schains.dkg_status import DKGStatus
 from core.schains.runner import (
     is_exited_with_zero,
-    is_schain_failed,
+    is_schain_container_failed,
     restart_container,
     run_ima_container,
     run_schain_container,
@@ -395,14 +395,8 @@ def monitor_schain_container(
         run_schain_container(schain, dutils=dutils)
         return
 
-    bad_exit = is_schain_failed(schain_name, dutils=dutils)
-    code = dutils.container_exit_code(schain_name)
-    logger.info(
-        'SChain %s, bad exit: %s, code %d',
-        schain_name,
-        bad_exit,
-        code
-    )
+    bad_exit = is_schain_container_failed(schain_name, dutils=dutils)
+    logger.info('SChain %s, failed: %s', schain_name, bad_exit)
     if bad_exit:
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
             logger.info(f'SChain {schain_name}: restarting container')
