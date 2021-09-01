@@ -73,7 +73,7 @@ from web.models.schain import upsert_schain_record, SChainRecord
 logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
-SCHAIN_MONITOR_SLEEP_INTERVAL = 500
+SCHAIN_MONITOR_SLEEP_INTERVAL = 30
 
 
 class MonitorMode(Enum):
@@ -145,8 +145,9 @@ def monitor_schain(
     ecdsa_sgx_key_name,
     dutils=None
 ):
-    dutils = dutils or DockerUtils()
     name = schain['name']
+    logger.info('Running monitor for schain %s', name)
+    dutils = dutils or DockerUtils()
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
 
@@ -156,6 +157,7 @@ def monitor_schain(
 
     schain_record = upsert_schain_record(name)
     mode = get_monitor_mode(schain_record, rotation)
+    logger.info('Monitor mode for schain %s: %s', name, mode)
     checks = SChainChecks(
         name,
         node_id,
@@ -192,13 +194,18 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
 
     schain_record.set_first_run(False)
     schain_record.set_new_schain(False)
+    logger.info(
+        f'sChain {schain["name"]}: '
+        f'restart count - {schain_record.restart_count}, '
+        f'failed rpc count - {schain_record.failed_rpc_count}'
+    )
     logger.info(f'Running monitor for sChain {name} in {mode.name} mode')
 
     if mode == MonitorMode.EXIT:
         logger.info(f'Finish time: {finish_time}')
         # ensure containers are working after update
-        endpoint_alive = checks.rpc
         container_running = checks.container
+        endpoint_alive = checks.rpc
         if not container_running:
             monitor_schain_container(
                 schain,
@@ -236,8 +243,8 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
 
     elif mode == MonitorMode.RESTART:
         # ensure containers are working after update
-        endpoint_alive = checks.rpc
         container_running = checks.container
+        endpoint_alive = checks.rpc
         if not container_running:
             monitor_schain_container(
                 schain,
@@ -514,7 +521,8 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             node_id=node_id,
             schain_name=name,
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
-            rotation_id=rotation_id
+            rotation_id=rotation_id,
+            schain_record=schain_record
         )
     if not checks.volume:
         init_data_volume(schain, dutils=dutils)
@@ -541,7 +549,8 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
                 schain_name=name,
                 node_id=node_id,
                 ecdsa_sgx_key_name=ecdsa_sgx_key_name,
-                rotation_id=rotation['rotation_id']
+                rotation_id=rotation['rotation_id'],
+                schain_record=schain_record
             )
             add_firewall_rules(name)
             restart_container(SCHAIN_CONTAINER, schain)

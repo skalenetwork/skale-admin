@@ -80,7 +80,7 @@ class SChainChecks:
         config_filepath = get_schain_config_filepath(self.name)
         if not os.path.isfile(config_filepath):
             return False
-        return schain_config_version_match(self.name)
+        return schain_config_version_match(self.name, self.schain_record)
 
     @property
     def volume(self) -> bool:
