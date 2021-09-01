@@ -73,7 +73,7 @@ from web.models.schain import upsert_schain_record, SChainRecord
 logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
-SCHAIN_MONITOR_SLEEP_INTERVAL = 30
+SCHAIN_MONITOR_SLEEP_INTERVAL = 500
 
 
 class MonitorMode(Enum):
