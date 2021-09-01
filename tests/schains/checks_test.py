@@ -100,11 +100,9 @@ def test_config_check(sample_checks, sample_false_checks):
         assert not sample_false_checks.config
 
 
-def test_config_check_wrong_version(sample_checks, sample_false_checks):
-    schain_record_mock = SchainRecordMock('9.8.7')
-    with mock.patch('core.schains.config.generator.upsert_schain_record',
-                    return_value=schain_record_mock):
-        assert not sample_checks.config
+def test_config_check_wrong_version(sample_checks):
+    sample_checks.schain_record = SchainRecordMock('9.8.7')
+    assert not sample_checks.config
 
 
 def test_volume_check(sample_checks, sample_false_checks, dutils):
