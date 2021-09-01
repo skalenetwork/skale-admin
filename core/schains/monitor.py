@@ -73,7 +73,7 @@ from web.models.schain import upsert_schain_record, SChainRecord
 logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
-SCHAIN_MONITOR_SLEEP_INTERVAL = 500
+SCHAIN_MONITOR_SLEEP_INTERVAL = 30
 
 
 class MonitorMode(Enum):
@@ -360,10 +360,11 @@ def monitor_schain_rpc(
 
     rpc_stuck = schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
     logger.info(
-        'SChain %s, rpc stuck: %s, failed cnt: %d',
+        'SChain %s, rpc stuck: %s, failed_rpc_count: %d, restart_count: %d',
         schain_name,
         rpc_stuck,
-        schain_record.failed_rpc_count
+        schain_record.failed_rpc_count,
+        schain_record.restart_count
     )
     if rpc_stuck:
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
@@ -396,7 +397,12 @@ def monitor_schain_container(
         return
 
     bad_exit = is_schain_container_failed(schain_name, dutils=dutils)
-    logger.info('SChain %s, failed: %s', schain_name, bad_exit)
+    logger.info(
+        'SChain %s, failed: %s, %d',
+        schain_name,
+        bad_exit,
+        schain_record.restart_count
+    )
     if bad_exit:
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
             logger.info(f'SChain {schain_name}: restarting container')
