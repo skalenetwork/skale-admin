@@ -196,8 +196,8 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
     schain_record.set_new_schain(False)
     logger.info(
         f'sChain {schain["name"]}: '
-        f'restart count - {schain_record.restart_count}, '
-        f'failed rpc count - {schain_record.failed_rpc_count}'
+        f'restart_count - {schain_record.restart_count}, '
+        f'failed_rpc_count - {schain_record.failed_rpc_count}'
     )
     logger.info(f'Running monitor for sChain {name} in {mode.name} mode')
 
@@ -221,6 +221,7 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             )
         else:
             schain_record.set_restart_count(0)
+            schain_record.set_failed_rpc_count(0)
         set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     elif mode == MonitorMode.SYNC:
@@ -260,6 +261,7 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             )
         else:
             schain_record.set_restart_count(0)
+            schain_record.set_failed_rpc_count(0)
 
         is_dkg_done = safe_run_dkg(
             skale=skale,
@@ -367,9 +369,12 @@ def monitor_schain_rpc(
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
             logger.info(f'SChain {schain_name}: restarting container')
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
+            schain_record.set_restart_count(schain_record.restart_count + 1)
         else:
             logger.warning(f'SChain {schain_name}: max restart count exceeded')
         schain_record.set_failed_rpc_count(0)
+    else:
+        schain_record.set_failed_rpc_count(schain_record.failed_rpc_count + 1)
 
 
 def monitor_schain_container(
@@ -403,6 +408,7 @@ def monitor_schain_container(
             logger.info(f'SChain {schain_name}: restarting container')
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
             schain_record.set_restart_count(schain_record.restart_count + 1)
+            schain_record.set_failed_rpc_count(0)
         else:
             logger.warning(f'SChain {schain_name}: max restart count exceeded')
 
@@ -569,6 +575,7 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
         )
     if endpoint_alive and container_running:
         schain_record.set_restart_count(0)
+        schain_record.set_failed_rpc_count(0)
     if not DISABLE_IMA and not checks.ima_container:
         monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=dutils)
 

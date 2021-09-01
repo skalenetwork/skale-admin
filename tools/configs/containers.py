@@ -36,6 +36,7 @@ CONTAINERS_INFO = read_json(CONTAINERS_FILEPATH)
 
 CONTAINER_NOT_FOUND = 'not_found'
 EXITED_STATUS = 'exited'
+CREATED_STATUS = 'created'
 RUNNING_STATUS = 'running'
 
 LOCAL_IP = '127.0.0.1'

@@ -17,8 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import logging
+import os
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
@@ -119,12 +119,6 @@ class SChainChecks:
         if self.config:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             res = check_endpoint_alive(http_endpoint)
-        if not res:
-            self.schain_record.set_failed_rpc_count(
-                self.schain_record.failed_rpc_count + 1
-            )
-        else:
-            self.schain_record.set_failed_rpc_count(0)
         return res
 
     @property

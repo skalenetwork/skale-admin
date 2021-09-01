@@ -202,8 +202,14 @@ def is_exited(
 def is_schain_failed(schain_name: str, dutils: DockerUtils = None) -> bool:
     dutils = dutils or DockerUtils()
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
-    return dutils.is_container_exited(name) and \
-        dutils.container_exit_code(name) not in [
-            SkaledExitCodes.EC_SUCCESS,
-            SkaledExitCodes.EC_STATE_ROOT_MISMATCH
-        ]
+    created = dutils.is_container_created(name)
+    exited = dutils.is_container_created(name)
+    exit_code = dutils.container_exit_code(name)
+    logger.info(
+        'SChain %s failure check: created: %s, exited %s, code: %d',
+        name, created, exited, exit_code
+    )
+    return created or exited and exit_code not in [
+        SkaledExitCodes.EC_SUCCESS,
+        SkaledExitCodes.EC_STATE_ROOT_MISMATCH
+    ]

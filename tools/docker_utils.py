@@ -31,6 +31,7 @@ from docker.models.volumes import Volume
 
 from tools.configs.containers import (
     CONTAINER_NOT_FOUND,
+    CREATED_STATUS,
     DEFAULT_DOCKER_HOST,
     DOCKER_DEFAULT_TAIL_LINES,
     DOCKER_DEFAULT_STOP_TIMEOUT,
@@ -154,6 +155,10 @@ class DockerUtils:
     def is_container_found(self, container_id: str) -> bool:
         info = self.get_info(container_id)
         return info['status'] != CONTAINER_NOT_FOUND
+
+    def is_container_created(self, container_id: str) -> bool:
+        info = self.get_info(container_id)
+        return info['status'] == CREATED_STATUS
 
     def is_container_exited(self, container_id: str) -> bool:
         info = self.get_info(container_id)
