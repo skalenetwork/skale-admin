@@ -194,7 +194,8 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
 
 def cleanup_schain(node_id, schain_name, dutils=None):
     dutils = dutils or DockerUtils()
-    checks = SChainChecks(schain_name, node_id)
+    schain_record = upsert_schain_record(schain_name)
+    checks = SChainChecks(schain_name, node_id, schain_record=schain_record)
     if checks.container or is_exited(
         schain_name,
         container_type=ContainerType.schain,

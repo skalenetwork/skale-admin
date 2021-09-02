@@ -29,9 +29,14 @@ from skale.schain_config.generator import get_nodes_for_schain
 from web3._utils import request
 
 from core.schains.dkg_status import DKGStatus
-from core.schains.runner import (run_schain_container, run_ima_container,
-                                 restart_container, set_rotation_for_schain,
-                                 is_exited_with_zero)
+from core.schains.runner import (
+    is_exited_with_zero,
+    is_schain_container_failed,
+    restart_container,
+    run_ima_container,
+    run_schain_container,
+    set_rotation_for_schain,
+)
 from core.schains.cleaner import (
     remove_config_dir,
     remove_schain_container,
@@ -52,7 +57,12 @@ from tools.bls.dkg_client import DkgError, KeyGenerationError
 from tools.bls.dkg_utils import init_dkg_client, get_secret_key_share_filepath, generate_bls_keys
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
-from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from tools.configs.containers import (
+    MAX_SCHAIN_RESTART_COUNT,
+    SCHAIN_CONTAINER,
+    IMA_CONTAINER
+)
+from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
 from tools.configs.ima import DISABLE_IMA
 from tools.iptables import (add_rules as add_iptables_rules,
                             remove_rules as remove_iptables_rules)
@@ -135,8 +145,9 @@ def monitor_schain(
     ecdsa_sgx_key_name,
     dutils=None
 ):
-    dutils = dutils or DockerUtils()
     name = schain['name']
+    logger.info('Running monitor for schain %s', name)
+    dutils = dutils or DockerUtils()
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
 
@@ -146,9 +157,11 @@ def monitor_schain(
 
     schain_record = upsert_schain_record(name)
     mode = get_monitor_mode(schain_record, rotation)
+    logger.info('Monitor mode for schain %s: %s', name, mode)
     checks = SChainChecks(
         name,
         node_id,
+        schain_record=schain_record,
         rotation_id=rotation_id,
         dutils=dutils
     )
@@ -171,21 +184,44 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
         notify_repair_mode(node_info, name)
         schain_record.set_repair_mode(False)
 
-    if not schain_record.first_run:
+    if schain_record.first_run:
+        schain_record.set_restart_count(0)
+        schain_record.set_failed_rpc_count(0)
+    else:
         checks_dict = checks.get_all()
         if not is_checks_passed(checks_dict):
             notify_checks(name, node_info, checks_dict)
 
     schain_record.set_first_run(False)
     schain_record.set_new_schain(False)
+    logger.info(
+        f'sChain {schain["name"]}: '
+        f'restart_count - {schain_record.restart_count}, '
+        f'failed_rpc_count - {schain_record.failed_rpc_count}'
+    )
     logger.info(f'Running monitor for sChain {name} in {mode.name} mode')
 
     if mode == MonitorMode.EXIT:
         logger.info(f'Finish time: {finish_time}')
         # ensure containers are working after update
-        if not checks.container:
-            monitor_schain_container(schain, dutils=dutils)
+        container_running = checks.container
+        endpoint_alive = checks.rpc
+        if not container_running:
+            monitor_schain_container(
+                schain,
+                schain_record=schain_record,
+                dutils=dutils
+            )
             time.sleep(CONTAINERS_DELAY)
+        elif not endpoint_alive:
+            monitor_schain_rpc(
+                schain,
+                schain_record=schain_record,
+                dutils=dutils
+            )
+        else:
+            schain_record.set_restart_count(0)
+            schain_record.set_failed_rpc_count(0)
         set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
 
     elif mode == MonitorMode.SYNC:
@@ -208,9 +244,24 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
 
     elif mode == MonitorMode.RESTART:
         # ensure containers are working after update
-        if not checks.container:
-            monitor_schain_container(schain, dutils=dutils)
+        container_running = checks.container
+        endpoint_alive = checks.rpc
+        if not container_running:
+            monitor_schain_container(
+                schain,
+                schain_record=schain_record,
+                dutils=dutils
+            )
             time.sleep(CONTAINERS_DELAY)
+        elif not endpoint_alive:
+            monitor_schain_rpc(
+                schain,
+                schain_record=schain_record,
+                dutils=dutils
+            )
+        else:
+            schain_record.set_restart_count(0)
+            schain_record.set_failed_rpc_count(0)
 
         is_dkg_done = safe_run_dkg(
             skale=skale,
@@ -288,14 +339,78 @@ def is_container_exists(schain_name,
     return dutils.is_container_exists(container_name)
 
 
-def monitor_schain_container(schain, volume_required=True, dutils=None):
+def is_rpc_stuck(schain_record: SChainRecord):
+    return schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
+
+
+def monitor_schain_rpc(
+    schain,
+    schain_record,
+    dutils=None
+):
+    dutils = dutils or DockerUtils()
     schain_name = schain['name']
+    logger.info(f'Monitoring rpc for sChain {schain_name}')
+
+    if not is_container_exists(schain_name, dutils=dutils):
+        logger.info(
+            f'{schain_name} rpc monitor failed: container doesn\'t exit'
+        )
+        return
+
+    rpc_stuck = schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
+    logger.info(
+        'SChain %s, rpc stuck: %s, failed_rpc_count: %d, restart_count: %d',
+        schain_name,
+        rpc_stuck,
+        schain_record.failed_rpc_count,
+        schain_record.restart_count
+    )
+    if rpc_stuck:
+        if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
+            logger.info(f'SChain {schain_name}: restarting container')
+            restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
+            schain_record.set_restart_count(schain_record.restart_count + 1)
+        else:
+            logger.warning(f'SChain {schain_name}: max restart count exceeded')
+        schain_record.set_failed_rpc_count(0)
+    else:
+        schain_record.set_failed_rpc_count(schain_record.failed_rpc_count + 1)
+
+
+def monitor_schain_container(
+    schain,
+    schain_record,
+    volume_required=True,
+    dutils=None
+):
+    dutils = dutils or DockerUtils()
+    schain_name = schain['name']
+    logger.info(f'Monitoring container for sChain {schain_name}')
     if volume_required and not is_volume_exists(schain_name, dutils=dutils):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
         return
 
     if not is_container_exists(schain_name, dutils=dutils):
+        logger.info(f'SChain {schain_name}: container doesn\'t exits')
         run_schain_container(schain, dutils=dutils)
+        return
+
+    bad_exit = is_schain_container_failed(schain_name, dutils=dutils)
+    logger.info(
+        'SChain %s, failed: %s, %d',
+        schain_name,
+        bad_exit,
+        schain_record.restart_count
+    )
+    if bad_exit:
+        if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
+            logger.info(f'SChain {schain_name}: restarting container')
+            restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
+            schain_record.set_restart_count(schain_record.restart_count + 1)
+            schain_record.set_failed_rpc_count(0)
+        else:
+            logger.warning(f'SChain {schain_name}: max restart count exceeded')
 
 
 def monitor_ima_container(schain: dict, mainnet_chain_id: int, dutils=None):
@@ -318,7 +433,7 @@ def get_schain_public_key(skale, schain_name):
     return ':'.join(map(str, public_key_array))
 
 
-def monitor_sync_schain_container(skale, schain, start_ts,
+def monitor_sync_schain_container(skale, schain, start_ts, schain_record,
                                   volume_required=True,
                                   dutils=None):
     dutils = dutils or DockerUtils()
@@ -329,6 +444,7 @@ def monitor_sync_schain_container(skale, schain, start_ts,
 
     if not is_container_exists(schain_name, dutils=dutils):
         public_key = get_schain_public_key(skale, schain_name)
+        schain_record.set_restart_count(0)
         run_schain_container(schain, public_key=public_key, start_ts=start_ts,
                              dutils=dutils)
 
@@ -411,19 +527,23 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             node_id=node_id,
             schain_name=name,
             ecdsa_sgx_key_name=ecdsa_sgx_key_name,
-            rotation_id=rotation_id
+            rotation_id=rotation_id,
+            schain_record=schain_record
         )
     if not checks.volume:
         init_data_volume(schain, dutils=dutils)
     if not checks.firewall_rules:
         add_firewall_rules(name)
-    if not checks.container:
+    container_running = checks.container
+    endpoint_alive = checks.rpc
+    if not container_running:
         if sync:
             finish_ts = rotation['finish_ts']
             monitor_sync_schain_container(
                 skale,
                 schain,
                 finish_ts,
+                schain_record=schain_record,
                 dutils=dutils
             )
         elif check_schain_rotated(name, dutils=dutils):
@@ -435,13 +555,27 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
                 schain_name=name,
                 node_id=node_id,
                 ecdsa_sgx_key_name=ecdsa_sgx_key_name,
-                rotation_id=rotation['rotation_id']
+                rotation_id=rotation['rotation_id'],
+                schain_record=schain_record
             )
             add_firewall_rules(name)
             restart_container(SCHAIN_CONTAINER, schain)
         else:
-            monitor_schain_container(schain, dutils=dutils)
+            monitor_schain_container(
+                schain,
+                schain_record=schain_record,
+                dutils=dutils
+            )
             time.sleep(CONTAINERS_DELAY)
+    elif not endpoint_alive:
+        monitor_schain_rpc(
+            schain,
+            schain_record=schain_record,
+            dutils=dutils
+        )
+    if endpoint_alive and container_running:
+        schain_record.set_restart_count(0)
+        schain_record.set_failed_rpc_count(0)
     if not DISABLE_IMA and not checks.ima_container:
         monitor_ima(skale_ima, schain, mainnet_chain_id, dutils=dutils)
 

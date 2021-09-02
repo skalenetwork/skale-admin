@@ -53,7 +53,7 @@ def check_schain_container(schain_name: str, client: DockerUtils):
     assert 'stats' in info
     print('DEBUG', containers[0].logs())
     assert info['status'] == 'running'
-    assert client.container_running(info)
+    assert client.is_container_running(containers[0].id)
     assert containers[0].name
 
 
@@ -75,9 +75,18 @@ def remove_schain_container(schain_name, client):
     client.rm_vol(schain_name)
 
 
+@mock.patch(
+    'core.schains.runner.get_image_name',
+    return_value='skaled-mock'
+)
 def test_run_schain_container(
-    dutils, schain_config,
-        cleanup_container, cert_key_pair):
+    get_image,
+    dutils,
+    schain_config,
+    cleanup_container,
+    cert_key_pair,
+    skaled_mock_image
+):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
     # Run schain container
@@ -87,9 +96,18 @@ def test_run_schain_container(
     check_schain_container(schain_name, dutils)
 
 
+@mock.patch(
+    'core.schains.runner.get_image_name',
+    return_value='skaled-mock'
+)
 def test_run_schain_container_in_sync_mode(
-    dutils, schain_config,
-        cleanup_container, cert_key_pair):
+    get_image,
+    dutils,
+    schain_config,
+    cleanup_container,
+    cert_key_pair,
+    skaled_mock_image
+):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
     # Run schain container
@@ -108,7 +126,7 @@ def test_not_existed_docker_objects(dutils):
     # Not existed container
     info = dutils.get_info('random_id')
     assert info['status'] == 'not_found'
-    assert not dutils.container_found(info)
+    assert dutils.is_container_found('random_id') is False
     dutils.safe_rm('random_name')
 
 

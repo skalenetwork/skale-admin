@@ -13,7 +13,7 @@ from tests.rotation_test.utils import (
     init_data_volume_mock, run_dkg_mock
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
-from web.models.schain import SChainRecord
+from web.models.schain import SChainRecord, upsert_schain_record
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def rotated_nodes(skale, schain_config, schain_db, cert_key_pair, dutils):
         skale.manager.node_exit(nodes[i].config.id, wait_for=True)
 
 
-def test_new_node(skale, skale_ima, rotated_nodes, dutils):
+def test_new_node(skale, skale_ima, rotated_nodes, dutils, meta_file):
     nodes, schain_name = rotated_nodes
 
     exited_node, new_node = nodes[0], nodes[2]
@@ -53,6 +53,8 @@ def test_new_node(skale, skale_ima, rotated_nodes, dutils):
         ecdsa_sgx_key_name = new_node.config.sgx_key_name
         node_info = new_node.config.all()
         schain = skale.schains.get_by_name(schain_name)
+        schain_record = upsert_schain_record(schain_name)
+        schain_record.set_config_version(meta_file['config_stream'])
 
         monitor_schain(
             new_node.skale,
@@ -65,6 +67,7 @@ def test_new_node(skale, skale_ima, rotated_nodes, dutils):
         checks = SChainChecks(
             schain_name,
             new_node.config.id,
+            schain_record=schain_record,
             dutils=dutils
         ).get_all()
         assert checks['container']
