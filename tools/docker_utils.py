@@ -237,8 +237,9 @@ class DockerUtils:
         container.remove(**kwargs)
         logger.info(f'Container removed: {container_name}')
 
+    @classmethod
     def save_container_logs(
-        self,
+        cls,
         container: Container,
         log_filepath: str,
         head: int = DOCKER_DEFAULT_HEAD_LINES,
@@ -263,7 +264,7 @@ class DockerUtils:
     ) -> None:
         logger.info(f'Going to backup container logs: {container.name}')
         logs_backup_filepath = self.get_logs_backup_filepath(container)
-        self.save_container_logs(
+        DockerUtils.save_container_logs(
             container,
             logs_backup_filepath,
             head=head,
