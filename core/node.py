@@ -162,20 +162,18 @@ class Node:
 
     def get_node_id_from_contracts(self, name, ip) -> int:
         node_id = self.skale.nodes.node_name_to_index(name)
-        if node_id == 0:
-            try:
-                node_data = self.skale.nodes.get(node_id)
-            except InvalidNodeIdError:
-                return -1
+        try:
+            node_data = self.skale.nodes.get(node_id)
+        except InvalidNodeIdError:
+            node_id = -1
+        else:
             public_key = node_data['publicKey']
             data_address = to_checksum_address(
                 public_key_to_address(public_key)
             )
-            if data_address == self.skale.wallet.address and \
-                name == node_data['name'] and \
-                    ip == node_data['ip']:
-                node_id = 0
-            else:
+            if not data_address == self.skale.wallet.address or \
+                not name == node_data['name'] or \
+                    not ip == node_data['ip']:
                 node_id = -1
         return node_id
 
