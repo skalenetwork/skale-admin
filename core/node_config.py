@@ -49,7 +49,7 @@ def config_getter(func):
 
 
 class NodeConfig:
-    def __init__(self):
+    def __init__(self, filepath: str = NODE_CONFIG_FILEPATH):
         init_file(NODE_CONFIG_FILEPATH, {})
 
     @property
