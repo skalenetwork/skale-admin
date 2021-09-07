@@ -22,10 +22,9 @@ import logging
 from time import sleep
 
 from tools.bls.dkg_utils import (
-    init_dkg_client, send_complaint, send_alright, get_latest_block_timestamp,
-    generate_poly_name, DkgError,
-    generate_bls_keys, get_secret_key_share_filepath,
-    check_response, check_no_complaints, check_failed_dkg, wait_for_fail, broadcast_and_check_data
+    init_dkg_client, send_complaint, send_alright, get_latest_block_timestamp, DkgError,
+    generate_bls_keys, get_secret_key_share_filepath, check_response, check_no_complaints,
+    check_failed_dkg, wait_for_fail, broadcast_and_check_data
 )
 from tools.bls.dkg_client import KeyGenerationError
 from tools.helper import write_json
@@ -35,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     try:
-        dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name)
+        dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
     except DkgError as e:
         logger.error(e)
         channel_started_time = skale.dkg.get_channel_started_time(
@@ -45,12 +44,10 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         raise
 
     n = dkg_client.n
-    group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
-    poly_name = generate_poly_name(group_index_str, dkg_client.node_id_dkg, rotation_id)
 
     channel_started_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
 
-    broadcast_and_check_data(dkg_client, poly_name)
+    broadcast_and_check_data(dkg_client)
 
     if not dkg_client.is_everyone_broadcasted():
         wait_for_fail(skale, schain_name, channel_started_time, "broadcast")
@@ -72,7 +69,8 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         check_failed_dkg(skale, schain_name)
         if not check_no_complaints(dkg_client):
             break
-        if get_latest_block_timestamp(dkg_client) - start_time_alright > dkg_client.dkg_timeout:
+        if get_latest_block_timestamp(dkg_client.skale) - \
+                start_time_alright > dkg_client.dkg_timeout:
             break
         for from_node in range(dkg_client.n):
             if not is_alright_sent_list[from_node]:
@@ -108,7 +106,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         logger.info(f'sChain: {schain_name}: Everyone sent alright')
         if skale.dkg.is_last_dkg_successful(dkg_client.group_index):
             try:
-                generated_keys_dict = generate_bls_keys(dkg_client, rotation_id)
+                generated_keys_dict = generate_bls_keys(dkg_client)
                 return generated_keys_dict
             except Exception as err:
                 raise KeyGenerationError(err)

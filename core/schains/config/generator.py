@@ -158,7 +158,14 @@ def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: i
     )
 
 
-def init_schain_config(skale, node_id, schain_name, ecdsa_sgx_key_name, rotation_id):
+def init_schain_config(
+    skale,
+    node_id,
+    schain_name,
+    ecdsa_sgx_key_name,
+    rotation_id,
+    schain_record
+):
     config_filepath = get_schain_config_filepath(schain_name)
 
     logger.warning(arguments_list_string({
@@ -174,7 +181,7 @@ def init_schain_config(skale, node_id, schain_name, ecdsa_sgx_key_name, rotation
         ecdsa_key_name=ecdsa_sgx_key_name
     )
     save_schain_config(schain_config.to_dict(), schain_name)
-    update_schain_config_version(schain_name)
+    update_schain_config_version(schain_name, schain_record=schain_record)
 
 
 def save_schain_config(schain_config, schain_name):
@@ -185,16 +192,16 @@ def save_schain_config(schain_config, schain_name):
     shutil.move(tmp_config_filepath, config_filepath)
 
 
-def update_schain_config_version(schain_name):
+def update_schain_config_version(schain_name, schain_record=None):
     new_config_version = get_skale_node_version()
-    schain_record = upsert_schain_record(schain_name)
+    schain_record = schain_record or upsert_schain_record(schain_name)
     logger.info(f'Going to change config_version for {schain_name}: \
 {schain_record.config_version} -> {new_config_version}')
     schain_record.set_config_version(new_config_version)
 
 
-def schain_config_version_match(schain_name):
-    schain_record = upsert_schain_record(schain_name)
+def schain_config_version_match(schain_name, schain_record=None):
+    schain_record = schain_record or upsert_schain_record(schain_name)
     skale_node_version = get_skale_node_version()
     logger.debug(f'config check, schain: {schain_name}, config_version: \
 {schain_record.config_version}, skale_node_version: {skale_node_version}')

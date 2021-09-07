@@ -24,7 +24,6 @@ from core.schains.helper import init_schain_dir
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.docker_utils import DockerUtils
 from web.models.schain import (
     SChainRecord, mark_schain_deleted, upsert_schain_record)
 
@@ -49,14 +48,8 @@ class ImaEnv:
         return {}
 
 
-def container_running(dutils, container_name):
-    info = dutils.get_info(container_name)
-    return dutils.container_running(info)
-
-
-@pytest.fixture
-def dutils():
-    return DockerUtils(volume_driver='local')
+def is_container_running(dutils, container_name):
+    return dutils.is_container_running(container_name)
 
 
 @pytest.fixture
@@ -72,9 +65,11 @@ def schain_dirs_for_monitor():
     schain_dir_path1 = os.path.join(SCHAINS_DIR_PATH, TEST_SCHAIN_NAME_2)
     Path(schain_dir_path1).mkdir(parents=True, exist_ok=True)
     Path(schain_dir_path2).mkdir(parents=True, exist_ok=True)
-    yield
-    shutil.rmtree(schain_dir_path1)
-    shutil.rmtree(schain_dir_path2)
+    try:
+        yield
+    finally:
+        shutil.rmtree(schain_dir_path1)
+        shutil.rmtree(schain_dir_path2)
 
 
 @pytest.fixture
@@ -83,21 +78,33 @@ def upsert_db(db):
         upsert_schain_record(name)
 
 
-def test_monitor(db, schain_dirs_for_monitor, skale, node_config):
+def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils):
     ensure_schain_removed_mock = mock.Mock()
-
-    with mock.patch('core.schains.cleaner.ensure_schain_removed',
-                    ensure_schain_removed_mock):
-        monitor(skale, node_config)
-        ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_1, 0)
-        ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_2, 0)
 
     ensure_schain_removed_mock = mock.Mock(side_effect=ValueError)
     with mock.patch('core.schains.cleaner.ensure_schain_removed',
                     ensure_schain_removed_mock):
-        monitor(skale, node_config)
-        ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_1, 0)
-        ensure_schain_removed_mock.assert_any_call(skale, TEST_SCHAIN_NAME_2, 0)
+        monitor(skale, node_config, dutils=dutils)
+        ensure_schain_removed_mock.assert_any_call(
+            skale,
+            TEST_SCHAIN_NAME_1,
+            0,
+            dutils=dutils
+        )
+        ensure_schain_removed_mock.assert_any_call(
+            skale,
+            TEST_SCHAIN_NAME_2,
+            0,
+            dutils=dutils
+        )
+
+    monitor(skale, node_config, dutils=dutils)
+    assert [
+        c.name
+        for c in dutils.client.containers.list(
+            filters={'name': 'skale_schains'}
+        )
+    ] == []
 
 
 def test_remove_config_dir():
@@ -113,7 +120,7 @@ def test_remove_schain_volume(dutils, schain_config):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     dutils.create_data_volume(schain_name)
     assert dutils.is_data_volume_exists(schain_name)
-    remove_schain_volume(schain_name)
+    remove_schain_volume(schain_name, dutils=dutils)
     assert not dutils.is_data_volume_exists(schain_name)
 
 
@@ -132,15 +139,18 @@ def schain_container(schain_config, ssl_folder, dutils):
 
 
 def test_remove_schain_container(
-    dutils, schain_config,
-        cleanup_container, cert_key_pair):
+    dutils,
+    schain_config,
+    cleanup_container,
+    cert_key_pair
+):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
     run_simple_schain_container(schain_data, dutils)
     container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
-    assert container_running(dutils, container_name)
-    remove_schain_container(schain_name, dutils)
-    assert not container_running(dutils, container_name)
+    assert is_container_running(dutils, container_name)
+    remove_schain_container(schain_name, dutils=dutils)
+    assert not is_container_running(dutils, container_name)
 
 
 def test_remove_ima_container(dutils, schain_container):
@@ -151,9 +161,9 @@ def test_remove_ima_container(dutils, schain_container):
     )):
         run_simple_ima_container(schain_data, dutils)
     container_name = IMA_CONTAINER_NAME_TEMPLATE.format(schain_name)
-    assert container_running(dutils, container_name)
-    remove_ima_container(schain_name, dutils)
-    assert not container_running(dutils, container_name)
+    assert is_container_running(dutils, container_name)
+    remove_ima_container(schain_name, dutils=dutils)
+    assert not is_container_running(dutils, container_name)
 
 
 def test_remove_schain_record():
@@ -193,7 +203,8 @@ def test_delete_bls_keys(skale, valid_secret_key_file):
     with mock.patch('core.schains.cleaner.SgxClient.delete_bls_key',
                     new=mock.Mock()) as delete_mock:
         delete_bls_keys(skale, TEST_SCHAIN_NAME_1)
-        delete_mock.assert_called_with('BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0')
+        delete_mock.assert_called_with(
+            'BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0')
         assert delete_mock.call_count == 1
 
 
@@ -218,6 +229,10 @@ def test_get_schains_on_node(schain_dirs_for_monitor,
                              dutils, schain_container, upsert_db):
     schain_name = schain_container
     result = get_schains_on_node(dutils)
+    print(sorted([
+        TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
+        PHANTOM_SCHAIN_NAME, schain_name
+    ]))
     assert result == sorted([
         TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
         PHANTOM_SCHAIN_NAME, schain_name

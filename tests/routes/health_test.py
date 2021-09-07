@@ -6,7 +6,6 @@ from sgx import SgxClient
 
 from core.node_config import NodeConfig
 
-from tools.docker_utils import DockerUtils
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 
 from web.models.schain import SChainRecord
@@ -20,12 +19,12 @@ TEST_SGX_KEYNAME = 'test_keyname'
 
 
 @pytest.fixture
-def skale_bp(skale):
+def skale_bp(skale, dutils):
     app = Flask(__name__)
     app.register_blueprint(construct_health_bp())
 
     def handler(sender, **kwargs):
-        g.docker_utils = DockerUtils(volume_driver='local')
+        g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
         g.config.id = 1
@@ -37,12 +36,12 @@ def skale_bp(skale):
 
 
 @pytest.fixture
-def unregistered_skale_bp(skale):
+def unregistered_skale_bp(skale, dutils):
     app = Flask(__name__)
     app.register_blueprint(construct_health_bp())
 
     def handler(sender, **kwargs):
-        g.docker_utils = DockerUtils(volume_driver='local')
+        g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
         g.config.id = None
@@ -53,9 +52,8 @@ def unregistered_skale_bp(skale):
         SChainRecord.drop_table()
 
 
-def test_containers(skale_bp):
+def test_containers(skale_bp, dutils):
     data = get_bp_data(skale_bp, get_api_url('health', 'containers'))
-    dutils = DockerUtils(volume_driver='local')
     expected = {
         'status': 'ok',
         'payload': dutils.get_containers_info(
@@ -67,9 +65,19 @@ def test_containers(skale_bp):
     assert data == expected
 
 
-def test_schains_checks(skale_bp, skale):
+def test_schains_checks(skale_bp, skale, schain_db):
+    schain_name = schain_db
+
     class SChainChecksMock:
-        def __init__(self, name, node_id, log=False, failhook=None):
+        def __init__(
+            self,
+            name,
+            node_id,
+            *args,
+            log=False,
+            failhook=None,
+            **kwargs
+        ):
             pass
 
         def get_all(self):
@@ -85,11 +93,17 @@ def test_schains_checks(skale_bp, skale):
             }
 
     def get_schains_for_node_mock(self, node_id):
-        return [{'name': 'test-schain'}, {'name': ''}]
+        return [
+            {'name': schain_name},
+            {'name': 'test-schain'},
+            {'name': ''}
+        ]
 
     with mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
-        with mock.patch('skale.contracts.manager.schains.SChains.get_schains_for_node',
-                        get_schains_for_node_mock):
+        with mock.patch(
+            'skale.contracts.manager.schains.SChains.get_schains_for_node',
+            get_schains_for_node_mock
+        ):
             data = get_bp_data(skale_bp, get_api_url('health', 'schains'))
             assert data['status'] == 'ok'
             payload = data['payload']

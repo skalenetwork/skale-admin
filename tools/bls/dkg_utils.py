@@ -38,7 +38,7 @@ class DkgFailedError(DkgError):
     pass
 
 
-def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name):
+def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
     schain_nodes = get_nodes_for_schain(skale, schain_name)
     n = len(schain_nodes)
     t = (2 * n + 1) // 3
@@ -64,35 +64,13 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name):
                        'Initialization failed, nodeID not found for schain.')
     dkg_client = DKGClient(
         node_id_dkg, node_id, skale, t, n, schain_name,
-        public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name
+        public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name, rotation_id
     )
 
     return dkg_client
 
 
-def generate_bls_key_name(group_index_str, node_id, dkg_id):
-    return (
-            "BLS_KEY:SCHAIN_ID:"
-            f"{group_index_str}"
-            ":NODE_ID:"
-            f"{str(node_id)}"
-            ":DKG_ID:"
-            f"{str(dkg_id)}"
-        )
-
-
-def generate_poly_name(group_index_str, node_id, dkg_id):
-    return (
-            "POLY:SCHAIN_ID:"
-            f"{group_index_str}"
-            ":NODE_ID:"
-            f"{str(node_id)}"
-            ":DKG_ID:"
-            f"{str(dkg_id)}"
-        )
-
-
-def broadcast_and_check_data(dkg_client, poly_name):
+def broadcast_and_check_data(dkg_client):
     logger.info(f'sChain {dkg_client.schain_name}: Sending broadcast')
 
     n = dkg_client.n
@@ -108,7 +86,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
     start_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
 
     try:
-        broadcast(dkg_client, poly_name)
+        broadcast(dkg_client)
     except SgxUnreachableError as e:
         logger.error(e)
         wait_for_fail(dkg_client.skale, schain_name, start_time)
@@ -117,7 +95,7 @@ def broadcast_and_check_data(dkg_client, poly_name):
     broadcasts_found = []
 
     while False in is_received:
-        time_gone = get_latest_block_timestamp(dkg_client) - start_time
+        time_gone = get_latest_block_timestamp(dkg_client.skale) - start_time
         if time_gone > dkg_client.dkg_timeout:
             break
         logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
@@ -160,14 +138,10 @@ def broadcast_and_check_data(dkg_client, poly_name):
     check_broadcasted_data(dkg_client, is_correct, is_received)
 
 
-def generate_bls_keys(dkg_client, rotation_id):
+def generate_bls_keys(dkg_client):
     skale = dkg_client.skale
     schain_name = dkg_client.schain_name
-    group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
-    bls_name = generate_bls_key_name(
-        group_index_str, dkg_client.node_id_dkg, rotation_id
-    )
-    encrypted_bls_key = dkg_client.generate_bls_key(bls_name)
+    encrypted_bls_key = dkg_client.generate_bls_key()
     logger.info(f'sChain: {schain_name}. '
                 f'Node`s encrypted bls key is: {encrypted_bls_key}')
     bls_public_keys = dkg_client.get_bls_public_keys()
@@ -182,13 +156,13 @@ def generate_bls_keys(dkg_client, rotation_id):
         'bls_public_keys': bls_public_keys,
         't': dkg_client.t,
         'n': dkg_client.n,
-        'key_share_name': bls_name
+        'key_share_name': dkg_client.bls_name
     }
 
 
-def broadcast(dkg_client, poly_name):
+def broadcast(dkg_client):
     try:
-        dkg_client.broadcast(poly_name)
+        dkg_client.broadcast()
     except DkgTransactionError:
         pass
 
@@ -287,8 +261,8 @@ def wait_for_fail(skale, schain_name, channel_started_time, reason=""):
         sleep(30)
 
 
-def get_latest_block_timestamp(dkg_client):
-    return dkg_client.skale.web3.eth.getBlock("latest")["timestamp"]
+def get_latest_block_timestamp(skale):
+    return skale.web3.eth.getBlock("latest")["timestamp"]
 
 
 def get_secret_key_share_filepath(schain_name, rotation_id):

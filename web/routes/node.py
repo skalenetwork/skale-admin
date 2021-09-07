@@ -223,6 +223,8 @@ def construct_node_bp():
     def _validator_nodes():
         logger.debug(request)
         skale = init_skale(g.wallet)
+        if g.config.id is None:
+            return construct_ok_response(data=[])
         res = check_validator_nodes(skale, g.config.id)
         if res['status'] != 0:
             return construct_err_response(msg=res['errors'])

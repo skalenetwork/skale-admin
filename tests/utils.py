@@ -27,6 +27,53 @@ TEST_IMA_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
     DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'ima.json')
 
 
+CONTAINERS_JSON = {
+  "schain": {
+    "name": "skalenetwork/schain",
+    "version": "3.7.5-beta.0",
+    "custom_args": {
+      "ulimits_list": [
+        {
+          "name": "core",
+          "soft": -1,
+          "hard": -1
+        }
+      ],
+      "logs": {
+        "max-size": "250m",
+        "max-file": "5"
+      }
+    },
+    "args": {
+      "security_opt": [
+        "seccomp=unconfined"
+      ],
+      "restart_policy": {
+        "MaximumRetryCount": 0,
+        "Name": "on-failure"
+      },
+      "network": "host",
+      "cap_add": [
+        "SYS_PTRACE",
+        "SYS_ADMIN"
+      ]
+    }
+  },
+  "ima": {
+    "name": "skalenetwork/ima",
+    "version": "1.0.0-develop.208",
+    "custom_args": {},
+    "args": {
+      "restart_policy": {
+        "MaximumRetryCount": 10,
+        "Name": "on-failure"
+      },
+      "network": "host"
+    }
+  }
+}
+
+
 class FailedAPICall(Exception):
     pass
 
@@ -105,7 +152,7 @@ def run_simple_schain_container(schain_data: dict, dutils: DockerUtils):
 def run_simple_schain_container_in_sync_mode(schain_data: dict,
                                              dutils: DockerUtils):
     public_key = "1:1:1:1"
-    timestamp = time.time()
+    timestamp = int(time.time())
 
     class SnapshotAddressMock:
         def __init__(self):
