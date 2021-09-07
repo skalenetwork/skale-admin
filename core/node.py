@@ -173,7 +173,7 @@ class Node:
             )
             if not data_address == self.skale.wallet.address or \
                 not name == node_data['name'] or \
-                    not ip == node_data['ip']:
+                    not ip == ip_from_bytes(node_data['ip']):
                 node_id = -1
         return node_id
 
