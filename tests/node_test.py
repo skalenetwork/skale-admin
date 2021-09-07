@@ -105,11 +105,10 @@ def active_node(skale):
     config.id = node_id
     config.ip = ip
     config.name = name
-    status = skale.nodes.get_node_status(node_id)
     yield Node(skale, config)
-    if status not in (NodeStatus.FROZEN.value, NodeStatus.FROZEN.value):
-        if skale.nodes.get_node_status(node_id) == \
-                NodeStatus.IN_MAINTENANCE.value:
+    status = skale.nodes.get_node_status(node_id)
+    if status not in (NodeStatus.FROZEN.value, NodeStatus.LEFT.value):
+        if status == NodeStatus.IN_MAINTENANCE.value:
             skale.nodes.remove_node_from_in_maintenance(node_id)
         skale.manager.node_exit(node_id)
 
