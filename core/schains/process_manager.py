@@ -17,8 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# import os
-# import sys
+import sys
 import signal
 import logging
 from multiprocessing import Process
@@ -44,14 +43,14 @@ def pm_signal_handler(*args):
     The purpose of the process manager signal handler is to forward SIGTERM signal to all sChain
     processes so they can gracefully save DKG results before
     """
-    schain_records = SChainRecord.select()
-    print(f'schain_records: {len(schain_records)}')
-    print(f'schain_records: {list(schain_records)}')
-    for schain_record in schain_records:
-        logger.warning(f'Going to send SIGTERM to {schain_record.name}, {schain_record.monitor_id}')
-        terminate_process(schain_record.monitor_id)
+    records = SChainRecord.select()
+    print(f'schain_records: {len(records)}')
+    print(f'schain_records: {records}')
+    for r in records:
+        logger.warning(f'Sending SIGTERM to {r.name}, {r.monitor_id}')
+        terminate_process(r.monitor_id)
     logger.warning(f'All sChain processes stopped, exiting...')
-    # sys.exit(0)
+    sys.exit(0)
 
 
 def run_process_manager(skale, skale_ima, node_config):

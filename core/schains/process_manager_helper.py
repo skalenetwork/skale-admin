@@ -18,9 +18,12 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import os
+import signal
 from datetime import datetime
 
 import psutil
+
 
 from tools.helper import check_pid
 
@@ -60,7 +63,7 @@ def terminate_process(pid, kill_timeout=P_KILL_WAIT_TIMEOUT, log_msg=''):
     try:
         logger.warning(f'{log_prefix} - going to terminate')
         p = psutil.Process(pid)
-        p.terminate()
+        os.kill(p.pid, signal.SIGTERM)
         p.wait(timeout=kill_timeout)
         logger.info(f'{log_prefix} was terminated')
     except psutil.NoSuchProcess:
