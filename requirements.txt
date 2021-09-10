@@ -14,7 +14,7 @@ pycryptodome==3.9.9
 python-iptables==0.14.0
 
 skale.py==5.1dev7
-ima-predeployed==1.0.0b7
+ima-predeployed==1.0.0b11
 
 pyyaml==5.4
 psutil==5.7.0
