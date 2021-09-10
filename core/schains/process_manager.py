@@ -49,7 +49,7 @@ def pm_signal_handler(*args):
     for r in records:
         logger.warning(f'Sending SIGTERM to {r.name}, {r.monitor_id}')
         terminate_process(r.monitor_id)
-    logger.warning(f'All sChain processes stopped, exiting...')
+    logger.warning('All sChain processes stopped, exiting...')
     sys.exit(0)
 
 
