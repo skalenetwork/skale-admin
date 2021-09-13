@@ -73,7 +73,7 @@ from web.models.schain import upsert_schain_record, SChainRecord
 logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
-SCHAIN_MONITOR_SLEEP_INTERVAL = 500
+SCHAIN_MONITOR_SLEEP_INTERVAL = 30
 
 
 class MonitorMode(Enum):
@@ -150,6 +150,7 @@ def monitor_schain(
     dutils = dutils or DockerUtils()
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
+    ima_linked = skale_ima.linker.has_schain(name)
 
     rotation_id = rotation['rotation_id']
     finish_ts = rotation['finish_ts']
@@ -163,6 +164,7 @@ def monitor_schain(
         node_id,
         schain_record=schain_record,
         rotation_id=rotation_id,
+        ima_linked=ima_linked,
         dutils=dutils
     )
 
