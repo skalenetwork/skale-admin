@@ -49,6 +49,7 @@ class ChecksMock:
         node_id: int,
         schain_record: SChainRecord,
         rotation_id: int = 0,
+        ima_linked: bool = False,
         dutils: DockerUtils = None
     ):
         pass
