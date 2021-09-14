@@ -133,8 +133,9 @@ def notify_checks(
     if saved_state != state:
         count = 1
         logger.info(f'Saving new checks state {count} {state}')
+        ex = None if success else CHECKS_STATE_EXPIRATION
         pipe = client.pipeline()
-        pipe.set(state_key, state, ex=CHECKS_STATE_EXPIRATION)
+        pipe.set(state_key, state, ex=ex)
         pipe.set(count_key, count)
         pipe.execute()
     else:
