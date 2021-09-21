@@ -22,10 +22,11 @@ import logging
 import time
 from datetime import datetime
 from functools import wraps
+from typing import Dict, List, Optional
 
 from redis import BlockingConnectionPool, Redis
 
-from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from tools.configs.tg import CHECKS_STATE_EXPIRATION, TG_API_KEY, TG_CHAT_ID
 from tools.notifications.tasks import send_message_to_telegram
 
 
@@ -37,10 +38,10 @@ RED_LIGHT = '\u274C'
 GREEN_LIGHT = '\u2705'
 EXCLAMATION_MARK = '\u2757'
 SUCCESS_MAX_ATTEMPS = 1
-FAILED_MAX_ATTEMPS = 5
+FAILED_MAX_ATTEMPS = 1
 
 
-def tg_notifications_enabled():
+def tg_notifications_enabled() -> bool:
     return TG_API_KEY and TG_CHAT_ID
 
 
@@ -58,7 +59,7 @@ def notifications_enabled(func):
 
 
 @notifications_enabled
-def cleanup_notification_state(*, client=None):
+def cleanup_notification_state(*, client: Optional[Redis] = None) -> None:
     client = client or redis_client
     keys = client.keys('messages.*')
     logger.info(f'Removing following keys from notificaton state: {keys}')
@@ -66,11 +67,16 @@ def cleanup_notification_state(*, client=None):
         client.delete(*keys)
 
 
-def is_checks_passed(checks):
+def is_checks_passed(checks: Dict) -> bool:
     return all(checks.values())
 
 
-def compose_checks_message(schain_name, node, checks, raw=False):
+def compose_checks_message(
+    schain_name: str,
+    node: Dict,
+    checks: Dict,
+    raw: bool = False
+):
     if raw:
         msg = {
             'schain_name': schain_name,
@@ -93,19 +99,28 @@ def compose_checks_message(schain_name, node, checks, raw=False):
     return msg
 
 
-def get_state_from_checks(checks):
+def get_state_from_checks(checks: Dict) -> str:
     return str(sorted(checks.items()))
 
 
 @notifications_enabled
-def notify_checks(schain_name, node, checks, *, client=None):
+def notify_checks(
+    schain_name: str,
+    node: Dict,
+    checks: Dict,
+    *,
+    client: Optional[Redis] = None
+) -> None:
     client = client or redis_client
-    count_key = 'messages.checks.count'
-    state_key = 'messages.checks.state'
-    count = int(client.get(count_key) or 0)
+    count_key = f'messages.checks.{schain_name}.count'
+    state_key = f'messages.checks.{schain_name}.state'
     saved_state_bytes = client.get(state_key) or b''
     saved_state = saved_state_bytes.decode('utf-8')
+    count = 0
+    if saved_state:
+        count = int(client.get(count_key) or 0)
     state = get_state_from_checks(checks)
+
     success = is_checks_passed(checks)
 
     if saved_state != state or (
@@ -115,12 +130,25 @@ def notify_checks(schain_name, node, checks, *, client=None):
         logger.info(f'Sending checks notification with state {state}')
         send_message(message)
 
-    count = 1 if saved_state != state else count + 1
-    logger.info(f'Saving new checks state {count} {state}')
-    client.mset({count_key: count, state_key: state})
+    if saved_state != state:
+        count = 1
+        logger.info(f'Saving new checks state {count} {state}')
+        ex = None if success else CHECKS_STATE_EXPIRATION
+        pipe = client.pipeline()
+        pipe.set(state_key, state, ex=ex)
+        pipe.set(count_key, count)
+        pipe.execute()
+    else:
+        count += 1
+        logger.info(f'Saving new checks count {count}')
+        client.set(count_key, count)
 
 
-def compose_balance_message(node_info, balance, required_balance):
+def compose_balance_message(
+    node_info: Dict,
+    balance: float,
+    required_balance: float
+) -> List[str]:
     if balance < required_balance:
         header = f'{EXCLAMATION_MARK} Balance on node is too low \n'
     else:
@@ -134,7 +162,13 @@ def compose_balance_message(node_info, balance, required_balance):
 
 
 @notifications_enabled
-def notify_balance(node_info, balance, required_balance, *, client=None):
+def notify_balance(
+    node_info: Dict,
+    balance: float,
+    required_balance: float,
+    *,
+    client: Optional[Redis] = None
+) -> None:
     client = client or redis_client
     count_key = 'messages.balance.count'
     state_key = 'messages.balance.state'
@@ -156,7 +190,10 @@ def notify_balance(node_info, balance, required_balance, *, client=None):
     client.mset({count_key: count, state_key: str(state)})
 
 
-def compose_repair_mode_notification(node_info: dict, schain_name: str) -> list:
+def compose_repair_mode_notification(
+    node_info: Dict,
+    schain_name: str
+) -> List:
     header = f'{EXCLAMATION_MARK} Repair mode for {schain_name} enabled \n'
     return [
         header,
@@ -167,13 +204,13 @@ def compose_repair_mode_notification(node_info: dict, schain_name: str) -> list:
 
 
 @notifications_enabled
-def notify_repair_mode(node_info: dict, schain_name: str) -> None:
+def notify_repair_mode(node_info: Dict, schain_name: str) -> None:
     message = compose_repair_mode_notification(node_info, schain_name)
     logger.info('Sending repair mode notification')
     send_message(message)
 
 
-def send_message(message: list, api_key: str = TG_API_KEY,
+def send_message(message: List, api_key: str = TG_API_KEY,
                  chat_id: str = TG_CHAT_ID):
     message.extend([
         f'\nTimestamp: {int(time.time())}',

@@ -50,6 +50,7 @@ class SChainChecks:
         schain_record: SChainRecord,
         rotation_id: int = 0,
         *,
+        ima_linked: bool = True,
         dutils: DockerUtils = None
     ):
         self.name = schain_name
@@ -58,6 +59,7 @@ class SChainChecks:
         self.rotation_id = rotation_id
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
+        self.ima_linked = ima_linked
 
     @property
     def data_dir(self) -> bool:
@@ -141,7 +143,7 @@ class SChainChecks:
             'rpc': self.rpc,
             'blocks': self.blocks
         }
-        if not DISABLE_IMA:
+        if not DISABLE_IMA and self.ima_linked:
             checks_dict['ima_container'] = self.ima_container
         if log:
             log_checks_dict(self.name, checks_dict)
