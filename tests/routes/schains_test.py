@@ -9,7 +9,6 @@ from flask import Flask, appcontext_pushed, g
 from core.node_config import NodeConfig
 from core.schains.config.helper import get_schain_config_filepath
 from tests.utils import get_bp_data, post_bp_data
-from tools.docker_utils import DockerUtils
 from tools.iptables import NodeEndpoint
 from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
@@ -22,12 +21,12 @@ BLUEPRINT_NAME = 'schains'
 
 
 @pytest.fixture
-def skale_bp(skale):
+def skale_bp(skale, dutils):
     app = Flask(__name__)
     app.register_blueprint(construct_schains_bp())
 
     def handler(sender, **kwargs):
-        g.docker_utils = DockerUtils(volume_driver='local')
+        g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
         g.config.id = 1

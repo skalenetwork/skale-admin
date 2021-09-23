@@ -12,13 +12,27 @@ from skale.utils.contracts_provision.main import (create_nodes, create_schain,
 from core.schains.cleaner import remove_schain_container
 from core.schains.cleaner import remove_schain_volume
 
-from tests.utils import init_skale_ima, init_web3_skale, generate_cert
-from tools.configs import SSL_CERTIFICATES_FILEPATH
+from tests.utils import (
+    CONTAINERS_JSON,
+    generate_cert,
+    init_skale_ima,
+    init_web3_skale
+)
+from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.docker_utils import DockerUtils
 
 
 from web.models.schain import create_tables, SChainRecord, upsert_schain_record
+
+
+@pytest.fixture
+def containers_json():
+    with open(CONTAINERS_FILEPATH, 'w') as cf:
+        json.dump(CONTAINERS_JSON, cf)
+    yield CONTAINERS_FILEPATH
+    os.remove(CONTAINERS_FILEPATH)
 
 
 @pytest.fixture
@@ -33,7 +47,10 @@ def skale_ima():
 
 @pytest.fixture
 def ssl_folder():
-    pathlib.Path(SSL_CERTIFICATES_FILEPATH).mkdir(parents=True)
+    pathlib.Path(SSL_CERTIFICATES_FILEPATH).mkdir(
+        parents=True,
+        exist_ok=True
+    )
     yield SSL_CERTIFICATES_FILEPATH
     pathlib.Path(SSL_CERTIFICATES_FILEPATH).rmdir()
 
@@ -209,10 +226,25 @@ def db():
 
 
 @pytest.fixture
-def schain_db(db, _schain_name):
+def schain_db(db, _schain_name, meta_file):
     """ Database with default schain inserted """
-    upsert_schain_record(_schain_name)
+    config_version = meta_file['config_stream']
+    r = upsert_schain_record(_schain_name)
+    r.set_config_version(config_version)
     return _schain_name
+
+
+@pytest.fixture
+def meta_file():
+    meta_info = {
+        "version": "0.0.0",
+        "config_stream": "1.0.0-testnet",
+        "docker_lvmpy_stream": "1.1.1"
+    }
+    with open(META_FILEPATH, 'w') as meta_file:
+        json.dump(meta_info, meta_file)
+    yield meta_info
+    os.remove(META_FILEPATH)
 
 
 @pytest.fixture
@@ -226,7 +258,27 @@ def schain_on_contracts(skale, _schain_name) -> str:
 
 @pytest.fixture
 def dutils():
-    return DockerUtils(volume_driver='local')
+    return DockerUtils(
+        volume_driver='local',
+        host='unix://var/run/docker.sock'
+    )
+
+
+@pytest.fixture
+def skaled_mock_image(scope='module'):
+    dutils = DockerUtils(
+        volume_driver='local',
+        host='unix://var/run/docker.sock'
+    )
+    name = 'skaled-mock'
+    dutils.client.images.build(
+        tag=name,
+        rm=True,
+        nocache=True,
+        path='tests/skaled-mock'
+    )
+    yield name
+    dutils.client.images.remove(name, force=True)
 
 
 @pytest.fixture
