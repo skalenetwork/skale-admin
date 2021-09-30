@@ -19,6 +19,7 @@ from core.schains.cleaner import (monitor as cleaner_monitor,
 from core.schains.process_manager import run_process_manager
 from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from tools.configs.schains import SCHAINS_DIR_PATH
+from web.routes.schains import SChainRecord
 
 
 @pytest.fixture
@@ -42,9 +43,10 @@ def exiting_node(skale, db):
 
 
 # TODO: Mock leaving history, check final exit status
-def test_node_exit(skale, skale_ima, exiting_node):
+def test_node_exit(skale, skale_ima, exiting_node, dutils):
     nodes, schain_name = exiting_node
     node = nodes[0]
+    schain_record = SChainRecord.get_by_name(schain_name)
     spawn_skale_lib_mock = get_spawn_skale_mock(node.config.id)
     with mock.patch('core.schains.monitor.add_firewall_rules'), \
             mock.patch('core.schains.monitor.run_dkg', run_dkg_mock),\
@@ -79,9 +81,13 @@ def test_node_exit(skale, skale_ima, exiting_node):
                         new=mock.Mock(return_value=rotation_state_mock)),\
                 mock.patch('core.schains.cleaner.SgxClient.delete_bls_key', delete_bls_keys_mock):
             run_process_manager(skale, skale_ima, node.config)
-            wait_for_schain_exiting(schain_name)
+            wait_for_schain_exiting(schain_name, dutils)
             cleaner_monitor(node.skale, node.config)
-            checks = SChainChecks(schain_name, node.config.id).get_all()
+            checks = SChainChecks(
+                schain_name,
+                node.config.id,
+                schain_record=schain_record
+            ).get_all()
             assert not checks['container']
             assert not checks['volume']
             assert not checks['data_dir']

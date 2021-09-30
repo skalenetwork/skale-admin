@@ -95,7 +95,7 @@ def broadcast_and_check_data(dkg_client):
     broadcasts_found = []
 
     while False in is_received:
-        time_gone = get_latest_block_timestamp(dkg_client) - start_time
+        time_gone = get_latest_block_timestamp(dkg_client.skale) - start_time
         if time_gone > dkg_client.dkg_timeout:
             break
         logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
@@ -261,8 +261,8 @@ def wait_for_fail(skale, schain_name, channel_started_time, reason=""):
         sleep(30)
 
 
-def get_latest_block_timestamp(dkg_client):
-    return dkg_client.skale.web3.eth.getBlock("latest")["timestamp"]
+def get_latest_block_timestamp(skale):
+    return skale.web3.eth.getBlock("latest")["timestamp"]
 
 
 def get_secret_key_share_filepath(schain_name, rotation_id):

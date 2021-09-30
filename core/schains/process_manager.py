@@ -17,6 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import sys
+import signal
 import logging
 from multiprocessing import Process
 
@@ -25,17 +27,34 @@ from skale import Skale
 from core.schains.monitor import run_monitor_for_schain
 from core.schains.utils import notify_if_not_enough_balance
 from core.schains.process_manager_helper import (
-    terminate_stuck_schain_process, is_monitor_process_alive
+    terminate_stuck_schain_process, is_monitor_process_alive, terminate_process
 )
 
-from web.models.schain import upsert_schain_record
+from web.models.schain import upsert_schain_record, SChainRecord
 from tools.str_formatters import arguments_list_string
 
 
 logger = logging.getLogger(__name__)
 
 
+def pm_signal_handler(*args):
+    """
+    This function is trigerred when SIGTERM signal is received by the main process of the app.
+    The purpose of the process manager signal handler is to forward SIGTERM signal to all sChain
+    processes so they can gracefully save DKG results before
+    """
+    records = SChainRecord.select()
+    print(f'schain_records: {len(records)}')
+    print(f'schain_records: {records}')
+    for r in records:
+        logger.warning(f'Sending SIGTERM to {r.name}, {r.monitor_id}')
+        terminate_process(r.monitor_id)
+    logger.warning('All sChain processes stopped, exiting...')
+    sys.exit(0)
+
+
 def run_process_manager(skale, skale_ima, node_config):
+    signal.signal(signal.SIGTERM, pm_signal_handler)
     logger.info('Process manager started')
     node_id = node_config.id
     ecdsa_sgx_key_name = node_config.sgx_key_name

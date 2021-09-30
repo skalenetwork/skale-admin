@@ -15,7 +15,6 @@ from skale.utils.web3_utils import to_checksum_address
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, post_bp_data
-from tools.docker_utils import DockerUtils
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from web.routes.node import construct_node_bp
 from web.helper import get_api_url
@@ -28,12 +27,12 @@ BLUEPRINT_NAME = 'node'
 
 
 @pytest.fixture
-def skale_bp(skale):
+def skale_bp(skale, dutils):
     app = Flask(__name__)
     app.register_blueprint(construct_node_bp())
 
     def handler(sender, **kwargs):
-        g.docker_utils = DockerUtils(volume_driver='local')
+        g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
 
@@ -205,19 +204,10 @@ def test_endpoint_info(skale_bp, skale):
     assert payload['client'] != 'unknown'
 
 
-def test_meta_info(skale_bp):
-    meta_info = {
-        "version": "0.0.0",
-        "config_stream": "1.4.1-testnet",
-        "docker_lvmpy_stream": "1.1.1"
-    }
-
-    with mock.patch(
-        'web.routes.node.get_meta_info',
-        return_value=meta_info
-    ):
-        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'meta-info'))
-        assert data == {'status': 'ok', 'payload': meta_info}
+def test_meta_info(skale_bp, meta_file):
+    meta_info = meta_file
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'meta-info'))
+    assert data == {'status': 'ok', 'payload': meta_info}
 
 
 def test_public_ip_info(skale_bp):

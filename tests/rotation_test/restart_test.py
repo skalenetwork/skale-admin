@@ -14,10 +14,7 @@ from tests.rotation_test.utils import (set_up_rotated_schain, get_spawn_skale_mo
                                        run_dkg_mock, wait_for_schain_exiting,
                                        wait_for_schain_alive, wait_for_contract_exiting)
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
-
-dutils = DockerUtils(volume_driver='local')
 
 
 @pytest.fixture
@@ -42,8 +39,9 @@ def rotated_nodes(skale, schain_config, schain_db):
     subprocess.run(['rm', '-rf', schain_dir_path])
 
 
-def test_new_node(skale, skale_ima, rotated_nodes):
+def test_new_node(skale, skale_ima, rotated_nodes, dutils):
     nodes, schain_name = rotated_nodes
+    schain_record = SChainRecord.get_by_name(schain_name)
     exited_node, restarted_node = nodes[0], nodes[1]
 
     spawn_skale_lib_mock = get_spawn_skale_mock(restarted_node.config.id)
@@ -72,7 +70,7 @@ def test_new_node(skale, skale_ima, rotated_nodes):
         with mock.patch('core.schains.monitor.get_rotation_state',
                         new=mock.Mock(return_value=rotation_state_mock)):
             run_process_manager(restarted_node.skale, skale_ima, restarted_node.config)
-            wait_for_schain_exiting(schain_name)
+            wait_for_schain_exiting(schain_name, dutils)
 
         rotation_state_mock['in_progress'] = False
         with mock.patch('core.schains.monitor.remove_firewall_rules'), \
@@ -80,6 +78,11 @@ def test_new_node(skale, skale_ima, rotated_nodes):
                            new=mock.Mock(return_value=rotation_state_mock)):
             run_process_manager(restarted_node.skale, skale_ima, restarted_node.config)
             wait_for_schain_alive(schain_name)
-            checks = SChainChecks(schain_name, restarted_node.config.id).get_all()
+
+            checks = SChainChecks(
+                schain_name,
+                restarted_node.config.id,
+                schain_record=schain_record
+            ).get_all()
             assert checks['container']
             assert checks['rpc']

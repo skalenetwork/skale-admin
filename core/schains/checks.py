@@ -17,13 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import logging
+import os
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
 from core.schains.config.generator import schain_config_version_match
-from core.schains.config.helper import get_allowed_endpoints, get_local_schain_http_endpoint
+from core.schains.config.helper import (
+    get_allowed_endpoints,
+    get_local_schain_http_endpoint
+)
 from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
 from core.schains.runner import get_container_name
 from tools.bls.dkg_utils import get_secret_key_share_filepath
@@ -34,16 +37,29 @@ from tools.iptables import apsent_rules as apsent_iptables_rules
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
+from web.models.schain import SChainRecord
+
 logger = logging.getLogger(__name__)
-dutils = DockerUtils()
 
 
 class SChainChecks:
-    def __init__(self, schain_name: str, node_id: int, rotation_id=0):
+    def __init__(
+        self,
+        schain_name: str,
+        node_id: int,
+        schain_record: SChainRecord,
+        rotation_id: int = 0,
+        *,
+        ima_linked: bool = True,
+        dutils: DockerUtils = None
+    ):
         self.name = schain_name
         self.node_id = node_id
+        self.schain_record = schain_record
         self.rotation_id = rotation_id
+        self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
+        self.ima_linked = ima_linked
 
     @property
     def data_dir(self) -> bool:
@@ -54,7 +70,10 @@ class SChainChecks:
     @property
     def dkg(self) -> bool:
         """Checks that DKG procedure is completed"""
-        secret_key_share_filepath = get_secret_key_share_filepath(self.name, self.rotation_id)
+        secret_key_share_filepath = get_secret_key_share_filepath(
+            self.name,
+            self.rotation_id
+        )
         return os.path.isfile(secret_key_share_filepath)
 
     @property
@@ -63,12 +82,12 @@ class SChainChecks:
         config_filepath = get_schain_config_filepath(self.name)
         if not os.path.isfile(config_filepath):
             return False
-        return schain_config_version_match(self.name)
+        return schain_config_version_match(self.name, self.schain_record)
 
     @property
     def volume(self) -> bool:
         """Checks that sChain volume exists"""
-        return dutils.is_data_volume_exists(self.name)
+        return self.dutils.is_data_volume_exists(self.name)
 
     @property
     def firewall_rules(self) -> bool:
@@ -81,30 +100,28 @@ class SChainChecks:
     @property
     def container(self) -> bool:
         """Checks that skaled container is running"""
-        info = dutils.get_info(self.container_name)
-        return dutils.container_running(info)
+        return self.dutils.is_container_running(self.container_name)
 
     @property
     def exit_code_ok(self) -> bool:
         """Checks that skaled exit code is OK"""
-        info = dutils.get_info(self.container_name)
-        exit_code = dutils.container_exit_code(info)
+        exit_code = self.dutils.container_exit_code(self.container_name)
         return int(exit_code) != SkaledExitCodes.EC_STATE_ROOT_MISMATCH
 
     @property
     def ima_container(self) -> bool:
         """Checks that IMA container is running"""
         name = get_container_name(IMA_CONTAINER, self.name)
-        info = dutils.get_info(name)
-        return dutils.container_running(info)
+        return self.dutils.is_container_running(name)
 
     @property
     def rpc(self) -> bool:
         """Checks that local skaled RPC is accessible"""
+        res = False
         if self.config:
             http_endpoint = get_local_schain_http_endpoint(self.name)
-            return check_endpoint_alive(http_endpoint)
-        return False
+            res = check_endpoint_alive(http_endpoint)
+        return res
 
     @property
     def blocks(self) -> bool:
@@ -126,7 +143,7 @@ class SChainChecks:
             'rpc': self.rpc,
             'blocks': self.blocks
         }
-        if not DISABLE_IMA:
+        if not DISABLE_IMA and self.ima_linked:
             checks_dict['ima_container'] = self.ima_container
         if log:
             log_checks_dict(self.name, checks_dict)
@@ -147,7 +164,10 @@ def log_checks_dict(schain_name, checks_dict):
         failed_checks_str = ", ".join(failed_checks)
         logger.info(
             arguments_list_string(
-                {'sChain name': schain_name, 'Failed checks': failed_checks_str},
+                {
+                    'sChain name': schain_name,
+                    'Failed checks': failed_checks_str
+                },
                 'Failed sChain checks', 'error'
             )
         )
