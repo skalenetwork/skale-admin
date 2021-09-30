@@ -105,13 +105,6 @@ def merged_unique(*args):
             seen.add(item)
 
 
-def read_file(path):
-    file = open(path, 'r')
-    text = file.read()
-    file.close()
-    return text
-
-
 def process_template(source, destination, data):
     """
     :param source: j2 template source path
@@ -119,7 +112,9 @@ def process_template(source, destination, data):
     :param data: dictionary with fields for template
     :return: Nothing
     """
-    template = read_file(source)
+    template = None
+    with open(source) as template_file:
+        template = template_file.read()
     processed_template = Environment().from_string(template).render(data)
     with open(destination, "w") as f:
         f.write(processed_template)

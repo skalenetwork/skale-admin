@@ -19,7 +19,6 @@ from tests.utils import (
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs import NODE_DATA_PATH
 from tools.docker_utils import DockerUtils
-from tools.helper import read_file
 
 from unittest import mock
 
@@ -28,7 +27,12 @@ DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 TEST_SKALE_DATA_DIR = os.path.join(DIR_PATH, 'skale-data')
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
-LOGS_TEST_TEXT = 'Hello, SKALE!'
+HELLO_MSG = 'Hello, SKALE!'
+LOGS_TEST_LINES = [
+    f'{HELLO_MSG}\n',
+    '================================================================================\n',   # noqa
+    f'{HELLO_MSG}\n'
+]
 
 
 @pytest.fixture
@@ -164,7 +168,8 @@ def test_safe_rm(dutils):
     assert dutils.safe_get_container(container_name)
     dutils.safe_rm(container_name)
     assert os.path.isfile(path)
-    assert str(read_file(path)) == f'{LOGS_TEST_TEXT}\n'
+    with open(path) as f:
+        assert f.readlines() == LOGS_TEST_LINES
     assert not dutils.safe_get_container(container_name)
 
 
@@ -204,7 +209,7 @@ def run_test_schain_container(dutils):
         dutils.run_container(
             image_name=image_name,
             name=container_name,
-            entrypoint=f'echo {LOGS_TEST_TEXT}'
+            entrypoint=f'echo {HELLO_MSG}'
         )
     except Exception as e:
         container = dutils.safe_get_container(container_name)

@@ -17,10 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
 import os
+import sys
 import time
 import signal
+import logging
+
 from enum import Enum
 from importlib import reload
 from datetime import datetime
@@ -95,9 +97,20 @@ def run_monitor_for_schain(
             schain_record.set_monitor_last_seen(datetime.now())
 
             def signal_handler(*args):
+                logger.info(
+                    f'signal_handler was triggered for {schain["name"]}, trying to stop gracefully')
+
+                if schain_record.dkg_status == DKGStatus.DONE.value:
+                    logger.info(f'DKG is done for {schain["name"]}, exiting with 0')
+                    sys.exit(0)
+                logger.info(
+                    f'DKG status for {schain["name"]} is {schain_record.dkg_status}'
+                )
+
                 schain_index = skale.schains.name_to_group_id(schain["name"])
                 num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
                 if skale.dkg.get_number_of_completed(schain_index) == num_of_nodes:
+                    logger.info(f'Dkg for {schain["name"]} is completed')
                     rotation = get_rotation_state(
                         skale, schain['name'], node_info['node_id'])
                     rotation_id = rotation['rotation_id']
@@ -109,10 +122,13 @@ def run_monitor_for_schain(
                     else:
                         schain_record.dkg_key_generation_error()
                 else:
+                    logger.info(f'Dkg for {schain["name"]} is not completed')
                     schain_record.dkg_failed()
                 logger.info(
                     f'DKG status for {schain["name"]} was changed to {schain_record.dkg_status}')
-                os.kill(schain_record.monitor_id, signal.SIGTERM)
+
+                logger.info(f'Handler completed: {schain["name"]}, exiting with 0')
+                sys.exit(0)
 
             signal.signal(signal.SIGTERM, signal_handler)
 
@@ -150,6 +166,7 @@ def monitor_schain(
     dutils = dutils or DockerUtils()
     node_id, sgx_key_name = node_info['node_id'], node_info['sgx_key_name']
     rotation = get_rotation_state(skale, name, node_id)
+    ima_linked = skale_ima.linker.has_schain(name)
 
     rotation_id = rotation['rotation_id']
     finish_ts = rotation['finish_ts']
@@ -163,6 +180,7 @@ def monitor_schain(
         node_id,
         schain_record=schain_record,
         rotation_id=rotation_id,
+        ima_linked=ima_linked,
         dutils=dutils
     )
 
@@ -451,7 +469,7 @@ def monitor_sync_schain_container(skale, schain, start_ts, schain_record,
 
 def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
                  rotation_id, schain_record):
-    if schain_record.dkg_status == DKGStatus.KEY_GENERATION_ERROR:
+    if schain_record.dkg_status == DKGStatus.KEY_GENERATION_ERROR.value:
         try:
             dkg_client = init_dkg_client(
                 node_id, schain_name, skale, sgx_key_name, rotation_id)
