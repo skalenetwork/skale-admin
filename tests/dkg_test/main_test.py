@@ -29,8 +29,8 @@ from tests.utils import (generate_random_node_data,
                          generate_random_schain_data, init_web3_skale)
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.bls.dkg_utils import init_dkg_client
-from tools.bls.dkg_client import generate_bls_key_name, generate_bls_keys
+from tools.bls.dkg_utils import init_dkg_client, generate_bls_keys
+from tools.bls.dkg_client import generate_bls_key_name
 
 
 MAX_WORKERS = 5
