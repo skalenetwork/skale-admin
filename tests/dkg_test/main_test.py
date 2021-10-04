@@ -256,8 +256,8 @@ def check_fetch_broadcasted_data(skale, schain_name, nodes, bls_public_keys, all
     all_public_keys_done = []
     for node_data, result in zip(nodes, results):
         assert result is not None
-        bls_public_keys.append(result['public_key'])
-        all_public_keys.append(result['bls_public_keys'])
+        bls_public_keys_done.append(result['public_key'])
+        all_public_keys_done.append(result['bls_public_keys'])
 
     assert bls_public_keys_done == bls_public_keys
     assert all_public_keys_done == all_public_keys
