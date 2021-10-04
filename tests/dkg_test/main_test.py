@@ -255,10 +255,9 @@ def check_fetch_broadcasted_data(skale, schain_name, nodes, bls_public_keys, all
     bls_public_keys_done = []
     all_public_keys_done = []
     for node_data, result in zip(nodes, results):
-        assert result['dkg_results'] is not None
-        bls_public_keys.append(result['dkg_results']['public_key'])
-        all_public_keys.append(result['dkg_results']['bls_public_keys'])
-        check_config(nodes, node_data, result['config'])
+        assert result is not None
+        bls_public_keys.append(result['public_key'])
+        all_public_keys.append(result['bls_public_keys'])
 
     assert bls_public_keys_done == bls_public_keys
     assert all_public_keys_done == all_public_keys
