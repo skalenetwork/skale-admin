@@ -117,6 +117,8 @@ def run_dkg(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
     if not os.path.isfile(secret_key_share_filepath):
         dkg_results = init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id)
         save_dkg_results(dkg_results, secret_key_share_filepath)
+        return dkg_results
+    return None
 
 
 def save_dkg_results(dkg_results, filepath):

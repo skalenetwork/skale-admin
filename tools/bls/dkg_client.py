@@ -27,6 +27,7 @@ from sgx.sgx_rpc_handler import DkgPolyStatus
 from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.transactions.result import TransactionFailedError
 
+from tools.bls.skale_dkg_broadcast_filter import Filter
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from tools.sgx_utils import sgx_unreachable_retry
 
@@ -403,6 +404,24 @@ class DKGClient:
         except TransactionFailedError as e:
             logger.error(f'DKG response failed: sChain {self.schain_name}')
             raise DkgTransactionError(e)
+
+    def fetch_all_broadcasted_data(self):
+        self.verification_vector()
+        self.secret_key_contribution()
+
+        dkg_filter = Filter(self.skale, self.schain_name, self.n)
+        events = dkg_filter.get_events(from_channel_started_block=True)
+
+        for event in events:
+            from_node = self.node_ids_contract[event.nodeIndex]
+            if from_node == self.node_id_dkg:
+                continue
+            broadcasted_data = [event.verificationVector, event.secretKeyContribution]
+            self.store_broadcasted_data(broadcasted_data, from_node)
+            logger.info(
+                f'sChain: {self.schain_name}. Received by {self.node_id_dkg} from '
+                f'{from_node}'
+            )
 
     def is_all_data_received(self, from_node):
         return self.skale.dkg.is_all_data_received(self.group_index, self.node_ids_dkg[from_node])

@@ -29,6 +29,8 @@ from tests.utils import (generate_random_node_data,
                          generate_random_schain_data, init_web3_skale)
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.bls.dkg_utils import init_dkg_client
+from tools.bls.dkg_client import generate_bls_key_name, generate_bls_keys
 
 
 MAX_WORKERS = 5
@@ -189,15 +191,20 @@ def run_dkg_all(skale, schain_name, nodes):
     for future in futures:
         results.append(future.result())
 
+    bls_public_keys = []
+    all_public_keys = []
     for node_data, result in zip(nodes, results):
         assert result['node_id'] == node_data['node_id']
-        assert result['dkg_results'] is None
+        assert result['dkg_results'] is not None
+        bls_public_keys.append(result['dkg_results']['public_key'])
+        all_public_keys.append(result['dkg_results']['bls_public_keys'])
         check_config(nodes, node_data, result['config'])
 
     assert len(results) == N_OF_NODES
 
     gid = skale.schains.name_to_id(schain_name)
     assert skale.dkg.is_last_dkg_successful(gid)
+    return bls_public_keys, all_public_keys
     # todo: add some additional checks that dkg is finished successfully
 
 
@@ -228,6 +235,48 @@ def run_node_dkg(opts):
         'dkg_results': dkg_results,
         'config': schain_config.to_dict()
     }
+
+
+def check_fetch_broadcasted_data(skale, schain_name, nodes, bls_public_keys, all_public_keys):
+    futures, results = [], []
+    nodes.sort(key=lambda x: x['node_id'])
+    with Executor(max_workers=MAX_WORKERS) as executor:
+        for i, node_data in enumerate(nodes):
+            opts = {
+                'skale': skale,
+                'schain_name': schain_name,
+                'node_id': node_data['node_id'],
+                'wallet': node_data['wallet'],
+            }
+            futures.append(executor.submit(run_dkg_fetch, opts))
+    for future in futures:
+        results.append(future.result())
+
+    bls_public_keys_done = []
+    all_public_keys_done = []
+    for node_data, result in zip(nodes, results):
+        assert result['dkg_results'] is not None
+        bls_public_keys.append(result['dkg_results']['public_key'])
+        all_public_keys.append(result['dkg_results']['bls_public_keys'])
+        check_config(nodes, node_data, result['config'])
+
+    assert bls_public_keys_done == bls_public_keys
+    assert all_public_keys_done == all_public_keys
+
+
+def run_dkg_fetch(opts):
+    skale = skale_fixture()
+    skale.wallet = opts['wallet']
+    sgx_key_name = skale.wallet._key_name
+    schain_name = opts['schain_name']
+    node_id = opts['node_id']
+
+    dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, 0)
+    group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
+    dkg_client.bls_key_name = generate_bls_key_name(group_index_str, node_id, 2)
+    dkg_client.fetch_all_broadcasted_data()
+    dkg_results = generate_bls_keys(dkg_client)
+    return dkg_results
 
 
 def create_schain(skale: Skale, name: str, lifetime_seconds: int) -> None:
@@ -303,7 +352,8 @@ def test_init_bls(skale, schain_creation_data, cleanup_dkg):
     link_addresses_to_validator(skale, wallets)
     nodes = register_nodes(skale, wallets)
     create_schain(skale, schain_name, lifetime)
-    run_dkg_all(skale, schain_name, nodes)
+    bls_public_keys, all_public_keys = run_dkg_all(skale, schain_name, nodes)
+    check_fetch_broadcasted_data(skale, schain_name, nodes, bls_public_keys, all_public_keys)
 
 
 if __name__ == "__main__":
