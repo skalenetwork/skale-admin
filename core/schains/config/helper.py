@@ -112,6 +112,10 @@ def get_schain_ports_from_config(config):
         'https': int(node_info["httpsRpcPort"]),
         'wss': int(node_info["wssRpcPort"]),
         'info_http': int(node_info["infoHttpRpcPort"]),
+        'pg_http': int(node_info["pgHttpRpcPort"]),
+        'pg_https': int(node_info["pgHttpsRpcPort"]),
+        'pg_info_http': int(node_info["infoPgHttpRpcPort"]),
+        'pg_info_https': int(node_info["infoPgHttpsRpcPort"])
     }
 
 
@@ -125,6 +129,10 @@ def get_skaled_rpc_endpoints_from_config(config):
         NodeEndpoint(ip=None, port=node_info['httpsRpcPort']),
         NodeEndpoint(ip=None, port=node_info['wssRpcPort']),
         NodeEndpoint(ip=None, port=node_info['infoHttpRpcPort']),
+        NodeEndpoint(ip=None, port=node_info['pgHttpRpcPort']),
+        NodeEndpoint(ip=None, port=node_info['pgHttpsRpcPort']),
+        NodeEndpoint(ip=None, port=node_info['infoPgHttpRpcPort']),
+        NodeEndpoint(ip=None, port=node_info['infoPgHttpsRpcPort'])
     ]
 
 
