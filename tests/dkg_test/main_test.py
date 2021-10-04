@@ -273,7 +273,7 @@ def run_dkg_fetch(opts):
 
     dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, 0)
     group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
-    dkg_client.bls_key_name = generate_bls_key_name(group_index_str, node_id, 2)
+    dkg_client.bls_name = generate_bls_key_name(group_index_str, node_id, 2)
     dkg_client.fetch_all_broadcasted_data()
     dkg_results = generate_bls_keys(dkg_client)
     return dkg_results
