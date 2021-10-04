@@ -406,16 +406,11 @@ class DKGClient:
             raise DkgTransactionError(e)
 
     def fetch_all_broadcasted_data(self):
-        self.verification_vector()
-        self.secret_key_contribution()
-
         dkg_filter = Filter(self.skale, self.schain_name, self.n)
         events = dkg_filter.get_events(from_channel_started_block=True)
 
         for event in events:
             from_node = self.node_ids_contract[event.nodeIndex]
-            if from_node == self.node_id_dkg:
-                continue
             broadcasted_data = [event.verificationVector, event.secretKeyContribution]
             self.store_broadcasted_data(broadcasted_data, from_node)
             logger.info(
