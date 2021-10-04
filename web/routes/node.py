@@ -157,10 +157,21 @@ def construct_node_bp():
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'set-domain-name'), methods=['POST'])
     def set_domain_name():
         logger.debug(request)
+
         domain_name = request.json['domain_name']
+        gas_price = request.json.get('gas_price')
+        gas_limit = request.json.get('gas_limit')
+
+        if gas_price is not None:
+            gas_price = Web3.toWei(Decimal(gas_price), 'gwei')
+
         skale = init_skale(g.wallet)
         node = Node(skale, g.config)
-        res = node.set_domain_name(domain_name)
+        res = node.set_domain_name(
+            domain_name,
+            gas_price,
+            gas_limit
+        )
         if res['status'] != 'ok':
             return construct_err_response(msg=res['errors'])
         return construct_ok_response()
