@@ -242,13 +242,11 @@ class Node:
             return self._error('Removing node from maintenance mode failed')
         return self._ok()
 
-    def set_domain_name(self, domain_name: str, gas_price: str, gas_limit: str) -> dict:
+    def set_domain_name(self, domain_name: str) -> dict:
         try:
             self.skale.nodes.set_domain_name(
                 self.config.id,
-                domain_name,
-                gas_price=gas_price,
-                gas_limit=gas_limit
+                domain_name
             )
         except TransactionFailedError as err:
             return self._error(str(err))
