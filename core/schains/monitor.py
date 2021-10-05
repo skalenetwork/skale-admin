@@ -480,6 +480,7 @@ def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
             return False
 
         try:
+            dkg_client.fetch_all_broadcasted_data()
             dkg_results = generate_bls_keys(dkg_client)
             secret_key_share_filepath = get_secret_key_share_filepath(
                 schain_name, rotation_id)
