@@ -16,7 +16,7 @@ python-iptables==0.14.0
 skale.py==5.2dev1
 ima-predeployed==1.0.0b12
 
-pyyaml==5.4
+pyyaml==5.4.1
 psutil==5.7.0
 
 colorful==0.5.4
