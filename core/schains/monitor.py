@@ -18,19 +18,15 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import sys
 import time
-import signal
 import logging
 
 from enum import Enum
 from importlib import reload
 from datetime import datetime
 
-from skale.schain_config.generator import get_nodes_for_schain
 from web3._utils import request
 
-from core.schains.dkg_status import DKGStatus
 from core.schains.runner import (
     is_exited_with_zero,
     is_schain_container_failed,
@@ -51,7 +47,7 @@ from core.schains.config.helper import get_allowed_endpoints
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.rotation import get_rotation_state
-from core.schains.dkg import run_dkg, save_dkg_results
+from core.schains.dkg import is_last_dkg_finished, run_dkg, save_dkg_results
 
 from core.schains.runner import get_container_name
 
@@ -95,42 +91,6 @@ def run_monitor_for_schain(
             logger.info(f'schain: {schain["name"]} - running monitor')
             schain_record = upsert_schain_record(schain["name"])
             schain_record.set_monitor_last_seen(datetime.now())
-
-            def signal_handler(*args):
-                logger.info(
-                    f'signal_handler was triggered for {schain["name"]}, trying to stop gracefully')
-
-                if schain_record.dkg_status == DKGStatus.DONE.value:
-                    logger.info(f'DKG is done for {schain["name"]}, exiting with 0')
-                    sys.exit(0)
-                logger.info(
-                    f'DKG status for {schain["name"]} is {schain_record.dkg_status}'
-                )
-
-                schain_index = skale.schains.name_to_group_id(schain["name"])
-                num_of_nodes = len(get_nodes_for_schain(skale, schain["name"]))
-                if skale.dkg.get_number_of_completed(schain_index) == num_of_nodes:
-                    logger.info(f'Dkg for {schain["name"]} is completed')
-                    rotation = get_rotation_state(
-                        skale, schain['name'], node_info['node_id'])
-                    rotation_id = rotation['rotation_id']
-                    secret_key_share_filepath = get_secret_key_share_filepath(
-                        schain["name"], rotation_id
-                    )
-                    if os.path.isfile(secret_key_share_filepath):
-                        schain_record.dkg_done()
-                    else:
-                        schain_record.dkg_key_generation_error()
-                else:
-                    logger.info(f'Dkg for {schain["name"]} is not completed')
-                    schain_record.dkg_failed()
-                logger.info(
-                    f'DKG status for {schain["name"]} was changed to {schain_record.dkg_status}')
-
-                logger.info(f'Handler completed: {schain["name"]}, exiting with 0')
-                sys.exit(0)
-
-            signal.signal(signal.SIGTERM, signal_handler)
 
             monitor_schain(
                 skale,
@@ -467,9 +427,15 @@ def monitor_sync_schain_container(skale, schain, start_ts, schain_record,
                              dutils=dutils)
 
 
-def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
-                 rotation_id, schain_record):
-    if schain_record.dkg_status == DKGStatus.KEY_GENERATION_ERROR.value:
+def safe_run_dkg(
+    skale,
+    schain_name,
+    node_id,
+    sgx_key_name,
+    rotation_id,
+    schain_record
+):
+    if is_last_dkg_finished(skale, schain_name):
         try:
             dkg_client = init_dkg_client(
                 node_id, schain_name, skale, sgx_key_name, rotation_id)

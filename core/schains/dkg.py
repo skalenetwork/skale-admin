@@ -21,6 +21,8 @@ import os
 import logging
 from time import sleep
 
+from skale.schain_config.generator import get_nodes_for_schain
+
 from tools.bls.dkg_utils import (
     init_dkg_client, send_complaint, send_alright, get_latest_block_timestamp, DkgError,
     generate_bls_keys, get_secret_key_share_filepath, check_response, check_no_complaints,
@@ -119,6 +121,12 @@ def run_dkg(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         save_dkg_results(dkg_results, secret_key_share_filepath)
         return dkg_results
     return None
+
+
+def is_last_dkg_finished(skale, schain_name):
+    schain_index = skale.schains.name_to_group_id(schain_name)
+    num_of_nodes = len(get_nodes_for_schain(skale, schain_name))
+    return skale.dkg.get_number_of_completed(schain_index) == num_of_nodes
 
 
 def save_dkg_results(dkg_results, filepath):
