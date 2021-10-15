@@ -17,73 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+# import os
 import logging
 import json
 import requests
-from pathlib import Path
 
 from skale import Skale
-
-from tools.configs import SCHAIN_DATA_PATH, ROTATION_FLAG_FILENAME
-from tools.configs.schains import (SCHAINS_DIR_PATH, DATA_DIR_NAME,
-                                   BASE_SCHAIN_CONFIG_FILEPATH,
-                                   SCHAINS_DIR_PATH_HOST)
+from core.schains.config.dir import get_schain_config
+# from tools.configs import SCHAIN_DATA_PATH, ROTATION_FLAG_FILENAME
+# from tools.configs.schains import (SCHAINS_DIR_PATH, DATA_DIR_NAME,
+#                                    BASE_SCHAIN_CONFIG_FILEPATH,
+#                                    SCHAINS_DIR_PATH_HOST)
 
 logger = logging.getLogger(__name__)
-
-
-def get_schain_dir_path(schain_name):
-    return os.path.join(SCHAINS_DIR_PATH, schain_name)
-
-
-def get_schain_dir_path_host(schain_name):
-    return os.path.join(SCHAINS_DIR_PATH_HOST, schain_name)
-
-
-def get_schain_data_dir(schain_name):
-    return os.path.join(get_schain_dir_path(schain_name), DATA_DIR_NAME)
-
-
-def init_schain_dir(schain_name):
-    logger.info(f'Creating data_dir for sChain: {schain_name}')
-    data_dir_path = get_schain_data_dir(schain_name)
-    path = Path(data_dir_path)
-    os.makedirs(path, exist_ok=True)
-
-
-def get_schain_config_filepath(schain_name, in_schain_container=False):
-    schain_dir_path = SCHAIN_DATA_PATH if in_schain_container else get_schain_dir_path(schain_name)
-    return os.path.join(schain_dir_path,
-                        f'schain_{schain_name}.json')
-
-
-def get_schain_rotation_filepath(schain_name):
-    schain_dir_path = get_schain_dir_path(schain_name)
-    return os.path.join(schain_dir_path, ROTATION_FLAG_FILENAME)
-
-
-def get_tmp_schain_config_filepath(schain_name):
-    schain_dir_path = get_schain_dir_path(schain_name)
-    return os.path.join(schain_dir_path,
-                        f'tmp_schain_{schain_name}.json')
-
-
-def get_schain_config(schain_name):
-    config_filepath = get_schain_config_filepath(schain_name)
-    with open(config_filepath) as f:
-        schain_config = json.load(f)
-    return schain_config
-
-
-def schain_config_exists(schain_name):
-    schain_config_filepath = get_schain_config_filepath(schain_name)
-    return os.path.isfile(schain_config_filepath)
-
-
-def read_base_config():
-    json_data = open(BASE_SCHAIN_CONFIG_FILEPATH).read()
-    return json.loads(json_data)
 
 
 def get_schain_rpc_ports(schain_id):

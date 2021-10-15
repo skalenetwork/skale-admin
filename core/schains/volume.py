@@ -31,6 +31,11 @@ from tools.docker_utils import DockerUtils
 logger = logging.getLogger(__name__)
 
 
+def is_volume_exists(schain_name, dutils=None):
+    dutils = dutils or DockerUtils()
+    return dutils.is_data_volume_exists(schain_name)
+
+
 def init_data_volume(schain, dutils=None):
     dutils = dutils or DockerUtils()
     schain_name = schain['name']

@@ -24,8 +24,8 @@ from time import sleep
 from skale.schain_config.generator import get_nodes_for_schain
 
 from tools.configs import NODE_DATA_PATH
-from tools.bls.dkg_client import DKGClient, DkgError, DkgVerificationError, DkgTransactionError
-from tools.bls.skale_dkg_broadcast_filter import Filter
+from core.schains.dkg.client import DKGClient, DkgError, DkgVerificationError, DkgTransactionError
+from core.schains.dkg.broadcast_filter import Filter
 
 from sgx.http import SgxUnreachableError
 

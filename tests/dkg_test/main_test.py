@@ -22,15 +22,15 @@ from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from core.schains.cleaner import remove_schain_container
 from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.dkg import run_dkg
-from core.schains.helper import init_schain_dir
+from core.schains.config.dir import init_schain_dir
 from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (generate_random_node_data,
                          generate_random_schain_data, init_web3_skale)
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.bls.dkg_utils import init_dkg_client, generate_bls_keys
-from tools.bls.dkg_client import generate_bls_key_name
+from core.schains.dkg.utils import init_dkg_client, generate_bls_keys
+from core.schains.dkg.client import generate_bls_key_name
 
 
 MAX_WORKERS = 5

@@ -24,7 +24,7 @@ from multiprocessing import Process
 
 from skale import Skale
 
-from core.schains.monitor import run_monitor_for_schain
+from core.schains.monitor.main import run_monitor_for_schain
 from core.schains.utils import notify_if_not_enough_balance
 from core.schains.process_manager_helper import (
     terminate_stuck_schain_process, is_monitor_process_alive, terminate_process
@@ -75,7 +75,7 @@ def run_process_manager(skale, skale_ima, node_config):
             process = Process(target=run_monitor_for_schain, args=(
                 skale,
                 skale_ima,
-                node_info,
+                node_config,
                 schain,
                 ecdsa_sgx_key_name
             ))

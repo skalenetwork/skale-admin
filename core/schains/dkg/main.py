@@ -21,15 +21,67 @@ import os
 import logging
 from time import sleep
 
-from tools.bls.dkg_utils import (
+from core.schains.dkg.status import DKGStatus
+from core.schains.dkg.utils import (
     init_dkg_client, send_complaint, send_alright, get_latest_block_timestamp, DkgError,
     generate_bls_keys, get_secret_key_share_filepath, check_response, check_no_complaints,
     check_failed_dkg, wait_for_fail, broadcast_and_check_data
 )
-from tools.bls.dkg_client import KeyGenerationError
+from core.schains.dkg.client import KeyGenerationError
 from tools.helper import write_json
 
 logger = logging.getLogger(__name__)
+
+
+def safe_run_dkg(skale, schain_name, node_id, sgx_key_name,
+                 rotation_id, schain_record):
+    """Main function that runs DKG for the chain"""
+    if schain_record.dkg_status == DKGStatus.KEY_GENERATION_ERROR.value:
+        try:
+            dkg_client = init_dkg_client(
+                node_id, schain_name, skale, sgx_key_name, rotation_id)
+        except DkgError as err:
+            logger.info(
+                f'sChain {schain_name} Dkg procedure failed with {err}')
+            schain_record.dkg_failed()
+            return False
+
+        try:
+            dkg_client.fetch_all_broadcasted_data()
+            dkg_results = generate_bls_keys(dkg_client)
+            secret_key_share_filepath = get_secret_key_share_filepath(
+                schain_name, rotation_id)
+            save_dkg_results(dkg_results, secret_key_share_filepath)
+        except KeyGenerationError as err:
+            logger.info(
+                f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
+            schain_record.dkg_key_generation_error()
+            return False
+        except DkgError as err:
+            logger.info(
+                f'sChain {schain_name} Dkg procedure failed with {err}')
+            schain_record.dkg_failed()
+            return False
+        schain_record.dkg_done()
+        return True
+
+    schain_record.dkg_started()
+    try:
+        if not skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
+            schain_record.dkg_failed()
+            return False
+        run_dkg(skale, schain_name, node_id, sgx_key_name, rotation_id)
+    except KeyGenerationError as err:
+        logger.info(
+            f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
+        schain_record.dkg_key_generation_error()
+        return False
+    except DkgError as err:
+        logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
+        schain_record.dkg_failed()
+        return False
+    schain_record.dkg_done()
+    return True
 
 
 def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):

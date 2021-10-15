@@ -27,9 +27,9 @@ from core.schains.config.helper import (
     get_allowed_endpoints,
     get_local_schain_http_endpoint
 )
-from core.schains.helper import get_schain_dir_path, get_schain_config_filepath
+from core.schains.config.dir import schain_config_dir, schain_config_filepath
 from core.schains.runner import get_container_name
-from tools.bls.dkg_utils import get_secret_key_share_filepath
+from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.configs.ima import DISABLE_IMA
 from tools.iptables import apsent_rules as apsent_iptables_rules
@@ -62,10 +62,10 @@ class SChainChecks:
         self.ima_linked = ima_linked
 
     @property
-    def data_dir(self) -> bool:
-        """Checks that sChain data dir exists"""
-        schain_dir_path = get_schain_dir_path(self.name)
-        return os.path.isdir(schain_dir_path)
+    def config_dir(self) -> bool:
+        """Checks that sChain config directory exists"""
+        dir_path = schain_config_dir(self.name)
+        return os.path.isdir(dir_path)
 
     @property
     def dkg(self) -> bool:
@@ -79,7 +79,7 @@ class SChainChecks:
     @property
     def config(self) -> bool:
         """Checks that sChain config file exists"""
-        config_filepath = get_schain_config_filepath(self.name)
+        config_filepath = schain_config_filepath(self.name)
         if not os.path.isfile(config_filepath):
             return False
         return schain_config_version_match(self.name, self.schain_record)

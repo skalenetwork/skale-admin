@@ -11,6 +11,8 @@ from skale.utils.contracts_provision.main import (create_nodes, create_schain,
 
 from core.schains.cleaner import remove_schain_container
 from core.schains.cleaner import remove_schain_volume
+from core.schains.checks import SChainChecks
+from core.node_config import NodeConfig
 
 from tests.utils import (
     CONTAINERS_JSON,
@@ -303,3 +305,32 @@ def cleanup_container(schain_config, dutils):
 def cleanup_schain_container(schain_name: str, dutils: DockerUtils):
     remove_schain_container(schain_name, dutils)
     remove_schain_volume(schain_name, dutils)
+
+
+@pytest.fixture
+def node_config(skale):
+    node_config = NodeConfig()
+    node_config.id = 0
+    return node_config
+
+
+@pytest.fixture
+def schain_checks(schain_config, dutils):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain_record = SChainRecord.get_by_name(schain_name)
+    node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
+    return SChainChecks(
+        schain_name,
+        node_id,
+        schain_record=schain_record,
+        dutils=dutils
+    )
+
+
+@pytest.fixture
+def schain_struct(schain_config):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    return {
+        'name': schain_name,
+        'partOfNode': 0
+    }

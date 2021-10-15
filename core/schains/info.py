@@ -27,7 +27,7 @@ class SChainInfo:
             'id': self.schain_id,
             'owner': self.owner,
             'part_of_node': self.part_of_node,
-            'dkg_status': self.dkg_status,
+            'dkg_status': self.status,
             'is_deleted': self.is_deleted,
             'first_run': self.first_run,
             'repair_mode': self.repair_mode
@@ -49,7 +49,7 @@ def get_schain_info_by_name(skale: Skale, schain_name: str) -> SChainInfo:
         sid,
         contracts_info['owner'],
         contracts_info['partOfNode'],
-        record.dkg_status,
+        record.status,
         record.is_deleted,
         record.first_run,
         record.repair_mode

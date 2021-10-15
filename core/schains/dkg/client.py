@@ -27,7 +27,7 @@ from sgx.sgx_rpc_handler import DkgPolyStatus
 from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.transactions.result import TransactionFailedError
 
-from tools.bls.skale_dkg_broadcast_filter import Filter
+from core.schains.dkg.broadcast_filter import Filter
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from tools.sgx_utils import sgx_unreachable_retry
 

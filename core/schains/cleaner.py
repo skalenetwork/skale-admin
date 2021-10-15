@@ -25,13 +25,13 @@ from multiprocessing import Process
 from sgx import SgxClient
 
 from core.schains.checks import SChainChecks
-from core.schains.helper import get_schain_dir_path
+from core.schains.config.dir import schain_config_dir
 from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
 from core.schains.config.helper import get_allowed_endpoints
 from core.schains.types import ContainerType
 from core.schains.process_manager_helper import terminate_schain_process
 
-from tools.bls.dkg_utils import get_secret_key_share_filepath
+from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
@@ -93,7 +93,7 @@ def remove_ima_container(schain_name: str, dutils: DockerUtils = None):
 
 def remove_config_dir(schain_name: str) -> None:
     log_remove('config directory', schain_name)
-    schain_dir_path = get_schain_dir_path(schain_name)
+    schain_dir_path = schain_config_dir(schain_name)
     shutil.rmtree(schain_dir_path)
 
 
@@ -213,7 +213,7 @@ def cleanup_schain(node_id, schain_name, dutils=None):
             dutils=dutils
         ):
             remove_ima_container(schain_name, dutils=dutils)
-    if checks.data_dir:
+    if checks.config_dir:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
 

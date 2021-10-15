@@ -19,7 +19,7 @@
 
 from dataclasses import dataclass
 
-from core.schains.helper import get_schain_dir_path
+from core.schains.config.dir import schain_config_dir
 from core.schains.config.helper import get_schain_ports, get_schain_config
 from core.ima.schain import get_schain_ima_abi_filepath
 
@@ -122,7 +122,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
     node_address = public_node_info['owner']
 
     return ImaEnv(
-        schain_dir=get_schain_dir_path(schain_name),
+        schain_dir=schain_config_dir(schain_name),
         mainnet_proxy_path=MAINNET_IMA_ABI_FILEPATH,
         schain_proxy_path=get_schain_ima_abi_filepath(schain_name),
         state_file=IMA_STATE_CONTAINER_PATH,

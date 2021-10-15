@@ -7,7 +7,7 @@ def test_get_schain_info_by_name(skale, schain_on_contracts, schain_db):
     assert info.name == name
     assert info.schain_id == skale.schains.name_to_id(name)
     assert info.part_of_node == 1
-    assert info.dkg_status == 1
+    assert info.status == 1
     assert not info.is_deleted
     assert info.first_run
     assert not info.repair_mode

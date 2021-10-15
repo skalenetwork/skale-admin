@@ -17,7 +17,7 @@ from tests.dkg_test.main_test import (create_schain,
                                       transfer_eth_to_wallets,
                                       link_addresses_to_validator,
                                       register_nodes, run_dkg_all)
-from tools.bls.dkg_utils import get_secret_key_share_filepath
+from core.schains.dkg.utils import get_secret_key_share_filepath
 
 
 TIMEOUT = 240

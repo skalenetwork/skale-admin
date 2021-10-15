@@ -10,8 +10,6 @@ from dataclasses import dataclass
 
 from skale.skale_manager import spawn_skale_manager_lib
 
-from core.node_config import NodeConfig
-
 from core.schains.cleaner import (
     delete_bls_keys,
     monitor,
@@ -50,13 +48,6 @@ class ImaEnv:
 
 def is_container_running(dutils, container_name):
     return dutils.is_container_running(container_name)
-
-
-@pytest.fixture
-def node_config(skale):
-    node_config = NodeConfig()
-    node_config.id = 0
-    return node_config
 
 
 @pytest.fixture

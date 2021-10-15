@@ -28,14 +28,14 @@ from Crypto.Hash import keccak
 from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
-from core.schains.helper import get_schain_config_filepath
+from core.schains.config.dir import schain_config_filepath
 from tools.configs.containers import (
     DATA_DIR_CONTAINER_PATH,
     SHARED_SPACE_CONTAINER_PATH
 )
 from tools.configs.ima import IMA_ENDPOINT
 
-from tools.bls.dkg_utils import get_secret_key_share_filepath
+from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json
 
 from tools.configs import SGX_SERVER_URL
@@ -216,7 +216,7 @@ def get_allowed_endpoints(schain_name):
 
 
 def get_schain_config(schain_name):
-    config_filepath = get_schain_config_filepath(schain_name)
+    config_filepath = schain_config_filepath(schain_name)
     if not os.path.isfile(config_filepath):
         return None
     with open(config_filepath) as f:
@@ -257,7 +257,7 @@ def get_schain_container_sync_opts(schain_name: str, public_key: str,
 
 def get_schain_container_base_opts(schain_name: str,
                                    enable_ssl: bool = True) -> list:
-    config_filepath = get_schain_config_filepath(schain_name, in_schain_container=True)
+    config_filepath = schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
 

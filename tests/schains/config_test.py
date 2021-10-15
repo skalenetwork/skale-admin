@@ -7,7 +7,7 @@ from core.schains.config.helper import (
     get_skaled_rpc_endpoints_from_config,
     get_snapshots_endpoints_from_config,
 )
-from core.schains.helper import get_schain_config_filepath
+from core.schains.config.dir import schain_config_filepath
 from core.schains.ssl import get_ssl_filepath
 from core.schains.volume import get_schain_volume_config
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
@@ -150,7 +150,7 @@ def test_get_snapshots_endpoints_from_config():
 def test_get_schain_container_cmd(schain_config, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     container_opts = get_schain_container_cmd(schain_name)
-    config_filepath = get_schain_config_filepath(schain_name, in_schain_container=True)
+    config_filepath = schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key_path, ssl_cert_path = get_ssl_filepath()
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
