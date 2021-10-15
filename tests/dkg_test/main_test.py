@@ -21,7 +21,7 @@ from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.schains.cleaner import remove_schain_container
 from core.schains.config.generator import generate_schain_config_with_skale
-from core.schains.dkg import run_dkg
+from core.schains.dkg import is_last_dkg_finished, run_dkg
 from core.schains.helper import init_schain_dir
 from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
@@ -351,7 +351,9 @@ def test_init_bls(skale, schain_creation_data, cleanup_dkg):
     link_addresses_to_validator(skale, wallets)
     nodes = register_nodes(skale, wallets)
     create_schain(skale, schain_name, lifetime)
+    assert not is_last_dkg_finished(skale, schain_name)
     bls_public_keys, all_public_keys = run_dkg_all(skale, schain_name, nodes)
+    assert is_last_dkg_finished(skale, schain_name)
     check_fetch_broadcasted_data(skale, schain_name, nodes, bls_public_keys, all_public_keys)
 
 
