@@ -98,13 +98,13 @@ class BaseMonitor(ABC):
         pass
 
     def config_dir(self):
-        if not self.checks.config_dir:
+        if not self.checks.config_dir.status:
             init_schain_config_dir(self.name)
         else:
-            logger.debug(f'{self.p} config already exists')
+            logger.info(f'{self.p} config_dir - ok')
 
     def dkg(self):
-        if not self.checks.dkg:
+        if not self.checks.dkg.status:
             is_dkg_done = safe_run_dkg(
                 skale=self.skale,
                 schain_name=self.name,
@@ -116,9 +116,11 @@ class BaseMonitor(ABC):
             if not is_dkg_done:
                 remove_config_dir(self.name)
                 raise DkgError(f'{self.p} DKG failed')
+        else:
+            logger.info(f'{self.p} dkg - ok')
 
     def config(self):
-        if not self.checks.config:
+        if not self.checks.config.status:
             init_schain_config(
                 skale=self.skale,
                 node_id=self.node_config.id,
@@ -127,23 +129,32 @@ class BaseMonitor(ABC):
                 rotation_id=self.rotation_id,
                 schain_record=self.schain_record
             )
+        else:
+            logger.info(f'{self.p} config - ok')
 
     def volume(self):
-        if not self.checks.volume:
+        if not self.checks.volume.status:
             init_data_volume(self.schain, dutils=self.dutils)
+        else:
+            logger.info(f'{self.p} volume - ok')
 
     def firewall_rules(self):
-        if not self.checks.firewall_rules:
+        if not self.checks.firewall_rules.status:
             add_firewall_rules(self.name)
+        else:
+            logger.info(f'{self.p} firewall_rules - ok')
 
-    def skaled_container(self):
-        if self.checks.container:
+    def skaled_container(self, sync: bool):
+        skaled_container_check = self.checks.skaled_container
+        if not skaled_container_check.status:
             monitor_schain_container(
                 self.schain,
                 schain_record=self.schain_record,
                 dutils=self.dutils
             )
             time.sleep(CONTAINERS_DELAY)
+        else:
+            logger.info(f'{self.p} skaled_container - ok')
 
     def skaled_rpc(self):
         pass

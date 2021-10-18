@@ -17,8 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
 import os
+import logging
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
@@ -42,6 +42,12 @@ from web.models.schain import SChainRecord
 logger = logging.getLogger(__name__)
 
 
+class CheckRes:
+    def __init__(self, status: bool, data: dict = None):
+        self.status = status
+        self.data = data if data else {}
+
+
 class SChainChecks:
     def __init__(
         self,
@@ -62,86 +68,90 @@ class SChainChecks:
         self.ima_linked = ima_linked
 
     @property
-    def config_dir(self) -> bool:
+    def config_dir(self) -> CheckRes:
         """Checks that sChain config directory exists"""
         dir_path = schain_config_dir(self.name)
-        return os.path.isdir(dir_path)
+        return CheckRes(os.path.isdir(dir_path))
 
     @property
-    def dkg(self) -> bool:
+    def dkg(self) -> CheckRes:
         """Checks that DKG procedure is completed"""
         secret_key_share_filepath = get_secret_key_share_filepath(
             self.name,
             self.rotation_id
         )
-        return os.path.isfile(secret_key_share_filepath)
+        return CheckRes(os.path.isfile(secret_key_share_filepath))
 
     @property
-    def config(self) -> bool:
+    def config(self) -> CheckRes:
         """Checks that sChain config file exists"""
         config_filepath = schain_config_filepath(self.name)
         if not os.path.isfile(config_filepath):
-            return False
-        return schain_config_version_match(self.name, self.schain_record)
+            return CheckRes(False)
+        return CheckRes(schain_config_version_match(self.name, self.schain_record))
 
     @property
-    def volume(self) -> bool:
+    def volume(self) -> CheckRes:
         """Checks that sChain volume exists"""
-        return self.dutils.is_data_volume_exists(self.name)
+        return CheckRes(self.dutils.is_data_volume_exists(self.name))
 
     @property
-    def firewall_rules(self) -> bool:
-        """Checks that firewall rules are setted correctly"""
+    def firewall_rules(self) -> CheckRes:
+        """Checks that firewall rules are set correctly"""
         if self.config:
             ips_ports = get_allowed_endpoints(self.name)
-            return len(apsent_iptables_rules(ips_ports)) == 0
-        return False
+            res = len(apsent_iptables_rules(ips_ports)) == 0
+            return CheckRes(res)
+        return CheckRes(False)
 
     @property
-    def container(self) -> bool:
+    def skaled_container(self) -> CheckRes:
         """Checks that skaled container is running"""
-        return self.dutils.is_container_running(self.container_name)
+        # todo: modify check!
+        return CheckRes(self.dutils.is_container_running(self.container_name))
 
     @property
-    def exit_code_ok(self) -> bool:
+    def exit_code_ok(self) -> CheckRes:
         """Checks that skaled exit code is OK"""
+        # todo: modify check!
         exit_code = self.dutils.container_exit_code(self.container_name)
-        return int(exit_code) != SkaledExitCodes.EC_STATE_ROOT_MISMATCH
+        res = int(exit_code) != SkaledExitCodes.EC_STATE_ROOT_MISMATCH
+        return CheckRes(res)
 
     @property
-    def ima_container(self) -> bool:
+    def ima_container(self) -> CheckRes:
         """Checks that IMA container is running"""
         name = get_container_name(IMA_CONTAINER, self.name)
-        return self.dutils.is_container_running(name)
+        return CheckRes(self.dutils.is_container_running(name))
 
     @property
-    def rpc(self) -> bool:
+    def rpc(self) -> CheckRes:
         """Checks that local skaled RPC is accessible"""
         res = False
         if self.config:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             res = check_endpoint_alive(http_endpoint)
-        return res
+        return CheckRes(res)
 
     @property
-    def blocks(self) -> bool:
+    def blocks(self) -> CheckRes:
         """Checks that local skaled is mining blocks"""
         if self.config:
             http_endpoint = get_local_schain_http_endpoint(self.name)
-            return check_endpoint_blocks(http_endpoint)
-        return False
+            return CheckRes(check_endpoint_blocks(http_endpoint))
+        return CheckRes(False)
 
     def get_all(self, log=True):
         checks_dict = {
-            'data_dir': self.data_dir,
-            'dkg': self.dkg,
-            'config': self.config,
-            'volume': self.volume,
-            'firewall_rules': self.firewall_rules,
-            'container': self.container,
-            'exit_code_ok': self.exit_code_ok,
-            'rpc': self.rpc,
-            'blocks': self.blocks
+            'data_dir': self.config_dir.status,
+            'dkg': self.dkg.status,
+            'config': self.config.status,
+            'volume': self.volume.status,
+            'firewall_rules': self.firewall_rules.status,
+            'container': self.container.status,
+            'exit_code_ok': self.exit_code_ok.status,
+            'rpc': self.rpc.status,
+            'blocks': self.blocks.status
         }
         if not DISABLE_IMA and self.ima_linked:
             checks_dict['ima_container'] = self.ima_container

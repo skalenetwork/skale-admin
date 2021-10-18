@@ -85,8 +85,8 @@ def sample_false_checks(schain_config, schain_db, dutils):
 
 
 def test_data_dir_check(sample_checks, sample_false_checks):
-    assert sample_checks.data_dir
-    assert not sample_false_checks.data_dir
+    assert sample_checks.config_dir.res
+    assert not sample_false_checks.config_dir.res
 
 
 def test_dkg_check(sample_checks, sample_false_checks):

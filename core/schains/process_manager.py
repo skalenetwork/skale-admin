@@ -57,7 +57,6 @@ def run_process_manager(skale, skale_ima, node_config):
     signal.signal(signal.SIGTERM, pm_signal_handler)
     logger.info('Process manager started')
     node_id = node_config.id
-    ecdsa_sgx_key_name = node_config.sgx_key_name
     node_info = node_config.all()
     notify_if_not_enough_balance(skale, node_info)
 
@@ -76,8 +75,7 @@ def run_process_manager(skale, skale_ima, node_config):
                 skale,
                 skale_ima,
                 node_config,
-                schain,
-                ecdsa_sgx_key_name
+                schain
             ))
             process.start()
             schain_record.set_monitor_id(process.ident)
