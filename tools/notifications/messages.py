@@ -197,8 +197,8 @@ def compose_repair_mode_notification(
     header = f'{EXCLAMATION_MARK} Repair mode for {schain_name} enabled \n'
     return [
         header,
-        f'Node id: {node_info["node_id"]}',
-        f'Node ip: {node_info["node_ip"]}',
+        f'Node ID: {node_info["node_id"]}',
+        f'Node IP: {node_info["node_ip"]}',
         f'SChain: {schain_name}'
     ]
 

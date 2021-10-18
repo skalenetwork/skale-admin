@@ -19,7 +19,6 @@
 
 import time
 import logging
-from enum import Enum
 from datetime import datetime
 from abc import ABC, abstractmethod
 
@@ -28,7 +27,11 @@ from skale import Skale
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
 from core.schains.dkg import safe_run_dkg, DkgError
-from core.schains.cleaner import remove_config_dir
+from core.schains.cleaner import (
+    remove_config_dir,
+    remove_schain_container,
+    remove_schain_volume
+)
 from core.schains.volume import init_data_volume
 from core.schains.firewall import add_firewall_rules
 from core.schains.monitor.containers import monitor_schain_container
@@ -45,13 +48,7 @@ logger = logging.getLogger(__name__)
 
 CONTAINERS_DELAY = 20
 SCHAIN_MONITOR_SLEEP_INTERVAL = 500
-
-
-class MonitorMode(Enum):
-    REGULAR = 0
-    ROTATION = 1
-    BACKUP = 2
-    REPAIR = 3
+SCHAIN_CLEANUP_TIMEOUT = 10
 
 
 class BaseMonitor(ABC):
@@ -161,5 +158,10 @@ class BaseMonitor(ABC):
 
     def ima_container(self):
         pass
+
+    def cleanup_schain_docker_entity(self) -> None:
+        remove_schain_container(self.name, dutils=self.dutils)
+        time.sleep(SCHAIN_CLEANUP_TIMEOUT)
+        remove_schain_volume(self.name, dutils=self.dutils)
 
     _monitor_runner = staticmethod(_monitor_runner)

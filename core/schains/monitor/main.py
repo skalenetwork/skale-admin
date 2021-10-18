@@ -24,11 +24,15 @@ from importlib import reload
 from web3._utils import request
 
 from core.node_config import NodeConfig
-from core.schains.monitor import RegularMonitor
+from core.schains.monitor import (
+    BaseMonitor, RegularMonitor, RepairMonitor, BackupMonitor, RotationMonitor
+)
 from core.schains.checks import SChainChecks
 
 from tools.docker_utils import DockerUtils
-from web.models.schain import upsert_schain_record
+from tools.configs import BACKUP_RUN
+
+from web.models.schain import upsert_schain_record, SChainRecord
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +40,28 @@ logger = logging.getLogger(__name__)
 
 def get_log_prefix(name):
     return f'schain: {name} -'
+
+
+def _is_backup_mode(schain_record):
+    return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
+
+
+def _is_repair_mode(schain_record, checks):
+    return schain_record.repair_mode or not checks.exit_code_ok
+
+
+def _is_rotation_mode():
+    return False  # todo!
+
+
+def get_monitor_type(schain_record: SChainRecord, checks: SChainChecks) -> BaseMonitor:
+    if _is_backup_mode(schain_record):
+        return BackupMonitor
+    if _is_repair_mode(schain_record, checks):
+        return RepairMonitor
+    if _is_rotation_mode():
+        return RotationMonitor
+    return RegularMonitor
 
 
 def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
@@ -61,9 +87,8 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
                 dutils=dutils
             )
 
-            # todo: determine monitor type here
-
-            monitor = RegularMonitor(
+            monitor_class = get_monitor_type()
+            monitor = monitor_class(
                 skale=skale,
                 schain=schain,
                 node_config=node_config,

@@ -19,17 +19,38 @@
 
 import logging
 from core.schains.monitor.base_monitor import BaseMonitor
-
+from tools.notifications.messages import notify_repair_mode
 
 logger = logging.getLogger(__name__)
 
 
 class RepairMonitor(BaseMonitor):
+    """
+    RepairMonitor could be executed for the sChain in 2 cases:
+    1. Repair mode was toggled by node owner manually
+    2. Wrong exit code on skaled container (currently only 200 exit code is handled)
+
+    In this mode container and volume are removed and replaced with a new ones, in a sync mode.
+    """
+
+    def notify_repair_mode(self) -> None:
+        notify_repair_mode(
+            {
+                'node_id': self.node_config.id,
+                'node_ip': self.node_config.ip
+            },
+            self.name
+        )
+
+    def disable_repair_mode(self) -> None:
+        self.schain_record.set_repair_mode(False)
+
     @BaseMonitor._monitor_runner
     def run(self):
-        logger.warning(f'{self.p} going to remove container and volume!')
-        self.rm_skaled_container()  # todo: implement
-        self.rm_volume()  # todo: implement
+        logger.warning(f'REPAIR MODE was toggled - \
+repair_mode: {self.schain_record.repair_mode}, exit_code_ok: {self.checks.exit_code_ok}')
+        self.notify_repair_mode()
+        self.cleanup_schain_docker_entity()
         self.volume()
         self.skaled_container(sync=True)  # todo: handle sync case
-        # todo: set repair mode to false here
+        self.disable_repair_mode()
