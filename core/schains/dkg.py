@@ -17,18 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import logging
+from dataclasses import dataclass
 from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
 
+from core.schains.dkg_status import DKGStatus
 from tools.bls.dkg_utils import (
     init_dkg_client, send_complaint, send_alright, get_latest_block_timestamp, DkgError,
-    generate_bls_keys, get_secret_key_share_filepath, check_response, check_no_complaints,
+    generate_bls_keys, check_response, check_no_complaints,
     check_failed_dkg, wait_for_fail, broadcast_and_check_data
 )
-from tools.bls.dkg_client import KeyGenerationError
+from tools.bls.dkg_utils import DKGKeyGenerationError
 from tools.helper import write_json
 
 logger = logging.getLogger(__name__)
@@ -104,23 +105,25 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
             send_complaint(dkg_client, complainted_node_index, "response")
             wait_for_fail(skale, schain_name, channel_started_time, "response")
 
-    if False not in is_alright_sent_list:
+    if False in is_alright_sent_list:
+        logger.info(f'sChain: {schain_name}: Not everyone sent alright')
+        raise DkgError(f'sChain: {schain_name}: Not everyone sent alright')
+    else:
         logger.info(f'sChain: {schain_name}: Everyone sent alright')
-        if skale.dkg.is_last_dkg_successful(dkg_client.group_index):
-            try:
-                generated_keys_dict = generate_bls_keys(dkg_client)
-                return generated_keys_dict
-            except Exception as err:
-                raise KeyGenerationError(err)
+        return dkg_client
 
 
-def run_dkg(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
-    secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
-    if not os.path.isfile(secret_key_share_filepath):
-        dkg_results = init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id)
-        save_dkg_results(dkg_results, secret_key_share_filepath)
-        return dkg_results
-    return None
+def restore_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
+    # TODO extract init dkg client from init_bls
+    dkg_client = init_dkg_client(
+        node_id,
+        schain_name,
+        skale,
+        sgx_key_name,
+        rotation_id
+    )
+    dkg_client.fetch_all_broadcasted_data()
+    return dkg_client
 
 
 def is_last_dkg_finished(skale, schain_name):
@@ -129,6 +132,71 @@ def is_last_dkg_finished(skale, schain_name):
     return skale.dkg.get_number_of_completed(schain_index) == num_of_nodes
 
 
-def save_dkg_results(dkg_results, filepath):
+def save_dkg_results(dkg_results, filepath=None):
     """Save DKG results to the JSON file on disk"""
     write_json(filepath, dkg_results)
+
+
+@dataclass
+class DKGResult:
+    status: DKGStatus
+    keys_data: dict
+
+
+def safe_run_dkg(
+    skale,
+    schain_name,
+    node_id,
+    sgx_key_name,
+    rotation_id
+):
+    keys_data, status = None, None
+    dkg_client = None
+    try:
+        if is_last_dkg_finished(skale, schain_name):
+            logger.info(f'Dkg for {schain_name} is completed. Restoring keys')
+            dkg_client = restore_bls(
+                skale,
+                schain_name,
+                node_id,
+                sgx_key_name,
+                rotation_id
+            )
+            status = DKGStatus.DONE
+        elif skale.dkg.is_channel_opened(
+            skale.schains.name_to_group_id(schain_name)
+        ):
+            logger.info(f'Starting dkg procedure for {schain_name}')
+            if not skale.dkg.is_channel_opened(
+                skale.schains.name_to_group_id(schain_name)
+            ):
+                status = DKGStatus.FAILED
+            else:
+                status = DKGStatus.IN_PROGRESS
+                dkg_client = init_bls(
+                    skale,
+                    schain_name,
+                    node_id,
+                    sgx_key_name,
+                    rotation_id
+                )
+    except DkgError as e:
+        logger.info(f'sChain {schain_name} DKG procedure failed with {e}')
+        status = DKGStatus.FAILED
+
+    if not dkg_client:
+        status = DKGStatus.FAILED
+    else:
+        try:
+            keys_data = generate_bls_keys(dkg_client)
+        except DKGKeyGenerationError as e:
+            logger.info(
+                f'sChain {schain_name} DKG failed during key generation, err {e}')
+            status = DKGStatus.KEY_GENERATION_ERROR
+
+    # TODO: Handle KEY_GENERATION_ERROR overwritting
+    if keys_data:
+        status = DKGStatus.DONE
+    else:
+        status = DKGStatus.FAILED
+    return DKGResult(keys_data=keys_data, status=status)

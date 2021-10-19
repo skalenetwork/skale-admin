@@ -23,7 +23,7 @@ import sys
 
 from sgx import SgxClient
 from sgx.http import SgxUnreachableError
-from sgx.sgx_rpc_handler import DkgPolyStatus
+from sgx.sgx_rpc_handler import DkgPolyStatus, SgxServerError
 from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.transactions.result import TransactionFailedError
 
@@ -266,6 +266,17 @@ class DKGClient:
                                                self.node_id_dkg)
 
     @sgx_unreachable_retry
+    def is_bls_key_generated(self):
+        try:
+            self.sgx.get_bls_public_key(self.bls_name)
+        except SgxServerError as err:
+            if 'Data with this name does not exist' in err.args[0]:
+                logger.info(f'No bls key with name {self.bls_name}, {err}')
+                return False
+            raise
+        return True
+
+    @sgx_unreachable_retry
     def generate_bls_key(self):
         received_secret_key_contribution = "".join(to_verify(
                                                     self.incoming_secret_key_contribution[j]
@@ -281,6 +292,11 @@ class DKGClient:
         self.public_key = self.sgx.get_bls_public_key(self.bls_name)
         return bls_private_key
 
+    @sgx_unreachable_retry
+    def fetch_bls_public_key(self):
+        self.public_key = self.sgx.get_bls_public_key(self.bls_name)
+
+    @sgx_unreachable_retry
     def get_bls_public_keys(self):
         self.incoming_verification_vector[self.node_id_dkg] = convert_g2_array_to_hex(
             self.incoming_verification_vector[self.node_id_dkg]

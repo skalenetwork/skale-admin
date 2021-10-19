@@ -47,12 +47,13 @@ from core.schains.config.helper import get_allowed_endpoints
 from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.rotation import get_rotation_state
-from core.schains.dkg import is_last_dkg_finished, run_dkg, save_dkg_results
-
+from core.schains.dkg import (
+    get_secret_key_share_filepath,
+    safe_run_dkg,
+    save_dkg_results
+)
 from core.schains.runner import get_container_name
 
-from tools.bls.dkg_client import DkgError, KeyGenerationError
-from tools.bls.dkg_utils import init_dkg_client, get_secret_key_share_filepath, generate_bls_keys
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.containers import (
@@ -241,7 +242,7 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             schain_record.set_restart_count(0)
             schain_record.set_failed_rpc_count(0)
 
-        is_dkg_done = safe_run_dkg(
+        dkg_result = safe_run_dkg(
             skale=skale,
             schain_name=name,
             node_id=node_id,
@@ -250,8 +251,13 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             schain_record=schain_record
         )
         # TODO: do once
-        if is_dkg_done:
+        if dkg_result.status.is_done():
+            save_dkg_results(
+                dkg_result.keys_data,
+                get_secret_key_share_filepath(name, rotation_id)
+            )
             set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
+        schain_record.set_dkg_status(dkg_result.status)
 
     else:
         monitor_checks(
@@ -427,62 +433,6 @@ def monitor_sync_schain_container(skale, schain, start_ts, schain_record,
                              dutils=dutils)
 
 
-def safe_run_dkg(
-    skale,
-    schain_name,
-    node_id,
-    sgx_key_name,
-    rotation_id,
-    schain_record
-):
-    if is_last_dkg_finished(skale, schain_name):
-        try:
-            dkg_client = init_dkg_client(
-                node_id, schain_name, skale, sgx_key_name, rotation_id)
-        except DkgError as err:
-            logger.info(
-                f'sChain {schain_name} Dkg procedure failed with {err}')
-            schain_record.dkg_failed()
-            return False
-
-        try:
-            dkg_client.fetch_all_broadcasted_data()
-            dkg_results = generate_bls_keys(dkg_client)
-            secret_key_share_filepath = get_secret_key_share_filepath(
-                schain_name, rotation_id)
-            save_dkg_results(dkg_results, secret_key_share_filepath)
-        except KeyGenerationError as err:
-            logger.info(
-                f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
-            schain_record.dkg_key_generation_error()
-            return False
-        except DkgError as err:
-            logger.info(
-                f'sChain {schain_name} Dkg procedure failed with {err}')
-            schain_record.dkg_failed()
-            return False
-        schain_record.dkg_done()
-        return True
-
-    schain_record.dkg_started()
-    try:
-        if not skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
-            schain_record.dkg_failed()
-            return False
-        run_dkg(skale, schain_name, node_id, sgx_key_name, rotation_id)
-    except KeyGenerationError as err:
-        logger.info(
-            f'sChain {schain_name} Dkg procedure failed on key generation with {err}')
-        schain_record.dkg_key_generation_error()
-        return False
-    except DkgError as err:
-        logger.info(f'sChain {schain_name} Dkg procedure failed with {err}')
-        schain_record.dkg_failed()
-        return False
-    schain_record.dkg_done()
-    return True
-
-
 def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
                    rotation, schain_record, ecdsa_sgx_key_name, sync=False,
                    dutils=None):
@@ -492,8 +442,9 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
     logger.debug(f'Mainnet chainId: {mainnet_chain_id}')
     if not checks.data_dir:
         init_schain_dir(name)
+    rotation_id = rotation['rotation_id']
     if not checks.dkg:
-        is_dkg_done = safe_run_dkg(
+        dkg_result = safe_run_dkg(
             skale=skale,
             schain_name=name,
             node_id=node_id,
@@ -501,9 +452,16 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             rotation_id=rotation['rotation_id'],
             schain_record=schain_record
         )
-        if not is_dkg_done:
+        if not dkg_result.status.is_done():
+            schain_record.set_dkg_status(dkg_result.status)
             remove_config_dir(name)
             return
+        else:
+            save_dkg_results(
+                dkg_result.keys_data,
+                get_secret_key_share_filepath(name, rotation_id)
+            )
+            schain_record.set_dkg_status(dkg_result.status)
 
     if not checks.config:
         rotation_id = skale.schains.get_last_rotation_id(name)

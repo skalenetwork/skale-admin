@@ -20,8 +20,8 @@ from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.schains.cleaner import remove_schain_container
-from core.schains.config.generator import generate_schain_config_with_skale
-from core.schains.dkg import is_last_dkg_finished, run_dkg
+# from core.schains.config.generator import generate_schain_config_with_skale
+from core.schains.dkg import is_last_dkg_finished, safe_run_dkg
 from core.schains.helper import init_schain_dir
 from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
@@ -32,6 +32,7 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.bls.dkg_utils import init_dkg_client, generate_bls_keys
 from tools.bls.dkg_client import generate_bls_key_name
 
+warnings.filterwarnings("ignore")
 
 MAX_WORKERS = 5
 TEST_SRW_FUND_VALUE = 3000000000000000000
@@ -194,14 +195,14 @@ def run_dkg_all(skale, schain_name, nodes):
     bls_public_keys = []
     all_public_keys = []
     for node_data, result in zip(nodes, results):
-        assert result['node_id'] == node_data['node_id']
-        assert result['dkg_results'] is not None
-        bls_public_keys.append(result['dkg_results']['public_key'])
-        all_public_keys.append(result['dkg_results']['bls_public_keys'])
-        check_config(nodes, node_data, result['config'])
+        assert result.status.is_done()
+        keys_data = result.keys_data
+        assert keys_data is not None
+        bls_public_keys.append(keys_data['public_key'])
+        all_public_keys.append(keys_data['bls_public_keys'])
+        # check_config(nodes, node_data, result['config'])
 
     assert len(results) == N_OF_NODES
-
     gid = skale.schains.name_to_id(schain_name)
     assert skale.dkg.is_last_dkg_successful(gid)
     return bls_public_keys, all_public_keys
@@ -216,25 +217,17 @@ def run_node_dkg(opts):
     skale.wallet = opts['wallet']
     sgx_key_name = skale.wallet._key_name
     schain_name = opts['schain_name']
-    node_id = opts['node_id']
 
     init_schain_dir(schain_name)
-    dkg_results = run_dkg(skale, schain_name, opts['node_id'], sgx_key_name)
-    print(f'=========================\nDKG DONE: node_id: {node_id} {dkg_results}')
-
     rotation_id = skale.schains.get_last_rotation_id(schain_name)
-    schain_config = generate_schain_config_with_skale(
-        skale=skale,
-        schain_name=schain_name,
-        node_id=node_id,
-        rotation_id=rotation_id,
-        ecdsa_key_name=sgx_key_name
+    dkg_result = safe_run_dkg(
+        skale,
+        schain_name,
+        opts['node_id'],
+        sgx_key_name,
+        rotation_id
     )
-    return {
-        'node_id': node_id,
-        'dkg_results': dkg_results,
-        'config': schain_config.to_dict()
-    }
+    return dkg_result
 
 
 def check_fetch_broadcasted_data(skale, schain_name, nodes, bls_public_keys, all_public_keys):
@@ -354,7 +347,9 @@ def test_init_bls(skale, schain_creation_data, cleanup_dkg):
     assert not is_last_dkg_finished(skale, schain_name)
     bls_public_keys, all_public_keys = run_dkg_all(skale, schain_name, nodes)
     assert is_last_dkg_finished(skale, schain_name)
-    check_fetch_broadcasted_data(skale, schain_name, nodes, bls_public_keys, all_public_keys)
+    bls_public_keys, all_public_keys = run_dkg_all(skale, schain_name, nodes)
+    assert is_last_dkg_finished(skale, schain_name)
+    # check_fetch_broadcasted_data(skale, schain_name, nodes, bls_public_keys, all_public_keys)
 
 
 if __name__ == "__main__":

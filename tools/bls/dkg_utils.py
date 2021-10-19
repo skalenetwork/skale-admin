@@ -38,6 +38,10 @@ class DkgFailedError(DkgError):
     pass
 
 
+class DKGKeyGenerationError(Exception):
+    pass
+
+
 def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
     schain_nodes = get_nodes_for_schain(skale, schain_name)
     n = len(schain_nodes)
@@ -141,15 +145,24 @@ def broadcast_and_check_data(dkg_client):
 def generate_bls_keys(dkg_client):
     skale = dkg_client.skale
     schain_name = dkg_client.schain_name
-    encrypted_bls_key = dkg_client.generate_bls_key()
-    logger.info(f'sChain: {schain_name}. '
-                f'Node`s encrypted bls key is: {encrypted_bls_key}')
-    bls_public_keys = dkg_client.get_bls_public_keys()
-    common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
-    formated_common_public_key = []
-    for coord in common_public_key:
-        for elem in coord:
-            formated_common_public_key.append(elem)
+    try:
+        if not dkg_client.is_bls_key_generated():
+            encrypted_bls_key = dkg_client.generate_bls_key()
+            logger.info(f'sChain: {schain_name}. '
+                        f'Node`s encrypted bls key is: {encrypted_bls_key}')
+        else:
+            logger.info(f'sChain: {schain_name}. BLS key exists. Fetching')
+            dkg_client.fetch_bls_public_key()
+
+        bls_public_keys = dkg_client.get_bls_public_keys()
+        common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
+        formated_common_public_key = [
+            elem
+            for coord in common_public_key
+            for elem in coord
+        ]
+    except Exception as err:
+        raise DKGKeyGenerationError(err)
     return {
         'common_public_key': formated_common_public_key,
         'public_key': dkg_client.public_key,
@@ -262,7 +275,7 @@ def wait_for_fail(skale, schain_name, channel_started_time, reason=""):
 
 
 def get_latest_block_timestamp(skale):
-    return skale.web3.eth.getBlock("latest")["timestamp"]
+    return skale.web3.eth.get_block("latest")["timestamp"]
 
 
 def get_secret_key_share_filepath(schain_name, rotation_id):

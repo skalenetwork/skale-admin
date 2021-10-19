@@ -105,7 +105,7 @@ class SChainRecord(BaseModel):
     def dkg_done(self):
         self.set_dkg_status(DKGStatus.DONE)
 
-    def set_dkg_status(self, val):
+    def set_dkg_status(self, val: DKGStatus) -> None:
         logger.info(f'Changing DKG status for {self.name} to {val.name}')
         self.dkg_status = val.value
         self.save()
@@ -158,6 +158,15 @@ class SChainRecord(BaseModel):
         logger.info(f'Changing failed rpc count for {self.name} to {value}')
         self.failed_rpc_count = value
         self.save()
+
+    def is_dkg_done(self) -> bool:
+        return self.dkg_status == DKGStatus.DONE.value
+
+    def is_dkg_unsuccessful(self) -> bool:
+        return self.dkg_status in [
+            DKGStatus.KEY_GENERATION_ERROR.value,
+            DKGStatus.FAILED.value
+        ]
 
 
 def create_tables():
