@@ -35,7 +35,8 @@ from tools.helper import write_json
 logger = logging.getLogger(__name__)
 
 
-def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
+def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
+    dkg_client = None
     try:
         dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
     except DkgError as e:
@@ -45,7 +46,19 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         )
         wait_for_fail(skale, schain_name, channel_started_time, "broadcast")
         raise
+    if not dkg_client:
+        raise DkgError('Dkg client was not inited successfully')
+    return dkg_client
 
+
+def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
+    dkg_client = get_dkg_client(
+        node_id,
+        schain_name,
+        skale,
+        sgx_key_name,
+        rotation_id
+    )
     n = dkg_client.n
 
     channel_started_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
@@ -114,8 +127,7 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
 
 
 def restore_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
-    # TODO extract init dkg client from init_bls
-    dkg_client = init_dkg_client(
+    dkg_client = get_dkg_client(
         node_id,
         schain_name,
         skale,
