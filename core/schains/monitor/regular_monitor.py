@@ -33,4 +33,5 @@ class RegularMonitor(BaseMonitor):
         self.volume()
         self.firewall_rules()
         self.skaled_container()
+        self.skaled_rpc()
         self.ima_container()

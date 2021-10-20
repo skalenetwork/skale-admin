@@ -17,18 +17,21 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import Enum
+import logging
+from core.schains.monitor.base_monitor import BaseMonitor
 
 
-class RotationMode(Enum):
-    STAYING = 0
-    NEW = 1
-    EXITING = 2
+logger = logging.getLogger(__name__)
 
 
-class RotationMonitor:
-    def __init__(self, name):
-        pass
-
+class BackupMonitor(BaseMonitor):
+    @BaseMonitor._monitor_runner
     def run(self):
-        pass
+        self.config_dir()
+        self.dkg()
+        self.config()
+        self.volume()
+        self.firewall_rules()
+        self.skaled_container(sync=True)
+        self.skaled_rpc()
+        self.ima_container()

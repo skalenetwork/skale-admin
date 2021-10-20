@@ -22,7 +22,7 @@ import logging
 from datetime import datetime
 from abc import ABC, abstractmethod
 
-from skale import Skale
+from skale import Skale, SkaleIma
 
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
@@ -34,12 +34,15 @@ from core.schains.cleaner import (
 )
 from core.schains.volume import init_data_volume
 from core.schains.firewall import add_firewall_rules
-from core.schains.monitor.containers import monitor_schain_container
+from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
+from core.schains.monitor.rpc import monitor_schain_rpc
 
 from core.schains.config.dir import init_schain_config_dir
 from core.schains.config.generator import init_schain_config
 
+from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
+from tools.notifications.messages import notify_checks, is_checks_passed
 from web.models.schain import upsert_schain_record
 
 
@@ -55,6 +58,7 @@ class BaseMonitor(ABC):
     def __init__(
         self,
         skale: Skale,
+        skale_ima: SkaleIma,
         schain: dict,
         node_config: NodeConfig,
         rotation_id: int,
@@ -62,6 +66,7 @@ class BaseMonitor(ABC):
         dutils: DockerUtils = None
     ):
         self.skale = skale
+        self.skale_ima = skale_ima
         self.schain = schain
         self.name = schain['name']
         self.node_config = node_config
@@ -72,15 +77,37 @@ class BaseMonitor(ABC):
         self.schain_record = upsert_schain_record(self.name)
         self.p = f'{type(self).__name__} - schain: {self.name} -'
 
-    def _upd_last_seen(self):
+    def _upd_last_seen(self) -> None:
         schain_record = upsert_schain_record(self.name)
         schain_record.set_monitor_last_seen(datetime.now())
+
+    def _upd_schain_record(self) -> None:
+        schain_record = upsert_schain_record(self.name)
+        if schain_record.first_run:
+            schain_record.set_restart_count(0)
+            schain_record.set_failed_rpc_count(0)
+        schain_record.set_first_run(False)
+        schain_record.set_new_schain(False)
+        logger.info(
+            f'sChain {self.name}: '
+            f'restart_count - {schain_record.restart_count}, '
+            f'failed_rpc_count - {schain_record.failed_rpc_count}'
+        )
+
+    def _run_all_checks(self) -> None:
+        checks_dict = self.checks.get_all()
+        if not is_checks_passed(checks_dict):
+            notify_checks(self.name, self.node_config.all(), checks_dict)
 
     def _monitor_runner(func):
         def monitor_runner(self):
             logger.info(f'{self.p} starting monitor runner')
             self._upd_last_seen()
             try:
+                schain_record = upsert_schain_record(self.name)
+                if not schain_record.first_run:
+                    self._run_all_checks()
+                self._upd_schain_record()
                 res = func(self)
                 self._upd_last_seen()
                 logger.info(f'{self.p} finished monitor runner')
@@ -94,13 +121,13 @@ class BaseMonitor(ABC):
     def run(self):
         pass
 
-    def config_dir(self):
+    def config_dir(self) -> None:
         if not self.checks.config_dir.status:
             init_schain_config_dir(self.name)
         else:
             logger.info(f'{self.p} config_dir - ok')
 
-    def dkg(self):
+    def dkg(self) -> None:
         if not self.checks.dkg.status:
             is_dkg_done = safe_run_dkg(
                 skale=self.skale,
@@ -116,7 +143,7 @@ class BaseMonitor(ABC):
         else:
             logger.info(f'{self.p} dkg - ok')
 
-    def config(self):
+    def config(self) -> None:
         if not self.checks.config.status:
             init_schain_config(
                 skale=self.skale,
@@ -129,19 +156,19 @@ class BaseMonitor(ABC):
         else:
             logger.info(f'{self.p} config - ok')
 
-    def volume(self):
+    def volume(self) -> None:
         if not self.checks.volume.status:
             init_data_volume(self.schain, dutils=self.dutils)
         else:
             logger.info(f'{self.p} volume - ok')
 
-    def firewall_rules(self):
+    def firewall_rules(self) -> None:
         if not self.checks.firewall_rules.status:
             add_firewall_rules(self.name)
         else:
             logger.info(f'{self.p} firewall_rules - ok')
 
-    def skaled_container(self, sync: bool):
+    def skaled_container(self, sync: bool) -> None:  # todo: handle sync!
         skaled_container_check = self.checks.skaled_container
         if not skaled_container_check.status:
             monitor_schain_container(
@@ -151,13 +178,25 @@ class BaseMonitor(ABC):
             )
             time.sleep(CONTAINERS_DELAY)
         else:
+            self.schain_record.set_restart_count(0)
             logger.info(f'{self.p} skaled_container - ok')
 
-    def skaled_rpc(self):
-        pass
+    def skaled_rpc(self) -> None:
+        if not self.checks.rpc.status:
+            monitor_schain_rpc(
+                self.schain,
+                schain_record=self.schain_record,
+                dutils=self.dutils
+            )
+        else:
+            self.schain_record.set_failed_rpc_count(0)
+            logger.info(f'{self.p} rpc - ok')
 
-    def ima_container(self):
-        pass
+    def ima_container(self) -> None:
+        if not DISABLE_IMA and not self.checks.ima_container:
+            monitor_ima_container(self.skale_ima, self.schain, dutils=self.dutils)
+        else:
+            logger.info(f'{self.p} ima_container - ok')
 
     def cleanup_schain_docker_entity(self) -> None:
         remove_schain_container(self.name, dutils=self.dutils)

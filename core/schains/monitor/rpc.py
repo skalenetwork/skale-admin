@@ -19,65 +19,47 @@
 
 import logging
 
-from core.ima.schain import copy_schain_ima_abi
-from core.schains.volume import is_volume_exists
-from core.schains.runner import (
-    is_schain_container_failed,
-    restart_container,
-    run_schain_container,
-    is_container_exists
-)
+from core.schains.runner import restart_container
+from core.schains.runner import is_container_exists
+from tools.docker_utils import DockerUtils
+
+from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
 from tools.configs.containers import (
     MAX_SCHAIN_RESTART_COUNT,
     SCHAIN_CONTAINER
 )
-from tools.docker_utils import DockerUtils
-
 
 logger = logging.getLogger(__name__)
 
 
-def monitor_schain_container(
+def monitor_schain_rpc(
     schain,
     schain_record,
-    volume_required=True,
     dutils=None
 ):
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
-    logger.info(f'Monitoring container for sChain {schain_name}')
-    if volume_required and not is_volume_exists(schain_name, dutils=dutils):
-        logger.error(f'Data volume for sChain {schain_name} does not exist')
-        return
+    logger.info(f'Monitoring rpc for sChain {schain_name}')
 
     if not is_container_exists(schain_name, dutils=dutils):
-        logger.info(f'SChain {schain_name}: container doesn\'t exits')
-        run_schain_container(schain, dutils=dutils)
+        logger.info(f'{schain_name} rpc monitor failed: container doesn\'t exit')
         return
 
-    bad_exit = is_schain_container_failed(schain_name, dutils=dutils)
+    rpc_stuck = schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
     logger.info(
-        'SChain %s, failed: %s, %d',
+        'SChain %s, rpc stuck: %s, failed_rpc_count: %d, restart_count: %d',
         schain_name,
-        bad_exit,
+        rpc_stuck,
+        schain_record.failed_rpc_count,
         schain_record.restart_count
     )
-    if bad_exit:
+    if rpc_stuck:
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
             logger.info(f'SChain {schain_name}: restarting container')
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
             schain_record.set_restart_count(schain_record.restart_count + 1)
-            schain_record.set_failed_rpc_count(0)
         else:
             logger.warning(f'SChain {schain_name}: max restart count exceeded')
-
-
-def monitor_ima_container(skale_ima, schain, dutils=None):
-    dutils = dutils or DockerUtils()
-    mainnet_chain_id = skale_ima.web3.eth.chainId
-    # todo: add IMA version check
-    if skale_ima.linker.has_schain(schain['name']):
-        copy_schain_ima_abi(schain['name'])
-        monitor_ima_container(schain, mainnet_chain_id, dutils=dutils)
+        schain_record.set_failed_rpc_count(0)
     else:
-        logger.warning(f'sChain {schain["name"]} is not registered in IMA')
+        schain_record.set_failed_rpc_count(schain_record.failed_rpc_count + 1)

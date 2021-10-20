@@ -26,11 +26,9 @@ from core.schains.limits import get_schain_limit, get_ima_limit
 from core.schains.types import MetricType, ContainerType
 from core.schains.config.helper import (
     get_schain_container_cmd,
-    get_schain_env,
-    get_skaled_http_address
+    get_schain_env
 )
 from core.schains.ima import get_ima_env
-from core.schains.helper import send_rotation_request
 from core.schains.config.dir import schain_config_dir_host
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from tools.docker_utils import DockerUtils
@@ -41,6 +39,13 @@ from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR
                            SKALE_VOLUME_PATH, SCHAIN_CONFIG_DIR_SKALED)
 
 logger = logging.getLogger(__name__)
+
+
+def is_container_exists(schain_name,
+                        container_type=SCHAIN_CONTAINER, dutils=None):
+    dutils = dutils or DockerUtils()
+    container_name = get_container_name(container_type, schain_name)
+    return dutils.is_container_exists(container_name)
 
 
 def get_image_name(type):
@@ -137,12 +142,6 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
     run_container(SCHAIN_CONTAINER, schain_name, env, cmd,
                   volume_config, cpu_limit,
                   mem_limit, dutils=dutils, volume_mode=volume_mode)
-
-
-def set_rotation_for_schain(schain_name: str, timestamp: int) -> None:
-    endpoint = get_skaled_http_address(schain_name)
-    url = f'http://{endpoint.ip}:{endpoint.port}'
-    send_rotation_request(url, timestamp)
 
 
 def run_ima_container(schain: dict, mainnet_chain_id: int, dutils: DockerUtils = None) -> None:

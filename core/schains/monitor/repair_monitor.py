@@ -35,10 +35,7 @@ class RepairMonitor(BaseMonitor):
 
     def notify_repair_mode(self) -> None:
         notify_repair_mode(
-            {
-                'node_id': self.node_config.id,
-                'node_ip': self.node_config.ip
-            },
+            self.node_config.all(),
             self.name
         )
 
@@ -53,4 +50,5 @@ repair_mode: {self.schain_record.repair_mode}, exit_code_ok: {self.checks.exit_c
         self.cleanup_schain_docker_entity()
         self.volume()
         self.skaled_container(sync=True)  # todo: handle sync case
+        self.skaled_rpc()
         self.disable_repair_mode()

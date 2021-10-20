@@ -42,24 +42,28 @@ def get_log_prefix(name):
     return f'schain: {name} -'
 
 
-def _is_backup_mode(schain_record):
+def _is_backup_mode(schain_record: SChainRecord) -> bool:
     return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
 
 
-def _is_repair_mode(schain_record, checks):
+def _is_repair_mode(schain_record: SChainRecord, checks: SChainChecks) -> bool:
     return schain_record.repair_mode or not checks.exit_code_ok
 
 
-def _is_rotation_mode():
-    return False  # todo!
+def _is_rotation_mode(rotation_in_progress: bool) -> bool:
+    return rotation_in_progress
 
 
-def get_monitor_type(schain_record: SChainRecord, checks: SChainChecks) -> BaseMonitor:
+def get_monitor_type(
+        schain_record: SChainRecord,
+        checks: SChainChecks,
+        rotation_in_progress: bool
+        ) -> BaseMonitor:
     if _is_backup_mode(schain_record):
         return BackupMonitor
     if _is_repair_mode(schain_record, checks):
         return RepairMonitor
-    if _is_rotation_mode():
+    if _is_rotation_mode(rotation_in_progress):
         return RotationMonitor
     return RegularMonitor
 
@@ -76,6 +80,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
         while True:
             ima_linked = skale_ima.linker.has_schain(name)
             rotation_id = skale.schains.get_last_rotation_id(name)
+            rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
 
             schain_record = upsert_schain_record(name)
             checks = SChainChecks(
@@ -87,9 +92,10 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
                 dutils=dutils
             )
 
-            monitor_class = get_monitor_type()
+            monitor_class = get_monitor_type(schain_record, checks, rotation_in_progress)
             monitor = monitor_class(
                 skale=skale,
+                skale_ima=skale_ima,
                 schain=schain,
                 node_config=node_config,
                 rotation_id=rotation_id,
