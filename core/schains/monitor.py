@@ -48,7 +48,6 @@ from core.schains.volume import init_data_volume
 from core.schains.checks import SChainChecks
 from core.schains.rotation import get_rotation_state
 from core.schains.dkg import (
-    get_secret_key_share_filepath,
     safe_run_dkg,
     save_dkg_results
 )
@@ -61,6 +60,7 @@ from tools.configs.containers import (
     SCHAIN_CONTAINER,
     IMA_CONTAINER
 )
+from tools.bls.dkg_utils import get_secret_key_share_filepath
 from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
 from tools.configs.ima import DISABLE_IMA
 from tools.iptables import (add_rules as add_iptables_rules,
@@ -247,8 +247,7 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             schain_name=name,
             node_id=node_id,
             sgx_key_name=sgx_key_name,
-            rotation_id=rotation_id,
-            schain_record=schain_record
+            rotation_id=rotation_id
         )
         # TODO: do once
         if dkg_result.status.is_done():
@@ -449,8 +448,7 @@ def monitor_checks(skale, skale_ima, schain, checks, node_id, sgx_key_name,
             schain_name=name,
             node_id=node_id,
             sgx_key_name=sgx_key_name,
-            rotation_id=rotation['rotation_id'],
-            schain_record=schain_record
+            rotation_id=rotation['rotation_id']
         )
         if not dkg_result.status.is_done():
             schain_record.set_dkg_status(dkg_result.status)
