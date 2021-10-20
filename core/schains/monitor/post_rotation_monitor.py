@@ -17,9 +17,18 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .base_monitor import BaseMonitor # noqa
-from .regular_monitor import RegularMonitor # noqa
-from .repair_monitor import RepairMonitor # noqa
-from .backup_monitor import BackupMonitor # noqa
-from .rotation_monitor import RotationMonitor # noqa
-from .post_rotation_monitor import PostRotationMonitor # noqa
+import logging
+from core.schains.monitor.base_monitor import BaseMonitor
+
+
+logger = logging.getLogger(__name__)
+
+
+class PostRotationMonitor(BaseMonitor):
+    """
+    PostRotationMonitor be executed for the sChain on the staying node when rotation is complete.
+    This type of monitor reloads skaled container.
+    """
+    @BaseMonitor._monitor_runner
+    def run(self):
+        pass

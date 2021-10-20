@@ -103,18 +103,14 @@ class BaseMonitor(ABC):
         def monitor_runner(self):
             logger.info(f'{self.p} starting monitor runner')
             self._upd_last_seen()
-            try:
-                schain_record = upsert_schain_record(self.name)
-                if not schain_record.first_run:
-                    self._run_all_checks()
-                self._upd_schain_record()
-                res = func(self)
-                self._upd_last_seen()
-                logger.info(f'{self.p} finished monitor runner')
-                return res
-            except Exception as e:
-                print(f'{self.p} monitor runner failed')
-                logger.exception(e)
+            schain_record = upsert_schain_record(self.name)
+            if not schain_record.first_run:
+                self._run_all_checks()
+            self._upd_schain_record()
+            res = func(self)
+            self._upd_last_seen()
+            logger.info(f'{self.p} finished monitor runner')
+            return res
         return monitor_runner
 
     @abstractmethod

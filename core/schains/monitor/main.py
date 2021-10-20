@@ -25,9 +25,10 @@ from web3._utils import request
 
 from core.node_config import NodeConfig
 from core.schains.monitor import (
-    BaseMonitor, RegularMonitor, RepairMonitor, BackupMonitor, RotationMonitor
+    BaseMonitor, RegularMonitor, RepairMonitor, BackupMonitor, RotationMonitor, PostRotationMonitor
 )
 from core.schains.checks import SChainChecks
+from core.schains.rotation import check_schain_rotated
 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
@@ -54,6 +55,10 @@ def _is_rotation_mode(rotation_in_progress: bool) -> bool:
     return rotation_in_progress
 
 
+def _is_post_rotation_mode(schain_name: str) -> bool:
+    return check_schain_rotated(schain_name)
+
+
 def get_monitor_type(
         schain_record: SChainRecord,
         checks: SChainChecks,
@@ -65,6 +70,8 @@ def get_monitor_type(
         return RepairMonitor
     if _is_rotation_mode(rotation_in_progress):
         return RotationMonitor
+    if _is_post_rotation_mode(checks):
+        return PostRotationMonitor
     return RegularMonitor
 
 
@@ -102,7 +109,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
                 checks=checks
             )
             monitor.run()
-            time.sleep(30)  # todo: change sleep interval
-
     except Exception:
         logger.exception(f'{p} monitor failed')
+    finally:
+        time.sleep(30)  # todo: change sleep interval
