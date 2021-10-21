@@ -34,6 +34,8 @@ from core.schains.cleaner import (
 )
 from core.schains.volume import init_data_volume
 from core.schains.firewall import add_firewall_rules
+from core.schains.rotation import get_schain_public_key
+
 from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
 from core.schains.monitor.rpc import monitor_schain_rpc
 
@@ -72,6 +74,7 @@ class BaseMonitor(ABC):
         self.node_config = node_config
         self.checks = checks
         self.rotation_id = rotation_id
+        self.rotation_data = self.skale.node_rotation.get_rotation(self.name)
         self.dutils = dutils or DockerUtils()
 
         self.schain_record = upsert_schain_record(self.name)
@@ -139,8 +142,8 @@ class BaseMonitor(ABC):
         else:
             logger.info(f'{self.p} dkg - ok')
 
-    def config(self) -> None:
-        if not self.checks.config.status:
+    def config(self, overwrite=False) -> None:
+        if not self.checks.config.status or overwrite:
             init_schain_config(
                 skale=self.skale,
                 node_id=self.node_config.id,
@@ -158,18 +161,27 @@ class BaseMonitor(ABC):
         else:
             logger.info(f'{self.p} volume - ok')
 
-    def firewall_rules(self) -> None:
-        if not self.checks.firewall_rules.status:
+    def firewall_rules(self, overwrite=False) -> None:
+        if not self.checks.firewall_rules.status or overwrite:
             add_firewall_rules(self.name)
         else:
             logger.info(f'{self.p} firewall_rules - ok')
 
-    def skaled_container(self, sync: bool) -> None:  # todo: handle sync!
+    def skaled_container(self, sync: bool = False) -> None:
         skaled_container_check = self.checks.skaled_container
         if not skaled_container_check.status:
+
+            if sync:
+                public_key = get_schain_public_key(self.skale, self.name)
+                start_ts = self.rotation_data['finish_ts']
+            else:
+                public_key, start_ts = None, None
+
             monitor_schain_container(
                 self.schain,
                 schain_record=self.schain_record,
+                public_key=public_key,
+                start_ts=start_ts,
                 dutils=self.dutils
             )
             time.sleep(CONTAINERS_DELAY)

@@ -40,6 +40,8 @@ logger = logging.getLogger(__name__)
 def monitor_schain_container(
     schain,
     schain_record,
+    public_key=None,
+    start_ts=None,
     volume_required=True,
     dutils=None
 ):
@@ -52,7 +54,12 @@ def monitor_schain_container(
 
     if not is_container_exists(schain_name, dutils=dutils):
         logger.info(f'SChain {schain_name}: container doesn\'t exits')
-        run_schain_container(schain, dutils=dutils)
+        run_schain_container(
+            schain=schain,
+            public_key=public_key,
+            start_ts=start_ts,
+            dutils=dutils
+        )
         return
 
     bad_exit = is_schain_container_failed(schain_name, dutils=dutils)

@@ -63,3 +63,13 @@ def check_schain_rotated(schain_name, dutils=None):
     rotation_file_exists = os.path.exists(schain_rotation_filepath)
     zero_exit_code = is_exited_with_zero(schain_name, dutils=dutils)
     return rotation_file_exists and zero_exit_code
+
+
+def get_schain_public_key(skale, schain_name):
+    group_idx = skale.schains.name_to_id(schain_name)
+    raw_public_key = skale.key_storage.get_previous_public_key(group_idx)
+    public_key_array = [*raw_public_key[0], *raw_public_key[1]]
+    if public_key_array == ['0', '0', '1', '0']:  # zero public key
+        raw_public_key = skale.key_storage.get_common_public_key(group_idx)
+        public_key_array = [*raw_public_key[0], *raw_public_key[1]]
+    return ':'.join(map(str, public_key_array))

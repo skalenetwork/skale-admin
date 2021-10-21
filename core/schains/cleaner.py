@@ -27,7 +27,7 @@ from sgx import SgxClient
 from core.schains.checks import SChainChecks
 from core.schains.config.dir import schain_config_dir
 from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
-from core.schains.config.helper import get_allowed_endpoints
+from core.schains.firewall import remove_firewall_rules
 from core.schains.types import ContainerType
 from core.schains.process_manager_helper import terminate_schain_process
 
@@ -39,7 +39,6 @@ from tools.configs.containers import (
 )
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
-from tools.iptables import remove_rules as remove_iptables_rules
 from tools.helper import merged_unique, read_json
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
@@ -155,11 +154,6 @@ def schain_names_to_ids(skale, schain_names):
         id_ = skale.schains.name_to_id(name)
         ids.append(bytes.fromhex(id_))
     return ids
-
-
-def remove_firewall_rules(schain_name):
-    endpoints = get_allowed_endpoints(schain_name)
-    remove_iptables_rules(endpoints)
 
 
 def ensure_schain_removed(skale, schain_name, node_id, dutils=None):

@@ -69,7 +69,6 @@ class RotationMonitor(BaseMonitor):
 
     @BaseMonitor._monitor_runner
     def run(self):
-        self.rotation_data = self.skale.node_rotation.get_rotation(self.name)
         if self._is_new_node():
             return self.new_node()
         if self._is_leaving_node():
