@@ -63,7 +63,7 @@ class BaseMonitor(ABC):
         skale_ima: SkaleIma,
         schain: dict,
         node_config: NodeConfig,
-        rotation_id: int,
+        rotation_data: dict,
         checks: SChainChecks,
         dutils: DockerUtils = None
     ):
@@ -73,8 +73,8 @@ class BaseMonitor(ABC):
         self.name = schain['name']
         self.node_config = node_config
         self.checks = checks
-        self.rotation_id = rotation_id
-        self.rotation_data = self.skale.node_rotation.get_rotation(self.name)
+        self.rotation_id = rotation_data['rotation_id']
+        self.rotation_data = rotation_data
         self.dutils = dutils or DockerUtils()
 
         self.schain_record = upsert_schain_record(self.name)

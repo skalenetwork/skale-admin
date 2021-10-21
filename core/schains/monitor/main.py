@@ -70,7 +70,7 @@ def get_monitor_type(
         return RepairMonitor
     if _is_rotation_mode(rotation_in_progress):
         return RotationMonitor
-    if _is_post_rotation_mode(checks):
+    if _is_post_rotation_mode(checks.name):
         return PostRotationMonitor
     return RegularMonitor
 
@@ -86,7 +86,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
 
         while True:
             ima_linked = skale_ima.linker.has_schain(name)
-            rotation_id = skale.schains.get_last_rotation_id(name)
+            rotation_data = skale.node_rotation.get_rotation(name)
             rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
 
             schain_record = upsert_schain_record(name)
@@ -94,7 +94,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
                 name,
                 node_config.id,
                 schain_record=schain_record,
-                rotation_id=rotation_id,
+                rotation_id=rotation_data['rotation_id'],
                 ima_linked=ima_linked,
                 dutils=dutils
             )
@@ -105,7 +105,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
                 skale_ima=skale_ima,
                 schain=schain,
                 node_config=node_config,
-                rotation_id=rotation_id,
+                rotation_data=rotation_data,
                 checks=checks
             )
             monitor.run()
