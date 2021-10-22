@@ -1,4 +1,5 @@
-from core.schains.runner import set_rotation_for_schain, is_exited, is_exited_with_zero
+from core.schains.runner import is_exited, is_exited_with_zero
+from core.schains.rotation import set_rotation_for_schain
 import mock
 import json
 
