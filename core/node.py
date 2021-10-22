@@ -244,7 +244,10 @@ class Node:
 
     def set_domain_name(self, domain_name: str) -> dict:
         try:
-            self.skale.nodes.set_domain_name(self.config.id, domain_name)
+            self.skale.nodes.set_domain_name(
+                self.config.id,
+                domain_name
+            )
         except TransactionFailedError as err:
             return self._error(str(err))
         return self._ok()
