@@ -45,14 +45,15 @@ from core.schains.config.generator import init_schain_config
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 from tools.notifications.messages import notify_checks, is_checks_passed
-from web.models.schain import upsert_schain_record
+from tools.str_formatters import arguments_list_string
+
+from web.models.schain import upsert_schain_record, set_first_run, SChainRecord
 
 
 logger = logging.getLogger(__name__)
 
 
-CONTAINERS_DELAY = 20
-SCHAIN_MONITOR_SLEEP_INTERVAL = 500
+CONTAINER_POST_RUN_DELAY = 20
 SCHAIN_CLEANUP_TIMEOUT = 10
 
 
@@ -73,28 +74,30 @@ class BaseMonitor(ABC):
         self.name = schain['name']
         self.node_config = node_config
         self.checks = checks
-        self.rotation_id = rotation_data['rotation_id']
-        self.rotation_data = rotation_data
-        self.dutils = dutils or DockerUtils()
 
-        self.schain_record = upsert_schain_record(self.name)
+        self.rotation_data = rotation_data
+        self.rotation_id = rotation_data['rotation_id']
+
+        self.dutils = dutils or DockerUtils()
         self.p = f'{type(self).__name__} - schain: {self.name} -'
 
+    @property
+    def schain_record(self):
+        return upsert_schain_record(self.name)
+
     def _upd_last_seen(self) -> None:
-        schain_record = upsert_schain_record(self.name)
-        schain_record.set_monitor_last_seen(datetime.now())
+        self.schain_record.set_monitor_last_seen(datetime.now())
 
     def _upd_schain_record(self) -> None:
-        schain_record = upsert_schain_record(self.name)
-        if schain_record.first_run:
-            schain_record.set_restart_count(0)
-            schain_record.set_failed_rpc_count(0)
-        schain_record.set_first_run(False)
-        schain_record.set_new_schain(False)
+        if self.schain_record.first_run:
+            self.schain_record.set_restart_count(0)
+            self.schain_record.set_failed_rpc_count(0)
+        set_first_run(self.name, False)
+        self.schain_record.set_new_schain(False)
         logger.info(
             f'sChain {self.name}: '
-            f'restart_count - {schain_record.restart_count}, '
-            f'failed_rpc_count - {schain_record.failed_rpc_count}'
+            f'restart_count - {self.schain_record.restart_count}, '
+            f'failed_rpc_count - {self.schain_record.failed_rpc_count}'
         )
 
     def _run_all_checks(self) -> None:
@@ -104,10 +107,14 @@ class BaseMonitor(ABC):
 
     def _monitor_runner(func):
         def monitor_runner(self):
-            logger.info(f'{self.p} starting monitor runner')
+            logger.info(arguments_list_string({
+                'Monitor type': type(self).__name__,
+                'Rotation data': self.rotation_data,
+                'sChain record': SChainRecord.to_dict(self.schain_record)
+            }, f'Starting monitor runner - {self.name}'))
+
             self._upd_last_seen()
-            schain_record = upsert_schain_record(self.name)
-            if not schain_record.first_run:
+            if not self.schain_record.first_run:
                 self._run_all_checks()
             self._upd_schain_record()
             res = func(self)
@@ -184,7 +191,7 @@ class BaseMonitor(ABC):
                 start_ts=start_ts,
                 dutils=self.dutils
             )
-            time.sleep(CONTAINERS_DELAY)
+            time.sleep(CONTAINER_POST_RUN_DELAY)
         else:
             self.schain_record.set_restart_count(0)
             logger.info(f'{self.p} skaled_container - ok')

@@ -190,24 +190,24 @@ def cleanup_schain(node_id, schain_name, dutils=None):
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
     checks = SChainChecks(schain_name, node_id, schain_record=schain_record)
-    if checks.container or is_exited(
+    if checks.skaled_container.status or is_exited(
         schain_name,
         container_type=ContainerType.schain,
         dutils=dutils
     ):
         remove_schain_container(schain_name, dutils=dutils)
-    if checks.volume:
+    if checks.volume.status:
         remove_schain_volume(schain_name, dutils=dutils)
-    if checks.firewall_rules:
+    if checks.firewall_rules.status:
         remove_firewall_rules(schain_name)
     if not DISABLE_IMA:
-        if checks.ima_container or is_exited(
+        if checks.ima_container.status or is_exited(
             schain_name,
             container_type=ContainerType.ima,
             dutils=dutils
         ):
             remove_ima_container(schain_name, dutils=dutils)
-    if checks.config_dir:
+    if checks.config_dir.status:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
 

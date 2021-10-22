@@ -117,7 +117,7 @@ class SChainRecord(BaseModel):
     def set_first_run(self, val):
         logger.info(f'Changing first_run for {self.name} to {val}')
         self.first_run = val
-        self.save()
+        self.save(only=[SChainRecord.first_run])
 
     def set_repair_mode(self, value):
         logger.info(f'Changing repair_mode for {self.name} to {value}')
@@ -188,12 +188,12 @@ def set_schains_monitor_id():
 
 
 def upsert_schain_record(name):
-    if not SChainRecord.added(name):
-        logger.debug(f'Could not find sChain record: {name}, going to add')
-        schain_record, _ = SChainRecord.add(name)
-    else:
-        logger.debug(f'Getting sChain record by name: {name}')
-        schain_record = SChainRecord.get_by_name(name)
+    # if not SChainRecord.added(name):
+    #     logger.debug(f'Could not find sChain record: {name}, going to add')
+    #     schain_record, _ = SChainRecord.add(name)
+    # else:
+    logger.debug(f'Getting sChain record by name: {name}')
+    schain_record = SChainRecord.get_by_name(name)
 
     if not schain_record:
         logger.error(f'schain_record is None for {name}')
@@ -205,6 +205,12 @@ def mark_schain_deleted(name):
     if SChainRecord.added(name):
         schain_record = SChainRecord.get_by_name(name)
         schain_record.set_deleted()
+
+
+def set_first_run(name, value):
+    if SChainRecord.added(name):
+        schain_record = SChainRecord.get_by_name(name)
+        schain_record.set_first_run(value)
 
 
 def get_schains_names(include_deleted=False):

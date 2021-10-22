@@ -19,5 +19,5 @@
 
 # flake8: noqa: E402
 
-from core.schains.dkg.main import safe_run_dkg
+from core.schains.dkg.main import safe_run_dkg, run_dkg
 from core.schains.dkg.utils import DkgError

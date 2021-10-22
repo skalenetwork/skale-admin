@@ -7,13 +7,16 @@ import pytest
 import requests
 
 from core.node_config import NodeConfig
-from core.schains.monitor import (check_schain_rotated,
-                                  cleanup_schain_docker_entity,
-                                  monitor_ima_container,
-                                  monitor_schain,
-                                  monitor_schain_container,
-                                  monitor_schain_rpc,
-                                  monitor_sync_schain_container, monitor_ima)
+from core.schains.monitor.main import (
+    check_schain_rotated,
+    cleanup_schain_docker_entity,
+    monitor_ima_container,
+    monitor_schain,
+    monitor_schain_container,
+    monitor_schain_rpc,
+    monitor_sync_schain_container,
+    monitor_ima
+)
 from core.schains.helper import get_schain_rotation_filepath
 from core.schains.runner import get_container_name
 from tests.utils import get_schain_contracts_data

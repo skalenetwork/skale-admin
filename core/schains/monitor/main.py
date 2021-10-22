@@ -36,6 +36,9 @@ from tools.configs import BACKUP_RUN
 from web.models.schain import upsert_schain_record, SChainRecord
 
 
+SCHAIN_MONITOR_SLEEP_INTERVAL = 60
+# SCHAIN_MONITOR_SLEEP_INTERVAL = 500 TODO
+
 logger = logging.getLogger(__name__)
 
 
@@ -77,6 +80,11 @@ def get_monitor_type(
 
 def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
     p = get_log_prefix(schain["name"])
+
+    def post_monitor_sleep():
+        logger.info(f'{p} monitor completed, sleeping for {SCHAIN_MONITOR_SLEEP_INTERVAL}s...')
+        time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
+
     try:
         logger.info(f'{p} monitor created')
         reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
@@ -109,7 +117,8 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
                 checks=checks
             )
             monitor.run()
+            post_monitor_sleep()
     except Exception:
         logger.exception(f'{p} monitor failed')
     finally:
-        time.sleep(30)  # todo: change sleep interval
+        post_monitor_sleep()

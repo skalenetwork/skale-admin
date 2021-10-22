@@ -148,7 +148,7 @@ class SChainChecks:
             'config': self.config.status,
             'volume': self.volume.status,
             'firewall_rules': self.firewall_rules.status,
-            'container': self.container.status,
+            'container': self.skaled_container.status,
             'exit_code_ok': self.exit_code_ok.status,
             'rpc': self.rpc.status,
             'blocks': self.blocks.status

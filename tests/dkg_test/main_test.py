@@ -22,7 +22,7 @@ from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from core.schains.cleaner import remove_schain_container
 from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.dkg import run_dkg
-from core.schains.config.dir import init_schain_dir
+from core.schains.config.dir import init_schain_config_dir
 from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (generate_random_node_data,
@@ -218,7 +218,7 @@ def run_node_dkg(opts):
     schain_name = opts['schain_name']
     node_id = opts['node_id']
 
-    init_schain_dir(schain_name)
+    init_schain_config_dir(schain_name)
     dkg_results = run_dkg(skale, schain_name, opts['node_id'], sgx_key_name)
     print(f'=========================\nDKG DONE: node_id: {node_id} {dkg_results}')
 
