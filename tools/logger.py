@@ -74,24 +74,25 @@ class HidingFormatter:
 
 
 def init_logger(
-    log_file_path,
-    log_format,
     base_formatter,
+    log_format,
+    log_file_path=None,
     debug_file_path=None
 ):
     handlers = []
 
     base_formatter = base_formatter(log_format)
     formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
-    f_handler = RotatingFileHandler(
-        log_file_path,
-        maxBytes=LOG_FILE_SIZE_BYTES,
-        backupCount=LOG_BACKUP_COUNT
-    )
+    if log_file_path:
+        f_handler = RotatingFileHandler(
+            log_file_path,
+            maxBytes=LOG_FILE_SIZE_BYTES,
+            backupCount=LOG_BACKUP_COUNT
+        )
 
-    f_handler.setFormatter(formatter)
-    f_handler.setLevel(logging.INFO)
-    handlers.append(f_handler)
+        f_handler.setFormatter(formatter)
+        f_handler.setLevel(logging.INFO)
+        handlers.append(f_handler)
 
     stream_handler = StreamHandler(sys.stderr)
     stream_handler.setFormatter(formatter)
@@ -110,8 +111,8 @@ def init_logger(
 
 
 def init_admin_logger():
-    init_logger(ADMIN_LOG_PATH, ADMIN_LOG_FORMAT, Formatter, DEBUG_LOG_PATH)
+    init_logger(Formatter, ADMIN_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
 
 
 def init_api_logger():
-    init_logger(API_LOG_PATH, API_LOG_FORMAT, RequestFormatter)
+    init_logger(RequestFormatter, API_LOG_FORMAT, API_LOG_PATH)

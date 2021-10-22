@@ -40,7 +40,7 @@ def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
     try:
         dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
     except DkgError as e:
-        logger.error(e)
+        logger.exception(e)
         channel_started_time = skale.dkg.get_channel_started_time(
             skale.schains.name_to_group_id(schain_name)
         )
@@ -51,14 +51,8 @@ def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
     return dkg_client
 
 
-def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
-    dkg_client = get_dkg_client(
-        node_id,
-        schain_name,
-        skale,
-        sgx_key_name,
-        rotation_id
-    )
+def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
+    skale, schain_name = dkg_client.skale, dkg_client.schain_name
     n = dkg_client.n
 
     channel_started_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
@@ -126,18 +120,6 @@ def init_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
         return dkg_client
 
 
-def restore_bls(skale, schain_name, node_id, sgx_key_name, rotation_id=0):
-    dkg_client = get_dkg_client(
-        node_id,
-        schain_name,
-        skale,
-        sgx_key_name,
-        rotation_id
-    )
-    dkg_client.fetch_all_broadcasted_data()
-    return dkg_client
-
-
 def is_last_dkg_finished(skale, schain_name):
     schain_index = skale.schains.name_to_group_id(schain_name)
     num_of_nodes = len(get_nodes_for_schain(skale, schain_name))
@@ -165,15 +147,10 @@ def safe_run_dkg(
     keys_data, status = None, None
     dkg_client = None
     try:
+        dkg_client = get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
         if is_last_dkg_finished(skale, schain_name):
-            logger.info(f'Dkg for {schain_name} is completed. Restoring keys')
-            dkg_client = restore_bls(
-                skale,
-                schain_name,
-                node_id,
-                sgx_key_name,
-                rotation_id
-            )
+            logger.info(f'Dkg for {schain_name} is completed. Fetching data')
+            dkg_client.fetch_all_broadcasted_data()
             status = DKGStatus.DONE
         elif skale.dkg.is_channel_opened(
             skale.schains.name_to_group_id(schain_name)
@@ -185,13 +162,7 @@ def safe_run_dkg(
                 status = DKGStatus.FAILED
             else:
                 status = DKGStatus.IN_PROGRESS
-                dkg_client = init_bls(
-                    skale,
-                    schain_name,
-                    node_id,
-                    sgx_key_name,
-                    rotation_id
-                )
+                init_bls(dkg_client, node_id, sgx_key_name, rotation_id)
     except DkgError as e:
         logger.info(f'sChain {schain_name} DKG procedure failed with {e}')
         status = DKGStatus.FAILED
@@ -206,9 +177,9 @@ def safe_run_dkg(
                 f'sChain {schain_name} DKG failed during key generation, err {e}')
             status = DKGStatus.KEY_GENERATION_ERROR
 
-    # TODO: Handle KEY_GENERATION_ERROR overwritting
     if keys_data:
         status = DKGStatus.DONE
     else:
-        status = DKGStatus.FAILED
+        if status != DKGStatus.KEY_GENERATION_ERROR:
+            status = DKGStatus.FAILED
     return DKGResult(keys_data=keys_data, status=status)

@@ -60,11 +60,10 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
 
         node_ids_contract[node["id"]] = i
         node_ids_dkg[i] = node["id"]
-
         public_keys[i] = node["publicKey"]
 
     if node_id_dkg == -1:
-        raise DkgError(f'sChain: {schain_name}:'
+        raise DkgError(f'sChain: {schain_name}: {node_id}'
                        'Initialization failed, nodeID not found for schain.')
     dkg_client = DKGClient(
         node_id_dkg, node_id, skale, t, n, schain_name,
@@ -257,6 +256,7 @@ def check_no_complaints(dkg_client):
 
 
 def wait_for_fail(skale, schain_name, channel_started_time, reason=""):
+    logger.info(f'sChain: {schain_name}. Will wait for FailedDkg event')
     start_time = get_latest_block_timestamp(skale)
     dkg_timeout = skale.constants_holder.get_dkg_timeout()
     group_index = skale.schains.name_to_group_id(schain_name)

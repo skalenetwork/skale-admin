@@ -1,8 +1,5 @@
 """
 Test for dkg procedure using SGX keys
-
-Usage:
-SCHAIN_TYPE=test2/test4/tiny SGX_CERTIFICATES_FOLDER=./tests/dkg_test/ SGX_SERVER_URL=[SGX_SERVER_URL] ENDPOINT=[ENDPOINT] RUNNING_ON_HOST=True SKALE_DIR_HOST=~/.skale python tests/dkg_test/main_test.py  # noqa
 """
 import logging
 import os
@@ -13,10 +10,8 @@ from concurrent.futures import ThreadPoolExecutor as Executor
 import pytest
 import warnings
 from skale import Skale
-from skale.utils.helper import init_default_logger
 from skale.utils.account_tools import send_ether
 from skale.wallets import SgxWallet
-from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.schains.cleaner import remove_schain_container
@@ -25,12 +20,17 @@ from core.schains.dkg import is_last_dkg_finished, safe_run_dkg
 from core.schains.helper import init_schain_dir
 from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
-from tests.utils import (generate_random_node_data,
-                         generate_random_schain_data, init_web3_skale)
+from tests.utils import (
+    generate_random_node_data,
+    generate_random_schain_data,
+    init_skale_from_wallet,
+    init_web3_skale
+)
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.bls.dkg_utils import init_dkg_client, generate_bls_keys
 from tools.bls.dkg_client import generate_bls_key_name
+# from tools.logger import init_logger, Formatter
 
 warnings.filterwarnings("ignore")
 
@@ -39,6 +39,9 @@ TEST_SRW_FUND_VALUE = 3000000000000000000
 
 owner_skale = init_web3_skale()
 
+log_format = '[%(asctime)s][%(levelname)s] - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
+
+# init_logger(Formatter, log_format)
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +86,7 @@ def link_addresses_to_validator(skale, wallets):
         link_node_address(skale, wallet)
 
 
-def register_node(skale, wallet):
-    skale.wallet = wallet
+def register_node(skale):
     ip, public_ip, port, name = generate_random_node_data()
     port = 10000
     skale.manager.create_node(
@@ -100,17 +102,25 @@ def register_node(skale, wallet):
     return {
         'node': skale.nodes.get_by_name(name),
         'node_id': node_id,
-        'wallet': wallet
+        'wallet': skale.wallet
     }
 
 
-def register_nodes(skale, wallets):
-    base_wallet = skale.wallet
+@pytest.fixture
+def other_maintenance(skale):
+    nodes = skale.nodes.get_active_node_ids()
+    for nid in nodes:
+        skale.nodes.set_node_in_maintenance(nid)
+    yield
+    for nid in nodes:
+        skale.nodes.remove_node_from_in_maintenance(nid)
+
+
+def register_nodes(skale_instances):
     nodes = [
-        register_node(skale, wallet)
-        for wallet in wallets
+        register_node(sk)
+        for sk in skale_instances
     ]
-    skale.wallet = base_wallet
     return nodes
 
 
@@ -175,20 +185,16 @@ def check_config(nodes, node_data, config):
     check_schain_info(nodes, config['skaleConfig']['sChain'])
 
 
-def run_dkg_all(skale, schain_name, nodes):
+def run_dkg_all(skale, skale_sgx_instances, schain_name, nodes):
     futures, results = [], []
     nodes.sort(key=lambda x: x['node_id'])
     with Executor(max_workers=MAX_WORKERS) as executor:
-        for i, node_data in enumerate(nodes):
-            opts = {
-                'index': i,
-                'skale': skale,
-                'schain_name': schain_name,
-                'node_id': node_data['node_id'],
-                'wallet': node_data['wallet'],
-                'results': results
-            }
-            futures.append(executor.submit(run_node_dkg, opts))
+        for i, (node_skale, node_data) in \
+                enumerate(zip(skale_sgx_instances, nodes)):
+            futures.append(executor.submit(
+                run_node_dkg,
+                node_skale, schain_name, i, node_data['node_id']
+            ))
     for future in futures:
         results.append(future.result())
 
@@ -209,28 +215,31 @@ def run_dkg_all(skale, schain_name, nodes):
     # todo: add some additional checks that dkg is finished successfully
 
 
-def run_node_dkg(opts):
-    timeout = opts['index'] * 5  # diversify start time for all nodes
-    logger.info(f'Node {opts["node_id"]} going to sleep {timeout} seconds')
+def run_node_dkg(skale, schain_name, index, node_id):
+    timeout = index * 5  # diversify start time for all nodes
+    logger.info(f'Node {node_id} going to sleep {timeout} seconds')
     time.sleep(timeout)
-    skale = skale_fixture()
-    skale.wallet = opts['wallet']
     sgx_key_name = skale.wallet._key_name
-    schain_name = opts['schain_name']
 
     init_schain_dir(schain_name)
     rotation_id = skale.schains.get_last_rotation_id(schain_name)
     dkg_result = safe_run_dkg(
         skale,
         schain_name,
-        opts['node_id'],
+        node_id,
         sgx_key_name,
         rotation_id
     )
     return dkg_result
 
 
-def check_fetch_broadcasted_data(skale, schain_name, nodes, bls_public_keys, all_public_keys):
+def check_fetch_broadcasted_data(
+    skale,
+    schain_name,
+    nodes,
+    bls_public_keys,
+    all_public_keys
+):
     futures, results = [], []
     nodes.sort(key=lambda x: x['node_id'])
     with Executor(max_workers=MAX_WORKERS) as executor:
@@ -309,11 +318,11 @@ def cleanup_dkg(schain_creation_data):
     yield
     error = None
     schain_name, _ = schain_creation_data
-    try:
-        cleanup_contracts_from_dkg_items(schain_name)
-    except Exception as err:
-        print(f'Cleaning dkg items from contracts failed {err}')
-        error = err
+    # try:
+    #     cleanup_contracts_from_dkg_items(schain_name)
+    # except Exception as err:
+    #     print(f'Cleaning dkg items from contracts failed {err}')
+    #     error = err
     try:
         cleanup_docker_items(schain_name)
     except Exception as err:
@@ -336,23 +345,82 @@ def schain_creation_data():
     return name, lifetime_seconds
 
 
-def test_init_bls(skale, schain_creation_data, cleanup_dkg):
-    schain_name, lifetime = schain_creation_data
-    cleanup_nodes_schains(skale)
+@pytest.fixture
+def sgx_wallets(skale):
     wallets = generate_sgx_wallets(skale, N_OF_NODES)
     transfer_eth_to_wallets(skale, wallets)
     link_addresses_to_validator(skale, wallets)
-    nodes = register_nodes(skale, wallets)
+    return wallets
+
+
+@pytest.fixture
+def skale_sgx_instances(skale, sgx_wallets):
+    return [
+        init_skale_from_wallet(w)
+        for w in sgx_wallets
+    ]
+
+
+@pytest.fixture
+def nodes(skale, skale_sgx_instances, other_maintenance):
+    nodes = register_nodes(skale_sgx_instances)
+    try:
+        yield nodes
+    finally:
+        return
+        nids = [node['node_id'] for node in nodes]
+        remove_nodes(skale, nids)
+
+
+@pytest.fixture
+def schain(schain_creation_data, skale, nodes):
+    schain_name, lifetime = schain_creation_data
     create_schain(skale, schain_name, lifetime)
+    try:
+        yield schain_name
+    finally:
+        remove_schain(skale, schain_name)
+
+
+def remove_schain(skale, schain_name):
+    print('Cleanup nodes and schains')
+    if schain_name is not None:
+        skale.manager.delete_schain(schain_name, wait_for=True)
+
+
+def remove_nodes(skale, nodes):
+    for node_id in nodes:
+        skale.manager.node_exit(node_id, wait_for=True)
+
+
+def test_dkg(
+    skale,
+    schain_creation_data,
+    skale_sgx_instances,
+    nodes,
+    schain,
+    cleanup_dkg
+):
+    skale.constants_holder.set_complaint_timelimit(30000000000)
+    schain_name, _ = schain_creation_data
     assert not is_last_dkg_finished(skale, schain_name)
-    bls_public_keys, all_public_keys = run_dkg_all(skale, schain_name, nodes)
+    bls_public_keys, all_public_keys = run_dkg_all(
+        skale,
+        skale_sgx_instances,
+        schain_name,
+        nodes
+    )
     assert is_last_dkg_finished(skale, schain_name)
-    bls_public_keys, all_public_keys = run_dkg_all(skale, schain_name, nodes)
+    # Rerun dkg to regenerate keys
+    bls_public_keys, all_public_keys = run_dkg_all(
+        skale,
+        skale_sgx_instances,
+        schain_name,
+        nodes
+    )
     assert is_last_dkg_finished(skale, schain_name)
-    # check_fetch_broadcasted_data(skale, schain_name, nodes, bls_public_keys, all_public_keys)
 
 
-if __name__ == "__main__":
-    init_default_logger()
-    skale = skale_fixture()
-    test_init_bls(owner_skale)
+@pytest.mark.skip
+def test_generate_bls_keys(skale):
+    init_dkg_client(skale)

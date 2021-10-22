@@ -205,9 +205,8 @@ class DKGClient:
                 f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
             )
 
-        is_broadcast_possible = self.skale.dkg.is_broadcast_possible(
-            self.group_index, self.node_id_contract, self.skale.wallet.address
-        )
+        is_broadcast_possible = self.skale.dkg.contract.functions.isBroadcastPossible(
+            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
 
         channel_opened = self.is_channel_opened()
         if not is_broadcast_possible or not channel_opened:
@@ -300,6 +299,7 @@ class DKGClient:
         return self.sgx.calculate_all_bls_public_keys(self.incoming_verification_vector)
 
     def alright(self):
+        logger.info(f'sChain {self.schain_name} sending alright transaction')
         is_alright_possible = self.skale.dkg.is_alright_possible(
             self.group_index, self.node_id_contract, self.skale.wallet.address)
 

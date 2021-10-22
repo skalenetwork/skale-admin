@@ -172,6 +172,10 @@ def run_simple_ima_container(schain: dict, dutils: DockerUtils):
 def init_web3_skale() -> Skale:
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
+    return init_skale_from_wallet(wallet)
+
+
+def init_skale_from_wallet(wallet) -> Skale:
     return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
 
 
