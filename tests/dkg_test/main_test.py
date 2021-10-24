@@ -7,6 +7,7 @@ import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor as Executor
 
+import mock
 import pytest
 import warnings
 from skale import Skale
@@ -16,7 +17,7 @@ from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.schains.cleaner import remove_schain_container
 # from core.schains.config.generator import generate_schain_config_with_skale
-from core.schains.dkg import is_last_dkg_finished, safe_run_dkg
+from core.schains.dkg import get_dkg_client, is_last_dkg_finished, safe_run_dkg
 from core.schains.helper import init_schain_dir
 from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
@@ -28,8 +29,12 @@ from tests.utils import (
 )
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.bls.dkg_utils import init_dkg_client, generate_bls_keys
-from tools.bls.dkg_client import generate_bls_key_name
+from tools.bls.dkg_utils import (
+    DKGKeyGenerationError,
+    init_dkg_client,
+    generate_bls_keys
+)
+from tools.bls.dkg_client import DkgError, generate_bls_key_name
 # from tools.logger import init_logger, Formatter
 
 warnings.filterwarnings("ignore")
@@ -44,6 +49,10 @@ log_format = '[%(asctime)s][%(levelname)s] - %(threadName)s - %(name)s:%(lineno)
 # init_logger(Formatter, log_format)
 
 logger = logging.getLogger(__name__)
+
+
+class DkgTestError(Exception):
+    pass
 
 
 def generate_sgx_wallets(skale, n_of_keys):
@@ -186,7 +195,7 @@ def check_config(nodes, node_data, config):
 
 
 def run_dkg_all(skale, skale_sgx_instances, schain_name, nodes):
-    futures, results = [], []
+    futures = []
     nodes.sort(key=lambda x: x['node_id'])
     with Executor(max_workers=MAX_WORKERS) as executor:
         for i, (node_skale, node_data) in \
@@ -195,24 +204,8 @@ def run_dkg_all(skale, skale_sgx_instances, schain_name, nodes):
                 run_node_dkg,
                 node_skale, schain_name, i, node_data['node_id']
             ))
-    for future in futures:
-        results.append(future.result())
 
-    bls_public_keys = []
-    all_public_keys = []
-    for node_data, result in zip(nodes, results):
-        assert result.status.is_done()
-        keys_data = result.keys_data
-        assert keys_data is not None
-        bls_public_keys.append(keys_data['public_key'])
-        all_public_keys.append(keys_data['bls_public_keys'])
-        # check_config(nodes, node_data, result['config'])
-
-    assert len(results) == N_OF_NODES
-    gid = skale.schains.name_to_id(schain_name)
-    assert skale.dkg.is_last_dkg_successful(gid)
-    return bls_public_keys, all_public_keys
-    # todo: add some additional checks that dkg is finished successfully
+    return [f.result() for f in futures]
 
 
 def run_node_dkg(skale, schain_name, index, node_id):
@@ -401,26 +394,63 @@ def test_dkg(
     schain,
     cleanup_dkg
 ):
-    skale.constants_holder.set_complaint_timelimit(30000000000)
+    # skale.constants_holder.set_complaint_timelimit(30000000000)
     schain_name, _ = schain_creation_data
     assert not is_last_dkg_finished(skale, schain_name)
-    bls_public_keys, all_public_keys = run_dkg_all(
+    results = run_dkg_all(
         skale,
         skale_sgx_instances,
         schain_name,
         nodes
     )
+    assert len(results) == N_OF_NODES
     assert is_last_dkg_finished(skale, schain_name)
+
+    bls_public_keys, all_public_keys = [], []
+    for node_data, result in zip(nodes, results):
+        assert result.status.is_done()
+        keys_data = result.keys_data
+        assert keys_data is not None
+        bls_public_keys.append(keys_data['public_key'])
+        all_public_keys.append(keys_data['bls_public_keys'])
+        # check_config(nodes, node_data, result['config'])
+
+    gid = skale.schains.name_to_id(schain_name)
+    assert skale.dkg.is_last_dkg_successful(gid)
+
     # Rerun dkg to regenerate keys
-    bls_public_keys, all_public_keys = run_dkg_all(
+    results = run_dkg_all(
         skale,
         skale_sgx_instances,
         schain_name,
         nodes
     )
+    assert all([r.status.is_done() for r in results])
     assert is_last_dkg_finished(skale, schain_name)
 
 
-@pytest.mark.skip
-def test_generate_bls_keys(skale):
-    init_dkg_client(skale)
+def test_failed_get_dkg_client(skale):
+    skale.schains_internal.get_node_ids_for_schain = mock.Mock(return_value=[])
+    with pytest.raises(DkgError):
+        get_dkg_client(
+            node_id=0,
+            schain_name='fake-schain',
+            skale=skale,
+            sgx_key_name='fake-sgx-keyname',
+            rotation_id=0
+        )
+
+
+def test_failed_generate_bls_keys(skale):
+    skale.schains_internal.get_node_ids_for_schain = mock.Mock(return_value=[])
+    skale.key_storage.get_common_public_key = mock.Mock(
+        side_effect=DkgTestError('Key storage operation failed')
+    )
+    dkg_client = get_dkg_client(
+        node_id=0,
+        schain_name='fake-schain',
+        skale=skale,
+        sgx_key_name='faike-sgx-keyname'
+    )
+    with pytest.raises(DKGKeyGenerationError):
+        generate_bls_keys(dkg_client)
