@@ -1,4 +1,3 @@
-import json
 from time import sleep
 
 from skale.skale_manager import spawn_skale_manager_lib
@@ -6,18 +5,19 @@ from skale.skale_manager import spawn_skale_manager_lib
 from core.node import Node
 from core.schains.checks import check_endpoint_alive
 from core.schains.config.helper import get_skaled_http_address
+from core.schains.dkg import DKGResult
+from core.schains.dkg_status import DKGStatus
 from core.schains.runner import run_schain_container, is_exited
 from core.schains.volume import init_data_volume
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
-from tests.utils import generate_random_schain_data
+from tests.utils import generate_random_schain_data, init_skale_from_wallet
 from tests.dkg_test.main_test import (create_schain,
                                       generate_sgx_wallets,
                                       transfer_eth_to_wallets,
                                       link_addresses_to_validator,
                                       register_nodes, run_dkg_all)
-from tools.bls.dkg_utils import get_secret_key_share_filepath
 
 
 TIMEOUT = 240
@@ -67,12 +67,9 @@ class NodeConfigMock:
         }
 
 
-def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
-    path = get_secret_key_share_filepath(schain_name, rotation_id)
-    with open(path, 'w') as file:
-        file.write(json.dumps(SECRET_KEY_INFO))
+def safe_run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
     import_bls_key()
-    return True
+    return DKGResult(status=DKGStatus.DONE, keys_data=SECRET_KEY_INFO)
 
 
 def init_data_volume_mock(schain, dutils=None):
@@ -99,27 +96,28 @@ def set_up_nodes(skale, nodes_number):
     wallets = generate_sgx_wallets(skale, nodes_number)
     transfer_eth_to_wallets(skale, wallets)
     link_addresses_to_validator(skale, wallets)
-    nodes_data = register_nodes(skale, wallets)
-    return nodes_data
+    skale_instances = [init_skale_from_wallet(wallet) for wallet in wallets]
+    nodes_data = register_nodes(skale_instances)
+    return nodes_data, skale_instances
 
 
 def set_up_rotated_schain(skale, schain_name=None):
-    nodes_data = set_up_nodes(skale, 2)
+    nodes_data, skale_instances = set_up_nodes(skale, 2)
 
     _, lifetime_seconds, new_name = generate_random_schain_data()
     schain_name = new_name
     create_schain(skale, schain_name, lifetime_seconds)
-    run_dkg_all(skale, schain_name, nodes_data)
+    run_dkg_all(skale, skale_instances, schain_name, nodes_data)
 
-    nodes_data.append(set_up_nodes(skale, 1)[0])
+    [new_node_data], [new_skale_instance] = set_up_nodes(skale, 1)
+    nodes_data.append(new_node_data)
+    skale_instances.append(new_skale_instance)
     nodes = []
-    for node in nodes_data:
-        skale_lib = spawn_skale_manager_lib(skale)
-        skale_lib.wallet = node['wallet']
+    for node, node_skale in zip(nodes_data, skale_instances):
         config = NodeConfigMock()
         config.id = node['node_id']
-        config.sgx_key_name = skale_lib.wallet.key_name
-        nodes.append(Node(skale_lib, config))
+        config.sgx_key_name = node_skale.wallet.key_name
+        nodes.append(Node(node_skale, config))
 
     return nodes, schain_name
 
