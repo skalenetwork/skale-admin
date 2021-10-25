@@ -121,8 +121,8 @@ class BaseMonitor(ABC):
             return initial_status
         return _monitor_block
 
-    def _monitor_runner(func):
-        def monitor_runner(self):
+    def monitor_runner(func):
+        def _monitor_runner(self):
             logger.info(arguments_list_string({
                 'Monitor type': type(self).__name__,
                 'Rotation data': self.rotation_data,
@@ -138,7 +138,7 @@ class BaseMonitor(ABC):
             self.log_executed_blocks()
             logger.info(f'{self.p} finished monitor runner')
             return res
-        return monitor_runner
+        return _monitor_runner
 
     @abstractmethod
     def run(self):
@@ -246,7 +246,7 @@ class BaseMonitor(ABC):
 
     @monitor_block
     def ima_container(self) -> None:
-        initial_status = self.checks.ima_container
+        initial_status = self.checks.ima_container.status
         if not DISABLE_IMA and not self.checks.ima_container:
             monitor_ima_container(self.skale_ima, self.schain, dutils=self.dutils)
         else:
@@ -264,5 +264,5 @@ class BaseMonitor(ABC):
         logger.info(arguments_list_string(
             self.executed_blocks, f'Finished monitor runner - {self.name}'))
 
-    _monitor_runner = staticmethod(_monitor_runner)
+    monitor_runner = staticmethod(monitor_runner)
     monitor_block = staticmethod(monitor_block)

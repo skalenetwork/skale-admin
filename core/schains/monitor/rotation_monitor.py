@@ -67,7 +67,7 @@ class RotationMonitor(BaseMonitor):
         self.dkg()
         self.rotation_request()
 
-    @BaseMonitor._monitor_runner
+    @BaseMonitor.monitor_runner
     def run(self):
         if self._is_new_node():
             return self.new_node()

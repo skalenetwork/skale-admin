@@ -4,7 +4,7 @@ from core.schains.monitor import BaseMonitor
 
 
 class BaseTestMonitor(BaseMonitor):
-    @BaseMonitor._monitor_runner
+    @BaseMonitor.monitor_runner
     def run(self):
         return 1234
 
@@ -13,7 +13,7 @@ class BaseTestMonitor(BaseMonitor):
 
 
 class CrashingTestMonitor(BaseMonitor):
-    @BaseMonitor._monitor_runner
+    @BaseMonitor.monitor_runner
     def run(self):
         raise Exception('Something went wrong')
 

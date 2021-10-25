@@ -32,7 +32,7 @@ class PostRotationMonitor(BaseMonitor):
     PostRotationMonitor be executed for the sChain on the staying node when rotation is complete.
     This type of monitor reloads skaled container.
     """
-    @BaseMonitor._monitor_runner
+    @BaseMonitor.monitor_runner
     def run(self):
         logger.info(f'{self.p} was stopped after rotation. Going to restart')
         remove_firewall_rules(self.name)

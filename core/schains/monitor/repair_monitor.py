@@ -42,7 +42,7 @@ class RepairMonitor(BaseMonitor):
     def disable_repair_mode(self) -> None:
         self.schain_record.set_repair_mode(False)
 
-    @BaseMonitor._monitor_runner
+    @BaseMonitor.monitor_runner
     def run(self):
         logger.warning(f'REPAIR MODE was toggled - \
 repair_mode: {self.schain_record.repair_mode}, exit_code_ok: {self.checks.exit_code_ok.status}')

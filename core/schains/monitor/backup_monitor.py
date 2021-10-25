@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class BackupMonitor(BaseMonitor):
-    @BaseMonitor._monitor_runner
+    @BaseMonitor.monitor_runner
     def run(self):
         self.config_dir()
         self.dkg()
