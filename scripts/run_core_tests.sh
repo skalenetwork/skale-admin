@@ -14,7 +14,6 @@ run_sgx_simulator $SGX_WALLET_TAG
 bash scripts/run_redis.sh
 
 python tests/prepare_data.py
-# py.test --cov=core.schains.dkg tests/dkg_test/main_test.py  --cov-report term-missing --ignore=tests/firewall --ignore=tests/rotation_test $@
 py.test tests/ --ignore=tests/firewall --ignore=tests/rotation_test $@
 tests_cleanup
 scripts/run_firewall_test.sh
