@@ -53,7 +53,7 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
     node_ids_dkg = dict()
     for i, node in enumerate(schain_nodes):
         if not len(node):
-            raise DkgError(f'sChain: {schain_name}:'
+            raise DkgError(f'sChain: {schain_name}: '
                            'Initialization failed, node info is empty.')
         if node['id'] == node_id:
             node_id_dkg = i
@@ -63,7 +63,7 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
         public_keys[i] = node["publicKey"]
 
     if node_id_dkg == -1:
-        raise DkgError(f'sChain: {schain_name}: {node_id}'
+        raise DkgError(f'sChain: {schain_name}: {node_id} '
                        'Initialization failed, nodeID not found for schain.')
     dkg_client = DKGClient(
         node_id_dkg, node_id, skale, t, n, schain_name,

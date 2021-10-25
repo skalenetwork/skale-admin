@@ -220,36 +220,6 @@ def remove_nodes(skale, nodes):
         skale.manager.node_exit(node_id, wait_for=True)
 
 
-@pytest.mark.skip
-def test_failed_get_dkg_client(skale):
-    skale.schains_internal.get_node_ids_for_schain = mock.Mock(return_value=[])
-    with pytest.raises(DkgError):
-        get_dkg_client(
-            node_id=0,
-            schain_name='fake-schain',
-            skale=skale,
-            sgx_key_name='fake-sgx-keyname',
-            rotation_id=0
-        )
-
-
-@pytest.mark.skip
-def test_failed_generate_bls_keys(skale):
-    skale.schains_internal.get_node_ids_for_schain = mock.Mock(return_value=[])
-    skale.key_storage.get_common_public_key = mock.Mock(
-        side_effect=DkgTestError('Key storage operation failed')
-    )
-    dkg_client = get_dkg_client(
-        node_id=0,
-        schain_name='fake-schain',
-        skale=skale,
-        sgx_key_name='faike-sgx-keyname',
-        rotation_id=0
-    )
-    with pytest.raises(DKGKeyGenerationError):
-        generate_bls_keys(dkg_client)
-
-
 class TestDKG:
     @pytest.fixture(scope='class')
     def skale(self):
@@ -328,7 +298,6 @@ class TestDKG:
             assert keys_data is not None
             bls_public_keys.append(keys_data['public_key'])
             all_public_keys.append(keys_data['bls_public_keys'])
-            # check_config(nodes, node_data, result['config'])
 
         gid = skale.schains.name_to_id(schain_name)
         assert skale.dkg.is_last_dkg_successful(gid)
@@ -351,3 +320,49 @@ class TestDKG:
         )
         assert all([r.status.is_done() for r in results])
         assert is_last_dkg_finished(skale, schain_name)
+
+    @pytest.fixture
+    def no_ids_for_schain_skale(self, skale):
+        get_node_ids_f = skale.schains_internal.get_node_ids_for_schain
+        try:
+            skale.t
+            skale.schains_internal.get_node_ids_for_schain = mock.Mock(
+                return_value=[]
+            )
+
+            skale.constants_holder.get_dkg_timeout = mock.Mock(return_value=2)
+            yield skale
+        finally:
+            skale.schains_internal.get_node_ids_for_schain = get_node_ids_f
+
+    def test_failed_get_dkg_client(self, no_ids_for_schain_skale):
+        skale = no_ids_for_schain_skale
+        with pytest.raises(DkgError):
+            get_dkg_client(
+                node_id=0,
+                schain_name='fake-schain',
+                skale=skale,
+                sgx_key_name='fake-sgx-keyname',
+                rotation_id=0
+            )
+
+    @pytest.mark.skip
+    def test_failed_generate_bls_keys(
+        self,
+        skale,
+        skale_sgx_instances,
+        nodes,
+        schain
+    ):
+        skale.key_storage.get_common_public_key = mock.Mock(
+            side_effect=DkgTestError('Key storage operation failed')
+        )
+        dkg_client = get_dkg_client(
+            node_id=nodes[0]['node_id'],
+            schain_name=schain,
+            skale=skale,
+            sgx_key_name=skale_sgx_instances[0],
+            rotation_id=0
+        )
+        with pytest.raises(DKGKeyGenerationError):
+            generate_bls_keys(dkg_client)

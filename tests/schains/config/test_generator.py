@@ -128,7 +128,6 @@ def check_schain_info(node_ids, schain_info):
         node_ids,
         schain_info['nodes']
     )):
-        print(index, nid)
         check_schain_node_info(nid, schain_node_info, index)
 
 
