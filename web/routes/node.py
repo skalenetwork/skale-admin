@@ -19,12 +19,10 @@
 
 import time
 import logging
-from decimal import Decimal
 from http import HTTPStatus
 
 import requests
 from flask import Blueprint, abort, g, request
-from web3 import Web3
 
 from core.node import Node
 from tools.helper import init_skale, get_endpoint_call_speed
@@ -67,15 +65,9 @@ def construct_node_bp():
         port = request.json.get('port')
         name = request.json.get('name')
         domain_name = request.json.get('domain_name')
-        gas_price = request.json.get('gas_price')
-        gas_limit = request.json.get('gas_limit')
-        skip_dry_run = request.json.get('skip_dry_run')
 
         if not public_ip:
             public_ip = ip
-
-        if gas_price is not None:
-            gas_price = Web3.toWei(Decimal(gas_price), 'gwei')
 
         node = Node(skale, g.config)
         res = node.register(
@@ -83,10 +75,7 @@ def construct_node_bp():
             public_ip=public_ip,
             port=port,
             name=name,
-            domain_name=domain_name,
-            gas_price=gas_price,
-            gas_limit=gas_limit,
-            skip_dry_run=skip_dry_run
+            domain_name=domain_name
         )
         if res['status'] != 'ok':
             return construct_err_response(
@@ -158,6 +147,7 @@ def construct_node_bp():
     def set_domain_name():
         logger.debug(request)
         domain_name = request.json['domain_name']
+
         skale = init_skale(g.wallet)
         node = Node(skale, g.config)
         res = node.set_domain_name(domain_name)

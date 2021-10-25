@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from decimal import Decimal
 
 from flask import Blueprint, g, request
 from skale.transactions.tools import send_eth_with_skale
@@ -48,10 +47,6 @@ def construct_wallet_bp():
         logger.debug(request)
         raw_address = request.json.get('address')
         eth_amount = request.json.get('amount')
-        gas_limit = request.json.get('gas_limit', None)
-        gas_price = request.json.get('gas_price', None)
-        if gas_price is not None:
-            gas_price = Web3.toWei(Decimal(gas_price), 'gwei')
         wei_amount = Web3.toWei(eth_amount, 'ether')
         if not raw_address:
             return construct_err_response('Address is empty')
@@ -60,13 +55,10 @@ def construct_wallet_bp():
         try:
             address = to_checksum_address(raw_address)
             logger.info(
-                f'Sending {eth_amount} wei to {address} with '
-                f'gas_price: {gas_price} Wei, '
-                f'gas_limit: {gas_limit}'
+                f'Sending {eth_amount} wei to {address}'
             )
             skale = init_skale(g.wallet)
-            send_eth_with_skale(skale, address, wei_amount,
-                                gas_limit=gas_limit, gas_price=gas_price)
+            send_eth_with_skale(skale, address, wei_amount)
         except Exception:
             logger.exception('Funds were not sent due to error')
             return construct_err_response(msg='Funds sending failed')
