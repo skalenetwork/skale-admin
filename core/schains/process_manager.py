@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
-import signal
 import logging
 from multiprocessing import Process
 
@@ -54,7 +53,7 @@ def pm_signal_handler(*args):
 
 
 def run_process_manager(skale, skale_ima, node_config):
-    signal.signal(signal.SIGTERM, pm_signal_handler)
+    # signal.signal(signal.SIGTERM, pm_signal_handler)
     logger.info('Process manager started')
     node_id = node_config.id
     node_info = node_config.all()

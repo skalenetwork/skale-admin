@@ -67,6 +67,10 @@ class NodeConfigMock:
         }
 
 
+def safe_run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id, schain_record):
+    return run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id)
+
+
 def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
     path = get_secret_key_share_filepath(schain_name, rotation_id)
     with open(path, 'w') as file:
