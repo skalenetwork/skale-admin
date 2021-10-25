@@ -15,8 +15,6 @@ from skale.utils.account_tools import send_ether
 from skale.wallets import SgxWallet
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
-from core.schains.cleaner import remove_schain_container
-# from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.dkg import get_dkg_client, is_last_dkg_finished, safe_run_dkg
 from core.schains.helper import init_schain_dir
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
@@ -30,7 +28,6 @@ from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.bls.dkg_utils import DKGKeyGenerationError, generate_bls_keys
 from tools.bls.dkg_client import DkgError
-# from tools.logger import init_logger, Formatter
 
 warnings.filterwarnings("ignore")
 
@@ -38,8 +35,6 @@ MAX_WORKERS = 5
 TEST_SRW_FUND_VALUE = 3000000000000000000
 
 log_format = '[%(asctime)s][%(levelname)s] - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
-
-# init_logger(Formatter, log_format)
 
 logger = logging.getLogger(__name__)
 
@@ -166,47 +161,9 @@ def create_schain(skale: Skale, name: str, lifetime_seconds: int) -> None:
     )
 
 
-def cleanup_contracts_from_dkg_items(skale: Skale, schain_name: str) -> None:
-    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
-    skale.manager.delete_schain(schain_name)
-    for node_id in node_ids:
-        skale.manager.node_exit(node_id)
-
-
-def cleanup_docker_items(schain_name: str) -> None:
-    remove_schain_container(schain_name)
-    # remove_schain_volume(schain_name)
-
-
-def cleanup_schain_configs(schain_name: str) -> None:
+def cleanup_schain_config(schain_name: str) -> None:
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
     subprocess.run(['rm', '-rf', schain_dir_path])
-
-
-@pytest.fixture
-def cleanup_dkg(skale, schain_creation_data):
-    yield
-    error = None
-    schain_name, _ = schain_creation_data
-    # try:
-    #     cleanup_contracts_from_dkg_items(skale, schain_name)
-    # except Exception as err:
-    #     print(f'Cleaning dkg items from contracts failed {err}')
-    #     error = err
-    try:
-        cleanup_docker_items(schain_name)
-    except Exception as err:
-        print(f'Cleanning schain docker items failed {err}')
-        error = err
-    try:
-        cleanup_schain_configs(schain_name)
-    except Exception as err:
-        print(f'Cleannuping schain config items failed {err}')
-        error = err
-
-    warnings.warn(f'Cleanup dkg failed with {error}')
-    # if error:
-    #     raise error
 
 
 def remove_schain(skale, schain_name):
@@ -271,7 +228,7 @@ class TestDKG:
             yield schain_name
         finally:
             remove_schain(skale, schain_name)
-            cleanup_schain_configs(schain_name)
+            cleanup_schain_config(schain_name)
 
     def test_regular_dkg(
         self,
