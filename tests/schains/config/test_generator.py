@@ -126,8 +126,8 @@ def check_schain_info(node_ids, schain_info):
     )
     for index, (nid, schain_node_info) in enumerate(zip(
         node_ids,
-        sorted(schain_info['nodes'], key=lambda x: x['nodeID']))
-    ):
+        schain_info['nodes']
+    )):
         print(index, nid)
         check_schain_node_info(nid, schain_node_info, index)
 

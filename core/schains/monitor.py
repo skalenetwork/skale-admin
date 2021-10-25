@@ -249,12 +249,12 @@ repair_mode: {schain_record.repair_mode}, exit_code_ok: {checks.exit_code_ok}')
             sgx_key_name=sgx_key_name,
             rotation_id=rotation_id
         )
-        # TODO: do once
         if dkg_result.status.is_done():
             save_dkg_results(
                 dkg_result.keys_data,
                 get_secret_key_share_filepath(name, rotation_id)
             )
+            # TODO: do once
             set_rotation_for_schain(schain_name=name, timestamp=finish_ts)
         schain_record.set_dkg_status(dkg_result.status)
 
