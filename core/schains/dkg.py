@@ -126,7 +126,7 @@ def is_last_dkg_finished(skale, schain_name):
     return skale.dkg.get_number_of_completed(schain_index) == num_of_nodes
 
 
-def save_dkg_results(dkg_results, filepath=None):
+def save_dkg_results(dkg_results, filepath):
     """Save DKG results to the JSON file on disk"""
     write_json(filepath, dkg_results)
 

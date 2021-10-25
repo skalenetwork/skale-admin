@@ -46,7 +46,7 @@ init_admin_logger()
 logger = logging.getLogger(__name__)
 
 INITIAL_SLEEP_INTERVAL = 135
-SLEEP_INTERVAL = 50
+SLEEP_INTERVAL = 200
 WORKER_RESTART_SLEEP_INTERVAL = 2
 
 
