@@ -20,6 +20,7 @@
 import time
 import logging
 from datetime import datetime
+from functools import wraps
 from abc import ABC, abstractmethod
 
 from skale import Skale, SkaleIma
@@ -74,6 +75,7 @@ class BaseMonitor(ABC):
         self.name = schain['name']
         self.node_config = node_config
         self.checks = checks
+        self.executed_blocks = {}
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
@@ -105,6 +107,20 @@ class BaseMonitor(ABC):
         if not is_checks_passed(checks_dict):
             notify_checks(self.name, self.node_config.all(), checks_dict)
 
+    def monitor_block(f):
+        @wraps(f)
+        def _monitor_block(self, *args, **kwargs):
+            ts = time.time()
+            initial_status = f(self, *args, **kwargs)
+            te = time.time()
+            self.executed_blocks[f.__name__] = {
+                'ts': ts,
+                'te': te,
+                'initial_status': initial_status
+            }
+            return initial_status
+        return _monitor_block
+
     def _monitor_runner(func):
         def monitor_runner(self):
             logger.info(arguments_list_string({
@@ -119,6 +135,7 @@ class BaseMonitor(ABC):
             self._upd_schain_record()
             res = func(self)
             self._upd_last_seen()
+            self.log_executed_blocks()
             logger.info(f'{self.p} finished monitor runner')
             return res
         return monitor_runner
@@ -127,14 +144,19 @@ class BaseMonitor(ABC):
     def run(self):
         pass
 
+    @monitor_block
     def config_dir(self) -> None:
-        if not self.checks.config_dir.status:
+        initial_status = self.checks.config_dir.status
+        if not initial_status:
             init_schain_config_dir(self.name)
         else:
             logger.info(f'{self.p} config_dir - ok')
+        return initial_status
 
+    @monitor_block
     def dkg(self) -> None:
-        if not self.checks.dkg.status:
+        initial_status = self.checks.dkg.status
+        if not initial_status:
             is_dkg_done = safe_run_dkg(
                 skale=self.skale,
                 schain_name=self.name,
@@ -148,9 +170,12 @@ class BaseMonitor(ABC):
                 raise DkgError(f'{self.p} DKG failed')
         else:
             logger.info(f'{self.p} dkg - ok')
+        return initial_status
 
+    @monitor_block
     def config(self, overwrite=False) -> None:
-        if not self.checks.config.status or overwrite:
+        initial_status = self.checks.config.status
+        if not initial_status or overwrite:
             init_schain_config(
                 skale=self.skale,
                 node_id=self.node_config.id,
@@ -161,22 +186,30 @@ class BaseMonitor(ABC):
             )
         else:
             logger.info(f'{self.p} config - ok')
+        return initial_status
 
+    @monitor_block
     def volume(self) -> None:
-        if not self.checks.volume.status:
+        initial_status = self.checks.volume.status
+        if not initial_status:
             init_data_volume(self.schain, dutils=self.dutils)
         else:
             logger.info(f'{self.p} volume - ok')
+        return initial_status
 
+    @monitor_block
     def firewall_rules(self, overwrite=False) -> None:
-        if not self.checks.firewall_rules.status or overwrite:
+        initial_status = self.checks.firewall_rules.status
+        if not initial_status or overwrite:
             add_firewall_rules(self.name)
         else:
             logger.info(f'{self.p} firewall_rules - ok')
+        return initial_status
 
+    @monitor_block
     def skaled_container(self, sync: bool = False) -> None:
-        skaled_container_check = self.checks.skaled_container
-        if not skaled_container_check.status:
+        initial_status = self.checks.skaled_container.status
+        if not initial_status:
 
             if sync:
                 public_key = get_schain_public_key(self.skale, self.name)
@@ -195,9 +228,12 @@ class BaseMonitor(ABC):
         else:
             self.schain_record.set_restart_count(0)
             logger.info(f'{self.p} skaled_container - ok')
+        return initial_status
 
+    @monitor_block
     def skaled_rpc(self) -> None:
-        if not self.checks.rpc.status:
+        initial_status = self.checks.rpc.status
+        if not initial_status:
             monitor_schain_rpc(
                 self.schain,
                 schain_record=self.schain_record,
@@ -206,16 +242,27 @@ class BaseMonitor(ABC):
         else:
             self.schain_record.set_failed_rpc_count(0)
             logger.info(f'{self.p} rpc - ok')
+        return initial_status
 
+    @monitor_block
     def ima_container(self) -> None:
+        initial_status = self.checks.ima_container
         if not DISABLE_IMA and not self.checks.ima_container:
             monitor_ima_container(self.skale_ima, self.schain, dutils=self.dutils)
         else:
             logger.info(f'{self.p} ima_container - ok')
+        return initial_status
 
+    @monitor_block
     def cleanup_schain_docker_entity(self) -> None:
         remove_schain_container(self.name, dutils=self.dutils)
         time.sleep(SCHAIN_CLEANUP_TIMEOUT)
         remove_schain_volume(self.name, dutils=self.dutils)
+        return True
+
+    def log_executed_blocks(self) -> None:
+        logger.info(arguments_list_string(
+            self.executed_blocks, f'Finished monitor runner - {self.name}'))
 
     _monitor_runner = staticmethod(_monitor_runner)
+    monitor_block = staticmethod(monitor_block)

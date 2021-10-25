@@ -45,7 +45,7 @@ class RepairMonitor(BaseMonitor):
     @BaseMonitor._monitor_runner
     def run(self):
         logger.warning(f'REPAIR MODE was toggled - \
-repair_mode: {self.schain_record.repair_mode}, exit_code_ok: {self.checks.exit_code_ok}')
+repair_mode: {self.schain_record.repair_mode}, exit_code_ok: {self.checks.exit_code_ok.status}')
         self.notify_repair_mode()
         self.cleanup_schain_docker_entity()
         self.volume()
