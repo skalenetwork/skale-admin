@@ -19,7 +19,6 @@ from core.schains.cleaner import remove_schain_container
 # from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.dkg import get_dkg_client, is_last_dkg_finished, safe_run_dkg
 from core.schains.helper import init_schain_dir
-from tests.conftest import skale as skale_fixture
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
     generate_random_node_data,
@@ -29,20 +28,14 @@ from tests.utils import (
 )
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.bls.dkg_utils import (
-    DKGKeyGenerationError,
-    init_dkg_client,
-    generate_bls_keys
-)
-from tools.bls.dkg_client import DkgError, generate_bls_key_name
+from tools.bls.dkg_utils import DKGKeyGenerationError, generate_bls_keys
+from tools.bls.dkg_client import DkgError
 # from tools.logger import init_logger, Formatter
 
 warnings.filterwarnings("ignore")
 
 MAX_WORKERS = 5
 TEST_SRW_FUND_VALUE = 3000000000000000000
-
-owner_skale = init_web3_skale()
 
 log_format = '[%(asctime)s][%(levelname)s] - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
 
@@ -84,7 +77,9 @@ def link_node_address(skale, wallet):
 
 
 def transfer_eth_to_wallets(skale, wallets):
-    logger.info(f'Transfering {TEST_ETH_AMOUNT} ETH to {len(wallets)} test wallets')
+    logger.info(
+        f'Transfering {TEST_ETH_AMOUNT} ETH to {len(wallets)} test wallets'
+    )
     for wallet in wallets:
         send_ether(skale.web3, skale.wallet, wallet.address, TEST_ETH_AMOUNT)
 
@@ -115,83 +110,12 @@ def register_node(skale):
     }
 
 
-@pytest.fixture
-def other_maintenance(skale):
-    nodes = skale.nodes.get_active_node_ids()
-    for nid in nodes:
-        skale.nodes.set_node_in_maintenance(nid)
-    yield
-    for nid in nodes:
-        skale.nodes.remove_node_from_in_maintenance(nid)
-
-
 def register_nodes(skale_instances):
     nodes = [
         register_node(sk)
         for sk in skale_instances
     ]
     return nodes
-
-
-def check_keys(data, expected_keys):
-    assert all(key in data for key in expected_keys)
-
-
-def check_node_ports(info):
-    base_port = info['basePort']
-    assert isinstance(base_port, int)
-    assert info['wsRpcPort'] == base_port + 2
-    assert info['wssRpcPort'] == base_port + 7
-    assert info['httpRpcPort'] == base_port + 3
-    assert info['httpsRpcPort'] == base_port + 8
-
-
-def check_node_info(node_data, info):
-    keys = ['nodeID', 'nodeName', 'basePort', 'httpRpcPort', 'httpsRpcPort',
-            'wsRpcPort', 'wssRpcPort', 'bindIP', 'logLevel', 'logLevelConfig',
-            'imaMessageProxySChain', 'imaMessageProxyMainNet',
-            'rotateAfterBlock', 'ecdsaKeyName', 'wallets', 'minCacheSize',
-            'maxCacheSize', 'collectionQueueSize', 'collectionDuration',
-            'transactionQueueSize', 'maxOpenLeveldbFiles']
-    check_keys(info, keys)
-    assert info['nodeID'] == node_data['node_id']
-    check_node_ports(info)
-    assert info['infoHttpRpcPort'] == info['basePort'] + 9
-    assert info['ecdsaKeyName'] == node_data['wallet']._key_name
-
-
-def check_schain_node_info(node_data, schain_node_info):
-    check_keys(schain_node_info,
-               ['nodeID', 'nodeName', 'basePort', 'httpRpcPort',
-                'httpsRpcPort', 'wsRpcPort', 'wssRpcPort', 'publicKey',
-                'blsPublicKey0', 'blsPublicKey1', 'blsPublicKey2',
-                'blsPublicKey3', 'owner', 'schainIndex', 'ip', 'publicIP'])
-    assert schain_node_info['nodeID'] == node_data['node_id']
-    check_node_ports(schain_node_info)
-
-
-def check_schain_info(nodes, schain_info):
-    check_keys(
-        schain_info,
-        ['schainID', 'schainName', 'schainOwner', 'contractStorageLimit',
-         'dbStorageLimit', 'snapshotIntervalSec', 'emptyBlockIntervalMs',
-         'maxConsensusStorageBytes', 'maxSkaledLeveldbStorageBytes',
-         'maxFileStorageBytes', 'maxReservedStorageBytes',
-         'nodes']
-    )
-    for node_data, schain_node_info in zip(
-        nodes, sorted(schain_info['nodes'],
-                      key=lambda x: x['nodeID'])):
-        check_schain_node_info(node_data, schain_node_info)
-
-
-def check_config(nodes, node_data, config):
-    check_keys(
-        config,
-        ['sealEngine', 'params', 'genesis', 'accounts', 'skaleConfig']
-    )
-    check_node_info(node_data, config['skaleConfig']['nodeInfo'])
-    check_schain_info(nodes, config['skaleConfig']['sChain'])
 
 
 def run_dkg_all(skale, skale_sgx_instances, schain_name, nodes):
@@ -226,53 +150,6 @@ def run_node_dkg(skale, schain_name, index, node_id):
     return dkg_result
 
 
-def check_fetch_broadcasted_data(
-    skale,
-    schain_name,
-    nodes,
-    bls_public_keys,
-    all_public_keys
-):
-    futures, results = [], []
-    nodes.sort(key=lambda x: x['node_id'])
-    with Executor(max_workers=MAX_WORKERS) as executor:
-        for i, node_data in enumerate(nodes):
-            opts = {
-                'skale': skale,
-                'schain_name': schain_name,
-                'node_id': node_data['node_id'],
-                'wallet': node_data['wallet'],
-            }
-            futures.append(executor.submit(run_dkg_fetch, opts))
-    for future in futures:
-        results.append(future.result())
-
-    bls_public_keys_done = []
-    all_public_keys_done = []
-    for node_data, result in zip(nodes, results):
-        assert result is not None
-        bls_public_keys_done.append(result['public_key'])
-        all_public_keys_done.append(result['bls_public_keys'])
-
-    assert bls_public_keys_done == bls_public_keys
-    assert all_public_keys_done == all_public_keys
-
-
-def run_dkg_fetch(opts):
-    skale = skale_fixture()
-    skale.wallet = opts['wallet']
-    sgx_key_name = skale.wallet._key_name
-    schain_name = opts['schain_name']
-    node_id = opts['node_id']
-
-    dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, 0)
-    group_index_str = str(int(skale.web3.toHex(dkg_client.group_index)[2:], 16))
-    dkg_client.bls_name = generate_bls_key_name(group_index_str, node_id, 2)
-    dkg_client.fetch_all_broadcasted_data()
-    dkg_results = generate_bls_keys(dkg_client)
-    return dkg_results
-
-
 def create_schain(skale: Skale, name: str, lifetime_seconds: int) -> None:
     _ = skale.schains.get_schain_price(
         TYPE_OF_NODES, lifetime_seconds
@@ -289,11 +166,11 @@ def create_schain(skale: Skale, name: str, lifetime_seconds: int) -> None:
     )
 
 
-def cleanup_contracts_from_dkg_items(schain_name: str) -> None:
-    node_ids = owner_skale.schains_internal.get_node_ids_for_schain(schain_name)
-    owner_skale.manager.delete_schain(schain_name)
+def cleanup_contracts_from_dkg_items(skale: Skale, schain_name: str) -> None:
+    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    skale.manager.delete_schain(schain_name)
     for node_id in node_ids:
-        owner_skale.manager.node_exit(node_id)
+        skale.manager.node_exit(node_id)
 
 
 def cleanup_docker_items(schain_name: str) -> None:
@@ -307,12 +184,12 @@ def cleanup_schain_configs(schain_name: str) -> None:
 
 
 @pytest.fixture
-def cleanup_dkg(schain_creation_data):
+def cleanup_dkg(skale, schain_creation_data):
     yield
     error = None
     schain_name, _ = schain_creation_data
     # try:
-    #     cleanup_contracts_from_dkg_items(schain_name)
+    #     cleanup_contracts_from_dkg_items(skale, schain_name)
     # except Exception as err:
     #     print(f'Cleaning dkg items from contracts failed {err}')
     #     error = err
@@ -332,49 +209,6 @@ def cleanup_dkg(schain_creation_data):
     #     raise error
 
 
-@pytest.fixture
-def schain_creation_data():
-    _, lifetime_seconds, name = generate_random_schain_data()
-    return name, lifetime_seconds
-
-
-@pytest.fixture
-def sgx_wallets(skale):
-    wallets = generate_sgx_wallets(skale, N_OF_NODES)
-    transfer_eth_to_wallets(skale, wallets)
-    link_addresses_to_validator(skale, wallets)
-    return wallets
-
-
-@pytest.fixture
-def skale_sgx_instances(skale, sgx_wallets):
-    return [
-        init_skale_from_wallet(w)
-        for w in sgx_wallets
-    ]
-
-
-@pytest.fixture
-def nodes(skale, skale_sgx_instances, other_maintenance):
-    nodes = register_nodes(skale_sgx_instances)
-    try:
-        yield nodes
-    finally:
-        return
-        nids = [node['node_id'] for node in nodes]
-        remove_nodes(skale, nids)
-
-
-@pytest.fixture
-def schain(schain_creation_data, skale, nodes):
-    schain_name, lifetime = schain_creation_data
-    create_schain(skale, schain_name, lifetime)
-    try:
-        yield schain_name
-    finally:
-        remove_schain(skale, schain_name)
-
-
 def remove_schain(skale, schain_name):
     print('Cleanup nodes and schains')
     if schain_name is not None:
@@ -386,49 +220,7 @@ def remove_nodes(skale, nodes):
         skale.manager.node_exit(node_id, wait_for=True)
 
 
-def test_dkg(
-    skale,
-    schain_creation_data,
-    skale_sgx_instances,
-    nodes,
-    schain,
-    cleanup_dkg
-):
-    # skale.constants_holder.set_complaint_timelimit(30000000000)
-    schain_name, _ = schain_creation_data
-    assert not is_last_dkg_finished(skale, schain_name)
-    results = run_dkg_all(
-        skale,
-        skale_sgx_instances,
-        schain_name,
-        nodes
-    )
-    assert len(results) == N_OF_NODES
-    assert is_last_dkg_finished(skale, schain_name)
-
-    bls_public_keys, all_public_keys = [], []
-    for node_data, result in zip(nodes, results):
-        assert result.status.is_done()
-        keys_data = result.keys_data
-        assert keys_data is not None
-        bls_public_keys.append(keys_data['public_key'])
-        all_public_keys.append(keys_data['bls_public_keys'])
-        # check_config(nodes, node_data, result['config'])
-
-    gid = skale.schains.name_to_id(schain_name)
-    assert skale.dkg.is_last_dkg_successful(gid)
-
-    # Rerun dkg to regenerate keys
-    results = run_dkg_all(
-        skale,
-        skale_sgx_instances,
-        schain_name,
-        nodes
-    )
-    assert all([r.status.is_done() for r in results])
-    assert is_last_dkg_finished(skale, schain_name)
-
-
+@pytest.mark.skip
 def test_failed_get_dkg_client(skale):
     skale.schains_internal.get_node_ids_for_schain = mock.Mock(return_value=[])
     with pytest.raises(DkgError):
@@ -441,6 +233,7 @@ def test_failed_get_dkg_client(skale):
         )
 
 
+@pytest.mark.skip
 def test_failed_generate_bls_keys(skale):
     skale.schains_internal.get_node_ids_for_schain = mock.Mock(return_value=[])
     skale.key_storage.get_common_public_key = mock.Mock(
@@ -450,7 +243,111 @@ def test_failed_generate_bls_keys(skale):
         node_id=0,
         schain_name='fake-schain',
         skale=skale,
-        sgx_key_name='faike-sgx-keyname'
+        sgx_key_name='faike-sgx-keyname',
+        rotation_id=0
     )
     with pytest.raises(DKGKeyGenerationError):
         generate_bls_keys(dkg_client)
+
+
+class TestDKG:
+    @pytest.fixture(scope='class')
+    def skale(self):
+        return init_web3_skale()
+
+    @pytest.fixture(scope='class')
+    def schain_creation_data(self):
+        _, lifetime_seconds, name = generate_random_schain_data()
+        return name, lifetime_seconds
+
+    @pytest.fixture(scope='class')
+    def sgx_wallets(self, skale):
+        wallets = generate_sgx_wallets(skale, N_OF_NODES)
+        transfer_eth_to_wallets(skale, wallets)
+        link_addresses_to_validator(skale, wallets)
+        return wallets
+
+    @pytest.fixture(scope='class')
+    def skale_sgx_instances(self, skale, sgx_wallets):
+        return [
+            init_skale_from_wallet(w)
+            for w in sgx_wallets
+        ]
+
+    @pytest.fixture(scope='class')
+    def other_maintenance(self, skale):
+        nodes = skale.nodes.get_active_node_ids()
+        for nid in nodes:
+            skale.nodes.set_node_in_maintenance(nid)
+        yield
+        for nid in nodes:
+            skale.nodes.remove_node_from_in_maintenance(nid)
+
+    @pytest.fixture(scope='class')
+    def nodes(self, skale, skale_sgx_instances, other_maintenance):
+        nodes = register_nodes(skale_sgx_instances)
+        try:
+            yield nodes
+        finally:
+            return
+            nids = [node['node_id'] for node in nodes]
+            remove_nodes(skale, nids)
+
+    @pytest.fixture(scope='class')
+    def schain(self, schain_creation_data, skale, nodes):
+        schain_name, lifetime = schain_creation_data
+        create_schain(skale, schain_name, lifetime)
+        try:
+            yield schain_name
+        finally:
+            remove_schain(skale, schain_name)
+
+    def test_regular_dkg(
+        self,
+        skale,
+        schain_creation_data,
+        skale_sgx_instances,
+        nodes,
+        schain
+    ):
+        schain_name, _ = schain_creation_data
+        assert not is_last_dkg_finished(skale, schain_name)
+        results = run_dkg_all(
+            skale,
+            skale_sgx_instances,
+            schain_name,
+            nodes
+        )
+        assert len(results) == N_OF_NODES
+        assert is_last_dkg_finished(skale, schain_name)
+
+        bls_public_keys, all_public_keys = [], []
+        for node_data, result in zip(nodes, results):
+            assert result.status.is_done()
+            keys_data = result.keys_data
+            assert keys_data is not None
+            bls_public_keys.append(keys_data['public_key'])
+            all_public_keys.append(keys_data['bls_public_keys'])
+            # check_config(nodes, node_data, result['config'])
+
+        gid = skale.schains.name_to_id(schain_name)
+        assert skale.dkg.is_last_dkg_successful(gid)
+
+    def test_dkg_restore_keys(
+        self,
+        skale,
+        schain_creation_data,
+        skale_sgx_instances,
+        nodes,
+        schain
+    ):
+        # Rerun dkg to regenerate keys
+        schain_name, _ = schain_creation_data
+        results = run_dkg_all(
+            skale,
+            skale_sgx_instances,
+            schain_name,
+            nodes
+        )
+        assert all([r.status.is_done() for r in results])
+        assert is_last_dkg_finished(skale, schain_name)
