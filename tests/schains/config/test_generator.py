@@ -63,7 +63,6 @@ def check_node_bls_keys(info, index):
     assert info['blsPublicKey1'] == bls_keys[1]
     assert info['blsPublicKey2'] == bls_keys[2]
     assert info['blsPublicKey3'] == bls_keys[3]
-    assert info['publicKey'] == '0x513462e7ff260ae614a8a9404419c0521963cffa098b1328239cb3e694fa2f34eb4d170b296029ae47c26df6a2e66fd3e5176651341604cc0b1c3fb337e68800'  # noqa
 
 
 def check_node_info(node_id, info):

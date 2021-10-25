@@ -271,6 +271,7 @@ class TestDKG:
             yield schain_name
         finally:
             remove_schain(skale, schain_name)
+            cleanup_schain_configs(schain_name)
 
     def test_regular_dkg(
         self,

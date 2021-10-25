@@ -24,6 +24,7 @@ from tools.configs.containers import (
 )
 from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
 from web.models.schain import SChainRecord, upsert_schain_record
+from core.schains.dkg import DKGResult
 from core.schains.dkg_status import DKGStatus
 from core.schains.monitor import get_monitor_mode, MonitorMode
 
@@ -116,7 +117,7 @@ def test_rotating_monitor(skale, skale_ima, node_config, db, dutils):
     schain = get_schain_contracts_data(schain_name=schain_name)
 
     with mock.patch('core.schains.monitor.safe_run_dkg',
-                    return_value=DKGStatus.DONE),\
+                    return_value=DKGResult(DKGStatus.DONE, {})),\
             mock.patch('core.schains.monitor.CONTAINERS_DELAY', 0), \
             mock.patch('core.schains.monitor.init_schain_config',
                        new=mock.Mock(return_value=True)), \
@@ -126,7 +127,8 @@ def test_rotating_monitor(skale, skale_ima, node_config, db, dutils):
             mock.patch('core.schains.monitor.get_rotation_state',
                        new=mock.Mock(return_value=rotation_info)), \
             mock.patch.object(skale.dkg, 'is_channel_opened', return_value=True), \
-            mock.patch('core.schains.monitor.set_rotation_for_schain') as rotation:
+            mock.patch('core.schains.monitor.set_rotation_for_schain') as rotation, \
+            mock.patch('core.schains.monitor.save_dkg_results'):
         node_info = node_config.all()
         monitor_schain(skale, skale_ima, node_info,
                        schain, ecdsa_sgx_key_name='test', dutils=dutils)
