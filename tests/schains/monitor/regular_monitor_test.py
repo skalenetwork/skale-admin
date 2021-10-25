@@ -5,8 +5,6 @@ from skale.schain_config.generator import get_nodes_for_schain
 from skale.wallets import SgxWallet
 from skale.utils.helper import ip_from_bytes
 
-from core.schains.cleaner import remove_config_dir
-from core.schains.dkg import DkgError
 from core.schains.checks import SChainChecks, CheckRes
 from core.schains.monitor import RegularMonitor
 from core.schains.config.generator import save_schain_config
@@ -17,10 +15,9 @@ from tools.configs import (
     SGX_SERVER_URL
 )
 
-from tools.sgx_utils import generate_sgx_key
 from web.models.schain import SChainRecord
 
-from tests.rotation_test.utils import safe_run_dkg_mock
+from tests.dkg_utils import safe_run_dkg_mock
 
 
 logger = logging.getLogger(__name__)
@@ -40,22 +37,14 @@ def alter_schain_config(schain_name: str, public_key: str) -> None:
 class RegularMonitorMock(RegularMonitor):
     @RegularMonitor.monitor_block
     def dkg(self) -> None:
-        initial_status = self.checks.dkg.status
-        if not initial_status:
-            is_dkg_done = safe_run_dkg_mock(
-                skale=self.skale,
-                schain_name=self.name,
-                node_id=self.node_config.id,
-                sgx_key_name=self.node_config.sgx_key_name,
-                rotation_id=self.rotation_id,
-                schain_record=self.schain_record
-            )
-            if not is_dkg_done:
-                remove_config_dir(self.name)
-                raise DkgError(f'{self.p} DKG failed')
-        else:
-            logger.info(f'{self.p} dkg - ok')
-        return initial_status
+        return safe_run_dkg_mock(
+            skale=self.skale,
+            schain_name=self.name,
+            node_id=self.node_config.id,
+            sgx_key_name=self.node_config.sgx_key_name,
+            rotation_id=self.rotation_id,
+            schain_record=self.schain_record
+        )
 
 
 class SChainChecksMock(SChainChecks):
@@ -70,17 +59,15 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
     schain = skale.schains.get_by_name(schain_name)
     nodes = get_nodes_for_schain(skale, schain_name)
 
-    generate_sgx_key(node_config)
-
     sgx_wallet = SgxWallet(
         web3=skale.web3,
         sgx_endpoint=SGX_SERVER_URL,
-        key_name=node_config.sgx_key_name,
         path_to_cert=SGX_CERTIFICATES_FOLDER
     )
 
     node_config.id = nodes[0]['id']
     node_config.ip = ip_from_bytes(nodes[0]['ip'])
+    node_config.sgx_key_name = sgx_wallet.key_name
 
     schain_record = SChainRecord.get_by_name(schain_name)
     schain_checks = SChainChecksMock(
@@ -118,3 +105,6 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
 
     if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker
         assert schain_checks.rpc.status
+        assert schain_checks.blocks.status
+
+    test_monitor.cleanup_schain_docker_entity()

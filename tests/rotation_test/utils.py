@@ -1,4 +1,3 @@
-import json
 from time import sleep
 
 from skale.skale_manager import spawn_skale_manager_lib
@@ -8,47 +7,15 @@ from core.schains.checks import check_endpoint_alive
 from core.schains.config.helper import get_skaled_http_address
 from core.schains.runner import run_schain_container, is_exited
 from core.schains.volume import init_data_volume
-from sgx import SgxClient
-from sgx.sgx_rpc_handler import SgxServerError
-from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tests.utils import generate_random_schain_data
 from tests.dkg_test.main_test import (create_schain,
                                       generate_sgx_wallets,
                                       transfer_eth_to_wallets,
                                       link_addresses_to_validator,
                                       register_nodes, run_dkg_all)
-from core.schains.dkg.utils import get_secret_key_share_filepath
 
 
 TIMEOUT = 240
-INSECURE_PRIVATE_KEY = "f253bad7b1f62b8ff60bbf451cf2e8e9ebb5d6e9bff450c55b8d5504b8c63d3"
-SECRET_KEY_INFO = {
-    "common_public_key": [
-        "15959969554621958245201075983340071881770733084910870228938077786643587385029",
-        "7970122607051572307517094692346020360016825923464107614135327251488152616550",
-        "3371162264373897025322009434717052197952692496405149486989861571246537813591",
-        "13678625751515504401110635369790787716744686498431213713911601759809559919693"
-    ],
-    "public_key": [
-        "15959969554621958245201075983340071881770733084910870228938077786643587385029",
-        "7970122607051572307517094692346020360016825923464107614135327251488152616550",
-        "3371162264373897025322009434717052197952692496405149486989861571246537813591",
-        "13678625751515504401110635369790787716744686498431213713911601759809559919693"
-    ],
-    "bls_public_keys": [
-        "15959969554621958245201075983340071881770733084910870228938077786643587385029:"
-        "7970122607051572307517094692346020360016825923464107614135327251488152616550:"
-        "3371162264373897025322009434717052197952692496405149486989861571246537813591:"
-        "13678625751515504401110635369790787716744686498431213713911601759809559919693",
-        "15959969554621958245201075983340071881770733084910870228938077786643587385029:"
-        "7970122607051572307517094692346020360016825923464107614135327251488152616550:"
-        "3371162264373897025322009434717052197952692496405149486989861571246537813591:"
-        "13678625751515504401110635369790787716744686498431213713911601759809559919693"
-    ],
-    "t": 1,
-    "n": 1,
-    "key_share_name": "BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0"
-}
 
 
 class NodeConfigMock:
@@ -65,18 +32,6 @@ class NodeConfigMock:
             'name': self.name,
             'sgx_key_name': self.sgx_key_name
         }
-
-
-def safe_run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id, schain_record):
-    return run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id)
-
-
-def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
-    path = get_secret_key_share_filepath(schain_name, rotation_id)
-    with open(path, 'w') as file:
-        file.write(json.dumps(SECRET_KEY_INFO))
-    import_bls_key()
-    return True
 
 
 def init_data_volume_mock(schain, dutils=None):
@@ -170,14 +125,3 @@ def check_schain_alive(schain_name):
     schain_endpoint = get_skaled_http_address(schain_name)
     schain_endpoint = f'http://{schain_endpoint.ip}:{schain_endpoint.port}'
     return check_endpoint_alive(schain_endpoint)
-
-
-def import_bls_key():
-    sgx_client = SgxClient(SGX_SERVER_URL, n=1, t=1, path_to_cert=SGX_CERTIFICATES_FOLDER)
-    try:
-        sgx_client.import_bls_private_key(
-            SECRET_KEY_INFO['key_share_name'], INSECURE_PRIVATE_KEY
-        )
-    except SgxServerError as e:
-        if str(e) == 'Key share with this name already exists':
-            pass
