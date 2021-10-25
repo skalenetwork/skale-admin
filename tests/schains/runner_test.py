@@ -10,7 +10,7 @@ class ResponseMock:
 
 
 def test_set_rotation(schain_config):
-    with mock.patch('core.schains.helper.requests.post',
+    with mock.patch('core.schains.rotation.requests.post',
                     new=mock.Mock(return_value=ResponseMock())) as post:
         schain_name = schain_config['skaleConfig']['sChain']['schainName']
         set_rotation_for_schain(schain_name, 100)

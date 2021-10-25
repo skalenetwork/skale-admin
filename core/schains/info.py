@@ -49,7 +49,7 @@ def get_schain_info_by_name(skale: Skale, schain_name: str) -> SChainInfo:
         sid,
         contracts_info['owner'],
         contracts_info['partOfNode'],
-        record.status,
+        record.dkg_status,
         record.is_deleted,
         record.first_run,
         record.repair_mode
