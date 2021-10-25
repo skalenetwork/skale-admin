@@ -27,7 +27,7 @@ class SChainInfo:
             'id': self.schain_id,
             'owner': self.owner,
             'part_of_node': self.part_of_node,
-            'dkg_status': self.status,
+            'dkg_status': self.dkg_status,
             'is_deleted': self.is_deleted,
             'first_run': self.first_run,
             'repair_mode': self.repair_mode
