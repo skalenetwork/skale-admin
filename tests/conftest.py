@@ -14,6 +14,8 @@ from core.schains.cleaner import remove_schain_volume
 from core.schains.checks import SChainChecks
 from core.node_config import NodeConfig
 
+from core.schains.ima import ImaData
+
 from tests.utils import (
     CONTAINERS_JSON,
     generate_cert,
@@ -334,3 +336,8 @@ def schain_struct(schain_config):
         'name': schain_name,
         'partOfNode': 0
     }
+
+
+@pytest.fixture
+def ima_data(skale):
+    return ImaData(linked=True, chain_id=skale.web3.eth.chainId)

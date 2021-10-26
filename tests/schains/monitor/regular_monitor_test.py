@@ -7,8 +7,8 @@ from skale.utils.helper import ip_from_bytes
 
 from core.schains.checks import SChainChecks, CheckRes
 from core.schains.monitor import RegularMonitor
-from core.schains.config.generator import save_schain_config
-from core.schains.config.helper import get_schain_config
+from core.schains.ima import ImaData
+
 
 from tools.configs import (
     SGX_CERTIFICATES_FOLDER,
@@ -18,20 +18,10 @@ from tools.configs import (
 from web.models.schain import SChainRecord
 
 from tests.dkg_utils import safe_run_dkg_mock
+from tests.utils import alter_schain_config
 
 
 logger = logging.getLogger(__name__)
-
-
-def alter_schain_config(schain_name: str, public_key: str) -> None:
-    """
-    Fix config to make skaled work with a single node (mine blocks, etc)
-    """
-    config = get_schain_config(schain_name)
-    node = config['skaleConfig']['sChain']['nodes'][0]
-    node['publicKey'] = public_key
-    config['skaleConfig']['sChain']['nodes'] = [node]
-    save_schain_config(config, schain_name)
 
 
 class RegularMonitorMock(RegularMonitor):
@@ -76,9 +66,10 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
         schain_record=schain_record,
         dutils=dutils
     )
+    ima_data = ImaData(False, '0x1')
     test_monitor = RegularMonitorMock(
         skale=skale,
-        skale_ima=skale_ima,
+        ima_data=ima_data,
         schain=schain,
         node_config=node_config,
         rotation_data={'rotation_id': 0},

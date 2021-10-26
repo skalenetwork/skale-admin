@@ -30,6 +30,8 @@ from core.schains.monitor import (
 from core.schains.checks import SChainChecks
 from core.schains.rotation import check_schain_rotated
 
+from core.schains.ima import ImaData
+
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 
@@ -107,10 +109,15 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
                 dutils=dutils
             )
 
+            ima_data = ImaData(
+                linked=skale_ima.linker.has_schain(name),
+                chain_id=skale_ima.web3.eth.chainId
+            )
+
             monitor_class = get_monitor_type(schain_record, checks, rotation_in_progress)
             monitor = monitor_class(
                 skale=skale,
-                skale_ima=skale_ima,
+                ima_data=ima_data,
                 schain=schain,
                 node_config=node_config,
                 rotation_data=rotation_data,

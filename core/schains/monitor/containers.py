@@ -19,7 +19,7 @@
 
 import logging
 
-from core.ima.schain import copy_schain_ima_abi
+
 from core.schains.volume import is_volume_exists
 from core.schains.runner import (
     is_schain_container_failed,
@@ -77,14 +77,3 @@ def monitor_schain_container(
             schain_record.set_failed_rpc_count(0)
         else:
             logger.warning(f'SChain {schain_name}: max restart count exceeded')
-
-
-def monitor_ima_container(skale_ima, schain, dutils=None):
-    dutils = dutils or DockerUtils()
-    mainnet_chain_id = skale_ima.web3.eth.chainId
-    # todo: add IMA version check
-    if skale_ima.linker.has_schain(schain['name']):
-        copy_schain_ima_abi(schain['name'])
-        monitor_ima_container(schain, mainnet_chain_id, dutils=dutils)
-    else:
-        logger.warning(f'sChain {schain["name"]} is not registered in IMA')

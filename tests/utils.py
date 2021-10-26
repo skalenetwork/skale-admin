@@ -14,6 +14,9 @@ from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
 from core.schains.runner import run_schain_container, run_ima_container
+from core.schains.config.generator import save_schain_config
+from core.schains.config.helper import get_schain_config
+
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
 
@@ -200,3 +203,14 @@ def response_mock(status_code=0, json_data=None, cookies=None,
 
 def request_mock(response_mock):
     return Mock(return_value=response_mock)
+
+
+def alter_schain_config(schain_name: str, public_key: str) -> None:
+    """
+    Fix config to make skaled work with a single node (mine blocks, etc)
+    """
+    config = get_schain_config(schain_name)
+    node = config['skaleConfig']['sChain']['nodes'][0]
+    node['publicKey'] = public_key
+    config['skaleConfig']['sChain']['nodes'] = [node]
+    save_schain_config(config, schain_name)

@@ -38,6 +38,12 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class ImaData:
+    linked: bool
+    chain_id: str
+
+
+@dataclass
 class ImaEnv:
     schain_dir: str
 

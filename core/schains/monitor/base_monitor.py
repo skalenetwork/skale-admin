@@ -23,7 +23,7 @@ from datetime import datetime
 from functools import wraps
 from abc import ABC, abstractmethod
 
-from skale import Skale, SkaleIma
+from skale import Skale
 
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
@@ -33,15 +33,20 @@ from core.schains.cleaner import (
     remove_schain_container,
     remove_schain_volume
 )
+from core.schains.runner import run_ima_container
+
 from core.schains.volume import init_data_volume
 from core.schains.firewall import add_firewall_rules
 from core.schains.rotation import get_schain_public_key
 
-from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
+from core.schains.monitor.containers import monitor_schain_container
 from core.schains.monitor.rpc import monitor_schain_rpc
 
 from core.schains.config.dir import init_schain_config_dir
 from core.schains.config.generator import init_schain_config
+
+from core.schains.ima import ImaData
+from core.ima.schain import copy_schain_ima_abi
 
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
@@ -62,7 +67,7 @@ class BaseMonitor(ABC):
     def __init__(
         self,
         skale: Skale,
-        skale_ima: SkaleIma,
+        ima_data: ImaData,
         schain: dict,
         node_config: NodeConfig,
         rotation_data: dict,
@@ -70,7 +75,7 @@ class BaseMonitor(ABC):
         dutils: DockerUtils = None
     ):
         self.skale = skale
-        self.skale_ima = skale_ima
+        self.ima_data = ima_data
         self.schain = schain
         self.name = schain['name']
         self.node_config = node_config
@@ -145,7 +150,7 @@ class BaseMonitor(ABC):
         pass
 
     @monitor_block
-    def config_dir(self) -> None:
+    def config_dir(self) -> bool:
         initial_status = self.checks.config_dir.status
         if not initial_status:
             init_schain_config_dir(self.name)
@@ -154,7 +159,7 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def dkg(self) -> None:
+    def dkg(self) -> bool:
         initial_status = self.checks.dkg.status
         if not initial_status:
             is_dkg_done = safe_run_dkg(
@@ -173,7 +178,7 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def config(self, overwrite=False) -> None:
+    def config(self, overwrite=False) -> bool:
         initial_status = self.checks.config.status
         if not initial_status or overwrite:
             init_schain_config(
@@ -189,7 +194,7 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def volume(self) -> None:
+    def volume(self) -> bool:
         initial_status = self.checks.volume.status
         if not initial_status:
             init_data_volume(self.schain, dutils=self.dutils)
@@ -198,7 +203,7 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def firewall_rules(self, overwrite=False) -> None:
+    def firewall_rules(self, overwrite=False) -> bool:
         initial_status = self.checks.firewall_rules.status
         if not initial_status or overwrite:
             add_firewall_rules(self.name)
@@ -207,7 +212,7 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def skaled_container(self, sync: bool = False) -> None:
+    def skaled_container(self, sync: bool = False) -> bool:
         initial_status = self.checks.skaled_container.status
         if not initial_status:
 
@@ -231,7 +236,7 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def skaled_rpc(self) -> None:
+    def skaled_rpc(self) -> bool:
         initial_status = self.checks.rpc.status
         if not initial_status:
             monitor_schain_rpc(
@@ -245,16 +250,20 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def ima_container(self) -> None:
+    def ima_container(self) -> bool:
         initial_status = self.checks.ima_container.status
-        if not DISABLE_IMA and not self.checks.ima_container:
-            monitor_ima_container(self.skale_ima, self.schain, dutils=self.dutils)
+        if not DISABLE_IMA and not initial_status:
+            if self.ima_data.linked:
+                copy_schain_ima_abi(self.name)
+                run_ima_container(self.schain, self.ima_data.chain_id, dutils=self.dutils)
+            else:
+                logger.warning(f'{self.p} not registered in IMA')
         else:
             logger.info(f'{self.p} ima_container - ok')
         return initial_status
 
     @monitor_block
-    def cleanup_schain_docker_entity(self) -> None:
+    def cleanup_schain_docker_entity(self) -> bool:
         remove_schain_container(self.name, dutils=self.dutils)
         time.sleep(SCHAIN_CLEANUP_TIMEOUT)
         remove_schain_volume(self.name, dutils=self.dutils)
