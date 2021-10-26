@@ -147,11 +147,16 @@ def safe_run_dkg(
     keys_data, status = None, None
     dkg_client = None
     try:
-        dkg_client = get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
+        dkg_client = get_dkg_client(
+            node_id,
+            schain_name,
+            skale,
+            sgx_key_name,
+            rotation_id
+        )
         if is_last_dkg_finished(skale, schain_name):
             logger.info(f'Dkg for {schain_name} is completed. Fetching data')
             dkg_client.fetch_all_broadcasted_data()
-            status = DKGStatus.DONE
         elif skale.dkg.is_channel_opened(
             skale.schains.name_to_group_id(schain_name)
         ):

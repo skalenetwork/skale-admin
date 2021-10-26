@@ -230,7 +230,7 @@ class TestDKG:
             remove_schain(skale, schain_name)
             cleanup_schain_config(schain_name)
 
-    def test_regular_dkg(
+    def test_dkg_procedure(
         self,
         skale,
         schain_creation_data,
@@ -249,27 +249,18 @@ class TestDKG:
         assert len(results) == N_OF_NODES
         assert is_last_dkg_finished(skale, schain_name)
 
-        bls_public_keys, all_public_keys = [], []
         for node_data, result in zip(nodes, results):
             assert result.status.is_done()
             keys_data = result.keys_data
             assert keys_data is not None
-            bls_public_keys.append(keys_data['public_key'])
-            all_public_keys.append(keys_data['bls_public_keys'])
-
         gid = skale.schains.name_to_id(schain_name)
         assert skale.dkg.is_last_dkg_successful(gid)
 
-    def test_dkg_restore_keys(
-        self,
-        skale,
-        schain_creation_data,
-        skale_sgx_instances,
-        nodes,
-        schain
-    ):
-        # Rerun dkg to regenerate keys
-        schain_name, _ = schain_creation_data
+        regular_dkg_keys_data = sorted(
+            [r.keys_data for r in results], key=lambda d: d['n']
+        )
+
+        # Rerun dkg to emulate restoring keys
         results = run_dkg_all(
             skale,
             skale_sgx_instances,
@@ -278,6 +269,11 @@ class TestDKG:
         )
         assert all([r.status.is_done() for r in results])
         assert is_last_dkg_finished(skale, schain_name)
+
+        restore_dkg_keys_data = sorted(
+            [r.keys_data for r in results], key=lambda d: d['n']
+        )
+        assert regular_dkg_keys_data == restore_dkg_keys_data
 
     @pytest.fixture
     def no_ids_for_schain_skale(self, skale):
