@@ -53,21 +53,22 @@ def _is_backup_mode(schain_record: SChainRecord) -> bool:
 
 
 def _is_repair_mode(schain_record: SChainRecord, checks: SChainChecks) -> bool:
-    return schain_record.repair_mode or not checks.exit_code_ok
+    return schain_record.repair_mode or not checks.exit_code_ok.status
 
 
 def _is_rotation_mode(rotation_in_progress: bool) -> bool:
     return rotation_in_progress
 
 
-def _is_post_rotation_mode(schain_name: str) -> bool:
-    return check_schain_rotated(schain_name)
+def _is_post_rotation_mode(schain_name: str, dutils=None) -> bool:
+    return check_schain_rotated(schain_name, dutils)
 
 
 def get_monitor_type(
         schain_record: SChainRecord,
         checks: SChainChecks,
-        rotation_in_progress: bool
+        rotation_in_progress: bool,
+        dutils=None
         ) -> BaseMonitor:
     if _is_backup_mode(schain_record):
         return BackupMonitor
@@ -75,12 +76,13 @@ def get_monitor_type(
         return RepairMonitor
     if _is_rotation_mode(rotation_in_progress):
         return RotationMonitor
-    if _is_post_rotation_mode(checks.name):
+    if _is_post_rotation_mode(checks.name, dutils=dutils):
         return PostRotationMonitor
     return RegularMonitor
 
 
-def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
+def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, dutils=None,
+                           once=False):
     p = get_log_prefix(schain["name"])
 
     def post_monitor_sleep():
@@ -92,7 +94,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
         reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
 
         name = schain["name"]
-        dutils = DockerUtils()
+        dutils = dutils or DockerUtils()
 
         while True:
             ima_linked = skale_ima.linker.has_schain(name)
@@ -114,7 +116,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
                 chain_id=skale_ima.web3.eth.chainId
             )
 
-            monitor_class = get_monitor_type(schain_record, checks, rotation_in_progress)
+            monitor_class = get_monitor_type(schain_record, checks, rotation_in_progress, dutils)
             monitor = monitor_class(
                 skale=skale,
                 ima_data=ima_data,
@@ -124,8 +126,11 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain):
                 checks=checks
             )
             monitor.run()
+            if once:
+                return True
             post_monitor_sleep()
     except Exception:
         logger.exception(f'{p} monitor failed')
-    finally:
+        if once:
+            return False
         post_monitor_sleep()
