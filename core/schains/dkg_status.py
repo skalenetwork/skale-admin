@@ -26,3 +26,6 @@ class DKGStatus(Enum):
     DONE = 3
     FAILED = 4
     KEY_GENERATION_ERROR = 5
+
+    def is_done(self) -> bool:
+        return self == DKGStatus.DONE
