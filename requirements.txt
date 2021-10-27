@@ -13,8 +13,7 @@ simple-crypt==4.1.7
 pycryptodome==3.9.9
 python-iptables==0.14.0
 
-eth-account==0.5.3
-skale.py==5.2dev1
+skale.py==5.2dev2
 ima-predeployed==1.0.0b12
 
 pyyaml==5.4
