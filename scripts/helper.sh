@@ -20,6 +20,8 @@ export_test_env () {
     export ABI_FILEPATH=$PWD/helper-scripts/contracts_data/manager.json
     export ENV_TYPE=devnet
     export ENV=test
+    export ALLOWED_TS_DIFF=9000000
+    export SCHAIN_STOP_TIMEOUT=1
 
     cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info
 }

@@ -29,9 +29,9 @@ from core.node import get_skale_node_version
 from core.schains.config.skale_config import SkaleConfig, generate_skale_config
 from core.schains.config.accounts import generate_dynamic_accounts
 from core.schains.config.helper import get_chain_id
-from core.schains.helper import get_tmp_schain_config_filepath
+from core.schains.config.directory import get_tmp_schain_config_filepath
 
-from core.schains.helper import get_schain_config_filepath
+from core.schains.config.directory import schain_config_filepath
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
 from tools.str_formatters import arguments_list_string
@@ -166,7 +166,7 @@ def init_schain_config(
     rotation_id,
     schain_record
 ):
-    config_filepath = get_schain_config_filepath(schain_name)
+    config_filepath = schain_config_filepath(schain_name)
 
     logger.warning(arguments_list_string({
         'sChain name': schain_name,
@@ -188,7 +188,7 @@ def save_schain_config(schain_config, schain_name):
     tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
     with open(tmp_config_filepath, 'w') as outfile:
         json.dump(schain_config, outfile, indent=4)
-    config_filepath = get_schain_config_filepath(schain_name)
+    config_filepath = schain_config_filepath(schain_name)
     shutil.move(tmp_config_filepath, config_filepath)
 
 

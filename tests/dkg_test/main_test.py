@@ -15,8 +15,9 @@ from skale.utils.account_tools import send_ether
 from skale.wallets import SgxWallet
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
-from core.schains.dkg import get_dkg_client, is_last_dkg_finished, safe_run_dkg
-from core.schains.helper import init_schain_dir
+from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, safe_run_dkg
+from core.schains.config.directory import init_schain_config_dir
+
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
     generate_random_node_data,
@@ -26,8 +27,8 @@ from tests.utils import (
 )
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.bls.dkg_utils import DKGKeyGenerationError, generate_bls_keys
-from tools.bls.dkg_client import DkgError
+from core.schains.dkg.utils import DKGKeyGenerationError, generate_bls_keys
+from core.schains.dkg.client import DkgError
 
 warnings.filterwarnings("ignore")
 
@@ -133,7 +134,7 @@ def run_node_dkg(skale, schain_name, index, node_id):
     time.sleep(timeout)
     sgx_key_name = skale.wallet._key_name
 
-    init_schain_dir(schain_name)
+    init_schain_config_dir(schain_name)
     rotation_id = skale.schains.get_last_rotation_id(schain_name)
     dkg_result = safe_run_dkg(
         skale,
@@ -216,7 +217,6 @@ class TestDKG:
         try:
             yield nodes
         finally:
-            return
             nids = [node['node_id'] for node in nodes]
             remove_nodes(skale, nids)
 

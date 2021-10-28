@@ -25,13 +25,13 @@ from multiprocessing import Process
 from sgx import SgxClient
 
 from core.schains.checks import SChainChecks
-from core.schains.helper import get_schain_dir_path
+from core.schains.config.directory import schain_config_dir
 from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
-from core.schains.config.helper import get_allowed_endpoints
+from core.schains.firewall import remove_firewall_rules
 from core.schains.types import ContainerType
 from core.schains.process_manager_helper import terminate_schain_process
 
-from tools.bls.dkg_utils import get_secret_key_share_filepath
+from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
@@ -39,7 +39,6 @@ from tools.configs.containers import (
 )
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
-from tools.iptables import remove_rules as remove_iptables_rules
 from tools.helper import merged_unique, read_json
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
@@ -93,7 +92,7 @@ def remove_ima_container(schain_name: str, dutils: DockerUtils = None):
 
 def remove_config_dir(schain_name: str) -> None:
     log_remove('config directory', schain_name)
-    schain_dir_path = get_schain_dir_path(schain_name)
+    schain_dir_path = schain_config_dir(schain_name)
     shutil.rmtree(schain_dir_path)
 
 
@@ -157,11 +156,6 @@ def schain_names_to_ids(skale, schain_names):
     return ids
 
 
-def remove_firewall_rules(schain_name):
-    endpoints = get_allowed_endpoints(schain_name)
-    remove_iptables_rules(endpoints)
-
-
 def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
     dutils = dutils or DockerUtils()
     is_schain_exist = skale.schains_internal.is_schain_exist(schain_name)
@@ -196,24 +190,24 @@ def cleanup_schain(node_id, schain_name, dutils=None):
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
     checks = SChainChecks(schain_name, node_id, schain_record=schain_record)
-    if checks.container or is_exited(
+    if checks.skaled_container.status or is_exited(
         schain_name,
         container_type=ContainerType.schain,
         dutils=dutils
     ):
         remove_schain_container(schain_name, dutils=dutils)
-    if checks.volume:
+    if checks.volume.status:
         remove_schain_volume(schain_name, dutils=dutils)
-    if checks.firewall_rules:
+    if checks.firewall_rules.status:
         remove_firewall_rules(schain_name)
     if not DISABLE_IMA:
-        if checks.ima_container or is_exited(
+        if checks.ima_container.status or is_exited(
             schain_name,
             container_type=ContainerType.ima,
             dutils=dutils
         ):
             remove_ima_container(schain_name, dutils=dutils)
-    if checks.data_dir:
+    if checks.config_dir.status:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
 

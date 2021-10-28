@@ -22,7 +22,7 @@ from datetime import datetime
 from peewee import (CharField, DateTimeField,
                     IntegrityError, IntegerField, BooleanField)
 
-from core.schains.dkg_status import DKGStatus
+from core.schains.dkg.status import DKGStatus
 from web.models.base import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -117,7 +117,7 @@ class SChainRecord(BaseModel):
     def set_first_run(self, val):
         logger.info(f'Changing first_run for {self.name} to {val}')
         self.first_run = val
-        self.save()
+        self.save(only=[SChainRecord.first_run])
 
     def set_repair_mode(self, value):
         logger.info(f'Changing repair_mode for {self.name} to {value}')
@@ -214,6 +214,12 @@ def mark_schain_deleted(name):
     if SChainRecord.added(name):
         schain_record = SChainRecord.get_by_name(name)
         schain_record.set_deleted()
+
+
+def set_first_run(name, value):
+    if SChainRecord.added(name):
+        schain_record = SChainRecord.get_by_name(name)
+        schain_record.set_first_run(value)
 
 
 def get_schains_names(include_deleted=False):

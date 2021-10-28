@@ -23,13 +23,12 @@ from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
 
-from core.schains.dkg_status import DKGStatus
-from tools.bls.dkg_utils import (
+from core.schains.dkg.status import DKGStatus
+from core.schains.dkg.utils import (
     init_dkg_client, send_complaint, send_alright, get_latest_block_timestamp, DkgError,
-    generate_bls_keys, check_response, check_no_complaints,
+    DKGKeyGenerationError, generate_bls_keys, check_response, check_no_complaints,
     check_failed_dkg, wait_for_fail, broadcast_and_check_data
 )
-from tools.bls.dkg_utils import DKGKeyGenerationError
 from tools.helper import write_json
 
 logger = logging.getLogger(__name__)

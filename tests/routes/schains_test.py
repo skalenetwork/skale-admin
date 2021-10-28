@@ -7,7 +7,7 @@ import pytest
 from flask import Flask, appcontext_pushed, g
 
 from core.node_config import NodeConfig
-from core.schains.config.helper import get_schain_config_filepath
+from core.schains.config.directory import schain_config_filepath
 from tests.utils import get_bp_data, post_bp_data
 from tools.iptables import NodeEndpoint
 from web.models.schain import SChainRecord
@@ -39,7 +39,7 @@ def skale_bp(skale, dutils):
 
 def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):
     name = schain_on_contracts
-    filename = get_schain_config_filepath(name)
+    filename = schain_config_filepath(name)
     dirname = os.path.dirname(filename)
     if not os.path.isdir(dirname):
         os.makedirs(os.path.dirname(filename))

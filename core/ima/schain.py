@@ -23,7 +23,8 @@ import shutil
 import logging
 from ima_predeployed.generator import generate_abi, generate_contracts
 
-from core.schains.helper import get_schain_dir_path
+from core.schains.config.directory import schain_config_dir
+
 from tools.helper import read_json
 
 from tools.configs.ima import (
@@ -52,7 +53,7 @@ def copy_schain_ima_abi(name):
 
 
 def get_schain_ima_abi_filepath(schain_name):
-    schain_dir_path = get_schain_dir_path(schain_name)
+    schain_dir_path = schain_config_dir(schain_name)
     return os.path.join(schain_dir_path, SCHAIN_IMA_ABI_FILENAME)
 
 
