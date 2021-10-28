@@ -22,7 +22,7 @@ import json
 import logging
 import requests
 
-from core.schains.config.dir import get_schain_rotation_filepath
+from core.schains.config.directory import get_schain_rotation_filepath
 from core.schains.runner import is_exited_with_zero
 from core.schains.config.helper import get_skaled_http_address
 from tools.docker_utils import DockerUtils

@@ -23,7 +23,7 @@ import shutil
 import logging
 from ima_predeployed.generator import generate_abi, generate_contracts
 
-from core.schains.config.dir import schain_config_dir
+from core.schains.config.directory import schain_config_dir
 
 from tools.helper import read_json
 

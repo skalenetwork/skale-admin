@@ -1,6 +1,8 @@
 import logging
 import platform
 
+import mock
+
 from skale.schain_config.generator import get_nodes_for_schain
 from skale.wallets import SgxWallet
 from skale.utils.helper import ip_from_bytes
@@ -22,19 +24,6 @@ from tests.utils import alter_schain_config
 
 
 logger = logging.getLogger(__name__)
-
-
-class RegularMonitorMock(RegularMonitor):
-    @RegularMonitor.monitor_block
-    def dkg(self) -> None:
-        return safe_run_dkg_mock(
-            skale=self.skale,
-            schain_name=self.name,
-            node_id=self.node_config.id,
-            sgx_key_name=self.node_config.sgx_key_name,
-            rotation_id=self.rotation_id,
-            schain_record=self.schain_record
-        )
 
 
 class SChainChecksMock(SChainChecks):
@@ -67,7 +56,7 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
         dutils=dutils
     )
     ima_data = ImaData(False, '0x1')
-    test_monitor = RegularMonitorMock(
+    test_monitor = RegularMonitor(
         skale=skale,
         ima_data=ima_data,
         schain=schain,
@@ -77,7 +66,8 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
         dutils=dutils
     )
 
-    test_monitor.run()
+    with mock.patch('core.schains.monitor.base_monitor.safe_run_dkg', safe_run_dkg_mock):
+        test_monitor.run()
 
     assert schain_checks.config_dir.status
     assert schain_checks.dkg.status

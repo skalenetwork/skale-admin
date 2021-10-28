@@ -89,14 +89,14 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
         logger.info(f'{p} monitor completed, sleeping for {SCHAIN_MONITOR_SLEEP_INTERVAL}s...')
         time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
 
-    try:
-        logger.info(f'{p} monitor created')
-        reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
+    while True:
+        try:
+            logger.info(f'{p} monitor created')
+            reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
 
-        name = schain["name"]
-        dutils = dutils or DockerUtils()
+            name = schain["name"]
+            dutils = dutils or DockerUtils()
 
-        while True:
             ima_linked = skale_ima.linker.has_schain(name)
             rotation_data = skale.node_rotation.get_rotation(name)
             rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
@@ -129,8 +129,8 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             if once:
                 return True
             post_monitor_sleep()
-    except Exception:
-        logger.exception(f'{p} monitor failed')
-        if once:
-            return False
-        post_monitor_sleep()
+        except Exception:
+            logger.exception(f'{p} monitor failed')
+            if once:
+                return False
+            post_monitor_sleep()

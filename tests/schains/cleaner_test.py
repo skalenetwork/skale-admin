@@ -18,7 +18,7 @@ from core.schains.cleaner import (
     remove_schain_volume, remove_schain_container,
     remove_ima_container
 )
-from core.schains.config.dir import init_schain_config_dir
+from core.schains.config.directory import init_schain_config_dir
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH

@@ -29,9 +29,9 @@ from core.node import get_skale_node_version
 from core.schains.config.skale_config import SkaleConfig, generate_skale_config
 from core.schains.config.accounts import generate_dynamic_accounts
 from core.schains.config.helper import get_chain_id
-from core.schains.config.dir import get_tmp_schain_config_filepath
+from core.schains.config.directory import get_tmp_schain_config_filepath
 
-from core.schains.config.dir import schain_config_filepath
+from core.schains.config.directory import schain_config_filepath
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
 from tools.str_formatters import arguments_list_string

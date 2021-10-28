@@ -19,7 +19,7 @@
 
 from dataclasses import dataclass
 
-from core.schains.config.dir import schain_config_dir
+from core.schains.config.directory import schain_config_dir
 from core.schains.config.helper import get_schain_ports, get_schain_config
 from core.ima.schain import get_schain_ima_abi_filepath
 

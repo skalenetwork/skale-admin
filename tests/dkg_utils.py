@@ -1,10 +1,11 @@
 """ SKALE DKG test utilities """
-import json
 
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
 
-from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.schains.dkg.main import DKGResult
+from core.schains.dkg.status import DKGStatus
+
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 
 
@@ -38,16 +39,9 @@ SECRET_KEY_INFO = {
 }
 
 
-def safe_run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id, schain_record):
-    return run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id)
-
-
-def run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
-    path = get_secret_key_share_filepath(schain_name, rotation_id)
-    with open(path, 'w') as file:
-        file.write(json.dumps(SECRET_KEY_INFO))
+def safe_run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
     import_bls_key()
-    return True
+    return DKGResult(status=DKGStatus.DONE, keys_data=SECRET_KEY_INFO)
 
 
 def import_bls_key():

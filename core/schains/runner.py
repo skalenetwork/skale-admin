@@ -29,7 +29,7 @@ from core.schains.config.helper import (
     get_schain_env
 )
 from core.schains.ima import get_ima_env
-from core.schains.config.dir import schain_config_dir_host
+from core.schains.config.directory import schain_config_dir_host
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string

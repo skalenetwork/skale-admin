@@ -7,7 +7,7 @@ from core.schains.config.helper import (
     get_skaled_rpc_endpoints_from_config,
     get_snapshots_endpoints_from_config,
 )
-from core.schains.config.dir import schain_config_filepath
+from core.schains.config.directory import schain_config_filepath
 from core.schains.ssl import get_ssl_filepath
 from core.schains.volume import get_schain_volume_config
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME

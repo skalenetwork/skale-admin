@@ -27,7 +27,8 @@ from skale import Skale
 
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
-from core.schains.dkg import safe_run_dkg, DkgError
+from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
+from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.cleaner import (
     remove_config_dir,
     remove_schain_container,
@@ -42,7 +43,7 @@ from core.schains.rotation import get_schain_public_key
 from core.schains.monitor.containers import monitor_schain_container
 from core.schains.monitor.rpc import monitor_schain_rpc
 
-from core.schains.config.dir import init_schain_config_dir
+from core.schains.config.directory import init_schain_config_dir
 from core.schains.config.generator import init_schain_config
 
 from core.schains.ima import ImaData
@@ -126,7 +127,8 @@ class BaseMonitor(ABC):
             return initial_status
         return _monitor_block
 
-    def monitor_runner(func):
+    def monitor_runner(f):
+        @wraps(f)
         def _monitor_runner(self):
             logger.info(arguments_list_string({
                 'Monitor type': type(self).__name__,
@@ -138,7 +140,7 @@ class BaseMonitor(ABC):
             if not self.schain_record.first_run:
                 self._run_all_checks()
             self._upd_schain_record()
-            res = func(self)
+            res = f(self)
             self._upd_last_seen()
             self.log_executed_blocks()
             logger.info(f'{self.p} finished monitor runner')
@@ -162,15 +164,20 @@ class BaseMonitor(ABC):
     def dkg(self) -> bool:
         initial_status = self.checks.dkg.status
         if not initial_status:
-            is_dkg_done = safe_run_dkg(
+            dkg_result = safe_run_dkg(
                 skale=self.skale,
                 schain_name=self.name,
                 node_id=self.node_config.id,
                 sgx_key_name=self.node_config.sgx_key_name,
-                rotation_id=self.rotation_id,
-                schain_record=self.schain_record
+                rotation_id=self.rotation_id
             )
-            if not is_dkg_done:
+            if dkg_result.status.is_done():
+                save_dkg_results(
+                    dkg_result.keys_data,
+                    get_secret_key_share_filepath(self.name, self.rotation_id)
+                )
+            self.schain_record.set_dkg_status(dkg_result.status)
+            if not dkg_result.status.is_done():
                 remove_config_dir(self.name)
                 raise DkgError(f'{self.p} DKG failed')
         else:

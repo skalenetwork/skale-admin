@@ -25,7 +25,7 @@ from multiprocessing import Process
 from sgx import SgxClient
 
 from core.schains.checks import SChainChecks
-from core.schains.config.dir import schain_config_dir
+from core.schains.config.directory import schain_config_dir
 from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
 from core.schains.firewall import remove_firewall_rules
 from core.schains.types import ContainerType

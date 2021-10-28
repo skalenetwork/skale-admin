@@ -27,7 +27,7 @@ from core.schains.config.helper import (
     get_allowed_endpoints,
     get_local_schain_http_endpoint
 )
-from core.schains.config.dir import schain_config_dir, schain_config_filepath
+from core.schains.config.directory import schain_config_dir, schain_config_filepath
 from core.schains.runner import get_container_name
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER

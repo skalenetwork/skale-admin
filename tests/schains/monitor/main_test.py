@@ -9,14 +9,14 @@ from core.schains.monitor.main import (
     RotationMonitor, RegularMonitor
 )
 from core.schains.checks import SChainChecks, CheckRes
-from core.schains.config.dir import get_schain_rotation_filepath, schain_config_dir
+from core.schains.config.directory import get_schain_rotation_filepath, schain_config_dir
 from core.schains.runner import get_container_info
 
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.helper import write_json
 from web.models.schain import upsert_schain_record
 
-from tests.schains.monitor.base_monitor_test import BaseTestMonitor
+from tests.schains.monitor.base_monitor_test import BaseTestMonitor, CrashingTestMonitor
 
 
 class SChainChecksMock(SChainChecks):
@@ -116,7 +116,8 @@ def test_is_regular_mode(schain_db, _schain_name, dutils, checks):
 
 
 def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db, dutils):
-    assert not run_monitor_for_schain(
+    with mock.patch('core.schains.monitor.main.RegularMonitor', CrashingTestMonitor):
+        assert not run_monitor_for_schain(
             skale, skale_ima, node_config, {'name': schain_db, 'partOfNode': 0}, dutils, once=True)
     with mock.patch('core.schains.monitor.main.RegularMonitor', BaseTestMonitor):
         assert run_monitor_for_schain(

@@ -28,7 +28,7 @@ from Crypto.Hash import keccak
 from skale.dataclasses.skaled_ports import SkaledPorts
 
 from core.schains.ssl import get_ssl_filepath
-from core.schains.config.dir import schain_config_filepath
+from core.schains.config.directory import schain_config_filepath
 from tools.configs.containers import (
     DATA_DIR_CONTAINER_PATH,
     SHARED_SPACE_CONTAINER_PATH

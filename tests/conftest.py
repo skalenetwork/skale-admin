@@ -55,8 +55,10 @@ def ssl_folder():
         parents=True,
         exist_ok=True
     )
-    yield SSL_CERTIFICATES_FILEPATH
-    pathlib.Path(SSL_CERTIFICATES_FILEPATH).rmdir()
+    try:
+        yield SSL_CERTIFICATES_FILEPATH
+    finally:
+        pathlib.Path(SSL_CERTIFICATES_FILEPATH).rmdir()
 
 
 @pytest.fixture
