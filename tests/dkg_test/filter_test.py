@@ -1,7 +1,7 @@
 import mock
 import pytest
 
-from tools.bls.skale_dkg_broadcast_filter import Filter
+from core.schains.dkg.broadcast_filter import Filter
 
 SCHAIN_NAME = 'test'
 N = 16

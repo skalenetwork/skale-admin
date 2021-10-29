@@ -1,4 +1,5 @@
-from core.schains.runner import set_rotation_for_schain, is_exited, is_exited_with_zero
+from core.schains.runner import is_exited, is_exited_with_zero
+from core.schains.rotation import set_rotation_for_schain
 import mock
 import json
 
@@ -9,7 +10,7 @@ class ResponseMock:
 
 
 def test_set_rotation(schain_config):
-    with mock.patch('core.schains.helper.requests.post',
+    with mock.patch('core.schains.rotation.requests.post',
                     new=mock.Mock(return_value=ResponseMock())) as post:
         schain_name = schain_config['skaleConfig']['sChain']['schainName']
         set_rotation_for_schain(schain_name, 100)

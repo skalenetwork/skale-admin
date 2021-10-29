@@ -10,8 +10,6 @@ from dataclasses import dataclass
 
 from skale.skale_manager import spawn_skale_manager_lib
 
-from core.node_config import NodeConfig
-
 from core.schains.cleaner import (
     delete_bls_keys,
     monitor,
@@ -20,7 +18,7 @@ from core.schains.cleaner import (
     remove_schain_volume, remove_schain_container,
     remove_ima_container
 )
-from core.schains.helper import init_schain_dir
+from core.schains.config.directory import init_schain_config_dir
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -50,13 +48,6 @@ class ImaEnv:
 
 def is_container_running(dutils, container_name):
     return dutils.is_container_running(container_name)
-
-
-@pytest.fixture
-def node_config(skale):
-    node_config = NodeConfig()
-    node_config.id = 0
-    return node_config
 
 
 @pytest.fixture
@@ -109,7 +100,7 @@ def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils):
 
 def test_remove_config_dir():
     schain_name = 'temp'
-    init_schain_dir(schain_name)
+    init_schain_config_dir(schain_name)
     config_dir = os.path.join(SCHAINS_DIR_PATH, schain_name)
     assert os.path.isdir(config_dir)
     remove_config_dir(schain_name)

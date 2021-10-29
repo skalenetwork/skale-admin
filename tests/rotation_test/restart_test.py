@@ -11,7 +11,7 @@ from core.schains.cleaner import remove_schain_container, remove_schain_volume
 from skale.utils.contracts_provision.main import cleanup_nodes_schains
 from tests.rotation_test.utils import (set_up_rotated_schain, get_spawn_skale_mock,
                                        run_schain_container_mock, init_data_volume_mock,
-                                       run_dkg_mock, wait_for_schain_exiting,
+                                       safe_run_dkg_mock, wait_for_schain_exiting,
                                        wait_for_schain_alive, wait_for_contract_exiting)
 from tools.configs.schains import SCHAINS_DIR_PATH
 from web.models.schain import SChainRecord
@@ -49,7 +49,7 @@ def test_new_node(skale, skale_ima, rotated_nodes, dutils):
     with mock.patch('core.schains.monitor.add_firewall_rules'), \
             mock.patch('core.schains.monitor.run_schain_container', run_schain_container_mock), \
             mock.patch('core.schains.monitor.init_data_volume', init_data_volume_mock), \
-            mock.patch('core.schains.monitor.run_dkg', run_dkg_mock), \
+            mock.patch('core.schains.monitor.safe_run_dkg', safe_run_dkg_mock), \
             mock.patch('core.schains.monitor.spawn_skale_manager_lib', spawn_skale_lib_mock), \
             mock.patch('core.schains.checks.apsent_iptables_rules',
                        new=mock.Mock(return_value=[True, True])):

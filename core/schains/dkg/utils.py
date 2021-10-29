@@ -24,8 +24,8 @@ from time import sleep
 from skale.schain_config.generator import get_nodes_for_schain
 
 from tools.configs import NODE_DATA_PATH
-from tools.bls.dkg_client import DKGClient, DkgError, DkgVerificationError, DkgTransactionError
-from tools.bls.skale_dkg_broadcast_filter import Filter
+from core.schains.dkg.client import DKGClient, DkgError, DkgVerificationError, DkgTransactionError
+from core.schains.dkg.broadcast_filter import Filter
 
 from sgx.http import SgxUnreachableError
 
@@ -35,6 +35,10 @@ UINT_CONSTANT = 2**256 - 1
 
 
 class DkgFailedError(DkgError):
+    pass
+
+
+class DKGKeyGenerationError(Exception):
     pass
 
 
@@ -49,18 +53,17 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
     node_ids_dkg = dict()
     for i, node in enumerate(schain_nodes):
         if not len(node):
-            raise DkgError(f'sChain: {schain_name}:'
+            raise DkgError(f'sChain: {schain_name}: '
                            'Initialization failed, node info is empty.')
         if node['id'] == node_id:
             node_id_dkg = i
 
         node_ids_contract[node["id"]] = i
         node_ids_dkg[i] = node["id"]
-
         public_keys[i] = node["publicKey"]
 
     if node_id_dkg == -1:
-        raise DkgError(f'sChain: {schain_name}:'
+        raise DkgError(f'sChain: {schain_name}: {node_id} '
                        'Initialization failed, nodeID not found for schain.')
     dkg_client = DKGClient(
         node_id_dkg, node_id, skale, t, n, schain_name,
@@ -141,15 +144,24 @@ def broadcast_and_check_data(dkg_client):
 def generate_bls_keys(dkg_client):
     skale = dkg_client.skale
     schain_name = dkg_client.schain_name
-    encrypted_bls_key = dkg_client.generate_bls_key()
-    logger.info(f'sChain: {schain_name}. '
-                f'Node`s encrypted bls key is: {encrypted_bls_key}')
-    bls_public_keys = dkg_client.get_bls_public_keys()
-    common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
-    formated_common_public_key = []
-    for coord in common_public_key:
-        for elem in coord:
-            formated_common_public_key.append(elem)
+    try:
+        if not dkg_client.is_bls_key_generated():
+            encrypted_bls_key = dkg_client.generate_bls_key()
+            logger.info(f'sChain: {schain_name}. '
+                        f'Node`s encrypted bls key is: {encrypted_bls_key}')
+        else:
+            logger.info(f'sChain: {schain_name}. BLS key exists. Fetching')
+            dkg_client.fetch_bls_public_key()
+
+        bls_public_keys = dkg_client.get_bls_public_keys()
+        common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
+        formated_common_public_key = [
+            elem
+            for coord in common_public_key
+            for elem in coord
+        ]
+    except Exception as err:
+        raise DKGKeyGenerationError(err)
     return {
         'common_public_key': formated_common_public_key,
         'public_key': dkg_client.public_key,
@@ -244,6 +256,7 @@ def check_no_complaints(dkg_client):
 
 
 def wait_for_fail(skale, schain_name, channel_started_time, reason=""):
+    logger.info(f'sChain: {schain_name}. Will wait for FailedDkg event')
     start_time = get_latest_block_timestamp(skale)
     dkg_timeout = skale.constants_holder.get_dkg_timeout()
     group_index = skale.schains.name_to_group_id(schain_name)
