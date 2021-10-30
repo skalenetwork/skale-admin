@@ -129,3 +129,17 @@ def test_add_duplicates():
         assert plain_rules.count(plain_rule) == 1
 
     remove_rules(endpoints)
+
+
+def test_rule_class():
+    # import subprocess
+    # subprocess.run(['iptables', '-P', 'INPUT', 'DROP'])
+    import time
+    from tools.iptables import add_rule, compose_rule, delete_rule, has_rule
+    rule = compose_rule(1000, '1.1.1.1', '2.2.2.2', comment='Darova')
+    add_rule(rule)
+    # time.sleep(300)
+    assert has_rule(rule)
+    delete_rule(rule)
+    # time.sleep(300)
+    assert not has_rule(rule)

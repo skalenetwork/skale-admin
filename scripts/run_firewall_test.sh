@@ -15,4 +15,4 @@ docker run -v "$DIR/tests/skale-data/node_data":"/skale_node_data":Z \
     -e DB_PORT=3307 \
     -e SKALE_DIR_HOST=/skale_dir_host \
     --cap-add=NET_ADMIN --cap-add=NET_RAW \
-    --name test-firewall test-firewall pytest tests/firewall/
+    --name test-firewall test-firewall pytest tests/firewall/ $@
