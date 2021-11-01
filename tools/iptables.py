@@ -2,7 +2,9 @@ import importlib
 import logging
 import threading
 from collections import namedtuple
-from typing import Dict, List, Optional
+from typing import Dict, Generator, Optional
+
+from core.schains.firewall import IFirewallManager, SChainRule
 
 logger = logging.getLogger(__name__)
 
@@ -23,38 +25,61 @@ BASE_RULE_D = {
 lock = threading.Lock()
 
 
-class IptablesManager:
+class IptablesManager(IFirewallManager):
     def __init__(self, table: str = TABLE, chain: str = CHAIN):
         self.table = table
         self.chain = chain
         self.iptc = importlib.import_module('iptc')
 
-    def compose_rule_d(
-            self,
-            port: int,
-            start_ip: str,
-            end_ip: str,
-            target: str = 'ACCEPT',
-            comment: Optional[str] = None
-    ) -> Dict:
-        rule = {'protocol': 'tcp', 'tcp': {
-            'dport': str(port)}, 'target': target}
-        if start_ip == end_ip:
-            rule.update({'src': start_ip})
-        else:
-            rule.update({'iprange': {'src-range': f'{start_ip}-{end_ip}'}})
-            return rule
+    def add_rule(self, rule: SChainRule) -> None:
+        if not self.has_rule(rule):
+            rule_d = self.schain_rule_to_rule_d(rule)
+            with lock:
+                iptc.easy.insert_rule(self.table, self.chain, rule_d)
 
-    def get_rules(self) -> List[Dict]:
+    def remove_rule(self, rule: SChainRule) -> None:
+        if self.has_rule(rule):
+            rule_d = self.schain_rule_to_rule_d(rule)
+            with lock:
+                iptc.easy.delete_rule(self.table, self.chain, rule_d)
+
+    @property
+    def rules(self) -> Generator[SChainRule, SChainRule, SChainRule]:
         ichain = iptc.Chain(iptc.Table(self.table), self.chain)
         for irule in ichain.rules:
-            yield iptc.easy.encode_iptc_rule(irule)
+            rule_d = iptc.easy.decode_iptc_rule(irule)
+            yield self.rule_d_to_schain_rule(rule_d)
 
-    def get_port_range_rules(self, first: int, last: int) -> List[Dict]:
-        return filter(
-            lambda r: first < r.get('tcp', {}).get('dport', -1) < last,
-            self.get_rules
-        )
+    def has_rule(self, rule: SChainRule) -> bool:
+        rule_d = self.schain_rule_to_rule_d(rule)
+        return self.iptc.easy.has_rule(self.table, self.chain, rule_d)
+
+    def schain_rule_to_rule_d(self, srule: SChainRule) -> Dict:
+        rule = {
+            'protocol': 'tcp',
+            'tcp': {'dport': str(srule.port)},
+            'target': 'ACCEPT'
+        }
+        if srule.first_ip == srule.last_ip:
+            rule.update({'src': srule.first_ip})
+        else:
+            rule.update({
+                'iprange': {
+                    'src-range': f'{srule.first_ip}-{srule.last_ip}'
+                }
+            })
+        return rule
+
+    def rule_d_to_schain_rule(self, rule_d: Dict) -> SChainRule:
+        first_ip, last_ip = None, None
+        iprange = rule_d.get('iprange')
+        if iprange:
+            first_ip, last_ip = iprange['src-range'].split('-')
+        else:
+            first_ip = last_ip = rule_d['src']
+        port = int(rule_d['tcp']['dport'])
+
+        return SChainRule(port, first_ip, last_ip)
 
 
 def compose_rule(
