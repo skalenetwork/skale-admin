@@ -231,15 +231,15 @@ def test_get_all(schain_config, dutils, schain_db):
     )
     checks_dict = checks.get_all()
 
-    assert type(checks_dict['config_dir']) is bool
-    assert type(checks_dict['dkg']) is bool
-    assert type(checks_dict['config']) is bool
-    assert type(checks_dict['firewall_rules']) is bool
-    assert type(checks_dict['container']) is bool
-    assert type(checks_dict['exit_code_ok']) is bool
-    assert type(checks_dict['rpc']) is bool
-    assert type(checks_dict['blocks']) is bool
-    assert type(checks_dict['ima_container']) is bool
+    assert isinstance(checks_dict['config_dir'], bool)
+    assert isinstance(checks_dict['dkg'], bool)
+    assert isinstance(checks_dict['config'], bool)
+    assert isinstance(checks_dict['firewall_rules'], bool)
+    assert isinstance(checks_dict['container'], bool)
+    assert isinstance(checks_dict['exit_code_ok'], bool)
+    assert isinstance(checks_dict['rpc'], bool)
+    assert isinstance(checks_dict['blocks'], bool)
+    assert isinstance(checks_dict['ima_container'], bool)
 
     checks_without_ima = SChainChecksMock(
         schain_db,
