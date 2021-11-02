@@ -25,7 +25,8 @@ from typing import Generator, List, Iterable
 
 SChainRule = namedtuple(
     'SChainRule',
-    ['port', 'first_ip', 'last_ip']
+    ['port', 'first_ip', 'last_ip'],
+    defaults=(None, None,)
 )
 
 

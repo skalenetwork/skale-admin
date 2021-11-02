@@ -1,6 +1,7 @@
 import importlib
 import logging
 import threading
+import multiprocessing
 from collections import namedtuple
 from typing import Dict, Generator, Optional
 
@@ -23,6 +24,7 @@ BASE_RULE_D = {
 
 
 lock = threading.Lock()
+plock = multiprocessing.Lock()
 
 
 class IptablesManager(IFirewallManager):
@@ -34,21 +36,31 @@ class IptablesManager(IFirewallManager):
     def add_rule(self, rule: SChainRule) -> None:
         if not self.has_rule(rule):
             rule_d = self.schain_rule_to_rule_d(rule)
-            with lock:
+            with plock:
                 iptc.easy.insert_rule(self.table, self.chain, rule_d)
 
     def remove_rule(self, rule: SChainRule) -> None:
         if self.has_rule(rule):
             rule_d = self.schain_rule_to_rule_d(rule)
-            with lock:
+            with plock:
                 iptc.easy.delete_rule(self.table, self.chain, rule_d)
+
+    @classmethod
+    def is_manageable(cls, rule_d: Dict) -> bool:
+        # TODO: Think about comments
+        return all((
+            rule_d.get('protocol') == 'tcp',
+            rule_d.get('target') == 'ACCEPT',
+            rule_d.get('tcp', {}).get('dport') is not None
+        ))
 
     @property
     def rules(self) -> Generator[SChainRule, SChainRule, SChainRule]:
         ichain = iptc.Chain(iptc.Table(self.table), self.chain)
         for irule in ichain.rules:
             rule_d = iptc.easy.decode_iptc_rule(irule)
-            yield self.rule_d_to_schain_rule(rule_d)
+            if self.is_manageable(rule_d):
+                yield self.rule_d_to_schain_rule(rule_d)
 
     def has_rule(self, rule: SChainRule) -> bool:
         rule_d = self.schain_rule_to_rule_d(rule)
@@ -60,22 +72,24 @@ class IptablesManager(IFirewallManager):
             'tcp': {'dport': str(srule.port)},
             'target': 'ACCEPT'
         }
-        if srule.first_ip == srule.last_ip:
-            rule.update({'src': srule.first_ip})
-        else:
-            rule.update({
-                'iprange': {
-                    'src-range': f'{srule.first_ip}-{srule.last_ip}'
-                }
-            })
+        if srule.first_ip is not None:
+            if srule.first_ip == srule.last_ip or srule.last_ip is None:
+                rule.update({'src': srule.first_ip})
+            else:
+                rule.update({
+                    'iprange': {
+                        'src-range': f'{srule.first_ip}-{srule.last_ip}'
+                    }
+                })
         return rule
 
     def rule_d_to_schain_rule(self, rule_d: Dict) -> SChainRule:
         first_ip, last_ip = None, None
         iprange = rule_d.get('iprange')
+        src = rule_d.get('src')
         if iprange:
             first_ip, last_ip = iprange['src-range'].split('-')
-        else:
+        elif src:
             first_ip = last_ip = rule_d['src']
         port = int(rule_d['tcp']['dport'])
 
