@@ -1,5 +1,5 @@
 from collections import namedtuple
-from skale import SkaledPorts  # noqa
+from skale.dataclasses.skaled_ports import SkaledPorts  # noqa
 
 SChainRule = namedtuple(
     'SChainRule',

@@ -1,10 +1,11 @@
 import itertools
 from abc import ABC, abstractmethod
-from typing import Generator, Iterable, List, Optional
-
-from skale.sync_manager import IpRange  # type: ignore
+from collections import namedtuple
+from typing import Iterable, List, Optional
 
 from core.schains.firewall.entities import SChainRule, SkaledPorts
+
+IpRange = namedtuple('IpRange', ['start_ip', 'end_ip'])
 
 
 class IFirewallManager(ABC):
@@ -36,7 +37,7 @@ class SChainRuleController:
         self.firewall_manager = firewall_manager
 
     @property
-    def internal_ports(self) -> Generator[int, None, None]:
+    def internal_ports(self) -> Iterable[int]:
         return (
             self.base_port + offset.value
             for offset in (
@@ -49,14 +50,13 @@ class SChainRuleController:
 
     @property
     def internal_rules(self) -> Iterable[SChainRule]:
-        return (
-            SChainRule(port, ip)
-            for ip, port in zip(self.node_ips, self.internal_rules)
-            if ip != self.own_ip
-        )
+        for ip in self.node_ips:
+            if ip != self.own_ip:
+                for port in self.internal_ports:
+                    yield SChainRule(port, ip)
 
     @property
-    def public_ports(self) -> Iterable[SChainRule]:
+    def public_ports(self) -> Iterable[int]:
         return (
             self.base_port + offset.value
             for offset in (
@@ -74,34 +74,33 @@ class SChainRuleController:
 
     @property
     def public_rules(self) -> Iterable[SChainRule]:
-        return (SChainRule(port) for port in self.internal_rules)
+        return (SChainRule(port) for port in self.public_ports)
 
     @property
     def sync_agent_port(self) -> int:
-        return self.base_port + self.port_allocation.CATCHUP
+        return self.base_port + self.port_allocation.CATCHUP.value
 
     @property
     def sync_agent_rules(self) -> Iterable[SChainRule]:
         if not self.sync_ip_ranges:
-            raise StopIteration
+            return []
         return (
             SChainRule(self.sync_agent_port, r.start_ip, r.end_ip)
             for r in self.sync_ip_ranges
         )
 
-    @property
-    def rules(self) -> Iterable[SChainRule]:
-        return itertools.chain.from_iterable((
+    def expected_rules(self) -> Iterable[SChainRule]:
+        return sorted(itertools.chain.from_iterable((
             self.internal_rules,
             self.public_rules,
             self.sync_agent_rules
-        ))
+        )))
 
-    def get_rules(self) -> List[SChainRule]:
-        return list(self.rules)
+    def actual_rules(self) -> Iterable[SChainRule]:
+        return sorted(self.firewall_manager.rules)
 
     def is_rules_synced(self) -> bool:
-        return set(self.rules) == set(self.firewall_manager.rules)
+        return set(self.actual_rules()) == set(self.expected_rules())
 
     def sync_rules(self) -> None:
-        self.firewall_manager.update_rules(self.rules)
+        self.firewall_manager.update_rules(self.expected_rules())

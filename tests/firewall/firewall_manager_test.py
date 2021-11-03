@@ -6,10 +6,9 @@ from core.schains.firewall.firewall_manager import (
 )
 
 
-class TestHostFirewallManager(IHostFirewallManager):
+class HostFirewallManagerMock(IHostFirewallManager):
     def __init__(self):
         self._rules = set()
-        pass
 
     def add_rule(self, srule):
         self._rules.add(srule)
@@ -27,7 +26,7 @@ class TestHostFirewallManager(IHostFirewallManager):
 
 
 def test_firewall_manager():
-    hm = TestHostFirewallManager()
+    hm = HostFirewallManagerMock()
     fm = SChainFirewallManager('test', 10000, 10064, hm)
     assert list(fm.rules) == []
     rules = [
