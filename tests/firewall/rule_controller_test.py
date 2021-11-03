@@ -65,7 +65,6 @@ def test_schain_rule_controller():
         SkaledPorts,
         sync_ip_range
     )
-    print(src.expected_rules())
     assert list(src.expected_rules()) == list(sorted(expected_rules))
     src.sync_rules()
     assert src.is_rules_synced()
@@ -147,7 +146,6 @@ def test_schain_rule_controller_empty_sync_rules():
         SkaledPorts
     )
     assert not src.is_rules_synced()
-    print(list(src.expected_rules()))
     assert list(src.expected_rules()) == list(sorted(expected_rules))
     src.sync_rules()
     assert src.is_rules_synced()
