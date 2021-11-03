@@ -19,29 +19,22 @@
 
 
 from abc import ABC, abstractmethod
-from collections import namedtuple
-from typing import Generator, List, Iterable
+from typing import Iterable
+from core.schains.firewall.entities import SChainRule
 
 
-SChainRule = namedtuple(
-    'SChainRule',
-    ['port', 'first_ip', 'last_ip'],
-    defaults=(None, None,)
-)
-
-
-class IFirewallManager(ABC):
+class IHostFirewallManager(ABC):
     @abstractmethod
     def add_rule(self, rule: SChainRule) -> None:
         pass
 
     @abstractmethod
-    def remove_rule(self, rule: SChainRule) -> int:
+    def remove_rule(self, rule: SChainRule) -> None:
         pass
 
     @property
     @abstractmethod
-    def rules(self) -> Generator[SChainRule, SChainRule, SChainRule]:
+    def rules(self) -> Iterable[SChainRule]:
         pass
 
     @abstractmethod
@@ -49,57 +42,28 @@ class IFirewallManager(ABC):
         pass
 
 
-class SChainFirewall:
+class SChainFirewallManager:
     def __init__(
         self,
         name: str,
         first_port: int,
         last_port: int,
-        own_ip: str,
-        node_ips: List[str],
-        sync_agent_ips: List[str],
-        firewall_manager: IFirewallManager
+        host_manager: IHostFirewallManager
     ) -> None:
-        self.name = name,
-        self.firewall_manager = firewall_manager
-        self.own_ip = own_ip
-        self.node_ips = node_ips
-        self.sync_agent_ips = sync_agent_ips
+        self.name = name
+        self.first_port = first_port
+        self.last_port = last_port
+        self.host_manager = host_manager
 
-    def get_rules(
-        self,
-        first_port,
-        last_port
-    ) -> Generator[SChainRule, SChainRule, SChainRule]:
+    @property
+    def rules(self) -> Iterable[SChainRule]:
         return filter(
             lambda r: self.first_port <= r.port <= self.last_port,
-            self.firewall_manager.rules
+            self.host_manager.rules
         )
 
-#     def schain_rule_to_rule_d(self, srule: SChainRule) -> List:
-#         return self.firewall_manager.compose_rule_d(
-#             port=srule.port,
-#             start_ip=srule.start_ip,
-#             end_ip=srule.end_ip,
-#         )
-#
-#     def rule_d_to_schain_rule(self, rule_d: Dict) -> SChainRule:
-#         start_ip, end_ip = None, None
-#         iprange = rule_d.get('iprange')
-#         if iprange:
-#             start_ip, end_ip = iprange['src-range'].split('-')
-#         else:
-#             start_ip = end_ip = rule_d['src']
-#
-#         return SChainRule(
-#             name=self.name,
-#             port=rule_d['tcp']['dport'],
-#             start_ip=start_ip,
-#             end_ip=end_ip
-#         )
-
     def update_rules(self, rules: Iterable[SChainRule]) -> None:
-        actual_rules = set(self.firewall_manager.rules)
+        actual_rules = set(self.rules)
         expected_rules = set(rules)
         rules_to_add = expected_rules - actual_rules
         rules_to_remove = actual_rules - expected_rules
@@ -108,8 +72,8 @@ class SChainFirewall:
 
     def add_rules(self, rules: Iterable[SChainRule]) -> None:
         for rule in rules:
-            self.firewall_manager.add_rule(rule)
+            self.host_manager.add_rule(rule)
 
     def remove_rules(self, rules: Iterable[SChainRule]) -> None:
         for rule in rules:
-            self.firewall_manager.remove_rule(rule)
+            self.host_manager.remove_rule(rule)
