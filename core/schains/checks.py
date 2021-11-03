@@ -128,7 +128,7 @@ class SChainChecks:
     def rpc(self) -> CheckRes:
         """Checks that local skaled RPC is accessible"""
         res = False
-        if self.config:
+        if self.config.status:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             res = check_endpoint_alive(http_endpoint)
         return CheckRes(res)
@@ -136,14 +136,14 @@ class SChainChecks:
     @property
     def blocks(self) -> CheckRes:
         """Checks that local skaled is mining blocks"""
-        if self.config:
+        if self.config.status:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             return CheckRes(check_endpoint_blocks(http_endpoint))
         return CheckRes(False)
 
     def get_all(self, log=True):
         checks_dict = {
-            'data_dir': self.config_dir.status,
+            'config_dir': self.config_dir.status,
             'dkg': self.dkg.status,
             'config': self.config.status,
             'volume': self.volume.status,
@@ -154,7 +154,7 @@ class SChainChecks:
             'blocks': self.blocks.status
         }
         if not DISABLE_IMA and self.ima_linked:
-            checks_dict['ima_container'] = self.ima_container
+            checks_dict['ima_container'] = self.ima_container.status
         if log:
             log_checks_dict(self.name, checks_dict)
         return checks_dict

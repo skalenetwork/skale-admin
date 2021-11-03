@@ -8,7 +8,7 @@ from collections import namedtuple
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 
-from core.schains.checks import SChainChecks
+from core.schains.checks import SChainChecks, CheckRes
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER
 
@@ -57,6 +57,12 @@ ETH_GET_BLOCK_RESULT = {
 }
 
 SchainRecordMock = namedtuple('SchainRecord', ['config_version'])
+
+
+class SChainChecksMock(SChainChecks):
+    @property
+    def firewall_rules(self) -> CheckRes:
+        return CheckRes(True)
 
 
 @pytest.fixture
@@ -211,3 +217,36 @@ def test_exit_code(skale, schain_db, dutils):
         dutils.safe_rm(container_name)
         raise e
     dutils.safe_rm(container_name)
+
+
+def test_get_all(schain_config, dutils, schain_db):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain_record = SChainRecord.get_by_name(schain_name)
+    node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
+    checks = SChainChecksMock(
+        schain_db,
+        node_id,
+        schain_record=schain_record,
+        dutils=dutils
+    )
+    checks_dict = checks.get_all()
+
+    assert isinstance(checks_dict['config_dir'], bool)
+    assert isinstance(checks_dict['dkg'], bool)
+    assert isinstance(checks_dict['config'], bool)
+    assert isinstance(checks_dict['firewall_rules'], bool)
+    assert isinstance(checks_dict['container'], bool)
+    assert isinstance(checks_dict['exit_code_ok'], bool)
+    assert isinstance(checks_dict['rpc'], bool)
+    assert isinstance(checks_dict['blocks'], bool)
+    assert isinstance(checks_dict['ima_container'], bool)
+
+    checks_without_ima = SChainChecksMock(
+        schain_db,
+        node_id,
+        schain_record=schain_record,
+        dutils=dutils,
+        ima_linked=False
+    )
+    checks_dict_without_ima = checks_without_ima.get_all()
+    assert 'ima_container' not in checks_dict_without_ima
