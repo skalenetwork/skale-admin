@@ -57,10 +57,10 @@ class SChainFirewallManager:
 
     @property
     def rules(self) -> Iterable[SChainRule]:
-        return filter(
+        return sorted(list(filter(
             lambda r: self.first_port <= r.port <= self.last_port,
             self.host_manager.rules
-        )
+        )))
 
     def update_rules(self, rules: Iterable[SChainRule]) -> None:
         actual_rules = set(self.rules)
