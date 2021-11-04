@@ -30,7 +30,6 @@ from core.schains.checks import SChainChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.cleaner import (
-    remove_config_dir,
     remove_schain_container,
     remove_schain_volume
 )
@@ -178,7 +177,6 @@ class BaseMonitor(ABC):
                 )
             self.schain_record.set_dkg_status(dkg_result.status)
             if not dkg_result.status.is_done():
-                remove_config_dir(self.name)
                 raise DkgError(f'{self.p} DKG failed')
         else:
             logger.info(f'{self.p} dkg - ok')
