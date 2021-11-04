@@ -11,11 +11,11 @@ IpRange = namedtuple('IpRange', ['start_ip', 'end_ip'])
 class IFirewallManager(ABC):
     @property
     @abstractmethod
-    def rules(self) -> Iterable[SChainRule]:
+    def rules(self) -> Iterable[SChainRule]:  # pragma: no cover
         pass
 
     @abstractmethod
-    def update_rules(self, rules: Iterable[SChainRule]) -> None:
+    def update_rules(self, rules: Iterable[SChainRule]) -> None:  # pragma: no cover  # noqa
         pass
 
 

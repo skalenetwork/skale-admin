@@ -25,20 +25,20 @@ from core.schains.firewall.entities import SChainRule
 
 class IHostFirewallManager(ABC):
     @abstractmethod
-    def add_rule(self, rule: SChainRule) -> None:
+    def add_rule(self, rule: SChainRule) -> None:  # pragma: no cover
         pass
 
     @abstractmethod
-    def remove_rule(self, rule: SChainRule) -> None:
+    def remove_rule(self, rule: SChainRule) -> None:  # pragma: no cover
         pass
 
     @property
     @abstractmethod
-    def rules(self) -> Iterable[SChainRule]:
+    def rules(self) -> Iterable[SChainRule]:  # pragma: no cover
         pass
 
     @abstractmethod
-    def has_rule(self, rule: SChainRule) -> bool:
+    def has_rule(self, rule: SChainRule) -> bool:  # pragma: no cover
         pass
 
 
