@@ -16,6 +16,7 @@ else:
     SKALE_VOLUME_PATH = '/skale_vol'
     NODE_DATA_PATH = '/skale_node_data'
 
+DISK_MOUNTPOINT = os.getenv('DISK_MOUNTPOINT', None)
 
 SCHAIN_NODE_DATA_PATH = '/skale_node_data'
 SCHAIN_CONFIG_DIR_SKALED = '/schain_config'

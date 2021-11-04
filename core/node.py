@@ -42,8 +42,7 @@ from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.filebeat import update_filebeat_service
 
-from tools.configs import CHECK_REPORT_PATH, META_FILEPATH, WATCHDOG_PORT
-from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
+from tools.configs import CHECK_REPORT_PATH, META_FILEPATH, WATCHDOG_PORT, DISK_MOUNTPOINT
 from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
@@ -304,17 +303,10 @@ def get_block_device_size(device: str) -> int:
     return data['Size']
 
 
-def get_attached_storage_block_device():
-    with open(DISK_MOUNTPOINT_FILEPATH) as dm_file:
-        name = dm_file.read().strip()
-        return name
-
-
 def get_node_hardware_info() -> dict:
     system_release = f'{platform.system()}-{platform.release()}'
     uname_version = platform.uname().version
-    attached_device = get_attached_storage_block_device()
-    attached_storage_size = get_block_device_size(attached_device)
+    attached_storage_size = get_block_device_size(DISK_MOUNTPOINT)
     return {
         'cpu_total_cores': psutil.cpu_count(logical=True),
         'cpu_physical_cores': psutil.cpu_count(logical=False),

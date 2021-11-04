@@ -9,14 +9,12 @@ from skale.utils.contracts_provision.main import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.node import (
-    get_attached_storage_block_device,
     get_block_device_size,
     get_node_hardware_info,
     Node, NodeExitStatus, NodeStatus
 )
 from core.node_config import NodeConfig
 from tools.configs import NODE_DATA_PATH
-from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -218,17 +216,8 @@ def test_node_maintenance_error(active_node, skale):
         res = active_node.set_maintenance_on()
 
 
-@pytest.fixture
-def block_device_file():
-    device = '/dev/xvdd'
-    with open(DISK_MOUNTPOINT_FILEPATH, 'w') as dm_file:
-        dm_file.write(device)
-    yield DISK_MOUNTPOINT_FILEPATH
-    os.remove(DISK_MOUNTPOINT_FILEPATH)
-
-
 @mock.patch('core.node.get_block_device_size', return_value=300)
-def test_get_node_hardware_info(get_block_device_size_mock, block_device_file):
+def test_get_node_hardware_info(get_block_device_size_mock):
     info = get_node_hardware_info()
     assert isinstance(info['cpu_total_cores'], int)
     assert isinstance(info['cpu_physical_cores'], int)
@@ -240,10 +229,6 @@ def test_get_node_hardware_info(get_block_device_size_mock, block_device_file):
     assert isinstance(info['system_release'], str)
     assert isinstance(info['uname_version'], str)
     assert info['attached_storage_size'] == 300
-
-
-def test_get_attached_storage_block_device(block_device_file) -> int:
-    assert get_attached_storage_block_device() == '/dev/xvdd'
 
 
 def test_get_block_device_size():
