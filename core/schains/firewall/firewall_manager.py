@@ -18,28 +18,9 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from abc import ABC, abstractmethod
 from typing import Iterable
 from core.schains.firewall.entities import SChainRule
-
-
-class IHostFirewallManager(ABC):
-    @abstractmethod
-    def add_rule(self, rule: SChainRule) -> None:  # pragma: no cover
-        pass
-
-    @abstractmethod
-    def remove_rule(self, rule: SChainRule) -> None:  # pragma: no cover
-        pass
-
-    @property
-    @abstractmethod
-    def rules(self) -> Iterable[SChainRule]:  # pragma: no cover
-        pass
-
-    @abstractmethod
-    def has_rule(self, rule: SChainRule) -> bool:  # pragma: no cover
-        pass
+from core.schains.firewall.interfaces import IHostFirewallManager
 
 
 class SChainFirewallManager:

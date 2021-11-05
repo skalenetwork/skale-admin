@@ -27,10 +27,10 @@ from core.node_config import NodeConfig
 from core.schains.monitor import (
     BaseMonitor, RegularMonitor, RepairMonitor, BackupMonitor, RotationMonitor, PostRotationMonitor
 )
+from core.schains.ima import ImaData
 from core.schains.checks import SChainChecks
 from core.schains.rotation import check_schain_rotated
-
-from core.schains.ima import ImaData
+from core.schains.utils import get_sync_agent_ranges
 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
@@ -101,6 +101,8 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             rotation_data = skale.node_rotation.get_rotation(name)
             rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
 
+            sync_agent_ranges = get_sync_agent_ranges(skale)
+
             schain_record = upsert_schain_record(name)
             checks = SChainChecks(
                 name,
@@ -108,6 +110,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
                 schain_record=schain_record,
                 rotation_id=rotation_data['rotation_id'],
                 ima_linked=ima_linked,
+                sync_agent_ranges=sync_agent_ranges,
                 dutils=dutils
             )
 
@@ -123,7 +126,8 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
                 schain=schain,
                 node_config=node_config,
                 rotation_data=rotation_data,
-                checks=checks
+                checks=checks,
+                sync_agent_ranges=sync_agent_ranges
             )
             monitor.run()
             if once:

@@ -19,12 +19,15 @@
 
 import time
 import logging
+from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import wraps
-from abc import ABC, abstractmethod
+from typing import List, Optional
 
 from skale import Skale
 
+
+from core.ima.schain import copy_schain_ima_abi
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
@@ -37,17 +40,24 @@ from core.schains.cleaner import (
 from core.schains.runner import run_ima_container
 
 from core.schains.volume import init_data_volume
-from core.schains.firewall import add_firewall_rules
 from core.schains.rotation import get_schain_public_key
 
 from core.schains.monitor.containers import monitor_schain_container
 from core.schains.monitor.rpc import monitor_schain_rpc
 
-from core.schains.config.directory import init_schain_config_dir
+from core.schains.config.directory import (
+    get_schain_config,
+    init_schain_config_dir
+)
 from core.schains.config.generator import init_schain_config
-
+from core.schains.config.helper import (
+    get_base_port_from_config,
+    get_node_ips_from_config,
+    get_own_ip_from_config
+)
+from core.schains.firewall import get_default_rule_controller
+from core.schains.firewall.entities import IpRange
 from core.schains.ima import ImaData
-from core.ima.schain import copy_schain_ima_abi
 
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
@@ -73,6 +83,7 @@ class BaseMonitor(ABC):
         node_config: NodeConfig,
         rotation_data: dict,
         checks: SChainChecks,
+        sync_agent_ranges: Optional[List[IpRange]] = None,
         dutils: DockerUtils = None
     ):
         self.skale = skale
@@ -85,6 +96,7 @@ class BaseMonitor(ABC):
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
+        self.sync_agent_ranges = sync_agent_ranges or []
 
         self.dutils = dutils or DockerUtils()
         self.p = f'{type(self).__name__} - schain: {self.name} -'
@@ -212,10 +224,19 @@ class BaseMonitor(ABC):
     @monitor_block
     def firewall_rules(self, overwrite=False) -> bool:
         initial_status = self.checks.firewall_rules.status
-        if not initial_status or overwrite:
-            add_firewall_rules(self.name)
-        else:
-            logger.info(f'{self.p} firewall_rules - ok')
+        if not initial_status:
+            conf = get_schain_config(self.name)
+            base_port = get_base_port_from_config(conf)
+            node_ips = get_node_ips_from_config(conf)
+            own_ip = get_own_ip_from_config(conf)
+            rc = get_default_rule_controller(
+                self.name,
+                base_port,
+                own_ip,
+                node_ips,
+                self.sync_agent_ranges
+            )
+            rc.sync_rules()
         return initial_status
 
     @monitor_block
@@ -262,7 +283,11 @@ class BaseMonitor(ABC):
         if not DISABLE_IMA and not initial_status:
             if self.ima_data.linked:
                 copy_schain_ima_abi(self.name)
-                run_ima_container(self.schain, self.ima_data.chain_id, dutils=self.dutils)
+                run_ima_container(
+                    self.schain,
+                    self.ima_data.chain_id,
+                    dutils=self.dutils
+                )
             else:
                 logger.warning(f'{self.p} not registered in IMA')
         else:

@@ -1,22 +1,8 @@
 import itertools
-from abc import ABC, abstractmethod
-from collections import namedtuple
 from typing import Iterable, List, Optional
 
-from core.schains.firewall.entities import SChainRule, SkaledPorts
-
-IpRange = namedtuple('IpRange', ['start_ip', 'end_ip'])
-
-
-class IFirewallManager(ABC):
-    @property
-    @abstractmethod
-    def rules(self) -> Iterable[SChainRule]:  # pragma: no cover
-        pass
-
-    @abstractmethod
-    def update_rules(self, rules: Iterable[SChainRule]) -> None:  # pragma: no cover  # noqa
-        pass
+from core.schains.firewall.entities import IpRange, SChainRule, SkaledPorts
+from core.schains.firewall.interfaces import IFirewallManager
 
 
 class SChainRuleController:

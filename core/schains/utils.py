@@ -19,7 +19,11 @@
 
 
 import logging
+from typing import Dict, List
 
+from skale import Skale
+
+from core.schains.firewall.entities import IpRange
 from tools.notifications.messages import notify_balance
 
 logger = logging.getLogger(__name__)
@@ -27,9 +31,17 @@ logger = logging.getLogger(__name__)
 REQUIRED_BALANCE_WEI = 10 ** 17
 
 
-def notify_if_not_enough_balance(skale, node_info):
+def notify_if_not_enough_balance(skale: Skale, node_info: Dict) -> None:
     eth_balance_wei = skale.web3.eth.getBalance(skale.wallet.address)
     logger.info(f'Node account has {eth_balance_wei} WEI')
     balance_in_skl = skale.web3.fromWei(eth_balance_wei, 'ether')
     required_in_skl = skale.web3.fromWei(REQUIRED_BALANCE_WEI, 'ether')
     notify_balance(node_info, balance_in_skl, required_in_skl)
+
+
+def get_sync_agent_ranges(skale: Skale) -> List[IpRange]:
+    sync_agent_ranges = []
+    rnum = skale.sync_manager.get_ip_ranges_number()
+    for i in range(rnum):
+        sync_agent_ranges.appned(skale.sync_manager.get_ip_range_by_index(i))
+    return sync_agent_ranges

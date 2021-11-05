@@ -27,7 +27,6 @@ from sgx import SgxClient
 from core.schains.checks import SChainChecks
 from core.schains.config.directory import schain_config_dir
 from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
-from core.schains.firewall import remove_firewall_rules
 from core.schains.types import ContainerType
 from core.schains.process_manager_helper import terminate_schain_process
 
@@ -198,8 +197,9 @@ def cleanup_schain(node_id, schain_name, dutils=None):
         remove_schain_container(schain_name, dutils=dutils)
     if checks.volume.status:
         remove_schain_volume(schain_name, dutils=dutils)
-    if checks.firewall_rules.status:
-        remove_firewall_rules(schain_name)
+        if checks.firewall_rules.status:
+            # TODO:
+            pass
     if not DISABLE_IMA:
         if checks.ima_container.status or is_exited(
             schain_name,

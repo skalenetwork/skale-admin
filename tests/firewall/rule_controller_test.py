@@ -110,7 +110,7 @@ def test_schain_rule_controller():
     assert list(src.actual_rules()) == list(sorted(expected_rules))
 
 
-def test_schain_rule_controller_empty_sync_rules():
+def test_schain_rule_controller_no_sync_rules():
     tfm = FirewallManagerMock()
     own_ip = '1.1.1.1'
     node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4']
@@ -151,3 +151,16 @@ def test_schain_rule_controller_empty_sync_rules():
     assert src.is_rules_synced()
     assert list(src.expected_rules()) == list(sorted(expected_rules))
     assert list(src.actual_rules()) == list(sorted(expected_rules))
+
+
+def test_schain_rule_controller_empty():
+    tfm = FirewallManagerMock()
+    src = SChainRuleController(
+        tfm,
+        10000,
+        '1.1.1.1',
+        ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4'],
+        SkaledPorts
+    )
+    assert src.is_rules_synced()
+    assert list(src.expected_rules()) == []
