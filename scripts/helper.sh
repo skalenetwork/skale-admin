@@ -22,7 +22,6 @@ export_test_env () {
     export ENV=test
     export ALLOWED_TS_DIFF=9000000
     export SCHAIN_STOP_TIMEOUT=1
-    export DISK_MOUNTPOINT=/dev/xvdd
 
     cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info
 }

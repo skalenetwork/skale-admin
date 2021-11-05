@@ -238,8 +238,8 @@ def test_get_block_device_size():
     response_mock.json = mock.Mock(
         return_value={'Name': device, 'Size': size, 'Err': ''})
     with mock.patch('requests.get', return_value=response_mock):
-        assert get_block_device_size(device) == size
+        assert get_block_device_size() == size
 
     response_mock.json = mock.Mock(return_value={'Err': 'Test error'})
     with mock.patch('requests.get', return_value=response_mock):
-        assert get_block_device_size(device) == -1
+        assert get_block_device_size() == -1
