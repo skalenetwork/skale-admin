@@ -22,7 +22,7 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import wraps
-from typing import List, Optional
+from typing import Callable
 
 from skale import Skale
 
@@ -55,8 +55,6 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config
 )
-from core.schains.firewall import get_default_rule_controller
-from core.schains.firewall.entities import IpRange
 from core.schains.ima import ImaData
 
 from tools.configs.ima import DISABLE_IMA
@@ -83,7 +81,7 @@ class BaseMonitor(ABC):
         node_config: NodeConfig,
         rotation_data: dict,
         checks: SChainChecks,
-        sync_agent_ranges: Optional[List[IpRange]] = None,
+        rule_controller_creator: Callable,
         dutils: DockerUtils = None
     ):
         self.skale = skale
@@ -96,7 +94,7 @@ class BaseMonitor(ABC):
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
-        self.sync_agent_ranges = sync_agent_ranges or []
+        self.rc_creator = rule_controller_creator
 
         self.dutils = dutils or DockerUtils()
         self.p = f'{type(self).__name__} - schain: {self.name} -'
@@ -229,13 +227,7 @@ class BaseMonitor(ABC):
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
-            rc = get_default_rule_controller(
-                self.name,
-                base_port,
-                own_ip,
-                node_ips,
-                self.sync_agent_ranges
-            )
+            rc = self.rc_creator(self.name, base_port, own_ip, node_ips)
             rc.sync_rules()
         return initial_status
 

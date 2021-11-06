@@ -19,7 +19,7 @@
 
 import os
 import logging
-from typing import List, Optional
+from typing import Callable
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
@@ -35,8 +35,6 @@ from core.schains.config.directory import (
     schain_config_dir,
     schain_config_filepath
 )
-from core.schains.firewall import get_default_rule_controller
-from core.schains.firewall.entities import IpRange
 from core.schains.runner import get_container_name
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
@@ -61,9 +59,9 @@ class SChainChecks:
         schain_name: str,
         node_id: int,
         schain_record: SChainRecord,
+        rule_controller_creator: Callable,
         rotation_id: int = 0,
         *,
-        sync_agent_ranges: Optional[List[IpRange]] = None,
         ima_linked: bool = True,
         dutils: DockerUtils = None
     ):
@@ -74,7 +72,7 @@ class SChainChecks:
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.ima_linked = ima_linked
-        self.sync_agent_ranges = sync_agent_ranges or []
+        self.rc_creator = rule_controller_creator
 
     @property
     def config_dir(self) -> CheckRes:
@@ -114,12 +112,11 @@ class SChainChecks:
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
-            rc = get_default_rule_controller(
-                self.name,
-                base_port,
-                own_ip,
-                node_ips,
-                self.sync_agent_ranges
+            rc = self.rc_creator(
+                name=self.name,
+                base_port=base_port,
+                own_ip=own_ip,
+                node_ips=node_ips
             )
             return CheckRes(rc.is_rules_synced())
         return CheckRes(False)

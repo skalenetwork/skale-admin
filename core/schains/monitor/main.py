@@ -19,16 +19,18 @@
 
 import time
 import logging
+from functools import partial
 from importlib import reload
 
 from web3._utils import request
 
 from core.node_config import NodeConfig
+from core.schains.checks import SChainChecks
+from core.schains.firewall import get_default_rule_controller
+from core.schains.ima import ImaData
 from core.schains.monitor import (
     BaseMonitor, RegularMonitor, RepairMonitor, BackupMonitor, RotationMonitor, PostRotationMonitor
 )
-from core.schains.ima import ImaData
-from core.schains.checks import SChainChecks
 from core.schains.rotation import check_schain_rotated
 from core.schains.utils import get_sync_agent_ranges
 
@@ -103,14 +105,18 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
 
             sync_agent_ranges = get_sync_agent_ranges(skale)
 
+            rc_creator = partial(
+                get_default_rule_controller,
+                sync_agent_ranges=sync_agent_ranges
+            )
             schain_record = upsert_schain_record(name)
             checks = SChainChecks(
                 name,
                 node_config.id,
                 schain_record=schain_record,
+                rule_controller_creator=rc_creator,
                 rotation_id=rotation_data['rotation_id'],
                 ima_linked=ima_linked,
-                sync_agent_ranges=sync_agent_ranges,
                 dutils=dutils
             )
 
@@ -127,7 +133,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
                 node_config=node_config,
                 rotation_data=rotation_data,
                 checks=checks,
-                sync_agent_ranges=sync_agent_ranges
+                rule_controller_creator=rc_creator
             )
             monitor.run()
             if once:

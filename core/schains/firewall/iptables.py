@@ -19,6 +19,7 @@ class IptablesManager(IHostFirewallManager):
         self.table = table
         self.chain = chain
         self.iptc = importlib.import_module('iptc')
+        self.iptc = importlib.reload(self.iptc)
 
     def add_rule(self, rule: SChainRule) -> None:
         if not self.has_rule(rule):
