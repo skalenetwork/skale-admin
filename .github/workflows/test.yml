@@ -19,14 +19,12 @@ jobs:
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: true
     - name: Set up Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v1
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-    - name: Checkout submodules
-      uses: textbook/git-checkout-submodule-action@master
-      with:
-        remote: true
     - name: Install python dependencies
       run: bash ./scripts/install_python_dependencies.sh
     - name: Lint with flake8
