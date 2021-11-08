@@ -47,7 +47,7 @@ def generate_skale_config(schain: dict, schain_id: int, node_id: int, node: dict
                           ecdsa_key_name: str, schains_on_node: list,
                           schain_nodes_with_schains: list,
                           rotation_id: int,
-                          previous_public_keys: list) -> SkaleConfig:
+                          previous_public_keys_info: list) -> SkaleConfig:
     static_schain_params = get_static_schain_params()
 
     contract_settings = generate_contract_settings(
@@ -76,7 +76,7 @@ def generate_skale_config(schain: dict, schain_id: int, node_id: int, node: dict
         schain=schain,
         static_schain_params=static_schain_params,
         nodes=schain_nodes,
-        previous_public_keys=previous_public_keys
+        previous_public_keys_info=previous_public_keys_info
     )
 
     return SkaleConfig(

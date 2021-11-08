@@ -191,7 +191,7 @@ class BaseMonitor(ABC):
                 node_id=self.node_config.id,
                 schain_name=self.name,
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
-                rotation_id=self.rotation_id,
+                rotation_data=self.rotation_data,
                 schain_record=self.schain_record
             )
         else:
