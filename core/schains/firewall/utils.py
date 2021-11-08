@@ -25,7 +25,7 @@ def get_default_rule_controller(
         base_port,
         own_ip,
         node_ips,
-        sync_agent_ranges=sync_agent_ranges
+        sync_ip_ranges=sync_agent_ranges
     )
 
 

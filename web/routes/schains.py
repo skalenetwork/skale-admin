@@ -21,7 +21,6 @@ import logging
 
 from flask import Blueprint, g, request
 
-from core.schains.config.helper import get_allowed_endpoints, get_schain_config
 from core.schains.config.directory import schain_config_exists
 from core.schains.ima import get_ima_version
 from core.schains.info import get_schain_info_by_name, get_skaled_version

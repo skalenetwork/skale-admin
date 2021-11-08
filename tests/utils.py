@@ -5,6 +5,7 @@ import os
 import random
 import string
 import time
+from functools import partial
 
 import mock
 from mock import Mock, MagicMock
@@ -13,9 +14,12 @@ from skale import Skale, SkaleIma
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
-from core.schains.runner import run_schain_container, run_ima_container
 from core.schains.config.generator import save_schain_config
 from core.schains.config.helper import get_schain_config
+from core.schains.firewall.entities import PORTS_PER_SCHAIN
+from core.schains.firewall.interfaces import IHostFirewallManager
+from core.schains.firewall import SChainFirewallManager, SChainRuleController
+from core.schains.runner import run_schain_container, run_ima_container
 
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
@@ -218,3 +222,52 @@ def alter_schain_config(schain_name: str, public_key: str) -> None:
     node['publicKey'] = public_key
     config['skaleConfig']['sChain']['nodes'] = [node]
     save_schain_config(config, schain_name)
+
+
+class HostFirewallManagerMock(IHostFirewallManager):
+    def __init__(self):
+        self._rules = set()
+
+    def add_rule(self, srule):
+        self._rules.add(srule)
+
+    def remove_rule(self, srule):
+        if self.has_rule(srule):
+            self._rules.remove(srule)
+
+    @property
+    def rules(self):
+        return iter(self._rules)
+
+    def has_rule(self, srule):
+        return srule in self._rules
+
+
+def get_test_rc(
+    name,
+    base_port,
+    own_ip,
+    node_ips,
+    sync_agent_ranges=[],
+    synced=False
+):
+    hm = HostFirewallManagerMock()
+    fm = SChainFirewallManager(
+        name,
+        base_port,
+        base_port + PORTS_PER_SCHAIN,
+        hm
+    )
+    rc = SChainRuleController(
+        fm,
+        base_port,
+        own_ip,
+        node_ips,
+        sync_ip_ranges=sync_agent_ranges
+    )
+    if synced:
+        rc.sync()
+    return rc
+
+
+get_test_rc_synced = partial(get_test_rc, synced=True)

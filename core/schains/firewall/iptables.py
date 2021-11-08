@@ -14,7 +14,20 @@ CHAIN = 'INPUT'
 plock = multiprocessing.Lock()
 
 
-class IptablesManager(IHostFirewallManager):
+class Singleton(type):
+    def __init__(self, *args, **kwargs):
+        self.__instance = None
+        super().__init__(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        if self.__instance is None:
+            self.__instance = super().__call__(*args, **kwargs)
+            return self.__instance
+        else:
+            return self.__instance
+
+
+class IptablesManager(IHostFirewallManager, Singleton):
     def __init__(self, table: str = TABLE, chain: str = CHAIN):
         self.table = table
         self.chain = chain

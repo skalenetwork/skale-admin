@@ -4,12 +4,12 @@ from time import sleep
 
 import pytest
 
+from core.schains.checks import SChainChecks, CheckRes
+from core.schains.config.directory import get_schain_rotation_filepath, schain_config_dir
 from core.schains.monitor.main import (
     run_monitor_for_schain, get_monitor_type, BackupMonitor, RepairMonitor, PostRotationMonitor,
     RotationMonitor, RegularMonitor
 )
-from core.schains.checks import SChainChecks, CheckRes
-from core.schains.config.directory import get_schain_rotation_filepath, schain_config_dir
 from core.schains.runner import get_container_info
 
 from tools.configs.containers import SCHAIN_CONTAINER
@@ -17,6 +17,7 @@ from tools.helper import write_json
 from web.models.schain import upsert_schain_record
 
 from tests.schains.monitor.base_monitor_test import BaseTestMonitor, CrashingTestMonitor
+from tests.utils import get_test_rc
 
 
 class SChainChecksMock(SChainChecks):
@@ -37,7 +38,8 @@ def checks(schain_db, node_config, ima_data, dutils):
     return SChainChecksMock(
         schain_db,
         node_config.id,
-        schain_record
+        schain_record,
+        rule_controller_creator=get_test_rc
     )
 
 
@@ -72,7 +74,8 @@ def test_is_repair_mode(schain_db, _schain_name, node_config, checks, dutils):
     bad_checks = SChainChecksMockBad(
         schain_db,
         node_config.id,
-        schain_record
+        schain_record,
+        rule_controller_creator=get_test_rc
     )
     assert get_monitor_type(schain_record, bad_checks, False, dutils) == RepairMonitor
 
@@ -83,6 +86,7 @@ def test_is_repair_mode_state_root(schain_db, _schain_name, node_config, dutils)
         schain_db,
         node_config.id,
         schain_record,
+        rule_controller_creator=get_test_rc,
         dutils=dutils
     )
     assert get_monitor_type(schain_record, checks, False, dutils) != RepairMonitor

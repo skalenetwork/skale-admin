@@ -110,8 +110,13 @@ def get_base_port_from_config(config: Dict) -> int:
     return config['skaleConfig']['nodeInfo']['basePort']
 
 
-def get_own_ip_from_config(config: Dict) -> int:
-    return config['skaleConfig']['nodeInfo']['ip']
+def get_own_ip_from_config(config: Dict) -> str:
+    schain_nodes_config = config['skaleConfig']['sChain']['nodes']
+    own_id = config['skaleConfig']['nodeInfo']['nodeID']
+    for node_data in schain_nodes_config:
+        if node_data['nodeID'] == own_id:
+            return node_data['ip']
+    return None
 
 
 def get_schain_ports(schain_name):

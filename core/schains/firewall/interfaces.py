@@ -39,5 +39,5 @@ class IRuleController(ABC):
         pass
 
     @abstractmethod
-    def sync_rules(self) -> None:  # pragma: no cover
+    def sync(self) -> None:  # pragma: no cover
         pass

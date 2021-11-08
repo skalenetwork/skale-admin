@@ -228,7 +228,7 @@ class BaseMonitor(ABC):
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
             rc = self.rc_creator(self.name, base_port, own_ip, node_ips)
-            rc.sync_rules()
+            rc.sync()
         return initial_status
 
     @monitor_block

@@ -9,7 +9,6 @@ from flask import Flask, appcontext_pushed, g
 from core.node_config import NodeConfig
 from core.schains.config.directory import schain_config_filepath
 from tests.utils import get_bp_data, post_bp_data
-from tools.iptables import NodeEndpoint
 from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 from web.helper import get_api_url

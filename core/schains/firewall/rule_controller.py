@@ -1,4 +1,5 @@
 import itertools
+from enum import Enum
 from typing import Iterable, List, Optional
 
 from core.schains.firewall.entities import IpRange, SChainRule, SkaledPorts
@@ -12,7 +13,7 @@ class SChainRuleController:
         base_port: int,
         own_ip: str,
         node_ips: List[str],
-        port_allocation: SkaledPorts,
+        port_allocation: Enum = SkaledPorts,
         sync_ip_ranges: Optional[List[IpRange]] = None
     ):
         self.base_port = base_port
@@ -88,5 +89,5 @@ class SChainRuleController:
     def is_rules_synced(self) -> bool:
         return set(self.actual_rules()) == set(self.expected_rules())
 
-    def sync_rules(self) -> None:
+    def sync(self) -> None:
         self.firewall_manager.update_rules(self.expected_rules())
