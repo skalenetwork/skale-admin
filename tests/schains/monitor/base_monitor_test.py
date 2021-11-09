@@ -94,8 +94,14 @@ def test_monitor(schain_db, node_config, skale, ima_data, dutils):
     )
 
 
-def test_crashing_monitor(schain_db, skale, node_config,
-                          ima_data, schain_struct, dutils):
+def test_crashing_monitor(
+    schain_db,
+    skale,
+    node_config,
+    ima_data,
+    schain_struct,
+    dutils
+):
     schain_record = SChainRecord.get_by_name(schain_db)
     schain_checks = SChainChecks(
         schain_db,

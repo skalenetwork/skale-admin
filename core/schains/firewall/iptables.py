@@ -27,7 +27,7 @@ class Singleton(type):
             return self.__instance
 
 
-class IptablesManager(IHostFirewallManager, Singleton):
+class IptablesManager(IHostFirewallManager):
     def __init__(self, table: str = TABLE, chain: str = CHAIN):
         self.table = table
         self.chain = chain

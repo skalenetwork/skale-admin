@@ -6,11 +6,13 @@ import pytest
 
 from core.schains.checks import SChainChecks, CheckRes
 from core.schains.config.directory import get_schain_rotation_filepath, schain_config_dir
+from core.schains.firewall.entities import IpRange
 from core.schains.monitor.main import (
     run_monitor_for_schain, get_monitor_type, BackupMonitor, RepairMonitor, PostRotationMonitor,
     RotationMonitor, RegularMonitor
 )
 from core.schains.runner import get_container_info
+from core.schains.utils import get_sync_agent_ranges
 
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.helper import write_json
@@ -126,3 +128,29 @@ def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db, dutils
     with mock.patch('core.schains.monitor.main.RegularMonitor', BaseTestMonitor):
         assert run_monitor_for_schain(
             skale, skale_ima, node_config, {'name': schain_db, 'partOfNode': 0}, dutils, once=True)
+
+
+@pytest.fixture
+def sync_ranges(skale):
+    skale.sync_manager.grant_sync_manager_role(skale.wallet.address)
+    skale.sync_manager.add_ip_range('test1', '127.0.0.1', '127.0.0.2')
+    skale.sync_manager.add_ip_range('test2', '127.0.0.5', '127.0.0.7')
+    try:
+        yield
+    finally:
+        skale.sync_manager.remove_ip_range('test1')
+        skale.sync_manager.remove_ip_range('test2')
+
+
+def test_get_sync_agent_ranges(skale, sync_ranges):
+    ranges = get_sync_agent_ranges(skale)
+    print(ranges)
+    assert ranges == [
+        IpRange(start_ip='127.0.0.1', end_ip='127.0.0.2'),
+        IpRange(start_ip='127.0.0.5', end_ip='127.0.0.7')
+    ]
+
+
+def test_get_sync_agent_ranges_empty(skale):
+    ranges = get_sync_agent_ranges(skale)
+    assert ranges == []

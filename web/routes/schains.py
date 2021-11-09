@@ -22,12 +22,20 @@ import logging
 from flask import Blueprint, g, request
 
 from core.schains.config.directory import schain_config_exists
+from core.schains.config.helper import (
+    get_base_port_from_config,
+    get_node_ips_from_config,
+    get_own_ip_from_config,
+    get_schain_config
+)
+from core.schains.firewall.utils import get_default_rule_controller
 from core.schains.ima import get_ima_version
 from core.schains.info import get_schain_info_by_name, get_skaled_version
 from tools.helper import init_skale
 from web.models.schain import get_schains_statuses, toggle_schain_repair_mode
 from web.helper import (construct_ok_response, construct_err_response,
                         construct_key_error_response, get_api_url)
+
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'schains'
@@ -80,7 +88,19 @@ def construct_schains_bp():
             return construct_err_response(
                 msg=f'No schain with name {schain_name}'
             )
-        endpoints = [e._asdict() for e in get_allowed_endpoints(schain_name)]
+        conf = get_schain_config(schain_name)
+        base_port = get_base_port_from_config(conf)
+        node_ips = get_node_ips_from_config(conf)
+        own_ip = get_own_ip_from_config(conf)
+
+        rc = get_default_rule_controller(
+            schain_name,
+            base_port,
+            own_ip,
+            node_ips,
+            []
+        )
+        endpoints = [e._asdict() for e in rc.actual_rules()]
         return construct_ok_response({'endpoints': endpoints})
 
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'repair'), methods=['POST'])

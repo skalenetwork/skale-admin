@@ -43,5 +43,5 @@ def get_sync_agent_ranges(skale: Skale) -> List[IpRange]:
     sync_agent_ranges = []
     rnum = skale.sync_manager.get_ip_ranges_number()
     for i in range(rnum):
-        sync_agent_ranges.appned(skale.sync_manager.get_ip_range_by_index(i))
+        sync_agent_ranges.append(skale.sync_manager.get_ip_range_by_index(i))
     return sync_agent_ranges
