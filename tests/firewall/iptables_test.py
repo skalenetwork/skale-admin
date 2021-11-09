@@ -6,12 +6,14 @@ import pytest
 
 from core.schains.firewall.iptables import IptablesManager
 from core.schains.firewall.entities import SChainRule
+from tools.helper import run_cmd
 
 
 def get_rules_through_subprocess(unique=True):
-    cmd_result = subprocess.run(['iptables', '-S'],
-                                stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE)
+    cmd_result = run_cmd(['iptables', '-S'])
+    # cmd_result = subprocess.run(['iptables', '-S'],
+    #                             stderr=subprocess.PIPE,
+    #                             stdout=subprocess.PIPE)
     stdout = cmd_result.stdout.decode('utf-8')
     result = filter(lambda s: s, stdout.split('\n'))
     if unique:
@@ -31,11 +33,11 @@ def plain_from_schain_rule(srule):
 
 @pytest.fixture
 def refresh():
-    subprocess.run(['iptables', '-F'])
+    run_cmd(['iptables', '-F'])
     try:
         yield
     finally:
-        subprocess.run(['iptables', '-F'])
+        run_cmd(['iptables', '-F'])
 
 
 def test_iptables_manager(refresh):
@@ -158,10 +160,6 @@ def generate_srules(number=5):
 
 
 def test_iptables_manager_parallel(refresh):
-    manager = IptablesManager()
-    print('\n'.join(list(map(lambda r: str(r), manager.rules))))
-    assert len(list(manager.rules)) == 0
-
     srules = generate_srules(number=12)
 
     futures = []

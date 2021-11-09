@@ -66,7 +66,7 @@ def test_schain_rule_controller():
         sync_ip_range
     )
     assert list(src.expected_rules()) == list(sorted(expected_rules))
-    src.sync_rules()
+    src.sync()
     assert src.is_rules_synced()
     assert list(src.actual_rules()) == list(sorted(expected_rules))
 
@@ -78,7 +78,7 @@ def test_schain_rule_controller():
     src.sync_ip_ranges = new_sync_ip_ranges
     src.node_ips = new_node_ips
     assert not src.is_rules_synced()
-    src.sync_rules()
+    src.sync()
 
     expected_rules = {
         SChainRule(port=10064, first_ip='1.1.1.1', last_ip=None),
@@ -147,7 +147,7 @@ def test_schain_rule_controller_no_sync_rules():
     )
     assert not src.is_rules_synced()
     assert list(src.expected_rules()) == list(sorted(expected_rules))
-    src.sync_rules()
+    src.sync()
     assert src.is_rules_synced()
     assert list(src.expected_rules()) == list(sorted(expected_rules))
     assert list(src.actual_rules()) == list(sorted(expected_rules))

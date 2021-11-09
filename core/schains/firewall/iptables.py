@@ -1,7 +1,8 @@
 import logging
 import importlib
 import multiprocessing
-from typing import Dict, Iterable
+from functools import wraps
+from typing import Callable, Dict, Iterable
 
 from core.schains.firewall.firewall_manager import IHostFirewallManager
 from core.schains.firewall.entities import SChainRule
@@ -14,17 +15,12 @@ CHAIN = 'INPUT'
 plock = multiprocessing.Lock()
 
 
-class Singleton(type):
-    def __init__(self, *args, **kwargs):
-        self.__instance = None
-        super().__init__(*args, **kwargs)
-
-    def __call__(self, *args, **kwargs):
-        if self.__instance is None:
-            self.__instance = super().__call__(*args, **kwargs)
-            return self.__instance
-        else:
-            return self.__instance
+def refreshed(func: Callable) -> Callable:
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        self.refresh()
+        return func(self, *args, **kwargs)
+    return wrapper
 
 
 class IptablesManager(IHostFirewallManager):
@@ -34,12 +30,17 @@ class IptablesManager(IHostFirewallManager):
         self.iptc = importlib.import_module('iptc')
         self.iptc = importlib.reload(self.iptc)
 
+    def refresh(self):
+        self.iptc.Table(self.table).refresh()
+
+    @refreshed
     def add_rule(self, rule: SChainRule) -> None:
         if not self.has_rule(rule):
             rule_d = self.schain_rule_to_rule_d(rule)
             with plock:
                 self.iptc.easy.insert_rule(self.table, self.chain, rule_d)  # type: ignore  # noqa
 
+    @refreshed
     def remove_rule(self, rule: SChainRule) -> None:
         if self.has_rule(rule):
             rule_d = self.schain_rule_to_rule_d(rule)
@@ -48,7 +49,6 @@ class IptablesManager(IHostFirewallManager):
 
     @classmethod
     def is_manageable(cls, rule_d: Dict) -> bool:
-        # IVD TODO: Think about comments
         return all((
             rule_d.get('protocol') == 'tcp',
             rule_d.get('target') == 'ACCEPT',
@@ -56,6 +56,7 @@ class IptablesManager(IHostFirewallManager):
         ))
 
     @property
+    @refreshed
     def rules(self) -> Iterable[SChainRule]:
         ichain = self.iptc.Chain(self.iptc.Table(self.table), self.chain)  # type: ignore  # noqa
         for irule in ichain.rules:
@@ -63,6 +64,7 @@ class IptablesManager(IHostFirewallManager):
             if self.is_manageable(rule_d):
                 yield self.rule_d_to_schain_rule(rule_d)
 
+    @refreshed
     def has_rule(self, rule: SChainRule) -> bool:
         rule_d = self.schain_rule_to_rule_d(rule)
         return self.iptc.easy.has_rule(self.table, self.chain, rule_d)  # type: ignore  # noqa
