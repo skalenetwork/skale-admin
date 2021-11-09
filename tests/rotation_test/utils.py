@@ -1,6 +1,11 @@
+import os
+import shutil
 from time import sleep
 
+import pytest
+
 from skale.skale_manager import spawn_skale_manager_lib
+from skale.utils.contracts_provision.main import cleanup_nodes_schains
 
 from core.node import Node
 from core.schains.checks import check_endpoint_alive
@@ -8,8 +13,10 @@ from core.schains.config.helper import get_skaled_http_address
 from core.schains.runner import run_schain_container, is_exited
 from core.schains.volume import init_data_volume
 
-from tests.utils import generate_random_schain_data, init_skale_from_wallet
+from web.models.schain import SChainRecord
+from tools.configs.schains import SCHAINS_DIR_PATH
 
+from tests.utils import generate_random_schain_data, init_skale_from_wallet
 from tests.dkg_test.main_test import (create_schain,
                                       generate_sgx_wallets,
                                       transfer_eth_to_wallets,
@@ -128,3 +135,20 @@ def check_schain_alive(schain_name):
     schain_endpoint = get_skaled_http_address(schain_name)
     schain_endpoint = f'http://{schain_endpoint.ip}:{schain_endpoint.port}'
     return check_endpoint_alive(schain_endpoint)
+
+
+@pytest.fixture
+def rotated_nodes(skale, schain_config, schain_db, cert_key_pair, dutils):
+    cleanup_nodes_schains(skale)
+    SChainRecord.create_table()
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+
+    nodes, schain_name = set_up_rotated_schain(skale, schain_name)
+
+    yield nodes, schain_name
+
+    shutil.rmtree(os.path.join(SCHAINS_DIR_PATH, schain_name))
+    dutils.safe_rm(f'skale_schain_{schain_name}', force=True)
+    skale.manager.delete_schain(schain_name, wait_for=True)
+    for i in range(1, 3):
+        skale.manager.node_exit(nodes[i].config.id, wait_for=True)
