@@ -26,9 +26,10 @@ from sgx import SgxClient
 
 from core.schains.checks import SChainChecks
 from core.schains.config.directory import schain_config_dir
+from core.schains.firewall.utils import get_default_rule_controller
+from core.schains.process_manager_helper import terminate_schain_process
 from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
 from core.schains.types import ContainerType
-from core.schains.process_manager_helper import terminate_schain_process
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.configs import SGX_CERTIFICATES_FOLDER
@@ -188,7 +189,12 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
 def cleanup_schain(node_id, schain_name, dutils=None):
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
-    checks = SChainChecks(schain_name, node_id, schain_record=schain_record)
+    checks = SChainChecks(
+        schain_name,
+        node_id,
+        rule_controller_creator=get_default_rule_controller,
+        schain_record=schain_record
+    )
     if checks.skaled_container.status or is_exited(
         schain_name,
         container_type=ContainerType.schain,
