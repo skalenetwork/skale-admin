@@ -33,12 +33,6 @@ jobs:
     - name: Deploy manager & ima contracts
       run: |
         bash ./helper-scripts/deploy_test_ima.sh
-    - name: Check ganache container
-      run: |
-        docker ps -a
-    - name: Check ganache container logs
-      run: |
-        docker logs ganache --tail 200
     - name: Run core tests
       run: |
         bash ./scripts/run_core_tests.sh
