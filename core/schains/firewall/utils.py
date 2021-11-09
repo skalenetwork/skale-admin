@@ -17,7 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import List
+from typing import List, Optional
 
 from .firewall_manager import SChainFirewallManager
 from .entities import IpRange, PORTS_PER_SCHAIN
@@ -30,8 +30,9 @@ def get_default_rule_controller(
     base_port: int,
     own_ip: str,
     node_ips: List[str],
-    sync_agent_ranges: List[IpRange]
+    sync_agent_ranges: Optional[List[IpRange]] = None
 ) -> SChainRuleController:
+    sync_agent_ranges = sync_agent_ranges or []
     im = IptablesManager()
     fm = SChainFirewallManager(
         name,

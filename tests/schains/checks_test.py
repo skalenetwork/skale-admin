@@ -246,6 +246,7 @@ def test_get_all(schain_config, dutils, schain_db):
         schain_db,
         node_id,
         schain_record=schain_record,
+        rule_controller_creator=get_test_rc_synced,
         dutils=dutils
     )
     checks_dict = checks.get_all()
@@ -264,6 +265,7 @@ def test_get_all(schain_config, dutils, schain_db):
         schain_db,
         node_id,
         schain_record=schain_record,
+        rule_controller_creator=get_test_rc_synced,
         dutils=dutils,
         ima_linked=False
     )
