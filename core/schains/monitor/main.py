@@ -122,7 +122,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             )
 
             ima_data = ImaData(
-                linked=skale_ima.linker.has_schain(name),
+                linked=ima_linked,
                 chain_id=skale_ima.web3.eth.chainId
             )
 
