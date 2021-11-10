@@ -115,7 +115,7 @@ def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
         'payload': {
             'name': schain_name,
             'id': schain_id,
-            'owner': skale.wallet.address,
+            'mainnetOwner': skale.wallet.address,
             'part_of_node': 1, 'dkg_status': 1, 'is_deleted': False,
             'first_run': True, 'repair_mode': False
         }

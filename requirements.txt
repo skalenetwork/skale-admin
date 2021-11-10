@@ -13,8 +13,9 @@ simple-crypt==4.1.7
 pycryptodome==3.9.9
 python-iptables==0.14.0
 
-skale.py==5.2dev2
+skale.py==5.3dev0
 ima-predeployed==1.0.0b12
+etherbase-predeployed==0.0.1a7
 
 pyyaml==5.4
 psutil==5.7.0

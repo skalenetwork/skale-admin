@@ -14,7 +14,7 @@ from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
 from core.schains.runner import run_schain_container, run_ima_container
-from core.schains.config.generator import save_schain_config
+from core.schains.config.main import save_schain_config
 from core.schains.config.helper import get_schain_config
 
 from tools.docker_utils import DockerUtils
@@ -137,7 +137,7 @@ def get_schain_contracts_data(schain_name):
     """ Schain data mock in case if schain on contracts is not required """
     return {
         'name': schain_name,
-        'owner': '0x1213123091a230923123213123',
+        'mainnetOwner': '0x1213123091a230923123213123',
         'indexInOwnerList': 0,
         'partOfNode': 0,
         'lifetime': 3600,

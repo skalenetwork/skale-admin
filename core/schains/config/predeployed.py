@@ -38,6 +38,35 @@ from tools.helper import read_json
 logger = logging.getLogger(__name__)
 
 
+def generate_predeployed_section(
+    schain: dict,
+    schain_nodes: list,
+    on_chain_owner: str,
+    generation: int
+) -> dict:
+    """Main function used to generate dynamic accounts for the sChain config.
+    For the params explanation please refer to the nested functions.
+
+    :returns: Dictionary with accounts
+    :rtype: dict
+    """
+    precompiled_section = {
+        **generate_precompiled_accounts(),
+        **generate_owner_accounts(on_chain_owner, schain_nodes),
+        **generate_context_accounts(schain['name'], on_chain_owner),
+        **generate_deploy_controller_accounts(on_chain_owner),
+        **generate_fs_accounts(schain, on_chain_owner),
+        **generate_ima_accounts(on_chain_owner, schain['name'])
+    }
+
+    if generation == 0:
+        pass
+    if generation == 1:
+        pass
+
+    return precompiled_section
+
+
 def generate_account(balance, code=None, storage={}, nonce=0):
     assert isinstance(code, str) or code is None
     assert isinstance(storage, dict) or storage is None
@@ -75,25 +104,25 @@ def generate_precompiled_accounts() -> dict:
     return accounts
 
 
-def generate_owner_accounts(schain_owner: str, schain_nodes: list) -> dict:
+def generate_owner_accounts(on_chain_owner: str, schain_nodes: list) -> dict:
     """Generates accounts with allocation for sChain owner and sChain nodes owners
 
-    :param schain_owner: Address of the sChain owner
-    :type schain_owner: str
+    :param on_chain_owner: Address of the sChain owner on the chain
+    :type on_chain_owner: str
     :param schain_nodes: List with nodes for the sChain
     :type schain_nodes_owners: list
     :returns: Dictionary with accounts
     :rtype: dict
     """
     accounts = {}
-    add_to_accounts(accounts, schain_owner, generate_account(SCHAIN_OWNER_ALLOC))
+    add_to_accounts(accounts, on_chain_owner, generate_account(SCHAIN_OWNER_ALLOC))
     for node in schain_nodes:
         node_owner = public_key_to_address(node['publicKey'])
         add_to_accounts(accounts, node_owner, generate_account(NODE_OWNER_ALLOC))
     return accounts
 
 
-def generate_context_accounts(schain: dict) -> dict:
+def generate_context_accounts(schain_name: dict, on_chain_owner: str) -> dict:
     """Generates accounts for the context predeployed SC
 
     :param schain_owner: Address of the sChain owner
@@ -106,8 +135,8 @@ def generate_context_accounts(schain: dict) -> dict:
     accounts = {}
     context_contract = get_context_contract()
 
-    storage = {hex(0): str(Web3.toChecksumAddress(schain['owner']))}
-    storage = {**storage, **_string_to_storage(1, schain['name'])}
+    storage = {hex(0): str(Web3.toChecksumAddress(on_chain_owner))}
+    storage = {**storage, **_string_to_storage(1, schain_name)}
 
     account = generate_account(
         balance=0,
@@ -118,17 +147,17 @@ def generate_context_accounts(schain: dict) -> dict:
     return accounts
 
 
-def generate_deploy_controller_accounts(schain_owner: str) -> dict:
+def generate_deploy_controller_accounts(on_chain_owner: str) -> dict:
     """Generates accounts for the deploy controller predeployed SC
 
-    :param schain_owner: Address of the sChain owner
-    :type schain_owner: str
+    :param on_chain_owner: Address of the sChain owner on chain
+    :type on_chain_owner: str
     :returns: Dictionary with accounts
     :rtype: dict
     """
     accounts = {}
     deploy_controller_contract = get_deploy_controller_contract()
-    owner_slot = calculate_deployment_owner_slot(schain_owner)
+    owner_slot = calculate_deployment_owner_slot(on_chain_owner)
     bytes_true = '0x01'
 
     storage = {owner_slot: bytes_true}
@@ -142,7 +171,7 @@ def generate_deploy_controller_accounts(schain_owner: str) -> dict:
     return accounts
 
 
-def generate_fs_accounts(schain: dict) -> dict:
+def generate_fs_accounts(schain: dict, on_chain_owner: str) -> dict:
     """Generates accounts for the Filestorage
 
     :param schain: sChain structure
@@ -151,7 +180,7 @@ def generate_fs_accounts(schain: dict) -> dict:
     :rtype: dict
     """
     volume_limits = get_schain_limit(schain, MetricType.volume_limits)
-    filestorage_accounts_info = compose_filestorage_info(volume_limits, schain['owner'])
+    filestorage_accounts_info = compose_filestorage_info(volume_limits, on_chain_owner)
     accounts = {}
     for account_info in filestorage_accounts_info.values():
         account = generate_account(
@@ -165,20 +194,3 @@ def generate_fs_accounts(schain: dict) -> dict:
             account=account
         )
     return accounts
-
-
-def generate_dynamic_accounts(schain: dict, schain_nodes: list) -> dict:
-    """Main function used to generate dynamic accounts for the sChain config.
-    For the params explanation please refer to the nested functions.
-
-    :returns: Dictionary with accounts
-    :rtype: dict
-    """
-    return {
-        **generate_precompiled_accounts(),
-        **generate_owner_accounts(schain['owner'], schain_nodes),
-        **generate_context_accounts(schain),
-        **generate_deploy_controller_accounts(schain['owner']),
-        **generate_fs_accounts(schain),
-        **generate_ima_accounts(schain['owner'], schain['name'])
-    }

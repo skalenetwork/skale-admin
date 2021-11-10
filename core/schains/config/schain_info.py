@@ -28,7 +28,7 @@ class SChainInfo:
     """Dataclass that represents sChain key of the skaleConfig section"""
     schain_id: int
     name: str
-    owner: str
+    block_author: str
 
     contract_storage_limit: int
     db_storage_limit: int
@@ -51,7 +51,7 @@ class SChainInfo:
         return {
             'schainID': self.schain_id,
             'schainName': self.name,
-            'schainOwner': self.owner,
+            'blockAuthor': self.block_author,
             'contractStorageLimit': self.contract_storage_limit,
             'dbStorageLimit': self.db_storage_limit,
             'snapshotIntervalSec': self.snapshot_interval_sec,
@@ -66,8 +66,9 @@ class SChainInfo:
         }
 
 
-def generate_schain_info(schain_id: int, schain: dict, static_schain_params: dict,
-                         previous_public_keys_info: list, nodes: dict) -> SChainInfo:
+def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
+                         static_schain_params: dict, previous_public_keys_info: list,
+                         nodes: dict) -> SChainInfo:
     volume_limits = get_schain_limit(schain, MetricType.volume_limits)
     leveldb_limits = get_schain_limit(schain, MetricType.leveldb_limits)
     contract_storage_limit = leveldb_limits['contract_storage']
@@ -76,7 +77,7 @@ def generate_schain_info(schain_id: int, schain: dict, static_schain_params: dic
     return SChainInfo(
         schain_id=schain_id,
         name=schain['name'],
-        owner=schain['owner'],
+        block_author=on_chain_etherbase,
         contract_storage_limit=contract_storage_limit,
         db_storage_limit=db_storage_limit,
         previous_public_keys_info=previous_public_keys_info,

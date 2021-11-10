@@ -57,10 +57,10 @@ def get_schain_ima_abi_filepath(schain_name):
     return os.path.join(schain_dir_path, SCHAIN_IMA_ABI_FILENAME)
 
 
-def generate_ima_accounts(schain_owner, schain_name):
+def generate_ima_accounts(on_chain_owner, schain_name):
     mainnet_ima_abi = read_json(MAINNET_IMA_ABI_FILEPATH)
     return generate_contracts(
-        owner_address=schain_owner,
+        owner_address=on_chain_owner,
         schain_name=schain_name,
         contracts_on_mainnet=mainnet_ima_abi
     )

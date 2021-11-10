@@ -42,8 +42,7 @@ from core.schains.rotation import get_schain_public_key
 from core.schains.monitor.containers import monitor_schain_container
 from core.schains.monitor.rpc import monitor_schain_rpc
 
-from core.schains.config.directory import init_schain_config_dir
-from core.schains.config.generator import init_schain_config
+from core.schains.config import init_schain_config, init_schain_config_dir
 
 from core.schains.ima import ImaData
 from core.ima.schain import copy_schain_ima_abi
