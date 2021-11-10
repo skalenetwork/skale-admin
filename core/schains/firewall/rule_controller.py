@@ -38,7 +38,7 @@ class SChainRuleController:
         node_ips: List[str],
         port_allocation: Enum = SkaledPorts,
         sync_ip_ranges: Optional[List[IpRange]] = None
-    ):
+    ) -> None:
         self.base_port = base_port
         self.own_ip = own_ip
         self.node_ips = node_ips
@@ -57,6 +57,16 @@ class SChainRuleController:
                 self.port_allocation.ZMQ_BROADCAST
             )
         )
+
+    def configure(
+        self,
+        own_ip: str,
+        node_ips: List[str],
+        sync_ip_ranges: Optional[List[IpRange]] = None
+    ) -> None:
+        self.own_ip = own_ip
+        self.node_ips = node_ips
+        self.sync_ip_ranges = sync_ip_ranges
 
     @property
     def internal_rules(self) -> Iterable[SChainRule]:

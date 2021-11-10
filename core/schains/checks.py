@@ -107,7 +107,7 @@ class SChainChecks:
     @property
     def firewall_rules(self) -> CheckRes:
         """Checks that firewall rules are set correctly"""
-        if self.config:
+        if self.config.status:
             conf = get_schain_config(self.name)
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
@@ -118,6 +118,7 @@ class SChainChecks:
                 own_ip=own_ip,
                 node_ips=node_ips
             )
+            logger.info(f'Rule controller {rc.expected_rules()}')
             return CheckRes(rc.is_rules_synced())
         return CheckRes(False)
 

@@ -221,6 +221,7 @@ class BaseMonitor(ABC):
     def firewall_rules(self, overwrite=False) -> bool:
         initial_status = self.checks.firewall_rules.status
         if not initial_status:
+            logger.info('Configuring firewall rules')
             conf = get_schain_config(self.name)
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)

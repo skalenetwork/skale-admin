@@ -17,9 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 
 from typing import Iterable
 from core.schains.firewall.types import IHostFirewallManager, SChainRule
+
+
+logger = logging.getLogger(__name__)
 
 
 class SChainFirewallManager:
@@ -45,8 +49,12 @@ class SChainFirewallManager:
     def update_rules(self, rules: Iterable[SChainRule]) -> None:
         actual_rules = set(self.rules)
         expected_rules = set(rules)
+        logger.info(f'IVD0 {actual_rules}')
+        logger.info(f'IVD1 {expected_rules}')
         rules_to_add = expected_rules - actual_rules
         rules_to_remove = actual_rules - expected_rules
+        logger.info(f'IVD2 {rules_to_add}')
+        logger.info(f'IVD3 {rules_to_remove}')
         self.add_rules(rules_to_add)
         self.remove_rules(rules_to_remove)
 

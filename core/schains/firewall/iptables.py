@@ -88,7 +88,8 @@ class IptablesManager(IHostFirewallManager):
         rule_d = self.schain_rule_to_rule_d(rule)
         return self.iptc.easy.has_rule(self.table, self.chain, rule_d)  # type: ignore  # noqa
 
-    def schain_rule_to_rule_d(self, srule: SChainRule) -> Dict:
+    @classmethod
+    def schain_rule_to_rule_d(cls, srule: SChainRule) -> Dict:
         rule = {
             'protocol': 'tcp',
             'tcp': {'dport': str(srule.port)},
@@ -105,7 +106,8 @@ class IptablesManager(IHostFirewallManager):
                 })
         return rule
 
-    def rule_d_to_schain_rule(self, rule_d: Dict) -> SChainRule:
+    @classmethod
+    def rule_d_to_schain_rule(cls, rule_d: Dict) -> SChainRule:
         first_ip, last_ip = None, None
         iprange = rule_d.get('iprange')
         src = rule_d.get('src')
@@ -113,6 +115,14 @@ class IptablesManager(IHostFirewallManager):
             first_ip, last_ip = iprange['src-range'].split('-')
         elif src:
             first_ip = last_ip = rule_d['src']
+        first_ip = cls.normalize_ip(first_ip)
+        last_ip = cls.normalize_ip(last_ip)
         port = int(rule_d['tcp']['dport'])
 
         return SChainRule(port, first_ip, last_ip)
+
+    @classmethod
+    def normalize_ip(cls, ip: str) -> str:
+        if ip and ip[-3] == '/':
+            return ip[:-3]
+        return ip

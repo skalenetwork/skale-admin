@@ -17,12 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 from typing import List, Optional
 
 from .firewall_manager import SChainFirewallManager
 from .types import IpRange, PORTS_PER_SCHAIN
 from .iptables import IptablesManager
 from .rule_controller import SChainRuleController
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_default_rule_controller(
@@ -40,6 +44,9 @@ def get_default_rule_controller(
         base_port + PORTS_PER_SCHAIN,
         im
     )
+    logger.info(
+        f'SChainRuleController {base_port}, {own_ip}, {node_ips}, {sync_agent_ranges}'
+    )
     return SChainRuleController(
         fm,
         base_port,
@@ -47,37 +54,3 @@ def get_default_rule_controller(
         node_ips,
         sync_ip_ranges=sync_agent_ranges
     )
-
-
-def is_rules_synced(
-    name: str,
-    base_port: int,
-    own_ip: str,
-    node_ips: List[str],
-    sync_agent_ranges: List[IpRange]
-):
-    rc = get_default_rule_controller(
-        name,
-        base_port,
-        own_ip,
-        node_ips,
-        sync_agent_ranges
-    )
-    return rc.is_rules_synced()
-
-
-def sync_rules(
-    name: str,
-    base_port: int,
-    own_ip: str,
-    node_ips: List[str],
-    sync_agent_ranges: List[IpRange]
-):
-    rc = get_default_rule_controller(
-        name,
-        base_port,
-        own_ip,
-        node_ips,
-        sync_agent_ranges
-    )
-    return rc.sync_rules()
