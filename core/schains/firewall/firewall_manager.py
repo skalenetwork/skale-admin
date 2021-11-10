@@ -19,8 +19,7 @@
 
 
 from typing import Iterable
-from core.schains.firewall.entities import SChainRule
-from core.schains.firewall.interfaces import IHostFirewallManager
+from core.schains.firewall.types import IHostFirewallManager, SChainRule
 
 
 class SChainFirewallManager:

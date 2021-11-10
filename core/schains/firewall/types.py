@@ -19,7 +19,18 @@
 
 from abc import ABC, abstractmethod
 from typing import Iterable
-from core.schains.firewall.entities import SChainRule
+
+from collections import namedtuple
+from skale.dataclasses.skaled_ports import SkaledPorts  # noqa
+from skale.schain_config import PORTS_PER_SCHAIN  # noqa
+
+SChainRule = namedtuple(
+    'SChainRule',
+    ['port', 'first_ip', 'last_ip'],
+    defaults=(None, None,)
+)
+
+IpRange = namedtuple('IpRange', ['start_ip', 'end_ip'])
 
 
 class IHostFirewallManager(ABC):
@@ -59,4 +70,8 @@ class IRuleController(ABC):
 
     @abstractmethod
     def sync(self) -> None:  # pragma: no cover
+        pass
+
+    @abstractmethod
+    def cleanup(self) -> None:
         pass

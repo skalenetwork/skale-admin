@@ -23,7 +23,7 @@ from typing import Dict, List
 
 from skale import Skale
 
-from core.schains.firewall.entities import IpRange
+from core.schains.firewall.types import IpRange
 from tools.notifications.messages import notify_balance
 
 logger = logging.getLogger(__name__)

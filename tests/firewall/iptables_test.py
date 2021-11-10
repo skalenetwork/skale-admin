@@ -5,15 +5,12 @@ import concurrent.futures
 import pytest
 
 from core.schains.firewall.iptables import IptablesManager
-from core.schains.firewall.entities import SChainRule
+from core.schains.firewall.types import SChainRule
 from tools.helper import run_cmd
 
 
 def get_rules_through_subprocess(unique=True):
     cmd_result = run_cmd(['iptables', '-S'])
-    # cmd_result = subprocess.run(['iptables', '-S'],
-    #                             stderr=subprocess.PIPE,
-    #                             stdout=subprocess.PIPE)
     stdout = cmd_result.stdout.decode('utf-8')
     result = filter(lambda s: s, stdout.split('\n'))
     if unique:

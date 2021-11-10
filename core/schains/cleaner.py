@@ -20,18 +20,26 @@
 import logging
 import os
 import shutil
+from functools import partial
 from multiprocessing import Process
 
 from sgx import SgxClient
 
 from core.schains.checks import SChainChecks
 from core.schains.config.directory import schain_config_dir
+from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.utils import get_default_rule_controller
+from core.schains.config.helper import (
+    get_base_port_from_config,
+    get_node_ips_from_config,
+    get_own_ip_from_config,
+    get_schain_config
+)
 from core.schains.process_manager_helper import terminate_schain_process
 from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
 from core.schains.types import ContainerType
+from core.schains.utils import get_sync_agent_ranges
 
-from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
@@ -181,18 +189,24 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
         logger.warning(msg)
         terminate_schain_process(schain_record)
         delete_bls_keys(skale, schain_name)
-        cleanup_schain(node_id, schain_name, dutils=dutils)
+        sync_agent_ranges = get_sync_agent_ranges(skale)
+        cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=dutils)
         return
     logger.info(msg)
 
 
-def cleanup_schain(node_id, schain_name, dutils=None):
+def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None):
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
+
+    rc_creator = partial(
+        get_default_rule_controller,
+        sync_agent_ranges=sync_agent_ranges
+    )
     checks = SChainChecks(
         schain_name,
         node_id,
-        rule_controller_creator=get_default_rule_controller,
+        rule_controller_creator=rc_creator,
         schain_record=schain_record
     )
     if checks.skaled_container.status or is_exited(
@@ -204,8 +218,18 @@ def cleanup_schain(node_id, schain_name, dutils=None):
     if checks.volume.status:
         remove_schain_volume(schain_name, dutils=dutils)
         if checks.firewall_rules.status:
-            # TODO:
-            pass
+            conf = get_schain_config(schain_name)
+            base_port = get_base_port_from_config(conf)
+            node_ips = get_node_ips_from_config(conf)
+            own_ip = get_own_ip_from_config(conf)
+            rc = get_default_rule_controller(
+                schain_name,
+                base_port,
+                own_ip,
+                node_ips,
+                []
+            )
+            rc.cleanup()
     if not DISABLE_IMA:
         if checks.ima_container.status or is_exited(
             schain_name,

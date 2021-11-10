@@ -16,8 +16,7 @@ from skale.wallets import Web3Wallet
 
 from core.schains.config.generator import save_schain_config
 from core.schains.config.helper import get_schain_config
-from core.schains.firewall.entities import PORTS_PER_SCHAIN
-from core.schains.firewall.interfaces import IHostFirewallManager
+from core.schains.firewall.types import IHostFirewallManager, PORTS_PER_SCHAIN
 from core.schains.firewall import SChainFirewallManager, SChainRuleController
 from core.schains.runner import run_schain_container, run_ima_container
 

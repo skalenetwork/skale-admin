@@ -1,4 +1,4 @@
-from core.schains.firewall.entities import SChainRule
+from core.schains.firewall.types import SChainRule
 
 from core.schains.firewall.firewall_manager import (
     SChainFirewallManager,

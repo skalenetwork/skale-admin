@@ -6,7 +6,7 @@ import pytest
 
 from core.schains.checks import SChainChecks, CheckRes
 from core.schains.config.directory import get_schain_rotation_filepath, schain_config_dir
-from core.schains.firewall.entities import IpRange
+from core.schains.firewall.types import IpRange
 from core.schains.monitor.main import (
     run_monitor_for_schain, get_monitor_type, BackupMonitor, RepairMonitor, PostRotationMonitor,
     RotationMonitor, RegularMonitor

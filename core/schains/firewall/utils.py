@@ -20,7 +20,7 @@
 from typing import List, Optional
 
 from .firewall_manager import SChainFirewallManager
-from .entities import IpRange, PORTS_PER_SCHAIN
+from .types import IpRange, PORTS_PER_SCHAIN
 from .iptables import IptablesManager
 from .rule_controller import SChainRuleController
 

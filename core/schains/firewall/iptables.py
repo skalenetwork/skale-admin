@@ -24,8 +24,7 @@ import multiprocessing
 from functools import wraps
 from typing import Callable, Dict, Iterable
 
-from core.schains.firewall.firewall_manager import IHostFirewallManager
-from core.schains.firewall.entities import SChainRule
+from core.schains.firewall.types import IHostFirewallManager, SChainRule
 
 logger = logging.getLogger(__name__)
 

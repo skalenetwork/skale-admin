@@ -21,8 +21,12 @@ import itertools
 from enum import Enum
 from typing import Iterable, List, Optional
 
-from core.schains.firewall.entities import IpRange, SChainRule, SkaledPorts
-from core.schains.firewall.interfaces import IFirewallManager
+from core.schains.firewall.types import (
+    IFirewallManager,
+    IpRange,
+    SChainRule,
+    SkaledPorts
+)
 
 
 class SChainRuleController:
@@ -38,7 +42,7 @@ class SChainRuleController:
         self.base_port = base_port
         self.own_ip = own_ip
         self.node_ips = node_ips
-        self.sync_ip_ranges = sync_ip_ranges
+        self.sync_ip_ranges = sync_ip_ranges or []
         self.port_allocation = port_allocation
         self.firewall_manager = firewall_manager
 
@@ -110,3 +114,6 @@ class SChainRuleController:
 
     def sync(self) -> None:
         self.firewall_manager.update_rules(self.expected_rules())
+
+    def cleanup(self) -> None:
+        self.firewall_manager.remove_rules(self.actual_rules())

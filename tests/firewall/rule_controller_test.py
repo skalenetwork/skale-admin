@@ -3,7 +3,7 @@ from core.schains.firewall.rule_controller import (
     IFirewallManager,
     IpRange
 )
-from core.schains.firewall.entities import SChainRule, SkaledPorts
+from core.schains.firewall.types import SChainRule, SkaledPorts
 
 
 class FirewallManagerMock(IFirewallManager):

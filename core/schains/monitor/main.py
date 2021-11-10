@@ -36,6 +36,7 @@ from core.schains.utils import get_sync_agent_ranges
 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
+from tools.configs.ima import DISABLE_IMA
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
@@ -99,7 +100,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             name = schain["name"]
             dutils = dutils or DockerUtils()
 
-            ima_linked = skale_ima.linker.has_schain(name)
+            ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
             rotation_data = skale.node_rotation.get_rotation(name)
             rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
 
