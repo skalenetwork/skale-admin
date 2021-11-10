@@ -284,15 +284,6 @@ def get_bls_public_keys(schain_name, rotation_id):
     return data["bls_public_keys"]
 
 
-def compose_public_key_info(bls_public_key):
-    return {
-        'blsPublicKey0': str(bls_public_key[0][0]),
-        'blsPublicKey1': str(bls_public_key[0][1]),
-        'blsPublicKey2': str(bls_public_key[1][0]),
-        'blsPublicKey3': str(bls_public_key[1][1])
-    }
-
-
 def calculate_deployment_owner_slot(owner):
     # Calculate owner slot by formula:
     #
