@@ -10,9 +10,6 @@ source $DIR/../helper-scripts/helper.sh
 tests_cleanup
 export_test_env
 
-export ABI_FILEPATH=test_abi.json
-export MAINNET_IMA_ABI_FILEPATH=ima_abi.json
-
 run_sgx_simulator $SGX_WALLET_TAG
 bash scripts/run_redis.sh
 
