@@ -39,13 +39,19 @@ def refresh():
 
 def test_iptables_manager(refresh):
     manager = IptablesManager()
-    rule = SChainRule(10000, '1.1.1.1', '2.2.2.2')
-    manager.add_rule(rule)
-    assert manager.has_rule(rule)
+    rule_a = SChainRule(10000, '1.1.1.1', '2.2.2.2')
+    rule_b = SChainRule(10001, '3.3.3.3')
+    manager.add_rule(rule_a)
+    manager.add_rule(rule_b)
+    assert manager.has_rule(rule_a)
+    assert manager.has_rule(rule_b)
     rules = list(manager.rules)
-    assert rules == [rule]
-    manager.remove_rule(rule)
-    assert not manager.has_rule(rule)
+    assert rules == [rule_b, rule_a]
+    manager.remove_rule(rule_a)
+    assert not manager.has_rule(rule_a)
+    assert manager.has_rule(rule_b)
+    manager.remove_rule(rule_b)
+    assert not manager.has_rule(rule_a)
 
 
 def test_iptables_manager_add_duplicates(refresh):
@@ -133,27 +139,29 @@ def test_iptables_manager_correctly_process_old_rules(refresh):
     plain_rules = get_rules_through_subprocess()
     assert plain_from_schain_rule(srule_a) in plain_rules
     assert plain_from_schain_rule(srule_b) in plain_rules
+    print(plain_rules)
+    # assert False
     print(list(manager.rules))
     assert list(manager.rules) == [
         SChainRule(port=10064, first_ip='5.5.5.5', last_ip='10.10.10.10'),
-        SChainRule(port=10000, first_ip='4.4.4.4', last_ip='4.4.4.4'),
+        SChainRule(port=10000, first_ip='4.4.4.4', last_ip=None),
         SChainRule(port=10009, first_ip=None, last_ip=None),
         SChainRule(port=10007, first_ip=None, last_ip=None),
         SChainRule(port=10008, first_ip=None, last_ip=None),
         SChainRule(port=10002, first_ip=None, last_ip=None),
         SChainRule(port=10003, first_ip=None, last_ip=None),
-        SChainRule(port=10005, first_ip='1.1.1.1', last_ip='1.1.1.1'),
-        SChainRule(port=10004, first_ip='1.1.1.1', last_ip='1.1.1.1'),
-        SChainRule(port=10001, first_ip='1.1.1.1', last_ip='1.1.1.1'),
-        SChainRule(port=10000, first_ip='1.1.1.1', last_ip='1.1.1.1'),
-        SChainRule(port=10005, first_ip='2.2.2.2', last_ip='2.2.2.2'),
-        SChainRule(port=10004, first_ip='2.2.2.2', last_ip='2.2.2.2'),
-        SChainRule(port=10001, first_ip='2.2.2.2', last_ip='2.2.2.2'),
-        SChainRule(port=10000, first_ip='2.2.2.2', last_ip='2.2.2.2'),
-        SChainRule(port=10005, first_ip='3.3.3.3', last_ip='3.3.3.3'),
-        SChainRule(port=10004, first_ip='3.3.3.3', last_ip='3.3.3.3'),
-        SChainRule(port=10001, first_ip='3.3.3.3', last_ip='3.3.3.3'),
-        SChainRule(port=10000, first_ip='3.3.3.3', last_ip='3.3.3.3'),
+        SChainRule(port=10005, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10004, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10001, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10000, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10005, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10004, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10001, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10000, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10005, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10004, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10001, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10000, first_ip='3.3.3.3', last_ip=None),
         SChainRule(port=9100, first_ip=None, last_ip=None),
         SChainRule(port=3009, first_ip=None, last_ip=None),
         SChainRule(port=53, first_ip=None, last_ip=None),

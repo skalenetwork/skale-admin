@@ -126,4 +126,4 @@ class SChainRuleController:
         self.firewall_manager.update_rules(self.expected_rules())
 
     def cleanup(self) -> None:
-        self.firewall_manager.remove_rules(self.actual_rules())
+        self.firewall_manager.flush()

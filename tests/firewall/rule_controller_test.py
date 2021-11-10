@@ -21,6 +21,9 @@ class FirewallManagerMock(IFirewallManager):
         for r in rules:
             self._rules.add(r)
 
+    def flush(self):
+        self._rules = set()
+
 
 def test_schain_rule_controller():
     tfm = FirewallManagerMock()
@@ -109,6 +112,9 @@ def test_schain_rule_controller():
     assert list(src.expected_rules()) == list(sorted(expected_rules))
     assert list(src.actual_rules()) == list(sorted(expected_rules))
 
+    src.cleanup()
+    assert list(src.actual_rules()) == []
+
 
 def test_schain_rule_controller_no_sync_rules():
     tfm = FirewallManagerMock()
@@ -151,3 +157,6 @@ def test_schain_rule_controller_no_sync_rules():
     assert src.is_rules_synced()
     assert list(src.expected_rules()) == list(sorted(expected_rules))
     assert list(src.actual_rules()) == list(sorted(expected_rules))
+
+    src.cleanup()
+    assert list(src.actual_rules()) == []

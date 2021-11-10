@@ -20,6 +20,7 @@
 
 import logging
 import importlib
+import ipaddress
 import multiprocessing
 from functools import wraps
 from typing import Callable, Dict, Iterable
@@ -97,7 +98,7 @@ class IptablesManager(IHostFirewallManager):
         }
         if srule.first_ip is not None:
             if srule.first_ip == srule.last_ip or srule.last_ip is None:
-                rule.update({'src': srule.first_ip})
+                rule.update({'src': cls.to_ip_network(srule.first_ip)})
             else:
                 rule.update({
                     'iprange': {
@@ -114,15 +115,16 @@ class IptablesManager(IHostFirewallManager):
         if iprange:
             first_ip, last_ip = iprange['src-range'].split('-')
         elif src:
-            first_ip = last_ip = rule_d['src']
-        first_ip = cls.normalize_ip(first_ip)
-        last_ip = cls.normalize_ip(last_ip)
+            first_ip = rule_d['src']
+            first_ip = cls.from_ip_network(rule_d['src'])
         port = int(rule_d['tcp']['dport'])
 
         return SChainRule(port, first_ip, last_ip)
 
     @classmethod
-    def normalize_ip(cls, ip: str) -> str:
-        if ip and ip[-3] == '/':
-            return ip[:-3]
-        return ip
+    def from_ip_network(cls, ip: str) -> str:
+        return str(ipaddress.ip_network(ip).hosts()[0])
+
+    @classmethod
+    def to_ip_network(cls, ip: str) -> str:
+        return str(ipaddress.ip_network(ip))

@@ -30,6 +30,7 @@ SChainRule = namedtuple(
     defaults=(None, None,)
 )
 
+
 IpRange = namedtuple('IpRange', ['start_ip', 'end_ip'])
 
 
@@ -62,6 +63,10 @@ class IFirewallManager(ABC):
     def update_rules(self, rules: Iterable[SChainRule]) -> None:  # pragma: no cover  # noqa
         pass
 
+    @abstractmethod
+    def flush(self) -> None:  # pragma: no cover  # noqa
+        pass
+
 
 class IRuleController(ABC):
     @abstractmethod
@@ -73,5 +78,5 @@ class IRuleController(ABC):
         pass
 
     @abstractmethod
-    def cleanup(self) -> None:
+    def cleanup(self) -> None:  # pragma: no cover
         pass

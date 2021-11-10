@@ -1,3 +1,5 @@
+import mock
+
 from core.schains.firewall.types import SChainRule
 
 from core.schains.firewall.firewall_manager import (
@@ -49,3 +51,38 @@ def test_firewall_manager():
     rules_to_remove.append(SChainRule(10004))
     fm.remove_rules(rules_to_remove)
     assert list(sorted(fm.rules)) == [rules[-1]]
+
+
+def test_firewall_manager_update_existed():
+    hm = HostFirewallManagerMock()
+    fm = SChainFirewallManager('test', 10000, 10064, hm)
+    rules = [
+        SChainRule(10000, '2.2.2.2'),
+        SChainRule(10001, '3.3.3.3', '4.4.4.4'),
+        SChainRule(10003),
+    ]
+    fm.add_rules(rules)
+
+    hm.add_rule = mock.Mock()
+    hm.remove_rule = mock.Mock()
+    fm.update_rules(rules)
+    assert list(sorted(fm.rules)) == rules
+
+    assert hm.add_rule.call_count == 0
+    assert hm.remove_rule.call_count == 0
+
+
+def test_firewall_manager_flush():
+    hm = HostFirewallManagerMock()
+    fm = SChainFirewallManager('test', 10000, 10064, hm)
+    rules = [
+        SChainRule(10000, '2.2.2.2'),
+        SChainRule(10001, '3.3.3.3', '4.4.4.4'),
+        SChainRule(10003),
+    ]
+    fm.add_rules(rules)
+    hm.add_rule(SChainRule(10072, '2.2.2.2'))
+
+    fm.flush()
+    assert list(fm.rules) == []
+    assert hm.has_rule(SChainRule(10072, '2.2.2.2'))
