@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from skale import Skale
 from skale.schain_config.generator import get_schain_nodes_with_schains
 from etherbase_predeployed import ETHERBASE_ADDRESS
+from marionette_predeployed import MARIONETTE_ADDRESS
 
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
 from core.schains.config.predeployed import generate_predeployed_section
@@ -79,6 +80,9 @@ class SChainConfig:
 
 
 def get_schain_generation(skale) -> int:
+    """
+    Returns SKALE chain generation (from contracts, starts from 0)
+    """
     return 0  # todo: will be replaced with contract call
 
 
@@ -86,7 +90,6 @@ def get_on_chain_owner(schain: dict, generation: int) -> str:
     """
     Returns on-chain owner depending on sChain generation.
     """
-    MARIONETTE_ADDRESS = '0x0'  # TODO: tmp, remove
     if generation == 0:
         return schain['mainnetOwner']
     if generation == 1:
@@ -116,6 +119,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
 
     on_chain_etherbase = get_on_chain_etherbase(schain, generation)
     on_chain_owner = get_on_chain_owner(schain, generation)
+    mainnet_owner = schain['mainnetOwner']
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
@@ -127,6 +131,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         schain=schain,
         schain_nodes=schain_nodes_with_schains,
         on_chain_owner=on_chain_owner,
+        mainnet_owner=mainnet_owner,
         generation=generation
     )
 

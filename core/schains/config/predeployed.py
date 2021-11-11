@@ -22,6 +22,18 @@ import logging
 from web3 import Web3
 from skale.wallets.web3_wallet import public_key_to_address
 
+from etherbase_predeployed import (
+    UpgradeableEtherbaseUpgradeableGenerator, ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
+)
+from marionette_predeployed import (
+    UpgradeableMarionetteGenerator, MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
+)
+from filestorage_predeployed import (
+    UpgradeableFileStorageGenerator, FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTATION_ADDRESS
+)
+from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminGenerator
+from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
+
 from core.schains.config.helper import (fix_address, _string_to_storage,
                                         get_context_contract, get_deploy_controller_contract,
                                         calculate_deployment_owner_slot)
@@ -38,10 +50,15 @@ from tools.helper import read_json
 logger = logging.getLogger(__name__)
 
 
+PROXY_ADMIN_PREDEPLOYED_ADDRESS = '0xD1000000000000000000000000000000000000D1'
+MULTISIG_PREDEPLOYED_ADDRESS = '0x02212345'  # TODO: tmp, replace when multisig will be ready
+
+
 def generate_predeployed_section(
     schain: dict,
     schain_nodes: list,
     on_chain_owner: str,
+    mainnet_owner: str,
     generation: int
 ) -> dict:
     """Main function used to generate dynamic accounts for the sChain config.
@@ -62,9 +79,63 @@ def generate_predeployed_section(
     if generation == 0:
         pass
     if generation == 1:
-        pass
+        v1_precompiled_contracts = generate_v1_precompiled_contracts(
+            on_chain_owner=on_chain_owner,
+            mainnet_owner=mainnet_owner,
+            message_proxy_for_schain_address=MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
+        )
+        precompiled_section.update(v1_precompiled_contracts)
 
     return precompiled_section
+
+
+def generate_v1_precompiled_contracts(
+    on_chain_owner: str,
+    mainnet_owner: str,
+    message_proxy_for_schain_address: str
+) -> dict:
+    proxy_admin_generator = ProxyAdminGenerator()
+    proxy_admin_predeployed = proxy_admin_generator.generate_allocation(
+        contract_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
+        owner_address=on_chain_owner
+    )
+
+    # TODO: allocate money to the etherbase + bootstrap address
+    etherbase_generator = UpgradeableEtherbaseUpgradeableGenerator()
+    etherbase_predeployed = etherbase_generator.generate_allocation(
+        contract_address=ETHERBASE_ADDRESS,
+        implementation_address=ETHERBASE_IMPLEMENTATION_ADDRESS,
+        schain_owner=on_chain_owner,
+        proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
+        balance=1245  # TODO!
+    )
+
+    marionette_generator = UpgradeableMarionetteGenerator()
+    marionette_predeployed = marionette_generator.generate_allocation(
+        contract_address=MARIONETTE_ADDRESS,
+        implementation_address=MARIONETTE_IMPLEMENTATION_ADDRESS,
+        proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
+        schain_owner=mainnet_owner,
+        marionette=MARIONETTE_ADDRESS,
+        owner=MULTISIG_PREDEPLOYED_ADDRESS,
+        ima=message_proxy_for_schain_address,
+    )
+
+    filestorage_generator = UpgradeableFileStorageGenerator()
+    filestorage_predeployed = filestorage_generator.generate_allocation(
+        contract_address=FILESTORAGE_ADDRESS,
+        implementation_address=FILESTORAGE_IMPLEMENTATION_ADDRESS,
+        schain_owner=MARIONETTE_ADDRESS,
+        proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
+        allocated_storage=1234  # TODO!
+    )
+
+    return {
+        **proxy_admin_predeployed,
+        **etherbase_predeployed,
+        **marionette_predeployed,
+        **filestorage_predeployed
+    }
 
 
 def generate_account(balance, code=None, storage={}, nonce=0):
