@@ -102,14 +102,13 @@ def generate_v1_precompiled_contracts(
         owner_address=on_chain_owner
     )
 
-    # TODO: allocate money to the etherbase + bootstrap address
     etherbase_generator = UpgradeableEtherbaseUpgradeableGenerator()
     etherbase_predeployed = etherbase_generator.generate_allocation(
         contract_address=ETHERBASE_ADDRESS,
         implementation_address=ETHERBASE_IMPLEMENTATION_ADDRESS,
         schain_owner=on_chain_owner,
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
-        balance=1245  # TODO!
+        balance=SCHAIN_OWNER_ALLOC
     )
 
     marionette_generator = UpgradeableMarionetteGenerator()
@@ -132,6 +131,11 @@ def generate_v1_precompiled_contracts(
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
         allocated_storage=allocated_storage
     )
+
+    # TODO: allocate money to the bootstrap address too
+    # TODO: add deploy controller SC
+    # TODO: add context manager SC
+    # TODO: add predeployed multisig SC
 
     return {
         **proxy_admin_predeployed,
