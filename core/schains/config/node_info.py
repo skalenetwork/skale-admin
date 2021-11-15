@@ -86,7 +86,7 @@ def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
                                schains_on_node: list, rotation_id: int) -> CurrentNodeInfo:
     schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain['name'],
                                                             node['port'])
-    schain_type_name = get_schain_type(schain).name
+    schain_type_name = get_schain_type(schain['partOfNode']).name
     rotate_after_block = get_rotate_after_block(schain_type_name)
     return CurrentNodeInfo(
         node_id=node_id,
