@@ -27,10 +27,12 @@ from marionette_predeployed import MARIONETTE_ADDRESS
 
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
 from core.schains.config.predeployed import generate_predeployed_section
+from core.schains.config.generation import get_schain_generation, gen0, gen1
 from core.schains.config.helper import get_chain_id
 from core.schains.config.previous_keys import (
     compose_previous_keys_info, previous_keys_info_to_dicts
 )
+from core.schains.limits import get_schain_type
 
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
@@ -79,20 +81,13 @@ class SChainConfig:
         }
 
 
-def get_schain_generation(skale) -> int:
-    """
-    Returns SKALE chain generation (from contracts, starts from 0)
-    """
-    return 0  # todo: will be replaced with contract call
-
-
 def get_on_chain_owner(schain: dict, generation: int) -> str:
     """
     Returns on-chain owner depending on sChain generation.
     """
-    if generation == 0:
+    if gen0(generation):
         return schain['mainnetOwner']
-    if generation == 1:
+    if gen1(generation):
         return MARIONETTE_ADDRESS
 
 
@@ -100,9 +95,9 @@ def get_on_chain_etherbase(schain: dict, generation: int) -> str:
     """
     Returns on-chain owner depending on sChain generation.
     """
-    if generation == 0:
+    if gen0(generation):
         return schain['mainnetOwner']
-    if generation == 1:
+    if gen1(generation):
         return ETHERBASE_ADDRESS
 
 
@@ -120,6 +115,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
     on_chain_etherbase = get_on_chain_etherbase(schain, generation)
     on_chain_owner = get_on_chain_owner(schain, generation)
     mainnet_owner = schain['mainnetOwner']
+    schain_type = get_schain_type(schain['partOfNode'])
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
@@ -128,7 +124,8 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
     }
 
     dynamic_accounts = generate_predeployed_section(
-        schain=schain,
+        schain_name=schain['name'],
+        schain_type=schain_type,
         schain_nodes=schain_nodes_with_schains,
         on_chain_owner=on_chain_owner,
         mainnet_owner=mainnet_owner,
@@ -138,6 +135,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
     skale_config = generate_skale_section(
         schain=schain,
         on_chain_etherbase=on_chain_etherbase,
+        on_chain_owner=on_chain_owner,
         schain_id=schain_id,
         node_id=node_id,
         node=node,
@@ -165,8 +163,13 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
     return schain_config
 
 
-def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: int,
-                                      rotation_data: dict, ecdsa_key_name: str) -> SChainConfig:
+def generate_schain_config_with_skale(
+    skale: Skale,
+    schain_name: str,
+    node_id: int,
+    rotation_data: dict,
+    ecdsa_key_name: str
+) -> SChainConfig:
     schain_id = 1  # todo: remove this later (should be removed from the skaled first)
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
     schains_on_node = skale.schains.get_schains_for_node(node_id)

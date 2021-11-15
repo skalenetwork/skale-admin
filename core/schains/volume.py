@@ -19,7 +19,7 @@
 
 import logging
 
-from core.schains.limits import get_schain_limit
+from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
 from tools.configs.containers import (
     SHARED_SPACE_VOLUME_NAME,
@@ -45,7 +45,8 @@ def init_data_volume(schain, dutils=None):
         return
 
     logger.info(f'Creating volume for schain: {schain_name}')
-    disk_limit = get_schain_limit(schain, MetricType.disk)
+    schain_type = get_schain_type(schain['partOfNode'])
+    disk_limit = get_schain_limit(schain_type, MetricType.disk)
     return dutils.create_data_volume(schain_name, disk_limit)
 
 

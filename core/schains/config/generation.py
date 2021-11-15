@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2019-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,15 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-from tools.configs import NODE_DATA_PATH
+from skale import Skale
 
-TIMES = 1
-TIMEOUT = 1
-MEMORY_FACTOR = 0.9
-DISK_FACTOR = 0.8
 
-RESOURCE_ALLOCATION_FILENAME = 'resource_allocation.json'
-RESOURCE_ALLOCATION_FILEPATH = os.path.join(NODE_DATA_PATH, RESOURCE_ALLOCATION_FILENAME)
+def get_schain_generation(skale: Skale) -> int:
+    """
+    Returns SKALE chain generation (from contracts, starts from 0)
+    """
+    return 0  # TODO: tmp, will be replaced with contract call
 
-FILESTORAGE_LIMIT_OPTION_NAME = 'max_file_storage_bytes'
+
+def gen0(generation) -> bool:
+    return generation == 0
+
+
+def gen1(generation) -> bool:
+    return generation == 1

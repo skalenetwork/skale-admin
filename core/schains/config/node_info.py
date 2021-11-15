@@ -22,11 +22,11 @@ from skale.dataclasses.node_info import NodeInfo
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.dataclasses.skaled_ports import SkaledPorts
 
-from core.ima.schain import get_message_proxy_addresses
 from core.schains.limits import get_schain_type
 from tools.configs import (
     SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, ENV_TYPE, ALLOCATION_FILEPATH
 )
+from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILEPATH
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json, safe_load_yml
@@ -125,3 +125,14 @@ def generate_wallets_config(schain_name: str, rotation_id: int) -> dict:
         wallets['ima'][name] = str(value)
 
     return wallets
+
+
+def get_message_proxy_addresses():
+    mainnet_ima_abi = read_json(MAINNET_IMA_ABI_FILEPATH)
+    schain_ima_abi = read_json(SCHAIN_IMA_ABI_FILEPATH)
+    ima_mp_schain = schain_ima_abi['message_proxy_chain_address']
+    ima_mp_mainnet = mainnet_ima_abi['message_proxy_mainnet_address']
+    return {
+        'ima_message_proxy_schain': ima_mp_schain,
+        'ima_message_proxy_mainnet': ima_mp_mainnet
+    }

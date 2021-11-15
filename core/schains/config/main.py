@@ -21,6 +21,8 @@ import json
 import shutil
 import logging
 
+from skale import Skale
+
 from core.node import get_skale_node_version
 from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.config.directory import get_tmp_schain_config_filepath
@@ -28,19 +30,19 @@ from core.schains.config.directory import schain_config_filepath
 
 from tools.str_formatters import arguments_list_string
 
-from web.models.schain import upsert_schain_record
+from web.models.schain import upsert_schain_record, SChainRecord
 
 
 logger = logging.getLogger(__name__)
 
 
 def init_schain_config(
-    skale,
-    node_id,
-    schain_name,
-    ecdsa_sgx_key_name,
-    rotation_data,
-    schain_record
+    skale: Skale,
+    node_id: int,
+    schain_name: str,
+    ecdsa_sgx_key_name: str,
+    rotation_data: dict,
+    schain_record: SChainRecord
 ):
     config_filepath = schain_config_filepath(schain_name)
 

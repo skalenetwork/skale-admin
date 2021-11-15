@@ -39,6 +39,8 @@ from core.schains.volume import init_data_volume
 from core.schains.firewall import add_firewall_rules
 from core.schains.rotation import get_schain_public_key
 
+from core.schains.limits import get_schain_type
+
 from core.schains.monitor.containers import monitor_schain_container
 from core.schains.monitor.rpc import monitor_schain_rpc
 
@@ -83,6 +85,8 @@ class BaseMonitor(ABC):
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
+
+        self.schain_type = get_schain_type(schain['partOfNode'])
 
         self.dutils = dutils or DockerUtils()
         self.p = f'{type(self).__name__} - schain: {self.name} -'

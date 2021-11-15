@@ -19,7 +19,7 @@
 
 from dataclasses import dataclass
 
-from core.schains.limits import get_schain_limit
+from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
 
 
@@ -69,8 +69,9 @@ class SChainInfo:
 def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
                          static_schain_params: dict, previous_public_keys_info: list,
                          nodes: dict) -> SChainInfo:
-    volume_limits = get_schain_limit(schain, MetricType.volume_limits)
-    leveldb_limits = get_schain_limit(schain, MetricType.leveldb_limits)
+    schain_type = get_schain_type(schain['partOfNode'])
+    volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)
+    leveldb_limits = get_schain_limit(schain_type, MetricType.leveldb_limits)
     contract_storage_limit = leveldb_limits['contract_storage']
     db_storage_limit = leveldb_limits['db_storage']
 

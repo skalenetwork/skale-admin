@@ -21,14 +21,11 @@ import os
 import json
 import shutil
 import logging
-from ima_predeployed.generator import generate_abi, generate_contracts
-
+from ima_predeployed.generator import generate_abi
 from core.schains.config.directory import schain_config_dir
 
-from tools.helper import read_json
-
 from tools.configs.ima import (
-    SCHAIN_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILENAME, MAINNET_IMA_ABI_FILEPATH
+    SCHAIN_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILENAME
 )
 
 
@@ -55,23 +52,3 @@ def copy_schain_ima_abi(name):
 def get_schain_ima_abi_filepath(schain_name):
     schain_dir_path = schain_config_dir(schain_name)
     return os.path.join(schain_dir_path, SCHAIN_IMA_ABI_FILENAME)
-
-
-def generate_ima_accounts(on_chain_owner, schain_name):
-    mainnet_ima_abi = read_json(MAINNET_IMA_ABI_FILEPATH)
-    return generate_contracts(
-        owner_address=on_chain_owner,
-        schain_name=schain_name,
-        contracts_on_mainnet=mainnet_ima_abi
-    )
-
-
-def get_message_proxy_addresses():
-    mainnet_ima_abi = read_json(MAINNET_IMA_ABI_FILEPATH)
-    schain_ima_abi = read_json(SCHAIN_IMA_ABI_FILEPATH)
-    ima_mp_schain = schain_ima_abi['message_proxy_chain_address']
-    ima_mp_mainnet = mainnet_ima_abi['message_proxy_mainnet_address']
-    return {
-        'ima_message_proxy_schain': ima_mp_schain,
-        'ima_message_proxy_mainnet': ima_mp_mainnet
-    }
