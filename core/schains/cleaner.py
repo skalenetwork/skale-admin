@@ -38,7 +38,7 @@ from core.schains.config.helper import (
 from core.schains.process_manager_helper import terminate_schain_process
 from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
 from core.schains.types import ContainerType
-from core.schains.utils import get_sync_agent_ranges
+from core.schains.firewall.utils import get_sync_agent_ranges
 
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH

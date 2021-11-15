@@ -32,7 +32,7 @@ from core.schains.monitor import (
     BaseMonitor, RegularMonitor, RepairMonitor, BackupMonitor, RotationMonitor, PostRotationMonitor
 )
 from core.schains.rotation import check_schain_rotated
-from core.schains.utils import get_sync_agent_ranges
+from core.schains.firewall.utils import get_sync_agent_ranges
 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN

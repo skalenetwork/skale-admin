@@ -12,7 +12,7 @@ from core.schains.monitor.main import (
     RotationMonitor, RegularMonitor
 )
 from core.schains.runner import get_container_info
-from core.schains.utils import get_sync_agent_ranges
+from core.schains.firewall.utils import get_sync_agent_ranges
 
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.helper import write_json

@@ -20,6 +20,8 @@
 import logging
 from typing import List, Optional
 
+from skale import Skale
+
 from .firewall_manager import SChainFirewallManager
 from .types import IpRange, PORTS_PER_SCHAIN
 from .iptables import IptablesManager
@@ -45,7 +47,8 @@ def get_default_rule_controller(
         im
     )
     logger.info(
-        f'SChainRuleController {base_port}, {own_ip}, {node_ips}, {sync_agent_ranges}'
+        'SChainRuleController %s, %s, %s, %s',
+        base_port, own_ip, node_ips, sync_agent_ranges
     )
     return SChainRuleController(
         fm,
@@ -54,3 +57,11 @@ def get_default_rule_controller(
         node_ips,
         sync_ip_ranges=sync_agent_ranges
     )
+
+
+def get_sync_agent_ranges(skale: Skale) -> List[IpRange]:
+    sync_agent_ranges = []
+    rnum = skale.sync_manager.get_ip_ranges_number()
+    for i in range(rnum):
+        sync_agent_ranges.append(skale.sync_manager.get_ip_range_by_index(i))
+    return sync_agent_ranges
