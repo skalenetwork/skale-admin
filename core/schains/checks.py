@@ -19,24 +19,29 @@
 
 import os
 import logging
+from typing import Callable
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
 from core.schains.config.generator import schain_config_version_match
 from core.schains.config.helper import (
-    get_allowed_endpoints,
+    get_base_port_from_config,
+    get_node_ips_from_config,
+    get_own_ip_from_config,
     get_local_schain_http_endpoint
 )
-from core.schains.config.directory import schain_config_dir, schain_config_filepath
+from core.schains.config.directory import (
+    get_schain_config,
+    schain_config_dir,
+    schain_config_filepath
+)
 from core.schains.runner import get_container_name
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.configs.ima import DISABLE_IMA
-from tools.iptables import apsent_rules as apsent_iptables_rules
 
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
-
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
@@ -54,6 +59,7 @@ class SChainChecks:
         schain_name: str,
         node_id: int,
         schain_record: SChainRecord,
+        rule_controller_creator: Callable,
         rotation_id: int = 0,
         *,
         ima_linked: bool = True,
@@ -66,6 +72,7 @@ class SChainChecks:
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.ima_linked = ima_linked
+        self.rc_creator = rule_controller_creator
 
     @property
     def config_dir(self) -> CheckRes:
@@ -88,7 +95,9 @@ class SChainChecks:
         config_filepath = schain_config_filepath(self.name)
         if not os.path.isfile(config_filepath):
             return CheckRes(False)
-        return CheckRes(schain_config_version_match(self.name, self.schain_record))
+        return CheckRes(
+            schain_config_version_match(self.name, self.schain_record)
+        )
 
     @property
     def volume(self) -> CheckRes:
@@ -98,10 +107,19 @@ class SChainChecks:
     @property
     def firewall_rules(self) -> CheckRes:
         """Checks that firewall rules are set correctly"""
-        if self.config:
-            ips_ports = get_allowed_endpoints(self.name)
-            res = len(apsent_iptables_rules(ips_ports)) == 0
-            return CheckRes(res)
+        if self.config.status:
+            conf = get_schain_config(self.name)
+            base_port = get_base_port_from_config(conf)
+            node_ips = get_node_ips_from_config(conf)
+            own_ip = get_own_ip_from_config(conf)
+            rc = self.rc_creator(
+                name=self.name,
+                base_port=base_port,
+                own_ip=own_ip,
+                node_ips=node_ips
+            )
+            logger.info(f'Rule controller {rc.expected_rules()}')
+            return CheckRes(rc.is_rules_synced())
         return CheckRes(False)
 
     @property

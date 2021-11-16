@@ -20,7 +20,6 @@
 import logging
 
 from core.schains.monitor.base_monitor import BaseMonitor
-from core.schains.firewall import remove_firewall_rules
 from core.schains.runner import restart_container
 from tools.configs.containers import SCHAIN_CONTAINER
 
@@ -35,7 +34,6 @@ class PostRotationMonitor(BaseMonitor):
     @BaseMonitor.monitor_runner
     def run(self):
         logger.info(f'{self.p} was stopped after rotation. Going to restart')
-        remove_firewall_rules(self.name)
         self.config(overwrite=True)
-        self.firewall_rules(overwrite=True)
+        self.firewall_rules()
         restart_container(SCHAIN_CONTAINER, self.schain)

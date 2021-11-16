@@ -1,17 +1,17 @@
 import mock
 import pytest
 
-from core.schains.monitor import BaseMonitor
-from core.schains.ima import ImaData
 from core.schains.checks import SChainChecks
 from core.schains.cleaner import remove_ima_container
 from core.schains.config.generator import save_schain_config
+from core.schains.ima import ImaData
+from core.schains.monitor import BaseMonitor
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
-
 from web.models.schain import SChainRecord
 
 from tests.dkg_utils import safe_run_dkg_mock
+from tests.utils import get_test_rc
 
 
 class BaseTestMonitor(BaseMonitor):
@@ -79,6 +79,7 @@ def test_monitor(schain_db, node_config, skale, ima_data, dutils):
         schain_db,
         node_config.id,
         schain_record=schain_record,
+        rule_controller_creator=get_test_rc,
         dutils=dutils
     )
     return BaseTestMonitor(
@@ -88,18 +89,35 @@ def test_monitor(schain_db, node_config, skale, ima_data, dutils):
         node_config=node_config,
         rotation_data={'rotation_id': 0, 'finish_ts': 0},
         checks=schain_checks,
+        rule_controller_creator=get_test_rc,
         dutils=dutils
     )
 
 
-def test_crashing_monitor(schain_db, skale, node_config, schain_checks, ima_data, schain_struct):
+def test_crashing_monitor(
+    schain_db,
+    skale,
+    node_config,
+    ima_data,
+    schain_struct,
+    dutils
+):
+    schain_record = SChainRecord.get_by_name(schain_db)
+    schain_checks = SChainChecks(
+        schain_db,
+        node_config.id,
+        schain_record=schain_record,
+        rule_controller_creator=get_test_rc,
+        dutils=dutils
+    )
     test_monitor = CrashingTestMonitor(
         skale=skale,
         ima_data=ima_data,
         schain=schain_struct,
         node_config=node_config,
         rotation_data={'rotation_id': 1},
-        checks=schain_checks
+        checks=schain_checks,
+        rule_controller_creator=get_test_rc
     )
     with pytest.raises(Exception):
         test_monitor.run()
@@ -182,6 +200,7 @@ def test_base_monitor_ima_container_not_linked(schain_db, node_config, skale, du
         schain_db,
         node_config.id,
         schain_record=schain_record,
+        rule_controller_creator=get_test_rc,
         dutils=dutils
     )
     ima_data = ImaData(False, '0x1')
@@ -192,6 +211,7 @@ def test_base_monitor_ima_container_not_linked(schain_db, node_config, skale, du
         node_config=node_config,
         rotation_data={'rotation_id': 0},
         checks=schain_checks,
+        rule_controller_creator=get_test_rc,
         dutils=dutils
     )
 

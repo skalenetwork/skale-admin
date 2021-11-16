@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2021 SKALE Labs
+#   Copyright (C) 2020 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,16 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from core.schains.config.helper import get_allowed_endpoints
-from tools.iptables import (add_rules as add_iptables_rules,
-                            remove_rules as remove_iptables_rules)
+
+import logging
+from typing import Dict
+
+from skale import Skale
+
+from tools.notifications.messages import notify_balance
+
+logger = logging.getLogger(__name__)
+
+REQUIRED_BALANCE_WEI = 10 ** 17
 
 
-def add_firewall_rules(schain_name):
-    endpoints = get_allowed_endpoints(schain_name)
-    add_iptables_rules(endpoints)
-
-
-def remove_firewall_rules(schain_name):
-    endpoints = get_allowed_endpoints(schain_name)
-    remove_iptables_rules(endpoints)
+def notify_if_not_enough_balance(skale: Skale, node_info: Dict) -> None:
+    eth_balance_wei = skale.web3.eth.getBalance(skale.wallet.address)
+    logger.info(f'Node account has {eth_balance_wei} WEI')
+    balance_in_skl = skale.web3.fromWei(eth_balance_wei, 'ether')
+    required_in_skl = skale.web3.fromWei(REQUIRED_BALANCE_WEI, 'ether')
+    notify_balance(node_info, balance_in_skl, required_in_skl)

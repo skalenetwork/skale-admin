@@ -8,8 +8,7 @@ from flask import Flask, appcontext_pushed, g
 
 from core.node_config import NodeConfig
 from core.schains.config.directory import schain_config_filepath
-from tests.utils import get_bp_data, post_bp_data
-from tools.iptables import NodeEndpoint
+from tests.utils import get_bp_data, get_test_rc_synced, post_bp_data
 from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 from web.helper import get_api_url
@@ -58,31 +57,36 @@ def test_schains_list(skale_bp, skale):
     assert data == {'payload': [], 'status': 'ok'}
 
 
-def get_allowed_endpoints_mock(schain):
-    return [
-        NodeEndpoint(ip='11.11.11.11', port='1111'),
-        NodeEndpoint(ip='12.12.12.12', port=None),
-        NodeEndpoint(ip=None, port='1313')
-    ]
-
-
 def schain_config_exists_mock(schain):
     return True
 
 
-@mock.patch('web.routes.schains.get_allowed_endpoints', get_allowed_endpoints_mock)
 @mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
-def test_firewall_rules(skale_bp):
+@mock.patch('web.routes.schains.get_default_rule_controller', get_test_rc_synced)
+def test_firewall_rules_route(skale_bp, schain_config):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'firewall-rules'),
-                       params={'schain': 'schain-test'})
+                       params={'schain_name': schain_name})
+    print(data)
     assert data == {
+        'status': 'ok',
         'payload': {
             'endpoints': [
-                {'ip': '11.11.11.11', 'port': '1111'},
-                {'ip': '12.12.12.12', 'port': None},
-                {'ip': None, 'port': '1313'}
-            ]},
-        'status': 'ok'
+                {'port': 10000, 'first_ip': '127.0.0.2', 'last_ip': None},
+                {'port': 10001, 'first_ip': '127.0.0.2', 'last_ip': None},
+                {'port': 10002, 'first_ip': None, 'last_ip': None},
+                {'port': 10003, 'first_ip': None, 'last_ip': None},
+                {'port': 10004, 'first_ip': '127.0.0.2', 'last_ip': None},
+                {'port': 10005, 'first_ip': '127.0.0.2', 'last_ip': None},
+                {'port': 10007, 'first_ip': None, 'last_ip': None},
+                {'port': 10008, 'first_ip': None, 'last_ip': None},
+                {'port': 10009, 'first_ip': None, 'last_ip': None},
+                {'port': 10010, 'first_ip': None, 'last_ip': None},
+                {'port': 10011, 'first_ip': None, 'last_ip': None},
+                {'port': 10012, 'first_ip': None, 'last_ip': None},
+                {'port': 10013, 'first_ip': None, 'last_ip': None}
+            ]
+        }
     }
 
 

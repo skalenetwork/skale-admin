@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2020 SKALE Labs
+#   Copyright (C) 2019-2020 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,19 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
-import logging
-
-from tools.notifications.messages import notify_balance
-
-logger = logging.getLogger(__name__)
-
-REQUIRED_BALANCE_WEI = 10 ** 17
-
-
-def notify_if_not_enough_balance(skale, node_info):
-    eth_balance_wei = skale.web3.eth.getBalance(skale.wallet.address)
-    logger.info(f'Node account has {eth_balance_wei} WEI')
-    balance_in_skl = skale.web3.fromWei(eth_balance_wei, 'ether')
-    required_in_skl = skale.web3.fromWei(REQUIRED_BALANCE_WEI, 'ether')
-    notify_balance(node_info, balance_in_skl, required_in_skl)
+from .firewall_manager import SChainFirewallManager  # noqa
+from .iptables import IptablesManager  # noqa
+from .rule_controller import SChainRuleController  # noqa
+from .utils import get_default_rule_controller  # noqa

@@ -19,6 +19,7 @@ from core.schains.ima import ImaData
 from tests.utils import (
     CONTAINERS_JSON,
     generate_cert,
+    get_test_rc,
     init_skale_ima,
     init_web3_skale
 )
@@ -26,8 +27,6 @@ from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.docker_utils import DockerUtils
-
-
 from web.models.schain import create_tables, SChainRecord, upsert_schain_record
 
 
@@ -166,9 +165,9 @@ def generate_schain_config(schain_name):
                         "infoPgHttpRpcPort": 10060,
                         "infoPgHttpsRpcPort": 10070,
                         "schainIndex": 1,
-                        "ip": "127.0.0.1",
+                        "ip": "127.0.0.2",
                         "owner": "0x42",
-                        "publicIP": "127.0.0.1"
+                        "publicIP": "127.0.0.2"
                     }
                 ]
             }
@@ -327,6 +326,7 @@ def schain_checks(schain_config, dutils):
         schain_name,
         node_id,
         schain_record=schain_record,
+        rule_controller_creator=get_test_rc,
         dutils=dutils
     )
 

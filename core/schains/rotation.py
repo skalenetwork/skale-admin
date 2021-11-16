@@ -31,8 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 def set_rotation_for_schain(schain_name: str, timestamp: int) -> None:
-    endpoint = get_skaled_http_address(schain_name)
-    url = f'http://{endpoint.ip}:{endpoint.port}'
+    url = get_skaled_http_address(schain_name)
     _send_rotation_request(url, timestamp)
 
 

@@ -15,7 +15,12 @@ from tools.configs.containers import SCHAIN_CONTAINER
 from web.models.schain import SChainRecord
 
 
-from tests.utils import response_mock, request_mock
+from tests.utils import (
+    get_test_rc,
+    get_test_rc_synced,
+    response_mock,
+    request_mock
+)
 
 
 NOT_EXISTS_SCHAIN_NAME = 'qwerty123'
@@ -74,6 +79,7 @@ def sample_checks(schain_config, schain_db, dutils):
         schain_name,
         node_id,
         schain_record=schain_record,
+        rule_controller_creator=get_test_rc_synced,
         dutils=dutils
     )
 
@@ -86,6 +92,20 @@ def sample_false_checks(schain_config, schain_db, dutils):
         NOT_EXISTS_SCHAIN_NAME,
         TEST_NODE_ID,
         schain_record=schain_record,
+        rule_controller_creator=get_test_rc,
+        dutils=dutils
+    )
+
+
+@pytest.fixture
+def rules_unsynced_checks(schain_config, schain_db, dutils):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain_record = SChainRecord.get_by_name(schain_name)
+    return SChainChecks(
+        schain_name,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        rule_controller_creator=get_test_rc,
         dutils=dutils
     )
 
@@ -120,14 +140,11 @@ def test_volume_check(sample_checks, sample_false_checks, dutils):
     assert not sample_false_checks.volume.status
 
 
-def test_firewall_rules_check(sample_checks, sample_false_checks):
-    with mock.patch('core.schains.checks.apsent_iptables_rules', return_value=[]), \
-            mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
+def test_firewall_rules_check(sample_checks, rules_unsynced_checks):
+    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
         assert sample_checks.firewall_rules.status
-    with mock.patch('core.schains.checks.apsent_iptables_rules',
-                    return_value=[('1.1.1.1', 1000)]), \
-            mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert not sample_false_checks.firewall_rules.status
+    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
+        assert not rules_unsynced_checks.firewall_rules.status
 
 
 def test_container_check(sample_checks, sample_false_checks):
@@ -186,7 +203,8 @@ def test_init_checks(skale, schain_db):
     checks = SChainChecks(
         schain_name,
         TEST_NODE_ID,
-        schain_record=schain_record
+        schain_record=schain_record,
+        rule_controller_creator=get_test_rc_synced,
     )
     assert checks.name == schain_name
     assert checks.node_id == TEST_NODE_ID
@@ -210,6 +228,7 @@ def test_exit_code(skale, schain_db, dutils):
             test_schain_name,
             TEST_NODE_ID,
             schain_record=schain_record,
+            rule_controller_creator=get_test_rc_synced,
             dutils=dutils
         )
         assert not checks.exit_code_ok.status
@@ -227,6 +246,7 @@ def test_get_all(schain_config, dutils, schain_db):
         schain_db,
         node_id,
         schain_record=schain_record,
+        rule_controller_creator=get_test_rc_synced,
         dutils=dutils
     )
     checks_dict = checks.get_all()
@@ -245,6 +265,7 @@ def test_get_all(schain_config, dutils, schain_db):
         schain_db,
         node_id,
         schain_record=schain_record,
+        rule_controller_creator=get_test_rc_synced,
         dutils=dutils,
         ima_linked=False
     )
