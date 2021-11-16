@@ -15,7 +15,7 @@ def test_generate_predeployed_section():
         mainnet_owner='0xD4000000000000000000000000000000000000D4',
         generation=0
     )
-    assert len(predeployed_section.keys()) == 44
+    assert len(predeployed_section.keys()) == 43
 
 
 def test_generate_v1_precompiled_contracts():
