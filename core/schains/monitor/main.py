@@ -19,21 +19,24 @@
 
 import time
 import logging
+from functools import partial
 from importlib import reload
 
 from web3._utils import request
 
 from core.node_config import NodeConfig
+from core.schains.checks import SChainChecks
+from core.schains.firewall import get_default_rule_controller
+from core.schains.ima import ImaData
 from core.schains.monitor import (
     BaseMonitor, RegularMonitor, RepairMonitor, BackupMonitor, RotationMonitor, PostRotationMonitor
 )
-from core.schains.checks import SChainChecks
 from core.schains.rotation import check_schain_rotated
-
-from core.schains.ima import ImaData
+from core.schains.firewall.utils import get_sync_agent_ranges
 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
+from tools.configs.ima import DISABLE_IMA
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
@@ -97,22 +100,29 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             name = schain["name"]
             dutils = dutils or DockerUtils()
 
-            ima_linked = skale_ima.linker.has_schain(name)
+            ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
             rotation_data = skale.node_rotation.get_rotation(name)
             rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
 
+            sync_agent_ranges = get_sync_agent_ranges(skale)
+
+            rc_creator = partial(
+                get_default_rule_controller,
+                sync_agent_ranges=sync_agent_ranges
+            )
             schain_record = upsert_schain_record(name)
             checks = SChainChecks(
                 name,
                 node_config.id,
                 schain_record=schain_record,
+                rule_controller_creator=rc_creator,
                 rotation_id=rotation_data['rotation_id'],
                 ima_linked=ima_linked,
                 dutils=dutils
             )
 
             ima_data = ImaData(
-                linked=skale_ima.linker.has_schain(name),
+                linked=ima_linked,
                 chain_id=skale_ima.web3.eth.chainId
             )
 
@@ -123,7 +133,8 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
                 schain=schain,
                 node_config=node_config,
                 rotation_data=rotation_data,
-                checks=checks
+                checks=checks,
+                rule_controller_creator=rc_creator
             )
             monitor.run()
             if once:

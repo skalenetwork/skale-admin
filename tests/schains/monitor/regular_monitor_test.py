@@ -7,7 +7,7 @@ from skale.schain_config.generator import get_nodes_for_schain
 from skale.wallets import SgxWallet
 from skale.utils.helper import ip_from_bytes
 
-from core.schains.checks import SChainChecks, CheckRes
+from core.schains.checks import SChainChecks
 from core.schains.monitor import RegularMonitor
 from core.schains.ima import ImaData
 
@@ -20,16 +20,10 @@ from tools.configs import (
 from web.models.schain import SChainRecord
 
 from tests.dkg_utils import safe_run_dkg_mock
-from tests.utils import alter_schain_config
+from tests.utils import alter_schain_config, get_test_rc_synced
 
 
 logger = logging.getLogger(__name__)
-
-
-class SChainChecksMock(SChainChecks):
-    @property
-    def firewall_rules(self) -> CheckRes:
-        return CheckRes(True)
 
 
 def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_folder,
@@ -49,10 +43,11 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
     node_config.sgx_key_name = sgx_wallet.key_name
 
     schain_record = SChainRecord.get_by_name(schain_name)
-    schain_checks = SChainChecksMock(
+    schain_checks = SChainChecks(
         schain_name,
         node_config.id,
         schain_record=schain_record,
+        rule_controller_creator=get_test_rc_synced,
         dutils=dutils
     )
     ima_data = ImaData(False, '0x1')
@@ -63,6 +58,7 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
         node_config=node_config,
         rotation_data={'rotation_id': 0},
         checks=schain_checks,
+        rule_controller_creator=get_test_rc_synced,
         dutils=dutils
     )
 

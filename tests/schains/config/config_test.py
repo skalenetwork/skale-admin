@@ -1,150 +1,32 @@
 import pytest
 
 from core.schains.config.helper import (
-    get_consensus_endpoints_from_config,
+    get_base_port_from_config,
+    get_node_ips_from_config,
+    get_own_ip_from_config,
     get_schain_env,
-    get_schain_container_cmd,
-    get_skaled_rpc_endpoints_from_config,
-    get_snapshots_endpoints_from_config,
+    get_schain_container_cmd
 )
 from core.schains.config.directory import schain_config_filepath
 from core.schains.ssl import get_ssl_filepath
 from core.schains.volume import get_schain_volume_config
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 
-from tools.iptables import NodeEndpoint
 from tools.configs import SGX_SERVER_URL
 from tools.configs.ima import IMA_ENDPOINT
 
 
-CONFIG = {
-    "skaleConfig": {
-        "nodeInfo": {
-            "nodeID": 2,
-            "nodeName": "quick-piscis-austrinus",
-            "basePort": 10011,
-            "httpRpcPort": 10013,
-            "httpsRpcPort": 10018,
-            "wsRpcPort": 10014,
-            "wssRpcPort": 10019,
-            "infoHttpRpcPort": 10020,
-            "pgHttpRpcPort": 10100,
-            "pgHttpsRpcPort": 10110,
-            "infoPgHttpRpcPort": 10120,
-            "infoPgHttpsRpcPort": 10130,
-            "bindIP": "127.0.0.1",
-            "imaMessageProxySChain": None,
-            "imaMessageProxyMainNet": "0x",
-            "wallets": {
-                "ima": {
-                    "url": "https://4",
-                    "keyShareName": "",
-                    "t": 1,
-                    "n": 2,
-                    "BLSPublicKey0": "8",
-                    "BLSPublicKey1": "4",
-                    "BLSPublicKey2": "4",
-                    "BLSPublicKey3": "1",
-                    "commonBLSPublicKey0": "8",
-                    "commonBLSPublicKey1": "4",
-                    "commonBLSPublicKey2": "4",
-                    "commonBLSPublicKey3": "1"
-                }
-            }
-        },
-        "sChain": {
-            "schainID": 1,
-            "schainName": "2chainTest",
-            "schainOwner": "0x",
-            "previousBlsPublicKeys": [
-                {
-                    "blsPublicKey0": "8",
-                    "blsPublicKey1": "4",
-                    "blsPublicKey2": "4",
-                    "blsPublicKey3": "1"
-                }
-            ],
-            "nodes": [
-                {
-                    "nodeID": 1,
-                    "nodeName": "quick-piscis-austrinus",
-                    "basePort": 10012,
-                    "httpRpcPort": 10014,
-                    "httpsRpcPort": 10019,
-                    "wsRpcPort": 10015,
-                    "wssRpcPort": 10020,
-                    "infoHttpRpcPort": 10021,
-                    "pgHttpRpcPort": 10040,
-                    "pgHttpsRpcPort": 10050,
-                    "infoPgHttpRpcPort": 10060,
-                    "infoPgHttpsRpcPort": 10070,
-                    "publicKey": "0x",
-                    "blsPublicKey0": "8",
-                    "blsPublicKey1": "4",
-                    "blsPublicKey2": "4",
-                    "blsPublicKey3": "1",
-                    "owner": "0x",
-                    "schainIndex": 2,
-                    "ip": "127.0.0.1",
-                    "publicIP": "127.0.0.2"
-                },
-                {
-                    "nodeID": 2,
-                    "nodeName": "quick-piscis-austrinus",
-                    "basePort": 10013,
-                    "httpRpcPort": 10015,
-                    "httpsRpcPort": 10020,
-                    "wsRpcPort": 10016,
-                    "wssRpcPort": 10021,
-                    "infoHttpRpcPort": 10090,
-                    "pgHttpRpcPort": 10100,
-                    "pgHttpsRpcPort": 10110,
-                    "infoPgHttpRpcPort": 10120,
-                    "infoPgHttpsRpcPort": 10130,
-                    "publicKey": "0x",
-                    "blsPublicKey0": "8",
-                    "blsPublicKey1": "4",
-                    "blsPublicKey2": "4",
-                    "blsPublicKey3": "1",
-                    "owner": "0x",
-                    "schainIndex": 2,
-                    "ip": "127.0.0.1",
-                    "publicIP": "127.0.0.2"
-                }
-            ]
-        }
-    }
-}
+def test_get_node_ips_from_config(schain_config):
+    assert get_node_ips_from_config(schain_config) == \
+        ['127.0.0.1', '127.0.0.2']
 
 
-def test_get_consensus_endpoints_from_config():
-    assert get_consensus_endpoints_from_config(None) == []
-    assert get_consensus_endpoints_from_config(CONFIG) == [
-        NodeEndpoint(ip='127.0.0.2', port=10011),
-        NodeEndpoint(ip='127.0.0.2', port=10012),
-        NodeEndpoint(ip='127.0.0.2', port=10015),
-        NodeEndpoint(ip='127.0.0.2', port=10016)
-    ]
+def test_get_base_port_from_config(schain_config):
+    assert get_base_port_from_config(schain_config) == 10000
 
 
-def test_get_skaled_rpc_endpoinds_from_config():
-    assert get_skaled_rpc_endpoints_from_config(None) == []
-    assert get_skaled_rpc_endpoints_from_config(CONFIG) == [
-        NodeEndpoint(ip=None, port=10013),
-        NodeEndpoint(ip=None, port=10014),
-        NodeEndpoint(ip=None, port=10018),
-        NodeEndpoint(ip=None, port=10019),
-        NodeEndpoint(ip=None, port=10020),
-        NodeEndpoint(ip=None, port=10100),
-        NodeEndpoint(ip=None, port=10110),
-        NodeEndpoint(ip=None, port=10120),
-        NodeEndpoint(ip=None, port=10130)
-    ]
-
-
-def test_get_snapshots_endpoints_from_config():
-    assert get_snapshots_endpoints_from_config(None) == []
-    assert get_snapshots_endpoints_from_config(CONFIG) == []
+def test_get_own_ip_from_config(schain_config):
+    assert get_own_ip_from_config(schain_config) == '127.0.0.1'
 
 
 def test_get_schain_container_cmd(schain_config, cert_key_pair):
