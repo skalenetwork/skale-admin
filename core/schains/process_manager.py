@@ -24,7 +24,7 @@ from multiprocessing import Process
 from skale import Skale
 
 from core.schains.monitor.main import run_monitor_for_schain
-from core.schains.utils import notify_if_not_enough_balance
+from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process_manager_helper import (
     terminate_stuck_schain_process, is_monitor_process_alive, terminate_process
 )
