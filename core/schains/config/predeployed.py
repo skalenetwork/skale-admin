@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2019-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -31,13 +31,18 @@ from marionette_predeployed import (
 from filestorage_predeployed import (
     UpgradeableFileStorageGenerator, FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTATION_ADDRESS
 )
+from deployment_controller_predeployed import (
+    UpgradeableDeploymentControllerGenerator,
+    DEPLOYMENT_CONTROLLER_ADDRESS,
+    DEPLOYMENT_CONTROLLER_IMPLEMENTATION_ADDRESS
+)
 from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminGenerator
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS, generate_contracts
 
 from core.schains.config.generation import gen0, gen1
-from core.schains.config.helper import (fix_address, _string_to_storage,
-                                        get_context_contract, get_deploy_controller_contract,
-                                        calculate_deployment_owner_slot)
+from core.schains.config.helper import (
+    fix_address, _string_to_storage, get_context_contract
+)
 
 from core.schains.types import SchainType
 from core.schains.limits import get_fs_allocated_storage
@@ -72,7 +77,6 @@ def generate_predeployed_section(
         **generate_precompiled_accounts(),
         **generate_owner_accounts(on_chain_owner, schain_nodes, generation),
         **generate_context_accounts(schain_name, on_chain_owner),
-        **generate_deploy_controller_accounts(on_chain_owner),
         **generate_ima_accounts(on_chain_owner, schain_name)
     }
 
@@ -117,7 +121,7 @@ def generate_v1_precompiled_contracts(
         implementation_address=MARIONETTE_IMPLEMENTATION_ADDRESS,
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
         schain_owner=mainnet_owner,
-        marionette=MARIONETTE_ADDRESS,
+        marionette=on_chain_owner,
         owner=MULTISIG_PREDEPLOYED_ADDRESS,
         ima=message_proxy_for_schain_address,
     )
@@ -127,21 +131,29 @@ def generate_v1_precompiled_contracts(
     filestorage_predeployed = filestorage_generator.generate_allocation(
         contract_address=FILESTORAGE_ADDRESS,
         implementation_address=FILESTORAGE_IMPLEMENTATION_ADDRESS,
-        schain_owner=MARIONETTE_ADDRESS,
+        schain_owner=on_chain_owner,
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
         allocated_storage=allocated_storage
     )
 
-    # TODO: allocate money to the bootstrap address too
-    # TODO: add deploy controller SC
-    # TODO: add context manager SC
+    deployment_controller_generator = UpgradeableDeploymentControllerGenerator()
+    deployment_controller_predeployed = deployment_controller_generator.generate_allocation(
+        contract_address=DEPLOYMENT_CONTROLLER_ADDRESS,
+        implementation_address=DEPLOYMENT_CONTROLLER_IMPLEMENTATION_ADDRESS,
+        schain_owner=on_chain_owner,
+        proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS
+    )
+
+    # TODO: allocate money to the bootstrap address
     # TODO: add predeployed multisig SC
+    # TODO: add context manager SC
 
     return {
         **proxy_admin_predeployed,
         **etherbase_predeployed,
         **marionette_predeployed,
-        **filestorage_predeployed
+        **filestorage_predeployed,
+        **deployment_controller_predeployed
     }
 
 
@@ -224,30 +236,6 @@ def generate_context_accounts(schain_name: dict, on_chain_owner: str) -> dict:
         storage=storage
     )
     add_to_accounts(accounts, context_contract['address'], account)
-    return accounts
-
-
-def generate_deploy_controller_accounts(on_chain_owner: str) -> dict:  # TODO: remove, use lib
-    """Generates accounts for the deploy controller predeployed SC
-
-    :param on_chain_owner: Address of the sChain owner on chain
-    :type on_chain_owner: str
-    :returns: Dictionary with accounts
-    :rtype: dict
-    """
-    accounts = {}
-    deploy_controller_contract = get_deploy_controller_contract()
-    owner_slot = calculate_deployment_owner_slot(on_chain_owner)
-    bytes_true = '0x01'
-
-    storage = {owner_slot: bytes_true}
-
-    account = generate_account(
-        balance=0,
-        code=deploy_controller_contract['bytecode'],
-        storage=storage
-    )
-    add_to_accounts(accounts, deploy_controller_contract['address'], account)
     return accounts
 
 

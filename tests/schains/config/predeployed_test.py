@@ -25,7 +25,7 @@ def test_generate_v1_precompiled_contracts():
         mainnet_owner='0x0123456789Ab',
         message_proxy_for_schain_address='0x987654321fC'
     )
-    assert len(v1_precompiled_contracts.keys()) == 7
+    assert len(v1_precompiled_contracts.keys()) == 9
     assert v1_precompiled_contracts.get('0xD1000000000000000000000000000000000000D1')
     assert v1_precompiled_contracts.get('0xd2bA3e0000000000000000000000000000000000')
     assert v1_precompiled_contracts.get('0xd2Ba3ED200000000000000000000000000000000')
