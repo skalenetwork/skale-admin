@@ -173,8 +173,8 @@ def safe_run_dkg(
 
     if not dkg_client:
         status = DKGStatus.FAILED
-    
-    if status != DKGStatus.FAILED
+
+    if status != DKGStatus.FAILED:
         try:
             keys_data = generate_bls_keys(dkg_client)
         except DKGKeyGenerationError as e:
