@@ -17,14 +17,12 @@ jobs:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: true
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
         python-version: 3.7
-    - name: Checkout submodules
-      uses: textbook/git-checkout-submodule-action@master
-      with:
-        remote: true
     - name: Build and publish container
       run: |
         export BRANCH=${GITHUB_REF##*/}
