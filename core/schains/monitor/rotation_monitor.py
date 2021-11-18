@@ -76,10 +76,10 @@ class RotationMonitor(BaseMonitor):
         self.rotation_request()
 
     def get_rotation_mode_func(self):
-        if self._is_new_node():
-            return self.new_node
         if self._is_leaving_node():
             return self.leaving_node
+        if self._is_new_node():
+            return self.new_node
         return self.staying_node
 
     @BaseMonitor.monitor_runner
