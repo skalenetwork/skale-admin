@@ -38,7 +38,7 @@ from core.schains.config.helper import (
 from core.schains.process_manager_helper import terminate_schain_process
 from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
 from core.schains.types import ContainerType
-from core.schains.firewall.utils import get_sync_agent_ranges
+# from core.schains.firewall.utils import get_sync_agent_ranges
 
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -189,7 +189,8 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
         logger.warning(msg)
         terminate_schain_process(schain_record)
         delete_bls_keys(skale, schain_name)
-        sync_agent_ranges = get_sync_agent_ranges(skale)
+        # sync_agent_ranges = get_sync_agent_ranges(skale)
+        sync_agent_ranges = []  # TODO: tmp
         cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=dutils)
         return
     logger.info(msg)
