@@ -42,7 +42,7 @@ from web.models.schain import upsert_schain_record, SChainRecord
 
 
 SCHAIN_MONITOR_SLEEP_INTERVAL = 60
-# SCHAIN_MONITOR_SLEEP_INTERVAL = 500 TODO
+# SCHAIN_MONITOR_SLEEP_INTERVAL = 500
 
 logger = logging.getLogger(__name__)
 
