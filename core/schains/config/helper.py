@@ -137,31 +137,6 @@ def get_schain_ports_from_config(config):
     }
 
 
-def get_snapshots_endpoints_from_config(config):
-    # TODO: Add this endpoints
-    return []
-
-
-def get_skaled_http_snapshot_address(schain_name):
-    config = get_schain_config(schain_name)
-    return get_skaled_http_snapshot_address_from_config(config)
-
-
-def get_skaled_http_snapshot_address_from_config(config):
-    node_id = config['skaleConfig']['nodeInfo']['nodeID']
-    schain_nodes_config = config['skaleConfig']['sChain']['nodes']
-    from_node = None
-    for node_data in schain_nodes_config:
-        if node_data['nodeID'] != node_id:
-            from_node = node_data
-            break
-
-    return 'http://{}:{}'.format(
-        from_node['ip'],
-        from_node['basePort'] + SkaledPorts.HTTP_JSON.value
-    )
-
-
 def get_skaled_http_address(schain_name: str) -> str:
     config = get_schain_config(schain_name)
     return get_skaled_http_address_from_config(config)
@@ -199,17 +174,15 @@ def get_schain_container_cmd(schain_name: str,
                              enable_ssl: bool = True) -> str:
     opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
     if public_key and str(start_ts):
-        sync_opts = get_schain_container_sync_opts(schain_name, public_key, start_ts)
+        sync_opts = get_schain_container_sync_opts(public_key, start_ts)
         opts.extend(sync_opts)
     return ' '.join(opts)
 
 
-def get_schain_container_sync_opts(schain_name: str, public_key: str,
+def get_schain_container_sync_opts(public_key: str,
                                    start_ts: int) -> list:
-    endpoint = get_skaled_http_snapshot_address(schain_name)
-    url = f'http://{endpoint.ip}:{endpoint.port}'
     return [
-        f'--download-snapshot {url}',
+        '--download-snapshot readfromconfig',  # tmp, parameter is needed, but value is not used
         f'--public-key {public_key}',
         f'--start-timestamp {start_ts}'
     ]

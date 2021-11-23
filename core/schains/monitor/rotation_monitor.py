@@ -35,8 +35,16 @@ class RotationMonitor(BaseMonitor):
     3. Staying node - when current node staying in the group
     """
 
-    def _is_new_node(self) -> bool:
+    def _is_new_rotation_node(self):
         return self.rotation_data['new_node'] == self.node_config.id
+
+    def _is_new_node(self) -> bool:
+        """
+        New node monitor runs in 2 cases during rotation:
+        1. When the current node is marked as a new node
+        2. When the current node doesn't have SKALE chain config file created
+        """
+        return self._is_new_rotation_node() or not self.checks.config.status
 
     def _is_leaving_node(self) -> bool:
         return self.rotation_data['leaving_node'] == self.node_config.id
@@ -68,10 +76,10 @@ class RotationMonitor(BaseMonitor):
         self.rotation_request()
 
     def get_rotation_mode_func(self):
-        if self._is_new_node():
-            return self.new_node
         if self._is_leaving_node():
             return self.leaving_node
+        if self._is_new_node():
+            return self.new_node
         return self.staying_node
 
     @BaseMonitor.monitor_runner

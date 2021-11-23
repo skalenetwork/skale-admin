@@ -8,7 +8,6 @@ import string
 
 from functools import partial
 
-import mock
 from mock import Mock, MagicMock
 
 from skale import Skale, SkaleIma
@@ -160,16 +159,7 @@ def run_simple_schain_container_in_sync_mode(schain_data: dict,
                                              dutils: DockerUtils):
     public_key = "1:1:1:1"
     timestamp = int(time.time())
-
-    class SnapshotAddressMock:
-        def __init__(self):
-            self.ip = '0.0.0.0'
-            self.port = '8080'
-
-    # Run schain container
-    with mock.patch('core.schains.config.helper.get_skaled_http_snapshot_address',
-                    return_value=SnapshotAddressMock()):
-        run_schain_container(schain_data, public_key, timestamp, dutils=dutils)
+    run_schain_container(schain_data, public_key, timestamp, dutils=dutils)
 
 
 def run_simple_ima_container(schain: dict, dutils: DockerUtils):
