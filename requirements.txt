@@ -26,6 +26,7 @@ redis==3.5.3
 filelock==3.0.12
 
 pyOpenSSL==19.1.0
+cryptography==35.0.0
 python-dateutil==2.8.1
 python-telegram-bot==12.8
 gunicorn==20.0.4
