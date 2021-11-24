@@ -128,6 +128,7 @@ def test_generate_schain_config_with_skale(
         schain_name=schain_name,
         node_id=current_node_id,
         rotation_data={'rotation_id': 0},
-        ecdsa_key_name=ECDSA_KEY_NAME
+        ecdsa_key_name=ECDSA_KEY_NAME,
+        generation=0
     )
     check_config(current_node_id, node_ids, schain_config.to_dict())

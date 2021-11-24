@@ -86,6 +86,7 @@ class BaseMonitor(ABC):
         self.ima_data = ima_data
         self.schain = schain
         self.name = schain['name']
+        self.generation = schain['generation']
         self.node_config = node_config
         self.checks = checks
         self.executed_blocks = {}
@@ -201,6 +202,7 @@ class BaseMonitor(ABC):
                 skale=self.skale,
                 node_id=self.node_config.id,
                 schain_name=self.name,
+                generation=self.generation,
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,
                 schain_record=self.schain_record

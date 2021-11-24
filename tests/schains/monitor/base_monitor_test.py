@@ -36,6 +36,7 @@ def init_schain_config_mock(
     skale,
     node_id,
     schain_name,
+    generation,
     ecdsa_sgx_key_name,
     rotation_data,
     schain_record

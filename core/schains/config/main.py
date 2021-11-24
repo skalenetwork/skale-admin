@@ -40,6 +40,7 @@ def init_schain_config(
     skale: Skale,
     node_id: int,
     schain_name: str,
+    generation: int,
     ecdsa_sgx_key_name: str,
     rotation_data: dict,
     schain_record: SChainRecord
@@ -54,6 +55,7 @@ def init_schain_config(
     schain_config = generate_schain_config_with_skale(
         skale=skale,
         schain_name=schain_name,
+        generation=generation,
         node_id=node_id,
         rotation_data=rotation_data,
         ecdsa_key_name=ecdsa_sgx_key_name

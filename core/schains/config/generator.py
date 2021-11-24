@@ -27,7 +27,7 @@ from marionette_predeployed import MARIONETTE_ADDRESS
 
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
 from core.schains.config.predeployed import generate_predeployed_section
-from core.schains.config.generation import get_schain_generation, gen0, gen1
+from core.schains.config.generation import gen0, gen1
 from core.schains.config.helper import get_chain_id
 from core.schains.config.previous_keys import (
     compose_previous_keys_info, previous_keys_info_to_dicts
@@ -166,6 +166,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
 def generate_schain_config_with_skale(
     skale: Skale,
     schain_name: str,
+    generation: int,
     node_id: int,
     rotation_data: dict,
     ecdsa_key_name: str
@@ -189,8 +190,6 @@ def generate_schain_config_with_skale(
         previous_bls_keys=previous_public_keys
     )
     previous_public_keys_info_dict = previous_keys_info_to_dicts(previous_public_keys_info)
-
-    generation = get_schain_generation(skale)
 
     return generate_schain_config(
         schain=schain,

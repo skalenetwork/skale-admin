@@ -17,19 +17,10 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from skale import Skale
 
-
-def get_schain_generation(skale: Skale) -> int:
-    """
-    Returns SKALE chain generation (from contracts, starts from 0)
-    """
-    return 0  # TODO: tmp, will be replaced with contract call
-
-
-def gen0(generation) -> bool:
+def gen0(generation: int) -> bool:
     return generation == 0
 
 
-def gen1(generation) -> bool:
+def gen1(generation: int) -> bool:
     return generation == 1
