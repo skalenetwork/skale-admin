@@ -111,7 +111,6 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
 
             sync_agent_ranges = get_sync_agent_ranges(skale)
-            sync_agent_ranges = []
 
             rc_creator = partial(
                 get_default_rule_controller,
