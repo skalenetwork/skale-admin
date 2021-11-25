@@ -45,7 +45,7 @@ from web.migrations import migrate
 init_admin_logger()
 logger = logging.getLogger(__name__)
 
-SLEEP_INTERVAL = 180
+SLEEP_INTERVAL = 90
 WORKER_RESTART_SLEEP_INTERVAL = 2
 
 
