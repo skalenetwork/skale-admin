@@ -18,17 +18,51 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import ABC, abstractmethod
-from typing import Iterable
+from functools import total_ordering
+from typing import Iterable, Optional
 
 from collections import namedtuple
 from skale.dataclasses.skaled_ports import SkaledPorts  # noqa
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
-SChainRule = namedtuple(
-    'SChainRule',
-    ['port', 'first_ip', 'last_ip'],
-    defaults=(None, None,)
-)
+
+@total_ordering
+class SChainRule(namedtuple('SChainRule', ['port', 'first_ip', 'last_ip'])):
+    def __new__(
+        cls,
+        port: int,
+        first_ip: Optional[str] = None,
+        last_ip: Optional[str] = None
+    ) -> None:
+        if first_ip and not last_ip:
+            last_ip = first_ip
+        return super(SChainRule, cls).__new__(cls, port, first_ip, last_ip)
+
+    def __repr__(self) -> str:
+        if not self.first_ip:
+            return f'[:{self.port}]'
+        else:
+            return f'[{self.first_ip}:{self.port}-{self.last_ip}:{self.port}]'
+
+    def __hash__(self) -> str:
+        return hash(tuple(self))
+
+    def __eq__(self, other) -> bool:
+        return self.port == other.port and \
+                self.first_ip == other.first_ip and \
+                self.last_ip == other.last_ip
+
+    def __lt__(self, other) -> bool:
+        if self.port != other.port:
+            return self.port < other.port
+        if self.first_ip != other.first_ip:
+            ip_a = '' if self.first_ip is None else self.first_ip
+            ip_b = '' if other.first_ip is None else other.first_ip
+            return ip_a < ip_b
+        if self.last_ip != other.last_ip:
+            ip_a = '' if self.last_ip is None else self.last_ip
+            ip_b = '' if other.last_ip is None else other.last_ip
+            return ip_a < ip_b
 
 
 IpRange = namedtuple('IpRange', ['start_ip', 'end_ip'])

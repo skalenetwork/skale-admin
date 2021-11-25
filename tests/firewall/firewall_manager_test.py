@@ -33,24 +33,29 @@ def test_firewall_manager():
     assert list(fm.rules) == []
     rules = [
         SChainRule(10000, '2.2.2.2'),
+        SChainRule(10001),
+        SChainRule(10001, '3.3.3.3'),
         SChainRule(10001, '3.3.3.3', '4.4.4.4'),
-        SChainRule(10003),
+        SChainRule(10003)
     ]
     fm.add_rules(rules)
-    assert list(sorted(fm.rules)) == rules
+    assert list(sorted(fm.rules)) == rules, list(sorted(fm.rules))
 
     new_rules = [
         SChainRule(10000, '2.2.2.2'),
+        SChainRule(10001),
+        SChainRule(10001, '3.3.3.3'),
+        SChainRule(10001, '3.3.3.3', '4.4.4.4'),
         SChainRule(10001, '4.4.4.4', '5.5.5.5'),
-        SChainRule(10003)
+        SChainRule(10004)
     ]
     fm.update_rules(new_rules)
     assert list(sorted(fm.rules)) == new_rules
 
     rules_to_remove = list(fm.rules)[:-1]
-    rules_to_remove.append(SChainRule(10004))
+    rules_to_remove.append(SChainRule(10005))
     fm.remove_rules(rules_to_remove)
-    assert list(sorted(fm.rules)) == [rules[-1]]
+    assert list(sorted(fm.rules)) == [new_rules[-1]]
 
 
 def test_firewall_manager_update_existed():
