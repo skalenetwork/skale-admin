@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import time
+import random
 import logging
 from functools import partial
 from importlib import reload
@@ -41,8 +42,9 @@ from tools.configs.ima import DISABLE_IMA
 from web.models.schain import upsert_schain_record, SChainRecord
 
 
-SCHAIN_MONITOR_SLEEP_INTERVAL = 60
-# SCHAIN_MONITOR_SLEEP_INTERVAL = 500 TODO
+MIN_SCHAIN_MONITOR_SLEEP_INTERVAL = 90
+MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 180
+
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +91,12 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
     p = get_log_prefix(schain["name"])
 
     def post_monitor_sleep():
-        logger.info(f'{p} monitor completed, sleeping for {SCHAIN_MONITOR_SLEEP_INTERVAL}s...')
-        time.sleep(SCHAIN_MONITOR_SLEEP_INTERVAL)
+        schain_monitor_sleep = random.randint(
+            MIN_SCHAIN_MONITOR_SLEEP_INTERVAL,
+            MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
+        )
+        logger.info(f'{p} monitor completed, sleeping for {schain_monitor_sleep}s...')
+        time.sleep(schain_monitor_sleep)
 
     while True:
         try:
