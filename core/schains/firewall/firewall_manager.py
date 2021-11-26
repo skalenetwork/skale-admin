@@ -55,13 +55,14 @@ class SChainFirewallManager:
         self.remove_rules(rules_to_remove)
 
     def add_rules(self, rules: Iterable[SChainRule]) -> None:
+        logger.debug('Adding rules %s', rules)
         for rule in sorted(rules):
             self.host_manager.add_rule(rule)
 
     def remove_rules(self, rules: Iterable[SChainRule]) -> None:
+        logger.debug('Removing rules %s', rules)
         for rule in rules:
             self.host_manager.remove_rule(rule)
 
     def flush(self) -> None:
-        for rule in self.rules:
-            self.host_manager.remove_rule(rule)
+        self.remove_rules(self.rules)

@@ -46,10 +46,8 @@ def get_default_rule_controller(
         base_port + PORTS_PER_SCHAIN,
         im
     )
-    logger.info(
-        'SChainRuleController %s, %s, %s, %s',
-        base_port, own_ip, node_ips, sync_agent_ranges
-    )
+    logger.info('Creating rc port: %s, own ip: %s', base_port, own_ip)
+    logger.debug('Rule controller ips %s, %s', node_ips, sync_agent_ranges)
     return SChainRuleController(
         fm,
         base_port,

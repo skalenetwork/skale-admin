@@ -40,9 +40,9 @@ class SChainRule(namedtuple('SChainRule', ['port', 'first_ip', 'last_ip'])):
 
     def __repr__(self) -> str:
         if not self.first_ip:
-            return f'[:{self.port}]'
+            return f'SChainRule(:{self.port})'
         else:
-            return f'[{self.first_ip}:{self.port}-{self.last_ip}:{self.port}]'
+            return f'SChainRule({self.first_ip}:{self.port}-{self.last_ip}:{self.port})'  # noqa
 
     def __hash__(self) -> str:
         return hash(tuple(self))

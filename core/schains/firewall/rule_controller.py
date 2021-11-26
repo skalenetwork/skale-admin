@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import itertools
+import logging
 from enum import Enum
 from typing import Iterable, List, Optional
 
@@ -27,6 +28,8 @@ from core.schains.firewall.types import (
     SChainRule,
     SkaledPorts
 )
+
+logger = logging.getLogger(__name__)
 
 
 class SChainRuleController:
@@ -120,10 +123,21 @@ class SChainRuleController:
         return sorted(self.firewall_manager.rules)
 
     def is_rules_synced(self) -> bool:
-        return set(self.actual_rules()) == set(self.expected_rules())
+        actual = set(self.actual_rules())
+        expected = set(self.expected_rules())
+        logger.debug('Rules status: actual %s, expected %s', actual, expected)
+        logger.info(
+            'Rules status: missing rules %s, redundant rules: %s',
+            expected - actual,
+            actual - expected
+        )
+        return actual == expected
 
     def sync(self) -> None:
-        self.firewall_manager.update_rules(self.expected_rules())
+        erules = self.expected_rules()
+        logger.info('Syncing firewall rules')
+        logger.debug('Syncing firewall rules with %s', erules)
+        self.firewall_manager.update_rules(erules)
 
     def cleanup(self) -> None:
         self.firewall_manager.flush()
