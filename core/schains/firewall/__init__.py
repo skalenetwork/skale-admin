@@ -18,6 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .firewall_manager import SChainFirewallManager  # noqa
-from .iptables import IptablesManager  # noqa
+from .iptables import IptablesController  # noqa
 from .rule_controller import SChainRuleController  # noqa
 from .utils import get_default_rule_controller  # noqa

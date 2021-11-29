@@ -33,7 +33,7 @@ class SChainRule(namedtuple('SChainRule', ['port', 'first_ip', 'last_ip'])):
         port: int,
         first_ip: Optional[str] = None,
         last_ip: Optional[str] = None
-    ) -> None:
+    ) -> 'SChainRule':
         if first_ip and not last_ip:
             last_ip = first_ip
         return super(SChainRule, cls).__new__(cls, port, first_ip, last_ip)
@@ -44,7 +44,7 @@ class SChainRule(namedtuple('SChainRule', ['port', 'first_ip', 'last_ip'])):
         else:
             return f'SChainRule({self.first_ip}:{self.port}-{self.last_ip}:{self.port})'  # noqa
 
-    def __hash__(self) -> str:
+    def __hash__(self) -> int:
         return hash(tuple(self))
 
     def __eq__(self, other) -> bool:
@@ -55,20 +55,22 @@ class SChainRule(namedtuple('SChainRule', ['port', 'first_ip', 'last_ip'])):
     def __lt__(self, other) -> bool:
         if self.port != other.port:
             return self.port < other.port
-        if self.first_ip != other.first_ip:
+        elif self.first_ip != other.first_ip:
             ip_a = '' if self.first_ip is None else self.first_ip
             ip_b = '' if other.first_ip is None else other.first_ip
             return ip_a < ip_b
-        if self.last_ip != other.last_ip:
+        elif self.last_ip != other.last_ip:
             ip_a = '' if self.last_ip is None else self.last_ip
             ip_b = '' if other.last_ip is None else other.last_ip
             return ip_a < ip_b
+        else:  # pragma: no cover
+            return True
 
 
 IpRange = namedtuple('IpRange', ['start_ip', 'end_ip'])
 
 
-class IHostFirewallManager(ABC):
+class IHostFirewallController(ABC):
     @abstractmethod
     def add_rule(self, rule: SChainRule) -> None:  # pragma: no cover
         pass

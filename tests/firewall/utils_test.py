@@ -36,7 +36,7 @@ def test_get_default_rule_controller():
 
     rules = rc.actual_rules()
 
-    hm = rc.firewall_manager.host_manager
+    hm = rc.firewall_manager.host_controller
     hm.add_rule = mock.Mock()
     hm.remove_rule = mock.Mock()
     rc.firewall_manager.update_rules(rules)

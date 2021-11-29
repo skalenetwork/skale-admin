@@ -25,7 +25,7 @@ import multiprocessing
 from functools import wraps
 from typing import Callable, Dict, Iterable
 
-from core.schains.firewall.types import IHostFirewallManager, SChainRule
+from core.schains.firewall.types import IHostFirewallController, SChainRule
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def refreshed(func: Callable) -> Callable:
     return wrapper
 
 
-class IptablesManager(IHostFirewallManager):
+class IptablesController(IHostFirewallController):
     def __init__(self, table: str = TABLE, chain: str = CHAIN):
         self.table = table
         self.chain = chain
@@ -75,7 +75,7 @@ class IptablesManager(IHostFirewallManager):
             rule_d.get('tcp', {}).get('dport') is not None
         ))
 
-    @property
+    @property  # type: ignore
     @refreshed
     def rules(self) -> Iterable[SChainRule]:
         ichain = self.iptc.Chain(self.iptc.Table(self.table), self.chain)  # type: ignore  # noqa

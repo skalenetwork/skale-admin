@@ -19,7 +19,6 @@
 
 import os
 import logging
-from typing import Callable
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
@@ -35,6 +34,7 @@ from core.schains.config.directory import (
     schain_config_dir,
     schain_config_filepath
 )
+from core.schains.firewall.types import IRuleController
 from core.schains.runner import get_container_name
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
@@ -59,7 +59,7 @@ class SChainChecks:
         schain_name: str,
         node_id: int,
         schain_record: SChainRecord,
-        rule_controller_creator: Callable,
+        rule_controller: IRuleController,
         rotation_id: int = 0,
         *,
         ima_linked: bool = True,
@@ -112,14 +112,13 @@ class SChainChecks:
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
-            rc = self.rc_creator(
-                name=self.name,
+            self.rc.configure(
                 base_port=base_port,
                 own_ip=own_ip,
                 node_ips=node_ips
             )
-            logger.info(f'Rule controller {rc.expected_rules()}')
-            return CheckRes(rc.is_rules_synced())
+            logger.info(f'Rule controller {self.rc.expected_rules()}')
+            return CheckRes(self.rc.is_rules_synced())
         return CheckRes(False)
 
     @property

@@ -19,35 +19,42 @@
 
 import itertools
 import logging
-from enum import Enum
-from typing import Iterable, List, Optional
+from abc import ABC, abstractmethod
+from typing import Any, Iterable, List, Optional
 
-from core.schains.firewall.types import (
+from .firewall_manager import IptablesSChainFirewallManager
+from .types import (
     IFirewallManager,
     IpRange,
+    PORTS_PER_SCHAIN,
     SChainRule,
     SkaledPorts
 )
 
+
 logger = logging.getLogger(__name__)
 
 
-class SChainRuleController:
+class SChainRuleController(ABC):
     def __init__(
         self,
-        firewall_manager: IFirewallManager,
-        base_port: int,
-        own_ip: str,
-        node_ips: List[str],
-        port_allocation: Enum = SkaledPorts,
-        sync_ip_ranges: Optional[List[IpRange]] = None
+        name: str,
+        base_port: Optional[int] = None,
+        own_ip: Optional[str] = None,
+        node_ips: List[str] = [],
+        port_allocation: Any = SkaledPorts,  # TODO: better typing for enum
+        ports_per_schain: int = PORTS_PER_SCHAIN,
+        sync_ip_ranges: List[IpRange] = []
+
     ) -> None:
+        self.name = name
         self.base_port = base_port
         self.own_ip = own_ip
         self.node_ips = node_ips
         self.sync_ip_ranges = sync_ip_ranges or []
         self.port_allocation = port_allocation
-        self.firewall_manager = firewall_manager
+        self.ports_per_schain = ports_per_schain
+        self._firewall_manager = None
 
     @property
     def internal_ports(self) -> Iterable[int]:
@@ -61,15 +68,29 @@ class SChainRuleController:
             )
         )
 
+    @abstractmethod
+    def create_firewall_manager(self) -> IFirewallManager:  # pragma: no cover
+        pass
+
+    @property
+    def firewall_manager(self):
+        if not self._firewall_manager:
+            self._firewall_manager = self.create_firewall_manager()
+        return self._firewall_manager
+
     def configure(
         self,
-        own_ip: str,
-        node_ips: List[str],
-        sync_ip_ranges: Optional[List[IpRange]] = None
+        base_port: Optional[int] = None,
+        own_ip: Optional[str] = None,
+        node_ips: Optional[List[str]] = None,
+        sync_ip_ranges: Optional[List[IpRange]] = None,
+        port_allocation: Any = SkaledPorts
     ) -> None:
-        self.own_ip = own_ip
-        self.node_ips = node_ips
-        self.sync_ip_ranges = sync_ip_ranges
+        self.base_port = base_port or self.base_port
+        self.own_ip = own_ip or self.own_ip
+        self.node_ips = node_ips or self.node_ips
+        self.sync_ip_ranges = sync_ip_ranges or self.sync_ip_ranges
+        self.port_allocation = port_allocation or self.port_allocation
 
     @property
     def internal_rules(self) -> Iterable[SChainRule]:
@@ -141,3 +162,12 @@ class SChainRuleController:
 
     def cleanup(self) -> None:
         self.firewall_manager.flush()
+
+
+class IptablesSChainRuleController(SChainRuleController):
+    def create_firewall_manager(self) -> IptablesSChainFirewallManager:
+        return IptablesSChainFirewallManager(
+            self.name,
+            self.base_port,  # type: ignore
+            self.base_port + self.ports_per_schain
+        )

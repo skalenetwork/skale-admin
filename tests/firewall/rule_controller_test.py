@@ -1,36 +1,14 @@
-from core.schains.firewall.rule_controller import (
-    SChainRuleController,
-    IFirewallManager,
-    IpRange
-)
+from core.schains.firewall.rule_controller import IpRange
 from core.schains.firewall.types import SChainRule, SkaledPorts
 
-
-class FirewallManagerMock(IFirewallManager):
-    def __init__(self):
-        self._rules = set()
-
-    @property
-    def rules(self):
-        return self._rules
-
-    def update_rules(self, rules):
-        self._rules = rules
-
-    def add_rules(self, rules):
-        for r in rules:
-            self._rules.add(r)
-
-    def flush(self):
-        self._rules = set()
+from tests.utils import SChainTestRuleController
 
 
 def test_schain_rule_controller():
-    tfm = FirewallManagerMock()
     own_ip = '3.3.3.3'
     node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4']
     base_port = 10064
-    sync_ip_range = [
+    sync_ip_ranges = [
         IpRange(start_ip='10.10.10.10', end_ip='15.15.15.15'),
         IpRange(start_ip='15.15.15.15', end_ip='18.18.18.18')
     ]
@@ -60,13 +38,13 @@ def test_schain_rule_controller():
         SChainRule(port=10076, first_ip=None, last_ip=None),
         SChainRule(port=10077, first_ip=None, last_ip=None)
     }
-    src = SChainRuleController(
-        tfm,
+    src = SChainTestRuleController(
+        'test',
         base_port,
         own_ip,
         node_ips,
         SkaledPorts,
-        sync_ip_range
+        sync_ip_ranges=sync_ip_ranges
     )
     assert list(src.expected_rules()) == list(sorted(expected_rules))
     src.sync()
@@ -117,7 +95,6 @@ def test_schain_rule_controller():
 
 
 def test_schain_rule_controller_no_sync_rules():
-    tfm = FirewallManagerMock()
     own_ip = '1.1.1.1'
     node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4']
     base_port = 10000
@@ -144,12 +121,11 @@ def test_schain_rule_controller_no_sync_rules():
         SChainRule(port=10012, first_ip=None, last_ip=None),
         SChainRule(port=10013, first_ip=None, last_ip=None)
     }
-    src = SChainRuleController(
-        tfm,
+    src = SChainTestRuleController(
+        'test',
         base_port,
         own_ip,
-        node_ips,
-        SkaledPorts
+        node_ips
     )
     assert not src.is_rules_synced()
     assert list(src.expected_rules()) == list(sorted(expected_rules))
@@ -157,6 +133,79 @@ def test_schain_rule_controller_no_sync_rules():
     assert src.is_rules_synced()
     assert list(src.expected_rules()) == list(sorted(expected_rules))
     assert list(src.actual_rules()) == list(sorted(expected_rules))
+
+    src.cleanup()
+    assert list(src.actual_rules()) == []
+
+
+def test_schain_rule_controller_configure():
+    src = SChainTestRuleController('test')
+    own_ip = '1.1.1.1'
+    node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4']
+    base_port = 10000
+    expected_rules = {
+        SChainRule(port=10000, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10000, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10000, first_ip='4.4.4.4', last_ip=None),
+        SChainRule(port=10001, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10001, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10001, first_ip='4.4.4.4', last_ip=None),
+        SChainRule(port=10002, first_ip=None, last_ip=None),
+        SChainRule(port=10003, first_ip=None, last_ip=None),
+        SChainRule(port=10004, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10004, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10004, first_ip='4.4.4.4', last_ip=None),
+        SChainRule(port=10005, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10005, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10005, first_ip='4.4.4.4', last_ip=None),
+        SChainRule(port=10007, first_ip=None, last_ip=None),
+        SChainRule(port=10008, first_ip=None, last_ip=None),
+        SChainRule(port=10009, first_ip=None, last_ip=None),
+        SChainRule(port=10010, first_ip=None, last_ip=None),
+        SChainRule(port=10011, first_ip=None, last_ip=None),
+        SChainRule(port=10012, first_ip=None, last_ip=None),
+        SChainRule(port=10013, first_ip=None, last_ip=None)
+    }
+    src.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
+    assert not src.is_rules_synced()
+    assert list(src.expected_rules()) == list(sorted(expected_rules))
+    src.sync()
+    assert src.is_rules_synced()
+    assert list(src.expected_rules()) == list(sorted(expected_rules))
+    assert list(src.actual_rules()) == list(sorted(expected_rules))
+
+    new_own_ip = '2.2.2.2'
+    new_node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '5.5.5.5']
+
+    src.configure(own_ip=new_own_ip, node_ips=new_node_ips)
+
+    expected_rules = {
+        SChainRule(port=10000, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10000, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10000, first_ip='5.5.5.5', last_ip=None),
+        SChainRule(port=10001, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10001, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10001, first_ip='5.5.5.5', last_ip=None),
+        SChainRule(port=10002, first_ip=None, last_ip=None),
+        SChainRule(port=10003, first_ip=None, last_ip=None),
+        SChainRule(port=10004, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10004, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10004, first_ip='5.5.5.5', last_ip=None),
+        SChainRule(port=10005, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10005, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10005, first_ip='5.5.5.5', last_ip=None),
+        SChainRule(port=10007, first_ip=None, last_ip=None),
+        SChainRule(port=10008, first_ip=None, last_ip=None),
+        SChainRule(port=10009, first_ip=None, last_ip=None),
+        SChainRule(port=10010, first_ip=None, last_ip=None),
+        SChainRule(port=10011, first_ip=None, last_ip=None),
+        SChainRule(port=10012, first_ip=None, last_ip=None),
+        SChainRule(port=10013, first_ip=None, last_ip=None)
+    }
+    assert not src.is_rules_synced()
+    print(expected_rules)
+    print(src.expected_rules())
+    assert list(src.expected_rules()) == list(sorted(expected_rules))
 
     src.cleanup()
     assert list(src.actual_rules()) == []

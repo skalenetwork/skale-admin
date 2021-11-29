@@ -18,32 +18,49 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from abc import abstractmethod
+from typing import Iterable, Optional
 
-from typing import Iterable
-from core.schains.firewall.types import IHostFirewallManager, SChainRule
+from core.schains.firewall.iptables import IptablesController
+from core.schains.firewall.types import (
+    IFirewallManager,
+    IHostFirewallController,
+    SChainRule
+)
 
 
 logger = logging.getLogger(__name__)
 
 
-class SChainFirewallManager:
+class SChainFirewallManager(IFirewallManager):
     def __init__(
         self,
         name: str,
         first_port: int,
-        last_port: int,
-        host_manager: IHostFirewallManager
+        last_port: int
     ) -> None:
         self.name = name
         self.first_port = first_port
         self.last_port = last_port
-        self.host_manager = host_manager
+        self._host_controller: Optional[IHostFirewallController] = None
+
+    @abstractmethod
+    def create_host_controller(
+        self
+    ) -> IHostFirewallController:  # pragma: no cover
+        pass
+
+    @property
+    def host_controller(self) -> IHostFirewallController:
+        if not self._host_controller:
+            self._host_controller = self.create_host_controller()
+        return self._host_controller
 
     @property
     def rules(self) -> Iterable[SChainRule]:
         return sorted(list(filter(
             lambda r: self.first_port <= r.port <= self.last_port,
-            self.host_manager.rules
+            self.host_controller.rules
         )))
 
     def update_rules(self, rules: Iterable[SChainRule]) -> None:
@@ -57,12 +74,17 @@ class SChainFirewallManager:
     def add_rules(self, rules: Iterable[SChainRule]) -> None:
         logger.debug('Adding rules %s', rules)
         for rule in sorted(rules):
-            self.host_manager.add_rule(rule)
+            self.host_controller.add_rule(rule)
 
     def remove_rules(self, rules: Iterable[SChainRule]) -> None:
         logger.debug('Removing rules %s', rules)
         for rule in rules:
-            self.host_manager.remove_rule(rule)
+            self.host_controller.remove_rule(rule)
 
     def flush(self) -> None:
         self.remove_rules(self.rules)
+
+
+class IptablesSChainFirewallManager(SChainFirewallManager):
+    def create_host_controller(self) -> IptablesController:
+        return IptablesController()
