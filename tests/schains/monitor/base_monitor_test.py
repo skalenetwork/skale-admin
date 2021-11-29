@@ -86,7 +86,7 @@ def test_monitor(schain_db, node_config, skale, ima_data, dutils):
     return BaseTestMonitor(
         skale=skale,
         ima_data=ima_data,
-        schain={'name': schain_db, 'partOfNode': 0},
+        schain={'name': schain_db, 'partOfNode': 0, 'generation': 0},
         node_config=node_config,
         rotation_data={'rotation_id': 0, 'finish_ts': 0},
         checks=schain_checks,
@@ -208,7 +208,7 @@ def test_base_monitor_ima_container_not_linked(schain_db, node_config, skale, du
     test_monitor = BaseTestMonitor(
         skale=skale,
         ima_data=ima_data,
-        schain={'name': schain_db, 'partOfNode': 0},
+        schain={'name': schain_db, 'partOfNode': 0, 'generation': 0},
         node_config=node_config,
         rotation_data={'rotation_id': 0},
         checks=schain_checks,
