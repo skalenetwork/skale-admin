@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class WebsChainInfo:
+class SchainData:
     name: str
     schain_id: str
     mainnet_owner: str
@@ -34,7 +34,7 @@ class WebsChainInfo:
         }
 
 
-def get_schain_info_by_name(skale: Skale, schain_name: str) -> WebsChainInfo:
+def get_schain_info_by_name(skale: Skale, schain_name: str) -> SchainData:
     sid = skale.schains.name_to_id(schain_name)
     contracts_info = skale.schains.get(sid)
 
@@ -44,7 +44,7 @@ def get_schain_info_by_name(skale: Skale, schain_name: str) -> WebsChainInfo:
         logger.error('Schain record not exits')
         return None
 
-    return WebsChainInfo(
+    return SchainData(
         schain_name,
         sid,
         contracts_info['mainnetOwner'],

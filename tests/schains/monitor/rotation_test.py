@@ -33,7 +33,7 @@ def get_rotation_monitor(skale, ima_data, node_config, schain_db, dutils, new_ch
     return RotationMonitor(
         skale=skale,
         ima_data=ima_data,
-        schain={'name': schain_db, 'partOfNode': 0},
+        schain={'name': schain_db, 'partOfNode': 0, 'generation': 0},
         node_config=node_config,
         rotation_data=rotation_data,
         checks=new_checks,
