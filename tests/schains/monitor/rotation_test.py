@@ -37,7 +37,7 @@ def get_rotation_monitor(
     dutils,
     new_checks,
     rotation_data,
-    rule_controller_creator
+    rule_controller
 ):
     return RotationMonitor(
         skale=skale,
