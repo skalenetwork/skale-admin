@@ -72,7 +72,7 @@ class SChainChecks:
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.ima_linked = ima_linked
-        self.rc_creator = rule_controller_creator
+        self.rc = rule_controller
 
     @property
     def config_dir(self) -> CheckRes:

@@ -19,7 +19,7 @@ from core.schains.ima import ImaData
 from tests.utils import (
     CONTAINERS_JSON,
     generate_cert,
-    get_test_rc,
+    get_test_rule_controller,
     init_skale_ima,
     init_web3_skale
 )
@@ -326,7 +326,7 @@ def schain_checks(schain_config, dutils):
         schain_name,
         node_id,
         schain_record=schain_record,
-        rule_controller_creator=get_test_rc,
+        rule_controller=get_test_rule_controller(schain_name),
         dutils=dutils
     )
 

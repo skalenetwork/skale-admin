@@ -19,7 +19,7 @@ from tools.helper import write_json
 from web.models.schain import upsert_schain_record
 
 from tests.schains.monitor.base_monitor_test import BaseTestMonitor, CrashingTestMonitor
-from tests.utils import get_test_rc
+from tests.utils import get_test_rule_controller
 
 
 class SChainChecksMock(SChainChecks):
@@ -35,13 +35,13 @@ class SChainChecksMockBad(SChainChecks):
 
 
 @pytest.fixture
-def checks(schain_db, node_config, ima_data, dutils):
+def checks(schain_db, _schain_name, node_config, ima_data, dutils):
     schain_record = upsert_schain_record(schain_db)
     return SChainChecksMock(
-        schain_db,
+        _schain_name,
         node_config.id,
         schain_record,
-        rule_controller_creator=get_test_rc
+        rule_controller_creator=get_test_rule_controller(_schain_name)
     )
 
 
@@ -74,10 +74,10 @@ def test_is_repair_mode(schain_db, _schain_name, node_config, checks, dutils):
     schain_record.set_repair_mode(False)
     assert get_monitor_type(schain_record, checks, False, dutils) != RepairMonitor
     bad_checks = SChainChecksMockBad(
-        schain_db,
+        _schain_name,
         node_config.id,
         schain_record,
-        rule_controller_creator=get_test_rc
+        rule_controller_creator=get_test_rule_controller(_schain_name)
     )
     assert get_monitor_type(schain_record, bad_checks, False, dutils) == RepairMonitor
 
@@ -85,10 +85,10 @@ def test_is_repair_mode(schain_db, _schain_name, node_config, checks, dutils):
 def test_is_repair_mode_state_root(schain_db, _schain_name, node_config, dutils):
     schain_record = upsert_schain_record(_schain_name)
     checks = SChainChecks(
-        schain_db,
+        _schain_name,
         node_config.id,
         schain_record,
-        rule_controller_creator=get_test_rc,
+        rule_controller_creator=get_test_rule_controller(_schain_name),
         dutils=dutils
     )
     assert get_monitor_type(schain_record, checks, False, dutils) != RepairMonitor

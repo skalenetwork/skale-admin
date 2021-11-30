@@ -2,13 +2,14 @@ import json
 import mock
 import os
 import shutil
+from functools import partial
 
 import pytest
 from flask import Flask, appcontext_pushed, g
 
 from core.node_config import NodeConfig
 from core.schains.config.directory import schain_config_filepath
-from tests.utils import get_bp_data, get_test_rc_synced, post_bp_data
+from tests.utils import get_bp_data, get_test_rule_controller, post_bp_data
 from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 from web.helper import get_api_url
@@ -62,7 +63,10 @@ def schain_config_exists_mock(schain):
 
 
 @mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
-@mock.patch('web.routes.schains.get_default_rule_controller', get_test_rc_synced)
+@mock.patch(
+    'web.routes.schains.get_default_rule_controller',
+    partial(get_test_rule_controller, synced=True)
+)
 def test_firewall_rules_route(skale_bp, schain_config):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'firewall-rules'),

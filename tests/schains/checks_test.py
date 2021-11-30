@@ -16,8 +16,7 @@ from web.models.schain import SChainRecord
 
 
 from tests.utils import (
-    get_test_rc,
-    get_test_rc_synced,
+    get_test_rule_controller,
     response_mock,
     request_mock
 )
@@ -79,9 +78,11 @@ def sample_checks(schain_config, schain_db, dutils):
         schain_name,
         node_id,
         schain_record=schain_record,
-        rule_controller_creator=get_test_rc_synced,
-        dutils=dutils
-    )
+        rule_controller=get_test_rule_controller(
+            name=schain_name,
+            synced=True
+        ),
+        dutils=dutils)
 
 
 @pytest.fixture
@@ -92,7 +93,7 @@ def sample_false_checks(schain_config, schain_db, dutils):
         NOT_EXISTS_SCHAIN_NAME,
         TEST_NODE_ID,
         schain_record=schain_record,
-        rule_controller_creator=get_test_rc,
+        rule_controller=get_test_rule_controller(name=schain_name),
         dutils=dutils
     )
 
@@ -105,7 +106,7 @@ def rules_unsynced_checks(schain_config, schain_db, dutils):
         schain_name,
         TEST_NODE_ID,
         schain_record=schain_record,
-        rule_controller_creator=get_test_rc,
+        rule_controller=get_test_rule_controller(name=schain_name),
         dutils=dutils
     )
 
@@ -204,7 +205,7 @@ def test_init_checks(skale, schain_db):
         schain_name,
         TEST_NODE_ID,
         schain_record=schain_record,
-        rule_controller_creator=get_test_rc_synced,
+        rule_controller=get_test_rule_controller(name=schain_name)
     )
     assert checks.name == schain_name
     assert checks.node_id == TEST_NODE_ID
@@ -228,7 +229,7 @@ def test_exit_code(skale, schain_db, dutils):
             test_schain_name,
             TEST_NODE_ID,
             schain_record=schain_record,
-            rule_controller_creator=get_test_rc_synced,
+            rule_controller=get_test_rule_controller(name=test_schain_name),
             dutils=dutils
         )
         assert not checks.exit_code_ok.status
@@ -246,7 +247,7 @@ def test_get_all(schain_config, dutils, schain_db):
         schain_db,
         node_id,
         schain_record=schain_record,
-        rule_controller_creator=get_test_rc_synced,
+        rule_controller=get_test_rule_controller(name=schain_name),
         dutils=dutils
     )
     checks_dict = checks.get_all()
@@ -261,11 +262,13 @@ def test_get_all(schain_config, dutils, schain_db):
     assert isinstance(checks_dict['blocks'], bool)
     assert isinstance(checks_dict['ima_container'], bool)
 
+    rc = get_test_rule_controller(name=schain_name, synced=True)
+
     checks_without_ima = SChainChecksMock(
         schain_db,
         node_id,
         schain_record=schain_record,
-        rule_controller_creator=get_test_rc_synced,
+        rule_controller=rc,
         dutils=dutils,
         ima_linked=False
     )

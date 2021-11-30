@@ -5,7 +5,6 @@ import os
 import random
 import string
 import time
-from functools import partial
 
 from mock import Mock, MagicMock
 
@@ -246,11 +245,11 @@ class SChainTestRuleController(SChainRuleController):
         )
 
 
-def get_test_rc(
+def get_test_rule_controller(
     name,
-    base_port,
-    own_ip,
-    node_ips,
+    base_port=None,
+    own_ip=None,
+    node_ips=[],
     sync_agent_ranges=[],
     synced=False
 ):
@@ -263,6 +262,3 @@ def get_test_rc(
     if synced:
         rc.sync()
     return rc
-
-
-get_test_rc_synced = partial(get_test_rc, synced=True)
