@@ -106,6 +106,14 @@ class IFirewallManager(ABC):
 
 class IRuleController(ABC):
     @abstractmethod
+    def configure(self) -> None:  # pragma: no cover
+        pass
+
+    @abstractmethod
+    def is_configured(self) -> bool:  # pragma: no cover
+        pass
+
+    @abstractmethod
     def is_rules_synced(self) -> bool:  # pragma: no cover
         pass
 

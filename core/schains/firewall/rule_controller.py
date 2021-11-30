@@ -19,13 +19,15 @@
 
 import itertools
 import logging
-from abc import ABC, abstractmethod
-from typing import Any, Iterable, List, Optional
+from abc import abstractmethod
+from functools import wraps
+from typing import Any, Callable, cast, Dict, Iterable, List, Optional, TypeVar
 
 from .firewall_manager import IptablesSChainFirewallManager
 from .types import (
     IFirewallManager,
     IpRange,
+    IRuleController,
     PORTS_PER_SCHAIN,
     SChainRule,
     SkaledPorts
@@ -35,7 +37,25 @@ from .types import (
 logger = logging.getLogger(__name__)
 
 
-class SChainRuleController(ABC):
+class NotInitializedError(Exception):
+    pass
+
+
+F = TypeVar('F', bound=Callable[..., Any])
+
+
+def configured_only(func: F) -> F:
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if self.is_configured():
+            return func(*args, **kwargs)
+        else:
+            missing = self.get_missing()
+            raise NotInitializedError(f'Missing fields {missing}')
+    return cast(F, wrapper)
+
+
+class SChainRuleController(IRuleController):
     def __init__(
         self,
         name: str,
@@ -56,27 +76,18 @@ class SChainRuleController(ABC):
         self.ports_per_schain = ports_per_schain
         self._firewall_manager = None
 
-    @property
-    def internal_ports(self) -> Iterable[int]:
-        return (
-            self.base_port + offset.value
-            for offset in (
-                self.port_allocation.CATCHUP,
-                self.port_allocation.PROPOSAL,
-                self.port_allocation.BINARY_CONSENSUS,
-                self.port_allocation.ZMQ_BROADCAST
-            )
-        )
+    def get_missing(self) -> Dict['str', Any]:
+        missing: Dict['str', Any] = {}
+        if not self.base_port:
+            missing.update({'base_port': self.base_port})
+        if not self.own_ip:
+            missing.update({'own_ip': self.own_ip})
+        if not self.node_ips:
+            missing.update({'node_ips': self.node_ips})
+        return missing
 
-    @abstractmethod
-    def create_firewall_manager(self) -> IFirewallManager:  # pragma: no cover
-        pass
-
-    @property
-    def firewall_manager(self):
-        if not self._firewall_manager:
-            self._firewall_manager = self.create_firewall_manager()
-        return self._firewall_manager
+    def is_configured(self) -> bool:
+        return all((self.base_port, self.own_ip, self.node_ips))
 
     def configure(
         self,
@@ -92,14 +103,42 @@ class SChainRuleController(ABC):
         self.sync_ip_ranges = sync_ip_ranges or self.sync_ip_ranges
         self.port_allocation = port_allocation or self.port_allocation
 
+    @property  # type: ignore
+    @configured_only
+    def internal_ports(self) -> Iterable[int]:
+        return (
+            self.base_port + offset.value
+            for offset in (
+                self.port_allocation.CATCHUP,
+                self.port_allocation.PROPOSAL,
+                self.port_allocation.BINARY_CONSENSUS,
+                self.port_allocation.ZMQ_BROADCAST
+            )
+        )
+
+    @abstractmethod
+    @configured_only
+    def create_firewall_manager(self) -> IFirewallManager:  # pragma: no cover
+        pass
+
     @property
+    def firewall_manager(self):
+        if not self._firewall_manager:
+            self._firewall_manager = self.create_firewall_manager()
+        return self._firewall_manager
+
+    @property  # type: ignore
+    @configured_only
     def internal_rules(self) -> Iterable[SChainRule]:
+        if not self.own_ip:
+            return []
         for ip in self.node_ips:
             if ip != self.own_ip:
                 for port in self.internal_ports:
                     yield SChainRule(port, ip)
 
-    @property
+    @property  # type: ignore
+    @configured_only
     def public_ports(self) -> Iterable[int]:
         return (
             self.base_port + offset.value
@@ -120,7 +159,8 @@ class SChainRuleController(ABC):
     def public_rules(self) -> Iterable[SChainRule]:
         return (SChainRule(port) for port in self.public_ports)
 
-    @property
+    @property  # type: ignore
+    @configured_only
     def sync_agent_port(self) -> int:
         return self.base_port + self.port_allocation.CATCHUP.value
 
@@ -165,9 +205,10 @@ class SChainRuleController(ABC):
 
 
 class IptablesSChainRuleController(SChainRuleController):
+    @configured_only
     def create_firewall_manager(self) -> IptablesSChainFirewallManager:
         return IptablesSChainFirewallManager(
             self.name,
             self.base_port,  # type: ignore
-            self.base_port + self.ports_per_schain
+            self.base_port + self.ports_per_schain  # type: ignore
         )
