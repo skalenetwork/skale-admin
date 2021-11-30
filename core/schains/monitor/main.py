@@ -19,7 +19,6 @@
 
 import time
 import logging
-from functools import partial
 from importlib import reload
 
 from web3._utils import request
