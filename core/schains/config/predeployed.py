@@ -187,7 +187,8 @@ def add_to_accounts(accounts: dict, address: str, account: dict) -> None:
 
 
 def generate_precompiled_accounts() -> dict:
-    """Generates accounts for SKALE precompiled contracts
+    """
+    Generates accounts for SKALE precompiled contracts
 
     :returns: Dictionary with accounts
     :rtype: dict
@@ -207,7 +208,8 @@ def generate_owner_accounts(
     schain_nodes: list,
     generation: int
 ) -> dict:
-    """Generates accounts with allocation for sChain owner and sChain nodes owners
+    """
+    Generates accounts with allocation for sChain owner and sChain nodes owners
 
     :param on_chain_owner: Address of the sChain owner on the chain (only for gen 0)
     :type on_chain_owner: str
@@ -232,7 +234,8 @@ def generate_owner_accounts(
 
 
 def generate_context_accounts(schain_name: dict, on_chain_owner: str) -> dict:
-    """Generates accounts for the context predeployed SC
+    """
+    Generates accounts for the context predeployed SC
 
     :param schain_owner: Address of the sChain owner
     :type schain_owner: str
@@ -257,7 +260,8 @@ def generate_context_accounts(schain_name: dict, on_chain_owner: str) -> dict:
 
 
 def generate_ima_accounts(on_chain_owner: str, schain_name: str) -> dict:
-    """Generates accounts for the IMA contracts
+    """
+    Generates accounts for the IMA contracts
 
     :param on_chain_owner: On-chain sChain owner
     :type on_chain_owner: str
