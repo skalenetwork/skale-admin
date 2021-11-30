@@ -1,4 +1,6 @@
-from core.schains.firewall.rule_controller import IpRange
+import pytest
+
+from core.schains.firewall.rule_controller import IpRange, NotInitializedError
 from core.schains.firewall.types import SChainRule, SkaledPorts
 
 from tests.utils import SChainTestRuleController
@@ -140,6 +142,10 @@ def test_schain_rule_controller_no_sync_rules():
 
 def test_schain_rule_controller_configure():
     src = SChainTestRuleController('test')
+
+    with pytest.raises(NotInitializedError):
+        src.public_ports()
+
     own_ip = '1.1.1.1'
     node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4']
     base_port = 10000

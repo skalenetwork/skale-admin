@@ -8,10 +8,14 @@ import subprocess
 import pytest
 from skale.utils.contracts_provision.main import (create_nodes, create_schain,
                                                   cleanup_nodes_schains)
-
+from core.schains.checks import SChainChecks
 from core.schains.cleaner import remove_schain_container
 from core.schains.cleaner import remove_schain_volume
-from core.schains.checks import SChainChecks
+from core.schains.config.helper import (
+    get_base_port_from_config,
+    get_node_ips_from_config,
+    get_own_ip_from_config
+)
 from core.node_config import NodeConfig
 
 from core.schains.ima import ImaData
@@ -318,7 +322,7 @@ def node_config(skale):
 
 
 @pytest.fixture
-def schain_checks(schain_config, dutils):
+def schain_checks(schain_config, schain_db, rule_controller, dutils):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_record = SChainRecord.get_by_name(schain_name)
     node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
@@ -326,7 +330,7 @@ def schain_checks(schain_config, dutils):
         schain_name,
         node_id,
         schain_record=schain_record,
-        rule_controller=get_test_rule_controller(schain_name),
+        rule_controller=rule_controller,
         dutils=dutils
     )
 
@@ -343,3 +347,21 @@ def schain_struct(schain_config):
 @pytest.fixture
 def ima_data(skale):
     return ImaData(linked=True, chain_id=skale.web3.eth.chainId)
+
+
+@pytest.fixture
+def rule_controller(_schain_name, schain_db, schain_config):
+    base_port = get_base_port_from_config(schain_config)
+    own_ip = get_own_ip_from_config(schain_config)
+    node_ips = get_node_ips_from_config(schain_config)
+    return get_test_rule_controller(
+        name=_schain_name,
+        base_port=base_port,
+        own_ip=own_ip,
+        node_ips=node_ips
+    )
+
+
+@pytest.fixture
+def uninited_rule_controller(_schain_name):
+    return get_test_rule_controller(name=_schain_name)

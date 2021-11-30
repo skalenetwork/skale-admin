@@ -30,8 +30,8 @@ def new_checks(schain_db, _schain_name, node_config, ima_data, dutils):
 
 def get_rotation_monitor(
     skale,
+    name,
     ima_data,
-    _schain_name,
     node_config,
     schain_db,
     dutils,
@@ -42,11 +42,11 @@ def get_rotation_monitor(
     return RotationMonitor(
         skale=skale,
         ima_data=ima_data,
-        schain={'name': _schain_name, 'partOfNode': 0},
+        schain={'name': name, 'partOfNode': 0},
         node_config=node_config,
         rotation_data=rotation_data,
         checks=new_checks,
-        rule_controller=get_test_rule_controller(_schain_name),
+        rule_controller=get_test_rule_controller(name),
         dutils=dutils
     )
 
@@ -62,6 +62,7 @@ def test_is_new_node_no_config(
 ):
     test_monitor = get_rotation_monitor(
         skale=skale,
+        name=_schain_name,
         ima_data=ima_data,
         schain_db=schain_db,
         node_config=node_config,
@@ -91,6 +92,7 @@ def test_is_new_node(
     }
     test_monitor = get_rotation_monitor(
         skale=skale,
+        name=_schain_name,
         ima_data=ima_data,
         schain_db=schain_db,
         node_config=node_config,
@@ -103,6 +105,7 @@ def test_is_new_node(
 
     test_monitor = get_rotation_monitor(
         skale=skale,
+        name=_schain_name,
         ima_data=ima_data,
         schain_db=schain_db,
         node_config=node_config,
@@ -132,6 +135,7 @@ def test_is_leaving_node(
     }
     test_monitor = get_rotation_monitor(
         skale=skale,
+        name=_schain_name,
         ima_data=ima_data,
         schain_db=schain_db,
         node_config=node_config,
@@ -144,6 +148,7 @@ def test_is_leaving_node(
 
     test_monitor = get_rotation_monitor(
         skale=skale,
+        name=_schain_name,
         ima_data=ima_data,
         schain_db=schain_db,
         node_config=node_config,
@@ -162,17 +167,19 @@ def test_is_staying_node(
     schain_config,
     ima_data,
     schain_db,
+    rule_controller,
     dutils,
     new_checks
 ):
     test_monitor = get_rotation_monitor(
         skale=skale,
+        name=_schain_name,
         ima_data=ima_data,
         schain_db=schain_db,
         node_config=node_config,
         rotation_data=DEFAULT_ROTATION_DATA,
         new_checks=new_checks,
-        rule_controller=get_test_rule_controller(_schain_name),
+        rule_controller=rule_controller,
         dutils=dutils
     )
     assert test_monitor.get_rotation_mode_func() == test_monitor.staying_node
@@ -186,6 +193,7 @@ def test_rotation_request(
     schain_config,
     ima_data,
     schain_db,
+    rule_controller,
     dutils,
     new_checks
 ):
@@ -197,12 +205,13 @@ def test_rotation_request(
     }
     test_monitor = get_rotation_monitor(
         skale=skale,
+        name=_schain_name,
         ima_data=ima_data,
         schain_db=schain_db,
         node_config=node_config,
         rotation_data=rotation_data_leaving_node,
         new_checks=new_checks,
-        rule_controller=get_test_rule_controller(_schain_name),
+        rule_controller=rule_controller,
         dutils=dutils
     )
     test_monitor.rotation_request()

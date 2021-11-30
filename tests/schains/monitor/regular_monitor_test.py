@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_folder,
+                         rule_controller,
                          schain_on_contracts):
     schain_name = schain_on_contracts
     schain = skale.schains.get_by_name(schain_name)
@@ -58,7 +59,7 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
         node_config=node_config,
         rotation_data={'rotation_id': 0},
         checks=schain_checks,
-        rule_controller=get_test_rule_controller(schain_name, synced=True),
+        rule_controller=rule_controller,
         dutils=dutils
     )
 

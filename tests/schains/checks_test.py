@@ -12,14 +12,11 @@ from core.schains.checks import SChainChecks, CheckRes
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER
 
+
 from web.models.schain import SChainRecord
 
 
-from tests.utils import (
-    get_test_rule_controller,
-    response_mock,
-    request_mock
-)
+from tests.utils import response_mock, request_mock
 
 
 NOT_EXISTS_SCHAIN_NAME = 'qwerty123'
@@ -70,148 +67,138 @@ class SChainChecksMock(SChainChecks):
 
 
 @pytest.fixture
-def sample_checks(schain_config, schain_db, dutils):
-    schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_record = SChainRecord.get_by_name(schain_name)
-    node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
-    return SChainChecks(
-        schain_name,
-        node_id,
-        schain_record=schain_record,
-        rule_controller=get_test_rule_controller(
-            name=schain_name,
-            synced=True
-        ),
-        dutils=dutils)
-
-
-@pytest.fixture
-def sample_false_checks(schain_config, schain_db, dutils):
+def sample_false_checks(schain_config, schain_db, rule_controller, dutils):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_record = SChainRecord.get_by_name(schain_name)
     return SChainChecks(
         NOT_EXISTS_SCHAIN_NAME,
         TEST_NODE_ID,
         schain_record=schain_record,
-        rule_controller=get_test_rule_controller(name=schain_name),
+        rule_controller=rule_controller,
         dutils=dutils
     )
 
 
 @pytest.fixture
-def rules_unsynced_checks(schain_config, schain_db, dutils):
+def rules_unsynced_checks(
+    schain_config,
+    uninited_rule_controller,
+    schain_db,
+    dutils
+):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_record = SChainRecord.get_by_name(schain_name)
     return SChainChecks(
         schain_name,
         TEST_NODE_ID,
         schain_record=schain_record,
-        rule_controller=get_test_rule_controller(name=schain_name),
+        rule_controller=uninited_rule_controller,
         dutils=dutils
     )
 
 
-def test_data_dir_check(sample_checks, sample_false_checks):
-    assert sample_checks.config_dir.status
+def test_data_dir_check(schain_checks, sample_false_checks):
+    assert schain_checks.config_dir.status
     assert not sample_false_checks.config_dir.status
 
 
-def test_dkg_check(sample_checks, sample_false_checks):
-    assert sample_checks.dkg.status
+def test_dkg_check(schain_checks, sample_false_checks):
+    assert schain_checks.dkg.status
     assert not sample_false_checks.dkg.status
 
 
-def test_config_check(sample_checks, sample_false_checks):
+def test_config_check(schain_checks, sample_false_checks):
     with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert sample_checks.config.status
+        assert schain_checks.config.status
         assert not sample_false_checks.config.status
 
 
-def test_config_check_wrong_version(sample_checks):
-    sample_checks.schain_record = SchainRecordMock('9.8.7')
-    assert not sample_checks.config.status
+def test_config_check_wrong_version(schain_checks):
+    schain_checks.schain_record = SchainRecordMock('9.8.7')
+    assert not schain_checks.config.status
 
 
-def test_volume_check(sample_checks, sample_false_checks, dutils):
+def test_volume_check(schain_checks, sample_false_checks, dutils):
     dutils.cli.inspect_volume = lambda _: True
-    assert sample_checks.volume.status
+    assert schain_checks.volume.status
     dutils.cli.inspect_volume = mock.Mock(
         side_effect=docker.errors.NotFound('')
     )
     assert not sample_false_checks.volume.status
 
 
-def test_firewall_rules_check(sample_checks, rules_unsynced_checks):
+def test_firewall_rules_check(schain_checks, rules_unsynced_checks):
+    schain_checks.rc.sync()
     with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert sample_checks.firewall_rules.status
+        assert schain_checks.firewall_rules.status
     with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
         assert not rules_unsynced_checks.firewall_rules.status
 
 
-def test_container_check(sample_checks, sample_false_checks):
+def test_container_check(schain_checks, sample_false_checks):
     with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
-        assert sample_checks.skaled_container.status
+        assert schain_checks.skaled_container.status
     with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_ERROR):
         assert not sample_false_checks.skaled_container.status
 
 
-def test_exit_code_ok_check(sample_checks, sample_false_checks):
+def test_exit_code_ok_check(schain_checks, sample_false_checks):
     with mock.patch('core.schains.checks.DockerUtils.container_exit_code', return_value=0), \
             mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
-        assert sample_checks.exit_code_ok.status
+        assert schain_checks.exit_code_ok.status
     with mock.patch('core.schains.checks.DockerUtils.container_exit_code',
                     return_value=SkaledExitCodes.EC_STATE_ROOT_MISMATCH), \
             mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
         assert not sample_false_checks.exit_code_ok.status
 
 
-def test_ima_check(sample_checks, sample_false_checks):
+def test_ima_check(schain_checks, sample_false_checks):
     with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
-        assert sample_checks.ima_container.status
+        assert schain_checks.ima_container.status
     with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_ERROR):
         assert not sample_false_checks.ima_container.status
 
 
-def test_rpc_check(sample_checks, schain_db):
+def test_rpc_check(schain_checks, schain_db):
     res_mock = response_mock(HTTPStatus.OK, {
         "id": 83,
         "jsonrpc": "2.0",
         "result": "0x4b7"
     })
     with mock.patch('requests.post', new=request_mock(res_mock)):
-        assert sample_checks.rpc.status
+        assert schain_checks.rpc.status
 
     for _ in range(4):
-        assert not sample_checks.rpc.status
+        assert not schain_checks.rpc.status
 
     with mock.patch('requests.post', new=request_mock(res_mock)):
-        assert sample_checks.rpc.status
+        assert schain_checks.rpc.status
 
 
-def test_blocks_check(sample_checks):
+def test_blocks_check(schain_checks):
     res_mock = response_mock(HTTPStatus.OK, ETH_GET_BLOCK_RESULT)
     with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
         with mock.patch('requests.post', return_value=res_mock), \
                 mock.patch('time.time', return_value=TEST_TIMESTAMP):
-            assert sample_checks.blocks.status
+            assert schain_checks.blocks.status
         with mock.patch('requests.post', return_value=res_mock):
-            assert not sample_checks.blocks.status
+            assert not schain_checks.blocks.status
 
 
-def test_init_checks(skale, schain_db):
+def test_init_checks(skale, schain_db, uninited_rule_controller):
     schain_name = schain_db
     schain_record = SChainRecord.get_by_name(schain_name)
     checks = SChainChecks(
         schain_name,
         TEST_NODE_ID,
         schain_record=schain_record,
-        rule_controller=get_test_rule_controller(name=schain_name)
+        rule_controller=uninited_rule_controller
     )
     assert checks.name == schain_name
     assert checks.node_id == TEST_NODE_ID
 
 
-def test_exit_code(skale, schain_db, dutils):
+def test_exit_code(skale, rule_controller, schain_db, dutils):
     test_schain_name = schain_db
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, test_schain_name)
@@ -229,7 +216,7 @@ def test_exit_code(skale, schain_db, dutils):
             test_schain_name,
             TEST_NODE_ID,
             schain_record=schain_record,
-            rule_controller=get_test_rule_controller(name=test_schain_name),
+            rule_controller=rule_controller,
             dutils=dutils
         )
         assert not checks.exit_code_ok.status
@@ -239,7 +226,7 @@ def test_exit_code(skale, schain_db, dutils):
     dutils.safe_rm(container_name)
 
 
-def test_get_all(schain_config, dutils, schain_db):
+def test_get_all(schain_config, rule_controller, dutils, schain_db):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_record = SChainRecord.get_by_name(schain_name)
     node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
@@ -247,7 +234,7 @@ def test_get_all(schain_config, dutils, schain_db):
         schain_db,
         node_id,
         schain_record=schain_record,
-        rule_controller=get_test_rule_controller(name=schain_name),
+        rule_controller=rule_controller,
         dutils=dutils
     )
     checks_dict = checks.get_all()
@@ -262,13 +249,13 @@ def test_get_all(schain_config, dutils, schain_db):
     assert isinstance(checks_dict['blocks'], bool)
     assert isinstance(checks_dict['ima_container'], bool)
 
-    rc = get_test_rule_controller(name=schain_name, synced=True)
+    rule_controller.sync()
 
     checks_without_ima = SChainChecksMock(
         schain_db,
         node_id,
         schain_record=schain_record,
-        rule_controller=rc,
+        rule_controller=rule_controller,
         dutils=dutils,
         ima_linked=False
     )

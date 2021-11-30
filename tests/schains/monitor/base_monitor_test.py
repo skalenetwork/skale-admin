@@ -77,6 +77,7 @@ def test_monitor(
     schain_db,
     _schain_name,
     node_config,
+    uninited_rule_controller,
     skale,
     ima_data,
     dutils
@@ -86,7 +87,7 @@ def test_monitor(
         _schain_name,
         node_config.id,
         schain_record=schain_record,
-        rule_controller=get_test_rule_controller(_schain_name),
+        rule_controller=uninited_rule_controller,
         dutils=dutils
     )
     return BaseTestMonitor(
@@ -96,7 +97,7 @@ def test_monitor(
         node_config=node_config,
         rotation_data={'rotation_id': 0, 'finish_ts': 0},
         checks=schain_checks,
-        rule_controller=get_test_rule_controller(_schain_name),
+        rule_controller=uninited_rule_controller,
         dutils=dutils
     )
 
@@ -106,6 +107,7 @@ def test_crashing_monitor(
     _schain_name,
     skale,
     node_config,
+    rule_controller,
     ima_data,
     schain_struct,
     dutils
@@ -115,7 +117,7 @@ def test_crashing_monitor(
         _schain_name,
         node_config.id,
         schain_record=schain_record,
-        rule_controller=get_test_rule_controller(_schain_name),
+        rule_controller=rule_controller,
         dutils=dutils
     )
     test_monitor = CrashingTestMonitor(
@@ -125,7 +127,7 @@ def test_crashing_monitor(
         node_config=node_config,
         rotation_data={'rotation_id': 1},
         checks=schain_checks,
-        rule_controller=get_test_rule_controller(_schain_name),
+        rule_controller=rule_controller
     )
     with pytest.raises(Exception):
         test_monitor.run()

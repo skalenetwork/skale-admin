@@ -254,6 +254,7 @@ def get_test_rule_controller(
     synced=False
 ):
     rc = SChainTestRuleController(
+        name,
         base_port,
         own_ip,
         node_ips,

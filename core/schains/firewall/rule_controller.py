@@ -48,7 +48,7 @@ def configured_only(func: F) -> F:
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         if self.is_configured():
-            return func(*args, **kwargs)
+            return func(self, *args, **kwargs)
         else:
             missing = self.get_missing()
             raise NotInitializedError(f'Missing fields {missing}')
@@ -130,8 +130,6 @@ class SChainRuleController(IRuleController):
     @property  # type: ignore
     @configured_only
     def internal_rules(self) -> Iterable[SChainRule]:
-        if not self.own_ip:
-            return []
         for ip in self.node_ips:
             if ip != self.own_ip:
                 for port in self.internal_ports:
