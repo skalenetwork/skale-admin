@@ -64,9 +64,11 @@ def schain_secret_key_file(schain_on_contracts):
     secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')
     with open(secret_key_path, 'w') as key_file:
         json.dump(SECRET_KEY, key_file)
-    yield
-    Path(secret_key_path).unlink()
-    Path(schain_dir_path).rmdir()
+    try:
+        yield
+    finally:
+        Path(secret_key_path).unlink()
+        Path(schain_dir_path).rmdir()
 
 
 @pytest.fixture
@@ -76,9 +78,11 @@ def schain_secret_key_file_default_chain():
     secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')
     with open(secret_key_path, 'w') as key_file:
         json.dump(SECRET_KEY, key_file)
-    yield
-    Path(secret_key_path).unlink()
-    Path(schain_dir_path).rmdir()
+    try:
+        yield
+    finally:
+        Path(secret_key_path).unlink()
+        Path(schain_dir_path).rmdir()
 
 
 def check_keys(data, expected_keys):
