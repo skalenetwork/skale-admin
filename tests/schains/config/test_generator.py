@@ -4,8 +4,19 @@ from pathlib import Path
 
 import pytest
 
-from core.schains.config.generator import generate_schain_config_with_skale
+from core.schains.config.generator import generate_schain_config_with_skale, generate_schain_config
+from core.schains.config.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
 from tools.configs.schains import SCHAINS_DIR_PATH
+
+from etherbase_predeployed import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
+from marionette_predeployed import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
+from filestorage_predeployed import FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTATION_ADDRESS
+from deployment_controller_predeployed import (
+    DEPLOYMENT_CONTROLLER_ADDRESS,
+    DEPLOYMENT_CONTROLLER_IMPLEMENTATION_ADDRESS
+)
+from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
+from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
 
 
 SCHAIN_ID = 1
@@ -30,6 +41,20 @@ SECRET_KEY = {
     ],
 }
 
+TEST_ERECTOR_ADDRESS = '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34'
+TEST_MAINNET_OWNER_ADDRESS = '0x30E1C96277735B03E59B3098204fd04FD0e78a46'
+
+TEST_SCHAIN_NODE_WITH_SCHAINS = [{
+    'name': 'test',
+    'ip': b'\x01\x02\x03\x04',
+    'publicIP': b'\x01\x02\x03\x04',
+    'publicKey': '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34',
+    'port': 10000,
+    'id': 1,
+    'schains': [{'name': 'test_schain'}]
+}]
+TEST_NODE = {'id': 1, 'name': 'test', 'publicKey': '0x5556', 'port': 10000}
+
 
 @pytest.fixture
 def schain_secret_key_file(schain_on_contracts):
@@ -39,9 +64,25 @@ def schain_secret_key_file(schain_on_contracts):
     secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')
     with open(secret_key_path, 'w') as key_file:
         json.dump(SECRET_KEY, key_file)
-    yield
-    Path(secret_key_path).unlink()
-    Path(schain_dir_path).rmdir()
+    try:
+        yield
+    finally:
+        Path(secret_key_path).unlink()
+        Path(schain_dir_path).rmdir()
+
+
+@pytest.fixture
+def schain_secret_key_file_default_chain():
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, 'test_schain')
+    Path(schain_dir_path).mkdir(exist_ok=True)
+    secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')
+    with open(secret_key_path, 'w') as key_file:
+        json.dump(SECRET_KEY, key_file)
+    try:
+        yield
+    finally:
+        Path(secret_key_path).unlink()
+        Path(schain_dir_path).rmdir()
 
 
 def check_keys(data, expected_keys):
@@ -93,7 +134,7 @@ def check_schain_node_info(node_id, schain_node_info, index):
 def check_schain_info(node_ids, schain_info):
     check_keys(
         schain_info,
-        ['schainID', 'schainName', 'schainOwner', 'contractStorageLimit',
+        ['schainID', 'schainName', 'blockAuthor', 'contractStorageLimit',
          'dbStorageLimit', 'snapshotIntervalSec', 'emptyBlockIntervalMs',
          'maxConsensusStorageBytes', 'maxSkaledLeveldbStorageBytes',
          'maxFileStorageBytes', 'maxReservedStorageBytes',
@@ -128,6 +169,86 @@ def test_generate_schain_config_with_skale(
         schain_name=schain_name,
         node_id=current_node_id,
         rotation_data={'rotation_id': 0},
-        ecdsa_key_name=ECDSA_KEY_NAME
+        ecdsa_key_name=ECDSA_KEY_NAME,
+        generation=0
     )
     check_config(current_node_id, node_ids, schain_config.to_dict())
+
+
+def test_generate_schain_config_gen0(schain_secret_key_file_default_chain):
+    schain = {
+        'name': 'test_schain',
+        'partOfNode': 0,
+        'generation': 0,
+        'mainnetOwner': '0x30E1C96277735B03E59B3098204fd04FD0e78a46',
+        'erector': TEST_ERECTOR_ADDRESS
+    }
+
+    node_id, schain_id, generation, rotation_id = 1, 1, 0, 0
+    ecdsa_key_name = 'test'
+    schains_on_node = [{'name': 'test_schain'}]
+    previous_public_keys_info_dict = {}
+
+    schain_config = generate_schain_config(
+        schain=schain,
+        schain_id=schain_id,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        schains_on_node=schains_on_node,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
+        previous_public_keys_info=previous_public_keys_info_dict,
+        generation=generation
+    )
+    config = schain_config.to_dict()
+
+    assert config['skaleConfig']['sChain']['blockAuthor'] == TEST_MAINNET_OWNER_ADDRESS
+    assert not config['accounts'].get(TEST_ERECTOR_ADDRESS)
+
+
+def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
+    schain = {
+        'name': 'test_schain',
+        'partOfNode': 0,
+        'generation': 1,
+        'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
+        'erector': TEST_ERECTOR_ADDRESS
+    }
+    node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
+    ecdsa_key_name = 'test'
+    schains_on_node = [{'name': 'test_schain'}]
+    previous_public_keys_info_dict = {}
+
+    schain_config = generate_schain_config(
+        schain=schain,
+        schain_id=schain_id,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        schains_on_node=schains_on_node,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
+        previous_public_keys_info=previous_public_keys_info_dict,
+        generation=generation
+    )
+    config = schain_config.to_dict()
+
+    block_author = config['skaleConfig']['sChain']['blockAuthor']
+
+    assert block_author == ETHERBASE_ADDRESS
+    assert config['accounts'][TEST_ERECTOR_ADDRESS] == {
+        'balance': '1000000000000000000000000000000'
+    }
+
+    assert config['accounts'].get(MARIONETTE_ADDRESS)
+    assert config['accounts'].get(MARIONETTE_IMPLEMENTATION_ADDRESS)
+    assert config['accounts'].get(FILESTORAGE_ADDRESS)
+    assert config['accounts'].get(FILESTORAGE_IMPLEMENTATION_ADDRESS)
+    assert config['accounts'].get(ETHERBASE_ADDRESS)
+    assert config['accounts'].get(ETHERBASE_IMPLEMENTATION_ADDRESS)
+    assert config['accounts'].get(DEPLOYMENT_CONTROLLER_ADDRESS)
+    assert config['accounts'].get(DEPLOYMENT_CONTROLLER_IMPLEMENTATION_ADDRESS)
+    assert config['accounts'].get(MULTISIGWALLET_ADDRESS)
+    assert config['accounts'].get(MESSAGE_PROXY_FOR_SCHAIN_ADDRESS)
+    assert config['accounts'].get(PROXY_ADMIN_PREDEPLOYED_ADDRESS)

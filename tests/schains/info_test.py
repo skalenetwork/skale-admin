@@ -15,7 +15,7 @@ def test_get_schain_info_by_name(skale, schain_on_contracts, schain_db):
     assert info.to_dict() == {
        'name': name,
        'id': skale.schains.name_to_id(name),
-       'owner': info.owner,
+       'mainnet_owner': info.mainnet_owner,
        'part_of_node': 1,
        'dkg_status': 1,
        'is_deleted': False,

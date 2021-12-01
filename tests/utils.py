@@ -1,10 +1,11 @@
 """ SKALE test utilities """
 
-import json
 import os
+import json
+import time
 import random
 import string
-import time
+
 from functools import partial
 
 from mock import Mock, MagicMock
@@ -13,7 +14,7 @@ from skale import Skale, SkaleIma
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
-from core.schains.config.generator import save_schain_config
+from core.schains.config.main import save_schain_config
 from core.schains.config.helper import get_schain_config
 from core.schains.firewall.types import IHostFirewallManager, PORTS_PER_SCHAIN
 from core.schains.firewall import SChainFirewallManager, SChainRuleController
@@ -35,7 +36,7 @@ TEST_IMA_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
 CONTAINERS_JSON = {
   "schain": {
     "name": "skalenetwork/schain",
-    "version": "3.7.5-beta.0",
+    "version": "3.9.0-develop.1",
     "custom_args": {
       "ulimits_list": [
         {
@@ -139,7 +140,7 @@ def get_schain_contracts_data(schain_name):
     """ Schain data mock in case if schain on contracts is not required """
     return {
         'name': schain_name,
-        'owner': '0x1213123091a230923123213123',
+        'mainnetOwner': '0x1213123091a230923123213123',
         'indexInOwnerList': 0,
         'partOfNode': 0,
         'lifetime': 3600,

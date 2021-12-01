@@ -22,7 +22,7 @@ import copy
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_schain_volume_config
-from core.schains.limits import get_schain_limit, get_ima_limit
+from core.schains.limits import get_schain_limit, get_ima_limit, get_schain_type
 from core.schains.types import MetricType, ContainerType
 from core.schains.config.helper import (
     get_schain_container_cmd,
@@ -124,8 +124,9 @@ def restart_container(type, schain, dutils=None):
 def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
                          volume_mode=None, ulimit_check=True, enable_ssl=True):
     schain_name = schain['name']
-    cpu_limit = get_schain_limit(schain, MetricType.cpu_shares)
-    mem_limit = get_schain_limit(schain, MetricType.mem)
+    schain_type = get_schain_type(schain['partOfNode'])
+    cpu_limit = get_schain_limit(schain_type, MetricType.cpu_shares)
+    mem_limit = get_schain_limit(schain_type, MetricType.mem)
 
     volume_config = get_schain_volume_config(
         schain_name,
@@ -148,8 +149,9 @@ def run_ima_container(schain: dict, mainnet_chain_id: int, dutils: DockerUtils =
     dutils = dutils or DockerUtils()
     env = get_ima_env(schain['name'], mainnet_chain_id)
 
-    cpu_limit = get_ima_limit(schain, MetricType.cpu_shares)
-    mem_limit = get_ima_limit(schain, MetricType.mem)
+    schain_type = get_schain_type(schain['partOfNode'])
+    cpu_limit = get_ima_limit(schain_type, MetricType.cpu_shares)
+    mem_limit = get_ima_limit(schain_type, MetricType.mem)
 
     run_container(
         type=IMA_CONTAINER,

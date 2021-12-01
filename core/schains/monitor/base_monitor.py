@@ -41,14 +41,13 @@ from core.schains.runner import run_ima_container
 from core.schains.volume import init_data_volume
 from core.schains.rotation import get_schain_public_key
 
+from core.schains.limits import get_schain_type
+
 from core.schains.monitor.containers import monitor_schain_container
 from core.schains.monitor.rpc import monitor_schain_rpc
 
-from core.schains.config.directory import (
-    get_schain_config,
-    init_schain_config_dir
-)
-from core.schains.config.generator import init_schain_config
+from core.schains.config import init_schain_config, init_schain_config_dir
+from core.schains.config.directory import get_schain_config
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
@@ -87,6 +86,7 @@ class BaseMonitor(ABC):
         self.ima_data = ima_data
         self.schain = schain
         self.name = schain['name']
+        self.generation = schain['generation']
         self.node_config = node_config
         self.checks = checks
         self.executed_blocks = {}
@@ -94,6 +94,8 @@ class BaseMonitor(ABC):
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
         self.rc_creator = rule_controller_creator
+
+        self.schain_type = get_schain_type(schain['partOfNode'])
 
         self.dutils = dutils or DockerUtils()
         self.p = f'{type(self).__name__} - schain: {self.name} -'
@@ -200,6 +202,7 @@ class BaseMonitor(ABC):
                 skale=self.skale,
                 node_id=self.node_config.id,
                 schain_name=self.name,
+                generation=self.generation,
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,
                 schain_record=self.schain_record
