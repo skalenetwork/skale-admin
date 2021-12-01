@@ -28,7 +28,10 @@ from core.schains.config.helper import (
     get_own_ip_from_config,
     get_schain_config
 )
-from core.schains.firewall.utils import get_default_rule_controller
+from core.schains.firewall.utils import (
+    get_default_rule_controller,
+    get_sync_agent_ranges
+)
 from core.schains.ima import get_ima_version
 from core.schains.info import get_schain_info_by_name, get_skaled_version
 from tools.helper import init_skale
@@ -84,6 +87,8 @@ def construct_schains_bp():
     def firewall_rules():
         logger.debug(request)
         schain_name = request.args.get('schain_name')
+        skale = init_skale(g.wallet)
+        sync_agent_ranges = get_sync_agent_ranges(skale)
         if not schain_config_exists(schain_name):
             return construct_err_response(
                 msg=f'No schain with name {schain_name}'
@@ -98,7 +103,7 @@ def construct_schains_bp():
             base_port,
             own_ip,
             node_ips,
-            []
+            sync_agent_ranges
         )
         endpoints = [e._asdict() for e in rc.actual_rules()]
         return construct_ok_response({'endpoints': endpoints})

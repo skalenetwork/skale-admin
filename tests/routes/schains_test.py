@@ -71,7 +71,6 @@ def test_firewall_rules_route(skale_bp, schain_config):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'firewall-rules'),
                        params={'schain_name': schain_name})
-    print(data)
     assert data == {
         'status': 'ok',
         'payload': {

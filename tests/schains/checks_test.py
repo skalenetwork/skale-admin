@@ -249,8 +249,6 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
     assert isinstance(checks_dict['blocks'], bool)
     assert isinstance(checks_dict['ima_container'], bool)
 
-    rule_controller.sync()
-
     checks_without_ima = SChainChecksMock(
         schain_db,
         node_id,

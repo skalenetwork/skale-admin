@@ -363,5 +363,11 @@ def rule_controller(_schain_name, schain_db, schain_config):
 
 
 @pytest.fixture
+def synced_rule_controller(rule_controller):
+    rule_controller.sync()
+    return rule_controller
+
+
+@pytest.fixture
 def uninited_rule_controller(_schain_name):
     return get_test_rule_controller(name=_schain_name)
