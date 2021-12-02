@@ -20,7 +20,7 @@ from tools.configs import (
 from web.models.schain import SChainRecord
 
 from tests.dkg_utils import safe_run_dkg_mock
-from tests.utils import alter_schain_config, get_test_rule_controller
+from tests.utils import alter_schain_config
 
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
         schain_name,
         node_config.id,
         schain_record=schain_record,
-        rule_controller=get_test_rule_controller(schain_name, synced=True),
+        rule_controller=rule_controller,
         dutils=dutils
     )
     ima_data = ImaData(False, '0x1')
