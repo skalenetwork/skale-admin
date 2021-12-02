@@ -198,7 +198,10 @@ def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None):
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
 
-    rc = get_default_rule_controller(name=schain_name)
+    rc = get_default_rule_controller(
+        name=schain_name,
+        sync_agent_ranges=sync_agent_ranges
+    )
     checks = SChainChecks(
         schain_name,
         node_id,
