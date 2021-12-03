@@ -16,7 +16,7 @@ from skale.wallets import SgxWallet
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, safe_run_dkg
-from core.schains.config.directory import init_schain_config_dir
+from core.schains.config import init_schain_config_dir
 
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (

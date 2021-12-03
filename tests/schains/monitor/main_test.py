@@ -123,10 +123,22 @@ def test_is_regular_mode(schain_db, _schain_name, dutils, checks):
 def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db, dutils):
     with mock.patch('core.schains.monitor.main.RegularMonitor', CrashingTestMonitor):
         assert not run_monitor_for_schain(
-            skale, skale_ima, node_config, {'name': schain_db, 'partOfNode': 0}, dutils, once=True)
+            skale,
+            skale_ima,
+            node_config,
+            {'name': schain_db, 'partOfNode': 0, 'generation': 0},
+            dutils,
+            once=True
+        )
     with mock.patch('core.schains.monitor.main.RegularMonitor', BaseTestMonitor):
         assert run_monitor_for_schain(
-            skale, skale_ima, node_config, {'name': schain_db, 'partOfNode': 0}, dutils, once=True)
+            skale,
+            skale_ima,
+            node_config,
+            {'name': schain_db, 'partOfNode': 0, 'generation': 0},
+            dutils,
+            once=True
+        )
 
 
 @pytest.fixture

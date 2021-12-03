@@ -3,7 +3,7 @@ import pytest
 
 from core.schains.checks import SChainChecks
 from core.schains.cleaner import remove_ima_container
-from core.schains.config.generator import save_schain_config
+from core.schains.config.main import save_schain_config
 from core.schains.ima import ImaData
 from core.schains.monitor import BaseMonitor
 from core.schains.runner import get_container_info
@@ -36,6 +36,7 @@ def init_schain_config_mock(
     skale,
     node_id,
     schain_name,
+    generation,
     ecdsa_sgx_key_name,
     rotation_data,
     schain_record
@@ -93,7 +94,7 @@ def test_monitor(
     return BaseTestMonitor(
         skale=skale,
         ima_data=ima_data,
-        schain={'name': schain_db, 'partOfNode': 0},
+        schain={'name': schain_db, 'partOfNode': 0, 'generation': 0},
         node_config=node_config,
         rotation_data={'rotation_id': 0, 'finish_ts': 0},
         checks=schain_checks,
@@ -223,7 +224,7 @@ def test_base_monitor_ima_container_not_linked(
     test_monitor = BaseTestMonitor(
         skale=skale,
         ima_data=ima_data,
-        schain={'name': schain_db, 'partOfNode': 0},
+        schain={'name': schain_db, 'partOfNode': 0, 'generation': 0},
         node_config=node_config,
         rotation_data={'rotation_id': 0},
         checks=schain_checks,

@@ -42,7 +42,7 @@ def get_rotation_monitor(
     return RotationMonitor(
         skale=skale,
         ima_data=ima_data,
-        schain={'name': name, 'partOfNode': 0},
+        schain={'name': name, 'partOfNode': 0, 'generation': 0},
         node_config=node_config,
         rotation_data=rotation_data,
         checks=new_checks,

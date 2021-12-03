@@ -47,23 +47,16 @@ class ContractSettings:
         }
 
 
-def generate_contract_settings(schain_owner: str, schain_nodes: list) -> ContractSettings:
+def generate_contract_settings(on_chain_owner: str, schain_nodes: list) -> ContractSettings:
     schain_ima_abi = read_json(SCHAIN_IMA_ABI_FILEPATH)
     mainnet_ima_abi = read_json(MAINNET_IMA_ABI_FILEPATH)
 
-    # mp_authorized_callers = generate_mp_authorized_callers(  # todo: 2.1 - remove it
-    #     schain_ima_abi, schain_owner, schain_nodes)
     ima_contracts_addresses = generate_ima_contracts_addresses(schain_ima_abi, mainnet_ima_abi)
 
     return ContractSettings(
         common={'enableContractLogMessages': True},
         ima={
-            'ownerAddress': schain_owner,
-            # 'variables': {
-            #     'MessageProxy': {
-            #         'mapAuthorizedCallers': mp_authorized_callers
-            #     }
-            # },
+            'ownerAddress': on_chain_owner,
             **ima_contracts_addresses
         }
     )

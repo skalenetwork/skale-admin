@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2021 SKALE Labs
+#   Copyright (C) 2019-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,5 +17,10 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .main import init_schain_config  # noqa
-from .directory import init_schain_config_dir  # noqa
+
+def gen0(generation: int) -> bool:
+    return generation == 0
+
+
+def gen1(generation: int) -> bool:
+    return generation == 1

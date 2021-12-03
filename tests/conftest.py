@@ -340,7 +340,8 @@ def schain_struct(schain_config):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     return {
         'name': schain_name,
-        'partOfNode': 0
+        'partOfNode': 0,
+        'generation': 0
     }
 
 

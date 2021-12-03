@@ -22,7 +22,7 @@ import logging
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
-from core.schains.config.generator import schain_config_version_match
+from core.schains.config.main import schain_config_version_match
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
