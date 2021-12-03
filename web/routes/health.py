@@ -77,13 +77,13 @@ def construct_health_bp():
                                           msg='No node installed')
 
         schains = skale.schains.get_schains_for_node(node_id)
+        sync_agent_ranges = get_sync_agent_ranges(skale)
         checks = []
         for schain in schains:
             if schain.get('name') != '':
                 rotation_data = skale.node_rotation.get_rotation(schain['name'])
                 rotation_id = rotation_data['rotation_id']
                 if SChainRecord.added(schain['name']):
-                    sync_agent_ranges = get_sync_agent_ranges(skale)
                     rc = get_default_rule_controller(
                         name=schain['name'],
                         sync_agent_ranges=sync_agent_ranges

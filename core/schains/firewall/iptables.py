@@ -51,16 +51,17 @@ class IptablesController(IHostFirewallController):
         self.iptc = importlib.reload(self.iptc)
 
     def refresh(self):
-        self.iptc.Table(self.table).refresh()
+        with plock:
+            self.iptc.Table(self.table).refresh()
 
-    @refreshed
+    # @refreshed
     def add_rule(self, rule: SChainRule) -> None:
         if not self.has_rule(rule):
             rule_d = self.schain_rule_to_rule_d(rule)
             with plock:
                 self.iptc.easy.insert_rule(self.table, self.chain, rule_d)  # type: ignore  # noqa
 
-    @refreshed
+    # @refreshed
     def remove_rule(self, rule: SChainRule) -> None:
         if self.has_rule(rule):
             rule_d = self.schain_rule_to_rule_d(rule)
@@ -78,16 +79,18 @@ class IptablesController(IHostFirewallController):
     @property  # type: ignore
     @refreshed
     def rules(self) -> Iterable[SChainRule]:
-        ichain = self.iptc.Chain(self.iptc.Table(self.table), self.chain)  # type: ignore  # noqa
-        for irule in ichain.rules:
-            rule_d = self.iptc.easy.decode_iptc_rule(irule)  # type: ignore  # noqa
-            if self.is_manageable(rule_d):
-                yield self.rule_d_to_schain_rule(rule_d)
+        with plock:
+            ichain = self.iptc.Chain(self.iptc.Table(self.table), self.chain)  # type: ignore  # noqa
+            for irule in ichain.rules:
+                rule_d = self.iptc.easy.decode_iptc_rule(irule)  # type: ignore  # noqa
+                if self.is_manageable(rule_d):
+                    yield self.rule_d_to_schain_rule(rule_d)
 
     @refreshed
     def has_rule(self, rule: SChainRule) -> bool:
-        rule_d = self.schain_rule_to_rule_d(rule)
-        return self.iptc.easy.has_rule(self.table, self.chain, rule_d)  # type: ignore  # noqa
+        with plock:
+            rule_d = self.schain_rule_to_rule_d(rule)
+            return self.iptc.easy.has_rule(self.table, self.chain, rule_d)  # type: ignore  # noqa
 
     @classmethod
     def schain_rule_to_rule_d(cls, srule: SChainRule) -> Dict:

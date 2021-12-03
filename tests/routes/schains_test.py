@@ -75,12 +75,12 @@ def test_firewall_rules_route(skale_bp, schain_config):
         'status': 'ok',
         'payload': {
             'endpoints': [
-                {'port': 10000, 'first_ip': '127.0.0.2', 'last_ip': None},
-                {'port': 10001, 'first_ip': '127.0.0.2', 'last_ip': None},
+                {'port': 10000, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
+                {'port': 10001, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
                 {'port': 10002, 'first_ip': None, 'last_ip': None},
                 {'port': 10003, 'first_ip': None, 'last_ip': None},
-                {'port': 10004, 'first_ip': '127.0.0.2', 'last_ip': None},
-                {'port': 10005, 'first_ip': '127.0.0.2', 'last_ip': None},
+                {'port': 10004, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
+                {'port': 10005, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
                 {'port': 10007, 'first_ip': None, 'last_ip': None},
                 {'port': 10008, 'first_ip': None, 'last_ip': None},
                 {'port': 10009, 'first_ip': None, 'last_ip': None},

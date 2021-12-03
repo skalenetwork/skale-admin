@@ -208,5 +208,5 @@ class IptablesSChainRuleController(SChainRuleController):
         return IptablesSChainFirewallManager(
             self.name,
             self.base_port,  # type: ignore
-            self.base_port + self.ports_per_schain  # type: ignore
+            self.base_port + self.ports_per_schain - 1  # type: ignore
         )
