@@ -209,8 +209,6 @@ def test_schain_rule_controller_configure():
         SChainRule(port=10013, first_ip=None, last_ip=None)
     }
     assert not src.is_rules_synced()
-    print(expected_rules)
-    print(src.expected_rules())
     assert list(src.expected_rules()) == list(sorted(expected_rules))
 
     src.cleanup()
