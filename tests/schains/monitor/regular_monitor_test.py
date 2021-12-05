@@ -10,6 +10,7 @@ from skale.utils.helper import ip_from_bytes
 from core.schains.checks import SChainChecks
 from core.schains.monitor import RegularMonitor
 from core.schains.ima import ImaData
+from core.schains.runner import get_container_name
 
 
 from tools.configs import (
@@ -66,6 +67,16 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
     with mock.patch('core.schains.monitor.base_monitor.safe_run_dkg', safe_run_dkg_mock):
         test_monitor.run()
 
+    container = dutils.safe_get_container(
+        get_container_name('schain', schain_name)
+    )
+    # separator = b'=' * 80 + b'\n'
+    tail_lines = container.logs(tail=300)
+    # lines_number = len(io.BytesIO(tail_lines).readlines())
+    # head = min(lines_number, head)
+    # log_stream = container.logs(stream=True, follow=True)
+    # head_lines = b''.join(itertools.islice(log_stream, head))
+    print(tail_lines)
     assert schain_checks.config_dir.status
     assert schain_checks.dkg.status
     assert schain_checks.config.status
