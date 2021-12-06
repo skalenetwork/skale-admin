@@ -19,7 +19,7 @@
 
 from abc import ABC, abstractmethod
 from functools import total_ordering
-from typing import Iterable, Optional
+from typing import Any, Iterable, List, Optional
 
 from collections import namedtuple
 from skale.dataclasses.skaled_ports import SkaledPorts  # noqa
@@ -106,7 +106,14 @@ class IFirewallManager(ABC):
 
 class IRuleController(ABC):
     @abstractmethod
-    def configure(self) -> None:  # pragma: no cover
+    def configure(  # pragma : no cover
+        self,
+        base_port: Optional[int] = None,
+        own_ip: Optional[str] = None,
+        node_ips: Optional[List[str]] = None,
+        sync_ip_ranges: Optional[List[IpRange]] = None,
+        port_allocation: Any = SkaledPorts
+    ) -> None:
         pass
 
     @abstractmethod
