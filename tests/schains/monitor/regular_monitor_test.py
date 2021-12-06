@@ -44,6 +44,7 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
     node_config.ip = ip_from_bytes(nodes[0]['ip'])
     node_config.sgx_key_name = sgx_wallet.key_name
 
+    rule_controller.sync()
     schain_record = SChainRecord.get_by_name(schain_name)
     schain_checks = SChainChecks(
         schain_name,
@@ -70,13 +71,8 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
     container = dutils.safe_get_container(
         get_container_name('schain', schain_name)
     )
-    # separator = b'=' * 80 + b'\n'
     tail_lines = container.logs(tail=300)
-    # lines_number = len(io.BytesIO(tail_lines).readlines())
-    # head = min(lines_number, head)
-    # log_stream = container.logs(stream=True, follow=True)
-    # head_lines = b''.join(itertools.islice(log_stream, head))
-    print(tail_lines)
+    print(b''.join(tail_lines))
     assert schain_checks.config_dir.status
     assert schain_checks.dkg.status
     assert schain_checks.config.status
