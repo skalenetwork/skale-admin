@@ -72,7 +72,8 @@ def test_regular_monitor(schain_db, skale, node_config, skale_ima, dutils, ssl_f
         get_container_name('schain', schain_name)
     )
     tail_lines = container.logs(tail=300)
-    print(b''.join(tail_lines))
+    print(tail_lines)
+    # print(b''.join(tail_lines))
     assert schain_checks.config_dir.status
     assert schain_checks.dkg.status
     assert schain_checks.config.status
