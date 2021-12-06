@@ -65,7 +65,7 @@ def generate_predeployed_section(
     schain_nodes: list,
     on_chain_owner: str,
     mainnet_owner: str,
-    erector_address: str,
+    originator_address: str,
     generation: int
 ) -> dict:
     """Main function used to generate dynamic accounts for the sChain config.
@@ -76,7 +76,7 @@ def generate_predeployed_section(
     """
     precompiled_section = {
         **generate_precompiled_accounts(),
-        **generate_owner_accounts(on_chain_owner, erector_address, schain_nodes, generation),
+        **generate_owner_accounts(on_chain_owner, originator_address, schain_nodes, generation),
         **generate_context_accounts(schain_name, on_chain_owner),
         **generate_ima_accounts(on_chain_owner, schain_name)
     }
@@ -88,7 +88,7 @@ def generate_predeployed_section(
             schain_type=schain_type,
             on_chain_owner=on_chain_owner,
             mainnet_owner=mainnet_owner,
-            erector_address=erector_address,
+            originator_address=originator_address,
             message_proxy_for_schain_address=MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
         )
         precompiled_section.update(v1_precompiled_contracts)
@@ -100,7 +100,7 @@ def generate_v1_precompiled_contracts(
     schain_type: SchainType,
     on_chain_owner: str,
     mainnet_owner: str,
-    erector_address: str,
+    originator_address: str,
     message_proxy_for_schain_address: str
 ) -> dict:
     proxy_admin_generator = ProxyAdminGenerator()
@@ -150,7 +150,7 @@ def generate_v1_precompiled_contracts(
     multisigwallet_generator = MultiSigWalletGenerator()
     multisigwallet_predeployed = multisigwallet_generator.generate_allocation(
         contract_address=MULTISIGWALLET_ADDRESS,
-        erector_addresses=[erector_address]
+        originator_addresses=[originator_address]
     )
 
     # TODO: add context manager SC (later)
@@ -204,7 +204,7 @@ def generate_precompiled_accounts() -> dict:
 
 def generate_owner_accounts(
     on_chain_owner: str,
-    erector_address: str,
+    originator_address: str,
     schain_nodes: list,
     generation: int
 ) -> dict:
@@ -213,8 +213,8 @@ def generate_owner_accounts(
 
     :param on_chain_owner: Address of the sChain owner on the chain (only for gen 0)
     :type on_chain_owner: str
-    :param erector_address: Erector address (only for gen 1)
-    :type erector_address: str
+    :param originator_address: Originator address (only for gen 1)
+    :type originator_address: str
     :param schain_nodes: List with nodes for the sChain
     :type schain_nodes_owners: list
     :param generation: Generation of the sChain
@@ -226,7 +226,7 @@ def generate_owner_accounts(
     if gen0(generation):
         add_to_accounts(accounts, on_chain_owner, generate_account(SCHAIN_OWNER_ALLOC))
     if gen1(generation):
-        add_to_accounts(accounts, erector_address, generate_account(SCHAIN_OWNER_ALLOC))
+        add_to_accounts(accounts, originator_address, generate_account(SCHAIN_OWNER_ALLOC))
     for node in schain_nodes:
         node_owner = public_key_to_address(node['publicKey'])
         add_to_accounts(accounts, node_owner, generate_account(NODE_OWNER_ALLOC))
