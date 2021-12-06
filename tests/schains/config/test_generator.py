@@ -41,7 +41,7 @@ SECRET_KEY = {
     ],
 }
 
-TEST_ERECTOR_ADDRESS = '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34'
+TEST_ORIGINATOR_ADDRESS = '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34'
 TEST_MAINNET_OWNER_ADDRESS = '0x30E1C96277735B03E59B3098204fd04FD0e78a46'
 
 TEST_SCHAIN_NODE_WITH_SCHAINS = [{
@@ -181,7 +181,7 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain):
         'partOfNode': 0,
         'generation': 0,
         'mainnetOwner': '0x30E1C96277735B03E59B3098204fd04FD0e78a46',
-        'erector': TEST_ERECTOR_ADDRESS
+        'originator': TEST_ORIGINATOR_ADDRESS
     }
 
     node_id, schain_id, generation, rotation_id = 1, 1, 0, 0
@@ -204,7 +204,7 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain):
     config = schain_config.to_dict()
 
     assert config['skaleConfig']['sChain']['blockAuthor'] == TEST_MAINNET_OWNER_ADDRESS
-    assert not config['accounts'].get(TEST_ERECTOR_ADDRESS)
+    assert not config['accounts'].get(TEST_ORIGINATOR_ADDRESS)
 
 
 def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
@@ -213,7 +213,7 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
         'partOfNode': 0,
         'generation': 1,
         'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
-        'erector': TEST_ERECTOR_ADDRESS
+        'originator': TEST_ORIGINATOR_ADDRESS
     }
     node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
     ecdsa_key_name = 'test'
@@ -237,7 +237,7 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
     block_author = config['skaleConfig']['sChain']['blockAuthor']
 
     assert block_author == ETHERBASE_ADDRESS
-    assert config['accounts'][TEST_ERECTOR_ADDRESS] == {
+    assert config['accounts'][TEST_ORIGINATOR_ADDRESS] == {
         'balance': '1000000000000000000000000000000'
     }
 
