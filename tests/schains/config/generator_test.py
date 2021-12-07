@@ -4,7 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from core.schains.config.generator import generate_schain_config_with_skale, generate_schain_config
+from core.schains.config.generator import (
+    generate_schain_config_with_skale, generate_schain_config, get_schain_originator
+)
 from core.schains.config.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
 from tools.configs.schains import SCHAINS_DIR_PATH
 
@@ -54,6 +56,23 @@ TEST_SCHAIN_NODE_WITH_SCHAINS = [{
     'schains': [{'name': 'test_schain'}]
 }]
 TEST_NODE = {'id': 1, 'name': 'test', 'publicKey': '0x5556', 'port': 10000}
+
+
+SCHAIN_WITHOUT_ORIGINATOR = {
+    'name': 'test_schain',
+    'partOfNode': 0,
+    'generation': 1,
+    'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
+    'originator': '0x0000000000000000000000000000000000000000'
+}
+
+SCHAIN_WITH_ORIGINATOR = {
+    'name': 'test_schain',
+    'partOfNode': 0,
+    'generation': 1,
+    'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
+    'originator': TEST_ORIGINATOR_ADDRESS
+}
 
 
 @pytest.fixture
@@ -208,20 +227,13 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain):
 
 
 def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
-    schain = {
-        'name': 'test_schain',
-        'partOfNode': 0,
-        'generation': 1,
-        'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
-        'originator': TEST_ORIGINATOR_ADDRESS
-    }
     node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
     previous_public_keys_info_dict = {}
 
     schain_config = generate_schain_config(
-        schain=schain,
+        schain=SCHAIN_WITH_ORIGINATOR,
         schain_id=schain_id,
         node=TEST_NODE,
         node_id=node_id,
@@ -257,20 +269,13 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
 
 
 def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_chain):
-    schain = {
-        'name': 'test_schain',
-        'partOfNode': 0,
-        'generation': 1,
-        'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
-        'originator': '0x0000000000000000000000000000000000000000'
-    }
     node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
     previous_public_keys_info_dict = {}
 
     schain_config = generate_schain_config(
-        schain=schain,
+        schain=SCHAIN_WITHOUT_ORIGINATOR,
         schain_id=schain_id,
         node=TEST_NODE,
         node_id=node_id,
@@ -282,6 +287,14 @@ def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_cha
         generation=generation
     )
     config = schain_config.to_dict()
-    
+
     assert not config['accounts'].get(TEST_ORIGINATOR_ADDRESS)
     assert config['accounts'].get(TEST_MAINNET_OWNER_ADDRESS)
+
+
+def test_get_schain_originator():
+    originator = get_schain_originator(SCHAIN_WITHOUT_ORIGINATOR)
+    assert originator == TEST_MAINNET_OWNER_ADDRESS
+
+    originator = get_schain_originator(SCHAIN_WITH_ORIGINATOR)
+    assert originator == TEST_ORIGINATOR_ADDRESS
