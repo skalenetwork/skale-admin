@@ -129,7 +129,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         schain_nodes=schain_nodes_with_schains,
         on_chain_owner=on_chain_owner,
         mainnet_owner=mainnet_owner,
-        erector_address=schain['erector'],
+        originator_address=schain['originator'],
         generation=generation
     )
 
