@@ -36,7 +36,7 @@ from core.schains.limits import get_schain_type
 
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
-
+from tools.helper import is_zero_address
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +101,15 @@ def get_on_chain_etherbase(schain: dict, generation: int) -> str:
         return ETHERBASE_ADDRESS
 
 
+def get_schain_originator(schain: dict):
+    """
+    Returns address that will be used as an sChain originator
+    """
+    if is_zero_address(schain['originator']):
+        return schain['mainnetOwner']
+    return schain['originator']
+
+
 def generate_schain_config(schain: dict, schain_id: int, node_id: int,
                            node: dict, ecdsa_key_name: str, schains_on_node: list,
                            rotation_id: int, schain_nodes_with_schains: list,
@@ -123,13 +132,15 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         'chainID': get_chain_id(schain['name'])
     }
 
+    originator_address = get_schain_originator(schain)
+
     dynamic_accounts = generate_predeployed_section(
         schain_name=schain['name'],
         schain_type=schain_type,
         schain_nodes=schain_nodes_with_schains,
         on_chain_owner=on_chain_owner,
         mainnet_owner=mainnet_owner,
-        originator_address=schain['originator'],
+        originator_address=originator_address,
         generation=generation
     )
 
