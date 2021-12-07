@@ -253,6 +253,8 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
     assert config['accounts'].get(MESSAGE_PROXY_FOR_SCHAIN_ADDRESS)
     assert config['accounts'].get(PROXY_ADMIN_PREDEPLOYED_ADDRESS)
 
+    assert not config['accounts'].get(TEST_MAINNET_OWNER_ADDRESS)
+
 
 def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_chain):
     schain = {
@@ -280,5 +282,6 @@ def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_cha
         generation=generation
     )
     config = schain_config.to_dict()
-    print(config)
-    assert False
+    
+    assert not config['accounts'].get(TEST_ORIGINATOR_ADDRESS)
+    assert config['accounts'].get(TEST_MAINNET_OWNER_ADDRESS)
