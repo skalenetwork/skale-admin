@@ -74,7 +74,7 @@ def generate_predeployed_section(
     :returns: Dictionary with accounts
     :rtype: dict
     """
-    precompiled_section = {
+    predeployed_section = {
         **generate_precompiled_accounts(),
         **generate_owner_accounts(on_chain_owner, originator_address, schain_nodes, generation),
         **generate_context_accounts(schain_name, on_chain_owner),
@@ -84,19 +84,18 @@ def generate_predeployed_section(
     if gen0(generation):
         pass
     if gen1(generation):
-        v1_precompiled_contracts = generate_v1_precompiled_contracts(
+        v1_predeployed_contracts = generate_v1_predeployed_contracts(
             schain_type=schain_type,
             on_chain_owner=on_chain_owner,
             mainnet_owner=mainnet_owner,
             originator_address=originator_address,
             message_proxy_for_schain_address=MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
         )
-        precompiled_section.update(v1_precompiled_contracts)
+        predeployed_section.update(v1_predeployed_contracts)
+    return predeployed_section
 
-    return precompiled_section
 
-
-def generate_v1_precompiled_contracts(
+def generate_v1_predeployed_contracts(
     schain_type: SchainType,
     on_chain_owner: str,
     mainnet_owner: str,

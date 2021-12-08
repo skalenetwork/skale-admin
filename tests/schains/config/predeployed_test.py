@@ -2,7 +2,7 @@ from marionette_predeployed import MARIONETTE_ADDRESS
 
 from core.schains.types import SchainType
 from core.schains.config.predeployed import (
-    generate_v1_precompiled_contracts, generate_predeployed_section
+    generate_v1_predeployed_contracts, generate_predeployed_section
 )
 
 
@@ -19,8 +19,8 @@ def test_generate_predeployed_section():
     assert len(predeployed_section.keys()) == 43
 
 
-def test_generate_v1_precompiled_contracts():
-    v1_precompiled_contracts = generate_v1_precompiled_contracts(
+def test_generate_v1_predeployed_contracts():
+    v1_precompiled_contracts = generate_v1_predeployed_contracts(
         schain_type=SchainType.medium,
         on_chain_owner=MARIONETTE_ADDRESS,
         mainnet_owner='0x0123456789Ab',
