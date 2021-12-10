@@ -36,7 +36,7 @@ from skale import Skale
 from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
 
@@ -160,3 +160,10 @@ def get_endpoint_call_speed(skale):
     call_avg_speed = round(sum(scores) / len(scores), 2)
     logger.info(f'Endpoint call speed scores: {scores}, avg: {call_avg_speed}')
     return call_avg_speed
+
+
+def is_zero_address(address: str) -> bool:
+    """
+    Returns true if provided string is equal to Ethereum zero address
+    """
+    return address == ZERO_ADDRESS
