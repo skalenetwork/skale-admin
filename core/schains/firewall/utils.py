@@ -22,10 +22,8 @@ from typing import List, Optional
 
 from skale import Skale
 
-from .firewall_manager import SChainFirewallManager
-from .types import IpRange, PORTS_PER_SCHAIN
-from .iptables import IptablesManager
-from .rule_controller import SChainRuleController
+from .types import IpRange
+from .rule_controller import IptablesSChainRuleController
 
 
 logger = logging.getLogger(__name__)
@@ -33,28 +31,19 @@ logger = logging.getLogger(__name__)
 
 def get_default_rule_controller(
     name: str,
-    base_port: int,
-    own_ip: str,
-    node_ips: List[str],
-    sync_agent_ranges: Optional[List[IpRange]] = None
-) -> SChainRuleController:
+    base_port: Optional[int] = None,
+    own_ip: Optional[str] = None,
+    node_ips: List[str] = [],
+    sync_agent_ranges: Optional[List[IpRange]] = []
+) -> IptablesSChainRuleController:
     sync_agent_ranges = sync_agent_ranges or []
-    im = IptablesManager()
-    fm = SChainFirewallManager(
-        name,
-        base_port,
-        base_port + PORTS_PER_SCHAIN,
-        im
-    )
-    logger.info(
-        'SChainRuleController %s, %s, %s, %s',
-        base_port, own_ip, node_ips, sync_agent_ranges
-    )
-    return SChainRuleController(
-        fm,
-        base_port,
-        own_ip,
-        node_ips,
+    logger.info('Creating rule controller for %s', name)
+    logger.debug('Rule controller ranges for %s: %s', name, sync_agent_ranges)
+    return IptablesSChainRuleController(
+        name=name,
+        base_port=base_port,
+        own_ip=own_ip,
+        node_ips=node_ips,
         sync_ip_ranges=sync_agent_ranges
     )
 

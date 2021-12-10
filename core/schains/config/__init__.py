@@ -17,5 +17,5 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .main import init_schain_config # noqa
-from .directory import init_schain_config_dir # noqa
+from .main import init_schain_config  # noqa
+from .directory import init_schain_config_dir  # noqa

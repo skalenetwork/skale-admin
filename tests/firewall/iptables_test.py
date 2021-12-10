@@ -4,7 +4,7 @@ import concurrent.futures
 
 import pytest
 
-from core.schains.firewall.iptables import IptablesManager
+from core.schains.firewall.iptables import IptablesController
 from core.schains.firewall.types import SChainRule
 from tools.helper import run_cmd
 
@@ -38,7 +38,7 @@ def refresh():
 
 
 def test_iptables_manager(refresh):
-    manager = IptablesManager()
+    manager = IptablesController()
     rule_a = SChainRule(10000, '1.1.1.1', '2.2.2.2')
     rule_b = SChainRule(10001, '3.3.3.3')
     manager.add_rule(rule_a)
@@ -56,7 +56,7 @@ def test_iptables_manager(refresh):
 
 def test_iptables_manager_add_duplicates(refresh):
     rule_a = SChainRule(10000, '1.1.1.1', '2.2.2.2')
-    manager = IptablesManager()
+    manager = IptablesController()
     manager.add_rule(rule_a)
     rule_b = SChainRule(10001, '3.3.3.3', '4.4.4.4')
     manager.add_rule(rule_b)
@@ -121,7 +121,7 @@ def test_iptables_manager_correctly_process_old_rules(refresh):
         if cmd:
             subprocess.run(cmd)
 
-    manager = IptablesManager()
+    manager = IptablesController()
 
     public_ports = [10002, 10003, 10007, 10008, 10009]
     for port in public_ports:
@@ -174,7 +174,7 @@ def test_iptables_manager_correctly_process_old_rules(refresh):
 
 
 def add_remove_rule(srule, refresh):
-    manager = IptablesManager()
+    manager = IptablesController()
     manager.add_rule(srule)
     time.sleep(1)
     if not manager.has_rule(srule):
@@ -206,6 +206,6 @@ def test_iptables_manager_parallel(refresh):
 
         for future in concurrent.futures.as_completed(futures):
             assert future.result
-    manager = IptablesManager()
+    manager = IptablesController()
     time.sleep(10)
     assert len(list(manager.rules)) == 0

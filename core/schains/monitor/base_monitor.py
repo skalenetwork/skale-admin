@@ -22,7 +22,6 @@ import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from functools import wraps
-from typing import Callable
 
 from skale import Skale
 
@@ -36,6 +35,7 @@ from core.schains.cleaner import (
     remove_schain_container,
     remove_schain_volume
 )
+from core.schains.firewall.types import IRuleController
 from core.schains.runner import run_ima_container
 
 from core.schains.volume import init_data_volume
@@ -79,7 +79,7 @@ class BaseMonitor(ABC):
         node_config: NodeConfig,
         rotation_data: dict,
         checks: SChainChecks,
-        rule_controller_creator: Callable,
+        rule_controller: IRuleController,
         dutils: DockerUtils = None
     ):
         self.skale = skale
@@ -93,7 +93,7 @@ class BaseMonitor(ABC):
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
-        self.rc_creator = rule_controller_creator
+        self.rc = rule_controller
 
         self.schain_type = get_schain_type(schain['partOfNode'])
 
@@ -229,8 +229,12 @@ class BaseMonitor(ABC):
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
-            rc = self.rc_creator(self.name, base_port, own_ip, node_ips)
-            rc.sync()
+            self.rc.configure(
+                base_port=base_port,
+                own_ip=own_ip,
+                node_ips=node_ips
+            )
+            self.rc.sync()
         return initial_status
 
     @monitor_block

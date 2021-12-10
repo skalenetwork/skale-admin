@@ -22,7 +22,6 @@ filestorage-predeployed==1.0.1.dev8
 deployment-controller-predeployed==1.0.0.dev2
 multisigwallet-predeployed==0.0.1a3
 
-
 pyyaml==5.4
 psutil==5.7.0
 

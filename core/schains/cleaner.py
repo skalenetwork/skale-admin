@@ -20,7 +20,6 @@
 import logging
 import os
 import shutil
-from functools import partial
 from multiprocessing import Process
 
 from sgx import SgxClient
@@ -199,14 +198,14 @@ def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None):
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
 
-    rc_creator = partial(
-        get_default_rule_controller,
+    rc = get_default_rule_controller(
+        name=schain_name,
         sync_agent_ranges=sync_agent_ranges
     )
     checks = SChainChecks(
         schain_name,
         node_id,
-        rule_controller_creator=rc_creator,
+        rule_controller=rc,
         schain_record=schain_record
     )
     if checks.skaled_container.status or is_exited(
@@ -220,15 +219,9 @@ def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None):
         if checks.firewall_rules.status:
             conf = get_schain_config(schain_name)
             base_port = get_base_port_from_config(conf)
-            node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
-            rc = get_default_rule_controller(
-                schain_name,
-                base_port,
-                own_ip,
-                node_ips,
-                []
-            )
+            node_ips = get_node_ips_from_config(conf)
+            rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
             rc.cleanup()
     if not DISABLE_IMA:
         if checks.ima_container.status or is_exited(

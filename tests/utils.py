@@ -2,11 +2,9 @@
 
 import os
 import json
-import time
 import random
 import string
-
-from functools import partial
+import time
 
 from mock import Mock, MagicMock
 
@@ -16,7 +14,7 @@ from skale.wallets import Web3Wallet
 
 from core.schains.config.main import save_schain_config
 from core.schains.config.helper import get_schain_config
-from core.schains.firewall.types import IHostFirewallManager, PORTS_PER_SCHAIN
+from core.schains.firewall.types import IHostFirewallController
 from core.schains.firewall import SChainFirewallManager, SChainRuleController
 from core.schains.runner import run_schain_container, run_ima_container
 
@@ -214,7 +212,7 @@ def alter_schain_config(schain_name: str, public_key: str) -> None:
     save_schain_config(config, schain_name)
 
 
-class HostFirewallManagerMock(IHostFirewallManager):
+class HostTestFirewallController(IHostFirewallController):
     def __init__(self):
         self._rules = set()
 
@@ -233,23 +231,30 @@ class HostFirewallManagerMock(IHostFirewallManager):
         return srule in self._rules
 
 
-def get_test_rc(
+class SChainTestFirewallManager(SChainFirewallManager):
+    def create_host_controller(self):
+        return HostTestFirewallController()
+
+
+class SChainTestRuleController(SChainRuleController):
+    def create_firewall_manager(self):
+        return SChainTestFirewallManager(
+            self.name,
+            self.base_port,
+            self.base_port + self.ports_per_schain
+        )
+
+
+def get_test_rule_controller(
     name,
-    base_port,
-    own_ip,
-    node_ips,
+    base_port=None,
+    own_ip=None,
+    node_ips=[],
     sync_agent_ranges=[],
     synced=False
 ):
-    hm = HostFirewallManagerMock()
-    fm = SChainFirewallManager(
+    rc = SChainTestRuleController(
         name,
-        base_port,
-        base_port + PORTS_PER_SCHAIN,
-        hm
-    )
-    rc = SChainRuleController(
-        fm,
         base_port,
         own_ip,
         node_ips,
@@ -258,6 +263,3 @@ def get_test_rc(
     if synced:
         rc.sync()
     return rc
-
-
-get_test_rc_synced = partial(get_test_rc, synced=True)

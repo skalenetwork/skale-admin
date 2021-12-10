@@ -2,13 +2,14 @@ import json
 import mock
 import os
 import shutil
+from functools import partial
 
 import pytest
 from flask import Flask, appcontext_pushed, g
 
 from core.node_config import NodeConfig
 from core.schains.config.directory import schain_config_filepath
-from tests.utils import get_bp_data, get_test_rc_synced, post_bp_data
+from tests.utils import get_bp_data, get_test_rule_controller, post_bp_data
 from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 from web.helper import get_api_url
@@ -62,22 +63,24 @@ def schain_config_exists_mock(schain):
 
 
 @mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
-@mock.patch('web.routes.schains.get_default_rule_controller', get_test_rc_synced)
+@mock.patch(
+    'web.routes.schains.get_default_rule_controller',
+    partial(get_test_rule_controller, synced=True)
+)
 def test_firewall_rules_route(skale_bp, schain_config):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'firewall-rules'),
                        params={'schain_name': schain_name})
-    print(data)
     assert data == {
         'status': 'ok',
         'payload': {
             'endpoints': [
-                {'port': 10000, 'first_ip': '127.0.0.2', 'last_ip': None},
-                {'port': 10001, 'first_ip': '127.0.0.2', 'last_ip': None},
+                {'port': 10000, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
+                {'port': 10001, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
                 {'port': 10002, 'first_ip': None, 'last_ip': None},
                 {'port': 10003, 'first_ip': None, 'last_ip': None},
-                {'port': 10004, 'first_ip': '127.0.0.2', 'last_ip': None},
-                {'port': 10005, 'first_ip': '127.0.0.2', 'last_ip': None},
+                {'port': 10004, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
+                {'port': 10005, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
                 {'port': 10007, 'first_ip': None, 'last_ip': None},
                 {'port': 10008, 'first_ip': None, 'last_ip': None},
                 {'port': 10009, 'first_ip': None, 'last_ip': None},

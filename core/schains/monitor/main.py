@@ -20,7 +20,6 @@
 import time
 import random
 import logging
-from functools import partial
 from importlib import reload
 
 from web3._utils import request
@@ -112,8 +111,8 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
 
             sync_agent_ranges = get_sync_agent_ranges(skale)
 
-            rc_creator = partial(
-                get_default_rule_controller,
+            rc = get_default_rule_controller(
+                name=name,
                 sync_agent_ranges=sync_agent_ranges
             )
             schain_record = upsert_schain_record(name)
@@ -121,7 +120,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
                 name,
                 node_config.id,
                 schain_record=schain_record,
-                rule_controller_creator=rc_creator,
+                rule_controller=rc,
                 rotation_id=rotation_data['rotation_id'],
                 ima_linked=ima_linked,
                 dutils=dutils
@@ -140,7 +139,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
                 node_config=node_config,
                 rotation_data=rotation_data,
                 checks=checks,
-                rule_controller_creator=rc_creator
+                rule_controller=rc
             )
             monitor.run()
             if once:
