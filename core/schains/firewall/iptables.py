@@ -54,14 +54,12 @@ class IptablesController(IHostFirewallController):
         with plock:
             self.iptc.Table(self.table).refresh()
 
-    # @refreshed
     def add_rule(self, rule: SChainRule) -> None:
         if not self.has_rule(rule):
             rule_d = self.schain_rule_to_rule_d(rule)
             with plock:
                 self.iptc.easy.insert_rule(self.table, self.chain, rule_d)  # type: ignore  # noqa
 
-    # @refreshed
     def remove_rule(self, rule: SChainRule) -> None:
         if self.has_rule(rule):
             rule_d = self.schain_rule_to_rule_d(rule)
