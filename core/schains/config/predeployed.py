@@ -113,6 +113,7 @@ def generate_v1_predeployed_contracts(
         contract_address=ETHERBASE_ADDRESS,
         implementation_address=ETHERBASE_IMPLEMENTATION_ADDRESS,
         schain_owner=on_chain_owner,
+        ether_managers=[message_proxy_for_schain_address],
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
         balance=SCHAIN_OWNER_ALLOC
     )
