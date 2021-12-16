@@ -63,12 +63,14 @@ class RotationMonitor(BaseMonitor):
         self.ima_container()
 
     def leaving_node(self) -> None:
+        self.firewall_rules()
         self.skaled_container()
         self.skaled_rpc()
         self.ima_container()
         self.rotation_request()
 
     def staying_node(self) -> None:
+        self.firewall_rules()
         self.skaled_container()
         self.skaled_rpc()
         self.ima_container()
@@ -85,4 +87,8 @@ class RotationMonitor(BaseMonitor):
     @BaseMonitor.monitor_runner
     def run(self):
         rotation_mode_func = self.get_rotation_mode_func()
+        logger.info(
+            f'{self.name} running {type(self).__name__} '
+            f'type: {rotation_mode_func}'
+        )
         return rotation_mode_func()
