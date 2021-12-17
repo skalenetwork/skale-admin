@@ -88,7 +88,7 @@ class RotationMonitor(BaseMonitor):
     def run(self):
         rotation_mode_func = self.get_rotation_mode_func()
         logger.info(
-            f'{self.name} running {type(self).__name__} '
+            f'sChain: {self.name} running {type(self).__name__} '
             f'type: {rotation_mode_func}'
         )
         return rotation_mode_func()
