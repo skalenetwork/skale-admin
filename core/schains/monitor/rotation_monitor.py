@@ -63,6 +63,7 @@ class RotationMonitor(BaseMonitor):
         self.ima_container()
 
     def leaving_node(self) -> None:
+        self.firewall_rules()
         self.skaled_container()
         self.skaled_rpc()
         self.ima_container()
