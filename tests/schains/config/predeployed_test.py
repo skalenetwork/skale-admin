@@ -2,12 +2,12 @@ from marionette_predeployed import MARIONETTE_ADDRESS
 
 from core.schains.types import SchainType
 from core.schains.config.predeployed import (
-    generate_v1_predeployed_contracts, generate_predeployed_section
+    generate_v1_predeployed_contracts, generate_predeployed_accounts
 )
 
 
-def test_generate_predeployed_section():
-    predeployed_section = generate_predeployed_section(
+def test_generate_predeployed_accounts():
+    predeployed_section = generate_predeployed_accounts(
         schain_name='abc',
         schain_type=SchainType.medium,
         schain_nodes={},

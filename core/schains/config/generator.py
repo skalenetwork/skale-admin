@@ -26,7 +26,8 @@ from etherbase_predeployed import ETHERBASE_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS
 
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
-from core.schains.config.predeployed import generate_predeployed_section
+from core.schains.config.predeployed import generate_predeployed_accounts
+from core.schains.config.precompield import generate_precompiled_accounts
 from core.schains.config.generation import gen0, gen1
 from core.schains.config.helper import get_chain_id
 from core.schains.config.previous_keys import (
@@ -134,7 +135,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
 
     originator_address = get_schain_originator(schain)
 
-    dynamic_accounts = generate_predeployed_section(
+    predeployed_accounts = generate_predeployed_accounts(
         schain_name=schain['name'],
         schain_type=schain_type,
         schain_nodes=schain_nodes_with_schains,
@@ -142,6 +143,10 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         mainnet_owner=mainnet_owner,
         originator_address=originator_address,
         generation=generation
+    )
+
+    precompiled_accounts = generate_precompiled_accounts(
+        on_chain_owner=on_chain_owner
     )
 
     skale_config = generate_skale_section(
@@ -168,7 +173,8 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         genesis=base_config.config['genesis'],
         accounts={
             **base_config.config['accounts'],
-            **dynamic_accounts
+            **predeployed_accounts,
+            **precompiled_accounts,
         },
         skale_config=skale_config
     )
