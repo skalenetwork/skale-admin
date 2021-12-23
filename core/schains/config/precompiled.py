@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2021p-Present SKALE Labs
+#   Copyright (C) 2021-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -28,17 +28,27 @@ def generate_precompiled_accounts(on_chain_owner: str) -> dict:
     """
     Generates accounts for SKALE precompiled contracts
 
+    :param on_chain_owner: Address of the sChain owner on the chain
+    :type on_chain_owner: str
     :returns: Dictionary with accounts
     :rtype: dict
     """
     accounts = {}
-    precompileds = get_precompiled_contracts()
+    precompileds = _get_precompiled_contracts()
     for address, precompiled in precompileds.items():
         if precompiled['precompiled'].get('restrictAccess'):
-            precompiled['precompiled']['restrictAccess'] = [FILESTORAGE_ADDRESS]
+            handle_precompiled_permissions(precompiled, on_chain_owner)
         add_to_accounts(accounts, address, precompiled)
     return accounts
 
 
-def get_precompiled_contracts():
+def handle_precompiled_permissions(precompiled: dict, on_chain_owner: str) -> None:
+    for i, permission in enumerate(precompiled['precompiled']['restrictAccess']):
+        if permission == 'fs':
+            precompiled['precompiled']['restrictAccess'][i] = FILESTORAGE_ADDRESS
+        if permission == 'schainOwner':
+            precompiled['precompiled']['restrictAccess'][i] = on_chain_owner
+
+
+def _get_precompiled_contracts():
     return read_json(PRECOMPILED_CONTRACTS_FILEPATH)

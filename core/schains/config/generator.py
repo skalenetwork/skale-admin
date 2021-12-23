@@ -27,7 +27,7 @@ from marionette_predeployed import MARIONETTE_ADDRESS
 
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
 from core.schains.config.predeployed import generate_predeployed_accounts
-from core.schains.config.precompield import generate_precompiled_accounts
+from core.schains.config.precompiled import generate_precompiled_accounts
 from core.schains.config.generation import gen0, gen1
 from core.schains.config.helper import get_chain_id
 from core.schains.config.previous_keys import (

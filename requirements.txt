@@ -18,9 +18,10 @@ skale.py==5.5dev1
 ima-predeployed==1.0.0b12
 etherbase-predeployed==0.0.1a24
 marionette-predeployed==0.0.1a3
-filestorage-predeployed==1.0.1.dev8
-deployment-controller-predeployed==1.0.0.dev2
+filestorage-predeployed==1.0.1.dev9
+deployment-controller-predeployed==1.0.0.dev3
 multisigwallet-predeployed==0.0.1a3
+predeployed_generator==0.0.1a3
 
 pyyaml==5.4
 psutil==5.7.0
