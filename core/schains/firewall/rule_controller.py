@@ -145,11 +145,7 @@ class SChainRuleController(IRuleController):
                 self.port_allocation.HTTPS_JSON,
                 self.port_allocation.WS_JSON,
                 self.port_allocation.WSS_JSON,
-                self.port_allocation.INFO_HTTP_JSON,
-                self.port_allocation.PG_HTTP_RPC_JSON,
-                self.port_allocation.PG_HTTPS_RPC_JSON,
-                self.port_allocation.PG_INFO_HTTP_RPC_JSON,
-                self.port_allocation.PG_INFO_HTTPS_RPC_JSON,
+                self.port_allocation.INFO_HTTP_JSON
             )
         )
 

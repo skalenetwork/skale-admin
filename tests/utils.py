@@ -34,7 +34,7 @@ TEST_IMA_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
 CONTAINERS_JSON = {
   "schain": {
     "name": "skalenetwork/schain",
-    "version": "3.9.0-develop.1",
+    "version": "3.11.0-develop.3",
     "custom_args": {
       "ulimits_list": [
         {
