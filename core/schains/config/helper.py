@@ -129,11 +129,7 @@ def get_schain_ports_from_config(config):
         'ws': int(node_info["wsRpcPort"]),
         'https': int(node_info["httpsRpcPort"]),
         'wss': int(node_info["wssRpcPort"]),
-        'info_http': int(node_info["infoHttpRpcPort"]),
-        'pg_http': int(node_info["pgHttpRpcPort"]),
-        'pg_https': int(node_info["pgHttpsRpcPort"]),
-        'pg_info_http': int(node_info["infoPgHttpRpcPort"]),
-        'pg_info_https': int(node_info["infoPgHttpsRpcPort"])
+        'info_http': int(node_info["infoHttpRpcPort"])
     }
 
 
