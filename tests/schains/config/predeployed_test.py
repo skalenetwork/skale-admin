@@ -1,13 +1,18 @@
 from marionette_predeployed import MARIONETTE_ADDRESS
+from etherbase_predeployed import ETHERBASE_ADDRESS
 
 from core.schains.types import SchainType
 from core.schains.config.predeployed import (
-    generate_v1_predeployed_contracts, generate_predeployed_section
+    generate_v1_predeployed_contracts, generate_predeployed_accounts
 )
+from tools.configs.schains import SCHAIN_OWNER_ALLOC
 
 
-def test_generate_predeployed_section():
-    predeployed_section = generate_predeployed_section(
+NUM_OF_PREDEPLOYED_CONTRACTS = 21
+
+
+def test_generate_predeployed_accounts():
+    predeployed_section = generate_predeployed_accounts(
         schain_name='abc',
         schain_type=SchainType.medium,
         schain_nodes={},
@@ -16,7 +21,7 @@ def test_generate_predeployed_section():
         originator_address='0xD500000000000000000000000000000000D5',
         generation=0
     )
-    assert len(predeployed_section.keys()) == 43
+    assert len(predeployed_section.keys()) == NUM_OF_PREDEPLOYED_CONTRACTS
 
 
 def test_generate_v1_predeployed_contracts():
@@ -33,3 +38,6 @@ def test_generate_v1_predeployed_contracts():
     assert v1_precompiled_contracts.get('0xd2Ba3ED200000000000000000000000000000000')
     assert v1_precompiled_contracts.get('0xD2c0DeFACe000000000000000000000000000000')
     assert v1_precompiled_contracts.get('0xd2c0defaCeD20000000000000000000000000000')
+
+    etherbase_balance = v1_precompiled_contracts[ETHERBASE_ADDRESS]['balance']
+    assert etherbase_balance == hex(SCHAIN_OWNER_ALLOC)
