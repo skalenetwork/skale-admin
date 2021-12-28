@@ -22,8 +22,10 @@ from core.schains.config.helper import fix_address
 
 
 def generate_account(balance, code=None, storage={}, nonce=0):
-    assert isinstance(code, str) or code is None
-    assert isinstance(storage, dict) or storage is None
+    if code and not isinstance(code, str):
+        raise ValueError('Code must be a str or None')
+    if storage and not isinstance(storage, dict):
+        raise ValueError('Code must be a dict or None')
     account = {
         'balance': str(balance)
     }
