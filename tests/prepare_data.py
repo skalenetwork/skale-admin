@@ -5,7 +5,7 @@ import logging
 from skale.utils.helper import init_default_logger
 from skale.utils.contracts_provision.main import (
     setup_validator, _skip_evm_time, create_nodes, cleanup_nodes_schains,
-    add_test_permissions, add_test_schain_type
+    add_test_permissions, add_test2_schain_type
 )
 from skale.utils.contracts_provision import MONTH_IN_SECONDS
 
@@ -21,7 +21,7 @@ if __name__ == "__main__":
     init_default_logger()
     skale = init_web3_skale()
     add_test_permissions(skale)
-    add_test_schain_type(skale)
+    add_test2_schain_type(skale)
     cleanup_nodes_schains(skale)
     setup_validator(skale)
     _skip_evm_time(skale.web3, MONTH_IN_SECONDS)
