@@ -9,7 +9,7 @@ from core.schains.config.directory import get_schain_rotation_filepath, schain_c
 from core.schains.firewall.types import IpRange
 from core.schains.monitor.main import (
     run_monitor_for_schain, get_monitor_type, BackupMonitor, RepairMonitor, PostRotationMonitor,
-    RotationMonitor, RegularMonitor
+    RotationMonitor, RegularMonitor, _is_chain_on_node
 )
 from core.schains.runner import get_container_info
 from core.schains.firewall.utils import get_sync_agent_ranges
@@ -165,3 +165,12 @@ def test_get_sync_agent_ranges(skale, sync_ranges):
 def test_get_sync_agent_ranges_empty(skale):
     ranges = get_sync_agent_ranges(skale)
     assert ranges == []
+
+
+def test_is_chain_on_node(skale, schain_on_contracts, node_config):
+    chain_on_node = _is_chain_on_node(skale, schain_on_contracts, node_config.id)
+    assert not chain_on_node
+
+    max_node_id = skale.nodes.get_nodes_number()
+    chain_on_node = _is_chain_on_node(skale, schain_on_contracts, max_node_id - 1)
+    assert chain_on_node

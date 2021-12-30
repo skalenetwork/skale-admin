@@ -68,6 +68,11 @@ def _is_post_rotation_mode(schain_name: str, dutils=None) -> bool:
     return check_schain_rotated(schain_name, dutils)
 
 
+def _is_chain_on_node(skale, schain_name, node_id):
+    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    return node_id in node_ids
+
+
 def get_monitor_type(
         schain_record: SChainRecord,
         checks: SChainChecks,
@@ -105,6 +110,10 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             name = schain["name"]
             dutils = dutils or DockerUtils()
 
+            if not _is_chain_on_node(skale, name, node_config.id):
+                logger.warning(f'{p} NOT FOUND ON NODE ({node_config.id}), finising process...')
+                return True
+
             ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
             rotation_data = skale.node_rotation.get_rotation(name)
             rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
@@ -131,7 +140,12 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
                 chain_id=skale_ima.web3.eth.chainId
             )
 
-            monitor_class = get_monitor_type(schain_record, checks, rotation_in_progress, dutils)
+            monitor_class = get_monitor_type(
+                schain_record,
+                checks,
+                rotation_in_progress,
+                dutils
+            )
             monitor = monitor_class(
                 skale=skale,
                 ima_data=ima_data,

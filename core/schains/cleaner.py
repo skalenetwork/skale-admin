@@ -35,9 +35,10 @@ from core.schains.config.helper import (
     get_schain_config
 )
 from core.schains.process_manager_helper import terminate_schain_process
-from core.schains.runner import get_container_name, is_exited, is_exited_with_zero
+from core.schains.runner import get_container_name, is_exited
 from core.schains.types import ContainerType
 from core.schains.firewall.utils import get_sync_agent_ranges
+from core.schains.monitor.main import _is_chain_on_node
 
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -166,32 +167,34 @@ def schain_names_to_ids(skale, schain_names):
 def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
     dutils = dutils or DockerUtils()
     is_schain_exist = skale.schains_internal.is_schain_exist(schain_name)
-    exited_with_zero = is_exited_with_zero(schain_name, dutils=dutils)
-    schain_record = upsert_schain_record(schain_name)
 
-    msg = arguments_list_string(
-        {'sChain name': schain_name},
-        'sChain do not satisfy removal condidions'
-    )
-    if exited_with_zero:
-        msg = arguments_list_string(
-            {'sChain name': schain_name},
-            'Going to remove this sChain because it was rotated'
-        )
     if not is_schain_exist:
         msg = arguments_list_string(
             {'sChain name': schain_name},
             'Going to remove this sChain because it was removed from contracts'
         )
-
-    if exited_with_zero or not is_schain_exist:
+        remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
+    elif not _is_chain_on_node(skale, schain_name, node_id):
+        msg = arguments_list_string(
+            {'sChain name': schain_name},
+            'Going to remove this sChain because this node is not in the group'
+        )
+        remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
+    else:
+        msg = arguments_list_string(
+            {'sChain name': schain_name},
+            'sChain do not satisfy removal condidions'
+        )
         logger.warning(msg)
-        terminate_schain_process(schain_record)
-        delete_bls_keys(skale, schain_name)
-        sync_agent_ranges = get_sync_agent_ranges(skale)
-        cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=dutils)
-        return
-    logger.info(msg)
+
+
+def remove_schain(skale, node_id, schain_name, msg, dutils=None):
+    schain_record = upsert_schain_record(schain_name)
+    logger.warning(msg)
+    terminate_schain_process(schain_record)
+    delete_bls_keys(skale, schain_name)
+    sync_agent_ranges = get_sync_agent_ranges(skale)
+    cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=dutils)
 
 
 def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None):
