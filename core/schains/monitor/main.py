@@ -37,6 +37,7 @@ from core.schains.firewall.utils import get_sync_agent_ranges
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.ima import DISABLE_IMA
+from tools.helper import is_chain_on_node
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
@@ -105,6 +106,10 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             name = schain["name"]
             dutils = dutils or DockerUtils()
 
+            if not is_chain_on_node(skale, name, node_config.id):
+                logger.warning(f'{p} NOT ON NODE ({node_config.id}), finising process...')
+                return True
+
             ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
             rotation_data = skale.node_rotation.get_rotation(name)
             rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
@@ -131,7 +136,12 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
                 chain_id=skale_ima.web3.eth.chainId
             )
 
-            monitor_class = get_monitor_type(schain_record, checks, rotation_in_progress, dutils)
+            monitor_class = get_monitor_type(
+                schain_record,
+                checks,
+                rotation_in_progress,
+                dutils
+            )
             monitor = monitor_class(
                 skale=skale,
                 ima_data=ima_data,
