@@ -74,7 +74,7 @@ def generate_predeployed_accounts(
     """
     predeployed_section = {
         **generate_owner_accounts(on_chain_owner, originator_address, schain_nodes, generation),
-        **generate_context_accounts(schain_name, on_chain_owner),  # TODO: use mainnet_onwer
+        **generate_context_accounts(schain_name, on_chain_owner),
         **generate_ima_accounts(on_chain_owner, schain_name)
     }
 
@@ -197,10 +197,10 @@ def generate_context_accounts(schain_name: dict, on_chain_owner: str) -> dict:
     """
     Generates accounts for the context predeployed SC
 
-    :param schain_owner: Address of the sChain owner
-    :type schain_owner: str
     :param schain_name: Name of the sChain
     :type schain_name: str
+    :param on_chain_owner: Address of the sChain owner
+    :type on_chain_owner: str
     :returns: Dictionary with accounts
     :rtype: dict
     """
