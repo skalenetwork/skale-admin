@@ -74,7 +74,7 @@ def generate_predeployed_accounts(
     """
     predeployed_section = {
         **generate_owner_accounts(on_chain_owner, originator_address, schain_nodes, generation),
-        **generate_context_accounts(schain_name, on_chain_owner),
+        **generate_context_accounts(schain_name, on_chain_owner),  # TODO: use mainnet_onwer
         **generate_ima_accounts(on_chain_owner, schain_name)
     }
 

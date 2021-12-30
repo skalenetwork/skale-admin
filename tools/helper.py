@@ -163,7 +163,10 @@ def get_endpoint_call_speed(skale):
 
 
 def is_zero_address(address: str) -> bool:
-    """
-    Returns true if provided string is equal to Ethereum zero address
-    """
+    """Returns true if provided string is equal to Ethereum zero address"""
     return address == ZERO_ADDRESS
+
+
+def is_address_contract(web3, address) -> bool:
+    """Returns true if contract is deployed at the requested address"""
+    return web3.eth.get_code(address) != '0x'
