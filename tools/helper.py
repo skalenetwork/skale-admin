@@ -162,6 +162,11 @@ def get_endpoint_call_speed(skale):
     return call_avg_speed
 
 
+def is_chain_on_node(skale, schain_name, node_id):
+    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    return node_id in node_ids
+
+
 def is_zero_address(address: str) -> bool:
     """
     Returns true if provided string is equal to Ethereum zero address

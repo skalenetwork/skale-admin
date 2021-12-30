@@ -37,6 +37,7 @@ from core.schains.firewall.utils import get_sync_agent_ranges
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.ima import DISABLE_IMA
+from tools.helper import is_chain_on_node
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
@@ -66,11 +67,6 @@ def _is_rotation_mode(rotation_in_progress: bool) -> bool:
 
 def _is_post_rotation_mode(schain_name: str, dutils=None) -> bool:
     return check_schain_rotated(schain_name, dutils)
-
-
-def _is_chain_on_node(skale, schain_name, node_id):
-    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
-    return node_id in node_ids
 
 
 def get_monitor_type(
@@ -110,7 +106,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             name = schain["name"]
             dutils = dutils or DockerUtils()
 
-            if not _is_chain_on_node(skale, name, node_config.id):
+            if not is_chain_on_node(skale, name, node_config.id):
                 logger.warning(f'{p} NOT FOUND ON NODE ({node_config.id}), finising process...')
                 return True
 

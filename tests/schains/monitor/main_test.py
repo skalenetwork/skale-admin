@@ -9,13 +9,13 @@ from core.schains.config.directory import get_schain_rotation_filepath, schain_c
 from core.schains.firewall.types import IpRange
 from core.schains.monitor.main import (
     run_monitor_for_schain, get_monitor_type, BackupMonitor, RepairMonitor, PostRotationMonitor,
-    RotationMonitor, RegularMonitor, _is_chain_on_node
+    RotationMonitor, RegularMonitor
 )
 from core.schains.runner import get_container_info
 from core.schains.firewall.utils import get_sync_agent_ranges
 
 from tools.configs.containers import SCHAIN_CONTAINER
-from tools.helper import write_json
+from tools.helper import write_json, is_chain_on_node
 from web.models.schain import upsert_schain_record
 
 from tests.schains.monitor.base_monitor_test import BaseTestMonitor, CrashingTestMonitor
@@ -168,9 +168,9 @@ def test_get_sync_agent_ranges_empty(skale):
 
 
 def test_is_chain_on_node(skale, schain_on_contracts, node_config):
-    chain_on_node = _is_chain_on_node(skale, schain_on_contracts, node_config.id)
+    chain_on_node = is_chain_on_node(skale, schain_on_contracts, node_config.id)
     assert not chain_on_node
 
     max_node_id = skale.nodes.get_nodes_number()
-    chain_on_node = _is_chain_on_node(skale, schain_on_contracts, max_node_id - 1)
+    chain_on_node = is_chain_on_node(skale, schain_on_contracts, max_node_id - 1)
     assert chain_on_node
