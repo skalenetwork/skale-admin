@@ -107,7 +107,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             dutils = dutils or DockerUtils()
 
             if not is_chain_on_node(skale, name, node_config.id):
-                logger.warning(f'{p} NOT FOUND ON NODE ({node_config.id}), finising process...')
+                logger.warning(f'{p} NOT ON NODE ({node_config.id}), finising process...')
                 return True
 
             ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)

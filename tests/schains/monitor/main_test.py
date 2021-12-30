@@ -121,7 +121,8 @@ def test_is_regular_mode(schain_db, _schain_name, dutils, checks):
 
 
 def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db, dutils):
-    with mock.patch('core.schains.monitor.main.RegularMonitor', CrashingTestMonitor):
+    with mock.patch('core.schains.monitor.main.RegularMonitor', CrashingTestMonitor), \
+            mock.patch('core.schains.monitor.main.is_chain_on_node', return_value=True):
         assert not run_monitor_for_schain(
             skale,
             skale_ima,
@@ -169,6 +170,9 @@ def test_get_sync_agent_ranges_empty(skale):
 
 def test_is_chain_on_node(skale, schain_on_contracts, node_config):
     chain_on_node = is_chain_on_node(skale, schain_on_contracts, node_config.id)
+    assert not chain_on_node
+
+    chain_on_node = is_chain_on_node(skale, 'a', node_config.id)
     assert not chain_on_node
 
     max_node_id = skale.nodes.get_nodes_number()
