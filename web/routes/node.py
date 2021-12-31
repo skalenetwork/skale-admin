@@ -182,6 +182,7 @@ def construct_node_bp():
             'client': eth_client_version,
             'call_speed': call_speed
         }
+        logger.info(f'endpoint info: {info}')
         return construct_ok_response(info)
 
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'meta-info'), methods=['GET'])

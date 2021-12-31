@@ -43,7 +43,7 @@ class SChainInfo:
     max_file_storage_bytes: int
     max_reserved_storage_bytes: int
 
-    previous_public_keys_info: list
+    node_groups: dict
     nodes: list
 
     def to_dict(self):
@@ -61,13 +61,13 @@ class SChainInfo:
             'maxSkaledLeveldbStorageBytes': self.max_skaled_leveldb_storage_bytes,
             'maxFileStorageBytes': self.max_file_storage_bytes,
             'maxReservedStorageBytes': self.max_reserved_storage_bytes,
-            # 'previousKeysInfo': self.previous_public_keys_info,
+            'nodeGroups': self.node_groups,
             'nodes': self.nodes
         }
 
 
 def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
-                         static_schain_params: dict, previous_public_keys_info: list,
+                         static_schain_params: dict, node_groups: dict,
                          nodes: dict) -> SChainInfo:
     schain_type = get_schain_type(schain['partOfNode'])
     volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)
@@ -81,7 +81,7 @@ def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
         block_author=on_chain_etherbase,
         contract_storage_limit=contract_storage_limit,
         db_storage_limit=db_storage_limit,
-        previous_public_keys_info=previous_public_keys_info,
+        node_groups=node_groups,
         nodes=nodes,
         **volume_limits,
         **static_schain_params['schain']

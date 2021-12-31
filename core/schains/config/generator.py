@@ -22,6 +22,8 @@ from dataclasses import dataclass
 
 from skale import Skale
 from skale.schain_config.generator import get_schain_nodes_with_schains
+from skale.schain_config.rotation_history import get_previous_schain_groups
+
 from etherbase_predeployed import ETHERBASE_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS
 
@@ -30,9 +32,6 @@ from core.schains.config.predeployed import generate_predeployed_accounts
 from core.schains.config.precompiled import generate_precompiled_accounts
 from core.schains.config.generation import gen0, gen1
 from core.schains.config.helper import get_chain_id
-from core.schains.config.previous_keys import (
-    compose_previous_keys_info, previous_keys_info_to_dicts
-)
 from core.schains.limits import get_schain_type
 
 from tools.helper import read_json
@@ -114,7 +113,7 @@ def get_schain_originator(schain: dict):
 def generate_schain_config(
     schain: dict, schain_id: int, node_id: int, node: dict, ecdsa_key_name: str,
     schains_on_node: list, rotation_id: int, schain_nodes_with_schains: list,
-    previous_public_keys_info: list, generation: int, is_owner_contract: bool
+    node_groups: list, generation: int, is_owner_contract: bool
 ) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
@@ -161,7 +160,7 @@ def generate_schain_config(
         schains_on_node=schains_on_node,
         schain_nodes_with_schains=schain_nodes_with_schains,
         rotation_id=rotation_id,
-        previous_public_keys_info=previous_public_keys_info
+        node_groups=node_groups
     )
 
     schain_config = SChainConfig(
@@ -194,21 +193,8 @@ def generate_schain_config_with_skale(
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
     schains_on_node = skale.schains.get_schains_for_node(node_id)
     schain = skale.schains.get_by_name(schain_name)
-
-    group_id = skale.schains.name_to_group_id(schain_name)
-    previous_public_keys = skale.key_storage.get_all_previous_public_keys(group_id)
-
     node = skale.nodes.get(node_id)
-
-    previous_public_keys = skale.key_storage.get_all_previous_public_keys(group_id)
-    rotation_data_list = [] if rotation_data['rotation_id'] == 0 else [rotation_data]  # noqa, TODO: temporary fix, need node rotation history SKALE-4746
-
-    previous_public_keys_info = compose_previous_keys_info(
-        skale=skale,
-        rotation_data=rotation_data_list,
-        previous_bls_keys=previous_public_keys
-    )
-    previous_public_keys_info_dict = previous_keys_info_to_dicts(previous_public_keys_info)
+    node_groups = get_previous_schain_groups(skale, schain_name)
 
     is_owner_contract = is_address_contract(skale.web3, schain['mainnetOwner'])
 
@@ -221,7 +207,7 @@ def generate_schain_config_with_skale(
         schains_on_node=schains_on_node,
         rotation_id=rotation_data['rotation_id'],
         schain_nodes_with_schains=schain_nodes_with_schains,
-        previous_public_keys_info=previous_public_keys_info_dict,
+        node_groups=node_groups,
         generation=generation,
         is_owner_contract=is_owner_contract
     )

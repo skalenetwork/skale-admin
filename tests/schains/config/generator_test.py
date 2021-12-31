@@ -206,7 +206,7 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain):
     node_id, schain_id, generation, rotation_id = 1, 1, 0, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
-    previous_public_keys_info_dict = {}
+    node_groups = {}
 
     schain_config = generate_schain_config(
         schain=schain,
@@ -217,7 +217,7 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain):
         schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
-        previous_public_keys_info=previous_public_keys_info_dict,
+        node_groups=node_groups,
         generation=generation,
         is_owner_contract=False
     )
@@ -231,7 +231,7 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
     node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
-    previous_public_keys_info_dict = {}
+    node_groups = {}
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITH_ORIGINATOR,
@@ -242,7 +242,7 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
         schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
-        previous_public_keys_info=previous_public_keys_info_dict,
+        node_groups=node_groups,
         generation=generation,
         is_owner_contract=True
     )
@@ -274,7 +274,7 @@ def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_cha
     node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
-    previous_public_keys_info_dict = {}
+    node_groups = {}
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITHOUT_ORIGINATOR,
@@ -285,7 +285,7 @@ def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_cha
         schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
-        previous_public_keys_info=previous_public_keys_info_dict,
+        node_groups=node_groups,
         generation=generation,
         is_owner_contract=False
     )
