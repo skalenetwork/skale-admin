@@ -218,7 +218,8 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain):
         rotation_id=rotation_id,
         schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
         node_groups=node_groups,
-        generation=generation
+        generation=generation,
+        is_owner_contract=False
     )
     config = schain_config.to_dict()
 
@@ -242,7 +243,8 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
         rotation_id=rotation_id,
         schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
         node_groups=node_groups,
-        generation=generation
+        generation=generation,
+        is_owner_contract=True
     )
     config = schain_config.to_dict()
 
@@ -284,7 +286,8 @@ def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_cha
         rotation_id=rotation_id,
         schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
         node_groups=node_groups,
-        generation=generation
+        generation=generation,
+        is_owner_contract=False
     )
     config = schain_config.to_dict()
 

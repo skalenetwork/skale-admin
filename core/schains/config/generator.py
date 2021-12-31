@@ -36,7 +36,7 @@ from core.schains.limits import get_schain_type
 
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
-from tools.helper import is_zero_address
+from tools.helper import is_zero_address, is_address_contract
 
 logger = logging.getLogger(__name__)
 
@@ -81,11 +81,11 @@ class SChainConfig:
         }
 
 
-def get_on_chain_owner(schain: dict, generation: int) -> str:
+def get_on_chain_owner(schain: dict, generation: int, is_owner_contract: bool) -> str:
     """
     Returns on-chain owner depending on sChain generation.
     """
-    if gen0(generation):
+    if gen0(generation) or not is_owner_contract:
         return schain['mainnetOwner']
     if gen1(generation):
         return MARIONETTE_ADDRESS
@@ -110,10 +110,11 @@ def get_schain_originator(schain: dict):
     return schain['originator']
 
 
-def generate_schain_config(schain: dict, schain_id: int, node_id: int,
-                           node: dict, ecdsa_key_name: str, schains_on_node: list,
-                           rotation_id: int, schain_nodes_with_schains: list,
-                           node_groups: dict, generation: int) -> SChainConfig:
+def generate_schain_config(
+    schain: dict, schain_id: int, node_id: int, node: dict, ecdsa_key_name: str,
+    schains_on_node: list, rotation_id: int, schain_nodes_with_schains: list,
+    node_groups: list, generation: int, is_owner_contract: bool
+) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
@@ -122,7 +123,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
     )
 
     on_chain_etherbase = get_on_chain_etherbase(schain, generation)
-    on_chain_owner = get_on_chain_owner(schain, generation)
+    on_chain_owner = get_on_chain_owner(schain, generation, is_owner_contract)
     mainnet_owner = schain['mainnetOwner']
     schain_type = get_schain_type(schain['partOfNode'])
 
@@ -195,6 +196,8 @@ def generate_schain_config_with_skale(
     node = skale.nodes.get(node_id)
     node_groups = get_previous_schain_groups(skale, schain_name)
 
+    is_owner_contract = is_address_contract(skale.web3, schain['mainnetOwner'])
+
     return generate_schain_config(
         schain=schain,
         schain_id=schain_id,
@@ -205,5 +208,6 @@ def generate_schain_config_with_skale(
         rotation_id=rotation_data['rotation_id'],
         schain_nodes_with_schains=schain_nodes_with_schains,
         node_groups=node_groups,
-        generation=generation
+        generation=generation,
+        is_owner_contract=is_owner_contract
     )
