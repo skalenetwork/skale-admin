@@ -291,6 +291,14 @@ def skaled_mock_image(scope='module'):
 
 
 @pytest.fixture
+def cleanup_schain_containers(dutils):
+    yield
+    containers = dutils.get_all_schain_containers(all=True)
+    for container in containers:
+        dutils.safe_rm(container.name, force=True)
+
+
+@pytest.fixture
 def cleanup_container(schain_config, dutils):
     yield
     schain_name = schain_config['skaleConfig']['sChain']['schainName']

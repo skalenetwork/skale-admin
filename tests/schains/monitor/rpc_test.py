@@ -19,7 +19,7 @@ def test_monitor_schain_rpc_no_container(schain_db, dutils):
     assert not dutils.is_container_exists(container_name)
 
 
-def test_monitor_schain_rpc_ec_0(schain_db, dutils):
+def test_monitor_schain_rpc_ec_0(schain_db, dutils, cleanup_schain_containers):
     schain_record = SChainRecord.get_by_name(schain_db)
 
     image_name, container_name, _, _ = get_container_info(
@@ -46,7 +46,7 @@ def test_monitor_schain_rpc_ec_0(schain_db, dutils):
     assert container_info['stats']['State']['FinishedAt'] == finished_at
 
 
-def test_monitor_schain_rpc_stuck_max_retries(schain_db, dutils):
+def test_monitor_schain_rpc_stuck_max_retries(schain_db, dutils, cleanup_schain_containers):
     schain_record = SChainRecord.get_by_name(schain_db)
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain_db)
@@ -71,7 +71,7 @@ def test_monitor_schain_rpc_stuck_max_retries(schain_db, dutils):
     assert container_info['stats']['State']['FinishedAt'] == finished_at
 
 
-def test_monitor_schain_rpc_stuck(schain_db, dutils):
+def test_monitor_schain_rpc_stuck(schain_db, dutils, cleanup_schain_containers):
     schain_record = SChainRecord.get_by_name(schain_db)
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain_db)
