@@ -7,17 +7,19 @@ from tools.configs.containers import SCHAIN_CONTAINER
 from web.models.schain import SChainRecord
 
 
-def test_monitor_schain_rpc_no_container(caplog, schain_db, dutils):
+def test_monitor_schain_rpc_no_container(schain_db, dutils):
     schain_record = SChainRecord.get_by_name(schain_db)
+    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, schain_db)
+
     assert not monitor_schain_rpc(
         schain={'name': schain_db},
         schain_record=schain_record,
         dutils=dutils
     )
-    assert 'RPC monitor failed: container doesn\'t exit' in caplog.text
+    assert not dutils.is_container_exists(container_name)
 
 
-def test_monitor_schain_rpc_ec_0(caplog, schain_db, dutils):
+def test_monitor_schain_rpc_ec_0(schain_db, dutils):
     schain_record = SChainRecord.get_by_name(schain_db)
 
     image_name, container_name, _, _ = get_container_info(
@@ -30,15 +32,21 @@ def test_monitor_schain_rpc_ec_0(caplog, schain_db, dutils):
     )
     sleep(10)
 
+    container_info = dutils.get_info(container_name)
+    finished_at = container_info['stats']['State']['FinishedAt']
+
     assert not monitor_schain_rpc(
         schain={'name': schain_db},
         schain_record=schain_record,
         dutils=dutils
     )
-    assert 'container exited with zero, skipping RPC monitor' in caplog.text
+    assert dutils.is_container_exists(container_name)
+
+    container_info = dutils.get_info(container_name)
+    assert container_info['stats']['State']['FinishedAt'] == finished_at
 
 
-def test_monitor_schain_rpc_stuck_max_retries(caplog, schain_db, dutils):
+def test_monitor_schain_rpc_stuck_max_retries(schain_db, dutils):
     schain_record = SChainRecord.get_by_name(schain_db)
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain_db)
@@ -51,12 +59,16 @@ def test_monitor_schain_rpc_stuck_max_retries(caplog, schain_db, dutils):
     schain_record.set_failed_rpc_count(100)
     schain_record.set_restart_count(100)
 
+    container_info = dutils.get_info(container_name)
+    finished_at = container_info['stats']['State']['FinishedAt']
+
     monitor_schain_rpc(
         schain={'name': schain_db},
         schain_record=schain_record,
         dutils=dutils
     )
-    assert 'max restart count exceeded' in caplog.text
+    container_info = dutils.get_info(container_name)
+    assert container_info['stats']['State']['FinishedAt'] == finished_at
 
 
 def test_monitor_schain_rpc_stuck(schain_db, dutils):
@@ -72,6 +84,9 @@ def test_monitor_schain_rpc_stuck(schain_db, dutils):
     schain_record.set_failed_rpc_count(100)
     schain_record.set_restart_count(0)
 
+    container_info = dutils.get_info(container_name)
+    finished_at = container_info['stats']['State']['FinishedAt']
+
     assert schain_record.restart_count == 0
     monitor_schain_rpc(
         schain={'name': schain_db},
@@ -79,3 +94,5 @@ def test_monitor_schain_rpc_stuck(schain_db, dutils):
         dutils=dutils
     )
     assert schain_record.restart_count == 1
+    container_info = dutils.get_info(container_name)
+    assert container_info['stats']['State']['FinishedAt'] != finished_at

@@ -46,7 +46,7 @@ def monitor_schain_rpc(
         return
 
     if is_exited_with_zero(schain_name, dutils=dutils):
-        logger.warning(f'{schain_name} container exited with zero, skipping RPC monitor')
+        logger.info(f'{schain_name} container exited with zero, skipping RPC monitor')
         return
 
     rpc_stuck = schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
