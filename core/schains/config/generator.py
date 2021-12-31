@@ -113,7 +113,7 @@ def get_schain_originator(schain: dict):
 def generate_schain_config(schain: dict, schain_id: int, node_id: int,
                            node: dict, ecdsa_key_name: str, schains_on_node: list,
                            rotation_id: int, schain_nodes_with_schains: list,
-                           previous_groups: dict, generation: int) -> SChainConfig:
+                           node_groups: dict, generation: int) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
@@ -159,7 +159,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         schains_on_node=schains_on_node,
         schain_nodes_with_schains=schain_nodes_with_schains,
         rotation_id=rotation_id,
-        previous_groups=previous_groups
+        node_groups=node_groups
     )
 
     schain_config = SChainConfig(
@@ -193,7 +193,7 @@ def generate_schain_config_with_skale(
     schains_on_node = skale.schains.get_schains_for_node(node_id)
     schain = skale.schains.get_by_name(schain_name)
     node = skale.nodes.get(node_id)
-    previous_groups = get_previous_schain_groups(skale, schain_name)
+    node_groups = get_previous_schain_groups(skale, schain_name)
 
     return generate_schain_config(
         schain=schain,
@@ -204,6 +204,6 @@ def generate_schain_config_with_skale(
         schains_on_node=schains_on_node,
         rotation_id=rotation_data['rotation_id'],
         schain_nodes_with_schains=schain_nodes_with_schains,
-        previous_groups=previous_groups,
+        node_groups=node_groups,
         generation=generation
     )
