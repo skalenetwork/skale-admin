@@ -120,11 +120,7 @@ def run_concurrent_rc_syncing(
             SkaledPorts.HTTPS_JSON.value,
             SkaledPorts.WS_JSON.value,
             SkaledPorts.WSS_JSON.value,
-            SkaledPorts.INFO_HTTP_JSON.value,
-            SkaledPorts.PG_HTTP_RPC_JSON.value,
-            SkaledPorts.PG_HTTPS_RPC_JSON.value,
-            SkaledPorts.PG_INFO_HTTP_RPC_JSON.value,
-            SkaledPorts.PG_INFO_HTTPS_RPC_JSON.value,
+            SkaledPorts.INFO_HTTP_JSON.value
         )
         for base_port in base_ports
     ]
