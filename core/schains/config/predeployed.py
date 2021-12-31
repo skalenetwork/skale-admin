@@ -197,10 +197,10 @@ def generate_context_accounts(schain_name: dict, on_chain_owner: str) -> dict:
     """
     Generates accounts for the context predeployed SC
 
-    :param schain_owner: Address of the sChain owner
-    :type schain_owner: str
     :param schain_name: Name of the sChain
     :type schain_name: str
+    :param on_chain_owner: Address of the sChain owner
+    :type on_chain_owner: str
     :returns: Dictionary with accounts
     :rtype: dict
     """
