@@ -61,7 +61,7 @@ class SChainInfo:
             'maxSkaledLeveldbStorageBytes': self.max_skaled_leveldb_storage_bytes,
             'maxFileStorageBytes': self.max_file_storage_bytes,
             'maxReservedStorageBytes': self.max_reserved_storage_bytes,
-            'previousGroups': self.previous_groups,
+            'nodeGroups': self.previous_groups,
             'nodes': self.nodes
         }
 
