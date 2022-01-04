@@ -1,7 +1,9 @@
-from core.schains.runner import is_exited, is_exited_with_zero
-from core.schains.rotation import set_rotation_for_schain
 import mock
 import json
+
+from core.schains.process_manager import get_leaving_schains_for_node
+from core.schains.runner import is_exited, is_exited_with_zero
+from core.schains.rotation import set_rotation_for_schain
 
 
 class ResponseMock:
@@ -58,3 +60,8 @@ def test_is_exited_with_zero():
     with mock.patch('core.schains.runner.DockerUtils.get_info',
                     new=mock.Mock(return_value=info_mock)):
         assert is_exited_with_zero(schain_name)
+
+
+def test_get_leaving_schains_for_node(skale, node_config):  # TODO: improve test
+    leaving_schains = get_leaving_schains_for_node(skale, node_config.id)
+    assert isinstance(leaving_schains, list)
