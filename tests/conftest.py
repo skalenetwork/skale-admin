@@ -9,8 +9,11 @@ import pytest
 from skale.utils.contracts_provision.main import (create_nodes, create_schain,
                                                   cleanup_nodes_schains)
 from core.schains.checks import SChainChecks
-from core.schains.cleaner import remove_schain_container
-from core.schains.cleaner import remove_schain_volume
+from core.schains.cleaner import (
+    remove_ima_container,
+    remove_schain_container,
+    remove_schain_volume
+)
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
@@ -291,13 +294,14 @@ def skaled_mock_image(scope='module'):
 
 
 @pytest.fixture
-def cleanup_container(schain_config, dutils):
+def cleanup_containers(schain_config, dutils):
     yield
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    cleanup_schain_container(schain_name, dutils)
+    cleanup_schain_containers(schain_name, dutils)
 
 
-def cleanup_schain_container(schain_name: str, dutils: DockerUtils):
+def cleanup_schain_containers(schain_name: str, dutils: DockerUtils):
+    remove_ima_container(schain_name, dutils)
     remove_schain_container(schain_name, dutils)
     remove_schain_volume(schain_name, dutils)
 

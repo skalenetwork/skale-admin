@@ -33,10 +33,10 @@ class SSLReloadMonitor(RegularMonitor):
     @BaseMonitor.monitor_runner
     def run(self):
         logger.info(
-            '%s. Restart requested. Going to restart sChain container',
+            '%s. Reload requested. Going to restart sChain container',
             self.p
         )
-        restart_container(SCHAIN_CONTAINER, self.schain)
+        restart_container(SCHAIN_CONTAINER, self.schain, dutils=self.dutils)
         record = self.schain_record
         record.set_restart_count(0)
         record.set_failed_rpc_count(0)
