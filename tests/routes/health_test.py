@@ -66,7 +66,7 @@ def test_containers(skale_bp, dutils):
     assert data == expected
 
 
-def test_containers_all(skale_bp, dutils, schain_db):
+def test_containers_all(skale_bp, dutils, schain_db, cleanup_schain_containers):
     run_custom_schain_container(dutils, schain_db, 'bash -c "exit 1"')
     sleep(10)
     data = get_bp_data(skale_bp, get_api_url('health', 'containers'), params={'all': True})
