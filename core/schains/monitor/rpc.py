@@ -20,7 +20,7 @@
 import logging
 
 from core.schains.runner import restart_container
-from core.schains.runner import is_container_exists
+from core.schains.runner import is_container_exists, is_exited_with_zero
 from tools.docker_utils import DockerUtils
 
 from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
@@ -39,10 +39,14 @@ def monitor_schain_rpc(
 ):
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
-    logger.info(f'Monitoring rpc for sChain {schain_name}')
+    logger.info(f'Monitoring RPC for sChain {schain_name}')
 
     if not is_container_exists(schain_name, dutils=dutils):
-        logger.info(f'{schain_name} rpc monitor failed: container doesn\'t exit')
+        logger.warning(f'{schain_name} RPC monitor failed: container doesn\'t exit')
+        return
+
+    if is_exited_with_zero(schain_name, dutils=dutils):
+        logger.info(f'{schain_name} container exited with zero, skipping RPC monitor')
         return
 
     rpc_stuck = schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
