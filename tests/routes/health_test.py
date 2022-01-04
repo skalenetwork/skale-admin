@@ -1,5 +1,6 @@
 import mock
 import pytest
+from time import sleep
 
 from flask import Flask, appcontext_pushed, g
 from sgx import SgxClient
@@ -12,7 +13,7 @@ from web.models.schain import SChainRecord
 from web.routes.health import construct_health_bp
 from web.helper import get_api_url
 
-from tests.utils import get_bp_data
+from tests.utils import get_bp_data, run_custom_schain_container
 
 
 TEST_SGX_KEYNAME = 'test_keyname'
@@ -58,6 +59,21 @@ def test_containers(skale_bp, dutils):
         'status': 'ok',
         'payload': dutils.get_containers_info(
             all=False,
+            name_filter='',
+            format=True
+        )
+    }
+    assert data == expected
+
+
+def test_containers_all(skale_bp, dutils, schain_db):
+    run_custom_schain_container(dutils, schain_db, 'bash -c "exit 1"')
+    sleep(10)
+    data = get_bp_data(skale_bp, get_api_url('health', 'containers'), params={'all': True})
+    expected = {
+        'status': 'ok',
+        'payload': dutils.get_containers_info(
+            all=True,
             name_filter='',
             format=True
         )
