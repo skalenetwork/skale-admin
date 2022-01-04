@@ -40,16 +40,14 @@ from multisigwallet_predeployed import MultiSigWalletGenerator, MULTISIGWALLET_A
 from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminGenerator
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS, generate_contracts
 
+from core.schains.config.accounts import add_to_accounts, generate_account
 from core.schains.config.generation import gen0, gen1
-from core.schains.config.helper import (
-    fix_address, _string_to_storage, get_context_contract
-)
+from core.schains.config.helper import _string_to_storage, get_context_contract
 
 from core.schains.types import SchainType
 from core.schains.limits import get_fs_allocated_storage
 
-from tools.configs.schains import (SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC,
-                                   PRECOMPILED_CONTRACTS_FILEPATH)
+from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.helper import read_json
 
@@ -59,7 +57,7 @@ logger = logging.getLogger(__name__)
 PROXY_ADMIN_PREDEPLOYED_ADDRESS = '0xD1000000000000000000000000000000000000D1'
 
 
-def generate_predeployed_section(
+def generate_predeployed_accounts(
     schain_name: str,
     schain_type: SchainType,
     schain_nodes: list,
@@ -75,7 +73,6 @@ def generate_predeployed_section(
     :rtype: dict
     """
     predeployed_section = {
-        **generate_precompiled_accounts(),
         **generate_owner_accounts(on_chain_owner, originator_address, schain_nodes, generation),
         **generate_context_accounts(schain_name, on_chain_owner),
         **generate_ima_accounts(on_chain_owner, schain_name)
@@ -165,43 +162,6 @@ def generate_v1_predeployed_contracts(
     }
 
 
-def generate_account(balance, code=None, storage={}, nonce=0):
-    assert isinstance(code, str) or code is None
-    assert isinstance(storage, dict) or storage is None
-    account = {
-        'balance': str(balance)
-    }
-    if code:
-        account['code'] = code
-        account['storage'] = storage
-        account['nonce'] = str(nonce)
-    return account
-
-
-def get_precompiled_contracts():
-    return read_json(PRECOMPILED_CONTRACTS_FILEPATH)
-
-
-def add_to_accounts(accounts: dict, address: str, account: dict) -> None:
-    accounts[fix_address(address)] = account
-
-
-def generate_precompiled_accounts() -> dict:
-    """
-    Generates accounts for SKALE precompiled contracts
-
-    :returns: Dictionary with accounts
-    :rtype: dict
-    """
-    accounts = {}
-    precompileds = get_precompiled_contracts()
-    for address, precompiled in precompileds.items():
-        if precompiled['precompiled'].get('restrictAccess'):
-            precompiled['precompiled']['restrictAccess'] = [FILESTORAGE_ADDRESS]
-        add_to_accounts(accounts, address, precompiled)
-    return accounts
-
-
 def generate_owner_accounts(
     on_chain_owner: str,
     originator_address: str,
@@ -237,10 +197,10 @@ def generate_context_accounts(schain_name: dict, on_chain_owner: str) -> dict:
     """
     Generates accounts for the context predeployed SC
 
-    :param schain_owner: Address of the sChain owner
-    :type schain_owner: str
     :param schain_name: Name of the sChain
     :type schain_name: str
+    :param on_chain_owner: Address of the sChain owner
+    :type on_chain_owner: str
     :returns: Dictionary with accounts
     :rtype: dict
     """

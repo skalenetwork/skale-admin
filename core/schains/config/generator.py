@@ -22,21 +22,21 @@ from dataclasses import dataclass
 
 from skale import Skale
 from skale.schain_config.generator import get_schain_nodes_with_schains
+from skale.schain_config.rotation_history import get_previous_schain_groups
+
 from etherbase_predeployed import ETHERBASE_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS
 
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
-from core.schains.config.predeployed import generate_predeployed_section
+from core.schains.config.predeployed import generate_predeployed_accounts
+from core.schains.config.precompiled import generate_precompiled_accounts
 from core.schains.config.generation import gen0, gen1
 from core.schains.config.helper import get_chain_id
-from core.schains.config.previous_keys import (
-    compose_previous_keys_info, previous_keys_info_to_dicts
-)
 from core.schains.limits import get_schain_type
 
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
-from tools.helper import is_zero_address
+from tools.helper import is_zero_address, is_address_contract
 
 logger = logging.getLogger(__name__)
 
@@ -81,11 +81,11 @@ class SChainConfig:
         }
 
 
-def get_on_chain_owner(schain: dict, generation: int) -> str:
+def get_on_chain_owner(schain: dict, generation: int, is_owner_contract: bool) -> str:
     """
     Returns on-chain owner depending on sChain generation.
     """
-    if gen0(generation):
+    if gen0(generation) or not is_owner_contract:
         return schain['mainnetOwner']
     if gen1(generation):
         return MARIONETTE_ADDRESS
@@ -110,10 +110,11 @@ def get_schain_originator(schain: dict):
     return schain['originator']
 
 
-def generate_schain_config(schain: dict, schain_id: int, node_id: int,
-                           node: dict, ecdsa_key_name: str, schains_on_node: list,
-                           rotation_id: int, schain_nodes_with_schains: list,
-                           previous_public_keys_info: list, generation: int) -> SChainConfig:
+def generate_schain_config(
+    schain: dict, schain_id: int, node_id: int, node: dict, ecdsa_key_name: str,
+    schains_on_node: list, rotation_id: int, schain_nodes_with_schains: list,
+    node_groups: list, generation: int, is_owner_contract: bool
+) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
@@ -122,7 +123,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
     )
 
     on_chain_etherbase = get_on_chain_etherbase(schain, generation)
-    on_chain_owner = get_on_chain_owner(schain, generation)
+    on_chain_owner = get_on_chain_owner(schain, generation, is_owner_contract)
     mainnet_owner = schain['mainnetOwner']
     schain_type = get_schain_type(schain['partOfNode'])
 
@@ -134,7 +135,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
 
     originator_address = get_schain_originator(schain)
 
-    dynamic_accounts = generate_predeployed_section(
+    predeployed_accounts = generate_predeployed_accounts(
         schain_name=schain['name'],
         schain_type=schain_type,
         schain_nodes=schain_nodes_with_schains,
@@ -142,6 +143,10 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         mainnet_owner=mainnet_owner,
         originator_address=originator_address,
         generation=generation
+    )
+
+    precompiled_accounts = generate_precompiled_accounts(
+        on_chain_owner=on_chain_owner
     )
 
     skale_config = generate_skale_section(
@@ -155,7 +160,7 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         schains_on_node=schains_on_node,
         schain_nodes_with_schains=schain_nodes_with_schains,
         rotation_id=rotation_id,
-        previous_public_keys_info=previous_public_keys_info
+        node_groups=node_groups
     )
 
     schain_config = SChainConfig(
@@ -168,7 +173,8 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         genesis=base_config.config['genesis'],
         accounts={
             **base_config.config['accounts'],
-            **dynamic_accounts
+            **predeployed_accounts,
+            **precompiled_accounts,
         },
         skale_config=skale_config
     )
@@ -187,21 +193,10 @@ def generate_schain_config_with_skale(
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
     schains_on_node = skale.schains.get_schains_for_node(node_id)
     schain = skale.schains.get_by_name(schain_name)
-
-    group_id = skale.schains.name_to_group_id(schain_name)
-    previous_public_keys = skale.key_storage.get_all_previous_public_keys(group_id)
-
     node = skale.nodes.get(node_id)
+    node_groups = get_previous_schain_groups(skale, schain_name)
 
-    previous_public_keys = skale.key_storage.get_all_previous_public_keys(group_id)
-    rotation_data_list = [] if rotation_data['rotation_id'] == 0 else [rotation_data]  # noqa, TODO: temporary fix, need node rotation history SKALE-4746
-
-    previous_public_keys_info = compose_previous_keys_info(
-        skale=skale,
-        rotation_data=rotation_data_list,
-        previous_bls_keys=previous_public_keys
-    )
-    previous_public_keys_info_dict = previous_keys_info_to_dicts(previous_public_keys_info)
+    is_owner_contract = is_address_contract(skale.web3, schain['mainnetOwner'])
 
     return generate_schain_config(
         schain=schain,
@@ -212,6 +207,7 @@ def generate_schain_config_with_skale(
         schains_on_node=schains_on_node,
         rotation_id=rotation_data['rotation_id'],
         schain_nodes_with_schains=schain_nodes_with_schains,
-        previous_public_keys_info=previous_public_keys_info_dict,
-        generation=generation
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=is_owner_contract
     )

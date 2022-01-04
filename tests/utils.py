@@ -19,7 +19,8 @@ from core.schains.firewall import SChainFirewallManager, SChainRuleController
 from core.schains.runner import run_schain_container, run_ima_container
 
 from tools.docker_utils import DockerUtils
-from tools.helper import run_cmd
+from tools.helper import run_cmd, is_address_contract
+from tools.configs.web3 import ZERO_ADDRESS
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -34,7 +35,7 @@ TEST_IMA_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
 CONTAINERS_JSON = {
   "schain": {
     "name": "skalenetwork/schain",
-    "version": "3.9.0-develop.1",
+    "version": "3.11.0-develop.6",
     "custom_args": {
       "ulimits_list": [
         {
@@ -263,3 +264,9 @@ def get_test_rule_controller(
     if synced:
         rc.sync()
     return rc
+
+
+def test_is_address_contract(skale):
+    assert not is_address_contract(skale.web3, ZERO_ADDRESS)
+    assert is_address_contract(skale.web3, skale.manager.address)
+    assert is_address_contract(skale.web3, skale.nodes.address)
