@@ -132,7 +132,7 @@ def schain_container(schain_config, ssl_folder, dutils):
 def test_remove_schain_container(
     dutils,
     schain_config,
-    cleanup_container,
+    cleanup_containers,
     cert_key_pair
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
