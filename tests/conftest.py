@@ -16,6 +16,7 @@ from core.schains.config.helper import (
 )
 from core.node_config import NodeConfig
 
+from core.schains.cleaner import remove_schain_container, remove_schain_volume
 from core.schains.ima import ImaData
 
 from tests.utils import (
@@ -288,6 +289,7 @@ def skaled_mock_image(scope='module'):
     dutils.client.images.remove(name, force=True)
 
 
+@pytest.fixture
 def cleanup_schain_containers(dutils):
     yield
     containers = dutils.get_all_schain_containers(all=True)
@@ -299,7 +301,12 @@ def cleanup_schain_containers(dutils):
 def cleanup_container(schain_config, dutils):
     yield
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    cleanup_schain_containers(schain_name, dutils)
+    cleanup_schain_container(schain_name, dutils)
+
+
+def cleanup_schain_container(schain_name: str, dutils: DockerUtils):
+    remove_schain_container(schain_name, dutils)
+    remove_schain_volume(schain_name, dutils)
 
 
 @pytest.fixture
