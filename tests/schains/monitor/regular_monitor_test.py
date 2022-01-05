@@ -20,7 +20,11 @@ from tools.configs import (
 from web.models.schain import SChainRecord
 
 from tests.dkg_utils import safe_run_dkg_mock
-from tests.utils import alter_schain_config, get_test_rule_controller
+from tests.utils import (
+    alter_schain_config,
+    get_test_rule_controller,
+    no_schain_artifacts
+)
 
 
 logger = logging.getLogger(__name__)
@@ -72,26 +76,30 @@ def test_regular_monitor(
         dutils=dutils
     )
 
-    with mock.patch('core.schains.monitor.base_monitor.safe_run_dkg', safe_run_dkg_mock):
+    with no_schain_artifacts(schain['name'], dutils):
+        with mock.patch(
+            'core.schains.monitor.base_monitor.safe_run_dkg',
+            safe_run_dkg_mock
+        ):
+            test_monitor.run()
+
+        assert schain_checks.config_dir.status
+        assert schain_checks.dkg.status
+        assert schain_checks.config.status
+        assert schain_checks.volume.status
+        assert schain_checks.skaled_container.status
+        assert not schain_checks.ima_container.status
+
+        test_monitor.cleanup_schain_docker_entity()
+        alter_schain_config(schain_name, sgx_wallet.public_key)
+
         test_monitor.run()
 
-    assert schain_checks.config_dir.status
-    assert schain_checks.dkg.status
-    assert schain_checks.config.status
-    assert schain_checks.volume.status
-    assert schain_checks.skaled_container.status
-    assert not schain_checks.ima_container.status
+        assert schain_checks.volume.status
+        assert schain_checks.skaled_container.status
 
-    test_monitor.cleanup_schain_docker_entity()
-    alter_schain_config(schain_name, sgx_wallet.public_key)
+        if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker
+            assert schain_checks.rpc.status
+            assert schain_checks.blocks.status
 
-    test_monitor.run()
-
-    assert schain_checks.volume.status
-    assert schain_checks.skaled_container.status
-
-    if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker
-        assert schain_checks.rpc.status
-        assert schain_checks.blocks.status
-
-    test_monitor.cleanup_schain_docker_entity()
+        test_monitor.cleanup_schain_docker_entity()

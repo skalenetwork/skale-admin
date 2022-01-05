@@ -21,7 +21,11 @@ from tools.configs.containers import SCHAIN_CONTAINER
 from web.models.schain import SChainRecord
 
 from tests.dkg_utils import safe_run_dkg_mock
-from tests.utils import alter_schain_config, get_test_rule_controller
+from tests.utils import (
+    alter_schain_config,
+    get_test_rule_controller,
+    no_schain_artifacts
+)
 
 
 logger = logging.getLogger(__name__)
@@ -34,8 +38,7 @@ def test_ssl_monitor(
     skale_ima,
     dutils,
     ssl_folder,
-    schain_on_contracts,
-    cleanup_containers
+    schain_on_contracts
 ):
     schain_name = schain_on_contracts
     schain = skale.schains.get_by_name(schain_name)
@@ -82,34 +85,36 @@ def test_ssl_monitor(
 
     schain_record.set_needs_reload(True)
 
-    with mock.patch(
-        'core.schains.monitor.base_monitor.safe_run_dkg',
-        safe_run_dkg_mock
-    ):
+    with no_schain_artifacts(schain['name'], dutils):
+        with mock.patch(
+            'core.schains.monitor.base_monitor.safe_run_dkg',
+            safe_run_dkg_mock
+        ):
+            ssl_monitor.run()
+
+        schain_record = SChainRecord.get_by_name(schain_name)
+        assert schain_record.needs_reload is False
+        state = dutils.get_info(container_name)['stats']['State']
+        assert state['Status'] == 'running'
+        initial_started_at = state['StartedAt']
+
+        ssl_monitor.cleanup_schain_docker_entity()
+        alter_schain_config(schain_name, sgx_wallet.public_key)
+
         ssl_monitor.run()
 
-    schain_record = SChainRecord.get_by_name(schain_name)
-    assert schain_record.needs_reload is False
-    state = dutils.get_info(container_name)['stats']['State']
-    assert state['Status'] == 'up'
-    initial_started_at = state['StartedAt']
+        state = dutils.get_info(container_name)['stats']['State']
+        assert state['Status'] == 'running'
+        assert state['StartedAt'] > initial_started_at
 
-    alter_schain_config(schain_name, sgx_wallet.public_key)
+        assert schain_record.needs_reload is False
+        assert schain_checks.config_dir.status
+        assert schain_checks.dkg.status
+        assert schain_checks.config.status
+        assert schain_checks.volume.status
+        assert schain_checks.skaled_container.status
+        assert not schain_checks.ima_container.status
 
-    ssl_monitor.run()
-
-    state = dutils.get_info(container_name)['stats']['State']
-    assert state['Status'] == 'up'
-    assert state['StartedAt'] > initial_started_at
-
-    assert schain_record.needs_reload is False
-    assert schain_checks.config_dir.status
-    assert schain_checks.dkg.status
-    assert schain_checks.config.status
-    assert schain_checks.volume.status
-    assert schain_checks.skaled_container.status
-    assert not schain_checks.ima_container.status
-
-    if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker  # noqa
-        assert schain_checks.rpc.status
-        assert schain_checks.blocks.status
+        if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker  # noqa
+            assert schain_checks.rpc.status
+            assert schain_checks.blocks.status
