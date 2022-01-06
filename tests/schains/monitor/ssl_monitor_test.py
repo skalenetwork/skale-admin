@@ -100,8 +100,8 @@ def test_ssl_monitor(
 
         schain_record = SChainRecord.get_by_name(schain_name)
         assert schain_record.needs_reload is False
-        state = dutils.get_info(container_name)['stats']['State']
-        assert state['status'] == 'not_found'
+        info = dutils.get_info(container_name)
+        assert info['status'] == 'not_found'
 
         with mock.patch(
             'core.schains.monitor.base_monitor.safe_run_dkg',
@@ -110,6 +110,7 @@ def test_ssl_monitor(
             regular_monitor.run()
         alter_schain_config(schain_name, sgx_wallet.public_key)
 
+        state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
         initial_started_at = state['StartedAt']
 
