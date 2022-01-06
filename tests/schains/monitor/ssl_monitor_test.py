@@ -1,5 +1,6 @@
 import logging
 import platform
+import time
 
 import mock
 
@@ -127,6 +128,8 @@ def test_ssl_monitor(
         assert schain_checks.volume.status
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
+
+        time.sleep(5)
 
         if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker  # noqa
             assert schain_checks.rpc.status
