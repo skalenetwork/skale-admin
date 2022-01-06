@@ -101,7 +101,7 @@ def test_ssl_monitor(
         schain_record = SChainRecord.get_by_name(schain_name)
         assert schain_record.needs_reload is False
         state = dutils.get_info(container_name)['stats']['State']
-        assert state['Status'] == 'not_found'
+        assert state['status'] == 'not_found'
 
         with mock.patch(
             'core.schains.monitor.base_monitor.safe_run_dkg',
