@@ -19,14 +19,14 @@
 
 import logging
 
-from core.schains.monitor import BaseMonitor, RegularMonitor
+from core.schains.monitor import BaseMonitor
 from core.schains.runner import restart_container
 from tools.configs.containers import SCHAIN_CONTAINER
 
 logger = logging.getLogger(__name__)
 
 
-class SSLReloadMonitor(RegularMonitor):
+class SSLReloadMonitor(BaseMonitor):
     """
     SSLReloadMonitor is executed when new ssl certificates were uploaded
     """
@@ -41,4 +41,3 @@ class SSLReloadMonitor(RegularMonitor):
         record.set_restart_count(0)
         record.set_failed_rpc_count(0)
         record.set_needs_reload(False)
-        super().run()

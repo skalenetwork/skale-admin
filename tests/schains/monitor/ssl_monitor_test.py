@@ -9,7 +9,7 @@ from skale.utils.helper import ip_from_bytes
 
 from core.schains.checks import SChainChecks
 from core.schains.ima import ImaData
-from core.schains.monitor import SSLReloadMonitor
+from core.schains.monitor import RegularMonitor, SSLReloadMonitor
 from core.schains.runner import get_container_info
 
 from tools.configs import (
@@ -82,24 +82,36 @@ def test_ssl_monitor(
         rule_controller=rc,
         dutils=dutils
     )
+    regular_monitor = RegularMonitor(
+        skale=skale,
+        ima_data=ima_data,
+        schain=schain,
+        node_config=node_config,
+        rotation_data={'rotation_id': 0},
+        checks=schain_checks,
+        rule_controller=rc,
+        dutils=dutils
+    )
 
     schain_record.set_needs_reload(True)
 
     with no_schain_artifacts(schain['name'], dutils):
-        with mock.patch(
-            'core.schains.monitor.base_monitor.safe_run_dkg',
-            safe_run_dkg_mock
-        ):
-            ssl_monitor.run()
+        ssl_monitor.run()
 
         schain_record = SChainRecord.get_by_name(schain_name)
         assert schain_record.needs_reload is False
         state = dutils.get_info(container_name)['stats']['State']
+        assert state['Status'] == 'not_found'
+
+        with mock.patch(
+            'core.schains.monitor.base_monitor.safe_run_dkg',
+            safe_run_dkg_mock
+        ):
+            regular_monitor.run()
+        alter_schain_config(schain_name, sgx_wallet.public_key)
+
         assert state['Status'] == 'running'
         initial_started_at = state['StartedAt']
-
-        ssl_monitor.cleanup_schain_docker_entity()
-        alter_schain_config(schain_name, sgx_wallet.public_key)
 
         ssl_monitor.run()
 
