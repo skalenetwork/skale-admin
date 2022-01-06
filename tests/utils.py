@@ -16,11 +16,11 @@ from core.schains.config.main import save_schain_config
 from core.schains.config.helper import get_schain_config
 from core.schains.firewall.types import IHostFirewallController
 from core.schains.firewall import SChainFirewallManager, SChainRuleController
-from core.schains.runner import run_schain_container, run_ima_container
+from core.schains.runner import run_schain_container, run_ima_container, get_container_info
 
 from tools.docker_utils import DockerUtils
-from tools.helper import run_cmd, is_address_contract
-from tools.configs.web3 import ZERO_ADDRESS
+from tools.helper import run_cmd
+from tools.configs.containers import SCHAIN_CONTAINER
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -266,7 +266,11 @@ def get_test_rule_controller(
     return rc
 
 
-def test_is_address_contract(skale):
-    assert not is_address_contract(skale.web3, ZERO_ADDRESS)
-    assert is_address_contract(skale.web3, skale.manager.address)
-    assert is_address_contract(skale.web3, skale.nodes.address)
+def run_custom_schain_container(dutils, schain_name, entrypoint):
+    image_name, container_name, _, _ = get_container_info(
+        SCHAIN_CONTAINER, schain_name)
+    return dutils.run_container(
+        image_name=image_name,
+        name=container_name,
+        entrypoint=entrypoint
+    )

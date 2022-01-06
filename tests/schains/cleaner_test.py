@@ -220,10 +220,6 @@ def test_get_schains_on_node(schain_dirs_for_monitor,
                              dutils, schain_container, upsert_db):
     schain_name = schain_container
     result = get_schains_on_node(dutils)
-    print(sorted([
-        TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
-        PHANTOM_SCHAIN_NAME, schain_name
-    ]))
     assert result == sorted([
         TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
         PHANTOM_SCHAIN_NAME, schain_name
