@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 def monitor_schain_rpc(
     schain,
     schain_record,
+    skaled_status,
     dutils=None
 ):
     dutils = dutils or DockerUtils()
@@ -46,7 +47,11 @@ def monitor_schain_rpc(
         return
 
     if is_exited_with_zero(schain_name, dutils=dutils):
-        logger.info(f'{schain_name} container exited with zero, skipping RPC monitor')
+        logger.info(f'{schain_name} - Skipping RPC monitor: container exited with zero EC')
+        return
+
+    if skaled_status.is_downloading_snapshot:
+        logger.info(f'{schain_name} - Skipping RPC monitor: skaled is downloading snapshot')
         return
 
     rpc_stuck = schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT

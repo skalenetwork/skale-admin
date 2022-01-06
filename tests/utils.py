@@ -32,6 +32,8 @@ TEST_IMA_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
     DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'ima.json')
 
 
+TEST_SKALED_STATUS_FILEPATH = os.path.join(DIR_PATH, 'skale-data', 'schain_status_sample.json')
+
 CONTAINERS_JSON = {
   "schain": {
     "name": "skalenetwork/schain",

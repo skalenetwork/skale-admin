@@ -16,12 +16,16 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config
 )
+from core.schains.config.directory import skaled_status_filepath
+from core.schains.skaled_status import SkaledStatus
+
 from core.node_config import NodeConfig
 
 from core.schains.ima import ImaData
 
 from tests.utils import (
     CONTAINERS_JSON,
+    TEST_SKALED_STATUS_FILEPATH,
     generate_cert,
     get_test_rule_controller,
     init_skale_ima,
@@ -77,6 +81,22 @@ def cert_key_pair(ssl_folder):
 def get_random_string(length=8):
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(length))
+
+
+def get_skaled_status_dict():
+    return {
+        "subsystemRunning": {
+            "SnapshotDownloader": False,
+            "Blockchain": False,
+            "Rpc": False
+        },
+        "exitState": {
+            "ClearDataDir": False,
+            "StartAgain": False,
+            "StartFromSnapshot": False,
+            "ExitTimeReached": False
+        }
+    }.copy()
 
 
 def generate_schain_config(schain_name):
@@ -225,6 +245,37 @@ def schain_config(_schain_name):
     yield schain_config
     # fix permission denied after schain container running
     subprocess.run(['rm', '-rf', schain_dir_path])
+
+
+@pytest.fixture
+def schain_skaled_status_file(_schain_name):
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
+    pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+
+    status_filepath = skaled_status_filepath(_schain_name)
+    with open(status_filepath, 'w') as config_file:
+        json.dump(get_skaled_status_dict(), config_file)
+    yield _schain_name
+    # fix permission denied after schain container running
+    subprocess.run(['rm', '-rf', schain_dir_path])
+
+
+@pytest.fixture
+def skaled_status():
+    with open(TEST_SKALED_STATUS_FILEPATH, 'w') as config_file:
+        json.dump(get_skaled_status_dict(), config_file)
+    yield SkaledStatus(TEST_SKALED_STATUS_FILEPATH)
+    os.remove(TEST_SKALED_STATUS_FILEPATH)
+
+
+@pytest.fixture
+def skaled_status_downloading_snapshot():
+    skaled_status_dict = get_skaled_status_dict()
+    skaled_status_dict['subsystemRunning']['snapshotDownloader'] = True
+    with open(TEST_SKALED_STATUS_FILEPATH, 'w') as config_file:
+        json.dump(skaled_status_dict, config_file)
+    yield SkaledStatus(TEST_SKALED_STATUS_FILEPATH)
+    os.remove(TEST_SKALED_STATUS_FILEPATH)
 
 
 @pytest.fixture
