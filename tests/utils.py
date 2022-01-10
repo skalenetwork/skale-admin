@@ -5,6 +5,7 @@ import json
 import random
 import string
 import time
+from contextlib import contextmanager
 
 from mock import Mock, MagicMock
 
@@ -12,6 +13,11 @@ from skale import Skale, SkaleIma
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
+from core.schains.cleaner import (
+    remove_config_dir,
+    remove_schain_container,
+    remove_schain_volume
+)
 from core.schains.config.main import save_schain_config
 from core.schains.config.helper import get_schain_config
 from core.schains.firewall.types import IHostFirewallController
@@ -264,6 +270,17 @@ def get_test_rule_controller(
     if synced:
         rc.sync()
     return rc
+
+
+@contextmanager
+def no_schain_artifacts(schain_name, dutils):
+    try:
+        yield
+    finally:
+        remove_schain_container(schain_name, dutils=dutils)
+        time.sleep(10)
+        remove_schain_volume(schain_name, dutils=dutils)
+        remove_config_dir(schain_name)
 
 
 def run_custom_schain_container(dutils, schain_name, entrypoint):
