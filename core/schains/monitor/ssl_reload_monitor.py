@@ -17,10 +17,27 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .base_monitor import BaseMonitor  # noqa
-from .regular_monitor import RegularMonitor  # noqa
-from .repair_monitor import RepairMonitor  # noqa
-from .backup_monitor import BackupMonitor  # noqa
-from .rotation_monitor import RotationMonitor  # noqa
-from .post_rotation_monitor import PostRotationMonitor  # noqa
-from .ssl_reload_monitor import SSLReloadMonitor  # noqa
+import logging
+
+from core.schains.monitor import BaseMonitor
+from core.schains.runner import restart_container
+from tools.configs.containers import SCHAIN_CONTAINER
+
+logger = logging.getLogger(__name__)
+
+
+class SSLReloadMonitor(BaseMonitor):
+    """
+    SSLReloadMonitor is executed when new ssl certificates were uploaded
+    """
+    @BaseMonitor.monitor_runner
+    def run(self):
+        logger.info(
+            '%s. Reload requested. Going to restart sChain container',
+            self.p
+        )
+        restart_container(SCHAIN_CONTAINER, self.schain, dutils=self.dutils)
+        record = self.schain_record
+        record.set_restart_count(0)
+        record.set_failed_rpc_count(0)
+        record.set_needs_reload(False)

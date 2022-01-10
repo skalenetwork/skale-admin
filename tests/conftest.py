@@ -9,8 +9,6 @@ import pytest
 from skale.utils.contracts_provision.main import (create_nodes, create_schain,
                                                   cleanup_nodes_schains)
 from core.schains.checks import SChainChecks
-from core.schains.cleaner import remove_schain_container
-from core.schains.cleaner import remove_schain_volume
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
@@ -21,6 +19,7 @@ from core.schains.skaled_status import SkaledStatus
 
 from core.node_config import NodeConfig
 
+from core.schains.cleaner import remove_schain_container, remove_schain_volume
 from core.schains.ima import ImaData
 
 from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH

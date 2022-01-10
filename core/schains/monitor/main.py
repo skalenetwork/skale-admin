@@ -29,7 +29,13 @@ from core.schains.checks import SChainChecks
 from core.schains.firewall import get_default_rule_controller
 from core.schains.ima import ImaData
 from core.schains.monitor import (
-    BaseMonitor, RegularMonitor, RepairMonitor, BackupMonitor, RotationMonitor, PostRotationMonitor
+    BaseMonitor,
+    BackupMonitor,
+    PostRotationMonitor,
+    RegularMonitor,
+    RepairMonitor,
+    RotationMonitor,
+    SSLReloadMonitor
 )
 from core.schains.rotation import check_schain_rotated
 from core.schains.firewall.utils import get_sync_agent_ranges
@@ -69,6 +75,10 @@ def _is_post_rotation_mode(schain_name: str) -> bool:
     return check_schain_rotated(schain_name)
 
 
+def _is_ssl_reload_mode(schain_record: SChainRecord) -> bool:
+    return schain_record.needs_reload
+
+
 def get_monitor_type(
         schain_record: SChainRecord,
         checks: SChainChecks,
@@ -82,6 +92,8 @@ def get_monitor_type(
         return RotationMonitor
     if _is_post_rotation_mode(checks.name):
         return PostRotationMonitor
+    if _is_ssl_reload_mode(schain_record):
+        return SSLReloadMonitor
     return RegularMonitor
 
 

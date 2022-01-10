@@ -1,5 +1,6 @@
 import logging
 import platform
+import time
 
 import mock
 
@@ -8,14 +9,15 @@ from skale.wallets import SgxWallet
 from skale.utils.helper import ip_from_bytes
 
 from core.schains.checks import SChainChecks
-from core.schains.monitor import RegularMonitor
 from core.schains.ima import ImaData
-
+from core.schains.monitor import RegularMonitor, SSLReloadMonitor
+from core.schains.runner import get_container_info
 
 from tools.configs import (
     SGX_CERTIFICATES_FOLDER,
     SGX_SERVER_URL
 )
+from tools.configs.containers import SCHAIN_CONTAINER
 
 from web.models.schain import SChainRecord
 
@@ -30,7 +32,7 @@ from tests.utils import (
 logger = logging.getLogger(__name__)
 
 
-def test_regular_monitor(
+def test_ssl_monitor(
     schain_db,
     skale,
     node_config,
@@ -42,6 +44,10 @@ def test_regular_monitor(
     schain_name = schain_on_contracts
     schain = skale.schains.get_by_name(schain_name)
     nodes = get_nodes_for_schain(skale, schain_name)
+    image_name, container_name, _, _ = get_container_info(
+        SCHAIN_CONTAINER,
+        schain_db
+    )
 
     # not using rule_controller fixture to avoid config generation
     rc = get_test_rule_controller(name=schain_name)
@@ -57,6 +63,8 @@ def test_regular_monitor(
     node_config.sgx_key_name = sgx_wallet.key_name
 
     schain_record = SChainRecord.get_by_name(schain_name)
+    schain_record.set_needs_reload(True)
+
     schain_checks = SChainChecks(
         schain_name,
         node_config.id,
@@ -65,7 +73,17 @@ def test_regular_monitor(
         dutils=dutils
     )
     ima_data = ImaData(False, '0x1')
-    test_monitor = RegularMonitor(
+    ssl_monitor = SSLReloadMonitor(
+        skale=skale,
+        ima_data=ima_data,
+        schain=schain,
+        node_config=node_config,
+        rotation_data={'rotation_id': 0},
+        checks=schain_checks,
+        rule_controller=rc,
+        dutils=dutils
+    )
+    regular_monitor = RegularMonitor(
         skale=skale,
         ima_data=ima_data,
         schain=schain,
@@ -76,13 +94,34 @@ def test_regular_monitor(
         dutils=dutils
     )
 
+    schain_record.set_needs_reload(True)
+
     with no_schain_artifacts(schain['name'], dutils):
+        ssl_monitor.run()
+
+        schain_record = SChainRecord.get_by_name(schain_name)
+        assert schain_record.needs_reload is False
+        info = dutils.get_info(container_name)
+        assert info['status'] == 'not_found'
+
         with mock.patch(
             'core.schains.monitor.base_monitor.safe_run_dkg',
             safe_run_dkg_mock
         ):
-            test_monitor.run()
+            regular_monitor.run()
+        alter_schain_config(schain_name, sgx_wallet.public_key)
 
+        state = dutils.get_info(container_name)['stats']['State']
+        assert state['Status'] == 'running'
+        initial_started_at = state['StartedAt']
+
+        ssl_monitor.run()
+
+        state = dutils.get_info(container_name)['stats']['State']
+        assert state['Status'] == 'running'
+        assert state['StartedAt'] > initial_started_at
+
+        assert schain_record.needs_reload is False
         assert schain_checks.config_dir.status
         assert schain_checks.dkg.status
         assert schain_checks.config.status
@@ -90,16 +129,8 @@ def test_regular_monitor(
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
 
-        test_monitor.cleanup_schain_docker_entity()
-        alter_schain_config(schain_name, sgx_wallet.public_key)
+        time.sleep(5)
 
-        test_monitor.run()
-
-        assert schain_checks.volume.status
-        assert schain_checks.skaled_container.status
-
-        if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker
+        if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker  # noqa
             assert schain_checks.rpc.status
             assert schain_checks.blocks.status
-
-        test_monitor.cleanup_schain_docker_entity()
