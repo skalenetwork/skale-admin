@@ -17,10 +17,15 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
+import logging
 import functools
 from filelock import FileLock
 
 from tools.helper import read_json, write_json
+
+
+logger = logging.getLogger(__name__)
 
 
 def config_setter(config_path, lock_path):
@@ -41,6 +46,9 @@ def config_getter(func):
     @functools.wraps(func)
     def wrapper_decorator(*args, **kwargs):
         field_name, filepath = func(*args, **kwargs)
+        if not os.path.isfile(filepath):
+            logger.warning("File %s is not found, can't get %s", filepath, field_name)
+            return
         config = read_json(filepath)
         return config.get(field_name)
     return wrapper_decorator

@@ -6,6 +6,7 @@ from functools import partial
 
 import pytest
 from flask import Flask, appcontext_pushed, g
+from Crypto.Hash import keccak
 
 from core.node_config import NodeConfig
 from core.schains.config.directory import schain_config_filepath
@@ -14,7 +15,7 @@ from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 from web.helper import get_api_url
 
-from Crypto.Hash import keccak
+from tests.conftest import get_skaled_status_dict
 
 
 BLUEPRINT_NAME = 'schains'
@@ -35,6 +36,13 @@ def skale_bp(skale, dutils):
         SChainRecord.create_table()
         yield app.test_client()
         SChainRecord.drop_table()
+
+
+def test_schain_statuses(skale_bp, schain_skaled_status_file):
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'statuses'))
+    skaled_status = get_skaled_status_dict(exit_time_reached=True)
+    assert data['status'] == 'ok'
+    assert data['payload'][schain_skaled_status_file] == skaled_status
 
 
 def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):

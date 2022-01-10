@@ -32,8 +32,10 @@ from core.schains.firewall.utils import (
     get_default_rule_controller,
     get_sync_agent_ranges
 )
+from core.schains.skaled_status import init_skaled_status
 from core.schains.ima import get_ima_version
 from core.schains.info import get_schain_info_by_name, get_skaled_version
+from core.schains.cleaner import get_schains_on_node
 from tools.helper import init_skale
 from web.models.schain import get_schains_statuses, toggle_schain_repair_mode
 from web.helper import (construct_ok_response, construct_err_response,
@@ -46,6 +48,19 @@ BLUEPRINT_NAME = 'schains'
 
 def construct_schains_bp():
     schains_bp = Blueprint(BLUEPRINT_NAME, __name__)
+
+    @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'statuses'), methods=['GET'])
+    def schain_statuses():
+        logger.debug(request)
+        node_id = g.config.id
+        if node_id is None:
+            return construct_err_response(msg='No node installed')
+        schains_on_node = get_schains_on_node(g.docker_utils)
+        statuses = {}
+        for schain_name in schains_on_node:
+            skaled_status = init_skaled_status(schain_name)
+            statuses[schain_name] = skaled_status.all
+        return construct_ok_response(statuses)
 
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'config'), methods=['GET'])
     def schain_config():

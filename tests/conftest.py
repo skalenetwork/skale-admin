@@ -23,6 +23,14 @@ from core.node_config import NodeConfig
 
 from core.schains.ima import ImaData
 
+from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
+from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.containers import CONTAINERS_FILEPATH
+from tools.docker_utils import DockerUtils
+from tools.helper import write_json
+
+from web.models.schain import create_tables, SChainRecord, upsert_schain_record
+
 from tests.utils import (
     CONTAINERS_JSON,
     TEST_SKALED_STATUS_FILEPATH,
@@ -31,11 +39,6 @@ from tests.utils import (
     init_skale_ima,
     init_web3_skale
 )
-from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
-from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.containers import CONTAINERS_FILEPATH
-from tools.docker_utils import DockerUtils
-from web.models.schain import create_tables, SChainRecord, upsert_schain_record
 
 
 @pytest.fixture
@@ -83,10 +86,10 @@ def get_random_string(length=8):
     return ''.join(random.choice(letters) for i in range(length))
 
 
-def get_skaled_status_dict():
+def get_skaled_status_dict(snapshot_downloader=False, exit_time_reached=False):
     return {
         "subsystemRunning": {
-            "SnapshotDownloader": False,
+            "SnapshotDownloader": snapshot_downloader,
             "Blockchain": False,
             "Rpc": False
         },
@@ -94,7 +97,7 @@ def get_skaled_status_dict():
             "ClearDataDir": False,
             "StartAgain": False,
             "StartFromSnapshot": False,
-            "ExitTimeReached": False
+            "ExitTimeReached": exit_time_reached
         }
     }.copy()
 
@@ -251,10 +254,8 @@ def schain_config(_schain_name):
 def schain_skaled_status_file(_schain_name):
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
     pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
-
     status_filepath = skaled_status_filepath(_schain_name)
-    with open(status_filepath, 'w') as config_file:
-        json.dump(get_skaled_status_dict(), config_file)
+    write_json(status_filepath, get_skaled_status_dict(exit_time_reached=True))
     yield _schain_name
     # fix permission denied after schain container running
     subprocess.run(['rm', '-rf', schain_dir_path])
@@ -262,18 +263,21 @@ def schain_skaled_status_file(_schain_name):
 
 @pytest.fixture
 def skaled_status():
-    with open(TEST_SKALED_STATUS_FILEPATH, 'w') as config_file:
-        json.dump(get_skaled_status_dict(), config_file)
+    write_json(TEST_SKALED_STATUS_FILEPATH, get_skaled_status_dict())
     yield SkaledStatus(TEST_SKALED_STATUS_FILEPATH)
     os.remove(TEST_SKALED_STATUS_FILEPATH)
 
 
 @pytest.fixture
 def skaled_status_downloading_snapshot():
-    skaled_status_dict = get_skaled_status_dict()
-    skaled_status_dict['subsystemRunning']['snapshotDownloader'] = True
-    with open(TEST_SKALED_STATUS_FILEPATH, 'w') as config_file:
-        json.dump(skaled_status_dict, config_file)
+    write_json(TEST_SKALED_STATUS_FILEPATH, get_skaled_status_dict(snapshot_downloader=True))
+    yield SkaledStatus(TEST_SKALED_STATUS_FILEPATH)
+    os.remove(TEST_SKALED_STATUS_FILEPATH)
+
+
+@pytest.fixture
+def skaled_status_exit_time_reached():
+    write_json(TEST_SKALED_STATUS_FILEPATH, get_skaled_status_dict(exit_time_reached=True))
     yield SkaledStatus(TEST_SKALED_STATUS_FILEPATH)
     os.remove(TEST_SKALED_STATUS_FILEPATH)
 

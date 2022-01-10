@@ -3,11 +3,11 @@ from core.schains.skaled_status import SkaledStatus, init_skaled_status
 from tests.utils import TEST_SKALED_STATUS_FILEPATH
 
 
-def test_skaled_status():
+def test_skaled_status(skaled_status):
     skaled_status = SkaledStatus(filepath=TEST_SKALED_STATUS_FILEPATH)
 
     assert skaled_status.subsystem_running == {
-        'SnapshotDownloader': True,
+        'SnapshotDownloader': False,
         'Blockchain': False,
         'Rpc': False
     }
@@ -26,3 +26,13 @@ def test_init_skaled_status(schain_skaled_status_file):
 
 def test_is_downloading_snapshot(skaled_status_downloading_snapshot):
     assert skaled_status_downloading_snapshot.is_downloading_snapshot
+
+
+def test_is_exit_time_reached(skaled_status_exit_time_reached):
+    assert skaled_status_exit_time_reached.is_exit_time_reached
+
+
+def test_no_status_file():
+    skaled_status = SkaledStatus(filepath='/skaleddd_status.json')
+    assert skaled_status.subsystem_running is None
+    assert skaled_status.is_downloading_snapshot is None

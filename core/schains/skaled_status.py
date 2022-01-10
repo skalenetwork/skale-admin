@@ -17,11 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import logging
 
 from core.schains.config.directory import skaled_status_filepath
 from tools.config_utils import config_getter
-from tools.helper import read_json, init_file
+from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,6 @@ logger = logging.getLogger(__name__)
 class SkaledStatus:
     def __init__(self, filepath: str):
         self.filepath = filepath
-        init_file(filepath, {})
 
     @property
     @config_getter
@@ -43,9 +43,23 @@ class SkaledStatus:
 
     @property
     def is_downloading_snapshot(self):
-        return self.subsystem_running['SnapshotDownloader']
+        subsystem_running = self.subsystem_running
+        if not subsystem_running:
+            return
+        return subsystem_running['SnapshotDownloader']
 
+    @property
+    def is_exit_time_reached(self):
+        exit_state = self.exit_state
+        if not exit_state:
+            return
+        return exit_state['ExitTimeReached']
+
+    @property
     def all(self) -> dict:
+        if not os.path.isfile(self.filepath):
+            logger.warning("File %s is not found", self.filepath)
+            return
         return read_json(self.filepath)
 
 

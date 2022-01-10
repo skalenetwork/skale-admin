@@ -22,7 +22,7 @@ import json
 import logging
 from pathlib import Path
 
-from tools.configs import SCHAIN_CONFIG_DIR_SKALED, ROTATION_FLAG_FILENAME
+from tools.configs import SCHAIN_CONFIG_DIR_SKALED
 from tools.configs.schains import (
     SCHAINS_DIR_PATH, SCHAINS_DIR_PATH_HOST, BASE_SCHAIN_CONFIG_FILEPATH, SKALED_STATUS_FILENAME
 )
@@ -60,11 +60,6 @@ def schain_config_filepath(name: str, in_schain_container=False) -> str:
 
 def skaled_status_filepath(name: str) -> str:
     return os.path.join(schain_config_dir(name), SKALED_STATUS_FILENAME)
-
-
-def get_schain_rotation_filepath(schain_name):
-    schain_dir_path = schain_config_dir(schain_name)
-    return os.path.join(schain_dir_path, ROTATION_FLAG_FILENAME)
 
 
 def get_tmp_schain_config_filepath(schain_name):

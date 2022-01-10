@@ -26,12 +26,9 @@ def test_monitor_schain_rpc_ec_0(schain_db, dutils, cleanup_schain_containers, s
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain_db)
 
-    dutils.run_container(
-        image_name=image_name,
-        name=container_name,
-        entrypoint='bash -c "exit 0"'
-    )
-    sleep(10)
+    dutils.run_container(image_name=image_name, name=container_name, entrypoint='bash -c "exit 0"')
+    sleep(7)
+    schain_record.set_failed_rpc_count(100)
 
     container_info = dutils.get_info(container_name)
     finished_at = container_info['stats']['State']['FinishedAt']
@@ -44,6 +41,34 @@ def test_monitor_schain_rpc_ec_0(schain_db, dutils, cleanup_schain_containers, s
     )
     assert dutils.is_container_exists(container_name)
 
+    container_info = dutils.get_info(container_name)
+    assert container_info['stats']['State']['FinishedAt'] == finished_at
+
+
+def test_monitor_schain_downloading_snapshot(
+    schain_db,
+    dutils,
+    cleanup_schain_containers,
+    skaled_status_downloading_snapshot
+):
+    schain_record = SChainRecord.get_by_name(schain_db)
+
+    image_name, container_name, _, _ = get_container_info(
+        SCHAIN_CONTAINER, schain_db)
+
+    dutils.run_container(image_name=image_name, name=container_name, entrypoint='bash -c "exit 5"')
+    sleep(7)
+    schain_record.set_failed_rpc_count(100)
+
+    container_info = dutils.get_info(container_name)
+    finished_at = container_info['stats']['State']['FinishedAt']
+
+    monitor_schain_rpc(
+        schain={'name': schain_db},
+        schain_record=schain_record,
+        skaled_status=skaled_status_downloading_snapshot,
+        dutils=dutils
+    )
     container_info = dutils.get_info(container_name)
     assert container_info['stats']['State']['FinishedAt'] == finished_at
 

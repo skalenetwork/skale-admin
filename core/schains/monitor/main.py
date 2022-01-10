@@ -65,15 +65,14 @@ def _is_rotation_mode(rotation_in_progress: bool) -> bool:
     return rotation_in_progress
 
 
-def _is_post_rotation_mode(schain_name: str, dutils=None) -> bool:
-    return check_schain_rotated(schain_name, dutils)
+def _is_post_rotation_mode(schain_name: str) -> bool:
+    return check_schain_rotated(schain_name)
 
 
 def get_monitor_type(
         schain_record: SChainRecord,
         checks: SChainChecks,
         rotation_in_progress: bool,
-        dutils=None
         ) -> BaseMonitor:
     if _is_backup_mode(schain_record):
         return BackupMonitor
@@ -81,7 +80,7 @@ def get_monitor_type(
         return RepairMonitor
     if _is_rotation_mode(rotation_in_progress):
         return RotationMonitor
-    if _is_post_rotation_mode(checks.name, dutils=dutils):
+    if _is_post_rotation_mode(checks.name):
         return PostRotationMonitor
     return RegularMonitor
 
@@ -139,8 +138,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             monitor_class = get_monitor_type(
                 schain_record,
                 checks,
-                rotation_in_progress,
-                dutils
+                rotation_in_progress
             )
             monitor = monitor_class(
                 skale=skale,
