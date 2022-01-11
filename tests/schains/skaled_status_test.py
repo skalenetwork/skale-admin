@@ -1,4 +1,4 @@
-from core.schains.skaled_status import SkaledStatus, init_skaled_status
+from core.schains.skaled_status import SkaledStatus
 from core.schains.config.directory import skaled_status_filepath
 
 
@@ -20,8 +20,8 @@ def test_skaled_status(skaled_status, _schain_name):
     }
 
 
-def test_init_skaled_status(schain_skaled_status_file):
-    assert isinstance(init_skaled_status(schain_skaled_status_file), SkaledStatus)
+def test_init_skaled_status(skaled_status):
+    assert isinstance(skaled_status, SkaledStatus)
 
 
 def test_downloading_snapshot(skaled_status_downloading_snapshot):
