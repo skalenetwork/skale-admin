@@ -20,7 +20,12 @@ def test_monitor_schain_rpc_no_container(schain_db, dutils, skaled_status):
     assert not dutils.is_container_exists(container_name)
 
 
-def test_monitor_schain_rpc_ec_0(schain_db, dutils, cleanup_schain_containers, skaled_status):
+def test_monitor_schain_rpc_exit_time_reached(
+    schain_db,
+    dutils,
+    cleanup_schain_containers,
+    skaled_status_exit_time_reached
+):
     schain_record = SChainRecord.get_by_name(schain_db)
 
     image_name, container_name, _, _ = get_container_info(
@@ -36,7 +41,7 @@ def test_monitor_schain_rpc_ec_0(schain_db, dutils, cleanup_schain_containers, s
     assert not monitor_schain_rpc(
         schain={'name': schain_db},
         schain_record=schain_record,
-        skaled_status=skaled_status,
+        skaled_status=skaled_status_exit_time_reached,
         dutils=dutils
     )
     assert dutils.is_container_exists(container_name)

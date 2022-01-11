@@ -15,8 +15,6 @@ from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 from web.helper import get_api_url
 
-from tests.conftest import get_skaled_status_dict
-
 
 BLUEPRINT_NAME = 'schains'
 
@@ -38,11 +36,10 @@ def skale_bp(skale, dutils):
         SChainRecord.drop_table()
 
 
-def test_schain_statuses(skale_bp, schain_skaled_status_file):
+def test_schain_statuses(skale_bp, skaled_status, _schain_name):
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'statuses'))
-    skaled_status = get_skaled_status_dict(exit_time_reached=True)
     assert data['status'] == 'ok'
-    assert data['payload'][schain_skaled_status_file] == skaled_status
+    assert data['payload'][_schain_name] == skaled_status.all
 
 
 def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):

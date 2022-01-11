@@ -22,7 +22,6 @@ import logging
 import requests
 
 from core.schains.config.helper import get_skaled_http_address
-from core.schains.skaled_status import init_skaled_status
 
 
 logger = logging.getLogger(__name__)
@@ -52,11 +51,6 @@ def _send_rotation_request(url, timestamp):
     ).json()
     if response.get('error'):
         raise Exception(response['error']['message'])
-
-
-def check_schain_rotated(schain_name):
-    skaled_status = init_skaled_status(schain_name)
-    return skaled_status.is_exit_time_reached
 
 
 def get_schain_public_key(skale, schain_name):

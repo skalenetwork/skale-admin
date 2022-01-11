@@ -1,6 +1,5 @@
 import os
 import mock
-from time import sleep
 
 import pytest
 
@@ -9,7 +8,7 @@ from core.schains.config.directory import schain_config_dir
 from core.schains.firewall.types import IpRange
 from core.schains.monitor.main import (
     run_monitor_for_schain, get_monitor_type, BackupMonitor, RepairMonitor, PostRotationMonitor,
-    RotationMonitor, RegularMonitor
+    RotationMonitor, RegularMonitor, ReloadMonitor
 )
 from core.schains.runner import get_container_info
 from core.schains.firewall.utils import get_sync_agent_ranges
@@ -23,13 +22,13 @@ from tests.schains.monitor.base_monitor_test import BaseTestMonitor, CrashingTes
 
 class SChainChecksMock(SChainChecks):
     @property
-    def exit_code_ok(self) -> CheckRes:
+    def skaled_container(self) -> CheckRes:
         return CheckRes(True)
 
 
 class SChainChecksMockBad(SChainChecks):
     @property
-    def exit_code_ok(self) -> CheckRes:
+    def skaled_container(self) -> CheckRes:
         return CheckRes(False)
 
 
@@ -37,6 +36,17 @@ class SChainChecksMockBad(SChainChecks):
 def checks(schain_db, _schain_name, rule_controller, node_config, ima_data):
     schain_record = upsert_schain_record(schain_db)
     return SChainChecksMock(
+        _schain_name,
+        node_config.id,
+        schain_record,
+        rule_controller=rule_controller
+    )
+
+
+@pytest.fixture
+def bad_checks(schain_db, _schain_name, rule_controller, node_config, ima_data):
+    schain_record = upsert_schain_record(schain_db)
+    return SChainChecksMockBad(
         _schain_name,
         node_config.id,
         schain_record,
@@ -55,69 +65,69 @@ def run_exited_schain_container(dutils, schain_name: str, exit_code: int):
     )
 
 
-def test_is_backup_mode(schain_db, _schain_name, checks):
-    schain_record = upsert_schain_record(_schain_name)
-    assert get_monitor_type(schain_record, checks, False) != BackupMonitor
+def test_is_backup_mode(schain_db, checks, skaled_status):
+    schain_record = upsert_schain_record(schain_db)
+    assert get_monitor_type(schain_record, checks, False, skaled_status) != BackupMonitor
     schain_record.set_new_schain(False)
     with mock.patch('core.schains.monitor.main.BACKUP_RUN', True):
-        assert get_monitor_type(schain_record, checks, False) == BackupMonitor
+        assert get_monitor_type(schain_record, checks, False, skaled_status) == BackupMonitor
 
 
-def test_is_repair_mode(schain_db, _schain_name, rule_controller, node_config, checks):
-    schain_record = upsert_schain_record(_schain_name)
+def test_is_repair_mode(schain_db, checks, skaled_status):
+    schain_record = upsert_schain_record(schain_db)
 
-    assert get_monitor_type(schain_record, checks, False) != RepairMonitor
+    assert get_monitor_type(schain_record, checks, False, skaled_status) != RepairMonitor
     schain_record.set_repair_mode(True)
-    assert get_monitor_type(schain_record, checks, False) == RepairMonitor
+    assert get_monitor_type(schain_record, checks, False, skaled_status) == RepairMonitor
 
     schain_record.set_repair_mode(False)
-    assert get_monitor_type(schain_record, checks, False) != RepairMonitor
-    bad_checks = SChainChecksMockBad(
-        _schain_name,
-        node_config.id,
-        schain_record,
-        rule_controller=rule_controller
-    )
-    assert get_monitor_type(schain_record, bad_checks, False) == RepairMonitor
+    assert get_monitor_type(schain_record, checks, False, skaled_status) != RepairMonitor
 
 
-def test_is_repair_mode_state_root(schain_db, rule_controller, _schain_name, node_config, dutils):
-    schain_record = upsert_schain_record(_schain_name)
-    checks = SChainChecks(
-        _schain_name,
-        node_config.id,
-        schain_record,
-        rule_controller=rule_controller,
-        dutils=dutils
-    )
-    assert get_monitor_type(schain_record, checks, False) != RepairMonitor
-    run_exited_schain_container(dutils, _schain_name, 200)
-    sleep(10)
-    assert get_monitor_type(schain_record, checks, False) == RepairMonitor
+def test_is_repair_mode_skaled_status(schain_db, checks, bad_checks, skaled_status_repair):
+    schain_record = upsert_schain_record(schain_db)
+    schain_record.set_repair_mode(False)
+    assert get_monitor_type(
+        schain_record, checks, False, skaled_status_repair) != RepairMonitor
+    assert get_monitor_type(
+        schain_record, bad_checks, False, skaled_status_repair) == RepairMonitor
 
 
-def test_not_post_rotation_mode(schain_db, _schain_name, checks):
-    schain_record = upsert_schain_record(_schain_name)
-    assert get_monitor_type(schain_record, checks, False) != PostRotationMonitor
+def test_not_post_rotation_mode(schain_db, checks, skaled_status):
+    schain_record = upsert_schain_record(schain_db)
+    assert get_monitor_type(schain_record, checks, False, skaled_status) != PostRotationMonitor
 
 
-def test_is_post_rotation_mode(schain_db, _schain_name, checks, schain_skaled_status_file):
-    schain_record = upsert_schain_record(_schain_name)
-    schain_dir_path = schain_config_dir(_schain_name)
+def test_is_post_rotation_mode(schain_db, checks, skaled_status_exit_time_reached):
+    schain_record = upsert_schain_record(schain_db)
+    schain_dir_path = schain_config_dir(schain_db)
     os.makedirs(schain_dir_path, exist_ok=True)
-    assert get_monitor_type(schain_record, checks, False) == PostRotationMonitor
+    assert get_monitor_type(
+        schain_record, checks, False, skaled_status_exit_time_reached) == PostRotationMonitor
 
 
-def test_is_rotation_mode(schain_db, _schain_name, checks):
-    schain_record = upsert_schain_record(_schain_name)
-    assert get_monitor_type(schain_record, checks, False) != RotationMonitor
-    assert get_monitor_type(schain_record, checks, True) == RotationMonitor
+def test_is_rotation_mode(schain_db, checks, skaled_status):
+    schain_record = upsert_schain_record(schain_db)
+    assert get_monitor_type(schain_record, checks, False, skaled_status) != RotationMonitor
+    assert get_monitor_type(schain_record, checks, True, skaled_status) == RotationMonitor
 
 
-def test_is_regular_mode(schain_db, _schain_name, checks):
-    schain_record = upsert_schain_record(_schain_name)
-    assert get_monitor_type(schain_record, checks, True) != RegularMonitor
-    assert get_monitor_type(schain_record, checks, False) == RegularMonitor
+def test_is_regular_mode(schain_db, checks, skaled_status):
+    schain_record = upsert_schain_record(schain_db)
+    assert get_monitor_type(schain_record, checks, True, skaled_status) != RegularMonitor
+    assert get_monitor_type(schain_record, checks, False, skaled_status) == RegularMonitor
+
+
+def test_not_is_reload_mode(schain_db, checks, bad_checks, skaled_status):
+    schain_record = upsert_schain_record(schain_db)
+    assert get_monitor_type(schain_record, checks, False, skaled_status) != ReloadMonitor
+    assert get_monitor_type(schain_record, bad_checks, False, skaled_status) != ReloadMonitor
+
+
+def test_is_reload_mode(schain_db, checks, bad_checks, skaled_status_reload):
+    schain_record = upsert_schain_record(schain_db)
+    assert get_monitor_type(schain_record, checks, False, skaled_status_reload) != ReloadMonitor
+    assert get_monitor_type(schain_record, bad_checks, False, skaled_status_reload) == ReloadMonitor
 
 
 def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db):

@@ -29,6 +29,11 @@ logger = logging.getLogger(__name__)
 
 class SkaledStatus:
     def __init__(self, filepath: str):
+        """
+        Read-only wrapper for skaled.status file, reads from the file each time.
+        Returns dict for top-level keys, True or False for second-level keys.
+        Returns None for all keys if file is not found.
+        """
         self.filepath = filepath
 
     @property
@@ -42,18 +47,39 @@ class SkaledStatus:
         return 'exitState', self.filepath
 
     @property
-    def is_downloading_snapshot(self):
+    def downloading_snapshot(self) -> bool:
         subsystem_running = self.subsystem_running
         if not subsystem_running:
             return
         return subsystem_running['SnapshotDownloader']
 
     @property
-    def is_exit_time_reached(self):
+    def exit_time_reached(self) -> bool:
         exit_state = self.exit_state
         if not exit_state:
             return
         return exit_state['ExitTimeReached']
+
+    @property
+    def clear_data_dir(self) -> bool:
+        exit_state = self.exit_state
+        if not exit_state:
+            return
+        return exit_state['ClearDataDir']
+
+    @property
+    def start_again(self) -> bool:
+        exit_state = self.exit_state
+        if not exit_state:
+            return
+        return exit_state['StartAgain']
+
+    @property
+    def start_from_snapshot(self) -> bool:
+        exit_state = self.exit_state
+        if not exit_state:
+            return
+        return exit_state['StartFromSnapshot']
 
     @property
     def all(self) -> dict:

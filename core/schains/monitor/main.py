@@ -35,10 +35,10 @@ from core.schains.monitor import (
     RegularMonitor,
     RepairMonitor,
     RotationMonitor,
-    SSLReloadMonitor
+    ReloadMonitor
 )
-from core.schains.rotation import check_schain_rotated
 from core.schains.firewall.utils import get_sync_agent_ranges
+from core.schains.skaled_status import init_skaled_status, SkaledStatus
 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
@@ -63,37 +63,56 @@ def _is_backup_mode(schain_record: SChainRecord) -> bool:
     return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
 
 
-def _is_repair_mode(schain_record: SChainRecord, checks: SChainChecks) -> bool:
-    return schain_record.repair_mode or not checks.exit_code_ok.status
+def _is_repair_mode(
+    schain_record: SChainRecord,
+    checks: SChainChecks,
+    skaled_status: SkaledStatus
+) -> bool:
+    return schain_record.repair_mode or _is_skaled_repair_status(checks, skaled_status)
 
 
 def _is_rotation_mode(rotation_in_progress: bool) -> bool:
     return rotation_in_progress
 
 
-def _is_post_rotation_mode(schain_name: str) -> bool:
-    return check_schain_rotated(schain_name)
+def _is_post_rotation_mode(skaled_status: SkaledStatus) -> bool:
+    return skaled_status.exit_time_reached
 
 
-def _is_ssl_reload_mode(schain_record: SChainRecord) -> bool:
-    return schain_record.needs_reload
+def _is_reload_mode(
+    schain_record: SChainRecord,
+    checks: SChainChecks,
+    skaled_status: SkaledStatus
+) -> bool:
+    return schain_record.needs_reload or _is_skaled_reload_status(checks, skaled_status)
+
+
+def _is_skaled_repair_status(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
+    needs_repair = skaled_status.clear_data_dir and skaled_status.start_from_snapshot
+    return not checks.skaled_container.status and needs_repair
+
+
+def _is_skaled_reload_status(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
+    needs_reload = skaled_status.start_again and not skaled_status.start_from_snapshot
+    return not checks.skaled_container.status and needs_reload
 
 
 def get_monitor_type(
         schain_record: SChainRecord,
         checks: SChainChecks,
         rotation_in_progress: bool,
+        skaled_status: SkaledStatus
         ) -> BaseMonitor:
     if _is_backup_mode(schain_record):
         return BackupMonitor
-    if _is_repair_mode(schain_record, checks):
+    if _is_repair_mode(schain_record, checks, skaled_status):
         return RepairMonitor
     if _is_rotation_mode(rotation_in_progress):
         return RotationMonitor
-    if _is_post_rotation_mode(checks.name):
+    if _is_post_rotation_mode(skaled_status):
         return PostRotationMonitor
-    if _is_ssl_reload_mode(schain_record):
-        return SSLReloadMonitor
+    if _is_reload_mode(schain_record, checks, skaled_status):
+        return ReloadMonitor
     return RegularMonitor
 
 
@@ -146,11 +165,13 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
                 linked=ima_linked,
                 chain_id=skale_ima.web3.eth.chainId
             )
+            skaled_status = init_skaled_status(name)
 
             monitor_class = get_monitor_type(
                 schain_record,
                 checks,
-                rotation_in_progress
+                rotation_in_progress,
+                skaled_status
             )
             monitor = monitor_class(
                 skale=skale,

@@ -1,10 +1,10 @@
 from core.schains.skaled_status import SkaledStatus, init_skaled_status
+from core.schains.config.directory import skaled_status_filepath
 
-from tests.utils import TEST_SKALED_STATUS_FILEPATH
 
-
-def test_skaled_status(skaled_status):
-    skaled_status = SkaledStatus(filepath=TEST_SKALED_STATUS_FILEPATH)
+def test_skaled_status(skaled_status, _schain_name):
+    status_filepath = skaled_status_filepath(_schain_name)
+    skaled_status = SkaledStatus(filepath=status_filepath)
 
     assert skaled_status.subsystem_running == {
         'SnapshotDownloader': False,
@@ -24,15 +24,15 @@ def test_init_skaled_status(schain_skaled_status_file):
     assert isinstance(init_skaled_status(schain_skaled_status_file), SkaledStatus)
 
 
-def test_is_downloading_snapshot(skaled_status_downloading_snapshot):
-    assert skaled_status_downloading_snapshot.is_downloading_snapshot
+def test_downloading_snapshot(skaled_status_downloading_snapshot):
+    assert skaled_status_downloading_snapshot.downloading_snapshot
 
 
-def test_is_exit_time_reached(skaled_status_exit_time_reached):
-    assert skaled_status_exit_time_reached.is_exit_time_reached
+def test_exit_time_reached(skaled_status_exit_time_reached):
+    assert skaled_status_exit_time_reached.exit_time_reached
 
 
 def test_no_status_file():
     skaled_status = SkaledStatus(filepath='/skaleddd_status.json')
     assert skaled_status.subsystem_running is None
-    assert skaled_status.is_downloading_snapshot is None
+    assert skaled_status.downloading_snapshot is None
