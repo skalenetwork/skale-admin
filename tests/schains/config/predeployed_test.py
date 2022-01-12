@@ -5,7 +5,7 @@ from core.schains.types import SchainType
 from core.schains.config.predeployed import (
     generate_v1_predeployed_contracts, generate_predeployed_accounts
 )
-from tools.configs.schains import SCHAIN_OWNER_ALLOC
+from tools.configs.schains import ETHERBASE_ALLOC
 
 
 NUM_OF_PREDEPLOYED_CONTRACTS = 21
@@ -40,4 +40,4 @@ def test_generate_v1_predeployed_contracts():
     assert v1_precompiled_contracts.get('0xd2c0defaCeD20000000000000000000000000000')
 
     etherbase_balance = v1_precompiled_contracts[ETHERBASE_ADDRESS]['balance']
-    assert etherbase_balance == hex(SCHAIN_OWNER_ALLOC)
+    assert etherbase_balance == hex(ETHERBASE_ALLOC)
