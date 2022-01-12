@@ -47,7 +47,7 @@ from core.schains.config.helper import _string_to_storage, get_context_contract
 from core.schains.types import SchainType
 from core.schains.limits import get_fs_allocated_storage
 
-from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC
+from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC, ETHERBASE_ALLOC
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.helper import read_json
 
@@ -112,7 +112,7 @@ def generate_v1_predeployed_contracts(
         schain_owner=on_chain_owner,
         ether_managers=[message_proxy_for_schain_address],
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
-        balance=SCHAIN_OWNER_ALLOC
+        balance=ETHERBASE_ALLOC
     )
 
     marionette_generator = UpgradeableMarionetteGenerator()
