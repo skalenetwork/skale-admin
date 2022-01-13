@@ -188,6 +188,7 @@ def test_base_monitor_skaled_container_sync(test_monitor):
     monitor_schain_mock.assert_called_with(
         test_monitor.schain,
         schain_record=test_monitor.schain_record,
+        skaled_status=test_monitor.skaled_status,
         public_key='0:0:1:0',
         start_ts=0,
         dutils=test_monitor.dutils
