@@ -40,6 +40,7 @@ logger = logging.getLogger(__name__)
 def monitor_schain_container(
     schain,
     schain_record,
+    skaled_status,
     public_key=None,
     start_ts=None,
     volume_required=True,
@@ -48,6 +49,7 @@ def monitor_schain_container(
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
     logger.info(f'Monitoring container for sChain {schain_name}')
+
     if volume_required and not is_volume_exists(schain_name, dutils=dutils):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
         return
@@ -62,18 +64,25 @@ def monitor_schain_container(
         )
         return
 
-    bad_exit = is_schain_container_failed(schain_name, dutils=dutils)
-    logger.info(
-        'SChain %s, failed: %s, %d',
-        schain_name,
-        bad_exit,
-        schain_record.restart_count
-    )
-    if bad_exit:
+    if skaled_status.exit_time_reached:
+        logger.info(f'{schain_name} - Skipping container monitor: exit time reached')
+        schain_record.set_restart_count(0)
+        return
+
+    if skaled_status.clear_data_dir and skaled_status.start_again:
+        logger.info(f'{schain_name} - Skipping container monitor: sChain should be repaired')
+        schain_record.set_restart_count(0)
+        return
+
+    if is_schain_container_failed(schain_name, dutils=dutils):
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
             logger.info(f'SChain {schain_name}: restarting container')
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
             schain_record.set_restart_count(schain_record.restart_count + 1)
             schain_record.set_failed_rpc_count(0)
         else:
-            logger.warning(f'SChain {schain_name}: max restart count exceeded')
+            logger.warning(
+                'SChain %s: max restart count exceeded - %d',
+                schain_name,
+                MAX_SCHAIN_RESTART_COUNT
+            )

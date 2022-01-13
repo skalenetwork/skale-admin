@@ -47,6 +47,7 @@ def init_schain_config_mock(
 def monitor_schain_container_mock(
     schain,
     schain_record,
+    skaled_status,
     public_key=None,
     start_ts=None,
     volume_required=True,

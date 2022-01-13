@@ -254,6 +254,7 @@ class BaseMonitor(ABC):
             monitor_schain_container(
                 self.schain,
                 schain_record=self.schain_record,
+                skaled_status=self.skaled_status,
                 public_key=public_key,
                 start_ts=start_ts,
                 dutils=self.dutils
