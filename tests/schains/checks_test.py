@@ -1,20 +1,23 @@
-import docker
-import mock
-import pytest
+import os
 from time import sleep
 from http import HTTPStatus
 
 from collections import namedtuple
+from multiprocessing import Process
+
+import mock
+import docker
+import pytest
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
-
 from core.schains.checks import SChainChecks, CheckRes
 from core.schains.runner import get_container_info
+from core.schains.config.directory import get_schain_check_filepath
+
 from tools.configs.containers import SCHAIN_CONTAINER
+from tools.helper import read_json
 
-
-from web.models.schain import SChainRecord
-
+from web.models.schain import upsert_schain_record, SChainRecord
 
 from tests.utils import response_mock, request_mock
 
@@ -226,6 +229,25 @@ def test_exit_code(skale, rule_controller, schain_db, dutils):
     dutils.safe_rm(container_name)
 
 
+def test_process(skale, rule_controller, schain_db, dutils):
+    schain_record = SChainRecord.get_by_name(schain_db)
+    checks = SChainChecks(
+        schain_db,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        rule_controller=rule_controller,
+        dutils=dutils
+    )
+    assert not checks.process.status
+
+    process = Process(target=sleep, args=(5,))
+    process.start()
+    schain_record.set_monitor_id(process.ident)
+    assert checks.process.status
+    process.join()
+    assert not checks.process.status
+
+
 def test_get_all(schain_config, rule_controller, dutils, schain_db):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_record = SChainRecord.get_by_name(schain_name)
@@ -243,11 +265,12 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
     assert isinstance(checks_dict['dkg'], bool)
     assert isinstance(checks_dict['config'], bool)
     assert isinstance(checks_dict['firewall_rules'], bool)
-    assert isinstance(checks_dict['container'], bool)
+    assert isinstance(checks_dict['skaled_container'], bool)
     assert isinstance(checks_dict['exit_code_ok'], bool)
     assert isinstance(checks_dict['rpc'], bool)
     assert isinstance(checks_dict['blocks'], bool)
     assert isinstance(checks_dict['ima_container'], bool)
+    assert isinstance(checks_dict['process'], bool)
 
     checks_without_ima = SChainChecksMock(
         schain_db,
@@ -259,3 +282,29 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
     )
     checks_dict_without_ima = checks_without_ima.get_all()
     assert 'ima_container' not in checks_dict_without_ima
+
+    filtered_checks = checks_without_ima.get_all(checks_filter=['config', 'volume'])
+    assert len(filtered_checks) == 2
+
+    filtered_checks = checks_without_ima.get_all(checks_filter=['ima_container'])
+    assert len(filtered_checks) == 0
+
+    filtered_checks = checks_without_ima.get_all(checks_filter=['<0_0>'])
+    assert len(filtered_checks) == 0
+
+
+def test_get_all_with_save(node_config, rule_controller, dutils, schain_db):
+    schain_record = upsert_schain_record(schain_db)
+    checks = SChainChecksMock(
+        schain_db,
+        node_config.id,
+        schain_record=schain_record,
+        rule_controller=rule_controller,
+        dutils=dutils
+    )
+    schain_check_path = get_schain_check_filepath(schain_db)
+    assert not os.path.isfile(schain_check_path)
+    schain_checks = checks.get_all(save=True)
+    assert os.path.isfile(schain_check_path)
+    checks_from_file = read_json(schain_check_path)
+    assert schain_checks == checks_from_file['checks']

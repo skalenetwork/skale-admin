@@ -69,7 +69,7 @@ def run_process_manager(skale, skale_ima, node_config):
         monitor_process_alive = is_monitor_process_alive(schain_record.monitor_id)
 
         if not monitor_process_alive:
-            logger.info(f'{log_prefix} Process wasn\'t found, doing to spawn')
+            logger.info(f'{log_prefix} PID {schain_record.monitor_id} is not running, spawning...')
             process = Process(target=run_monitor_for_schain, args=(
                 skale,
                 skale_ima,
