@@ -15,7 +15,7 @@ python-iptables==0.14.0
 
 skale.py==5.6dev2
 
-ima-predeployed==1.0.0b12
+ima-predeployed==1.1.0-develop.26
 etherbase-predeployed==0.0.1a24
 marionette-predeployed==0.0.1a3
 filestorage-predeployed==1.0.1.dev9
