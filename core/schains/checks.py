@@ -208,10 +208,13 @@ class SChainChecks:
 def save_checks_dict(schain_name, checks_dict):
     schain_check_path = get_schain_check_filepath(schain_name)
     logger.info(f'Saving checks for the chain {schain_name}: {schain_check_path}')
-    write_json(schain_check_path, {
-        'time': time.time(),
-        'checks': checks_dict
-    })
+    try:
+        write_json(schain_check_path, {
+            'time': time.time(),
+            'checks': checks_dict
+        })
+    except Exception:
+        logger.exception(f'Failed to save checks: {schain_check_path}')
 
 
 def log_checks_dict(schain_name, checks_dict):
