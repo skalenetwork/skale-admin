@@ -26,9 +26,9 @@ from tools.configs.containers import SCHAIN_CONTAINER
 logger = logging.getLogger(__name__)
 
 
-class SSLReloadMonitor(BaseMonitor):
+class ReloadMonitor(BaseMonitor):
     """
-    SSLReloadMonitor is executed when new ssl certificates were uploaded
+    ReloadMonitor is executed when new SSL certificates were uploaded or when reload is requested
     """
     @BaseMonitor.monitor_runner
     def run(self):

@@ -67,7 +67,6 @@ INIT_LOCK_PATH = os.getenv('INIT_LOCK_PATH')
 if not INIT_LOCK_PATH:
     INIT_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'init.lock')
 
-ROTATION_FLAG_FILENAME = '.rotation'
 META_FILEPATH = os.path.join(NODE_DATA_PATH, 'meta.json')
 
 ALLOWED_TIMESTAMP_DIFF = int(os.getenv('ALLOWED_TIMESTAMP_DIFF', 120))

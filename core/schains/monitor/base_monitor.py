@@ -54,6 +54,7 @@ from core.schains.config.helper import (
     get_own_ip_from_config
 )
 from core.schains.ima import ImaData
+from core.schains.skaled_status import init_skaled_status
 
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
@@ -94,6 +95,8 @@ class BaseMonitor(ABC):
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
         self.rc = rule_controller
+
+        self.skaled_status = init_skaled_status(self.name)
 
         self.schain_type = get_schain_type(schain['partOfNode'])
 
@@ -251,6 +254,7 @@ class BaseMonitor(ABC):
             monitor_schain_container(
                 self.schain,
                 schain_record=self.schain_record,
+                skaled_status=self.skaled_status,
                 public_key=public_key,
                 start_ts=start_ts,
                 dutils=self.dutils
@@ -268,6 +272,7 @@ class BaseMonitor(ABC):
             monitor_schain_rpc(
                 self.schain,
                 schain_record=self.schain_record,
+                skaled_status=self.skaled_status,
                 dutils=self.dutils
             )
         else:

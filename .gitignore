@@ -58,6 +58,7 @@ logs.tar.gz
 
 tests/skale-data/node_data/schains/*
 test_abi.json
+schain_status_sample.json
 
 *.lock
 
