@@ -20,9 +20,9 @@
 import os
 import json
 import time
+import psutil
 
 import yaml
-import errno
 import logging
 import itertools
 import subprocess
@@ -137,15 +137,18 @@ def safe_load_yml(filepath):
 
 
 def check_pid(pid):
+    """ Check For the existence of a unix pid. """
     try:
         os.kill(pid, 0)
-    except OSError as err:
-        if err.errno == errno.ESRCH:
-            return False
-        else:
-            raise err
+    except OSError:
+        return False
     else:
         return True
+
+
+def check_pid_psutil(pid):
+    p = psutil.Process(pid)
+    return p.is_running() and p.status() != psutil.STATUS_ZOMBIE
 
 
 def get_endpoint_call_speed(skale):

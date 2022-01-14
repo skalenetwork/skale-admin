@@ -70,6 +70,9 @@ def construct_health_bp():
     @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
     def schains_checks():
         logger.debug(request)
+        checks_filter = request.args.get('checks_filter')
+        if checks_filter:
+            checks_filter = checks_filter.split(',')
         skale = init_skale(wallet=g.wallet)
         node_id = g.config.id
         if node_id is None:
@@ -95,7 +98,7 @@ def construct_health_bp():
                         schain_record=schain_record,
                         rule_controller=rc,
                         rotation_id=rotation_id
-                    ).get_all()
+                    ).get_all(checks_filter=checks_filter)
                     checks.append({
                         'name': schain['name'],
                         'healthchecks': schain_checks

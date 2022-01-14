@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import time
 import logging
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
@@ -32,19 +33,38 @@ from core.schains.config.helper import (
 from core.schains.config.directory import (
     get_schain_config,
     schain_config_dir,
-    schain_config_filepath
+    schain_config_filepath,
+    get_schain_check_filepath
 )
 from core.schains.firewall.types import IRuleController
 from core.schains.runner import get_container_name
 from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.schains.process_manager_helper import is_monitor_process_alive
+
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.configs.ima import DISABLE_IMA
-
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
+from tools.helper import write_json
+
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
+
+
+API_ALLOWED_CHECKS = [
+    'config_dir',
+    'dkg',
+    'config',
+    'volume',
+    'firewall_rules',
+    'skaled_container',
+    'exit_code_ok',
+    'rpc',
+    'blocks',
+    'process',
+    'ima_container'
+]
 
 
 class CheckRes:
@@ -158,27 +178,43 @@ class SChainChecks:
             return CheckRes(check_endpoint_blocks(http_endpoint))
         return CheckRes(False)
 
-    def get_all(self, log=True):
-        checks_dict = {
-            'config_dir': self.config_dir.status,
-            'dkg': self.dkg.status,
-            'config': self.config.status,
-            'volume': self.volume.status,
-            'firewall_rules': self.firewall_rules.status,
-            'container': self.skaled_container.status,
-            'exit_code_ok': self.exit_code_ok.status,
-            'rpc': self.rpc.status,
-            'blocks': self.blocks.status
-        }
-        if not DISABLE_IMA and self.ima_linked:
-            checks_dict['ima_container'] = self.ima_container.status
+    @property
+    def process(self) -> CheckRes:
+        """Checks that sChain monitor process is running"""
+        return CheckRes(is_monitor_process_alive(self.schain_record.monitor_id))
+
+    def get_all(self, log=True, save=False, checks_filter=None):
+        if not checks_filter:
+            checks_filter = API_ALLOWED_CHECKS
+        checks_dict = {}
+        for check in checks_filter:
+            if check == 'ima_container' and (DISABLE_IMA or not self.ima_linked):
+                logger.info(f'Check {check} will be skipped - IMA is not linked')
+            elif check not in API_ALLOWED_CHECKS:
+                logger.warning(f'Check {check} is not allowed or does not exist')
+            else:
+                checks_dict[check] = getattr(self, check).status
         if log:
             log_checks_dict(self.name, checks_dict)
+        if save:
+            save_checks_dict(self.name, checks_dict)
         return checks_dict
 
     def is_healthy(self):
         checks = self.get_all()
         return False not in checks.values()
+
+
+def save_checks_dict(schain_name, checks_dict):
+    schain_check_path = get_schain_check_filepath(schain_name)
+    logger.info(f'Saving checks for the chain {schain_name}: {schain_check_path}')
+    try:
+        write_json(schain_check_path, {
+            'time': time.time(),
+            'checks': checks_dict
+        })
+    except Exception:
+        logger.exception(f'Failed to save checks: {schain_check_path}')
 
 
 def log_checks_dict(schain_name, checks_dict):
