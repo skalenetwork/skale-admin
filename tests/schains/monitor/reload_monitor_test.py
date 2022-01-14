@@ -97,7 +97,7 @@ def test_reload_monitor(
     schain_record.set_needs_reload(True)
 
     with no_schain_artifacts(schain['name'], dutils):
-        reload_monitor.config_dir()()
+        reload_monitor.config_dir()
         reload_monitor.run()
 
         schain_record = SChainRecord.get_by_name(schain_name)
