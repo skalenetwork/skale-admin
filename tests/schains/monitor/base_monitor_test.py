@@ -50,7 +50,6 @@ def monitor_schain_container_mock(
     skaled_status,
     public_key=None,
     start_ts=None,
-    volume_required=True,
     dutils=None
 ):
     image_name, container_name, _, _ = get_container_info(
