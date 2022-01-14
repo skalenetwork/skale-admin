@@ -119,8 +119,8 @@ class BaseMonitor(ABC):
             f'failed_rpc_count - {self.schain_record.failed_rpc_count}'
         )
 
-    def _run_all_checks(self) -> None:
-        checks_dict = self.checks.get_all()
+    def _run_all_checks(self, save_checks=True) -> None:
+        checks_dict = self.checks.get_all(save=save_checks)
         if not is_checks_passed(checks_dict):
             notify_checks(self.name, self.node_config.all(), checks_dict)
 

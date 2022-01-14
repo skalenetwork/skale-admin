@@ -97,6 +97,7 @@ def test_ssl_monitor(
     schain_record.set_needs_reload(True)
 
     with no_schain_artifacts(schain['name'], dutils):
+        ssl_monitor.config_dir()
         ssl_monitor.run()
 
         schain_record = SChainRecord.get_by_name(schain_name)
