@@ -167,11 +167,6 @@ class DockerUtils:
         info = self.get_info(container_id)
         return info['status'] == EXITED_STATUS
 
-    def is_container_exited_with_zero(self, container_id: str) -> bool:
-        info = self.get_info(container_id)
-        return info['status'] == EXITED_STATUS and \
-            info['stats']['State']['ExitCode'] == 0
-
     def container_exit_code(self, container_id: str) -> int:
         info = self.get_info(container_id)
         if info['status'] != CONTAINER_NOT_FOUND:

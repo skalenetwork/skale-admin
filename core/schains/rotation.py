@@ -17,15 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import json
 import logging
 import requests
 
-from core.schains.config.directory import get_schain_rotation_filepath
-from core.schains.runner import is_exited_with_zero
 from core.schains.config.helper import get_skaled_http_address
-from tools.docker_utils import DockerUtils
+
 
 logger = logging.getLogger(__name__)
 
@@ -54,14 +51,6 @@ def _send_rotation_request(url, timestamp):
     ).json()
     if response.get('error'):
         raise Exception(response['error']['message'])
-
-
-def check_schain_rotated(schain_name, dutils=None):
-    dutils = dutils or DockerUtils()
-    schain_rotation_filepath = get_schain_rotation_filepath(schain_name)
-    rotation_file_exists = os.path.exists(schain_rotation_filepath)
-    zero_exit_code = is_exited_with_zero(schain_name, dutils=dutils)
-    return rotation_file_exists and zero_exit_code
 
 
 def get_schain_public_key(skale, schain_name):

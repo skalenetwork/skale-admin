@@ -30,7 +30,6 @@ from core.schains.config.helper import (
 )
 from core.schains.ima import get_ima_env
 from core.schains.config.directory import schain_config_dir_host
-from core.schains.skaled_exit_codes import SkaledExitCodes
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
@@ -185,12 +184,6 @@ def add_config_volume(run_args, schain_name, mode=None):
     }
 
 
-def is_exited_with_zero(schain_name: str, dutils: DockerUtils = None) -> bool:
-    dutils = dutils or DockerUtils()
-    container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
-    return dutils.is_container_exited_with_zero(container_name)
-
-
 def is_exited(
     schain_name: str,
     container_type: ContainerType = ContainerType.schain,
@@ -209,12 +202,7 @@ def is_schain_container_failed(
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
     created = dutils.is_container_created(name)
     exited = dutils.is_container_exited(name)
-    exit_code = dutils.container_exit_code(name)
-    logger.info(
-        'SChain %s failure check: created: %s, exited %s, code: %d',
-        name, created, exited, exit_code
-    )
-    return created or exited and exit_code not in [
-        SkaledExitCodes.EC_SUCCESS,
-        SkaledExitCodes.EC_STATE_ROOT_MISMATCH
-    ]
+    bad_state = created or exited
+    if bad_state:
+        logger.warning(f'{name} is in bad state - exited: {exited}, created: {created}')
+    return bad_state

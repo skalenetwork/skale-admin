@@ -159,6 +159,11 @@ class SChainRecord(BaseModel):
         self.failed_rpc_count = value
         self.save()
 
+    def reset_failed_conunters(self) -> None:
+        logger.info(f'Resetting failed counters for {self.name}')
+        self.set_restart_count(0)
+        self.set_failed_rpc_count(0)
+
     def is_dkg_done(self) -> bool:
         return self.dkg_status == DKGStatus.DONE.value
 

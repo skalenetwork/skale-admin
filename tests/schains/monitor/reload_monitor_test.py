@@ -10,7 +10,7 @@ from skale.utils.helper import ip_from_bytes
 
 from core.schains.checks import SChainChecks
 from core.schains.ima import ImaData
-from core.schains.monitor import RegularMonitor, SSLReloadMonitor
+from core.schains.monitor import RegularMonitor, ReloadMonitor
 from core.schains.runner import get_container_info
 
 from tools.configs import (
@@ -32,7 +32,7 @@ from tests.utils import (
 logger = logging.getLogger(__name__)
 
 
-def test_ssl_monitor(
+def test_reload_monitor(
     schain_db,
     skale,
     node_config,
@@ -73,7 +73,7 @@ def test_ssl_monitor(
         dutils=dutils
     )
     ima_data = ImaData(False, '0x1')
-    ssl_monitor = SSLReloadMonitor(
+    reload_monitor = ReloadMonitor(
         skale=skale,
         ima_data=ima_data,
         schain=schain,
@@ -97,8 +97,8 @@ def test_ssl_monitor(
     schain_record.set_needs_reload(True)
 
     with no_schain_artifacts(schain['name'], dutils):
-        ssl_monitor.config_dir()
-        ssl_monitor.run()
+        reload_monitor.config_dir()
+        reload_monitor.run()
 
         schain_record = SChainRecord.get_by_name(schain_name)
         assert schain_record.needs_reload is False
@@ -116,7 +116,7 @@ def test_ssl_monitor(
         assert state['Status'] == 'running'
         initial_started_at = state['StartedAt']
 
-        ssl_monitor.run()
+        reload_monitor.run()
 
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
