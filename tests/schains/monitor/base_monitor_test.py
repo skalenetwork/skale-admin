@@ -195,10 +195,11 @@ def test_base_monitor_skaled_container_sync(test_monitor):
     assert monitor_schain_mock.call_count == 1
 
 
-def test_base_monitor_ima_container(test_monitor):
+def test_base_monitor_ima_container(test_monitor, schain_config):
     test_monitor.config_dir()
+    test_monitor.ima_data.linked = True
     with mock.patch(
-        'core.schains.monitor.base_monitor.run_ima_container',
+        'core.schains.monitor.containers.run_ima_container',
         run_ima_container_mock
     ):
         assert not test_monitor.ima_container()
