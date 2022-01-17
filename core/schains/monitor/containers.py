@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2021 SKALE Labs
+#   Copyright (C) 2021-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -19,18 +19,23 @@
 
 import logging
 
-
 from core.schains.volume import is_volume_exists
 from core.schains.runner import (
     is_schain_container_failed,
     restart_container,
     run_schain_container,
-    is_container_exists
+    is_container_exists,
+    run_ima_container
 )
+from core.ima.schain import copy_schain_ima_abi
+from core.schains.ima import ImaData
+
 from tools.configs.containers import (
     MAX_SCHAIN_RESTART_COUNT,
-    SCHAIN_CONTAINER
+    SCHAIN_CONTAINER,
+    IMA_CONTAINER
 )
+from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 
 
@@ -77,3 +82,31 @@ def monitor_schain_container(
             schain_record.set_failed_rpc_count(0)
         else:
             logger.warning(f'SChain {schain_name}: max restart count exceeded')
+
+
+def monitor_ima_container(
+    schain: dict,
+    ima_data: ImaData,
+    dutils: DockerUtils = None
+) -> None:
+    schain_name = schain["name"]
+
+    if DISABLE_IMA:
+        logger.info(f'{schain_name} - IMA is disabled, skipping')
+        return
+
+    if not ima_data.linked:
+        logger.info(f'{schain_name} - not registered in IMA, skipping')
+        return
+
+    copy_schain_ima_abi(schain_name)
+
+    if not is_container_exists(schain_name, container_type=IMA_CONTAINER, dutils=dutils):
+        logger.info(f'sChain {schain_name}: IMA container doesn\'t exits, creating...')
+        run_ima_container(
+            schain,
+            ima_data.chain_id,
+            dutils=dutils
+        )
+    else:
+        logger.warning(f'sChain {schain_name}: IMA container exists, but not running, skipping')
