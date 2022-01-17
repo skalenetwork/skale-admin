@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2021 SKALE Labs
+#   Copyright (C) 2021-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -25,8 +25,6 @@ from functools import wraps
 
 from skale import Skale
 
-
-from core.ima.schain import copy_schain_ima_abi
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
@@ -36,14 +34,13 @@ from core.schains.cleaner import (
     remove_schain_volume
 )
 from core.schains.firewall.types import IRuleController
-from core.schains.runner import run_ima_container
 
 from core.schains.volume import init_data_volume
 from core.schains.rotation import get_schain_public_key
 
 from core.schains.limits import get_schain_type
 
-from core.schains.monitor.containers import monitor_schain_container
+from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
 from core.schains.monitor.rpc import monitor_schain_rpc
 
 from core.schains.config import init_schain_config, init_schain_config_dir
@@ -56,7 +53,6 @@ from core.schains.config.helper import (
 from core.schains.ima import ImaData
 from core.schains.skaled_status import init_skaled_status
 
-from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 from tools.notifications.messages import notify_checks, is_checks_passed
 from tools.str_formatters import arguments_list_string
@@ -283,16 +279,12 @@ class BaseMonitor(ABC):
     @monitor_block
     def ima_container(self) -> bool:
         initial_status = self.checks.ima_container.status
-        if not DISABLE_IMA and not initial_status:
-            if self.ima_data.linked:
-                copy_schain_ima_abi(self.name)
-                run_ima_container(
-                    self.schain,
-                    self.ima_data.chain_id,
-                    dutils=self.dutils
-                )
-            else:
-                logger.warning(f'{self.p} not registered in IMA')
+        if not initial_status:
+            monitor_ima_container(
+                self.schain,
+                self.ima_data,
+                dutils=self.dutils
+            )
         else:
             logger.info(f'{self.p} ima_container - ok')
         return initial_status
