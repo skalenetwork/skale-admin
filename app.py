@@ -90,7 +90,7 @@ def teardown_request(response):
 @app.errorhandler(RecursionError)
 def recursion_error_handler(e):
     return construct_err_response(
-        status_code=HTTPStatus.BAD_REQUEST,
+        status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         msg='Unexpected RecursionError in API, try again'
     )
 
@@ -98,7 +98,7 @@ def recursion_error_handler(e):
 @app.errorhandler(EthClientOutdatedError)
 def outdated_eth_client_error_handler(e):
     return construct_err_response(
-        status_code=HTTPStatus.BAD_REQUEST,
+        status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         msg=str(e)
     )
 
