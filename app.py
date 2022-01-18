@@ -21,9 +21,10 @@ import binascii
 import logging
 import os
 import time
+from http import HTTPStatus
 
 from flask import Flask, g
-
+from skale.utils.web3_utils import EthClientOutdatedError
 
 from core.node_config import NodeConfig
 
@@ -46,6 +47,7 @@ from web.routes.schains import construct_schains_bp
 from web.routes.wallet import construct_wallet_bp
 from web.routes.ssl import construct_ssl_bp
 from web.routes.health import construct_health_bp
+from web.helper import construct_err_response
 
 REQ_ID_SIZE = 10
 
@@ -83,6 +85,22 @@ def teardown_request(response):
     if not g.db.is_closed():
         g.db.close()
     return response
+
+
+@app.errorhandler(RecursionError)
+def recursion_error_handler(e):
+    return construct_err_response(
+        status_code=HTTPStatus.BAD_REQUEST,
+        msg='Unexpected RecursionError in API, try again'
+    )
+
+
+@app.errorhandler(EthClientOutdatedError)
+def outdated_eth_client_error_handler(e):
+    return construct_err_response(
+        status_code=HTTPStatus.BAD_REQUEST,
+        msg=str(e)
+    )
 
 
 app.secret_key = FLASK_SECRET_KEY_FILE
