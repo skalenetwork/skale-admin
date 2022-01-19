@@ -14,7 +14,7 @@ from core.schains.runner import get_container_info
 from core.schains.firewall.utils import get_sync_agent_ranges
 
 from tools.configs.containers import SCHAIN_CONTAINER
-from tools.helper import is_chain_on_node
+from tools.helper import is_node_part_of_chain
 from web.models.schain import upsert_schain_record
 
 from tests.schains.monitor.base_monitor_test import BaseTestMonitor, CrashingTestMonitor
@@ -132,7 +132,7 @@ def test_is_reload_mode(schain_db, checks, bad_checks, skaled_status_reload):
 
 def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db):
     with mock.patch('core.schains.monitor.main.RegularMonitor', CrashingTestMonitor), \
-            mock.patch('core.schains.monitor.main.is_chain_on_node', return_value=True):
+            mock.patch('core.schains.monitor.main.is_node_part_of_chain', return_value=True):
         assert not run_monitor_for_schain(
             skale,
             skale_ima,
@@ -176,13 +176,13 @@ def test_get_sync_agent_ranges_empty(skale):
     assert ranges == []
 
 
-def test_is_chain_on_node(skale, schain_on_contracts, node_config):
-    chain_on_node = is_chain_on_node(skale, schain_on_contracts, node_config.id)
+def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
+    chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, node_config.id)
     assert not chain_on_node
 
-    chain_on_node = is_chain_on_node(skale, 'a', node_config.id)
+    chain_on_node = is_node_part_of_chain(skale, 'a', node_config.id)
     assert not chain_on_node
 
     max_node_id = skale.nodes.get_nodes_number()
-    chain_on_node = is_chain_on_node(skale, schain_on_contracts, max_node_id - 1)
+    chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, max_node_id - 1)
     assert chain_on_node

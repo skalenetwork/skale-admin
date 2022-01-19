@@ -59,8 +59,8 @@ def schain_dirs_for_monitor():
     try:
         yield
     finally:
-        shutil.rmtree(schain_dir_path1)
-        shutil.rmtree(schain_dir_path2)
+        shutil.rmtree(schain_dir_path1, ignore_errors=True)
+        shutil.rmtree(schain_dir_path2, ignore_errors=True)
 
 
 @pytest.fixture
@@ -217,10 +217,11 @@ def test_delete_bls_keys_with_invalid_secret_key(
 
 
 def test_get_schains_on_node(schain_dirs_for_monitor,
-                             dutils, schain_container, upsert_db):
+                             dutils, schain_container, upsert_db, cleanup_schain_dirs_before):
     schain_name = schain_container
     result = get_schains_on_node(dutils)
-    assert result == sorted([
+
+    assert set([
         TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
         PHANTOM_SCHAIN_NAME, schain_name
-    ])
+    ]).issubset(set(result))

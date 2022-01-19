@@ -2,6 +2,7 @@ import json
 import os
 import pathlib
 import random
+import shutil
 import string
 import subprocess
 
@@ -362,6 +363,13 @@ def skaled_mock_image(scope='module'):
     )
     yield name
     dutils.client.images.remove(name, force=True)
+
+
+@pytest.fixture
+def cleanup_schain_dirs_before():
+    shutil.rmtree(SCHAINS_DIR_PATH)
+    pathlib.Path(SCHAINS_DIR_PATH).mkdir(parents=True, exist_ok=True)
+    yield
 
 
 @pytest.fixture

@@ -43,7 +43,7 @@ from core.schains.skaled_status import init_skaled_status, SkaledStatus
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.ima import DISABLE_IMA
-from tools.helper import is_chain_on_node
+from tools.helper import is_node_part_of_chain
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
@@ -136,13 +136,14 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             name = schain["name"]
             dutils = dutils or DockerUtils()
 
-            if not is_chain_on_node(skale, name, node_config.id):
+            rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
+
+            if not is_node_part_of_chain(skale, name, node_config.id) and not rotation_in_progress:
                 logger.warning(f'{p} NOT ON NODE ({node_config.id}), finising process...')
                 return True
 
             ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
             rotation_data = skale.node_rotation.get_rotation(name)
-            rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
 
             sync_agent_ranges = get_sync_agent_ranges(skale)
 

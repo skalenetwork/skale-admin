@@ -46,7 +46,7 @@ from tools.configs.containers import (
 )
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
-from tools.helper import merged_unique, read_json, is_chain_on_node
+from tools.helper import merged_unique, read_json, is_node_part_of_chain
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
 from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
@@ -172,22 +172,31 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
             {'sChain name': schain_name},
             'Going to remove this sChain because it was removed from contracts'
         )
-        remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
-    elif not is_chain_on_node(skale, schain_name, node_id):
+        return remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
+
+    if skale.node_rotation.is_rotation_in_progress(schain_name):
+        msg = arguments_list_string(
+            {'sChain name': schain_name},
+            'Rotation is in progress, skipping cleaner'
+        )
+        logger.info(msg)
+        return
+
+    if not is_node_part_of_chain(skale, schain_name, node_id):
         msg = arguments_list_string(
             {'sChain name': schain_name},
             'Going to remove this sChain because this node is not in the group'
         )
-        remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
-    else:
-        msg = arguments_list_string(
-            {'sChain name': schain_name},
-            'sChain do not satisfy removal condidions'
-        )
-        logger.warning(msg)
+        return remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
+
+    msg = arguments_list_string(
+        {'sChain name': schain_name},
+        'sChain do not satisfy removal condidions'
+    )
+    logger.warning(msg)
 
 
-def remove_schain(skale, node_id, schain_name, msg, dutils=None):
+def remove_schain(skale, node_id, schain_name, msg, dutils=None) -> None:
     schain_record = upsert_schain_record(schain_name)
     logger.warning(msg)
     terminate_schain_process(schain_record)
@@ -196,7 +205,7 @@ def remove_schain(skale, node_id, schain_name, msg, dutils=None):
     cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=dutils)
 
 
-def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None):
+def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None) -> None:
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
 
