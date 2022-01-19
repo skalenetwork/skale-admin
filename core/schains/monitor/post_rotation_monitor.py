@@ -20,8 +20,7 @@
 import logging
 
 from core.schains.monitor.base_monitor import BaseMonitor
-from core.schains.runner import restart_container
-from tools.configs.containers import SCHAIN_CONTAINER
+
 
 logger = logging.getLogger(__name__)
 
@@ -36,4 +35,4 @@ class PostRotationMonitor(BaseMonitor):
         logger.info(f'{self.p} was stopped after rotation. Going to restart')
         self.config(overwrite=True)
         self.firewall_rules()
-        restart_container(SCHAIN_CONTAINER, self.schain)
+        self.restart_skaled_container()
