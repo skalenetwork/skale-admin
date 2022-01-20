@@ -195,6 +195,17 @@ def test_base_monitor_skaled_container_sync(test_monitor):
     assert monitor_schain_mock.call_count == 1
 
 
+def test_base_monitor_restart_skaled_container(test_monitor):
+    test_monitor.volume()
+    with mock.patch(
+        'core.schains.monitor.base_monitor.monitor_schain_container',
+        monitor_schain_container_mock
+    ):
+        assert not test_monitor.restart_skaled_container()
+        assert test_monitor.restart_skaled_container()
+    test_monitor.cleanup_schain_docker_entity()
+
+
 def test_base_monitor_ima_container(test_monitor, schain_config):
     test_monitor.config_dir()
     test_monitor.ima_data.linked = True

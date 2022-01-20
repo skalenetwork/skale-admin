@@ -42,7 +42,10 @@ from core.schains.limits import get_schain_type
 
 from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
 from core.schains.monitor.rpc import monitor_schain_rpc
-
+from core.schains.runner import (
+    restart_container,
+    is_container_exists
+)
 from core.schains.config import init_schain_config, init_schain_config_dir
 from core.schains.config.directory import get_schain_config
 from core.schains.config.helper import (
@@ -56,6 +59,7 @@ from core.schains.skaled_status import init_skaled_status
 from tools.docker_utils import DockerUtils
 from tools.notifications.messages import notify_checks, is_checks_passed
 from tools.str_formatters import arguments_list_string
+from tools.configs.containers import SCHAIN_CONTAINER
 
 from web.models.schain import upsert_schain_record, set_first_run, SChainRecord
 
@@ -259,6 +263,16 @@ class BaseMonitor(ABC):
         else:
             self.schain_record.set_restart_count(0)
             logger.info(f'{self.p} skaled_container - ok')
+        return initial_status
+
+    @monitor_block
+    def restart_skaled_container(self) -> bool:
+        initial_status = True
+        if not is_container_exists(self.name, dutils=self.dutils):
+            logger.info(f'sChain {self.name}: container doesn\'t exits, running container...')
+            initial_status = self.skaled_container()
+        else:
+            restart_container(SCHAIN_CONTAINER, self.schain, dutils=self.dutils)
         return initial_status
 
     @monitor_block

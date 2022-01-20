@@ -60,6 +60,9 @@ def terminate_process(pid, kill_timeout=P_KILL_WAIT_TIMEOUT, log_msg=''):
     log_prefix = f'pid: {pid} - '
     if log_msg != '':
         log_prefix += f'{log_msg} - '
+    if pid == 0:
+        logger.warning(f'{log_prefix} - pid is 0, skipping')
+        return
     try:
         logger.warning(f'{log_prefix} - going to terminate')
         p = psutil.Process(pid)
