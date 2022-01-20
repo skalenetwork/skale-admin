@@ -61,7 +61,11 @@ def test_monitor_schain_downloading_snapshot(
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain_db)
 
-    dutils.run_container(image_name=image_name, name=container_name, entrypoint='bash -c "exit 5"')
+    dutils.run_container(
+        image_name=image_name,
+        name=container_name,
+        entrypoint='bash -c "sleep 100"'
+    )
     sleep(7)
     schain_record.set_failed_rpc_count(100)
 
@@ -90,7 +94,7 @@ def test_monitor_schain_rpc_stuck_max_retries(
     dutils.run_container(
         image_name=image_name,
         name=container_name,
-        entrypoint='bash -c "exit 1000"'
+        entrypoint='bash -c "sleep 100"'
     )
 
     schain_record.set_failed_rpc_count(100)
@@ -109,6 +113,34 @@ def test_monitor_schain_rpc_stuck_max_retries(
     assert container_info['stats']['State']['FinishedAt'] == finished_at
 
 
+def test_monitor_container_exited(schain_db, dutils, cleanup_schain_containers, skaled_status):
+    schain_record = SChainRecord.get_by_name(schain_db)
+    image_name, container_name, _, _ = get_container_info(
+        SCHAIN_CONTAINER, schain_db)
+    dutils.run_container(
+        image_name=image_name,
+        name=container_name,
+        entrypoint='bash -c "exit 100;"'
+    )
+
+    schain_record.set_failed_rpc_count(100)
+    schain_record.set_restart_count(0)
+
+    container_info = dutils.get_info(container_name)
+    finished_at = container_info['stats']['State']['FinishedAt']
+
+    assert schain_record.restart_count == 0
+    monitor_schain_rpc(
+        schain={'name': schain_db},
+        schain_record=schain_record,
+        skaled_status=skaled_status,
+        dutils=dutils
+    )
+    assert schain_record.restart_count == 0
+    container_info = dutils.get_info(container_name)
+    assert container_info['stats']['State']['FinishedAt'] == finished_at
+
+
 def test_monitor_schain_rpc_stuck(schain_db, dutils, cleanup_schain_containers, skaled_status):
     schain_record = SChainRecord.get_by_name(schain_db)
     image_name, container_name, _, _ = get_container_info(
@@ -116,7 +148,7 @@ def test_monitor_schain_rpc_stuck(schain_db, dutils, cleanup_schain_containers, 
     dutils.run_container(
         image_name=image_name,
         name=container_name,
-        entrypoint='bash -c "exit 1000"'
+        entrypoint='bash -c "sleep 100"'
     )
 
     schain_record.set_failed_rpc_count(100)

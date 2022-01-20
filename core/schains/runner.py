@@ -47,6 +47,16 @@ def is_container_exists(schain_name,
     return dutils.is_container_exists(container_name)
 
 
+def is_container_running(
+    schain_name,
+    container_type=SCHAIN_CONTAINER,
+    dutils=None
+):
+    dutils = dutils or DockerUtils()
+    container_name = get_container_name(container_type, schain_name)
+    return dutils.is_container_running(container_name)
+
+
 def get_image_name(type):
     container_info = CONTAINERS_INFO[type]
     return f'{container_info["name"]}:{container_info["version"]}'
