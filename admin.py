@@ -26,7 +26,7 @@ from filelock import FileLock
 from core.node_config import NodeConfig
 from core.schains.process_manager import run_process_manager
 from core.schains.cleaner import run_cleaner
-from core.updates import soft_updates
+from core.updates import soft_updates, update_node_config_file
 from core.filebeat import update_filebeat_service
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH
@@ -51,6 +51,7 @@ WORKER_RESTART_SLEEP_INTERVAL = 2
 
 def monitor(skale, skale_ima, node_config):
     while True:
+        update_node_config_file(skale, node_config)
         try:
             run_process_manager(skale, skale_ima, node_config)
         except Exception:
