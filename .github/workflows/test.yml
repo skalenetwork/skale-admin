@@ -38,23 +38,4 @@ jobs:
     - name: Run codecov
       run: |
         codecov -t $CODECOV_TOKEN
-  # test_rotation:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v2
-  #   - name: Set up Python ${{ env.PYTHON_VERSION }}
-  #     uses: actions/setup-python@v1
-  #     with:
-  #       python-version: ${{ env.PYTHON_VERSION }}
-  #   - name: Checkout submodules
-  #     uses: textbook/git-checkout-submodule-action@master
-  #     with:
-  #       remote: true
-  #   - name: Install python dependencies
-  #     run: bash ./scripts/install_python_dependencies.sh
-  #   - name: Deploy manager & ima contracts
-  #     run: |
-  #       bash ./helper-scripts/deploy_test_ima.sh
-  #   - name: Run rotation tests
-  #     run: |
-  #       bash ./scripts/run_rotation_tests.sh
+
