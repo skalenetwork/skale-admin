@@ -24,6 +24,7 @@ from docker.types import LogConfig, Ulimit
 from core.schains.volume import get_schain_volume_config
 from core.schains.limits import get_schain_limit, get_ima_limit, get_schain_type
 from core.schains.types import MetricType, ContainerType
+from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.config.helper import (
     get_schain_container_cmd,
     get_schain_env
@@ -212,7 +213,8 @@ def is_schain_container_failed(
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
     created = dutils.is_container_created(name)
     exited = dutils.is_container_exited(name)
-    bad_state = created or exited
+    exit_code = dutils.container_exit_code(name)
+    bad_state = created or exited and exit_code is not SkaledExitCodes.EC_SUCCESS
     if bad_state:
         logger.warning(f'{name} is in bad state - exited: {exited}, created: {created}')
     return bad_state
