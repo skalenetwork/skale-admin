@@ -227,3 +227,12 @@ def test_btrfs_info(skale_bp, skale):
     assert data['status'] == 'ok'
     payload = data['payload']
     assert payload['kernel_module'] is False
+
+
+def test_exit_status(skale_bp, skale):
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'exit/status'))
+    assert data['status'] == 'ok'
+    payload = data['payload']
+
+    print(payload)
+    assert False
