@@ -165,7 +165,7 @@ def get_endpoint_call_speed(skale):
     return call_avg_speed
 
 
-def is_chain_on_node(skale, schain_name, node_id):
+def is_node_part_of_chain(skale, schain_name, node_id) -> bool:
     if not skale.schains_internal.is_schain_exist(schain_name):
         return False
     node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
