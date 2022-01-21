@@ -227,3 +227,16 @@ def test_btrfs_info(skale_bp, skale):
     assert data['status'] == 'ok'
     payload = data['payload']
     assert payload['kernel_module'] is False
+
+
+def test_exit_status(skale_bp, skale, schain_on_contracts):
+    schain_id = skale.schains.name_to_id(schain_on_contracts)
+    with mock.patch(
+        'skale.contracts.manager.node_rotation.NodeRotation.get_leaving_history',
+        return_value=[{'schain_id': schain_id, 'finished_rotation': 1000}]
+    ):
+        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'exit/status'))
+        assert data['status'] == 'ok'
+        payload = data['payload']
+        assert payload['status'] == 'WAIT_FOR_ROTATIONS'
+        assert payload['data'][0]['status']

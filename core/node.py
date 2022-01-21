@@ -204,7 +204,7 @@ class Node:
                 status = SchainExitStatus.LEFT
             else:
                 status = SchainExitStatus.LEAVING
-            schain_name = self.skale.schains.get(schain['id'])['name']
+            schain_name = self.skale.schains.get(schain['schain_id'])['name']
             if not schain_name:
                 schain_name = '[REMOVED]'
             schain_statuses.append(
