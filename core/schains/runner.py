@@ -214,7 +214,7 @@ def is_schain_container_failed(
     created = dutils.is_container_created(name)
     exited = dutils.is_container_exited(name)
     exit_code = dutils.container_exit_code(name)
-    bad_state = created or exited and exit_code is not SkaledExitCodes.EC_SUCCESS
+    bad_state = created or exited and exit_code != SkaledExitCodes.EC_SUCCESS
     if bad_state:
         logger.warning(f'{name} is in bad state - exited: {exited}, created: {created}')
     return bad_state
