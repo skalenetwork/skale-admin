@@ -15,7 +15,7 @@ def reload_nginx():
 
 
 def generate_nginx_config():
-    ssl_on = is_ssl_folder_empty()
+    ssl_on = not is_ssl_folder_empty()
     template_data = {
         'ssl': ssl_on,
     }
