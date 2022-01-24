@@ -74,3 +74,53 @@ def test_monitor_schain_container_cleanup(
         )
         assert schain_record.restart_count == 0
         assert schain_record.failed_rpc_count == 0
+
+
+def test_monitor_schain_container_ec(
+    schain_db,
+    skaled_status,
+    dutils,
+    ssl_folder,
+    schain_config,
+    cleanup_schain_containers
+):
+    schain_record = upsert_schain_record(schain_db)
+    schain = {'name': schain_db, 'partOfNode': 0, 'generation': 0}
+
+    run_exited_schain_container(dutils, schain_db, 123)
+    with mock.patch('core.schains.monitor.containers.is_volume_exists', return_value=True):
+        schain_record.set_failed_rpc_count(100)
+        schain_record.set_restart_count(0)
+        monitor_schain_container(
+            schain,
+            schain_record,
+            skaled_status,
+            dutils=dutils
+        )
+        assert schain_record.restart_count == 1
+        assert schain_record.failed_rpc_count == 0
+
+
+def test_monitor_schain_container_ec_0(
+    schain_db,
+    skaled_status,
+    dutils,
+    ssl_folder,
+    schain_config,
+    cleanup_schain_containers
+):
+    schain_record = upsert_schain_record(schain_db)
+    schain = {'name': schain_db, 'partOfNode': 0, 'generation': 0}
+
+    run_exited_schain_container(dutils, schain_db, 0)
+    with mock.patch('core.schains.monitor.containers.is_volume_exists', return_value=True):
+        schain_record.set_failed_rpc_count(100)
+        schain_record.set_restart_count(0)
+        monitor_schain_container(
+            schain,
+            schain_record,
+            skaled_status,
+            dutils=dutils
+        )
+        assert schain_record.restart_count == 0
+        assert schain_record.failed_rpc_count == 100
