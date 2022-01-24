@@ -22,6 +22,7 @@ from core.schains.config.directory import skaled_status_filepath
 from core.schains.cleaner import remove_schain_container, remove_schain_volume
 from core.schains.ima import ImaData
 from core.schains.skaled_status import init_skaled_status
+from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
 from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -450,3 +451,11 @@ def synced_rule_controller(rule_controller):
 @pytest.fixture
 def uninited_rule_controller(_schain_name):
     return get_test_rule_controller(name=_schain_name)
+
+
+@pytest.fixture
+def skale_manager_opts():
+    return SkaleManagerOpts(
+        schains_internal_address='0x1656',
+        nodes_address='0x7742'
+    )

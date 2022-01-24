@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2019-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -18,10 +18,12 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from skale.dataclasses.node_info import NodeInfo
-from skale.schain_config.ports_allocation import get_schain_base_port_on_node
-from skale.dataclasses.skaled_ports import SkaledPorts
 
+from skale.dataclasses.node_info import NodeInfo
+from skale.dataclasses.skaled_ports import SkaledPorts
+from skale.schain_config.ports_allocation import get_schain_base_port_on_node
+
+from core.schains.config.skale_manager_opts import SkaleManagerOpts
 from core.schains.limits import get_schain_type
 from tools.configs import (
     SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, ENV_TYPE, ALLOCATION_FILEPATH
@@ -51,6 +53,8 @@ class CurrentNodeInfo(NodeInfo):
     transaction_queue_size: int
     max_open_leveldb_files: int
 
+    skale_manager_opts: SkaleManagerOpts
+
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         return {
@@ -71,7 +75,8 @@ class CurrentNodeInfo(NodeInfo):
                 'transactionQueueSize': self.transaction_queue_size,
                 'maxOpenLeveldbFiles': self.max_open_leveldb_files,
                 'info-acceptors': 1,
-                'imaMonitoringPort': self.base_port + SkaledPorts.IMA_MONITORING.value
+                'imaMonitoringPort': self.base_port + SkaledPorts.IMA_MONITORING.value,
+                'skale-manager': self.skale_manager_opts.to_dict()
             }
         }
 
@@ -81,9 +86,10 @@ def get_rotate_after_block(schain_type_name: str) -> int:
     return schain_allocation_data[ENV_TYPE]['rotate_after_block'][schain_type_name]
 
 
-def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
-                               static_schain_params: dict, schain: dict,
-                               schains_on_node: list, rotation_id: int) -> CurrentNodeInfo:
+def generate_current_node_info(
+    node: dict, node_id: int, ecdsa_key_name: str, static_schain_params: dict,
+    schain: dict, schains_on_node: list, rotation_id: int, skale_manager_opts: SkaleManagerOpts
+) -> CurrentNodeInfo:
     schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain['name'],
                                                             node['port'])
     schain_type_name = get_schain_type(schain['partOfNode']).name
@@ -95,6 +101,7 @@ def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
         ecdsa_key_name=ecdsa_key_name,
         wallets=generate_wallets_config(schain['name'], rotation_id),
         rotate_after_block=rotate_after_block,
+        skale_manager_opts=skale_manager_opts,
         **get_message_proxy_addresses(),
         **static_schain_params['current_node_info'],
         **static_schain_params['cache_options'][schain_type_name]
