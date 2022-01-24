@@ -21,7 +21,7 @@ import os
 from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 
-def is_ssl_folder_empty():
+def is_ssl_folder_empty(ssl_path=SSL_CERTIFICATES_FILEPATH):
     return len(os.listdir(SSL_CERTIFICATES_FILEPATH)) == 0
 
 
