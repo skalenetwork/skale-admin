@@ -19,7 +19,7 @@ from tools.configs import (
 
 from web.models.schain import SChainRecord
 
-from tests.dkg_utils import safe_run_dkg_mock
+from tests.dkg_utils import safe_run_dkg_mock, get_bls_public_keys
 from tests.utils import (
     alter_schain_config,
     get_test_rule_controller,
@@ -80,6 +80,9 @@ def test_regular_monitor(
         with mock.patch(
             'core.schains.monitor.base_monitor.safe_run_dkg',
             safe_run_dkg_mock
+        ), mock.patch(
+            'skale.schain_config.rotation_history._compose_bls_public_key_info',
+            return_value=get_bls_public_keys()
         ):
             test_monitor.run()
 
@@ -93,7 +96,11 @@ def test_regular_monitor(
         test_monitor.cleanup_schain_docker_entity()
         alter_schain_config(schain_name, sgx_wallet.public_key)
 
-        test_monitor.run()
+        with mock.patch(
+            'skale.schain_config.rotation_history._compose_bls_public_key_info',
+            return_value=get_bls_public_keys()
+        ):
+            test_monitor.run()
 
         assert schain_checks.volume.status
         assert schain_checks.skaled_container.status

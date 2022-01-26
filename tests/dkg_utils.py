@@ -39,6 +39,15 @@ SECRET_KEY_INFO = {
 }
 
 
+def get_bls_public_keys():
+    return {
+        'blsPublicKey0': SECRET_KEY_INFO["common_public_key"][0],
+        'blsPublicKey1': SECRET_KEY_INFO["common_public_key"][1],
+        'blsPublicKey2': SECRET_KEY_INFO["common_public_key"][2],
+        'blsPublicKey3': SECRET_KEY_INFO["common_public_key"][3]
+    }
+
+
 def safe_run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
     import_bls_key()
     return DKGResult(status=DKGStatus.DONE, keys_data=SECRET_KEY_INFO)
