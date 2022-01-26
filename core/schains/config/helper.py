@@ -35,7 +35,7 @@ from tools.configs.containers import (
 )
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json
-from tools.configs import CONTRACTS_INFO_FOLDER, SGX_SERVER_URL
+from tools.configs import SGX_SERVER_URL
 from tools.configs.containers import LOCAL_IP
 from tools.configs.ima import IMA_ENDPOINT
 from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
@@ -171,11 +171,6 @@ def get_schain_container_cmd(schain_name: str,
         sync_opts = get_schain_container_sync_opts(public_key, start_ts)
         opts.extend(sync_opts)
     return ' '.join(opts)
-
-
-def get_ima_container_cmd() -> str:
-    abi_path = os.path.join(CONTRACTS_INFO_FOLDER, 'manager.json')
-    return [f'--abi-skale-manager={abi_path}', '--s2s-enable']
 
 
 def get_schain_container_sync_opts(public_key: str,
