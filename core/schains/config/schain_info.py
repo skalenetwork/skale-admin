@@ -46,6 +46,8 @@ class SChainInfo:
     node_groups: dict
     nodes: list
 
+    multitransaction_mode: bool
+
     def to_dict(self):
         """Returns camel-case representation of the SChainInfo object"""
         return {
@@ -62,6 +64,7 @@ class SChainInfo:
             'maxFileStorageBytes': self.max_file_storage_bytes,
             'maxReservedStorageBytes': self.max_reserved_storage_bytes,
             'nodeGroups': self.node_groups,
+            'multitransactionMode': self.multitransaction_mode,
             'nodes': self.nodes
         }
 
@@ -83,6 +86,7 @@ def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
         db_storage_limit=db_storage_limit,
         node_groups=node_groups,
         nodes=nodes,
+        multitransaction_mode=schain['multitransactionMode'],
         **volume_limits,
         **static_schain_params['schain']
     )
