@@ -175,7 +175,7 @@ def get_schain_container_cmd(schain_name: str,
 
 def get_ima_container_cmd() -> str:
     abi_path = os.path.join(CONTRACTS_INFO_FOLDER, 'manager.json')
-    return [f'--abi-skale-manager={abi_path}']
+    return [f'--abi-skale-manager={abi_path}', '--s2s-enable']
 
 
 def get_schain_container_sync_opts(public_key: str,
