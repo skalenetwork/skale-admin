@@ -26,6 +26,7 @@ from core.schains.limits import get_schain_limit, get_ima_limit, get_schain_type
 from core.schains.types import MetricType, ContainerType
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.config.helper import (
+    get_ima_container_cmd,
     get_schain_container_cmd,
     get_schain_env
 )
@@ -155,18 +156,24 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
                   mem_limit, dutils=dutils, volume_mode=volume_mode)
 
 
-def run_ima_container(schain: dict, mainnet_chain_id: int, dutils: DockerUtils = None) -> None:
+def run_ima_container(
+    schain: dict,
+    mainnet_chain_id: int,
+    dutils: DockerUtils = None
+) -> None:
     dutils = dutils or DockerUtils()
     env = get_ima_env(schain['name'], mainnet_chain_id)
 
     schain_type = get_schain_type(schain['partOfNode'])
     cpu_limit = get_ima_limit(schain_type, MetricType.cpu_shares)
     mem_limit = get_ima_limit(schain_type, MetricType.mem)
+    cmd = get_ima_container_cmd()
 
     run_container(
         type=IMA_CONTAINER,
         schain_name=schain['name'],
         env=env.to_dict(),
+        cmd=cmd,
         cpu_shares_limit=cpu_limit,
         mem_limit=mem_limit,
         dutils=dutils
