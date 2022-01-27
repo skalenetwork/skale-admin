@@ -20,8 +20,6 @@
 import logging
 
 from core.schains.monitor import BaseMonitor
-from core.schains.runner import restart_container
-from tools.configs.containers import SCHAIN_CONTAINER
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +34,7 @@ class ReloadMonitor(BaseMonitor):
             '%s. Reload requested. Going to restart sChain container',
             self.p
         )
-        restart_container(SCHAIN_CONTAINER, self.schain, dutils=self.dutils)
+        self.restart_skaled_container()
         record = self.schain_record
         record.set_restart_count(0)
         record.set_failed_rpc_count(0)

@@ -175,6 +175,7 @@ def remove_schain(skale, schain_name):
 
 def remove_nodes(skale, nodes):
     for node_id in nodes:
+        skale.nodes.init_exit(node_id)
         skale.manager.node_exit(node_id, wait_for=True)
 
 
