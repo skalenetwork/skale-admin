@@ -27,6 +27,7 @@ from skale.schain_config.rotation_history import get_previous_schain_groups
 from etherbase_predeployed import ETHERBASE_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS
 
+from core.schains.config.skale_manager_opts import SkaleManagerOpts, init_skale_manager_opts
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
 from core.schains.config.predeployed import generate_predeployed_accounts
 from core.schains.config.precompiled import generate_precompiled_accounts
@@ -113,7 +114,8 @@ def get_schain_originator(schain: dict):
 def generate_schain_config(
     schain: dict, schain_id: int, node_id: int, node: dict, ecdsa_key_name: str,
     schains_on_node: list, rotation_id: int, schain_nodes_with_schains: list,
-    node_groups: list, generation: int, is_owner_contract: bool
+    node_groups: list, generation: int, is_owner_contract: bool,
+    skale_manager_opts: SkaleManagerOpts
 ) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
@@ -160,7 +162,8 @@ def generate_schain_config(
         schains_on_node=schains_on_node,
         schain_nodes_with_schains=schain_nodes_with_schains,
         rotation_id=rotation_id,
-        node_groups=node_groups
+        node_groups=node_groups,
+        skale_manager_opts=skale_manager_opts
     )
 
     schain_config = SChainConfig(
@@ -198,6 +201,8 @@ def generate_schain_config_with_skale(
 
     is_owner_contract = is_address_contract(skale.web3, schain['mainnetOwner'])
 
+    skale_manager_opts = init_skale_manager_opts(skale)
+
     return generate_schain_config(
         schain=schain,
         schain_id=schain_id,
@@ -209,5 +214,6 @@ def generate_schain_config_with_skale(
         schain_nodes_with_schains=schain_nodes_with_schains,
         node_groups=node_groups,
         generation=generation,
-        is_owner_contract=is_owner_contract
+        is_owner_contract=is_owner_contract,
+        skale_manager_opts=skale_manager_opts
     )
