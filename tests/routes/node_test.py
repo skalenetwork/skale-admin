@@ -47,6 +47,7 @@ def node_contracts(skale):
                               domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
     node_id = skale.nodes.node_name_to_index(name)
     yield node_id
+    skale.nodes.init_exit(node_id)
     skale.manager.node_exit(node_id, wait_for=True)
 
 

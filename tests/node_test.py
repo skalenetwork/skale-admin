@@ -108,6 +108,7 @@ def active_node(skale):
     if status not in (NodeStatus.FROZEN.value, NodeStatus.LEFT.value):
         if status == NodeStatus.IN_MAINTENANCE.value:
             skale.nodes.remove_node_from_in_maintenance(node_id)
+        skale.nodes.init_exit(node_id)
         skale.manager.node_exit(node_id)
 
 
@@ -169,7 +170,8 @@ def test_get_node_id_node_not_registered(not_registered_node):
     assert nid == -1
 
 
-def test_start_exit(active_node):
+def test_start_exit(skale, active_node):
+    skale.nodes.init_exit(active_node.config.id)
     active_node.exit({})
     status = NodeExitStatus(
         active_node.skale.nodes.get_node_status(active_node.config.id))
@@ -177,12 +179,13 @@ def test_start_exit(active_node):
     assert status != NodeExitStatus.ACTIVE
 
 
-def test_exit_status(active_node):
+def test_exit_status(skale, active_node):
     active_status_data = active_node.get_exit_status()
     assert list(active_status_data.keys()) == ['status', 'data', 'exit_time']
     assert active_status_data['status'] == NodeExitStatus.ACTIVE.name
     assert active_status_data['exit_time'] == 0
 
+    skale.nodes.init_exit(active_node.config.id)
     active_node.exit({})
     exit_status_data = active_node.get_exit_status()
     assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']

@@ -63,7 +63,8 @@ SCHAIN_WITHOUT_ORIGINATOR = {
     'partOfNode': 0,
     'generation': 1,
     'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
-    'originator': '0x0000000000000000000000000000000000000000'
+    'originator': '0x0000000000000000000000000000000000000000',
+    'multitransactionMode': True
 }
 
 SCHAIN_WITH_ORIGINATOR = {
@@ -71,7 +72,8 @@ SCHAIN_WITH_ORIGINATOR = {
     'partOfNode': 0,
     'generation': 1,
     'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
-    'originator': TEST_ORIGINATOR_ADDRESS
+    'originator': TEST_ORIGINATOR_ADDRESS,
+    'multitransactionMode': True
 }
 
 
@@ -200,7 +202,8 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
         'partOfNode': 0,
         'generation': 0,
         'mainnetOwner': '0x30E1C96277735B03E59B3098204fd04FD0e78a46',
-        'originator': TEST_ORIGINATOR_ADDRESS
+        'originator': TEST_ORIGINATOR_ADDRESS,
+        'multitransactionMode': True
     }
 
     node_id, schain_id, generation, rotation_id = 1, 1, 0, 0
