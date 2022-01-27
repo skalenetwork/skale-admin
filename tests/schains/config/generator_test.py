@@ -194,7 +194,7 @@ def test_generate_schain_config_with_skale(
     check_config(current_node_id, node_ids, schain_config.to_dict())
 
 
-def test_generate_schain_config_gen0(schain_secret_key_file_default_chain):
+def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale_manager_opts):
     schain = {
         'name': 'test_schain',
         'partOfNode': 0,
@@ -219,7 +219,8 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain):
         schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
         node_groups=node_groups,
         generation=generation,
-        is_owner_contract=False
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts
     )
     config = schain_config.to_dict()
 
@@ -227,7 +228,7 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain):
     assert not config['accounts'].get(TEST_ORIGINATOR_ADDRESS)
 
 
-def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
+def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale_manager_opts):
     node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
@@ -244,7 +245,8 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
         schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
         node_groups=node_groups,
         generation=generation,
-        is_owner_contract=True
+        is_owner_contract=True,
+        skale_manager_opts=skale_manager_opts
     )
     config = schain_config.to_dict()
 
@@ -270,7 +272,10 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain):
     assert not config['accounts'].get(TEST_MAINNET_OWNER_ADDRESS)
 
 
-def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_chain):
+def test_generate_schain_config_gen1_pk_owner(
+    schain_secret_key_file_default_chain,
+    skale_manager_opts
+):
     node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
@@ -287,7 +292,8 @@ def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_cha
         schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
         node_groups=node_groups,
         generation=generation,
-        is_owner_contract=False
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts
     )
     config = schain_config.to_dict()
 

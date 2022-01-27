@@ -155,7 +155,11 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
                   mem_limit, dutils=dutils, volume_mode=volume_mode)
 
 
-def run_ima_container(schain: dict, mainnet_chain_id: int, dutils: DockerUtils = None) -> None:
+def run_ima_container(
+    schain: dict,
+    mainnet_chain_id: int,
+    dutils: DockerUtils = None
+) -> None:
     dutils = dutils or DockerUtils()
     env = get_ima_env(schain['name'], mainnet_chain_id)
 

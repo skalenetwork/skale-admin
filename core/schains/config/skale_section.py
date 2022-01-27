@@ -19,12 +19,14 @@
 
 from dataclasses import dataclass
 
-from core.schains.config.contract_settings import (ContractSettings,
-                                                   generate_contract_settings)
+from core.schains.config.contract_settings import (
+    ContractSettings, generate_contract_settings
+)
 from core.schains.config.node_info import CurrentNodeInfo, generate_current_node_info
 from core.schains.config.schain_info import SChainInfo, generate_schain_info
 from core.schains.config.schain_node import generate_schain_nodes
 from core.schains.config.helper import get_static_schain_params
+from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
 
 @dataclass
@@ -43,11 +45,11 @@ class SkaleConfig:
         }
 
 
-def generate_skale_section(schain: dict, on_chain_etherbase: str,
-                           on_chain_owner: str, schain_id: int, node_id: int,
-                           node: dict, ecdsa_key_name: str, schains_on_node: list,
-                           schain_nodes_with_schains: list, rotation_id: int,
-                           node_groups: dict) -> SkaleConfig:
+def generate_skale_section(
+    schain: dict, on_chain_etherbase: str, on_chain_owner: str, schain_id: int, node_id: int,
+    node: dict, ecdsa_key_name: str, schains_on_node: list, schain_nodes_with_schains: list,
+    rotation_id: int, node_groups: dict, skale_manager_opts: SkaleManagerOpts
+) -> SkaleConfig:
     static_schain_params = get_static_schain_params()
 
     contract_settings = generate_contract_settings(
@@ -62,7 +64,8 @@ def generate_skale_section(schain: dict, on_chain_etherbase: str,
         static_schain_params=static_schain_params,
         schain=schain,
         schains_on_node=schains_on_node,
-        rotation_id=rotation_id
+        rotation_id=rotation_id,
+        skale_manager_opts=skale_manager_opts
     )
 
     schain_nodes = generate_schain_nodes(

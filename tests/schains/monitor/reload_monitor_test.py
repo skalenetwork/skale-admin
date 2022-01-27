@@ -21,7 +21,7 @@ from tools.configs.containers import SCHAIN_CONTAINER
 
 from web.models.schain import SChainRecord
 
-from tests.dkg_utils import safe_run_dkg_mock
+from tests.dkg_utils import safe_run_dkg_mock, get_bls_public_keys
 from tests.utils import (
     alter_schain_config,
     get_test_rule_controller,
@@ -98,7 +98,12 @@ def test_reload_monitor(
 
     with no_schain_artifacts(schain['name'], dutils):
         reload_monitor.config_dir()
-        reload_monitor.run()
+
+        with mock.patch(
+            'skale.schain_config.rotation_history._compose_bls_public_key_info',
+            return_value=get_bls_public_keys()
+        ):
+            reload_monitor.run()
 
         schain_record = SChainRecord.get_by_name(schain_name)
         assert schain_record.needs_reload is False
@@ -108,6 +113,9 @@ def test_reload_monitor(
         with mock.patch(
             'core.schains.monitor.base_monitor.safe_run_dkg',
             safe_run_dkg_mock
+        ), mock.patch(
+            'skale.schain_config.rotation_history._compose_bls_public_key_info',
+            return_value=get_bls_public_keys()
         ):
             regular_monitor.run()
         alter_schain_config(schain_name, sgx_wallet.public_key)

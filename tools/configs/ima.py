@@ -18,7 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME, SCHAIN_CONFIG_DIR_SKALED
+from tools.configs import (
+    CONTRACTS_INFO_FOLDER,
+    IMA_CONTRACTS_INFO_NAME,
+    SCHAIN_CONFIG_DIR_SKALED
+)
 
 IMA_ENDPOINT = os.environ['IMA_ENDPOINT']
 MAINNET_IMA_ABI_FILEPATH = os.getenv('MAINNET_IMA_ABI_FILEPATH') or \

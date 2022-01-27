@@ -33,14 +33,12 @@ from tools.configs.containers import (
     DATA_DIR_CONTAINER_PATH,
     SHARED_SPACE_CONTAINER_PATH
 )
-from tools.configs.ima import IMA_ENDPOINT
-
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json
-
 from tools.configs import SGX_SERVER_URL
-from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
 from tools.configs.containers import LOCAL_IP
+from tools.configs.ima import IMA_ENDPOINT
+from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
 
 
 logger = logging.getLogger(__name__)
