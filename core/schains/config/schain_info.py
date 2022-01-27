@@ -64,7 +64,7 @@ class SChainInfo:
             'maxFileStorageBytes': self.max_file_storage_bytes,
             'maxReservedStorageBytes': self.max_reserved_storage_bytes,
             'nodeGroups': self.node_groups,
-            'multitransactionMode': self.multitransaction_mode,
+            'multiTransactionMode': self.multitransaction_mode,
             'nodes': self.nodes
         }
 
