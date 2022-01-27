@@ -22,24 +22,40 @@ import copy
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_schain_volume_config
-from core.schains.limits import get_schain_limit, get_ima_limit
+from core.schains.limits import get_schain_limit, get_ima_limit, get_schain_type
 from core.schains.types import MetricType, ContainerType
+from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.config.helper import (
     get_schain_container_cmd,
-    get_schain_env,
-    get_skaled_http_address
+    get_schain_env
 )
 from core.schains.ima import get_ima_env
-from core.schains.helper import send_rotation_request, get_schain_dir_path_host
-from core.schains.skaled_exit_codes import SkaledExitCodes
+from core.schains.config.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (CONTAINERS_INFO, CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
                                       IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
-                           SKALE_VOLUME_PATH, SCHAIN_DATA_PATH)
+                           SKALE_VOLUME_PATH, SCHAIN_CONFIG_DIR_SKALED)
 
 logger = logging.getLogger(__name__)
+
+
+def is_container_exists(schain_name,
+                        container_type=SCHAIN_CONTAINER, dutils=None):
+    dutils = dutils or DockerUtils()
+    container_name = get_container_name(container_type, schain_name)
+    return dutils.is_container_exists(container_name)
+
+
+def is_container_running(
+    schain_name,
+    container_type=SCHAIN_CONTAINER,
+    dutils=None
+):
+    dutils = dutils or DockerUtils()
+    container_name = get_container_name(container_type, schain_name)
+    return dutils.is_container_running(container_name)
 
 
 def get_image_name(type):
@@ -118,8 +134,9 @@ def restart_container(type, schain, dutils=None):
 def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
                          volume_mode=None, ulimit_check=True, enable_ssl=True):
     schain_name = schain['name']
-    cpu_limit = get_schain_limit(schain, MetricType.cpu_shares)
-    mem_limit = get_schain_limit(schain, MetricType.mem)
+    schain_type = get_schain_type(schain['partOfNode'])
+    cpu_limit = get_schain_limit(schain_type, MetricType.cpu_shares)
+    mem_limit = get_schain_limit(schain_type, MetricType.mem)
 
     volume_config = get_schain_volume_config(
         schain_name,
@@ -138,18 +155,17 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
                   mem_limit, dutils=dutils, volume_mode=volume_mode)
 
 
-def set_rotation_for_schain(schain_name: str, timestamp: int) -> None:
-    endpoint = get_skaled_http_address(schain_name)
-    url = f'http://{endpoint.ip}:{endpoint.port}'
-    send_rotation_request(url, timestamp)
-
-
-def run_ima_container(schain: dict, mainnet_chain_id: int, dutils: DockerUtils = None) -> None:
+def run_ima_container(
+    schain: dict,
+    mainnet_chain_id: int,
+    dutils: DockerUtils = None
+) -> None:
     dutils = dutils or DockerUtils()
     env = get_ima_env(schain['name'], mainnet_chain_id)
 
-    cpu_limit = get_ima_limit(schain, MetricType.cpu_shares)
-    mem_limit = get_ima_limit(schain, MetricType.mem)
+    schain_type = get_schain_type(schain['partOfNode'])
+    cpu_limit = get_ima_limit(schain_type, MetricType.cpu_shares)
+    mem_limit = get_ima_limit(schain_type, MetricType.mem)
 
     run_container(
         type=IMA_CONTAINER,
@@ -164,7 +180,7 @@ def run_ima_container(schain: dict, mainnet_chain_id: int, dutils: DockerUtils =
 def add_config_volume(run_args, schain_name, mode=None):
     if not run_args.get('volumes', None):
         run_args['volumes'] = {}
-    schain_data_dir_path = get_schain_dir_path_host(schain_name)
+    config_dir_host = schain_config_dir_host(schain_name)
 
     # mount /skale_node_data
     run_args['volumes'][NODE_DATA_PATH_HOST] = {
@@ -177,16 +193,10 @@ def add_config_volume(run_args, schain_name, mode=None):
         'mode': mode or 'ro'
     }
     # mount /skale_schain_data
-    run_args['volumes'][schain_data_dir_path] = {
-        'bind': SCHAIN_DATA_PATH,
+    run_args['volumes'][config_dir_host] = {
+        'bind': SCHAIN_CONFIG_DIR_SKALED,
         'mode': mode or 'rw'
     }
-
-
-def is_exited_with_zero(schain_name: str, dutils: DockerUtils = None) -> bool:
-    dutils = dutils or DockerUtils()
-    container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
-    return dutils.is_container_exited_with_zero(container_name)
 
 
 def is_exited(
@@ -208,11 +218,7 @@ def is_schain_container_failed(
     created = dutils.is_container_created(name)
     exited = dutils.is_container_exited(name)
     exit_code = dutils.container_exit_code(name)
-    logger.info(
-        'SChain %s failure check: created: %s, exited %s, code: %d',
-        name, created, exited, exit_code
-    )
-    return created or exited and exit_code not in [
-        SkaledExitCodes.EC_SUCCESS,
-        SkaledExitCodes.EC_STATE_ROOT_MISMATCH
-    ]
+    bad_state = created or exited and exit_code != SkaledExitCodes.EC_SUCCESS
+    if bad_state:
+        logger.warning(f'{name} is in bad state - exited: {exited}, created: {created}')
+    return bad_state

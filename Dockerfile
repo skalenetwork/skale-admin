@@ -1,6 +1,7 @@
 FROM python:3.8-buster
 
-RUN apt-get update && apt-get install -y wget git libxslt-dev iptables kmod
+RUN apt-get update && apt-get install -y wget git libxslt-dev iptables kmod swig3.0
+RUN ln -s /usr/bin/swig3.0 /usr/bin/swig
 
 RUN mkdir /usr/src/admin
 WORKDIR /usr/src/admin

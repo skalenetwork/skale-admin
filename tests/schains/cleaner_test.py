@@ -10,8 +10,6 @@ from dataclasses import dataclass
 
 from skale.skale_manager import spawn_skale_manager_lib
 
-from core.node_config import NodeConfig
-
 from core.schains.cleaner import (
     delete_bls_keys,
     monitor,
@@ -20,7 +18,7 @@ from core.schains.cleaner import (
     remove_schain_volume, remove_schain_container,
     remove_ima_container
 )
-from core.schains.helper import init_schain_dir
+from core.schains.config import init_schain_config_dir
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -53,13 +51,6 @@ def is_container_running(dutils, container_name):
 
 
 @pytest.fixture
-def node_config(skale):
-    node_config = NodeConfig()
-    node_config.id = 0
-    return node_config
-
-
-@pytest.fixture
 def schain_dirs_for_monitor():
     schain_dir_path2 = os.path.join(SCHAINS_DIR_PATH, TEST_SCHAIN_NAME_1)
     schain_dir_path1 = os.path.join(SCHAINS_DIR_PATH, TEST_SCHAIN_NAME_2)
@@ -68,8 +59,8 @@ def schain_dirs_for_monitor():
     try:
         yield
     finally:
-        shutil.rmtree(schain_dir_path1)
-        shutil.rmtree(schain_dir_path2)
+        shutil.rmtree(schain_dir_path1, ignore_errors=True)
+        shutil.rmtree(schain_dir_path2, ignore_errors=True)
 
 
 @pytest.fixture
@@ -109,7 +100,7 @@ def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils):
 
 def test_remove_config_dir():
     schain_name = 'temp'
-    init_schain_dir(schain_name)
+    init_schain_config_dir(schain_name)
     config_dir = os.path.join(SCHAINS_DIR_PATH, schain_name)
     assert os.path.isdir(config_dir)
     remove_config_dir(schain_name)
@@ -226,14 +217,11 @@ def test_delete_bls_keys_with_invalid_secret_key(
 
 
 def test_get_schains_on_node(schain_dirs_for_monitor,
-                             dutils, schain_container, upsert_db):
+                             dutils, schain_container, upsert_db, cleanup_schain_dirs_before):
     schain_name = schain_container
     result = get_schains_on_node(dutils)
-    print(sorted([
+
+    assert set([
         TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
         PHANTOM_SCHAIN_NAME, schain_name
-    ]))
-    assert result == sorted([
-        TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
-        PHANTOM_SCHAIN_NAME, schain_name
-    ])
+    ]).issubset(set(result))

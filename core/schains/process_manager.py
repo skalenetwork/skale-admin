@@ -18,14 +18,13 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import sys
-import signal
 import logging
 from multiprocessing import Process
 
 from skale import Skale
 
-from core.schains.monitor import run_monitor_for_schain
-from core.schains.utils import notify_if_not_enough_balance
+from core.schains.monitor.main import run_monitor_for_schain
+from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process_manager_helper import (
     terminate_stuck_schain_process, is_monitor_process_alive, terminate_process
 )
@@ -54,10 +53,9 @@ def pm_signal_handler(*args):
 
 
 def run_process_manager(skale, skale_ima, node_config):
-    signal.signal(signal.SIGTERM, pm_signal_handler)
+    # signal.signal(signal.SIGTERM, pm_signal_handler)
     logger.info('Process manager started')
     node_id = node_config.id
-    ecdsa_sgx_key_name = node_config.sgx_key_name
     node_info = node_config.all()
     notify_if_not_enough_balance(skale, node_info)
 
@@ -71,13 +69,12 @@ def run_process_manager(skale, skale_ima, node_config):
         monitor_process_alive = is_monitor_process_alive(schain_record.monitor_id)
 
         if not monitor_process_alive:
-            logger.info(f'{log_prefix} Process wasn\'t found, doing to spawn')
+            logger.info(f'{log_prefix} PID {schain_record.monitor_id} is not running, spawning...')
             process = Process(target=run_monitor_for_schain, args=(
                 skale,
                 skale_ima,
-                node_info,
-                schain,
-                ecdsa_sgx_key_name
+                node_config,
+                schain
             ))
             process.start()
             schain_record.set_monitor_id(process.ident)
@@ -109,7 +106,7 @@ def get_leaving_schains_for_node(skale: Skale, node_id: int) -> list:
     leaving_schains = []
     leaving_history = skale.node_rotation.get_leaving_history(node_id)
     for leaving_schain in leaving_history:
-        schain = skale.schains.get(leaving_schain['id'])
+        schain = skale.schains.get(leaving_schain['schain_id'])
         if skale.node_rotation.is_rotation_in_progress(schain['name']) and schain['name']:
             schain['active'] = True
             leaving_schains.append(schain)

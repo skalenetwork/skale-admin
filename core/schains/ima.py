@@ -19,7 +19,7 @@
 
 from dataclasses import dataclass
 
-from core.schains.helper import get_schain_dir_path
+from core.schains.config.directory import schain_config_dir
 from core.schains.config.helper import get_schain_ports, get_schain_config
 from core.ima.schain import get_schain_ima_abi_filepath
 
@@ -31,6 +31,7 @@ from tools.configs.containers import CONTAINERS_INFO
 from tools.configs.db import REDIS_URI
 from tools.configs.ima import IMA_ENDPOINT, MAINNET_IMA_ABI_FILEPATH, IMA_STATE_CONTAINER_PATH
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.web3 import ABI_FILEPATH
 from flask import g
 from websocket import create_connection
 
@@ -38,9 +39,16 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class ImaData:
+    linked: bool
+    chain_id: str
+
+
+@dataclass
 class ImaEnv:
     schain_dir: str
 
+    manager_abi_path: str
     mainnet_proxy_path: str
     schain_proxy_path: str
 
@@ -68,6 +76,7 @@ class ImaEnv:
         """Returns upper-case representation of the ImaEnv object"""
         return {
             'SCHAIN_DIR': self.schain_dir,
+            'MANAGER_ABI_PATH': self.manager_abi_path,
             'MAINNET_PROXY_PATH': self.mainnet_proxy_path,
             'SCHAIN_PROXY_PATH': self.schain_proxy_path,
             'STATE_FILE': self.state_file,
@@ -122,7 +131,8 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
     node_address = public_node_info['owner']
 
     return ImaEnv(
-        schain_dir=get_schain_dir_path(schain_name),
+        schain_dir=schain_config_dir(schain_name),
+        manager_abi_path=ABI_FILEPATH,
         mainnet_proxy_path=MAINNET_IMA_ABI_FILEPATH,
         schain_proxy_path=get_schain_ima_abi_filepath(schain_name),
         state_file=IMA_STATE_CONTAINER_PATH,

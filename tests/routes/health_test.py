@@ -1,10 +1,12 @@
 import mock
 import pytest
+from time import sleep
 
 from flask import Flask, appcontext_pushed, g
 from sgx import SgxClient
 
 from core.node_config import NodeConfig
+from core.schains.checks import SChainChecks, CheckRes
 
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 
@@ -12,7 +14,7 @@ from web.models.schain import SChainRecord
 from web.routes.health import construct_health_bp
 from web.helper import get_api_url
 
-from tests.utils import get_bp_data
+from tests.utils import get_bp_data, run_custom_schain_container
 
 
 TEST_SGX_KEYNAME = 'test_keyname'
@@ -65,32 +67,31 @@ def test_containers(skale_bp, dutils):
     assert data == expected
 
 
-def test_schains_checks(skale_bp, skale, schain_db):
+def test_containers_all(skale_bp, dutils, schain_db, cleanup_schain_containers):
+    run_custom_schain_container(dutils, schain_db, 'bash -c "exit 1"')
+    sleep(10)
+    data = get_bp_data(skale_bp, get_api_url('health', 'containers'), params={'all': True})
+    expected = {
+        'status': 'ok',
+        'payload': dutils.get_containers_info(
+            all=True,
+            name_filter='',
+            format=True
+        )
+    }
+    assert data == expected
+
+
+def test_schains_checks(skale_bp, skale, schain_db, dutils):
     schain_name = schain_db
 
-    class SChainChecksMock:
-        def __init__(
-            self,
-            name,
-            node_id,
-            *args,
-            log=False,
-            failhook=None,
-            **kwargs
-        ):
-            pass
+    class SChainChecksMock(SChainChecks):
+        def __init__(self, *args, **kwargs):
+            super(SChainChecksMock, self).__init__(*args, dutils=dutils, **kwargs)
 
-        def get_all(self):
-            return {
-                'data_dir': False,
-                'dkg': False,
-                'config': True,
-                'volume': False,
-                'container': True,
-                'ima_container': False,
-                'firewall_rules': True,
-                'rpc': False
-            }
+        @property
+        def firewall_rules(self) -> CheckRes:
+            return CheckRes(True)
 
     def get_schains_for_node_mock(self, node_id):
         return [
@@ -99,7 +100,8 @@ def test_schains_checks(skale_bp, skale, schain_db):
             {'name': ''}
         ]
 
-    with mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
+    with mock.patch('web.routes.health.SChainChecks', SChainChecksMock), \
+            mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
         with mock.patch(
             'skale.contracts.manager.schains.SChains.get_schains_for_node',
             get_schains_for_node_mock
@@ -110,14 +112,26 @@ def test_schains_checks(skale_bp, skale, schain_db):
             assert len(payload) == 1
             test_schain_checks = payload[0]['healthchecks']
             assert test_schain_checks == {
-                'data_dir': False,
+                'config_dir': False,
                 'dkg': False,
-                'config': True,
+                'config': False,
                 'volume': False,
-                'container': True,
-                'ima_container': False,
                 'firewall_rules': True,
-                'rpc': False
+                'skaled_container': False,
+                'exit_code_ok': True,
+                'rpc': False,
+                'blocks': False,
+                'process': False,
+                'ima_container': False
+            }
+
+            request_params = {'checks_filter': 'skaled_container,volume,config'}
+            data = get_bp_data(skale_bp, get_api_url('health', 'schains'), params=request_params)
+
+            assert data['payload'][0]['healthchecks'] == {
+                'skaled_container': False,
+                'volume': False,
+                'config': False
             }
 
 

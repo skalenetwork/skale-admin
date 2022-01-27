@@ -2,19 +2,18 @@ import json
 import mock
 import os
 import shutil
+from functools import partial
 
 import pytest
 from flask import Flask, appcontext_pushed, g
+from Crypto.Hash import keccak
 
 from core.node_config import NodeConfig
-from core.schains.config.helper import get_schain_config_filepath
-from tests.utils import get_bp_data, post_bp_data
-from tools.iptables import NodeEndpoint
+from core.schains.config.directory import schain_config_filepath
+from tests.utils import get_bp_data, get_test_rule_controller, post_bp_data
 from web.models.schain import SChainRecord
 from web.routes.schains import construct_schains_bp
 from web.helper import get_api_url
-
-from Crypto.Hash import keccak
 
 
 BLUEPRINT_NAME = 'schains'
@@ -37,9 +36,15 @@ def skale_bp(skale, dutils):
         SChainRecord.drop_table()
 
 
+def test_schain_statuses(skale_bp, skaled_status, _schain_name):
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'statuses'))
+    assert data['status'] == 'ok'
+    assert data['payload'][_schain_name] == skaled_status.all
+
+
 def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):
     name = schain_on_contracts
-    filename = get_schain_config_filepath(name)
+    filename = schain_config_filepath(name)
     dirname = os.path.dirname(filename)
     if not os.path.isdir(dirname):
         os.makedirs(os.path.dirname(filename))
@@ -58,31 +63,34 @@ def test_schains_list(skale_bp, skale):
     assert data == {'payload': [], 'status': 'ok'}
 
 
-def get_allowed_endpoints_mock(schain):
-    return [
-        NodeEndpoint(ip='11.11.11.11', port='1111'),
-        NodeEndpoint(ip='12.12.12.12', port=None),
-        NodeEndpoint(ip=None, port='1313')
-    ]
-
-
 def schain_config_exists_mock(schain):
     return True
 
 
-@mock.patch('web.routes.schains.get_allowed_endpoints', get_allowed_endpoints_mock)
 @mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
-def test_firewall_rules(skale_bp):
+@mock.patch(
+    'web.routes.schains.get_default_rule_controller',
+    partial(get_test_rule_controller, synced=True)
+)
+def test_firewall_rules_route(skale_bp, schain_config):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'firewall-rules'),
-                       params={'schain': 'schain-test'})
+                       params={'schain_name': schain_name})
     assert data == {
+        'status': 'ok',
         'payload': {
             'endpoints': [
-                {'ip': '11.11.11.11', 'port': '1111'},
-                {'ip': '12.12.12.12', 'port': None},
-                {'ip': None, 'port': '1313'}
-            ]},
-        'status': 'ok'
+                {'port': 10000, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
+                {'port': 10001, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
+                {'port': 10002, 'first_ip': None, 'last_ip': None},
+                {'port': 10003, 'first_ip': None, 'last_ip': None},
+                {'port': 10004, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
+                {'port': 10005, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
+                {'port': 10007, 'first_ip': None, 'last_ip': None},
+                {'port': 10008, 'first_ip': None, 'last_ip': None},
+                {'port': 10009, 'first_ip': None, 'last_ip': None}
+            ]
+        }
     }
 
 
@@ -115,7 +123,7 @@ def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
         'payload': {
             'name': schain_name,
             'id': schain_id,
-            'owner': skale.wallet.address,
+            'mainnet_owner': skale.wallet.address,
             'part_of_node': 1, 'dkg_status': 1, 'is_deleted': False,
             'first_run': True, 'repair_mode': False
         }

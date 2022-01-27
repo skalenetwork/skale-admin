@@ -252,5 +252,5 @@ def test_notify_repair(send_message_mock):
     notify_repair_mode(NODE_INFO, 'test-schain')
     send_message_mock.assert_called_with(
         ['\u2757 Repair mode for test-schain enabled \n',
-         'Node id: 1', 'Node ip: 1.1.1.1', 'SChain: test-schain']
+         'Node ID: 1', 'Node IP: 1.1.1.1', 'SChain: test-schain']
     )

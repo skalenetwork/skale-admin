@@ -20,9 +20,9 @@
 import os
 import json
 import time
+import psutil
 
 import yaml
-import errno
 import logging
 import itertools
 import subprocess
@@ -36,7 +36,7 @@ from skale import Skale
 from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
 
@@ -137,15 +137,18 @@ def safe_load_yml(filepath):
 
 
 def check_pid(pid):
+    """ Check For the existence of a unix pid. """
     try:
         os.kill(pid, 0)
-    except OSError as err:
-        if err.errno == errno.ESRCH:
-            return False
-        else:
-            raise err
+    except OSError:
+        return False
     else:
         return True
+
+
+def check_pid_psutil(pid):
+    p = psutil.Process(pid)
+    return p.is_running() and p.status() != psutil.STATUS_ZOMBIE
 
 
 def get_endpoint_call_speed(skale):
@@ -160,3 +163,20 @@ def get_endpoint_call_speed(skale):
     call_avg_speed = round(sum(scores) / len(scores), 2)
     logger.info(f'Endpoint call speed scores: {scores}, avg: {call_avg_speed}')
     return call_avg_speed
+
+
+def is_node_part_of_chain(skale, schain_name, node_id) -> bool:
+    if not skale.schains_internal.is_schain_exist(schain_name):
+        return False
+    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    return node_id in node_ids
+
+
+def is_zero_address(address: str) -> bool:
+    """Returns true if provided string is equal to Ethereum zero address"""
+    return address == ZERO_ADDRESS
+
+
+def is_address_contract(web3, address) -> bool:
+    """Returns true if contract is deployed at the requested address"""
+    return web3.eth.get_code(address) != b''

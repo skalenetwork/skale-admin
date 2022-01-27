@@ -18,10 +18,15 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME, SCHAIN_DATA_PATH
+from tools.configs import (
+    CONTRACTS_INFO_FOLDER,
+    IMA_CONTRACTS_INFO_NAME,
+    SCHAIN_CONFIG_DIR_SKALED
+)
 
 IMA_ENDPOINT = os.environ['IMA_ENDPOINT']
-MAINNET_IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
+MAINNET_IMA_ABI_FILEPATH = os.getenv('MAINNET_IMA_ABI_FILEPATH') or \
+    os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
 
 DISABLE_IMA = os.getenv('DISABLE_IMA') == 'True'
 
@@ -29,7 +34,7 @@ SCHAIN_IMA_ABI_FILENAME = 'schain_ima_abi.json'
 SCHAIN_IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, SCHAIN_IMA_ABI_FILENAME)
 
 IMA_STATE_PATH = 'ima_state.json'
-IMA_STATE_CONTAINER_PATH = os.path.join(SCHAIN_DATA_PATH, IMA_STATE_PATH)
+IMA_STATE_CONTAINER_PATH = os.path.join(SCHAIN_CONFIG_DIR_SKALED, IMA_STATE_PATH)
 
 SCHAIN_IMA_CONTRACTS = {
     'token_manager_eth': {

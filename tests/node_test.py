@@ -9,14 +9,12 @@ from skale.utils.contracts_provision.main import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.node import (
-    get_attached_storage_block_device,
     get_block_device_size,
     get_node_hardware_info,
     Node, NodeExitStatus, NodeStatus
 )
 from core.node_config import NodeConfig
 from tools.configs import NODE_DATA_PATH
-from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -110,6 +108,7 @@ def active_node(skale):
     if status not in (NodeStatus.FROZEN.value, NodeStatus.LEFT.value):
         if status == NodeStatus.IN_MAINTENANCE.value:
             skale.nodes.remove_node_from_in_maintenance(node_id)
+        skale.nodes.init_exit(node_id)
         skale.manager.node_exit(node_id)
 
 
@@ -171,7 +170,8 @@ def test_get_node_id_node_not_registered(not_registered_node):
     assert nid == -1
 
 
-def test_start_exit(active_node):
+def test_start_exit(skale, active_node):
+    skale.nodes.init_exit(active_node.config.id)
     active_node.exit({})
     status = NodeExitStatus(
         active_node.skale.nodes.get_node_status(active_node.config.id))
@@ -179,12 +179,13 @@ def test_start_exit(active_node):
     assert status != NodeExitStatus.ACTIVE
 
 
-def test_exit_status(active_node):
+def test_exit_status(skale, active_node):
     active_status_data = active_node.get_exit_status()
     assert list(active_status_data.keys()) == ['status', 'data', 'exit_time']
     assert active_status_data['status'] == NodeExitStatus.ACTIVE.name
     assert active_status_data['exit_time'] == 0
 
+    skale.nodes.init_exit(active_node.config.id)
     active_node.exit({})
     exit_status_data = active_node.get_exit_status()
     assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
@@ -218,17 +219,8 @@ def test_node_maintenance_error(active_node, skale):
         res = active_node.set_maintenance_on()
 
 
-@pytest.fixture
-def block_device_file():
-    device = '/dev/xvdd'
-    with open(DISK_MOUNTPOINT_FILEPATH, 'w') as dm_file:
-        dm_file.write(device)
-    yield DISK_MOUNTPOINT_FILEPATH
-    os.remove(DISK_MOUNTPOINT_FILEPATH)
-
-
 @mock.patch('core.node.get_block_device_size', return_value=300)
-def test_get_node_hardware_info(get_block_device_size_mock, block_device_file):
+def test_get_node_hardware_info(get_block_device_size_mock):
     info = get_node_hardware_info()
     assert isinstance(info['cpu_total_cores'], int)
     assert isinstance(info['cpu_physical_cores'], int)
@@ -242,10 +234,6 @@ def test_get_node_hardware_info(get_block_device_size_mock, block_device_file):
     assert info['attached_storage_size'] == 300
 
 
-def test_get_attached_storage_block_device(block_device_file) -> int:
-    assert get_attached_storage_block_device() == '/dev/xvdd'
-
-
 def test_get_block_device_size():
     device = '/dev/test'
     size = 41224
@@ -253,8 +241,8 @@ def test_get_block_device_size():
     response_mock.json = mock.Mock(
         return_value={'Name': device, 'Size': size, 'Err': ''})
     with mock.patch('requests.get', return_value=response_mock):
-        assert get_block_device_size(device) == size
+        assert get_block_device_size() == size
 
     response_mock.json = mock.Mock(return_value={'Err': 'Test error'})
     with mock.patch('requests.get', return_value=response_mock):
-        assert get_block_device_size(device) == -1
+        assert get_block_device_size() == -1

@@ -28,6 +28,10 @@ from sgx import SgxClient
 
 from core.node import get_check_report
 from core.schains.checks import SChainChecks
+from core.schains.firewall.utils import (
+    get_default_rule_controller,
+    get_sync_agent_ranges
+)
 from core.schains.ima import get_ima_log_checks
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs import SGX_CERTIFICATES_FOLDER
@@ -66,6 +70,9 @@ def construct_health_bp():
     @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
     def schains_checks():
         logger.debug(request)
+        checks_filter = request.args.get('checks_filter')
+        if checks_filter:
+            checks_filter = checks_filter.split(',')
         skale = init_skale(wallet=g.wallet)
         node_id = g.config.id
         if node_id is None:
@@ -73,19 +80,25 @@ def construct_health_bp():
                                           msg='No node installed')
 
         schains = skale.schains.get_schains_for_node(node_id)
+        sync_agent_ranges = get_sync_agent_ranges(skale)
         checks = []
         for schain in schains:
             if schain.get('name') != '':
                 rotation_data = skale.node_rotation.get_rotation(schain['name'])
                 rotation_id = rotation_data['rotation_id']
                 if SChainRecord.added(schain['name']):
+                    rc = get_default_rule_controller(
+                        name=schain['name'],
+                        sync_agent_ranges=sync_agent_ranges
+                    )
                     schain_record = SChainRecord.get_by_name(schain['name'])
                     schain_checks = SChainChecks(
                         schain['name'],
                         node_id,
                         schain_record=schain_record,
+                        rule_controller=rc,
                         rotation_id=rotation_id
-                    ).get_all()
+                    ).get_all(checks_filter=checks_filter)
                     checks.append({
                         'name': schain['name'],
                         'healthchecks': schain_checks
