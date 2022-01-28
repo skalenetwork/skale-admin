@@ -182,7 +182,7 @@ def test_base_monitor_skaled_container_sync(test_monitor):
         'core.schains.monitor.base_monitor.monitor_schain_container',
         new=mock.Mock()
     ) as monitor_schain_mock:
-        test_monitor.skaled_container(sync=True)
+        test_monitor.skaled_container(download_snapshot=True)
 
     monitor_schain_mock.assert_called_with(
         test_monitor.schain,
