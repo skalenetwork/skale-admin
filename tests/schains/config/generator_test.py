@@ -13,9 +13,9 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 from etherbase_predeployed import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
 from filestorage_predeployed import FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTATION_ADDRESS
-from deployment_controller_predeployed import (
-    DEPLOYMENT_CONTROLLER_ADDRESS,
-    DEPLOYMENT_CONTROLLER_IMPLEMENTATION_ADDRESS
+from config_controller_predeployed import (
+    CONFIG_CONTROLLER_ADDRESS,
+    CONFIG_CONTROLLER_IMPLEMENTATION_ADDRESS
 )
 from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
@@ -266,8 +266,8 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale
     assert config['accounts'].get(FILESTORAGE_IMPLEMENTATION_ADDRESS)
     assert config['accounts'].get(ETHERBASE_ADDRESS)
     assert config['accounts'].get(ETHERBASE_IMPLEMENTATION_ADDRESS)
-    assert config['accounts'].get(DEPLOYMENT_CONTROLLER_ADDRESS)
-    assert config['accounts'].get(DEPLOYMENT_CONTROLLER_IMPLEMENTATION_ADDRESS)
+    assert config['accounts'].get(CONFIG_CONTROLLER_ADDRESS)
+    assert config['accounts'].get(CONFIG_CONTROLLER_IMPLEMENTATION_ADDRESS)
     assert config['accounts'].get(MULTISIGWALLET_ADDRESS)
     assert config['accounts'].get(MESSAGE_PROXY_FOR_SCHAIN_ADDRESS)
     assert config['accounts'].get(PROXY_ADMIN_PREDEPLOYED_ADDRESS)

@@ -31,10 +31,10 @@ from marionette_predeployed import (
 from filestorage_predeployed import (
     UpgradeableFileStorageGenerator, FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTATION_ADDRESS
 )
-from deployment_controller_predeployed import (
-    UpgradeableDeploymentControllerGenerator,
-    DEPLOYMENT_CONTROLLER_ADDRESS,
-    DEPLOYMENT_CONTROLLER_IMPLEMENTATION_ADDRESS
+from config_controller_predeployed import (
+    UpgradeableConfigControllerGenerator,
+    CONFIG_CONTROLLER_ADDRESS,
+    CONFIG_CONTROLLER_IMPLEMENTATION_ADDRESS
 )
 from multisigwallet_predeployed import MultiSigWalletGenerator, MULTISIGWALLET_ADDRESS
 from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminGenerator
@@ -136,10 +136,10 @@ def generate_v1_predeployed_contracts(
         allocated_storage=allocated_storage
     )
 
-    deployment_controller_generator = UpgradeableDeploymentControllerGenerator()
-    deployment_controller_predeployed = deployment_controller_generator.generate_allocation(
-        contract_address=DEPLOYMENT_CONTROLLER_ADDRESS,
-        implementation_address=DEPLOYMENT_CONTROLLER_IMPLEMENTATION_ADDRESS,
+    config_generator = UpgradeableConfigControllerGenerator()
+    config_controller_predeployed = config_generator.generate_allocation(
+        contract_address=CONFIG_CONTROLLER_ADDRESS,
+        implementation_address=CONFIG_CONTROLLER_IMPLEMENTATION_ADDRESS,
         schain_owner=on_chain_owner,
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS
     )
@@ -157,7 +157,7 @@ def generate_v1_predeployed_contracts(
         **etherbase_predeployed,
         **marionette_predeployed,
         **filestorage_predeployed,
-        **deployment_controller_predeployed,
+        **config_controller_predeployed,
         **multisigwallet_predeployed
     }
 
