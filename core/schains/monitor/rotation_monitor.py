@@ -58,7 +58,7 @@ class RotationMonitor(BaseMonitor):
         self.config()
         self.volume()
         self.firewall_rules()
-        self.skaled_container(sync=True)
+        self.skaled_container(download_snapshot=True, delay_start=True)
         self.ima_container()
 
     def leaving_node(self) -> None:

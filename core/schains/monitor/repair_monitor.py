@@ -49,6 +49,6 @@ repair_mode: {self.schain_record.repair_mode}, exit_code_ok: {self.checks.exit_c
         self.notify_repair_mode()
         self.cleanup_schain_docker_entity()
         self.volume()
-        self.skaled_container(sync=True)  # todo: handle sync case
+        self.skaled_container(download_snapshot=True)
         self.skaled_rpc()
         self.disable_repair_mode()

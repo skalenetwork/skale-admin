@@ -182,7 +182,26 @@ def test_base_monitor_skaled_container_sync(test_monitor):
         'core.schains.monitor.base_monitor.monitor_schain_container',
         new=mock.Mock()
     ) as monitor_schain_mock:
-        test_monitor.skaled_container(sync=True)
+        test_monitor.skaled_container(download_snapshot=True)
+
+    monitor_schain_mock.assert_called_with(
+        test_monitor.schain,
+        schain_record=test_monitor.schain_record,
+        skaled_status=test_monitor.skaled_status,
+        public_key='0:0:1:0',
+        start_ts=None,
+        dutils=test_monitor.dutils
+    )
+    assert monitor_schain_mock.call_count == 1
+
+
+def test_base_monitor_skaled_container_sync_delay_start(test_monitor):
+    test_monitor.volume()
+    with mock.patch(
+        'core.schains.monitor.base_monitor.monitor_schain_container',
+        new=mock.Mock()
+    ) as monitor_schain_mock:
+        test_monitor.skaled_container(download_snapshot=True, delay_start=True)
 
     monitor_schain_mock.assert_called_with(
         test_monitor.schain,
