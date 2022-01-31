@@ -79,12 +79,8 @@ def _is_post_rotation_mode(skaled_status: SkaledStatus) -> bool:
     return skaled_status.exit_time_reached
 
 
-def _is_reload_mode(
-    schain_record: SChainRecord,
-    checks: SChainChecks,
-    skaled_status: SkaledStatus
-) -> bool:
-    return schain_record.needs_reload or _is_skaled_reload_status(checks, skaled_status)
+def _is_reload_mode(schain_record: SChainRecord) -> bool:
+    return schain_record.needs_reload
 
 
 def _is_skaled_repair_status(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
@@ -111,7 +107,7 @@ def get_monitor_type(
         return RotationMonitor
     if _is_post_rotation_mode(skaled_status):
         return PostRotationMonitor
-    if _is_reload_mode(schain_record, checks, skaled_status):
+    if _is_reload_mode(schain_record):
         return ReloadMonitor
     return RegularMonitor
 
