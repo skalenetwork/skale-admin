@@ -241,15 +241,15 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def skaled_container(self, sync: bool = False) -> bool:
+    def skaled_container(self, download_snapshot: bool = False, delay_start: bool = False) -> bool:
         initial_status = self.checks.skaled_container.status
         if not initial_status:
+            public_key, start_ts = None, None
 
-            if sync:
+            if download_snapshot:
                 public_key = get_schain_public_key(self.skale, self.name)
+            if delay_start:
                 start_ts = self.rotation_data['finish_ts']
-            else:
-                public_key, start_ts = None, None
 
             monitor_schain_container(
                 self.schain,

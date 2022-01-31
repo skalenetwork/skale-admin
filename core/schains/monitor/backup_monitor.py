@@ -32,6 +32,6 @@ class BackupMonitor(BaseMonitor):
         self.config()
         self.volume()
         self.firewall_rules()
-        self.skaled_container(sync=True)
+        self.skaled_container(download_snapshot=True)
         self.skaled_rpc()
         self.ima_container()

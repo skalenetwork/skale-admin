@@ -5,7 +5,8 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config,
     get_schain_env,
-    get_schain_container_cmd
+    get_schain_container_cmd,
+    get_schain_container_sync_opts
 )
 from core.schains.config.directory import schain_config_filepath
 from core.schains.ssl import get_ssl_filepath
@@ -75,3 +76,17 @@ def test_get_schain_volume_config():
         'test_name': {'bind': '/mnt/mount_path/', 'mode': 'Z'},
         SHARED_SPACE_VOLUME_NAME: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'Z'}
     }
+
+
+def test_get_schain_container_sync_opts():
+    sync_opts = get_schain_container_sync_opts(public_key='0x01', start_ts=123)
+    assert sync_opts == [
+        '--download-snapshot readfromconfig',
+        '--public-key 0x01',
+        '--start-timestamp 123'
+    ]
+    sync_opts = get_schain_container_sync_opts(public_key='0x01')
+    assert sync_opts == [
+        '--download-snapshot readfromconfig',
+        '--public-key 0x01'
+    ]

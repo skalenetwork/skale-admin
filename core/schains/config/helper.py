@@ -167,19 +167,23 @@ def get_schain_container_cmd(schain_name: str,
                              start_ts: int = None,
                              enable_ssl: bool = True) -> str:
     opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
-    if public_key and str(start_ts):
+    if public_key:
         sync_opts = get_schain_container_sync_opts(public_key, start_ts)
         opts.extend(sync_opts)
     return ' '.join(opts)
 
 
-def get_schain_container_sync_opts(public_key: str,
-                                   start_ts: int) -> list:
-    return [
-        '--download-snapshot readfromconfig',  # tmp, parameter is needed, but value is not used
-        f'--public-key {public_key}',
-        f'--start-timestamp {start_ts}'
+def get_schain_container_sync_opts(
+    public_key: str,
+    start_ts: int = None
+) -> list:
+    sync_opts = [
+        '--download-snapshot readfromconfig',  # TODO: update in the next version
+        f'--public-key {public_key}'
     ]
+    if start_ts:
+        sync_opts.append(f'--start-timestamp {start_ts}')
+    return sync_opts
 
 
 def get_schain_container_base_opts(schain_name: str,
