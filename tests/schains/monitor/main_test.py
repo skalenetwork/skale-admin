@@ -127,6 +127,7 @@ def test_not_is_reload_mode(schain_db, checks, bad_checks, skaled_status):
 def test_is_reload_mode(schain_db, checks, bad_checks, skaled_status_reload):
     schain_record = upsert_schain_record(schain_db)
     assert get_monitor_type(schain_record, checks, False, skaled_status_reload) != ReloadMonitor
+    schain_record.set_needs_reload(True)
     assert get_monitor_type(schain_record, bad_checks, False, skaled_status_reload) == ReloadMonitor
 
 
