@@ -283,3 +283,9 @@ def test_base_monitor_cleanup(test_monitor):
     test_monitor.cleanup_schain_docker_entity()
     assert not test_monitor.checks.volume.status
     assert not test_monitor.checks.skaled_container.status
+
+
+def test_schain_finish_ts(skale, schain_on_contracts):
+    name = schain_on_contracts
+    max_node_id = skale.nodes.get_nodes_number() - 1
+    assert skale.node_rotation.get_schain_finish_ts(max_node_id, name) is None
