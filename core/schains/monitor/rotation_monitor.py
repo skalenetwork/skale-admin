@@ -50,7 +50,7 @@ class RotationMonitor(BaseMonitor):
         return self.rotation_data['leaving_node'] == self.node_config.id
 
     def rotation_request(self) -> None:
-        set_rotation_for_schain(self.name, self.rotation_data['finish_ts'])
+        set_rotation_for_schain(self.name, self.finish_ts)
 
     def new_node(self) -> None:
         self.config_dir()

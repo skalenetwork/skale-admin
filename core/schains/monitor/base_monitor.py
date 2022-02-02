@@ -96,6 +96,8 @@ class BaseMonitor(ABC):
         self.rotation_id = rotation_data['rotation_id']
         self.rc = rule_controller
 
+        self.finish_ts = skale.node_rotation.get_schain_finish_ts(node_config.id, self.name)
+
         self.skaled_status = init_skaled_status(self.name)
 
         self.schain_type = get_schain_type(schain['partOfNode'])
@@ -249,7 +251,7 @@ class BaseMonitor(ABC):
             if download_snapshot:
                 public_key = get_schain_public_key(self.skale, self.name)
             if delay_start:
-                start_ts = self.rotation_data['finish_ts']
+                start_ts = self.finish_ts
 
             monitor_schain_container(
                 self.schain,

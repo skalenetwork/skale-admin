@@ -10,7 +10,7 @@ from tests.utils import get_test_rule_controller
 
 DEFAULT_ROTATION_DATA = {
     'rotation_id': 1,
-    'finish_ts': 12345678,
+    'freeze_until': 12345678,
     'new_node': 2999,
     'leaving_node': 1999
 }
@@ -86,7 +86,7 @@ def test_is_new_node(
 ):
     rotation_data_new_node = {
         'rotation_id': 1,
-        'finish_ts': 12345678,
+        'freeze_until': 12345678,
         'new_node': node_config.id,
         'leaving_node': 1999
     }
@@ -129,7 +129,7 @@ def test_is_leaving_node(
 ):
     rotation_data_leaving_node = {
         'rotation_id': 1,
-        'finish_ts': 12345678,
+        'freeze_until': 12345678,
         'new_node': 9999,
         'leaving_node': node_config.id,
     }
@@ -199,7 +199,7 @@ def test_rotation_request(
 ):
     rotation_data_leaving_node = {
         'rotation_id': 1,
-        'finish_ts': 12345678,
+        'freeze_until': 12345678,
         'new_node': 9999,
         'leaving_node': node_config.id,
     }
