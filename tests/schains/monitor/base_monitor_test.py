@@ -201,6 +201,7 @@ def test_base_monitor_skaled_container_sync_delay_start(test_monitor):
         'core.schains.monitor.base_monitor.monitor_schain_container',
         new=mock.Mock()
     ) as monitor_schain_mock:
+        test_monitor.finish_ts = 1245
         test_monitor.skaled_container(download_snapshot=True, delay_start=True)
 
     monitor_schain_mock.assert_called_with(
@@ -208,7 +209,7 @@ def test_base_monitor_skaled_container_sync_delay_start(test_monitor):
         schain_record=test_monitor.schain_record,
         skaled_status=test_monitor.skaled_status,
         public_key='0:0:1:0',
-        start_ts=0,
+        start_ts=1245,
         dutils=test_monitor.dutils
     )
     assert monitor_schain_mock.call_count == 1
