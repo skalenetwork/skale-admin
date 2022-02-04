@@ -70,7 +70,7 @@ def test_regular_monitor(
         ima_data=ima_data,
         schain=schain,
         node_config=node_config,
-        rotation_data={'rotation_id': 0},
+        rotation_data={'rotation_id': 0, 'leaving_node': 1},
         checks=schain_checks,
         rule_controller=rc,
         dutils=dutils
