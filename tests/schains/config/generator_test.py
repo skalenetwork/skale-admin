@@ -189,7 +189,7 @@ def test_generate_schain_config_with_skale(
         skale=skale,
         schain_name=schain_name,
         node_id=current_node_id,
-        rotation_data={'rotation_id': 0},
+        rotation_data={'rotation_id': 0, 'leaving_node': 1},
         ecdsa_key_name=ECDSA_KEY_NAME,
         generation=0
     )

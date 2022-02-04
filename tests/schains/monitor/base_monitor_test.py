@@ -96,7 +96,7 @@ def test_monitor(
         ima_data=ima_data,
         schain={'name': schain_db, 'partOfNode': 0, 'generation': 0},
         node_config=node_config,
-        rotation_data={'rotation_id': 0, 'finish_ts': 0},
+        rotation_data={'rotation_id': 0, 'finish_ts': 0, 'leaving_node': 1},
         checks=schain_checks,
         rule_controller=uninited_rule_controller,
         dutils=dutils
@@ -126,7 +126,7 @@ def test_crashing_monitor(
         ima_data=ima_data,
         schain=schain_struct,
         node_config=node_config,
-        rotation_data={'rotation_id': 1},
+        rotation_data={'rotation_id': 1, 'leaving_node': 1},
         checks=schain_checks,
         rule_controller=rule_controller
     )
@@ -259,7 +259,7 @@ def test_base_monitor_ima_container_not_linked(
         ima_data=ima_data,
         schain={'name': schain_db, 'partOfNode': 0, 'generation': 0},
         node_config=node_config,
-        rotation_data={'rotation_id': 0},
+        rotation_data={'rotation_id': 0, 'leaving_node': 1},
         checks=schain_checks,
         rule_controller=get_test_rule_controller(_schain_name),
         dutils=dutils

@@ -96,7 +96,11 @@ class BaseMonitor(ABC):
         self.rotation_id = rotation_data['rotation_id']
         self.rc = rule_controller
 
-        self.finish_ts = skale.node_rotation.get_schain_finish_ts(node_config.id, self.name)
+        self.finish_ts = skale.node_rotation.get_schain_finish_ts(
+            node_id=rotation_data['leaving_node'],
+            schain_name=self.name
+        )
+        logger.info(f'sChain finish_ts calculated: {self.finish_ts}')
 
         self.skaled_status = init_skaled_status(self.name)
 
