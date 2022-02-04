@@ -126,7 +126,7 @@ def test_crashing_monitor(
         ima_data=ima_data,
         schain=schain_struct,
         node_config=node_config,
-        rotation_data={'rotation_id': 1},
+        rotation_data={'rotation_id': 1, 'leaving_node': 1},
         checks=schain_checks,
         rule_controller=rule_controller
     )
