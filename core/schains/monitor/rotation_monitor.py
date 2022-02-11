@@ -21,6 +21,7 @@ import logging
 
 from core.schains.monitor.base_monitor import BaseMonitor
 from core.schains.rotation import set_rotation_for_schain
+from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
 
@@ -86,8 +87,8 @@ class RotationMonitor(BaseMonitor):
     @BaseMonitor.monitor_runner
     def run(self):
         rotation_mode_func = self.get_rotation_mode_func()
-        logger.info(
-            f'sChain: {self.name} running {type(self).__name__} '
-            f'type: {rotation_mode_func}'
-        )
+        logger.info(arguments_list_string({
+                'Node type':  rotation_mode_func.__name__,
+                'Node ID': self.node_config.id
+            }, f'Rotation monitor - {self.name}'))
         return rotation_mode_func()

@@ -184,6 +184,8 @@ def test_is_staying_node(
     )
     assert test_monitor.get_rotation_mode_func() == test_monitor.staying_node
 
+    test_monitor.run()
+
 
 @pytest.mark.skip(reason="test should be improved")
 def test_rotation_request(
