@@ -224,10 +224,10 @@ class DockerUtils:
         container = self.safe_get_container(container_name)
         if not container:
             return
-        self.backup_container_logs(container)
         logger.info(
             f'Stopping container: {container_name}, timeout: {stop_timeout}')
         container.stop(timeout=stop_timeout)
+        self.backup_container_logs(container)
         logger.info(f'Removing container: {container_name}, kwargs: {kwargs}')
         container.remove(**kwargs)
         logger.info(f'Container removed: {container_name}')
