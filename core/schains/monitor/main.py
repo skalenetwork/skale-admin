@@ -71,8 +71,8 @@ def _is_repair_mode(
     return schain_record.repair_mode or _is_skaled_repair_status(checks, skaled_status)
 
 
-def _is_rotation_mode(rotation_in_progress: bool) -> bool:
-    return rotation_in_progress
+def _is_rotation_mode(is_rotation_active: bool) -> bool:
+    return is_rotation_active
 
 
 def _is_post_rotation_mode(skaled_status: SkaledStatus) -> bool:
@@ -96,14 +96,14 @@ def _is_skaled_reload_status(checks: SChainChecks, skaled_status: SkaledStatus) 
 def get_monitor_type(
         schain_record: SChainRecord,
         checks: SChainChecks,
-        rotation_in_progress: bool,
+        is_rotation_active: bool,
         skaled_status: SkaledStatus
         ) -> BaseMonitor:
     if _is_backup_mode(schain_record):
         return BackupMonitor
     if _is_repair_mode(schain_record, checks, skaled_status):
         return RepairMonitor
-    if _is_rotation_mode(rotation_in_progress):
+    if _is_rotation_mode(is_rotation_active):
         return RotationMonitor
     if _is_post_rotation_mode(skaled_status):
         return PostRotationMonitor
@@ -132,9 +132,9 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             name = schain["name"]
             dutils = dutils or DockerUtils()
 
-            rotation_in_progress = skale.node_rotation.is_rotation_in_progress(name)
+            is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
-            if not is_node_part_of_chain(skale, name, node_config.id) and not rotation_in_progress:
+            if not is_node_part_of_chain(skale, name, node_config.id) and not is_rotation_active:
                 logger.warning(f'{p} NOT ON NODE ({node_config.id}), finising process...')
                 return True
 
@@ -167,7 +167,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
             monitor_class = get_monitor_type(
                 schain_record,
                 checks,
-                rotation_in_progress,
+                is_rotation_active,
                 skaled_status
             )
             monitor = monitor_class(
