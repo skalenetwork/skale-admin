@@ -21,6 +21,7 @@ import logging
 
 from core.schains.monitor.base_monitor import BaseMonitor
 from core.schains.rotation import set_rotation_for_schain
+from skale.schain_config.rotation_history import get_previous_schain_groups, get_new_nodes_list
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,24 @@ class RotationMonitor(BaseMonitor):
         1. When the current node is marked as a new node
         2. When the current node doesn't have SKALE chain config file created
         """
-        return self._is_new_rotation_node() or not self.checks.config.status
+        if self._is_new_rotation_node():
+            logger.info(f'{self.p} current node is the new node in this rotation')
+            return True
+        node_groups = get_previous_schain_groups(
+            skale=self.skale,
+            schain_name=self.name,
+            leaving_node_id=self.rotation_data['leaving_node']
+        )
+        new_nodes = get_new_nodes_list(
+            skale=self.skale,
+            name=self.name,
+            node_groups=node_groups
+        )
+        logger.info(f'{self.p} new nodes: {new_nodes}, current node: {self.node_config.id}')
+        if self.node_config.id in new_nodes:
+            logger.info(f'{self.p} current node is one of the new nodes in this rotation')
+            return True
+        return False
 
     def _is_leaving_node(self) -> bool:
         return self.rotation_data['leaving_node'] == self.node_config.id

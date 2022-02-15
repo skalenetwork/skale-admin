@@ -174,10 +174,10 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
         )
         return remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
 
-    if skale.node_rotation.is_rotation_in_progress(schain_name):
+    if skale.node_rotation.is_rotation_active(schain_name):
         msg = arguments_list_string(
             {'sChain name': schain_name},
-            'Rotation is in progress, skipping cleaner'
+            'Rotation is in progress (new group created), skipping cleaner'
         )
         logger.info(msg)
         return
