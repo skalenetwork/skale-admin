@@ -46,6 +46,7 @@ class RotationMonitor(BaseMonitor):
         2. When the current node doesn't have SKALE chain config file created
         """
         if self._is_new_rotation_node():
+            logger.info(f'{self.p} current node is the new node in this rotation')
             return True
         node_groups = get_previous_schain_groups(
             skale=self.skale,
