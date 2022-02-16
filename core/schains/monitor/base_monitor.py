@@ -283,12 +283,12 @@ class BaseMonitor(ABC):
 
     @monitor_block
     def reloaded_skaled_container(self) -> bool:
-        logger.info('Starting skaled with reload')
+        logger.info('Starting skaled with reloaded configuration')
         initial_status = True
         if is_container_exists(self.name, dutils=self.dutils):
             remove_schain_container(self.name, dutils=self.dutils)
         else:
-            logger.warning(f'sChain {self.name}: container doesn\'t exits')
+            logger.warning(f'sChain {self.name}: container doesn\'t exists')
         initial_status = self.skaled_container()
         return initial_status
 
