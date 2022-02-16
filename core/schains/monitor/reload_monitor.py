@@ -34,8 +34,8 @@ class ReloadMonitor(BaseMonitor):
             '%s. Reload requested. Going to restart sChain container',
             self.p
         )
-        self.restart_skaled_container()
         record = self.schain_record
+        self.reloaded_skaled_container()
         record.set_restart_count(0)
         record.set_failed_rpc_count(0)
         record.set_needs_reload(False)
