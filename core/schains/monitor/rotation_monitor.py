@@ -51,7 +51,8 @@ class RotationMonitor(BaseMonitor):
         node_groups = get_previous_schain_groups(
             skale=self.skale,
             schain_name=self.name,
-            leaving_node_id=self.rotation_data['leaving_node']
+            leaving_node_id=self.rotation_data['leaving_node'],
+            include_keys=False
         )
         new_nodes = get_new_nodes_list(
             skale=self.skale,
