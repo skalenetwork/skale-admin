@@ -184,7 +184,7 @@ def request_ima_healthcheck(endpoint):
     logger.debug(f'Received {result}')
     if result:
         data_json = json.loads(result)
-        data = data_json['last_transfer_errors']
+        data = {'errors': data_json['last_transfer_errors'], 'categories': data_json['last_error_categories']}
     else:
         data = None
     return data
@@ -192,12 +192,12 @@ def request_ima_healthcheck(endpoint):
 
 def get_ima_log_checks():
     ima_containers = get_ima_container_statuses()
-    ima_healthchecks = []
+    all_ima_healthchecks = []
     for schain_name in os.listdir(SCHAINS_DIR_PATH):
         error_text = None
-        ima_healthcheck = []
+        errors = []
+        categories = []
         container_name = f'skale_ima_{schain_name}'
-
         cont_data = next((item for item in ima_containers if item["name"] == container_name), None)
         if cont_data is None:
             continue
@@ -219,9 +219,13 @@ def get_ima_log_checks():
                     logger.info(f'Error occurred while checking IMA state on {endpoint}')
                     logger.exception(err)
                     error_text = repr(err)
-        if ima_healthcheck is None:
-            ima_healthcheck = []
-            error_text = 'Request failed'
-        ima_healthchecks.append({schain_name: {'error': error_text,
-                                               'last_ima_errors': ima_healthcheck}})
-    return ima_healthchecks
+                else:
+                    if ima_healthcheck is None:
+                        error_text = 'Request failed'
+                    else:
+                        errors = ima_healthcheck['errors']
+                        categories = ima_healthcheck['categories']
+        all_ima_healthchecks.append({schain_name: {'error': error_text,
+                                                   'last_ima_errors': errors,
+                                                   'error_categories': categories}})
+    return all_ima_healthchecks
