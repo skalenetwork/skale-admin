@@ -184,7 +184,8 @@ def request_ima_healthcheck(endpoint):
     logger.debug(f'Received {result}')
     if result:
         data_json = json.loads(result)
-        data = {'errors': data_json['last_transfer_errors'], 'categories': data_json['last_error_categories']}
+        data = {'errors': data_json['last_transfer_errors'],
+                'categories': data_json['last_error_categories']}
     else:
         data = None
     return data
