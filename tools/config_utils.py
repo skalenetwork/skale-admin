@@ -53,6 +53,11 @@ def config_getter(func):
         try:
             config = read_json(filepath)
         except JSONDecodeError:
+            log_broken_status_file(filepath)
             return None
         return config.get(field_name)
     return wrapper_decorator
+
+
+def log_broken_status_file(filepath: str) -> None:
+    logger.error("skaled status file is not valid JSON: %s", filepath)
