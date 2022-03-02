@@ -19,6 +19,7 @@
 
 import os
 import logging
+from json.decoder import JSONDecodeError
 
 from core.schains.config.directory import skaled_status_filepath
 from tools.config_utils import config_getter
@@ -86,7 +87,10 @@ class SkaledStatus:
         if not os.path.isfile(self.filepath):
             logger.warning("File %s is not found", self.filepath)
             return
-        return read_json(self.filepath)
+        try:
+            return read_json(self.filepath)
+        except JSONDecodeError:
+            return {}
 
 
 def init_skaled_status(schain_name) -> SkaledStatus:

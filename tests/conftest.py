@@ -21,7 +21,7 @@ from core.schains.config.helper import (
 from core.schains.config.directory import skaled_status_filepath
 from core.schains.cleaner import remove_schain_container, remove_schain_volume
 from core.schains.ima import ImaData
-from core.schains.skaled_status import init_skaled_status
+from core.schains.skaled_status import init_skaled_status, SkaledStatus
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
 from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
@@ -300,6 +300,17 @@ def skaled_status_repair(_schain_name):
 def skaled_status_reload(_schain_name):
     generate_schain_skaled_status_file(_schain_name, start_again=True)
     yield init_skaled_status(_schain_name)
+    rm_schain_dir(_schain_name)
+
+
+@pytest.fixture
+def skaled_status_broken_file(_schain_name):
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
+    pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+    status_filepath = skaled_status_filepath(_schain_name)
+    with open(status_filepath, "w") as text_file:
+        text_file.write('abcd')
+    yield SkaledStatus(status_filepath)
     rm_schain_dir(_schain_name)
 
 
