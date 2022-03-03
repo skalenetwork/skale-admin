@@ -36,3 +36,8 @@ def test_no_status_file():
     skaled_status = SkaledStatus(filepath='/skaleddd_status.json')
     assert skaled_status.subsystem_running is None
     assert skaled_status.downloading_snapshot is None
+
+
+def test_broken_status_file(skaled_status_broken_file):
+    assert not skaled_status_broken_file.exit_time_reached
+    assert not skaled_status_broken_file.downloading_snapshot
