@@ -250,8 +250,8 @@ class DockerUtils:
     def display_container_logs(
         self,
         container_name: Container,
-        head: int = DOCKER_DEFAULT_HEAD_LINES,
-        tail: int = DOCKER_DEFAULT_TAIL_LINES
+        head: int = 100,
+        tail: int = 1000
     ) -> None:
         container = self.safe_get_container(container_name)
         if not container:
@@ -261,8 +261,9 @@ class DockerUtils:
             head=head,
             tail=tail
         )
-        logger.info(f'{container_name} logs')
-        logger.info(head_lines + CONTAINER_LOGS_SEPARATOR + tail_lines)
+        pretext = f'container {container_name} logs: \n'
+        logs = (head_lines + CONTAINER_LOGS_SEPARATOR + tail_lines).decode("utf-8")
+        logger.info(pretext + logs)
 
     @classmethod
     def save_container_logs(

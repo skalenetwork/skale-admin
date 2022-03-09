@@ -43,8 +43,7 @@ from core.schains.limits import get_schain_type
 from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
 from core.schains.monitor.rpc import monitor_schain_rpc
 from core.schains.runner import (
-    restart_container,
-    is_container_exists
+    restart_container, is_container_exists, get_container_name
 )
 from core.schains.config import init_schain_config, init_schain_config_dir
 from core.schains.config.directory import get_schain_config
@@ -334,7 +333,8 @@ class BaseMonitor(ABC):
 
     def display_skaled_logs(self) -> None:
         if is_container_exists(self.name, dutils=self.dutils):
-            DockerUtils.display_container_logs()
+            container_name = get_container_name(SCHAIN_CONTAINER, self.name)
+            self.dutils.display_container_logs(container_name)
         else:
             logger.warning(f'sChain {self.name}: container doesn\'t exists, could not show logs')
 

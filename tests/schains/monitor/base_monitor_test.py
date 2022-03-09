@@ -290,3 +290,13 @@ def test_schain_finish_ts(skale, schain_on_contracts):
     name = schain_on_contracts
     max_node_id = skale.nodes.get_nodes_number() - 1
     assert skale.node_rotation.get_schain_finish_ts(max_node_id, name) is None
+
+
+def test_display_skaled_logs(skale, test_monitor, _schain_name):
+    test_monitor.volume()
+    with mock.patch(
+        'core.schains.monitor.base_monitor.monitor_schain_container',
+        monitor_schain_container_mock
+    ):
+        test_monitor.skaled_container()
+    test_monitor.display_skaled_logs()
