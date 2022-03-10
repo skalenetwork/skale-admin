@@ -39,7 +39,8 @@ from tools.configs.containers import (
     DOCKER_DEFAULT_TAIL_LINES,
     DOCKER_DEFAULT_STOP_TIMEOUT,
     EXITED_STATUS,
-    RUNNING_STATUS
+    RUNNING_STATUS,
+    CONTAINER_LOGS_SEPARATOR
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
 
@@ -233,6 +234,38 @@ class DockerUtils:
         logger.info(f'Container removed: {container_name}')
 
     @classmethod
+    def get_container_logs(
+        cls,
+        container: Container,
+        head: int = DOCKER_DEFAULT_HEAD_LINES,
+        tail: int = DOCKER_DEFAULT_TAIL_LINES
+    ):
+        tail_lines = container.logs(tail=tail)
+        lines_number = len(io.BytesIO(tail_lines).readlines())
+        head = min(lines_number, head)
+        log_stream = container.logs(stream=True, follow=True)
+        head_lines = b''.join(itertools.islice(log_stream, head))
+        return head_lines, tail_lines
+
+    def display_container_logs(
+        self,
+        container_name: Container,
+        head: int = 100,
+        tail: int = 1000
+    ) -> None:
+        container = self.safe_get_container(container_name)
+        if not container:
+            return
+        head_lines, tail_lines = DockerUtils.get_container_logs(
+            container=container,
+            head=head,
+            tail=tail
+        )
+        pretext = f'container {container_name} logs: \n'
+        logs = (head_lines + CONTAINER_LOGS_SEPARATOR + tail_lines).decode("utf-8")
+        logger.info(pretext + logs)
+
+    @classmethod
     def save_container_logs(
         cls,
         container: Container,
@@ -240,15 +273,14 @@ class DockerUtils:
         head: int = DOCKER_DEFAULT_HEAD_LINES,
         tail: int = DOCKER_DEFAULT_TAIL_LINES
     ) -> None:
-        separator = b'=' * 80 + b'\n'
-        tail_lines = container.logs(tail=tail)
-        lines_number = len(io.BytesIO(tail_lines).readlines())
-        head = min(lines_number, head)
-        log_stream = container.logs(stream=True, follow=True)
-        head_lines = b''.join(itertools.islice(log_stream, head))
+        head_lines, tail_lines = DockerUtils.get_container_logs(
+            container=container,
+            head=head,
+            tail=tail
+        )
         with open(log_filepath, 'wb') as out:
             out.write(head_lines)
-            out.write(separator)
+            out.write(CONTAINER_LOGS_SEPARATOR)
             out.write(tail_lines)
 
     def backup_container_logs(

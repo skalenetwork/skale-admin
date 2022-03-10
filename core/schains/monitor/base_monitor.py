@@ -43,8 +43,7 @@ from core.schains.limits import get_schain_type
 from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
 from core.schains.monitor.rpc import monitor_schain_rpc
 from core.schains.runner import (
-    restart_container,
-    is_container_exists
+    restart_container, is_container_exists, get_container_name
 )
 from core.schains.config import init_schain_config, init_schain_config_dir
 from core.schains.config.directory import get_schain_config
@@ -296,6 +295,7 @@ class BaseMonitor(ABC):
     def skaled_rpc(self) -> bool:
         initial_status = self.checks.rpc.status
         if not initial_status:
+            self.display_skaled_logs()
             monitor_schain_rpc(
                 self.schain,
                 schain_record=self.schain_record,
@@ -330,6 +330,13 @@ class BaseMonitor(ABC):
     def log_executed_blocks(self) -> None:
         logger.info(arguments_list_string(
             self.executed_blocks, f'Finished monitor runner - {self.name}'))
+
+    def display_skaled_logs(self) -> None:
+        if is_container_exists(self.name, dutils=self.dutils):
+            container_name = get_container_name(SCHAIN_CONTAINER, self.name)
+            self.dutils.display_container_logs(container_name)
+        else:
+            logger.warning(f'sChain {self.name}: container doesn\'t exists, could not show logs')
 
     monitor_runner = staticmethod(monitor_runner)
     monitor_block = staticmethod(monitor_block)

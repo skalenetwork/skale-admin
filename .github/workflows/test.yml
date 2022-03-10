@@ -38,4 +38,3 @@ jobs:
     - name: Run codecov
       run: |
         codecov -t $CODECOV_TOKEN
-
