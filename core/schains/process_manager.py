@@ -107,7 +107,7 @@ def get_leaving_schains_for_node(skale: Skale, node_id: int) -> list:
     leaving_history = skale.node_rotation.get_leaving_history(node_id)
     for leaving_schain in leaving_history:
         schain = skale.schains.get(leaving_schain['schain_id'])
-        if skale.node_rotation.is_rotation_in_progress(schain['name']) and schain['name']:
+        if skale.node_rotation.is_rotation_active(schain['name']) and schain['name']:
             schain['active'] = True
             leaving_schains.append(schain)
     logger.info(f'Got leaving sChains for the node: {leaving_schains}')

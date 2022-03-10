@@ -98,12 +98,12 @@ def test_not_post_rotation_mode(schain_db, checks, skaled_status):
     assert get_monitor_type(schain_record, checks, False, skaled_status) != PostRotationMonitor
 
 
-def test_is_post_rotation_mode(schain_db, checks, skaled_status_exit_time_reached):
+def test_is_post_rotation_mode(schain_db, bad_checks, skaled_status_exit_time_reached):
     schain_record = upsert_schain_record(schain_db)
     schain_dir_path = schain_config_dir(schain_db)
     os.makedirs(schain_dir_path, exist_ok=True)
     assert get_monitor_type(
-        schain_record, checks, False, skaled_status_exit_time_reached) == PostRotationMonitor
+        schain_record, bad_checks, False, skaled_status_exit_time_reached) == PostRotationMonitor
 
 
 def test_is_rotation_mode(schain_db, checks, skaled_status):
