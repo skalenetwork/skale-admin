@@ -45,13 +45,14 @@ def soft_updates(skale: Skale, node_config: NodeConfig) -> None:
 
 def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:
     """
-    - Fix for node_id field in the config file
-    - Add node name field to node config
+    - Ensure node config name field
+    - Ensure node config ip field
     """
     if node_config.id is not None:
-        if node_config.name is None:
-            node_info = skale.nodes.get(node_config.id)
-            node_config.name = node_info['name']
-        if node_config.ip is None:
-            node_info = skale.nodes.get(node_config.id)
-            node_config.ip = ip_from_bytes(node_info['ip'])
+        node_info = skale.nodes.get(node_config.id)
+        ip_bytes, name = node_info['ip'], node_info['name']
+        ip = ip_from_bytes(ip_bytes)
+        if node_config.ip != ip:
+            node_config.ip = ip
+        if node_config.name != name:
+            node_config.name = name

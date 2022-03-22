@@ -16,9 +16,8 @@ else:
     SKALE_VOLUME_PATH = '/skale_vol'
     NODE_DATA_PATH = '/skale_node_data'
 
-
 SCHAIN_NODE_DATA_PATH = '/skale_node_data'
-SCHAIN_DATA_PATH = '/skale_schain_data'
+SCHAIN_CONFIG_DIR_SKALED = '/schain_config'
 CONFIG_FOLDER_NAME = 'config'
 CONTRACTS_INFO_FOLDER_NAME = 'contracts_info'
 
@@ -68,7 +67,6 @@ INIT_LOCK_PATH = os.getenv('INIT_LOCK_PATH')
 if not INIT_LOCK_PATH:
     INIT_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'init.lock')
 
-ROTATION_FLAG_FILENAME = '.rotation'
 META_FILEPATH = os.path.join(NODE_DATA_PATH, 'meta.json')
 
 ALLOWED_TIMESTAMP_DIFF = int(os.getenv('ALLOWED_TIMESTAMP_DIFF', 120))

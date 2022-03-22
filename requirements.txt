@@ -1,20 +1,27 @@
 peewee==3.9.5
 PyMySQL==0.9.3
 
-Flask==1.1.2
-itsdangerous==0.24
-Jinja2==2.10.1
-MarkupSafe==0.23
-Werkzeug==0.15.5
+Flask==2.0.2
+Werkzeug==2.0.2
+gunicorn==20.1.0
+
+Jinja2==3.0.3
 
 docker==4.2.2
 pyjwt==1.4.2
 simple-crypt==4.1.7
-pycryptodome==3.9.9
+pycryptodome==3.12.0
 python-iptables==0.14.0
 
-skale.py==5.1dev7
-ima-predeployed==1.0.0b12
+skale.py==5.7dev7
+
+ima-predeployed==1.1.2b1
+etherbase-predeployed==1.0.0
+marionette-predeployed==1.0.0
+filestorage-predeployed==1.0.1b0
+config-controller-predeployed==1.0.0.dev6
+multisigwallet-predeployed==0.0.1a5
+predeployed-generator==1.0.0
 
 pyyaml==5.4
 psutil==5.7.0
@@ -26,7 +33,7 @@ redis==3.5.3
 filelock==3.0.12
 
 pyOpenSSL==19.1.0
+cryptography==35.0.0
 python-dateutil==2.8.1
 python-telegram-bot==12.8
-gunicorn==20.0.4
 sh==1.14.1

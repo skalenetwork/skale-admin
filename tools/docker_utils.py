@@ -18,6 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import io
+import itertools
 import logging
 import re
 import time
@@ -33,10 +35,12 @@ from tools.configs.containers import (
     CONTAINER_NOT_FOUND,
     CREATED_STATUS,
     DEFAULT_DOCKER_HOST,
+    DOCKER_DEFAULT_HEAD_LINES,
     DOCKER_DEFAULT_TAIL_LINES,
     DOCKER_DEFAULT_STOP_TIMEOUT,
     EXITED_STATUS,
-    RUNNING_STATUS
+    RUNNING_STATUS,
+    CONTAINER_LOGS_SEPARATOR
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
 
@@ -164,11 +168,6 @@ class DockerUtils:
         info = self.get_info(container_id)
         return info['status'] == EXITED_STATUS
 
-    def is_container_exited_with_zero(self, container_id: str) -> bool:
-        info = self.get_info(container_id)
-        return info['status'] == EXITED_STATUS and \
-            info['stats']['State']['ExitCode'] == 0
-
     def container_exit_code(self, container_id: str) -> int:
         info = self.get_info(container_id)
         if info['status'] != CONTAINER_NOT_FOUND:
@@ -226,21 +225,82 @@ class DockerUtils:
         container = self.safe_get_container(container_name)
         if not container:
             return
-        self.backup_container_logs(container)
         logger.info(
             f'Stopping container: {container_name}, timeout: {stop_timeout}')
         container.stop(timeout=stop_timeout)
+        self.backup_container_logs(container)
         logger.info(f'Removing container: {container_name}, kwargs: {kwargs}')
         container.remove(**kwargs)
         logger.info(f'Container removed: {container_name}')
 
-    def backup_container_logs(self, container: Container, tail=DOCKER_DEFAULT_TAIL_LINES) -> None:
+    @classmethod
+    def get_container_logs(
+        cls,
+        container: Container,
+        head: int = DOCKER_DEFAULT_HEAD_LINES,
+        tail: int = DOCKER_DEFAULT_TAIL_LINES
+    ):
+        tail_lines = container.logs(tail=tail)
+        lines_number = len(io.BytesIO(tail_lines).readlines())
+        head = min(lines_number, head)
+        log_stream = container.logs(stream=True, follow=True)
+        head_lines = b''.join(itertools.islice(log_stream, head))
+        return head_lines, tail_lines
+
+    def display_container_logs(
+        self,
+        container_name: Container,
+        head: int = 100,
+        tail: int = 1000
+    ) -> None:
+        container = self.safe_get_container(container_name)
+        if not container:
+            return
+        head_lines, tail_lines = DockerUtils.get_container_logs(
+            container=container,
+            head=head,
+            tail=tail
+        )
+        pretext = f'container {container_name} logs: \n'
+        logs = (head_lines + CONTAINER_LOGS_SEPARATOR + tail_lines).decode("utf-8")
+        logger.info(pretext + logs)
+
+    @classmethod
+    def save_container_logs(
+        cls,
+        container: Container,
+        log_filepath: str,
+        head: int = DOCKER_DEFAULT_HEAD_LINES,
+        tail: int = DOCKER_DEFAULT_TAIL_LINES
+    ) -> None:
+        head_lines, tail_lines = DockerUtils.get_container_logs(
+            container=container,
+            head=head,
+            tail=tail
+        )
+        with open(log_filepath, 'wb') as out:
+            out.write(head_lines)
+            out.write(CONTAINER_LOGS_SEPARATOR)
+            out.write(tail_lines)
+
+    def backup_container_logs(
+        self,
+        container: Container,
+        head: int = DOCKER_DEFAULT_HEAD_LINES,
+        tail: int = DOCKER_DEFAULT_TAIL_LINES
+    ) -> None:
         logger.info(f'Going to backup container logs: {container.name}')
         logs_backup_filepath = self.get_logs_backup_filepath(container)
-        with open(logs_backup_filepath, "wb") as out:
-            out.write(container.logs(tail=tail))
+        DockerUtils.save_container_logs(
+            container,
+            logs_backup_filepath,
+            head=head,
+            tail=tail
+        )
         logger.info(
-            f'Old container logs saved to {logs_backup_filepath}, tail: {tail}')
+            f'Old container logs saved to {logs_backup_filepath}, '
+            f'head {head}, tail: {tail}'
+        )
 
     def get_logs_backup_filepath(self, container: Container) -> str:
         container_index = sum(1 for f in os.listdir(REMOVED_CONTAINERS_FOLDER_PATH)

@@ -19,8 +19,7 @@
 
 from dataclasses import dataclass
 
-from core.schains.config.helper import compose_public_key_info
-from core.schains.limits import get_schain_limit
+from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
 
 
@@ -29,7 +28,7 @@ class SChainInfo:
     """Dataclass that represents sChain key of the skaleConfig section"""
     schain_id: int
     name: str
-    owner: str
+    block_author: str
 
     contract_storage_limit: int
     db_storage_limit: int
@@ -44,21 +43,17 @@ class SChainInfo:
     max_file_storage_bytes: int
     max_reserved_storage_bytes: int
 
-    previous_public_keys: list
+    node_groups: dict
     nodes: list
 
-    def previous_public_keys_info(self):
-        return [
-            compose_public_key_info(pk)
-            for pk in self.previous_public_keys
-        ]
+    multitransaction_mode: bool
 
     def to_dict(self):
         """Returns camel-case representation of the SChainInfo object"""
         return {
             'schainID': self.schain_id,
             'schainName': self.name,
-            'schainOwner': self.owner,
+            'blockAuthor': self.block_author,
             'contractStorageLimit': self.contract_storage_limit,
             'dbStorageLimit': self.db_storage_limit,
             'snapshotIntervalSec': self.snapshot_interval_sec,
@@ -68,26 +63,30 @@ class SChainInfo:
             'maxSkaledLeveldbStorageBytes': self.max_skaled_leveldb_storage_bytes,
             'maxFileStorageBytes': self.max_file_storage_bytes,
             'maxReservedStorageBytes': self.max_reserved_storage_bytes,
-            # 'previousPublicKeys': self.previous_public_keys_info(),
+            'nodeGroups': self.node_groups,
+            'multiTransactionMode': self.multitransaction_mode,
             'nodes': self.nodes
         }
 
 
-def generate_schain_info(schain_id: int, schain: dict, static_schain_params: dict,
-                         previous_public_keys: list, nodes: dict) -> SChainInfo:
-    volume_limits = get_schain_limit(schain, MetricType.volume_limits)
-    leveldb_limits = get_schain_limit(schain, MetricType.leveldb_limits)
+def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
+                         static_schain_params: dict, node_groups: dict,
+                         nodes: dict) -> SChainInfo:
+    schain_type = get_schain_type(schain['partOfNode'])
+    volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)
+    leveldb_limits = get_schain_limit(schain_type, MetricType.leveldb_limits)
     contract_storage_limit = leveldb_limits['contract_storage']
     db_storage_limit = leveldb_limits['db_storage']
 
     return SChainInfo(
         schain_id=schain_id,
         name=schain['name'],
-        owner=schain['owner'],
+        block_author=on_chain_etherbase,
         contract_storage_limit=contract_storage_limit,
         db_storage_limit=db_storage_limit,
-        previous_public_keys=previous_public_keys,
+        node_groups=node_groups,
         nodes=nodes,
+        multitransaction_mode=schain['multitransactionMode'],
         **volume_limits,
         **static_schain_params['schain']
     )

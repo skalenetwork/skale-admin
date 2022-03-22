@@ -22,7 +22,7 @@ from datetime import datetime
 from peewee import (CharField, DateTimeField,
                     IntegrityError, IntegerField, BooleanField)
 
-from core.schains.dkg_status import DKGStatus
+from core.schains.dkg.status import DKGStatus
 from web.models.base import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -105,7 +105,7 @@ class SChainRecord(BaseModel):
     def dkg_done(self):
         self.set_dkg_status(DKGStatus.DONE)
 
-    def set_dkg_status(self, val):
+    def set_dkg_status(self, val: DKGStatus) -> None:
         logger.info(f'Changing DKG status for {self.name} to {val.name}')
         self.dkg_status = val.value
         self.save()
@@ -117,7 +117,7 @@ class SChainRecord(BaseModel):
     def set_first_run(self, val):
         logger.info(f'Changing first_run for {self.name} to {val}')
         self.first_run = val
-        self.save()
+        self.save(only=[SChainRecord.first_run])
 
     def set_repair_mode(self, value):
         logger.info(f'Changing repair_mode for {self.name} to {value}')
@@ -158,6 +158,20 @@ class SChainRecord(BaseModel):
         logger.info(f'Changing failed rpc count for {self.name} to {value}')
         self.failed_rpc_count = value
         self.save()
+
+    def reset_failed_conunters(self) -> None:
+        logger.info(f'Resetting failed counters for {self.name}')
+        self.set_restart_count(0)
+        self.set_failed_rpc_count(0)
+
+    def is_dkg_done(self) -> bool:
+        return self.dkg_status == DKGStatus.DONE.value
+
+    def is_dkg_unsuccessful(self) -> bool:
+        return self.dkg_status in [
+            DKGStatus.KEY_GENERATION_ERROR.value,
+            DKGStatus.FAILED.value
+        ]
 
 
 def create_tables():
@@ -205,6 +219,12 @@ def mark_schain_deleted(name):
     if SChainRecord.added(name):
         schain_record = SChainRecord.get_by_name(name)
         schain_record.set_deleted()
+
+
+def set_first_run(name, value):
+    if SChainRecord.added(name):
+        schain_record = SChainRecord.get_by_name(name)
+        schain_record.set_first_run(value)
 
 
 def get_schains_names(include_deleted=False):

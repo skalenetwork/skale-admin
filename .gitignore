@@ -58,6 +58,7 @@ logs.tar.gz
 
 tests/skale-data/node_data/schains/*
 test_abi.json
+schain_status_sample.json
 
 *.lock
 
@@ -68,3 +69,4 @@ tests/skale-data/contracts_info/schain_ima_abi.json
 temp_*
 
 .DS_Store
+.coverage*

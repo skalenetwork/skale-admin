@@ -2,29 +2,43 @@ import json
 import os
 import pathlib
 import random
+import shutil
 import string
 import subprocess
 
 import pytest
-from skale.utils.contracts_provision.main import (create_nodes, create_schain,
-                                                  cleanup_nodes_schains)
-
-from core.schains.cleaner import remove_schain_container
-from core.schains.cleaner import remove_schain_volume
-
-from tests.utils import (
-    CONTAINERS_JSON,
-    generate_cert,
-    init_skale_ima,
-    init_web3_skale
+from skale.utils.contracts_provision.main import (
+    create_nodes, create_schain, cleanup_nodes_schains
 )
+
+from core.node_config import NodeConfig
+from core.schains.checks import SChainChecks
+from core.schains.config.helper import (
+    get_base_port_from_config,
+    get_node_ips_from_config,
+    get_own_ip_from_config
+)
+from core.schains.config.directory import skaled_status_filepath
+from core.schains.cleaner import remove_schain_container, remove_schain_volume
+from core.schains.ima import ImaData
+from core.schains.skaled_status import init_skaled_status, SkaledStatus
+from core.schains.config.skale_manager_opts import SkaleManagerOpts
+
 from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.docker_utils import DockerUtils
-
+from tools.helper import write_json
 
 from web.models.schain import create_tables, SChainRecord, upsert_schain_record
+
+from tests.utils import (
+    CONTAINERS_JSON,
+    generate_cert,
+    get_test_rule_controller,
+    init_skale_ima,
+    init_web3_skale
+)
 
 
 @pytest.fixture
@@ -51,8 +65,10 @@ def ssl_folder():
         parents=True,
         exist_ok=True
     )
-    yield SSL_CERTIFICATES_FILEPATH
-    pathlib.Path(SSL_CERTIFICATES_FILEPATH).rmdir()
+    try:
+        yield SSL_CERTIFICATES_FILEPATH
+    finally:
+        pathlib.Path(SSL_CERTIFICATES_FILEPATH).rmdir()
 
 
 @pytest.fixture
@@ -68,6 +84,28 @@ def cert_key_pair(ssl_folder):
 def get_random_string(length=8):
     letters = string.ascii_lowercase
     return ''.join(random.choice(letters) for i in range(length))
+
+
+def get_skaled_status_dict(
+    snapshot_downloader=False,
+    exit_time_reached=False,
+    clear_data_dir=False,
+    start_from_snapshot=False,
+    start_again=False
+):
+    return {
+        "subsystemRunning": {
+            "SnapshotDownloader": snapshot_downloader,
+            "Blockchain": False,
+            "Rpc": False
+        },
+        "exitState": {
+            "ClearDataDir": clear_data_dir,
+            "StartAgain": start_again,
+            "StartFromSnapshot": start_from_snapshot,
+            "ExitTimeReached": exit_time_reached
+        }
+    }
 
 
 def generate_schain_config(schain_name):
@@ -148,9 +186,9 @@ def generate_schain_config(schain_name):
                         "wssRpcPort": 10018,
                         "infoHttpRpcPort": 10019,
                         "schainIndex": 1,
-                        "ip": "127.0.0.1",
+                        "ip": "127.0.0.2",
                         "owner": "0x42",
-                        "publicIP": "127.0.0.1"
+                        "publicIP": "127.0.0.2"
                     }
                 ]
             }
@@ -214,8 +252,66 @@ def schain_config(_schain_name):
     with open(secret_key_path, 'w') as key_file:
         json.dump(SECRET_KEY, key_file)
     yield schain_config
+    rm_schain_dir(_schain_name)
+
+
+def generate_schain_skaled_status_file(_schain_name, **kwargs):
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
+    pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+    status_filepath = skaled_status_filepath(_schain_name)
+    write_json(status_filepath, get_skaled_status_dict(**kwargs))
+
+
+def rm_schain_dir(schain_name):
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
     # fix permission denied after schain container running
     subprocess.run(['rm', '-rf', schain_dir_path])
+
+
+@pytest.fixture
+def skaled_status(_schain_name):
+    generate_schain_skaled_status_file(_schain_name)
+    yield init_skaled_status(_schain_name)
+    rm_schain_dir(_schain_name)
+
+
+@pytest.fixture
+def skaled_status_downloading_snapshot(_schain_name):
+    generate_schain_skaled_status_file(_schain_name, snapshot_downloader=True)
+    yield init_skaled_status(_schain_name)
+    rm_schain_dir(_schain_name)
+
+
+@pytest.fixture
+def skaled_status_exit_time_reached(_schain_name):
+    generate_schain_skaled_status_file(_schain_name, exit_time_reached=True)
+    yield init_skaled_status(_schain_name)
+    rm_schain_dir(_schain_name)
+
+
+@pytest.fixture
+def skaled_status_repair(_schain_name):
+    generate_schain_skaled_status_file(_schain_name, clear_data_dir=True, start_from_snapshot=True)
+    yield init_skaled_status(_schain_name)
+    rm_schain_dir(_schain_name)
+
+
+@pytest.fixture
+def skaled_status_reload(_schain_name):
+    generate_schain_skaled_status_file(_schain_name, start_again=True)
+    yield init_skaled_status(_schain_name)
+    rm_schain_dir(_schain_name)
+
+
+@pytest.fixture
+def skaled_status_broken_file(_schain_name):
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
+    pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+    status_filepath = skaled_status_filepath(_schain_name)
+    with open(status_filepath, "w") as text_file:
+        text_file.write('abcd')
+    yield SkaledStatus(status_filepath)
+    rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
@@ -282,6 +378,21 @@ def skaled_mock_image(scope='module'):
 
 
 @pytest.fixture
+def cleanup_schain_dirs_before():
+    shutil.rmtree(SCHAINS_DIR_PATH)
+    pathlib.Path(SCHAINS_DIR_PATH).mkdir(parents=True, exist_ok=True)
+    yield
+
+
+@pytest.fixture
+def cleanup_schain_containers(dutils):
+    yield
+    containers = dutils.get_all_schain_containers(all=True)
+    for container in containers:
+        dutils.safe_rm(container.name, force=True)
+
+
+@pytest.fixture
 def cleanup_container(schain_config, dutils):
     yield
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
@@ -291,3 +402,71 @@ def cleanup_container(schain_config, dutils):
 def cleanup_schain_container(schain_name: str, dutils: DockerUtils):
     remove_schain_container(schain_name, dutils)
     remove_schain_volume(schain_name, dutils)
+
+
+@pytest.fixture
+def node_config(skale):
+    node_config = NodeConfig()
+    node_config.id = 0
+    return node_config
+
+
+@pytest.fixture
+def schain_checks(schain_config, schain_db, rule_controller, dutils):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain_record = SChainRecord.get_by_name(schain_name)
+    node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
+    return SChainChecks(
+        schain_name,
+        node_id,
+        schain_record=schain_record,
+        rule_controller=rule_controller,
+        dutils=dutils
+    )
+
+
+@pytest.fixture
+def schain_struct(schain_config):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    return {
+        'name': schain_name,
+        'partOfNode': 0,
+        'generation': 0
+    }
+
+
+@pytest.fixture
+def ima_data(skale):
+    return ImaData(linked=True, chain_id=skale.web3.eth.chainId)
+
+
+@pytest.fixture
+def rule_controller(_schain_name, schain_db, schain_config):
+    base_port = get_base_port_from_config(schain_config)
+    own_ip = get_own_ip_from_config(schain_config)
+    node_ips = get_node_ips_from_config(schain_config)
+    return get_test_rule_controller(
+        name=_schain_name,
+        base_port=base_port,
+        own_ip=own_ip,
+        node_ips=node_ips
+    )
+
+
+@pytest.fixture
+def synced_rule_controller(rule_controller):
+    rule_controller.sync()
+    return rule_controller
+
+
+@pytest.fixture
+def uninited_rule_controller(_schain_name):
+    return get_test_rule_controller(name=_schain_name)
+
+
+@pytest.fixture
+def skale_manager_opts():
+    return SkaleManagerOpts(
+        schains_internal_address='0x1656',
+        nodes_address='0x7742'
+    )

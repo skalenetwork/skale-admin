@@ -18,9 +18,12 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import os
+import signal
 from datetime import datetime
 
 import psutil
+
 
 from tools.helper import check_pid
 
@@ -49,17 +52,27 @@ def terminate_stuck_schain_process(skale, schain_record, schain):
 
 
 def terminate_schain_process(schain_record):
-    log_prefix = f'schain: {schain_record.name}, pid {schain_record.monitor_id}'
+    log_msg = f'schain: {schain_record.name}'
+    terminate_process(schain_record.monitor_id, log_msg=log_msg)
+
+
+def terminate_process(pid, kill_timeout=P_KILL_WAIT_TIMEOUT, log_msg=''):
+    log_prefix = f'pid: {pid} - '
+    if log_msg != '':
+        log_prefix += f'{log_msg} - '
+    if pid == 0:
+        logger.warning(f'{log_prefix} - pid is 0, skipping')
+        return
     try:
-        logger.info(f'{log_prefix} - going to terminate')
-        p = psutil.Process(schain_record.monitor_id)
-        p.terminate()
-        p.wait(timeout=P_KILL_WAIT_TIMEOUT)
+        logger.warning(f'{log_prefix} - going to terminate')
+        p = psutil.Process(pid)
+        os.kill(p.pid, signal.SIGTERM)
+        p.wait(timeout=kill_timeout)
         logger.info(f'{log_prefix} was terminated')
     except psutil.NoSuchProcess:
         logger.info(f'{log_prefix} - no such process')
     except psutil.TimeoutExpired:
-        logger.info(f'{log_prefix} - timout expired, going to kill')
+        logger.warning(f'{log_prefix} - timout expired, going to kill')
         p.kill()
         logger.info(f'{log_prefix} -  process was killed')
     except Exception:

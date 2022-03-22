@@ -43,7 +43,6 @@ from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 from core.filebeat import update_filebeat_service
 
 from tools.configs import CHECK_REPORT_PATH, META_FILEPATH, WATCHDOG_PORT
-from tools.configs.resource_allocation import DISK_MOUNTPOINT_FILEPATH
 from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
@@ -162,20 +161,18 @@ class Node:
 
     def get_node_id_from_contracts(self, name, ip) -> int:
         node_id = self.skale.nodes.node_name_to_index(name)
-        if node_id == 0:
-            try:
-                node_data = self.skale.nodes.get(node_id)
-            except InvalidNodeIdError:
-                return -1
+        try:
+            node_data = self.skale.nodes.get(node_id)
+        except InvalidNodeIdError:
+            node_id = -1
+        else:
             public_key = node_data['publicKey']
             data_address = to_checksum_address(
                 public_key_to_address(public_key)
             )
-            if data_address == self.skale.wallet.address and \
-                name == node_data['name'] and \
-                    ip == node_data['ip']:
-                node_id = 0
-            else:
+            if not data_address == self.skale.wallet.address or \
+                not name == node_data['name'] or \
+                    not ip == ip_from_bytes(node_data['ip']):
                 node_id = -1
         return node_id
 
@@ -207,7 +204,7 @@ class Node:
                 status = SchainExitStatus.LEFT
             else:
                 status = SchainExitStatus.LEAVING
-            schain_name = self.skale.schains.get(schain['id'])['name']
+            schain_name = self.skale.schains.get(schain['schain_id'])['name']
             if not schain_name:
                 schain_name = '[REMOVED]'
             schain_statuses.append(
@@ -246,7 +243,10 @@ class Node:
 
     def set_domain_name(self, domain_name: str) -> dict:
         try:
-            self.skale.nodes.set_domain_name(self.config.id, domain_name)
+            self.skale.nodes.set_domain_name(
+                self.config.id,
+                domain_name
+            )
         except TransactionFailedError as err:
             return self._error(str(err))
         return self._ok()
@@ -289,7 +289,7 @@ def _get_node_status(node_info):
     return status.value
 
 
-def get_block_device_size(device: str) -> int:
+def get_block_device_size() -> int:
     """ Returns block device size in bytes """
     response = requests.get(
         DOCKER_LVMPY_BLOCK_SIZE_URL,
@@ -303,17 +303,10 @@ def get_block_device_size(device: str) -> int:
     return data['Size']
 
 
-def get_attached_storage_block_device():
-    with open(DISK_MOUNTPOINT_FILEPATH) as dm_file:
-        name = dm_file.read().strip()
-        return name
-
-
 def get_node_hardware_info() -> dict:
     system_release = f'{platform.system()}-{platform.release()}'
     uname_version = platform.uname().version
-    attached_device = get_attached_storage_block_device()
-    attached_storage_size = get_block_device_size(attached_device)
+    attached_storage_size = get_block_device_size()
     return {
         'cpu_total_cores': psutil.cpu_count(logical=True),
         'cpu_physical_cores': psutil.cpu_count(logical=False),

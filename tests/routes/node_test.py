@@ -47,6 +47,7 @@ def node_contracts(skale):
                               domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
     node_id = skale.nodes.node_name_to_index(name)
     yield node_id
+    skale.nodes.init_exit(node_id)
     skale.manager.node_exit(node_id, wait_for=True)
 
 
@@ -141,7 +142,7 @@ def test_create_with_errors(skale_bp):
 
 
 def get_expected_signature(skale, validator_id):
-    unsigned_hash = Web3.soliditySha3(['uint256'], [validator_id])
+    unsigned_hash = Web3.solidityKeccak(['uint256'], [validator_id])
     signed_hash = skale.wallet.sign_hash(unsigned_hash.hex())
     return signed_hash.signature.hex()
 
@@ -227,3 +228,16 @@ def test_btrfs_info(skale_bp, skale):
     assert data['status'] == 'ok'
     payload = data['payload']
     assert payload['kernel_module'] is False
+
+
+def test_exit_status(skale_bp, skale, schain_on_contracts):
+    schain_id = skale.schains.name_to_id(schain_on_contracts)
+    with mock.patch(
+        'skale.contracts.manager.node_rotation.NodeRotation.get_leaving_history',
+        return_value=[{'schain_id': schain_id, 'finished_rotation': 1000}]
+    ):
+        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'exit/status'))
+        assert data['status'] == 'ok'
+        payload = data['payload']
+        assert payload['status'] == 'WAIT_FOR_ROTATIONS'
+        assert payload['data'][0]['status']

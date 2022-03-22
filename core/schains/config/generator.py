@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2019-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,27 +17,27 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import json
-import shutil
 import logging
 from dataclasses import dataclass
 
 from skale import Skale
 from skale.schain_config.generator import get_schain_nodes_with_schains
+from skale.schain_config.rotation_history import get_previous_schain_groups
 
-from core.node import get_skale_node_version
-from core.schains.config.skale_config import SkaleConfig, generate_skale_config
-from core.schains.config.accounts import generate_dynamic_accounts
+from etherbase_predeployed import ETHERBASE_ADDRESS
+from marionette_predeployed import MARIONETTE_ADDRESS
+
+from core.schains.config.skale_manager_opts import SkaleManagerOpts, init_skale_manager_opts
+from core.schains.config.skale_section import SkaleConfig, generate_skale_section
+from core.schains.config.predeployed import generate_predeployed_accounts
+from core.schains.config.precompiled import generate_precompiled_accounts
+from core.schains.config.generation import gen0, gen1
 from core.schains.config.helper import get_chain_id
-from core.schains.helper import get_tmp_schain_config_filepath
+from core.schains.limits import get_schain_type
 
-from core.schains.helper import get_schain_config_filepath
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
-from tools.str_formatters import arguments_list_string
-
-from web.models.schain import upsert_schain_record
-
+from tools.helper import is_zero_address, is_address_contract
 
 logger = logging.getLogger(__name__)
 
@@ -82,10 +82,41 @@ class SChainConfig:
         }
 
 
-def generate_schain_config(schain: dict, schain_id: int, node_id: int,
-                           node: dict, ecdsa_key_name: str, schains_on_node: list,
-                           rotation_id: int, schain_nodes_with_schains: list,
-                           previous_public_keys: list) -> SChainConfig:
+def get_on_chain_owner(schain: dict, generation: int, is_owner_contract: bool) -> str:
+    """
+    Returns on-chain owner depending on sChain generation.
+    """
+    if gen0(generation) or not is_owner_contract:
+        return schain['mainnetOwner']
+    if gen1(generation):
+        return MARIONETTE_ADDRESS
+
+
+def get_on_chain_etherbase(schain: dict, generation: int) -> str:
+    """
+    Returns on-chain owner depending on sChain generation.
+    """
+    if gen0(generation):
+        return schain['mainnetOwner']
+    if gen1(generation):
+        return ETHERBASE_ADDRESS
+
+
+def get_schain_originator(schain: dict):
+    """
+    Returns address that will be used as an sChain originator
+    """
+    if is_zero_address(schain['originator']):
+        return schain['mainnetOwner']
+    return schain['originator']
+
+
+def generate_schain_config(
+    schain: dict, schain_id: int, node_id: int, node: dict, ecdsa_key_name: str,
+    schains_on_node: list, rotation_id: int, schain_nodes_with_schains: list,
+    node_groups: list, generation: int, is_owner_contract: bool,
+    skale_manager_opts: SkaleManagerOpts
+) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
@@ -93,19 +124,37 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         f'ecdsa keyname: {ecdsa_key_name}, schain_id: {schain_id}'
     )
 
+    on_chain_etherbase = get_on_chain_etherbase(schain, generation)
+    on_chain_owner = get_on_chain_owner(schain, generation, is_owner_contract)
+    mainnet_owner = schain['mainnetOwner']
+    schain_type = get_schain_type(schain['partOfNode'])
+
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
     dynamic_params = {
         'chainID': get_chain_id(schain['name'])
     }
 
-    dynamic_accounts = generate_dynamic_accounts(
-        schain=schain,
-        schain_nodes=schain_nodes_with_schains
+    originator_address = get_schain_originator(schain)
+
+    predeployed_accounts = generate_predeployed_accounts(
+        schain_name=schain['name'],
+        schain_type=schain_type,
+        schain_nodes=schain_nodes_with_schains,
+        on_chain_owner=on_chain_owner,
+        mainnet_owner=mainnet_owner,
+        originator_address=originator_address,
+        generation=generation
     )
 
-    skale_config = generate_skale_config(
+    precompiled_accounts = generate_precompiled_accounts(
+        on_chain_owner=on_chain_owner
+    )
+
+    skale_config = generate_skale_section(
         schain=schain,
+        on_chain_etherbase=on_chain_etherbase,
+        on_chain_owner=on_chain_owner,
         schain_id=schain_id,
         node_id=node_id,
         node=node,
@@ -113,7 +162,8 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         schains_on_node=schains_on_node,
         schain_nodes_with_schains=schain_nodes_with_schains,
         rotation_id=rotation_id,
-        previous_public_keys=previous_public_keys
+        node_groups=node_groups,
+        skale_manager_opts=skale_manager_opts
     )
 
     schain_config = SChainConfig(
@@ -126,24 +176,32 @@ def generate_schain_config(schain: dict, schain_id: int, node_id: int,
         genesis=base_config.config['genesis'],
         accounts={
             **base_config.config['accounts'],
-            **dynamic_accounts
+            **predeployed_accounts,
+            **precompiled_accounts,
         },
         skale_config=skale_config
     )
     return schain_config
 
 
-def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: int,
-                                      rotation_id: int, ecdsa_key_name: str) -> SChainConfig:
+def generate_schain_config_with_skale(
+    skale: Skale,
+    schain_name: str,
+    generation: int,
+    node_id: int,
+    rotation_data: dict,
+    ecdsa_key_name: str
+) -> SChainConfig:
     schain_id = 1  # todo: remove this later (should be removed from the skaled first)
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
     schains_on_node = skale.schains.get_schains_for_node(node_id)
     schain = skale.schains.get_by_name(schain_name)
-
-    group_id = skale.schains.name_to_group_id(schain_name)
-    previous_public_keys = skale.key_storage.get_all_previous_public_keys(group_id)
-
     node = skale.nodes.get(node_id)
+    node_groups = get_previous_schain_groups(skale, schain_name)
+
+    is_owner_contract = is_address_contract(skale.web3, schain['mainnetOwner'])
+
+    skale_manager_opts = init_skale_manager_opts(skale)
 
     return generate_schain_config(
         schain=schain,
@@ -152,57 +210,10 @@ def generate_schain_config_with_skale(skale: Skale, schain_name: str, node_id: i
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         schains_on_node=schains_on_node,
-        rotation_id=rotation_id,
+        rotation_id=rotation_data['rotation_id'],
         schain_nodes_with_schains=schain_nodes_with_schains,
-        previous_public_keys=previous_public_keys
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=is_owner_contract,
+        skale_manager_opts=skale_manager_opts
     )
-
-
-def init_schain_config(
-    skale,
-    node_id,
-    schain_name,
-    ecdsa_sgx_key_name,
-    rotation_id,
-    schain_record
-):
-    config_filepath = get_schain_config_filepath(schain_name)
-
-    logger.warning(arguments_list_string({
-        'sChain name': schain_name,
-        'config_filepath': config_filepath
-        }, 'Generating sChain config'))
-
-    schain_config = generate_schain_config_with_skale(
-        skale=skale,
-        schain_name=schain_name,
-        node_id=node_id,
-        rotation_id=rotation_id,
-        ecdsa_key_name=ecdsa_sgx_key_name
-    )
-    save_schain_config(schain_config.to_dict(), schain_name)
-    update_schain_config_version(schain_name, schain_record=schain_record)
-
-
-def save_schain_config(schain_config, schain_name):
-    tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
-    with open(tmp_config_filepath, 'w') as outfile:
-        json.dump(schain_config, outfile, indent=4)
-    config_filepath = get_schain_config_filepath(schain_name)
-    shutil.move(tmp_config_filepath, config_filepath)
-
-
-def update_schain_config_version(schain_name, schain_record=None):
-    new_config_version = get_skale_node_version()
-    schain_record = schain_record or upsert_schain_record(schain_name)
-    logger.info(f'Going to change config_version for {schain_name}: \
-{schain_record.config_version} -> {new_config_version}')
-    schain_record.set_config_version(new_config_version)
-
-
-def schain_config_version_match(schain_name, schain_record=None):
-    schain_record = schain_record or upsert_schain_record(schain_name)
-    skale_node_version = get_skale_node_version()
-    logger.debug(f'config check, schain: {schain_name}, config_version: \
-{schain_record.config_version}, skale_node_version: {skale_node_version}')
-    return schain_record.config_version == skale_node_version
