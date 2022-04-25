@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import telnetlib
 from enum import Enum
 from http import HTTPStatus
 
@@ -34,7 +35,7 @@ from core.schains.firewall.utils import (
 )
 from core.schains.ima import get_ima_log_checks
 from tools.sgx_utils import SGX_SERVER_URL
-from tools.configs import SGX_CERTIFICATES_FOLDER
+from tools.configs import SGX_CERTIFICATES_FOLDER, ZMQ_PORT, ZMQ_TIMEOUT
 from tools.helper import init_skale
 from web.models.schain import SChainRecord
 from web.helper import (
@@ -125,8 +126,18 @@ def construct_health_bp():
         except Exception:  # todo: catch specific error - edit sgx.py
             status = 1
             version = None
+        host = SGX_SERVER_URL.split('//')[1].split(':')[0]
+        tn = telnetlib.Telnet()
+        try:
+            tn.open(host, ZMQ_PORT, timeout=ZMQ_TIMEOUT)
+            zmq_status = 0
+        except Exception as err:
+            zmq_status = 1
+            logger.error(err)
+        else:
+            tn.close()
         res = {
-            'status': status,
+            'status': zmq_status,
             'status_name': SGXStatus(status).name,
             'sgx_server_url': SGX_SERVER_URL,
             'sgx_keyname': g.config.sgx_key_name,
