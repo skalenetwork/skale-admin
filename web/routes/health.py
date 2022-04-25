@@ -27,6 +27,7 @@ from flask import Blueprint, g, request
 from sgx import SgxClient
 
 
+from urllib.parse import urlparse
 from core.node import get_check_report
 from core.schains.checks import SChainChecks
 from core.schains.firewall.utils import (
@@ -126,10 +127,10 @@ def construct_health_bp():
         except Exception:  # todo: catch specific error - edit sgx.py
             status = 1
             version = None
-        host = SGX_SERVER_URL.split('//')[1].split(':')[0]
+        sgx_host = urlparse(SGX_SERVER_URL).hostname
         tn = telnetlib.Telnet()
         try:
-            tn.open(host, ZMQ_PORT, timeout=ZMQ_TIMEOUT)
+            tn.open(sgx_host, ZMQ_PORT, timeout=ZMQ_TIMEOUT)
             zmq_status = 0
         except Exception as err:
             zmq_status = 1
