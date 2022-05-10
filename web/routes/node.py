@@ -25,13 +25,18 @@ import requests
 from flask import Blueprint, abort, g, request
 
 from core.node import Node
-from tools.helper import init_skale, get_endpoint_call_speed
+from tools.helper import get_endpoint_call_speed
 
 from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info, check_validator_nodes
 from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
-from web.helper import construct_err_response, construct_ok_response, get_api_url
+from web.helper import (
+    construct_err_response,
+    construct_ok_response,
+    get_api_url,
+    init_skale_from_node_config
+)
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'node'
@@ -47,7 +52,7 @@ def construct_node_bp():
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'info'), methods=['GET'])
     def info():
         logger.debug(request)
-        skale = init_skale(g.wallet)
+        skale = init_skale_from_node_config(g.config)
         node = Node(skale, g.config)
         data = {'node_info': node.info}
         return construct_ok_response(data=data)
@@ -58,7 +63,7 @@ def construct_node_bp():
         if not request.json:
             abort(400)
 
-        skale = init_skale(g.wallet)
+        skale = init_skale_from_node_config(g.config)
 
         ip = request.json.get('ip')
         public_ip = request.json.get('public_ip', None)
@@ -88,7 +93,7 @@ def construct_node_bp():
     def signature():
         logger.debug(request)
         validator_id = int(request.args.get('validator_id'))
-        skale = init_skale(g.wallet)
+        skale = init_skale_from_node_config(g.config)
         signature = skale.validator_service.get_link_node_signature(
             validator_id)
         return construct_ok_response(data={'signature': signature})
@@ -96,7 +101,7 @@ def construct_node_bp():
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-on'), methods=['POST'])
     def set_node_maintenance_on():
         logger.debug(request)
-        skale = init_skale(g.wallet)
+        skale = init_skale_from_node_config(g.config)
         node = Node(skale, g.config)
         res = node.set_maintenance_on()
         if res['status'] != 'ok':
@@ -106,7 +111,7 @@ def construct_node_bp():
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-off'), methods=['POST'])
     def set_node_maintenance_off():
         logger.debug(request)
-        skale = init_skale(g.wallet)
+        skale = init_skale_from_node_config(g.config)
         node = Node(skale, g.config)
         res = node.set_maintenance_off()
         if res['status'] != 'ok':
@@ -130,7 +135,7 @@ def construct_node_bp():
 
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/start'), methods=['POST'])
     def exit_start():
-        skale = init_skale(g.wallet)
+        skale = init_skale_from_node_config(g.config)
         node = Node(skale, g.config)
         exit_thread = CustomThread('Start node exit', node.exit, once=True)
         exit_thread.start()
@@ -138,7 +143,7 @@ def construct_node_bp():
 
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/status'), methods=['GET'])
     def exit_status():
-        skale = init_skale(g.wallet)
+        skale = init_skale_from_node_config(g.config)
         node = Node(skale, g.config)
         exit_status_data = node.get_exit_status()
         return construct_ok_response(exit_status_data)
@@ -148,7 +153,7 @@ def construct_node_bp():
         logger.debug(request)
         domain_name = request.json['domain_name']
 
-        skale = init_skale(g.wallet)
+        skale = init_skale_from_node_config(g.config)
         node = Node(skale, g.config)
         res = node.set_domain_name(domain_name)
         if res['status'] != 'ok':
@@ -164,7 +169,7 @@ def construct_node_bp():
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'endpoint-info'), methods=['GET'])
     def endpoint_info():
         logger.debug(request)
-        skale = init_skale(wallet=g.wallet)
+        skale = init_skale_from_node_config(g.config)
         call_speed = get_endpoint_call_speed(skale)
         block_number = skale.web3.eth.blockNumber
         syncing = skale.web3.eth.syncing
@@ -213,7 +218,7 @@ def construct_node_bp():
     @node_bp.route(get_api_url(BLUEPRINT_NAME, 'validator-nodes'), methods=['GET'])
     def _validator_nodes():
         logger.debug(request)
-        skale = init_skale(g.wallet)
+        skale = init_skale_from_node_config(g.config)
         if g.config.id is None:
             return construct_ok_response(data=[])
         res = check_validator_nodes(skale, g.config.id)

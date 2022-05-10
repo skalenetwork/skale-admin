@@ -17,12 +17,18 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+
 import os
 import logging
 import json
 from http import HTTPStatus
-from flask import Response
 
+from flask import Response
+from skale import Skale
+
+from core.node_config import NodeConfig
+from tools.helper import init_skale
+from tools.wallet_utils import init_wallet
 from web import API_VERSION_PREFIX
 
 
@@ -57,3 +63,8 @@ def construct_key_error_response(absent_keys):
 
 def get_api_url(blueprint_name, method_name):
     return os.path.join(API_VERSION_PREFIX, blueprint_name, method_name)
+
+
+def init_skale_from_node_config(node_config: NodeConfig) -> Skale:
+    wallet = init_wallet(node_config)
+    return init_skale(wallet)

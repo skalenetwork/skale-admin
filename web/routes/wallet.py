@@ -24,8 +24,12 @@ from skale.transactions.tools import send_eth_with_skale
 from skale.utils.web3_utils import to_checksum_address
 from web3 import Web3
 
-from web.helper import construct_ok_response, construct_err_response, get_api_url
-from tools.helper import init_skale
+from web.helper import (
+    construct_ok_response,
+    construct_err_response,
+    get_api_url,
+    init_skale_from_node_config
+)
 from tools.wallet_utils import wallet_with_balance
 
 logger = logging.getLogger(__name__)
@@ -38,7 +42,7 @@ def construct_wallet_bp():
     @wallet_bp.route(get_api_url(BLUEPRINT_NAME, 'info'), methods=['GET'])
     def info():
         logger.debug(request)
-        skale = init_skale(g.wallet)
+        skale = init_skale_from_node_config(g.config)
         res = wallet_with_balance(skale)
         return construct_ok_response(data=res)
 
@@ -57,7 +61,7 @@ def construct_wallet_bp():
             logger.info(
                 f'Sending {eth_amount} wei to {address}'
             )
-            skale = init_skale(g.wallet)
+            skale = init_skale_from_node_config(g.config)
             send_eth_with_skale(skale, address, wei_amount)
         except Exception:
             logger.exception('Funds were not sent due to error')

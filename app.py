@@ -38,7 +38,6 @@ from tools.configs.web3 import ENDPOINT
 from tools.db import get_database, REDIS_URI
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
-from tools.wallet_utils import init_wallet
 from tools.logger import init_api_logger
 from tools.str_formatters import arguments_list_string
 
@@ -68,7 +67,6 @@ def before_request():
     wait_until_admin_inited()
     g.request_start_time = time.time()
     g.config = NodeConfig()
-    g.wallet = init_wallet(node_config=g.config)
     g.request_id = binascii.b2a_hex(
         os.urandom(REQ_ID_SIZE // 2)
     ).decode('utf-8')

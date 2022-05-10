@@ -37,12 +37,12 @@ from core.schains.firewall.utils import (
 from core.schains.ima import get_ima_log_checks
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs import SGX_CERTIFICATES_FOLDER, ZMQ_PORT, ZMQ_TIMEOUT
-from tools.helper import init_skale
 from web.models.schain import SChainRecord
 from web.helper import (
     construct_err_response,
     construct_ok_response,
-    get_api_url
+    get_api_url,
+    init_skale_from_node_config
 )
 
 logger = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ def construct_health_bp():
         checks_filter = request.args.get('checks_filter')
         if checks_filter:
             checks_filter = checks_filter.split(',')
-        skale = init_skale(wallet=g.wallet)
+        skale = init_skale_from_node_config(wallet=g.config)
         node_id = g.config.id
         if node_id is None:
             return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
