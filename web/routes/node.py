@@ -31,7 +31,8 @@ from core.node import (
     get_meta_info, get_node_hardware_info, get_btrfs_info, check_validator_nodes, get_abi_hash
 )
 
-from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
+from tools.configs.web3 import ABI_FILEPATH, ENDPOINT, UNTRUSTED_PROVIDERS
+from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
 from web.helper import construct_err_response, construct_ok_response, get_api_url
@@ -224,10 +225,16 @@ def construct_node_bp():
             return construct_err_response(msg=res['errors'])
         return construct_ok_response(data=res['data'])
 
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'abi'), methods=['GET'])
-    def abi():
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'sm_abi'), methods=['GET'])
+    def sm_abi():
         logger.debug(request)
-        abi_hash = get_abi_hash()
+        abi_hash = get_abi_hash(ABI_FILEPATH)
+        return construct_ok_response(data=abi_hash)
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'ima_abi'), methods=['GET'])
+    def ima_abi():
+        logger.debug(request)
+        abi_hash = get_abi_hash(MAINNET_IMA_ABI_FILEPATH)
         return construct_ok_response(data=abi_hash)
 
     return node_bp
