@@ -33,7 +33,6 @@ def skale_bp(skale, dutils):
 
     def handler(sender, **kwargs):
         g.docker_utils = dutils
-        g.wallet = skale.wallet
         g.config = NodeConfig()
 
     with appcontext_pushed.connected_to(handler, app):
