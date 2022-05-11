@@ -24,6 +24,7 @@ import socket
 import psutil
 import logging
 import platform
+import hashlib
 
 import requests
 
@@ -43,7 +44,7 @@ from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 from core.filebeat import update_filebeat_service
 
 from tools.configs import CHECK_REPORT_PATH, META_FILEPATH, WATCHDOG_PORT
-from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
+from tools.configs.web3 import ABI_FILEPATH, NODE_REGISTER_CONFIRMATION_BLOCKS
 from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
@@ -381,3 +382,7 @@ def get_check_report(report_path: str = CHECK_REPORT_PATH) -> Dict:
         return {}
     with open(CHECK_REPORT_PATH) as report_file:
         return json.load(report_file)
+
+
+def get_abi_hash():
+    return hashlib.sha256(open(ABI_FILEPATH, 'rb').read()).hexdigest()

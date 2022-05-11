@@ -27,7 +27,10 @@ from flask import Blueprint, abort, g, request
 from core.node import Node
 from tools.helper import init_skale, get_endpoint_call_speed
 
-from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info, check_validator_nodes
+from core.node import (
+    get_meta_info, get_node_hardware_info, get_btrfs_info, check_validator_nodes, get_abi_hash
+)
+
 from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
@@ -220,5 +223,11 @@ def construct_node_bp():
         if res['status'] != 0:
             return construct_err_response(msg=res['errors'])
         return construct_ok_response(data=res['data'])
+
+    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'abi'), methods=['GET'])
+    def abi():
+        logger.debug(request)
+        abi_hash = get_abi_hash()
+        return construct_ok_response(data=abi_hash)
 
     return node_bp
