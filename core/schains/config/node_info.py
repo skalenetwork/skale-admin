@@ -25,13 +25,11 @@ from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
 from core.schains.limits import get_schain_type
-from tools.configs import (
-    SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, ENV_TYPE, ALLOCATION_FILEPATH
-)
+from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILEPATH
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from tools.helper import read_json, safe_load_yml
+from tools.helper import read_json
 
 
 @dataclass
@@ -42,7 +40,6 @@ class CurrentNodeInfo(NodeInfo):
     log_level_config: str
     ima_message_proxy_schain: str
     ima_message_proxy_mainnet: str
-    rotate_after_block: int
     ecdsa_key_name: str
     wallets: dict
 
@@ -55,6 +52,8 @@ class CurrentNodeInfo(NodeInfo):
 
     skale_manager_opts: SkaleManagerOpts
 
+    sync_node: bool
+
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         return {
@@ -65,7 +64,6 @@ class CurrentNodeInfo(NodeInfo):
                 'logLevelConfig': self.log_level_config,
                 'imaMessageProxySChain': self.ima_message_proxy_schain,
                 'imaMessageProxyMainNet': self.ima_message_proxy_mainnet,
-                'rotateAfterBlock': self.rotate_after_block,
                 'ecdsaKeyName': self.ecdsa_key_name,
                 'wallets': self.wallets,
                 'minCacheSize': self.min_cache_size,
@@ -76,32 +74,31 @@ class CurrentNodeInfo(NodeInfo):
                 'maxOpenLeveldbFiles': self.max_open_leveldb_files,
                 'info-acceptors': 1,
                 'imaMonitoringPort': self.base_port + SkaledPorts.IMA_MONITORING.value,
-                'skale-manager': self.skale_manager_opts.to_dict()
+                'skale-manager': self.skale_manager_opts.to_dict(),
+                'syncNode': self.sync_node
             }
         }
 
 
-def get_rotate_after_block(schain_type_name: str) -> int:
-    schain_allocation_data = safe_load_yml(ALLOCATION_FILEPATH)
-    return schain_allocation_data[ENV_TYPE]['rotate_after_block'][schain_type_name]
-
-
 def generate_current_node_info(
     node: dict, node_id: int, ecdsa_key_name: str, static_schain_params: dict,
-    schain: dict, schains_on_node: list, rotation_id: int, skale_manager_opts: SkaleManagerOpts
+    schain: dict, schains_on_node: list, rotation_id: int, skale_manager_opts: SkaleManagerOpts,
+    sync_node: bool = False
 ) -> CurrentNodeInfo:
     schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain['name'],
                                                             node['port'])
-    schain_type_name = get_schain_type(schain['partOfNode']).name
-    rotate_after_block = get_rotate_after_block(schain_type_name)
+    schain_type_name = get_schain_type(schain['partOfNode'], sync_node=sync_node).name
+
+    wallets = {} if sync_node else generate_wallets_config(schain['name'], rotation_id)
+
     return CurrentNodeInfo(
         node_id=node_id,
         name=node['name'],
         base_port=schain_base_port_on_node,
         ecdsa_key_name=ecdsa_key_name,
-        wallets=generate_wallets_config(schain['name'], rotation_id),
-        rotate_after_block=rotate_after_block,
+        wallets=wallets,
         skale_manager_opts=skale_manager_opts,
+        sync_node=sync_node,
         **get_message_proxy_addresses(),
         **static_schain_params['current_node_info'],
         **static_schain_params['cache_options'][schain_type_name]

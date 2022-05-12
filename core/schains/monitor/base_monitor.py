@@ -80,7 +80,8 @@ class BaseMonitor(ABC):
         rotation_data: dict,
         checks: SChainChecks,
         rule_controller: IRuleController,
-        dutils: DockerUtils = None
+        dutils: DockerUtils = None,
+        sync_node: bool = False
     ):
         self.skale = skale
         self.ima_data = ima_data
@@ -103,7 +104,7 @@ class BaseMonitor(ABC):
 
         self.skaled_status = init_skaled_status(self.name)
 
-        self.schain_type = get_schain_type(schain['partOfNode'])
+        self.schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
 
         self.dutils = dutils or DockerUtils()
         self.p = f'{type(self).__name__} - schain: {self.name} -'
@@ -203,7 +204,7 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def config(self, overwrite=False) -> bool:
+    def config(self, overwrite=False, sync_node=False) -> bool:
         initial_status = self.checks.config.status
         if not initial_status or overwrite:
             init_schain_config(
@@ -213,17 +214,18 @@ class BaseMonitor(ABC):
                 generation=self.generation,
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,
-                schain_record=self.schain_record
+                schain_record=self.schain_record,
+                sync_node=sync_node
             )
         else:
             logger.info(f'{self.p} config - ok')
         return initial_status
 
     @monitor_block
-    def volume(self) -> bool:
+    def volume(self, sync_node=False) -> bool:
         initial_status = self.checks.volume.status
         if not initial_status:
-            init_data_volume(self.schain, dutils=self.dutils)
+            init_data_volume(self.schain, sync_node=sync_node, dutils=self.dutils)
         else:
             logger.info(f'{self.p} volume - ok')
         return initial_status
@@ -246,7 +248,12 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def skaled_container(self, download_snapshot: bool = False, delay_start: bool = False) -> bool:
+    def skaled_container(
+        self,
+        download_snapshot: bool = False,
+        delay_start: bool = False,
+        sync_node: bool = False
+    ) -> bool:
         initial_status = self.checks.skaled_container.status
         if not initial_status:
             public_key, start_ts = None, None
@@ -262,7 +269,8 @@ class BaseMonitor(ABC):
                 skaled_status=self.skaled_status,
                 public_key=public_key,
                 start_ts=start_ts,
-                dutils=self.dutils
+                dutils=self.dutils,
+                sync_node=sync_node
             )
             time.sleep(CONTAINER_POST_RUN_DELAY)
         else:

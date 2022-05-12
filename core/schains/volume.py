@@ -36,7 +36,11 @@ def is_volume_exists(schain_name, dutils=None):
     return dutils.is_data_volume_exists(schain_name)
 
 
-def init_data_volume(schain, dutils=None):
+def init_data_volume(
+    schain: dict,
+    sync_node: bool = False,
+    dutils: DockerUtils = None
+):
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
 
@@ -45,7 +49,7 @@ def init_data_volume(schain, dutils=None):
         return
 
     logger.info(f'Creating volume for schain: {schain_name}')
-    schain_type = get_schain_type(schain['partOfNode'])
+    schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
     disk_limit = get_schain_limit(schain_type, MetricType.disk)
     return dutils.create_data_volume(schain_name, disk_limit)
 

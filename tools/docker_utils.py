@@ -83,13 +83,15 @@ class DockerUtils:
         host: str = DEFAULT_DOCKER_HOST
     ) -> DockerClient:
         logger.info(f'Initing docker client with host {host}')
-        return docker.DockerClient(base_url=host)
+        # return docker.DockerClient(base_url=host) # TODO: tmp
+        return docker.DockerClient()
 
     def init_docker_cli(
         self,
         host: str = DEFAULT_DOCKER_HOST
     ) -> APIClient:
-        return APIClient(base_url=host)
+        # return APIClient(base_url=host) # TODO: tmp
+        return APIClient()
 
     def is_data_volume_exists(self, name: str) -> bool:
         try:

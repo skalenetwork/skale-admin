@@ -37,6 +37,8 @@ from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, ZERO_ADDRESS
+from tools.configs.containers import CONTAINERS_FILEPATH
+
 
 logger = logging.getLogger(__name__)
 
@@ -180,3 +182,7 @@ def is_zero_address(address: str) -> bool:
 def is_address_contract(web3, address) -> bool:
     """Returns true if contract is deployed at the requested address"""
     return web3.eth.get_code(address) != b''
+
+
+def get_containers_data():
+    return read_json(CONTAINERS_FILEPATH)

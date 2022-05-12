@@ -115,7 +115,7 @@ def generate_schain_config(
     schain: dict, schain_id: int, node_id: int, node: dict, ecdsa_key_name: str,
     schains_on_node: list, rotation_id: int, schain_nodes_with_schains: list,
     node_groups: list, generation: int, is_owner_contract: bool,
-    skale_manager_opts: SkaleManagerOpts
+    skale_manager_opts: SkaleManagerOpts, sync_node: bool = False
 ) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
@@ -127,7 +127,7 @@ def generate_schain_config(
     on_chain_etherbase = get_on_chain_etherbase(schain, generation)
     on_chain_owner = get_on_chain_owner(schain, generation, is_owner_contract)
     mainnet_owner = schain['mainnetOwner']
-    schain_type = get_schain_type(schain['partOfNode'])
+    schain_type = get_schain_type(schain['partOfNode'], sync_node=False)
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
@@ -163,7 +163,8 @@ def generate_schain_config(
         schain_nodes_with_schains=schain_nodes_with_schains,
         rotation_id=rotation_id,
         node_groups=node_groups,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        sync_node=sync_node
     )
 
     schain_config = SChainConfig(
@@ -190,7 +191,8 @@ def generate_schain_config_with_skale(
     generation: int,
     node_id: int,
     rotation_data: dict,
-    ecdsa_key_name: str
+    ecdsa_key_name: str,
+    sync_node: bool = False
 ) -> SChainConfig:
     schain_id = 1  # todo: remove this later (should be removed from the skaled first)
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
@@ -215,5 +217,6 @@ def generate_schain_config_with_skale(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=is_owner_contract,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        sync_node=sync_node
     )

@@ -32,6 +32,10 @@ API_LOG_PATH = os.path.join(LOG_FOLDER, API_LOG_FILENAME)
 DEBUG_LOG_FILENAME = 'debug.log'
 DEBUG_LOG_PATH = os.path.join(LOG_FOLDER, DEBUG_LOG_FILENAME)
 
+SYNC_LOG_FILENAME = 'sync_node.log'
+SYNC_LOG_PATH = os.path.join(LOG_FOLDER, SYNC_LOG_FILENAME)
+
+
 REMOVED_CONTAINERS_FOLDER_NAME = '.removed_containers'
 REMOVED_CONTAINERS_FOLDER_PATH = os.path.join(
     LOG_FOLDER,
@@ -45,3 +49,4 @@ LOG_BACKUP_COUNT = 3
 
 ADMIN_LOG_FORMAT = '[%(asctime)s %(levelname)s] - %(process)d - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
 API_LOG_FORMAT = '[%(asctime)s] %(process)d %(levelname)s %(url)s %(module)s: %(message)s'  # noqa
+SYNC_LOG_FORMAT = '[%(asctime)s %(levelname)s] - %(name)s:%(lineno)d - %(message)s'  # noqa

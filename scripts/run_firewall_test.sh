@@ -8,7 +8,6 @@ docker run -v "$DIR/tests/skale-data/node_data":"/skale_node_data" \
     -v "$DIR/tests/skale-data":"/skale_vol" \
     -e SGX_SERVER_URL="https://127.0.0.1:1026" \
     -e ENDPOINT="http://127.0.0.1:8545" \
-    -e IMA_ENDPOINT="http://127.0.01:1000" \
     -e DB_USER="test" \
     -e DB_PASSWORD="pass" \
     -e DB_ROOT_PASSWORD="root-test-pass" \

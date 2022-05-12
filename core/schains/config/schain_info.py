@@ -71,8 +71,8 @@ class SChainInfo:
 
 def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
                          static_schain_params: dict, node_groups: dict,
-                         nodes: dict) -> SChainInfo:
-    schain_type = get_schain_type(schain['partOfNode'])
+                         nodes: dict, sync_node: bool) -> SChainInfo:
+    schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
     volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)
     leveldb_limits = get_schain_limit(schain_type, MetricType.leveldb_limits)
     contract_storage_limit = leveldb_limits['contract_storage']

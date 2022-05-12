@@ -14,7 +14,7 @@ from core.schains.volume import get_schain_volume_config
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 
 from tools.configs import SGX_SERVER_URL
-from tools.configs.ima import IMA_ENDPOINT
+from tools.configs.web3 import ENDPOINT
 
 
 def test_get_node_ips_from_config(schain_config):
@@ -39,7 +39,7 @@ def test_get_schain_container_cmd(schain_config, cert_key_pair):
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
         f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
         f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data '
-        f'--main-net-url {IMA_ENDPOINT} -v 2 '
+        f'--main-net-url {ENDPOINT} -v 2 '
         f'--web3-trace --enable-debug-behavior-apis '
         f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path}'
     )
@@ -50,7 +50,7 @@ def test_get_schain_container_cmd(schain_config, cert_key_pair):
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
         f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
         f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data '
-        f'--main-net-url {IMA_ENDPOINT} -v 2 --web3-trace '
+        f'--main-net-url {ENDPOINT} -v 2 --web3-trace '
         f'--enable-debug-behavior-apis --aa no'
     )
     assert container_opts == expected_opts
