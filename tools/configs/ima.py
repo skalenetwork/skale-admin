@@ -87,3 +87,5 @@ MAINNET_IMA_CONTRACTS = {
         'filename': 'DepositBoxERC1155'
     }
 }
+
+IMA_TIME_FRAMING = 30
