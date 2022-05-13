@@ -5,7 +5,7 @@ env:
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
   MANAGER_TAG: "1.9.0-develop.8"
   IMA_TAG: "1.1.2-develop.8"
-  SGX_WALLET_TAG: "1.83.0-stable.1"
+  SGX_WALLET_TAG: "1.83.0-develop.13"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   PYTHON_VERSION: 3.8
 jobs:
@@ -37,3 +37,8 @@ jobs:
     - name: Run codecov
       run: |
         codecov -t $CODECOV_TOKEN
+
+
+
+0x12140e2c51a9
+0x8ad2aa8b3fce4
