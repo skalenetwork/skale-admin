@@ -37,8 +37,3 @@ jobs:
     - name: Run codecov
       run: |
         codecov -t $CODECOV_TOKEN
-
-
-
-0x12140e2c51a9
-0x8ad2aa8b3fce4
