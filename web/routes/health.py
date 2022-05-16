@@ -37,12 +37,12 @@ from core.schains.firewall.utils import (
 from core.schains.ima import get_ima_log_checks
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.configs import SGX_CERTIFICATES_FOLDER, ZMQ_PORT, ZMQ_TIMEOUT
-from tools.helper import init_skale
 from web.models.schain import SChainRecord
 from web.helper import (
     construct_err_response,
     construct_ok_response,
-    get_api_url
+    get_api_url,
+    g_skale
 )
 
 logger = logging.getLogger(__name__)
@@ -70,23 +70,23 @@ def construct_health_bp():
         return construct_ok_response(containers_list)
 
     @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
+    @g_skale
     def schains_checks():
         logger.debug(request)
         checks_filter = request.args.get('checks_filter')
         if checks_filter:
             checks_filter = checks_filter.split(',')
-        skale = init_skale(wallet=g.wallet)
         node_id = g.config.id
         if node_id is None:
             return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
                                           msg='No node installed')
 
-        schains = skale.schains.get_schains_for_node(node_id)
-        sync_agent_ranges = get_sync_agent_ranges(skale)
+        schains = g.skale.schains.get_schains_for_node(node_id)
+        sync_agent_ranges = get_sync_agent_ranges(g.skale)
         checks = []
         for schain in schains:
             if schain.get('name') != '':
-                rotation_data = skale.node_rotation.get_rotation(schain['name'])
+                rotation_data = g.skale.node_rotation.get_rotation(schain['name'])
                 rotation_id = rotation_data['rotation_id']
                 if SChainRecord.added(schain['name']):
                     rc = get_default_rule_controller(

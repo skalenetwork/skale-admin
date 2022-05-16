@@ -36,10 +36,14 @@ from core.schains.skaled_status import init_skaled_status
 from core.schains.ima import get_ima_version
 from core.schains.info import get_schain_info_by_name, get_skaled_version
 from core.schains.cleaner import get_schains_on_node
-from tools.helper import init_skale
 from web.models.schain import get_schains_statuses, toggle_schain_repair_mode
-from web.helper import (construct_ok_response, construct_err_response,
-                        construct_key_error_response, get_api_url)
+from web.helper import (
+    construct_ok_response,
+    construct_err_response,
+    construct_key_error_response,
+    get_api_url,
+    g_skale
+)
 
 
 logger = logging.getLogger(__name__)
@@ -78,16 +82,16 @@ def construct_schains_bp():
         return construct_ok_response(skale_schain_config)
 
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'list'), methods=['GET'])
+    @g_skale
     def schains_list():
         logger.debug(request)
-        skale = init_skale(g.wallet)
         logger.debug(request)
         node_id = g.config.id
         if node_id is None:
             return construct_err_response(msg='No node installed')
         schains_list = list(filter(
             lambda s: s.get('name'),
-            skale.schains.get_schains_for_node(node_id)
+            g.skale.schains.get_schains_for_node(node_id)
         ))
         return construct_ok_response(schains_list)
 
@@ -99,11 +103,11 @@ def construct_schains_bp():
         return construct_ok_response(dkg_statuses)
 
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'firewall-rules'), methods=['GET'])
+    @g_skale
     def firewall_rules():
         logger.debug(request)
         schain_name = request.args.get('schain_name')
-        skale = init_skale(g.wallet)
-        sync_agent_ranges = get_sync_agent_ranges(skale)
+        sync_agent_ranges = get_sync_agent_ranges(g.skale)
         if not schain_config_exists(schain_name):
             return construct_err_response(
                 msg=f'No schain with name {schain_name}'
@@ -136,11 +140,11 @@ def construct_schains_bp():
             )
 
     @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'get'), methods=['GET'])
+    @g_skale
     def get_schain():
         logger.debug(request)
         schain_name = request.args.get('schain_name')
-        skale = init_skale(g.wallet)
-        info = get_schain_info_by_name(skale, schain_name)
+        info = get_schain_info_by_name(g.skale, schain_name)
         if not info:
             return construct_err_response(
                 msg=f'No schain with name {schain_name}'
