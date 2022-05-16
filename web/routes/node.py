@@ -47,183 +47,195 @@ IPIFY_URL = 'https://api.ipify.org?format=json'
 GET_IP_ATTEMPTS = 5
 
 
-def construct_node_bp():
-    node_bp = Blueprint(BLUEPRINT_NAME, __name__)
+node_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'info'), methods=['GET'])
-    @g_skale
-    def info():
-        logger.debug(request)
-        node = Node(g.skale, g.config)
-        data = {'node_info': node.info}
-        return construct_ok_response(data=data)
 
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'register'), methods=['POST'])
-    @g_skale
-    def register():
-        logger.debug(request)
-        if not request.json:
-            abort(400)
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'info'), methods=['GET'])
+@g_skale
+def info():
+    logger.debug(request)
+    node = Node(g.skale, g.config)
+    data = {'node_info': node.info}
+    return construct_ok_response(data=data)
 
-        ip = request.json.get('ip')
-        public_ip = request.json.get('public_ip', None)
-        port = request.json.get('port')
-        name = request.json.get('name')
-        domain_name = request.json.get('domain_name')
 
-        if not public_ip:
-            public_ip = ip
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'register'), methods=['POST'])
+@g_skale
+def register():
+    logger.debug(request)
+    if not request.json:
+        abort(400)
 
-        node = Node(g.skale, g.config)
-        res = node.register(
-            ip=ip,
-            public_ip=public_ip,
-            port=port,
-            name=name,
-            domain_name=domain_name
+    ip = request.json.get('ip')
+    public_ip = request.json.get('public_ip', None)
+    port = request.json.get('port')
+    name = request.json.get('name')
+    domain_name = request.json.get('domain_name')
+
+    if not public_ip:
+        public_ip = ip
+
+    node = Node(g.skale, g.config)
+    res = node.register(
+        ip=ip,
+        public_ip=public_ip,
+        port=port,
+        name=name,
+        domain_name=domain_name
+    )
+    if res['status'] != 'ok':
+        return construct_err_response(
+            msg=res['errors'],
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
-        if res['status'] != 'ok':
-            return construct_err_response(
-                msg=res['errors'],
-                status_code=HTTPStatus.INTERNAL_SERVER_ERROR
-            )
-        return construct_ok_response({'node_data': res['data']})
+    return construct_ok_response({'node_data': res['data']})
 
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'signature'), methods=['GET'])
-    @g_skale
-    def signature():
-        logger.debug(request)
-        validator_id = int(request.args.get('validator_id'))
-        signature = g.skale.validator_service.get_link_node_signature(
-            validator_id)
-        return construct_ok_response(data={'signature': signature})
 
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-on'), methods=['POST'])
-    @g_skale
-    def set_node_maintenance_on():
-        logger.debug(request)
-        node = Node(g.skale, g.config)
-        res = node.set_maintenance_on()
-        if res['status'] != 'ok':
-            return construct_err_response(msg=res['errors'])
-        return construct_ok_response()
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'signature'), methods=['GET'])
+@g_skale
+def signature():
+    logger.debug(request)
+    validator_id = int(request.args.get('validator_id'))
+    signature = g.skale.validator_service.get_link_node_signature(
+        validator_id)
+    return construct_ok_response(data={'signature': signature})
 
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-off'), methods=['POST'])
-    @g_skale
-    def set_node_maintenance_off():
-        logger.debug(request)
-        node = Node(g.skale, g.config)
-        res = node.set_maintenance_off()
-        if res['status'] != 'ok':
-            return construct_err_response(msg=res['errors'])
-        return construct_ok_response()
 
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'send-tg-notification'), methods=['POST'])
-    def send_tg_notification():
-        logger.debug(request)
-        message = request.json.get('message')
-        if not message:
-            return construct_err_response('Message is empty')
-        if not tg_notifications_enabled():
-            return construct_err_response('TG_API_KEY or TG_CHAT_ID not found')
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-on'), methods=['POST'])
+@g_skale
+def set_node_maintenance_on():
+    logger.debug(request)
+    node = Node(g.skale, g.config)
+    res = node.set_maintenance_on()
+    if res['status'] != 'ok':
+        return construct_err_response(msg=res['errors'])
+    return construct_ok_response()
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-off'), methods=['POST'])
+@g_skale
+def set_node_maintenance_off():
+    logger.debug(request)
+    node = Node(g.skale, g.config)
+    res = node.set_maintenance_off()
+    if res['status'] != 'ok':
+        return construct_err_response(msg=res['errors'])
+    return construct_ok_response()
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'send-tg-notification'), methods=['POST'])
+def send_tg_notification():
+    logger.debug(request)
+    message = request.json.get('message')
+    if not message:
+        return construct_err_response('Message is empty')
+    if not tg_notifications_enabled():
+        return construct_err_response('TG_API_KEY or TG_CHAT_ID not found')
+    try:
+        send_message(message)
+    except Exception:
+        logger.exception('Message was not send due to error')
+        construct_err_response(['Message sending failed'])
+    return construct_ok_response('Message was sent successfully')
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/start'), methods=['POST'])
+@g_skale
+def exit_start():
+    node = Node(g.skale, g.config)
+    exit_thread = CustomThread('Start node exit', node.exit, once=True)
+    exit_thread.start()
+    return construct_ok_response()
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/status'), methods=['GET'])
+@g_skale
+def exit_status():
+    node = Node(g.skale, g.config)
+    exit_status_data = node.get_exit_status()
+    return construct_ok_response(exit_status_data)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'set-domain-name'), methods=['POST'])
+@g_skale
+def set_domain_name():
+    logger.debug(request)
+    domain_name = request.json['domain_name']
+
+    node = Node(g.skale, g.config)
+    res = node.set_domain_name(domain_name)
+    if res['status'] != 'ok':
+        return construct_err_response(msg=res['errors'])
+    return construct_ok_response()
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'hardware'), methods=['GET'])
+def hardware():
+    logger.debug(request)
+    hardware_info = get_node_hardware_info()
+    return construct_ok_response(hardware_info)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'endpoint-info'), methods=['GET'])
+@g_web3
+def endpoint_info():
+    logger.debug(request)
+    call_speed = get_endpoint_call_speed(g.web3)
+    block_number = g.web3.eth.blockNumber
+    syncing = g.web3.eth.syncing
+    trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
+    try:
+        eth_client_version = g.web3.clientVersion
+    except Exception:
+        logger.exception('Cannot get client version')
+        eth_client_version = 'unknown'
+    geth_client = 'Geth' in eth_client_version
+    info = {
+        'block_number': block_number,
+        'syncing': syncing,
+        'trusted': trusted and geth_client,
+        'client': eth_client_version,
+        'call_speed': call_speed
+    }
+    logger.info(f'endpoint info: {info}')
+    return construct_ok_response(info)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'meta-info'), methods=['GET'])
+def meta_info():
+    logger.debug(request)
+    version_data = get_meta_info()
+    return construct_ok_response(version_data)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'btrfs-info'), methods=['GET'])
+def btrfs_info():
+    logger.debug(request)
+    btrfs_data = get_btrfs_info()
+    return construct_ok_response(btrfs_data)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'public-ip'), methods=['GET'])
+def public_ip():
+    logger.debug(request)
+    for _ in range(GET_IP_ATTEMPTS):
         try:
-            send_message(message)
+            response = requests.get(IPIFY_URL)
+            ip = response.json()['ip']
+            return construct_ok_response({'public_ip': ip})
         except Exception:
-            logger.exception('Message was not send due to error')
-            construct_err_response(['Message sending failed'])
-        return construct_ok_response('Message was sent successfully')
+            logger.exception('Ip request failed')
+            time.sleep(1)
+    return construct_err_response(msg='Public ip request failed')
 
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/start'), methods=['POST'])
-    @g_skale
-    def exit_start():
-        node = Node(g.skale, g.config)
-        exit_thread = CustomThread('Start node exit', node.exit, once=True)
-        exit_thread.start()
-        return construct_ok_response()
 
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/status'), methods=['GET'])
-    @g_skale
-    def exit_status():
-        node = Node(g.skale, g.config)
-        exit_status_data = node.get_exit_status()
-        return construct_ok_response(exit_status_data)
-
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'set-domain-name'), methods=['POST'])
-    @g_skale
-    def set_domain_name():
-        logger.debug(request)
-        domain_name = request.json['domain_name']
-
-        node = Node(g.skale, g.config)
-        res = node.set_domain_name(domain_name)
-        if res['status'] != 'ok':
-            return construct_err_response(msg=res['errors'])
-        return construct_ok_response()
-
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'hardware'), methods=['GET'])
-    def hardware():
-        logger.debug(request)
-        hardware_info = get_node_hardware_info()
-        return construct_ok_response(hardware_info)
-
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'endpoint-info'), methods=['GET'])
-    @g_web3
-    def endpoint_info():
-        logger.debug(request)
-        call_speed = get_endpoint_call_speed(g.web3)
-        block_number = g.web3.eth.blockNumber
-        syncing = g.web3.eth.syncing
-        trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
-        try:
-            eth_client_version = g.web3.clientVersion
-        except Exception:
-            logger.exception('Cannot get client version')
-            eth_client_version = 'unknown'
-        geth_client = 'Geth' in eth_client_version
-        info = {
-            'block_number': block_number,
-            'syncing': syncing,
-            'trusted': trusted and geth_client,
-            'client': eth_client_version,
-            'call_speed': call_speed
-        }
-        logger.info(f'endpoint info: {info}')
-        return construct_ok_response(info)
-
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'meta-info'), methods=['GET'])
-    def meta_info():
-        logger.debug(request)
-        version_data = get_meta_info()
-        return construct_ok_response(version_data)
-
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'btrfs-info'), methods=['GET'])
-    def btrfs_info():
-        logger.debug(request)
-        btrfs_data = get_btrfs_info()
-        return construct_ok_response(btrfs_data)
-
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'public-ip'), methods=['GET'])
-    def public_ip():
-        logger.debug(request)
-        for _ in range(GET_IP_ATTEMPTS):
-            try:
-                response = requests.get(IPIFY_URL)
-                ip = response.json()['ip']
-                return construct_ok_response({'public_ip': ip})
-            except Exception:
-                logger.exception('Ip request failed')
-                time.sleep(1)
-        return construct_err_response(msg='Public ip request failed')
-
-    @node_bp.route(get_api_url(BLUEPRINT_NAME, 'validator-nodes'), methods=['GET'])
-    @g_skale
-    def _validator_nodes():
-        logger.debug(request)
-        if g.config.id is None:
-            return construct_ok_response(data=[])
-        res = check_validator_nodes(g.skale, g.config.id)
-        if res['status'] != 0:
-            return construct_err_response(msg=res['errors'])
-        return construct_ok_response(data=res['data'])
-
-    return node_bp
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'validator-nodes'), methods=['GET'])
+@g_skale
+def _validator_nodes():
+    logger.debug(request)
+    if g.config.id is None:
+        return construct_ok_response(data=[])
+    res = check_validator_nodes(g.skale, g.config.id)
+    if res['status'] != 0:
+        return construct_err_response(msg=res['errors'])
+    return construct_ok_response(data=res['data'])

@@ -11,7 +11,7 @@ from core.schains.checks import SChainChecks, CheckRes
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 
 from web.models.schain import SChainRecord
-from web.routes.health import construct_health_bp
+from web.routes.health import health_bp
 from web.helper import get_api_url
 
 from tests.utils import get_bp_data, run_custom_schain_container
@@ -23,7 +23,7 @@ TEST_SGX_KEYNAME = 'test_keyname'
 @pytest.fixture
 def skale_bp(skale, dutils):
     app = Flask(__name__)
-    app.register_blueprint(construct_health_bp())
+    app.register_blueprint(health_bp)
 
     def handler(sender, **kwargs):
         g.docker_utils = dutils
@@ -40,7 +40,7 @@ def skale_bp(skale, dutils):
 @pytest.fixture
 def unregistered_skale_bp(skale, dutils):
     app = Flask(__name__)
-    app.register_blueprint(construct_health_bp())
+    app.register_blueprint(health_bp)
 
     def handler(sender, **kwargs):
         g.docker_utils = dutils

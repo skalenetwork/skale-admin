@@ -54,105 +54,107 @@ class SGXStatus(Enum):
     NOT_CONNECTED = 1
 
 
-def construct_health_bp():
-    health_bp = Blueprint(BLUEPRINT_NAME, __name__)
+health_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
-    @health_bp.route(get_api_url(BLUEPRINT_NAME, 'containers'), methods=['GET'])
-    def containers():
-        logger.debug(request)
-        all = request.args.get('all') == 'True'
-        name_filter = request.args.get('name_filter') or ''
-        containers_list = g.docker_utils.get_containers_info(
-            all=all,
-            name_filter=name_filter,
-            format=True
-        )
-        return construct_ok_response(containers_list)
 
-    @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
-    @g_skale
-    def schains_checks():
-        logger.debug(request)
-        checks_filter = request.args.get('checks_filter')
-        if checks_filter:
-            checks_filter = checks_filter.split(',')
-        node_id = g.config.id
-        if node_id is None:
-            return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
-                                          msg='No node installed')
-
-        schains = g.skale.schains.get_schains_for_node(node_id)
-        sync_agent_ranges = get_sync_agent_ranges(g.skale)
-        checks = []
-        for schain in schains:
-            if schain.get('name') != '':
-                rotation_data = g.skale.node_rotation.get_rotation(schain['name'])
-                rotation_id = rotation_data['rotation_id']
-                if SChainRecord.added(schain['name']):
-                    rc = get_default_rule_controller(
-                        name=schain['name'],
-                        sync_agent_ranges=sync_agent_ranges
-                    )
-                    schain_record = SChainRecord.get_by_name(schain['name'])
-                    schain_checks = SChainChecks(
-                        schain['name'],
-                        node_id,
-                        schain_record=schain_record,
-                        rule_controller=rc,
-                        rotation_id=rotation_id
-                    ).get_all(checks_filter=checks_filter)
-                    checks.append({
-                        'name': schain['name'],
-                        'healthchecks': schain_checks
-                    })
-        return construct_ok_response(checks)
-
-    @health_bp.route(get_api_url(BLUEPRINT_NAME, 'ima'), methods=['GET'])
-    def ima_log_checks():
-        logger.debug(request)
-        node_id = g.config.id
-        if node_id is None:
-            return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
-                                          msg='No node installed')
-        checks = get_ima_log_checks()
-        return construct_ok_response(checks)
-
-    @health_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx'), methods=['GET'])
-    def sgx_info():
-        logger.debug(request)
-        sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
-        try:
-            status = sgx.get_server_status()
-            version = sgx.get_server_version()
-        except Exception:  # todo: catch specific error - edit sgx.py
-            status = 1
-            version = None
-        sgx_host = urlparse(SGX_SERVER_URL).hostname
-        tn = telnetlib.Telnet()
-        try:
-            tn.open(sgx_host, ZMQ_PORT, timeout=ZMQ_TIMEOUT)
-            zmq_status = 0
-        except Exception as err:
-            zmq_status = 1
-            logger.error(err)
-        else:
-            tn.close()
-        res = {
-            'status': zmq_status,
-            'status_name': SGXStatus(status).name,
-            'sgx_server_url': SGX_SERVER_URL,
-            'sgx_keyname': g.config.sgx_key_name,
-            'sgx_wallet_version': version
-        }
-        return construct_ok_response(data=res)
-
-    @health_bp.route(
-        get_api_url(BLUEPRINT_NAME, 'check-report'),
-        methods=['GET']
+@health_bp.route(get_api_url(BLUEPRINT_NAME, 'containers'), methods=['GET'])
+def containers():
+    logger.debug(request)
+    all = request.args.get('all') == 'True'
+    name_filter = request.args.get('name_filter') or ''
+    containers_list = g.docker_utils.get_containers_info(
+        all=all,
+        name_filter=name_filter,
+        format=True
     )
-    def check_report():
-        logger.debug(request)
-        report = get_check_report()
-        return construct_ok_response(data=report)
+    return construct_ok_response(containers_list)
 
-    return health_bp
+
+@health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
+@g_skale
+def schains_checks():
+    logger.debug(request)
+    checks_filter = request.args.get('checks_filter')
+    if checks_filter:
+        checks_filter = checks_filter.split(',')
+    node_id = g.config.id
+    if node_id is None:
+        return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
+                                      msg='No node installed')
+
+    schains = g.skale.schains.get_schains_for_node(node_id)
+    sync_agent_ranges = get_sync_agent_ranges(g.skale)
+    checks = []
+    for schain in schains:
+        if schain.get('name') != '':
+            rotation_data = g.skale.node_rotation.get_rotation(schain['name'])
+            rotation_id = rotation_data['rotation_id']
+            if SChainRecord.added(schain['name']):
+                rc = get_default_rule_controller(
+                    name=schain['name'],
+                    sync_agent_ranges=sync_agent_ranges
+                )
+                schain_record = SChainRecord.get_by_name(schain['name'])
+                schain_checks = SChainChecks(
+                    schain['name'],
+                    node_id,
+                    schain_record=schain_record,
+                    rule_controller=rc,
+                    rotation_id=rotation_id
+                ).get_all(checks_filter=checks_filter)
+                checks.append({
+                    'name': schain['name'],
+                    'healthchecks': schain_checks
+                })
+    return construct_ok_response(checks)
+
+
+@health_bp.route(get_api_url(BLUEPRINT_NAME, 'ima'), methods=['GET'])
+def ima_log_checks():
+    logger.debug(request)
+    node_id = g.config.id
+    if node_id is None:
+        return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
+                                      msg='No node installed')
+    checks = get_ima_log_checks()
+    return construct_ok_response(checks)
+
+
+@health_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx'), methods=['GET'])
+def sgx_info():
+    logger.debug(request)
+    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+    try:
+        status = sgx.get_server_status()
+        version = sgx.get_server_version()
+    except Exception:  # todo: catch specific error - edit sgx.py
+        status = 1
+        version = None
+    sgx_host = urlparse(SGX_SERVER_URL).hostname
+    tn = telnetlib.Telnet()
+    try:
+        tn.open(sgx_host, ZMQ_PORT, timeout=ZMQ_TIMEOUT)
+        zmq_status = 0
+    except Exception as err:
+        zmq_status = 1
+        logger.error(err)
+    else:
+        tn.close()
+    res = {
+        'status': zmq_status,
+        'status_name': SGXStatus(status).name,
+        'sgx_server_url': SGX_SERVER_URL,
+        'sgx_keyname': g.config.sgx_key_name,
+        'sgx_wallet_version': version
+    }
+    return construct_ok_response(data=res)
+
+
+@health_bp.route(
+    get_api_url(BLUEPRINT_NAME, 'check-report'),
+    methods=['GET']
+)
+def check_report():
+    logger.debug(request)
+    report = get_check_report()
+    return construct_ok_response(data=report)

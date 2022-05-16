@@ -41,11 +41,11 @@ from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
 from tools.str_formatters import arguments_list_string
 
-from web.routes.node import construct_node_bp
-from web.routes.schains import construct_schains_bp
-from web.routes.wallet import construct_wallet_bp
-from web.routes.ssl import construct_ssl_bp
-from web.routes.health import construct_health_bp
+from web.routes.node import node_bp
+from web.routes.schains import schains_bp
+from web.routes.wallet import wallet_bp
+from web.routes.ssl import ssl_bp
+from web.routes.health import health_bp
 from web.helper import construct_err_response
 
 REQ_ID_SIZE = 10
@@ -55,11 +55,11 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.register_blueprint(construct_node_bp())
-app.register_blueprint(construct_schains_bp())
-app.register_blueprint(construct_wallet_bp())
-app.register_blueprint(construct_ssl_bp())
-app.register_blueprint(construct_health_bp())
+app.register_blueprint(node_bp)
+app.register_blueprint(schains_bp)
+app.register_blueprint(wallet_bp)
+app.register_blueprint(ssl_bp)
+app.register_blueprint(health_bp)
 
 
 @app.before_request
