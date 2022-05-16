@@ -39,7 +39,8 @@ def init_schain_config_mock(
     generation,
     ecdsa_sgx_key_name,
     rotation_data,
-    schain_record
+    schain_record,
+    sync_node
 ):
     save_schain_config({}, schain_name)
 
@@ -50,7 +51,8 @@ def monitor_schain_container_mock(
     skaled_status,
     public_key=None,
     start_ts=None,
-    dutils=None
+    dutils=None,
+    sync_node=False
 ):
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain['name'])
@@ -190,7 +192,8 @@ def test_base_monitor_skaled_container_sync(test_monitor):
         skaled_status=test_monitor.skaled_status,
         public_key='0:0:1:0',
         start_ts=None,
-        dutils=test_monitor.dutils
+        dutils=test_monitor.dutils,
+        sync_node=False
     )
     assert monitor_schain_mock.call_count == 1
 
@@ -210,7 +213,8 @@ def test_base_monitor_skaled_container_sync_delay_start(test_monitor):
         skaled_status=test_monitor.skaled_status,
         public_key='0:0:1:0',
         start_ts=1245,
-        dutils=test_monitor.dutils
+        dutils=test_monitor.dutils,
+        sync_node=False
     )
     assert monitor_schain_mock.call_count == 1
 

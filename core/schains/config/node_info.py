@@ -51,7 +51,6 @@ class CurrentNodeInfo(NodeInfo):
     max_open_leveldb_files: int
 
     skale_manager_opts: SkaleManagerOpts
-
     sync_node: bool
 
     def to_dict(self):

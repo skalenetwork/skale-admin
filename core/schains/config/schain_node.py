@@ -65,7 +65,7 @@ def generate_schain_nodes(
     if sync_node:
         bls_public_keys = ["0:0:1:0"] * len(schain_nodes_with_schains)
     else:
-        bls_public_keys = get_bls_public_keys(schain_name, rotation_id, sync_node)
+        bls_public_keys = get_bls_public_keys(schain_name, rotation_id)
 
     for i, node in enumerate(schain_nodes_with_schains, 1):
         base_port = get_schain_base_port_on_node(node['schains'], schain_name, node['port'])

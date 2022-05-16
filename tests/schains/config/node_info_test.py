@@ -34,17 +34,17 @@ def test_generate_wallets_config():
 
 def test_generate_current_node_info(skale_manager_opts, schain_config, _schain_name):
     static_schain_params = get_static_schain_params()
-    with mock.patch('core.schains.config.node_info.ENV_TYPE', new='testnet'):
-        current_node_info = generate_current_node_info(
-            node={'name': 'test', 'port': 10000},
-            node_id=1,
-            ecdsa_key_name='123',
-            static_schain_params=static_schain_params,
-            schain={'name': _schain_name, 'partOfNode': 0},
-            schains_on_node=[{'name': _schain_name, 'port': 10000}],
-            rotation_id=0,
-            skale_manager_opts=skale_manager_opts
-        )
+
+    current_node_info = generate_current_node_info(
+        node={'name': 'test', 'port': 10000},
+        node_id=1,
+        ecdsa_key_name='123',
+        static_schain_params=static_schain_params,
+        schain={'name': _schain_name, 'partOfNode': 0},
+        schains_on_node=[{'name': _schain_name, 'port': 10000}],
+        rotation_id=0,
+        skale_manager_opts=skale_manager_opts
+    )
     current_node_info_dict = current_node_info.to_dict()
     assert current_node_info_dict['nodeID'] == 1
     assert current_node_info_dict['nodeName'] == 'test'
@@ -56,38 +56,22 @@ def test_generate_current_node_info(skale_manager_opts, schain_config, _schain_n
     assert current_node_info_dict['minCacheSize'] == 32000000
     assert current_node_info_dict['maxCacheSize'] == 64000000
     assert current_node_info_dict['collectionQueueSize'] == 20
-    assert current_node_info_dict['rotateAfterBlock'] == 102400
-
-    with mock.patch('core.schains.config.node_info.ENV_TYPE', new='mainnet'):
-        current_node_info = generate_current_node_info(
-            node={'name': 'test', 'port': 10000},
-            node_id=1,
-            ecdsa_key_name='123',
-            static_schain_params=static_schain_params,
-            schain={'name': _schain_name, 'partOfNode': 0},
-            schains_on_node=[{'name': _schain_name, 'port': 10000}],
-            rotation_id=0,
-            skale_manager_opts=skale_manager_opts
-        )
-    current_node_info_dict = current_node_info.to_dict()
-    assert current_node_info_dict['rotateAfterBlock'] == 1024000
 
 
 def test_skale_manager_opts(skale_manager_opts, schain_config, _schain_name):
     static_schain_params = get_static_schain_params()
-    with mock.patch('core.schains.config.node_info.ENV_TYPE', new='testnet'):
-        current_node_info = generate_current_node_info(
-            node={'name': 'test', 'port': 10000},
-            node_id=1,
-            ecdsa_key_name='123',
-            static_schain_params=static_schain_params,
-            schain={'name': _schain_name, 'partOfNode': 0},
-            schains_on_node=[{'name': _schain_name, 'port': 10000}],
-            rotation_id=0,
-            skale_manager_opts=skale_manager_opts
-        )
-        current_node_info_dict = current_node_info.to_dict()
-        assert current_node_info_dict['skale-manager'] == {
-            'SchainsInternal': '0x1656',
-            'Nodes': '0x7742'
-        }
+    current_node_info = generate_current_node_info(
+        node={'name': 'test', 'port': 10000},
+        node_id=1,
+        ecdsa_key_name='123',
+        static_schain_params=static_schain_params,
+        schain={'name': _schain_name, 'partOfNode': 0},
+        schains_on_node=[{'name': _schain_name, 'port': 10000}],
+        rotation_id=0,
+        skale_manager_opts=skale_manager_opts
+    )
+    current_node_info_dict = current_node_info.to_dict()
+    assert current_node_info_dict['skale-manager'] == {
+        'SchainsInternal': '0x1656',
+        'Nodes': '0x7742'
+    }
