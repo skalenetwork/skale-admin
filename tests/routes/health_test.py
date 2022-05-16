@@ -9,15 +9,13 @@ from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks, CheckRes
 
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
+from tools.sgx_utils import generate_sgx_key
 
 from web.models.schain import SChainRecord
 from web.routes.health import construct_health_bp
 from web.helper import get_api_url
 
 from tests.utils import get_bp_data, run_custom_schain_container
-
-
-TEST_SGX_KEYNAME = 'test_keyname'
 
 
 @pytest.fixture
@@ -29,6 +27,7 @@ def skale_bp(skale, dutils):
         g.docker_utils = dutils
         g.config = NodeConfig()
         g.config.id = 1
+        generate_sgx_key(g.config)
 
     with appcontext_pushed.connected_to(handler, app):
         SChainRecord.create_table()
@@ -141,19 +140,14 @@ def test_schains_checks_no_node(unregistered_skale_bp, skale):
 
 
 def test_sgx(skale_bp, skale):
-    config = NodeConfig()
-    config.sgx_key_name = TEST_SGX_KEYNAME
-
     data = get_bp_data(skale_bp, get_api_url('health', 'sgx'))
     sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
     version = sgx.get_server_version()
-    assert data == {
-        'payload': {
-            'sgx_server_url': SGX_SERVER_URL,
-            'status': 0,
-            'status_name': 'CONNECTED',
-            'sgx_wallet_version': version,
-            'sgx_keyname': TEST_SGX_KEYNAME,
-        },
-        'status': 'ok'
-    }
+    assert data['status'] == 'ok'
+    payload = data['payload']
+    assert payload['sgx_server_url'] == SGX_SERVER_URL
+    assert payload['status'] == 0
+    assert payload['status_name'] == 'CONNECTED'
+    assert payload['sgx_wallet_version'] == version
+    print(payload)
+    assert payload['sgx_keyname'].startswith('NEK:')
