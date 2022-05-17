@@ -16,7 +16,7 @@ from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, post_bp_data
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
-from web.routes.node import construct_node_bp
+from web.routes.node import node_bp
 from web.helper import get_api_url
 
 
@@ -29,7 +29,7 @@ BLUEPRINT_NAME = 'node'
 @pytest.fixture
 def skale_bp(skale, dutils):
     app = Flask(__name__)
-    app.register_blueprint(construct_node_bp())
+    app.register_blueprint(node_bp)
 
     def handler(sender, **kwargs):
         g.docker_utils = dutils
