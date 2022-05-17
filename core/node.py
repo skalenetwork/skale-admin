@@ -385,4 +385,6 @@ def get_check_report(report_path: str = CHECK_REPORT_PATH) -> Dict:
 
 
 def get_abi_hash(file_path):
-    return hashlib.sha256(open(file_path, 'rb').read()).hexdigest()
+    with open(file_path, 'rb') as file:
+        abi_hash = hashlib.sha256(file.read()).hexdigest()
+    return abi_hash
