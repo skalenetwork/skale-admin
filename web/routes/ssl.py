@@ -79,46 +79,45 @@ def get_cert_info(cert):
     }
 
 
-def construct_ssl_bp():
-    ssl_bp = Blueprint(BLUEPRINT_NAME, __name__)
+ssl_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
-    @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'status'), methods=['GET'])
-    def status():
-        logger.debug(request)
-        if is_ssl_folder_empty():
-            return construct_ok_response(data={'is_empty': True})
 
-        cert_filepath = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-        cert = cert_from_file(cert_filepath)
-        status, info = get_cert_info(cert)
-        if status == 'error':
-            return construct_err_response(msg=CERTS_HAS_INVALID_FORMAT)
-        else:
-            return construct_ok_response(data={
-                'issued_to': info['issued_to'],
-                'expiration_date': info['expiration_date']
-            })
+@ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'status'), methods=['GET'])
+def status():
+    logger.debug(request)
+    if is_ssl_folder_empty():
+        return construct_ok_response(data={'is_empty': True})
 
-    @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'upload'), methods=['POST'])
-    def upload():
-        request_json = json.loads(request.form['json'])
-        force = request_json.get('force') is True
-        if not is_ssl_folder_empty() and not force:
-            return construct_err_response(msg=CERTS_UPLOADED_ERR_MSG)
-        if SSL_KEY_NAME not in request.files or \
-                SSL_CRT_NAME not in request.files:
-            return construct_err_response(msg=NO_REQUIRED_FILES_ERR_MSG)
+    cert_filepath = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+    cert = cert_from_file(cert_filepath)
+    status, info = get_cert_info(cert)
+    if status == 'error':
+        return construct_err_response(msg=CERTS_HAS_INVALID_FORMAT)
+    else:
+        return construct_ok_response(data={
+            'issued_to': info['issued_to'],
+            'expiration_date': info['expiration_date']
+        })
 
-        key = request.files[SSL_KEY_NAME].read()
-        cert = request.files[SSL_CRT_NAME].read()
 
-        status, info = get_cert_info(cert)
-        if status == 'error':
-            return construct_err_response(msg=CERTS_HAS_INVALID_FORMAT)
+@ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'upload'), methods=['POST'])
+def upload():
+    request_json = json.loads(request.form['json'])
+    force = request_json.get('force') is True
+    if not is_ssl_folder_empty() and not force:
+        return construct_err_response(msg=CERTS_UPLOADED_ERR_MSG)
+    if SSL_KEY_NAME not in request.files or \
+            SSL_CRT_NAME not in request.files:
+        return construct_err_response(msg=NO_REQUIRED_FILES_ERR_MSG)
 
-        save_cert_key_pair(cert, key)
-        set_schains_need_reload()
-        reload_nginx()
-        return construct_ok_response()
+    key = request.files[SSL_KEY_NAME].read()
+    cert = request.files[SSL_CRT_NAME].read()
 
-    return ssl_bp
+    status, info = get_cert_info(cert)
+    if status == 'error':
+        return construct_err_response(msg=CERTS_HAS_INVALID_FORMAT)
+
+    save_cert_key_pair(cert, key)
+    set_schains_need_reload()
+    reload_nginx()
+    return construct_ok_response()
