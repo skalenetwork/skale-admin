@@ -37,7 +37,7 @@ from web.migrations import migrate
 init_sync_logger()
 logger = logging.getLogger(__name__)
 
-SLEEP_INTERVAL = 90
+SLEEP_INTERVAL = 180
 WORKER_RESTART_SLEEP_INTERVAL = 2
 
 SCHAIN_NAME = os.environ.get('SCHAIN_NAME')
@@ -69,7 +69,6 @@ def worker(schain_name: str):
 
 
 def main():
-    logger.info('aaa!gdfxgdsfgsdf')
     if SCHAIN_NAME is None:
         raise Exception('You should provide SCHAIN_NAME')
     while True:

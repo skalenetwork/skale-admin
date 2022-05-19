@@ -19,21 +19,17 @@
 
 import logging
 
-from core.schains.monitor import BaseMonitor
-from tools.str_formatters import arguments_list_string
+from core.schains.monitor.base_monitor import BaseMonitor
+
 
 logger = logging.getLogger(__name__)
 
 
-class SyncNodeMonitor(BaseMonitor):
+class SyncNodeRotationMonitor(BaseMonitor):
     """
-    SyncNodeMonitor is executed only on the special sync node
+    SyncNodeRotationMonitor is executed only on the special sync node in case of node rotation.
     """
     def run(self):
-        logger.info(arguments_list_string({
-           'sChain name': self.name
-        }, 'Monitoring sync node'))
-        self.config_dir()
-        self.config(sync_node=True)
-        self.volume(sync_node=True)
-        self.skaled_container(sync_node=True)
+        logger.info(f'{self.p} - rotation complete, going to restart skaled with new config')
+        self.config(overwrite=True, sync_node=True)
+        self.reloaded_skaled_container(sync_node=True)

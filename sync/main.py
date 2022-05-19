@@ -17,24 +17,61 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import time
 import logging
 
 from skale import Skale, SkaleIma
 
-from core.schains.monitor.sync_node_monitor import SyncNodeMonitor
-from core.schains.firewall.utils import get_sync_agent_ranges
+from core.schains.monitor import (
+    BaseMonitor,
+    SyncNodeMonitor,
+    SyncNodeRotationMonitor
+)
 from core.schains.firewall import get_default_rule_controller
 
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
 from core.schains.ima import ImaData
 
+from core.schains.skaled_status import init_skaled_status, SkaledStatus
+
 from tools.str_formatters import arguments_list_string
 from tools.docker_utils import DockerUtils
+from tools.configs import SYNC_NODE_ROTATION_TS_DIFF
 
-from web.models.schain import upsert_schain_record
+from web.models.schain import upsert_schain_record, SChainRecord
+
 
 logger = logging.getLogger(__name__)
+
+
+def _is_sync_rotation_mode(
+    checks: SChainChecks,
+    finish_ts: int
+) -> bool:
+    # return _is_sync_node_rotation_timeframe(finish_ts) and not checks.skaled_container.status
+    return _is_sync_node_rotation_timeframe(finish_ts)
+
+
+def _is_sync_node_rotation_timeframe(finish_ts: int) -> bool:
+    current_time = time.time()
+    logger.info(f'Current time is {current_time}, finish_ts is {finish_ts}, rotation ts diff: \
+{SYNC_NODE_ROTATION_TS_DIFF}')
+    return current_time >= finish_ts and current_time < finish_ts + SYNC_NODE_ROTATION_TS_DIFF
+
+
+def get_monitor_type(
+        schain_record: SChainRecord,
+        checks: SChainChecks,
+        skaled_status: SkaledStatus,
+        finish_ts: int
+) -> BaseMonitor:
+    # TODO: RepairMonitor for Sync node should be discussed later
+    # if _is_repair_mode(schain_record, checks, skaled_status):
+    #     return RepairMonitor
+    if _is_sync_rotation_mode(checks, finish_ts):
+        return SyncNodeRotationMonitor
+    return SyncNodeMonitor
 
 
 def monitor_sync_node(
@@ -51,14 +88,10 @@ def monitor_sync_node(
     schain = skale.schains.get_by_name(schain_name)
 
     rotation_data = skale.node_rotation.get_rotation(schain_name)
-    sync_agent_ranges = get_sync_agent_ranges(skale)
 
     rc = get_default_rule_controller(
-        name=schain_name,
-        sync_agent_ranges=sync_agent_ranges
+        name=schain_name
     )
-
-    dutils = DockerUtils(volume_driver='local', host='unix:///var/run/docker.sock')  # TODO: TMP!
 
     schain_record = upsert_schain_record(schain_name)
     checks = SChainChecks(
@@ -76,15 +109,26 @@ def monitor_sync_node(
         chain_id=skale_ima.web3.eth.chainId
     )
 
-    monitor = SyncNodeMonitor(
+    skaled_status = init_skaled_status(schain_name)
+
+    finish_ts = skale.node_rotation.get_schain_finish_ts(
+        node_id=rotation_data['leaving_node'],
+        schain_name=schain_name
+    )
+
+    monitor_class = get_monitor_type(
+        schain_record,
+        checks,
+        skaled_status,
+        finish_ts
+    )
+    monitor = monitor_class(
         skale=skale,
         ima_data=ima_data,
         schain=schain,
         node_config=node_config,
         rotation_data=rotation_data,
         checks=checks,
-        rule_controller=rc,
-        dutils=dutils,
-        sync_node=True
+        rule_controller=rc
     )
     monitor.run()
