@@ -29,7 +29,12 @@ import os
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import CONTAINERS_INFO
 from tools.configs.db import REDIS_URI
-from tools.configs.ima import IMA_ENDPOINT, MAINNET_IMA_ABI_FILEPATH, IMA_STATE_CONTAINER_PATH
+from tools.configs.ima import (
+    IMA_ENDPOINT,
+    MAINNET_IMA_ABI_FILEPATH,
+    IMA_STATE_CONTAINER_PATH,
+    IMA_TIME_FRAMING
+)
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ABI_FILEPATH
 from flask import g
@@ -72,6 +77,8 @@ class ImaEnv:
 
     monitoring_port: int
 
+    time_framing: int
+
     def to_dict(self):
         """Returns upper-case representation of the ImaEnv object"""
         return {
@@ -92,7 +99,8 @@ class ImaEnv:
             'NODE_ADDRESS': self.node_address,
             'TM_URL_MAIN_NET': self.tm_url_mainnet,
             'CID_MAIN_NET': self.cid_main_net,
-            'MONITORING_PORT': self.monitoring_port
+            'MONITORING_PORT': self.monitoring_port,
+            'TIME_FRAMING': self.time_framing
         }
 
 
@@ -148,7 +156,8 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         node_address=node_address,
         tm_url_mainnet=REDIS_URI,
         cid_main_net=mainnet_chain_id,
-        monitoring_port=node_info['imaMonitoringPort']
+        monitoring_port=node_info['imaMonitoringPort'],
+        time_framing=IMA_TIME_FRAMING
     )
 
 

@@ -12,7 +12,7 @@ from core.node_config import NodeConfig
 from core.schains.config.directory import schain_config_filepath
 from tests.utils import get_bp_data, get_test_rule_controller, post_bp_data
 from web.models.schain import SChainRecord
-from web.routes.schains import construct_schains_bp
+from web.routes.schains import schains_bp
 from web.helper import get_api_url
 
 
@@ -22,7 +22,7 @@ BLUEPRINT_NAME = 'schains'
 @pytest.fixture
 def skale_bp(skale, dutils):
     app = Flask(__name__)
-    app.register_blueprint(construct_schains_bp())
+    app.register_blueprint(schains_bp)
 
     def handler(sender, **kwargs):
         g.docker_utils = dutils
