@@ -24,6 +24,7 @@ import socket
 import psutil
 import logging
 import platform
+import hashlib
 
 import requests
 
@@ -381,3 +382,9 @@ def get_check_report(report_path: str = CHECK_REPORT_PATH) -> Dict:
         return {}
     with open(CHECK_REPORT_PATH) as report_file:
         return json.load(report_file)
+
+
+def get_abi_hash(file_path):
+    with open(file_path, 'rb') as file:
+        abi_hash = hashlib.sha256(file.read()).hexdigest()
+    return abi_hash
