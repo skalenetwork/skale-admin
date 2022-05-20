@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 from dataclasses import dataclass
 
 from skale.dataclasses.node_info import NodeInfo
@@ -30,6 +31,9 @@ from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILEPATH
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -89,6 +93,10 @@ def generate_current_node_info(
     schain_type_name = get_schain_type(schain['partOfNode'], sync_node=sync_node).name
 
     wallets = {} if sync_node else generate_wallets_config(schain['name'], rotation_id)
+
+    if ecdsa_key_name is None:
+        logger.warning(f'Generating CurrentNodeInfo for {schain["name"]}, ecdsa_key_name is None')
+        ecdsa_key_name = ""
 
     return CurrentNodeInfo(
         node_id=node_id,
