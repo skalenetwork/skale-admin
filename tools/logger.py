@@ -80,8 +80,8 @@ def init_logger(
     log_file_path=None,
     debug_file_path=None
 ):
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
+    # for handler in logging.root.handlers[:]:
+    #    logging.root.removeHandler(handler)
 
     handlers = []
 
