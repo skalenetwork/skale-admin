@@ -25,6 +25,7 @@ from skale import Skale, SkaleIma
 
 from sync.main import monitor_sync_node
 from core.node_config import NodeConfig
+from core.ima.schain import update_predeployed_ima
 
 from tools.logger import init_sync_logger
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
@@ -75,6 +76,7 @@ def main():
         try:
             create_tables()
             migrate()
+            update_predeployed_ima()
             worker(SCHAIN_NAME)
         except Exception:
             logger.exception('Sync node worker failed')
