@@ -50,6 +50,8 @@ def _is_sync_rotation_mode(
     finish_ts: int
 ) -> bool:
     # return _is_sync_node_rotation_timeframe(finish_ts) and not checks.skaled_container.status
+    if finish_ts is None:
+        finish_ts = 0
     return _is_sync_node_rotation_timeframe(finish_ts)
 
 
