@@ -30,6 +30,7 @@ from tools.configs.logs import (
     ADMIN_LOG_FORMAT,
     ADMIN_LOG_PATH,
     API_LOG_FORMAT, API_LOG_PATH,
+    SYNC_LOG_FORMAT, SYNC_LOG_PATH,
     DEBUG_LOG_PATH,
     LOG_FILE_SIZE_BYTES,
     LOG_BACKUP_COUNT
@@ -79,6 +80,9 @@ def init_logger(
     log_file_path=None,
     debug_file_path=None
 ):
+    # for handler in logging.root.handlers[:]:
+    #    logging.root.removeHandler(handler)
+
     handlers = []
 
     base_formatter = base_formatter(log_format)
@@ -116,3 +120,7 @@ def init_admin_logger():
 
 def init_api_logger():
     init_logger(RequestFormatter, API_LOG_FORMAT, API_LOG_PATH)
+
+
+def init_sync_logger():
+    init_logger(Formatter, SYNC_LOG_FORMAT, SYNC_LOG_PATH)

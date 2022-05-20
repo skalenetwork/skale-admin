@@ -37,8 +37,8 @@ from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json
 from tools.configs import SGX_SERVER_URL
 from tools.configs.containers import LOCAL_IP
-from tools.configs.ima import IMA_ENDPOINT
 from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
+from tools.configs.web3 import ENDPOINT
 
 
 logger = logging.getLogger(__name__)
@@ -204,7 +204,7 @@ def get_schain_container_base_opts(schain_name: str,
         f'--wss-port {ports["wss"]}',
         f'--sgx-url {SGX_SERVER_URL}',
         f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data',
-        f'--main-net-url {IMA_ENDPOINT}'
+        f'--main-net-url {ENDPOINT}'
     ]
 
     if static_schain_cmd:

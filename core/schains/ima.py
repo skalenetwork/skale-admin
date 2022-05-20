@@ -17,23 +17,31 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
+import json
+import logging
+
 from dataclasses import dataclass
+from websocket import create_connection
+
+from flask import g
 
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.helper import get_schain_ports, get_schain_config
 from core.ima.schain import get_schain_ima_abi_filepath
 
-import json
-import logging
-import os
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
-from tools.configs.containers import CONTAINERS_INFO
 from tools.configs.db import REDIS_URI
-from tools.configs.ima import IMA_ENDPOINT, MAINNET_IMA_ABI_FILEPATH, IMA_STATE_CONTAINER_PATH
+from tools.configs.ima import (
+    MAINNET_IMA_ABI_FILEPATH,
+    IMA_STATE_CONTAINER_PATH,
+    IMA_TIME_FRAMING
+)
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.web3 import ABI_FILEPATH
-from flask import g
-from websocket import create_connection
+from tools.configs.web3 import ABI_FILEPATH, ENDPOINT
+
+from tools.helper import get_containers_data
+
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +80,8 @@ class ImaEnv:
 
     monitoring_port: int
 
+    time_framing: int
+
     def to_dict(self):
         """Returns upper-case representation of the ImaEnv object"""
         return {
@@ -92,7 +102,8 @@ class ImaEnv:
             'NODE_ADDRESS': self.node_address,
             'TM_URL_MAIN_NET': self.tm_url_mainnet,
             'CID_MAIN_NET': self.cid_main_net,
-            'MONITORING_PORT': self.monitoring_port
+            'MONITORING_PORT': self.monitoring_port,
+            'TIME_FRAMING': self.time_framing
         }
 
 
@@ -138,7 +149,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         state_file=IMA_STATE_CONTAINER_PATH,
         schain_name=schain_name,
         schain_rpc_url=get_localhost_http_endpoint(schain_name),
-        mainnet_rpc_url=IMA_ENDPOINT,
+        mainnet_rpc_url=ENDPOINT,
         node_number=schain_index,
         nodes_count=len(schain_nodes['nodes']),
         sgx_url=SGX_SERVER_URL,
@@ -148,12 +159,13 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         node_address=node_address,
         tm_url_mainnet=REDIS_URI,
         cid_main_net=mainnet_chain_id,
-        monitoring_port=node_info['imaMonitoringPort']
+        monitoring_port=node_info['imaMonitoringPort'],
+        time_framing=IMA_TIME_FRAMING
     )
 
 
 def get_ima_version() -> str:
-    return CONTAINERS_INFO['ima']['version']
+    return get_containers_data()['ima']['version']
 
 
 def get_ima_monitoring_port(schain_name):

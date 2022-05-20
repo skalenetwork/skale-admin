@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2022 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,27 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import Enum
+import logging
+
+from core.schains.monitor.base_monitor import BaseMonitor
 
 
-class SchainType(Enum):
-    test = 0
-    test4 = 32
-    large = 128
-    medium = 16
-    small = 1
-    sync_node = 314
+logger = logging.getLogger(__name__)
 
 
-class ContainerType(Enum):
-    base = 0
-    schain = 1
-    ima = 2
-
-
-class MetricType(Enum):
-    cpu_shares = 0
-    mem = 1
-    disk = 2
-    volume_limits = 3
-    leveldb_limits = 4
+class SyncNodeRotationMonitor(BaseMonitor):
+    """
+    SyncNodeRotationMonitor is executed only on the special sync node in case of node rotation.
+    """
+    def run(self):
+        logger.info(f'{self.p} - rotation complete, going to restart skaled with new config')
+        self.config(overwrite=True, sync_node=True)
+        self.reloaded_skaled_container(sync_node=True)

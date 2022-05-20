@@ -48,7 +48,8 @@ class SkaleConfig:
 def generate_skale_section(
     schain: dict, on_chain_etherbase: str, on_chain_owner: str, schain_id: int, node_id: int,
     node: dict, ecdsa_key_name: str, schains_on_node: list, schain_nodes_with_schains: list,
-    rotation_id: int, node_groups: dict, skale_manager_opts: SkaleManagerOpts
+    rotation_id: int, node_groups: dict, skale_manager_opts: SkaleManagerOpts,
+    sync_node: bool = False
 ) -> SkaleConfig:
     static_schain_params = get_static_schain_params()
 
@@ -65,13 +66,15 @@ def generate_skale_section(
         schain=schain,
         schains_on_node=schains_on_node,
         rotation_id=rotation_id,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        sync_node=sync_node
     )
 
     schain_nodes = generate_schain_nodes(
         schain_nodes_with_schains=schain_nodes_with_schains,
         schain_name=schain['name'],
-        rotation_id=rotation_id
+        rotation_id=rotation_id,
+        sync_node=sync_node
     )
 
     schain_info = generate_schain_info(
@@ -80,7 +83,8 @@ def generate_skale_section(
         on_chain_etherbase=on_chain_etherbase,
         static_schain_params=static_schain_params,
         nodes=schain_nodes,
-        node_groups=node_groups
+        node_groups=node_groups,
+        sync_node=sync_node
     )
 
     return SkaleConfig(

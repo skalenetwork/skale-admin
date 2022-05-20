@@ -24,3 +24,5 @@ from .backup_monitor import BackupMonitor  # noqa
 from .rotation_monitor import RotationMonitor  # noqa
 from .post_rotation_monitor import PostRotationMonitor  # noqa
 from .reload_monitor import ReloadMonitor  # noqa
+from .sync_node_monitor import SyncNodeMonitor  # noqa
+from .sync_node_rotation_monitor import SyncNodeRotationMonitor  # noqa

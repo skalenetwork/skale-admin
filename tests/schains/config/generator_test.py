@@ -128,12 +128,15 @@ def check_node_bls_keys(info, index):
 
 
 def check_node_info(node_id, info):
-    keys = ['nodeID', 'nodeName', 'basePort', 'httpRpcPort', 'httpsRpcPort',
-            'wsRpcPort', 'wssRpcPort', 'bindIP', 'logLevel', 'logLevelConfig',
-            'imaMessageProxySChain', 'imaMessageProxyMainNet',
-            'rotateAfterBlock', 'ecdsaKeyName', 'wallets', 'minCacheSize',
-            'maxCacheSize', 'collectionQueueSize', 'collectionDuration',
-            'transactionQueueSize', 'maxOpenLeveldbFiles']
+    keys = [
+        'nodeID', 'nodeName', 'basePort', 'httpRpcPort', 'httpsRpcPort', 'wsRpcPort',
+        'wssRpcPort', 'infoHttpRpcPort', 'bindIP', 'logLevel', 'logLevelConfig',
+        'imaMessageProxySChain', 'imaMessageProxyMainNet', 'ecdsaKeyName', 'wallets',
+        'minCacheSize', 'maxCacheSize', 'collectionQueueSize', 'collectionDuration',
+        'transactionQueueSize', 'maxOpenLeveldbFiles', 'info-acceptors', 'imaMonitoringPort',
+        'skale-manager', 'syncNode'
+    ]
+
     check_keys(info, keys)
     assert info['nodeID'] == node_id
     check_node_ports(info)
@@ -171,7 +174,7 @@ def check_schain_info(node_ids, schain_info):
 def check_config(node_id, all_node_ids, config):
     check_keys(
         config,
-        ['sealEngine', 'params', 'genesis', 'accounts', 'skaleConfig']
+        ['sealEngine', 'params', 'unddos', 'genesis', 'accounts', 'skaleConfig']
     )
     check_node_info(node_id, config['skaleConfig']['nodeInfo'])
     check_schain_info(all_node_ids, config['skaleConfig']['sChain'])
@@ -310,3 +313,33 @@ def test_get_schain_originator():
 
     originator = get_schain_originator(SCHAIN_WITH_ORIGINATOR)
     assert originator == TEST_ORIGINATOR_ADDRESS
+
+
+def test_generate_sync_node_config(
+    schain_secret_key_file_default_chain,
+    skale_manager_opts
+):
+    node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
+    ecdsa_key_name = 'test'
+    schains_on_node = [{'name': 'test_schain'}]
+    node_groups = {}
+
+    schain_config = generate_schain_config(
+        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain_id=schain_id,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        schains_on_node=schains_on_node,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts,
+        sync_node=True
+    )
+    config = schain_config.to_dict()
+
+    assert config['skaleConfig']['nodeInfo']['syncNode']
+    assert config['skaleConfig']['sChain']['dbStorageLimit'] == -1

@@ -8,7 +8,6 @@ export_test_env () {
     export SGX_CERTIFICATES_FOLDER=$PWD/tests/skale-data/node_data/sgx_certs
     export SGX_SERVER_URL=https://localhost:1026
     export ENDPOINT=http://localhost:8545
-    export IMA_ENDPOINT=http://localhost:1000
     export DB_USER=user
     export DB_PASSWORD=pass
     export DB_PORT=3307

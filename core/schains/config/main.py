@@ -43,13 +43,15 @@ def init_schain_config(
     generation: int,
     ecdsa_sgx_key_name: str,
     rotation_data: dict,
-    schain_record: SChainRecord
+    schain_record: SChainRecord,
+    sync_node: bool
 ):
     config_filepath = schain_config_filepath(schain_name)
 
     logger.warning(arguments_list_string({
         'sChain name': schain_name,
-        'config_filepath': config_filepath
+        'config_filepath': config_filepath,
+        'sync_node': sync_node
         }, 'Generating sChain config'))
 
     schain_config = generate_schain_config_with_skale(
@@ -58,7 +60,8 @@ def init_schain_config(
         generation=generation,
         node_id=node_id,
         rotation_data=rotation_data,
-        ecdsa_key_name=ecdsa_sgx_key_name
+        ecdsa_key_name=ecdsa_sgx_key_name,
+        sync_node=sync_node
     )
     save_schain_config(schain_config.to_dict(), schain_name)
     update_schain_config_version(schain_name, schain_record=schain_record)
