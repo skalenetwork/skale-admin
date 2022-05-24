@@ -150,7 +150,8 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
         schain_name,
         public_key,
         start_ts,
-        enable_ssl=enable_ssl
+        enable_ssl=enable_ssl,
+        sync_node=sync_node
     )
     run_container(SCHAIN_CONTAINER, schain_name, env, cmd,
                   volume_config, cpu_limit,

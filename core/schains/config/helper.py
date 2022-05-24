@@ -162,11 +162,14 @@ def get_schain_env(ulimit_check=True):
     return env
 
 
-def get_schain_container_cmd(schain_name: str,
-                             public_key: str = None,
-                             start_ts: int = None,
-                             enable_ssl: bool = True) -> str:
-    opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
+def get_schain_container_cmd(
+    schain_name: str,
+    public_key: str = None,
+    start_ts: int = None,
+    enable_ssl: bool = True,
+    sync_node: bool = False
+) -> str:
+    opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl, sync_node=sync_node)
     if public_key:
         sync_opts = get_schain_container_sync_opts(public_key, start_ts)
         opts.extend(sync_opts)
@@ -186,8 +189,11 @@ def get_schain_container_sync_opts(
     return sync_opts
 
 
-def get_schain_container_base_opts(schain_name: str,
-                                   enable_ssl: bool = True) -> list:
+def get_schain_container_base_opts(
+    schain_name: str,
+    enable_ssl: bool = True,
+    sync_node: bool = False
+) -> list:
     config_filepath = schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
@@ -202,10 +208,14 @@ def get_schain_container_base_opts(schain_name: str,
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
         f'--wss-port {ports["wss"]}',
-        f'--sgx-url {SGX_SERVER_URL}',
-        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data',
         f'--main-net-url {ENDPOINT}'
     ]
+
+    if not sync_node:
+        cmd.extend([
+            f'--sgx-url {SGX_SERVER_URL}',
+            f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data'
+        ])
 
     if static_schain_cmd:
         cmd.extend(static_schain_cmd)
