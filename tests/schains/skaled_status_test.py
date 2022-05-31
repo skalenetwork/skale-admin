@@ -47,6 +47,3 @@ def test_log(skaled_status, _schain_name, caplog):
     status_filepath = skaled_status_filepath(_schain_name)
     skaled_status = SkaledStatus(filepath=status_filepath)
     skaled_status.log()
-
-    assert 'skaled status file:' in caplog.text
-    assert '"exitState": {' in caplog.text
