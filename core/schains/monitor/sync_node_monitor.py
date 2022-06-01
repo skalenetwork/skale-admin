@@ -36,4 +36,5 @@ class SyncNodeMonitor(BaseMonitor):
         self.config_dir()
         self.config(sync_node=True)
         self.volume(sync_node=True)
+        self.firewall_rules()
         self.skaled_container(sync_node=True)
