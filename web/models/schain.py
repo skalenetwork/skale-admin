@@ -19,10 +19,10 @@
 
 import logging
 from datetime import datetime
-from peewee import (CharField, DateTimeField,
-                    IntegrityError, IntegerField, BooleanField)
+from peewee import CharField, DateTimeField, IntegrityError, IntegerField, BooleanField
 
 from core.schains.dkg.status import DKGStatus
+from core.schains.ssl import get_ssl_files_change_date
 from web.models.base import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -46,6 +46,8 @@ class SChainRecord(BaseModel):
     config_version = CharField(default=DEFAULT_CONFIG_VERSION)
     restart_count = IntegerField(default=0)
     failed_rpc_count = IntegerField(default=0)
+
+    ssl_change_date = DateTimeField(default=datetime.min)
 
     @classmethod
     def add(cls, name):
@@ -90,7 +92,8 @@ class SChainRecord(BaseModel):
             'needs_reload': record.needs_reload,
             'monitor_last_seen': record.monitor_last_seen.timestamp(),
             'monitor_id': record.monitor_id,
-            'config_version': record.config_version
+            'config_version': record.config_version,
+            'ssl_change_date': record.ssl_change_date.timestamp()
         }
 
     def dkg_started(self):
@@ -163,6 +166,23 @@ class SChainRecord(BaseModel):
         logger.info(f'Resetting failed counters for {self.name}')
         self.set_restart_count(0)
         self.set_failed_rpc_count(0)
+
+    def set_ssl_change_date(self, value: datetime) -> None:
+        logger.info(f'Changing ssl_change_date for {self.name} to {value}')
+        self.ssl_change_date = value
+        self.save()
+
+    def ssl_reloaded(self) -> None:
+        ssl_files_change_date = get_ssl_files_change_date()
+        self.set_ssl_change_date(ssl_files_change_date)
+
+    def ssl_reload_needed(self) -> bool:
+        ssl_files_change_date = get_ssl_files_change_date()
+        if not ssl_files_change_date:
+            return False
+        logger.info(f'ssl_files_change_date: {ssl_files_change_date}, \
+ssl_change_date for chain {self.name}: {self.ssl_change_date}')
+        return ssl_files_change_date != self.ssl_change_date
 
     def is_dkg_done(self) -> bool:
         return self.dkg_status == DKGStatus.DONE.value

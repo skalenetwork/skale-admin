@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2022 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,25 +17,26 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-from datetime import datetime
-from tools.configs import SSL_CERTIFICATES_FILEPATH, SSL_CERT_PATH
+import logging
+
+from core.schains.monitor import BaseMonitor
+
+logger = logging.getLogger(__name__)
 
 
-def is_ssl_folder_empty(ssl_path=SSL_CERTIFICATES_FILEPATH):
-    return len(os.listdir(ssl_path)) == 0
-
-
-def get_ssl_filepath():
-    if is_ssl_folder_empty():
-        return 'NULL', 'NULL'
-    else:
-        return os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key'), \
-            os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-
-
-def get_ssl_files_change_date() -> datetime:
-    if is_ssl_folder_empty():
-        return
-    ssl_changed_ts = os.path.getmtime(SSL_CERT_PATH)
-    return datetime.fromtimestamp(ssl_changed_ts)
+class SyncNodeReloadMonitor(BaseMonitor):
+    """
+    SyncNodeReloadMonitor is executed when new SSL certificates were uploaded or when reload
+    is requested. Triggered on sync-node only.
+    """
+    def run(self):
+        logger.info(
+            '%s. Reload requested. Going to restart sChain container',
+            self.p
+        )
+        self.reloaded_skaled_container(sync_node=True)
+        record = self.schain_record
+        record.set_restart_count(0)
+        record.set_failed_rpc_count(0)
+        record.set_needs_reload(False)
+        record.ssl_reloaded()

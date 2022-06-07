@@ -25,7 +25,8 @@ from skale import Skale, SkaleIma
 from core.schains.monitor import (
     BaseMonitor,
     SyncNodeMonitor,
-    SyncNodeRotationMonitor
+    SyncNodeReloadMonitor,
+    SyncNodeRotationMonitor,
 )
 from core.schains.firewall import get_default_rule_controller
 
@@ -62,6 +63,10 @@ def _is_sync_node_rotation_timeframe(finish_ts: int) -> bool:
     return current_time >= finish_ts and current_time < finish_ts + SYNC_NODE_ROTATION_TS_DIFF
 
 
+def _is_sync_reload_mode(schain_record: SChainRecord) -> bool:
+    return schain_record.needs_reload or schain_record.ssl_reload_needed()
+
+
 def get_monitor_type(
         schain_record: SChainRecord,
         checks: SChainChecks,
@@ -71,6 +76,8 @@ def get_monitor_type(
     # TODO: RepairMonitor for Sync node should be discussed later
     # if _is_repair_mode(schain_record, checks, skaled_status):
     #     return RepairMonitor
+    if _is_sync_reload_mode(checks):
+        return SyncNodeReloadMonitor
     if _is_sync_rotation_mode(checks, finish_ts):
         return SyncNodeRotationMonitor
     return SyncNodeMonitor
