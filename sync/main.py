@@ -139,6 +139,7 @@ def monitor_sync_node(
         node_config=node_config,
         rotation_data=rotation_data,
         checks=checks,
-        rule_controller=rc
+        rule_controller=rc,
+        sync_node=True
     )
     monitor.run()
