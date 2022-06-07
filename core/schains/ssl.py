@@ -18,8 +18,14 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import logging
 from datetime import datetime
+
+from web.models.schain import SChainRecord
 from tools.configs import SSL_CERTIFICATES_FILEPATH, SSL_CERT_PATH
+
+
+logger = logging.getLogger(__name__)
 
 
 def is_ssl_folder_empty(ssl_path=SSL_CERTIFICATES_FILEPATH):
@@ -38,4 +44,18 @@ def get_ssl_files_change_date() -> datetime:
     if is_ssl_folder_empty():
         return
     ssl_changed_ts = os.path.getmtime(SSL_CERT_PATH)
-    return datetime.fromtimestamp(ssl_changed_ts)
+    return datetime.utcfromtimestamp(ssl_changed_ts)
+
+
+def update_ssl_change_date(schain_record: SChainRecord) -> None:
+    ssl_files_change_date = get_ssl_files_change_date()
+    schain_record.set_ssl_change_date(ssl_files_change_date)
+
+
+def ssl_reload_needed(schain_record: SChainRecord) -> bool:
+    ssl_files_change_date = get_ssl_files_change_date()
+    if not ssl_files_change_date:
+        return False
+    logger.info(f'ssl_files_change_date: {ssl_files_change_date}, \
+ssl_change_date for chain {schain_record.name}: {schain_record.ssl_change_date}')
+    return ssl_files_change_date != schain_record.ssl_change_date

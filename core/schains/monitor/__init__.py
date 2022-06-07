@@ -27,4 +27,3 @@ from .reload_monitor import ReloadMonitor  # noqa
 
 from .sync_node_monitor import SyncNodeMonitor  # noqa
 from .sync_node_rotation_monitor import SyncNodeRotationMonitor  # noqa
-from .sync_node_reload_monitor import SyncNodeReloadMonitor # noqa

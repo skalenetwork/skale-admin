@@ -12,6 +12,7 @@ from core.schains.monitor.main import (
 )
 from core.schains.runner import get_container_info
 from core.schains.firewall.utils import get_sync_agent_ranges
+from core.schains.ssl import update_ssl_change_date
 
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.helper import is_node_part_of_chain
@@ -118,17 +119,17 @@ def test_is_regular_mode(schain_db, checks, skaled_status):
     assert get_monitor_type(schain_record, checks, False, skaled_status) == RegularMonitor
 
 
-def test_not_is_reload_mode(schain_db, checks, bad_checks, skaled_status):
+def test_not_is_reload_mode(schain_db, checks, bad_checks, skaled_status, ssl_folder):
     schain_record = upsert_schain_record(schain_db)
     assert get_monitor_type(schain_record, checks, False, skaled_status) != ReloadMonitor
     assert get_monitor_type(schain_record, bad_checks, False, skaled_status) != ReloadMonitor
 
 
-def test_is_reload_mode(schain_db, checks, bad_checks, skaled_status_reload):
+def test_is_reload_mode(schain_db, checks, bad_checks, skaled_status, cert_key_pair):
     schain_record = upsert_schain_record(schain_db)
-    assert get_monitor_type(schain_record, checks, False, skaled_status_reload) != ReloadMonitor
-    schain_record.set_needs_reload(True)
-    assert get_monitor_type(schain_record, bad_checks, False, skaled_status_reload) == ReloadMonitor
+    assert get_monitor_type(schain_record, checks, False, skaled_status) == ReloadMonitor
+    update_ssl_change_date(schain_record)
+    assert get_monitor_type(schain_record, bad_checks, False, skaled_status) != ReloadMonitor
 
 
 def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db):

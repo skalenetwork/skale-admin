@@ -39,6 +39,7 @@ from core.schains.monitor import (
 )
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.skaled_status import init_skaled_status, SkaledStatus
+from core.schains.ssl import ssl_reload_needed
 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
@@ -80,7 +81,7 @@ def _is_post_rotation_mode(checks: SChainChecks, skaled_status: SkaledStatus) ->
 
 
 def _is_reload_mode(schain_record: SChainRecord) -> bool:
-    return schain_record.needs_reload
+    return ssl_reload_needed(schain_record)
 
 
 def _is_skaled_repair_status(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:

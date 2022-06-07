@@ -22,7 +22,6 @@ from datetime import datetime
 from peewee import CharField, DateTimeField, IntegrityError, IntegerField, BooleanField
 
 from core.schains.dkg.status import DKGStatus
-from core.schains.ssl import get_ssl_files_change_date
 from web.models.base import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -171,18 +170,6 @@ class SChainRecord(BaseModel):
         logger.info(f'Changing ssl_change_date for {self.name} to {value}')
         self.ssl_change_date = value
         self.save()
-
-    def ssl_reloaded(self) -> None:
-        ssl_files_change_date = get_ssl_files_change_date()
-        self.set_ssl_change_date(ssl_files_change_date)
-
-    def ssl_reload_needed(self) -> bool:
-        ssl_files_change_date = get_ssl_files_change_date()
-        if not ssl_files_change_date:
-            return False
-        logger.info(f'ssl_files_change_date: {ssl_files_change_date}, \
-ssl_change_date for chain {self.name}: {self.ssl_change_date}')
-        return ssl_files_change_date != self.ssl_change_date
 
     def is_dkg_done(self) -> bool:
         return self.dkg_status == DKGStatus.DONE.value

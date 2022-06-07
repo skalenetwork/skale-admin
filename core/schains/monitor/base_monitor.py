@@ -91,6 +91,7 @@ class BaseMonitor(ABC):
         self.node_config = node_config
         self.checks = checks
         self.executed_blocks = {}
+        self.sync_node = sync_node
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
@@ -157,7 +158,7 @@ class BaseMonitor(ABC):
             }, f'Starting monitor runner - {self.name}'))
 
             self._upd_last_seen()
-            if not self.schain_record.first_run:
+            if not self.schain_record.first_run and not self.sync_node:
                 self._run_all_checks()
             self._upd_schain_record()
             res = f(self)
@@ -204,7 +205,7 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def config(self, overwrite=False, sync_node=False) -> bool:
+    def config(self, overwrite=False) -> bool:
         initial_status = self.checks.config.status
         if not initial_status or overwrite:
             init_schain_config(
@@ -215,17 +216,17 @@ class BaseMonitor(ABC):
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,
                 schain_record=self.schain_record,
-                sync_node=sync_node
+                sync_node=self.sync_node
             )
         else:
             logger.info(f'{self.p} config - ok')
         return initial_status
 
     @monitor_block
-    def volume(self, sync_node=False) -> bool:
+    def volume(self) -> bool:
         initial_status = self.checks.volume.status
         if not initial_status:
-            init_data_volume(self.schain, sync_node=sync_node, dutils=self.dutils)
+            init_data_volume(self.schain, sync_node=self.sync_node, dutils=self.dutils)
         else:
             logger.info(f'{self.p} volume - ok')
         return initial_status
@@ -251,8 +252,7 @@ class BaseMonitor(ABC):
     def skaled_container(
         self,
         download_snapshot: bool = False,
-        delay_start: bool = False,
-        sync_node: bool = False
+        delay_start: bool = False
     ) -> bool:
         initial_status = self.checks.skaled_container.status
         if not initial_status:
@@ -270,7 +270,7 @@ class BaseMonitor(ABC):
                 public_key=public_key,
                 start_ts=start_ts,
                 dutils=self.dutils,
-                sync_node=sync_node
+                sync_node=self.sync_node
             )
             time.sleep(CONTAINER_POST_RUN_DELAY)
         else:
@@ -289,14 +289,14 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def reloaded_skaled_container(self, sync_node: bool = False) -> bool:
+    def reloaded_skaled_container(self) -> bool:
         logger.info('Starting skaled with reloaded configuration')
         initial_status = True
         if is_container_exists(self.name, dutils=self.dutils):
             remove_schain_container(self.name, dutils=self.dutils)
         else:
             logger.warning(f'sChain {self.name}: container doesn\'t exists')
-        initial_status = self.skaled_container(sync_node=sync_node)
+        initial_status = self.skaled_container(sync_node=self.sync_node)
         return initial_status
 
     @monitor_block
