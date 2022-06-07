@@ -47,7 +47,7 @@ class SChainRecord(BaseModel):
     restart_count = IntegerField(default=0)
     failed_rpc_count = IntegerField(default=0)
 
-    ssl_change_date = DateTimeField(default=datetime.min)
+    ssl_change_date = DateTimeField(default=datetime.now())
 
     @classmethod
     def add(cls, name):

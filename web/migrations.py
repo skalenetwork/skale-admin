@@ -119,7 +119,7 @@ def add_failed_rpc_count_field(db, migrator):
 def add_ssl_change_date_field(db, migrator):
     add_column(
         db, migrator, 'SChainRecord', 'ssl_change_date',
-        DateTimeField(default=datetime.min)
+        DateTimeField(default=datetime.now())
     )
 
 
