@@ -47,9 +47,14 @@ def get_ssl_files_change_date() -> datetime:
     return datetime.utcfromtimestamp(ssl_changed_ts)
 
 
-def update_ssl_change_date(schain_record: SChainRecord) -> None:
+def update_ssl_change_date(schain_record: SChainRecord) -> bool:
     ssl_files_change_date = get_ssl_files_change_date()
+    if not ssl_files_change_date:
+        logger.warning(
+            f'Tried to update SSL change date for {schain_record.name}, but no SSL files found')
+        return False
     schain_record.set_ssl_change_date(ssl_files_change_date)
+    return True
 
 
 def ssl_reload_needed(schain_record: SChainRecord) -> bool:

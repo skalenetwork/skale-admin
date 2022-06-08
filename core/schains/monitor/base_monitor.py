@@ -296,7 +296,7 @@ class BaseMonitor(ABC):
             remove_schain_container(self.name, dutils=self.dutils)
         else:
             logger.warning(f'sChain {self.name}: container doesn\'t exists')
-        initial_status = self.skaled_container(sync_node=self.sync_node)
+        initial_status = self.skaled_container()
         return initial_status
 
     @monitor_block

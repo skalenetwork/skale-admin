@@ -39,4 +39,4 @@ class ReloadMonitor(BaseMonitor):
         record = self.schain_record
         record.set_restart_count(0)
         record.set_failed_rpc_count(0)
-        update_ssl_change_date()
+        update_ssl_change_date(record)
