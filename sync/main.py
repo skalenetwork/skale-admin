@@ -77,7 +77,7 @@ def get_monitor_type(
     # TODO: RepairMonitor for Sync node should be discussed later
     # if _is_repair_mode(schain_record, checks, skaled_status):
     #     return RepairMonitor
-    if _is_sync_reload_mode(checks):
+    if _is_sync_reload_mode(schain_record):
         return ReloadMonitor
     if _is_sync_rotation_mode(checks, finish_ts):
         return SyncNodeRotationMonitor
