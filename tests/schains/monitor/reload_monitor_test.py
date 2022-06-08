@@ -9,6 +9,7 @@ from skale.wallets import SgxWallet
 from skale.utils.helper import ip_from_bytes
 
 from core.schains.checks import SChainChecks
+from core.schains.ssl import ssl_reload_needed
 from core.schains.ima import ImaData
 from core.schains.monitor import RegularMonitor, ReloadMonitor
 from core.schains.runner import get_container_info
@@ -39,7 +40,8 @@ def test_reload_monitor(
     skale_ima,
     dutils,
     ssl_folder,
-    schain_on_contracts
+    schain_on_contracts,
+    cert_key_pair
 ):
     schain_name = schain_on_contracts
     schain = skale.schains.get_by_name(schain_name)
@@ -106,7 +108,7 @@ def test_reload_monitor(
             reload_monitor.run()
 
         schain_record = SChainRecord.get_by_name(schain_name)
-        assert schain_record.needs_reload is False
+        assert ssl_reload_needed(schain_record) is False
         info = dutils.get_info(container_name)
         assert info['status'] == 'not_found'
 
@@ -130,7 +132,7 @@ def test_reload_monitor(
         assert state['Status'] == 'running'
         assert state['StartedAt'] > initial_started_at
 
-        assert schain_record.needs_reload is False
+        assert ssl_reload_needed(schain_record) is False
         assert schain_checks.config_dir.status
         assert schain_checks.dkg.status
         assert schain_checks.config.status

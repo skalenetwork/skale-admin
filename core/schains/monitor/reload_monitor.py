@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2021 SKALE Labs
+#   Copyright (C) 2022 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -20,13 +20,14 @@
 import logging
 
 from core.schains.monitor import BaseMonitor
+from core.schains.ssl import update_ssl_change_date
 
 logger = logging.getLogger(__name__)
 
 
 class ReloadMonitor(BaseMonitor):
     """
-    ReloadMonitor is executed when new SSL certificates were uploaded or when reload is requested
+    ReloadMonitor is executed when new SSL certificates were uploaded or when reload is requested.
     """
     @BaseMonitor.monitor_runner
     def run(self):
@@ -38,4 +39,4 @@ class ReloadMonitor(BaseMonitor):
         record = self.schain_record
         record.set_restart_count(0)
         record.set_failed_rpc_count(0)
-        record.set_needs_reload(False)
+        update_ssl_change_date(record)

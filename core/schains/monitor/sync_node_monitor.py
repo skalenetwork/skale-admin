@@ -27,13 +27,14 @@ logger = logging.getLogger(__name__)
 
 class SyncNodeMonitor(BaseMonitor):
     """
-    SyncNodeMonitor is executed only on the special sync node
+    SyncNodeMonitor is executed only on the sync node.
     """
     def run(self):
         logger.info(arguments_list_string({
            'sChain name': self.name
         }, 'Monitoring sync node'))
         self.config_dir()
-        self.config(sync_node=True)
-        self.volume(sync_node=True)
-        self.skaled_container(sync_node=True)
+        self.config()
+        self.volume()
+        self.firewall_rules()
+        self.skaled_container()

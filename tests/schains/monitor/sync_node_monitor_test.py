@@ -72,7 +72,8 @@ def test_sync_node_monitor(
         rotation_data={'rotation_id': 0, 'leaving_node': 1},
         checks=schain_checks,
         rule_controller=rc,
-        dutils=dutils
+        dutils=dutils,
+        sync_node=True
     )
 
     sync_node_monitor.run()

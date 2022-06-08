@@ -31,5 +31,5 @@ class SyncNodeRotationMonitor(BaseMonitor):
     """
     def run(self):
         logger.info(f'{self.p} - rotation complete, going to restart skaled with new config')
-        self.config(overwrite=True, sync_node=True)
-        self.reloaded_skaled_container(sync_node=True)
+        self.config(overwrite=True)
+        self.reloaded_skaled_container()
