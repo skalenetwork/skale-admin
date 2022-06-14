@@ -13,7 +13,7 @@ from flask import Flask, appcontext_pushed, g
 
 from tests.utils import generate_cert, get_bp_data
 from tools.configs import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
-from web.routes.ssl import construct_ssl_bp
+from web.routes.ssl import ssl_bp
 from web.helper import get_api_url
 
 
@@ -23,7 +23,7 @@ BLUEPRINT_NAME = 'ssl'
 @pytest.fixture
 def skale_bp(skale, dutils):
     app = Flask(__name__)
-    app.register_blueprint(construct_ssl_bp())
+    app.register_blueprint(ssl_bp)
 
     def handler(sender, **kwargs):
         g.docker_utils = dutils
