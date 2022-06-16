@@ -67,7 +67,8 @@ class NodeExitStatus(Enum):
     ACTIVE = 0
     IN_PROGRESS = 1
     WAIT_FOR_ROTATIONS = 2
-    COMPLETED = 3
+    IN_MAINTENANCE = 3
+    COMPLETED = 4
 
 
 class SchainExitStatus(Enum):
@@ -212,13 +213,17 @@ class Node:
                 {'name': schain_name, 'status': status.name}
             )
         node_status = NodeExitStatus(
-            self.skale.nodes.get_node_status(self.config.id))
+            self.skale.nodes.get_node_status(self.config.id)
+        )
         exit_time = self.skale.nodes.get_node_finish_time(self.config.id)
         if node_status == NodeExitStatus.WAIT_FOR_ROTATIONS and \
                 current_time >= exit_time:
             node_status = NodeExitStatus.COMPLETED
-        return {'status': node_status.name, 'data': schain_statuses,
-                'exit_time': exit_time}
+        return {
+            'status': node_status.name,
+            'data': schain_statuses,
+            'exit_time': exit_time
+        }
 
     def set_maintenance_on(self):
         if NodeStatus(self.info['status']) != NodeStatus.ACTIVE:
