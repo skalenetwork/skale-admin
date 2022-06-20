@@ -44,6 +44,8 @@ def refreshed(func: Callable) -> Callable:
 
 
 def is_like_number(value):
+    if value is None:
+        return False
     try:
         int(value)
     except ValueError:
