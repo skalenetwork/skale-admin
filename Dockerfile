@@ -1,7 +1,15 @@
-FROM python:3.8-buster
+FROM python:3.9-bullseye
 
-RUN apt-get update && apt-get install -y wget git libxslt-dev iptables kmod swig3.0
-RUN ln -s /usr/bin/swig3.0 /usr/bin/swig
+RUN apt-get update && apt-get install -y
+    wget \
+    git \
+    libxslt-dev \
+    iptables \
+    nftables \
+    python3-nftables \
+    kmod \
+    swig4.0
+RUN ln -s /usr/bin/swig4.0 /usr/bin/swig
 
 RUN mkdir /usr/src/admin
 WORKDIR /usr/src/admin
@@ -19,5 +27,5 @@ COPY . .
 RUN update-alternatives --set iptables /usr/sbin/iptables-legacy && \
     update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy 
 
-ENV PYTHONPATH="/usr/src/admin"
+ENV PYTHONPATH="/usr/lib/python3/dist-packages:/usr/src/admin"
 ENV COLUMNS=80
