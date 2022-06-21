@@ -31,6 +31,7 @@ from core.schains.process_manager_helper import (
 
 from web.models.schain import upsert_schain_record, SChainRecord
 from tools.str_formatters import arguments_list_string
+from tools.configs.deny_list import SCHAIN_DENY_LIST
 
 
 logger = logging.getLogger(__name__)
@@ -84,6 +85,10 @@ def run_process_manager(skale, skale_ima, node_config):
     logger.info('Creator procedure finished')
 
 
+def should_be_monitored(schain: dict) -> bool:
+    return schain['active'] and schain['name'] not in SCHAIN_DENY_LIST
+
+
 def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
     """
     Returns list of sChain dicts that admin should monitor (currently assigned + rotating).
@@ -92,13 +97,13 @@ def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
     schains = skale.schains.get_schains_for_node(node_id)
     leaving_schains = get_leaving_schains_for_node(skale, node_id)
     schains.extend(leaving_schains)
-    active_schains = list(filter(lambda schain: schain['active'], schains))
-    schains_holes = len(schains) - len(active_schains)
+    schains_to_monitor = list(filter(lambda s: should_be_monitored(s), schains))
+    schains_holes = len(schains) - len(schains_to_monitor)
     logger.info(
-        arguments_list_string({'Node ID': node_id, 'sChains on node': active_schains,
-                               'Number of sChains on node': len(active_schains),
+        arguments_list_string({'Node ID': node_id, 'sChains on node': schains_to_monitor,
+                               'Number of sChains on node': len(schains_to_monitor),
                                'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
-    return active_schains
+    return schains_to_monitor
 
 
 def get_leaving_schains_for_node(skale: Skale, node_id: int) -> list:

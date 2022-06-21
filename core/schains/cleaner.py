@@ -44,6 +44,7 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
     SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
 )
+from tools.configs.deny_list import SCHAIN_DENY_LIST
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 from tools.helper import merged_unique, read_json, is_node_part_of_chain
@@ -115,7 +116,7 @@ def monitor(skale, node_config, dutils=None):
 sChains on node: {schains_on_node}')
 
     for schain_name in schains_on_node:
-        if schain_name not in schain_names_on_contracts:
+        if schain_name not in schain_names_on_contracts or schain_name in SCHAIN_DENY_LIST:
             logger.warning(f'sChain {schain_name} was found on node, but not on contracts: \
 {schain_names_on_contracts}, going to remove it!')
             try:
