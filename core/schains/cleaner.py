@@ -185,10 +185,17 @@ def ensure_schain_removed(
     dutils = dutils or DockerUtils()
     is_schain_exist = skale.schains_internal.is_schain_exist(schain_name)
 
-    if not is_schain_exist or schain_name in exclude:
+    if not is_schain_exist:
         msg = arguments_list_string(
             {'sChain name': schain_name},
             'Going to remove this sChain because it was removed from contracts'
+        )
+        return remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
+
+    if schain_name in exclude:
+        msg = arguments_list_string(
+            {'sChain name': schain_name},
+            'Going to remove this sChain because it is in exclude list'
         )
         return remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
 
