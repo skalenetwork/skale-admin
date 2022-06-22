@@ -44,7 +44,7 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
     SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
 )
-from tools.configs.deny_list import SCHAIN_DENY_LIST
+from tools.configs.schains import SCHAINS_TO_EXCLUDE
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 from tools.helper import merged_unique, read_json, is_node_part_of_chain
@@ -104,6 +104,16 @@ def remove_config_dir(schain_name: str) -> None:
     shutil.rmtree(schain_dir_path)
 
 
+def schains_to_remove(
+    schains_on_node: list,
+    schain_names_on_contracts: list,
+    exclude: list = SCHAINS_TO_EXCLUDE
+):
+    for schain_name in sorted(schains_on_node):
+        if schain_name not in schain_names_on_contracts or schain_name in SCHAINS_TO_EXCLUDE:
+            yield schain_name
+
+
 def monitor(skale, node_config, dutils=None):
     dutils = dutils or DockerUtils()
     logger.info('Cleaner procedure started.')
@@ -115,19 +125,18 @@ def monitor(skale, node_config, dutils=None):
     logger.info(f'\nsChains on contracts: {schain_names_on_contracts}\n\
 sChains on node: {schains_on_node}')
 
-    for schain_name in schains_on_node:
-        if schain_name not in schain_names_on_contracts or schain_name in SCHAIN_DENY_LIST:
-            logger.warning(f'sChain {schain_name} was found on node, but not on contracts: \
+    for schain_name in schains_to_remove(schains_on_node, schain_names_on_contracts):
+        logger.warning(f'sChain {schain_name} was found on node, but not on contracts: \
 {schain_names_on_contracts}, going to remove it!')
-            try:
-                ensure_schain_removed(
-                    skale,
-                    schain_name,
-                    node_config.id,
-                    dutils=dutils
-                )
-            except Exception:
-                logger.exception(f'sChain removal {schain_name} failed')
+        try:
+            ensure_schain_removed(
+                skale,
+                schain_name,
+                node_config.id,
+                dutils=dutils
+            )
+        except Exception:
+            logger.exception(f'sChain removal {schain_name} failed')
     logger.info('Cleanup procedure finished')
 
 

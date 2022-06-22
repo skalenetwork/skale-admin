@@ -42,3 +42,15 @@ NODE_OWNER_ALLOC = 1000000000000000000000000000000
 MAX_SCHAIN_FAILED_RPC_COUNT = int(os.getenv('MAX_SCHAIN_FAILED_RPC_COUNT', 1))
 
 SKALED_STATUS_FILENAME = 'skaled.status'
+
+SCHAINS_TO_EXCLUDE = (
+    "squeaking-nash",
+    "tinkling-kaffaljidhma",
+    "chubby-sadr",
+    "noisy-enif",
+    "drab-syrma",
+    "flickering-shocked-deneb-el-okab",
+    "right-doting-spica",
+    "comfortable-grizzled-wezen",
+    "gargantuan-wealthy-zosma"
+)

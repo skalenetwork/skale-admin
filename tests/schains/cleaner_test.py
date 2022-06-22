@@ -16,19 +16,25 @@ from core.schains.cleaner import (
     get_schains_on_node,
     remove_config_dir,
     remove_schain_volume, remove_schain_container,
-    remove_ima_container
+    remove_ima_container,
+    schains_to_remove
 )
 from core.schains.config import init_schain_config_dir
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
-from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.schains import SCHAINS_DIR_PATH, SCHAINS_TO_EXCLUDE
 from web.models.schain import (
-    SChainRecord, mark_schain_deleted, upsert_schain_record)
+    SChainRecord,
+    mark_schain_deleted,
+    upsert_schain_record
+)
 
 
-from tests.utils import (get_schain_contracts_data,
-                         run_simple_schain_container,
-                         run_simple_ima_container)
+from tests.utils import (
+    get_schain_contracts_data,
+    run_simple_schain_container,
+    run_simple_ima_container
+)
 
 SCHAIN_CONTAINER_NAME_TEMPLATE = 'skale_schain_{}'
 IMA_CONTAINER_NAME_TEMPLATE = 'skale_ima_{}'
@@ -57,10 +63,24 @@ def schain_dirs_for_monitor():
     Path(schain_dir_path1).mkdir(parents=True, exist_ok=True)
     Path(schain_dir_path2).mkdir(parents=True, exist_ok=True)
     try:
-        yield
+        yield [schain_dir_path1, schain_dir_path2]
     finally:
         shutil.rmtree(schain_dir_path1, ignore_errors=True)
         shutil.rmtree(schain_dir_path2, ignore_errors=True)
+
+
+@pytest.fixture
+def excluded_schain_dirs_for_monitor():
+    folders = []
+    for schain_name in SCHAINS_TO_EXCLUDE:
+        schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
+        Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+        folders.append(schain_dir_path)
+    try:
+        yield folders
+    finally:
+        for folder in folders:
+            shutil.rmtree(folder, ignore_errors=True)
 
 
 @pytest.fixture
@@ -216,8 +236,13 @@ def test_delete_bls_keys_with_invalid_secret_key(
         assert delete_mock.call_count == 1
 
 
-def test_get_schains_on_node(schain_dirs_for_monitor,
-                             dutils, schain_container, upsert_db, cleanup_schain_dirs_before):
+def test_get_schains_on_node(
+    schain_dirs_for_monitor,
+    dutils,
+    schain_container,
+    upsert_db,
+    cleanup_schain_dirs_before
+):
     schain_name = schain_container
     result = get_schains_on_node(dutils)
 
@@ -225,3 +250,27 @@ def test_get_schains_on_node(schain_dirs_for_monitor,
         TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
         PHANTOM_SCHAIN_NAME, schain_name
     ]).issubset(set(result))
+
+
+def test_schains_to_remove():
+    schains_on_node = ['s0', 's1', 's2']
+    schains_names_on_contracts = ['s1', 's3', 's4']
+    to_remove = list(schains_to_remove(schains_on_node, schains_names_on_contracts))
+    assert to_remove == ['s0', 's2']
+
+    schains_on_node = ['s0', 's1', 's2']
+    schains_names_on_contracts = ['s0', 's1', 's2']
+    to_remove = list(schains_to_remove(schains_on_node, schains_names_on_contracts))
+    assert to_remove == []
+
+
+def test_schains_to_remove_with_excluded():
+    schains_on_node = ['s0', 's1', 's2', *SCHAINS_TO_EXCLUDE]
+    schains_names_on_contracts = ['s1', 's3', 's4', *SCHAINS_TO_EXCLUDE]
+    to_remove = list(schains_to_remove(schains_on_node, schains_names_on_contracts))
+    assert sorted(to_remove) == sorted(['s0', 's2', *SCHAINS_TO_EXCLUDE])
+
+    schains_on_node = ['s0', 's1', 's2', *SCHAINS_TO_EXCLUDE]
+    schains_names_on_contracts = ['s0', 's1', 's2', *SCHAINS_TO_EXCLUDE]
+    to_remove = list(schains_to_remove(schains_on_node, schains_names_on_contracts))
+    assert sorted(to_remove) == sorted(SCHAINS_TO_EXCLUDE)
