@@ -122,12 +122,14 @@ def monitor(skale, node_config, dutils=None):
         skale,
         node_config.id
     )
-    logger.info(f'\nsChains on contracts: {schain_names_on_contracts}\n\
-sChains on node: {schains_on_node}')
+    logger.info(
+        f'\nsChains on contracts: {schain_names_on_contracts}\n'
+        f'sChains on node: {schains_on_node}\n'
+        f'sChains to exclude: {SCHAINS_TO_EXCLUDE}'
+    )
 
     for schain_name in schains_to_remove(schains_on_node, schain_names_on_contracts):
-        logger.warning(f'sChain {schain_name} was found on node, but not on contracts: \
-{schain_names_on_contracts}, going to remove it!')
+        logger.info(f'Going to remove sChain {schain_name}')
         try:
             ensure_schain_removed(
                 skale,
