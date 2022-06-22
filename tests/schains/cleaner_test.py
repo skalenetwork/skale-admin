@@ -141,12 +141,17 @@ def schain_container(schain_config, ssl_folder, dutils):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
     run_simple_schain_container(schain_data, dutils)
-    yield schain_name
-    schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    dutils.safe_rm(get_container_name(SCHAIN_CONTAINER, schain_name),
-                   force=True)
-    dutils.safe_rm(get_container_name(IMA_CONTAINER, schain_name),
-                   force=True)
+    try:
+        yield schain_name
+    finally:
+        dutils.safe_rm(
+            get_container_name(SCHAIN_CONTAINER, schain_name),
+            force=True
+        )
+        dutils.safe_rm(
+            get_container_name(IMA_CONTAINER, schain_name),
+            force=True
+        )
 
 
 def test_remove_schain_container(
