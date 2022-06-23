@@ -43,14 +43,5 @@ MAX_SCHAIN_FAILED_RPC_COUNT = int(os.getenv('MAX_SCHAIN_FAILED_RPC_COUNT', 1))
 
 SKALED_STATUS_FILENAME = 'skaled.status'
 
-SCHAINS_TO_EXCLUDE = (
-    "squeaking-nash",
-    "tinkling-kaffaljidhma",
-    "chubby-sadr",
-    "noisy-enif",
-    "drab-syrma",
-    "flickering-shocked-deneb-el-okab",
-    "right-doting-spica",
-    "comfortable-grizzled-wezen",
-    "gargantuan-wealthy-zosma"
-)
+SCHAINS_TO_EXCLUDE_FILENAME = 'schains_to_exclude.json'
+SCHAINS_TO_EXCLUDE_PATH = os.path.join(CONFIG_FOLDER, SCHAINS_TO_EXCLUDE_FILENAME)

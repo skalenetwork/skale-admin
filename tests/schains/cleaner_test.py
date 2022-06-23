@@ -22,7 +22,7 @@ from core.schains.cleaner import (
 from core.schains.config import init_schain_config_dir
 from core.schains.runner import get_container_name
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
-from tools.configs.schains import SCHAINS_DIR_PATH, SCHAINS_TO_EXCLUDE
+from tools.configs.schains import SCHAINS_DIR_PATH
 from web.models.schain import (
     SChainRecord,
     mark_schain_deleted,
@@ -31,6 +31,7 @@ from web.models.schain import (
 
 
 from tests.utils import (
+    generate_random_name,
     get_schain_contracts_data,
     run_simple_schain_container,
     run_simple_ima_container
@@ -42,6 +43,13 @@ IMA_CONTAINER_NAME_TEMPLATE = 'skale_ima_{}'
 TEST_SCHAIN_NAME_1 = 'schain_cleaner_test1'
 TEST_SCHAIN_NAME_2 = 'schain_cleaner_test2'
 PHANTOM_SCHAIN_NAME = 'phantom_schain'
+
+
+TEST_SCHAINS_TO_EXCLUDE = [
+    'excluded-chain0' + generate_random_name(),
+    'excluded-chain1' + generate_random_name(),
+    'excluded-chain2' + generate_random_name()
+]
 
 
 @dataclass
@@ -72,7 +80,7 @@ def schain_dirs_for_monitor():
 @pytest.fixture
 def excluded_schain_dirs_for_monitor():
     folders = []
-    for schain_name in SCHAINS_TO_EXCLUDE:
+    for schain_name in TEST_SCHAINS_TO_EXCLUDE:
         schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
         Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
         folders.append(schain_dir_path)
@@ -270,12 +278,12 @@ def test_schains_to_remove():
 
 
 def test_schains_to_remove_with_excluded():
-    schains_on_node = ['s0', 's1', 's2', *SCHAINS_TO_EXCLUDE]
-    schains_names_on_contracts = ['s1', 's3', 's4', *SCHAINS_TO_EXCLUDE]
+    schains_on_node = ['s0', 's1', 's2', *TEST_SCHAINS_TO_EXCLUDE]
+    schains_names_on_contracts = ['s1', 's3', 's4', *TEST_SCHAINS_TO_EXCLUDE]
     to_remove = list(schains_to_remove(schains_on_node, schains_names_on_contracts))
-    assert sorted(to_remove) == sorted(['s0', 's2', *SCHAINS_TO_EXCLUDE])
+    assert sorted(to_remove) == sorted(['s0', 's2', *TEST_SCHAINS_TO_EXCLUDE])
 
-    schains_on_node = ['s0', 's1', 's2', *SCHAINS_TO_EXCLUDE]
-    schains_names_on_contracts = ['s0', 's1', 's2', *SCHAINS_TO_EXCLUDE]
+    schains_on_node = ['s0', 's1', 's2', *TEST_SCHAINS_TO_EXCLUDE]
+    schains_names_on_contracts = ['s0', 's1', 's2', *TEST_SCHAINS_TO_EXCLUDE]
     to_remove = list(schains_to_remove(schains_on_node, schains_names_on_contracts))
-    assert sorted(to_remove) == sorted(SCHAINS_TO_EXCLUDE)
+    assert sorted(to_remove) == sorted(TEST_SCHAINS_TO_EXCLUDE)

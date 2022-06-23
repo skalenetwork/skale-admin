@@ -37,6 +37,7 @@ from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, ZERO_ADDRESS
+from tools.configs.schains import SCHAINS_TO_EXCLUDE_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -180,3 +181,11 @@ def is_zero_address(address: str) -> bool:
 def is_address_contract(web3, address) -> bool:
     """Returns true if contract is deployed at the requested address"""
     return web3.eth.get_code(address) != b''
+
+
+def get_schains_to_exclude(
+    schains_to_exclude_filepath: str = SCHAINS_TO_EXCLUDE_PATH
+) -> list:
+    if not os.path.isfile(schains_to_exclude_filepath):
+        return []
+    return json.loads(schains_to_exclude_filepath)['exclude']

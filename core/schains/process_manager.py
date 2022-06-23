@@ -20,6 +20,7 @@
 import sys
 import logging
 from multiprocessing import Process
+from typing import Optional
 
 from skale import Skale
 
@@ -31,7 +32,7 @@ from core.schains.process_manager_helper import (
 
 from web.models.schain import upsert_schain_record, SChainRecord
 from tools.str_formatters import arguments_list_string
-from tools.configs.schains import SCHAINS_TO_EXCLUDE
+from tools.helper import get_schains_to_exclude
 
 
 logger = logging.getLogger(__name__)
@@ -85,19 +86,21 @@ def run_process_manager(skale, skale_ima, node_config):
     logger.info('Creator procedure finished')
 
 
-def should_be_monitored(schain: dict, exclude: list = SCHAINS_TO_EXCLUDE) -> bool:
+def should_be_monitored(schain: dict, exclude: Optional[list] = None) -> bool:
+    exclude = exclude or get_schains_to_exclude()
     return schain['active'] and schain['name'] not in exclude
 
 
 def fetch_schains_to_monitor(
     skale: Skale,
     node_id: int,
-    exclude: list = SCHAINS_TO_EXCLUDE
+    exclude: Optional[list] = None
 ) -> list:
     """
     Returns list of sChain dicts that admin should monitor (currently assigned + rotating).
     """
     logger.info('Fetching schains to monitor...')
+    exclude = exclude or get_schains_to_exclude()
     schains = skale.schains.get_schains_for_node(node_id)
     leaving_schains = get_leaving_schains_for_node(skale, node_id)
     schains.extend(leaving_schains)

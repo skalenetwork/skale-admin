@@ -21,6 +21,7 @@ import logging
 import os
 import shutil
 from multiprocessing import Process
+from typing import Optional
 
 from sgx import SgxClient
 
@@ -42,12 +43,18 @@ from core.schains.firewall.utils import get_sync_agent_ranges
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
-    SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
+    SCHAIN_CONTAINER,
+    IMA_CONTAINER,
+    SCHAIN_STOP_TIMEOUT
 )
-from tools.configs.schains import SCHAINS_TO_EXCLUDE
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
-from tools.helper import merged_unique, read_json, is_node_part_of_chain
+from tools.helper import (
+    get_schains_to_exclude,
+    merged_unique,
+    read_json,
+    is_node_part_of_chain
+)
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
 from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
@@ -107,10 +114,11 @@ def remove_config_dir(schain_name: str) -> None:
 def schains_to_remove(
     schains_on_node: list,
     schain_names_on_contracts: list,
-    exclude: list = SCHAINS_TO_EXCLUDE
+    exclude: Optional[list] = None
 ):
+    exclude = exclude or get_schains_to_exclude()
     for schain_name in sorted(schains_on_node):
-        if schain_name not in schain_names_on_contracts or schain_name in SCHAINS_TO_EXCLUDE:
+        if schain_name not in schain_names_on_contracts or schain_name in exclude:
             yield schain_name
 
 
@@ -122,19 +130,25 @@ def monitor(skale, node_config, dutils=None):
         skale,
         node_config.id
     )
+    schains_to_exclude = get_schains_to_exclude()
     logger.info(
         f'\nsChains on contracts: {schain_names_on_contracts}\n'
         f'sChains on node: {schains_on_node}\n'
-        f'sChains to exclude: {SCHAINS_TO_EXCLUDE}'
+        f'sChains to exclude: {schains_to_exclude}'
     )
 
-    for schain_name in schains_to_remove(schains_on_node, schain_names_on_contracts):
+    for schain_name in schains_to_remove(
+        schains_on_node,
+        schain_names_on_contracts,
+        exclude=schains_to_exclude
+    ):
         logger.info(f'Going to remove sChain {schain_name}')
         try:
             ensure_schain_removed(
                 skale,
                 schain_name,
                 node_config.id,
+                exclude=schains_to_exclude,
                 dutils=dutils
             )
         except Exception:
@@ -179,10 +193,11 @@ def ensure_schain_removed(
     skale,
     schain_name,
     node_id,
-    exclude=SCHAINS_TO_EXCLUDE,
+    exclude: Optional[list] = None,
     dutils=None
 ):
     dutils = dutils or DockerUtils()
+    exclude = exclude or get_schains_to_exclude()
     is_schain_exist = skale.schains_internal.is_schain_exist(schain_name)
 
     if not is_schain_exist:
