@@ -245,14 +245,14 @@ def _validator_nodes():
     return construct_ok_response(data=res['data'])
 
 
-@node_bp.route(get_api_url(BLUEPRINT_NAME, 'sm_abi'), methods=['GET'])
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'sm-abi'), methods=['GET'])
 def sm_abi():
     logger.debug(request)
     abi_hash = get_abi_hash(ABI_FILEPATH)
     return construct_ok_response(data=abi_hash)
 
 
-@node_bp.route(get_api_url(BLUEPRINT_NAME, 'ima_abi'), methods=['GET'])
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'ima-abi'), methods=['GET'])
 def ima_abi():
     logger.debug(request)
     abi_hash = get_abi_hash(MAINNET_IMA_ABI_FILEPATH)
