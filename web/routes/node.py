@@ -186,7 +186,6 @@ def endpoint_info():
     logger.debug(request)
     call_speed = get_endpoint_call_speed(g.web3)
     block_number = g.web3.eth.blockNumber
-    syncing = g.web3.eth.syncing
     trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
     try:
         eth_client_version = g.web3.clientVersion
@@ -196,7 +195,6 @@ def endpoint_info():
     geth_client = 'Geth' in eth_client_version
     info = {
         'block_number': block_number,
-        'syncing': syncing,
         'trusted': trusted and geth_client,
         'client': eth_client_version,
         'call_speed': call_speed
