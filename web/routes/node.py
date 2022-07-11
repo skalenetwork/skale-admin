@@ -193,11 +193,11 @@ def endpoint_info():
         logger.exception('Cannot get client version')
         eth_client_version = 'unknown'
     geth_client = 'Geth' in eth_client_version
+    syncing = False
     try:
         syncing = g.web3.eth.syncing
         if syncing is not False:
             syncing = True
-            logger.info('Syncing target is %d block', syncing.highestBlock)
     except Exception:
         logger.exception('eth_syncing request errored')
         syncing = True
