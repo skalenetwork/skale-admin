@@ -200,7 +200,7 @@ def endpoint_info():
             syncing = True
     except Exception:
         logger.exception('eth_syncing request errored')
-        syncing = True
+        syncing = None
     info = {
         'block_number': block_number,
         'trusted': trusted and geth_client,
