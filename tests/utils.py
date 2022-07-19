@@ -1,23 +1,29 @@
 """ SKALE test utilities """
 
-import os
 import json
+import logging
+import os
 import random
 import string
 import time
 from contextlib import contextmanager
+from dataclasses import dataclass
 
 from mock import Mock, MagicMock
 
 from skale import Skale, SkaleIma
+from skale.contracts.manager.nodes import NodeStatus
+from skale.utils.account_tools import send_ether
+from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.utils.web3_utils import init_web3
-from skale.wallets import Web3Wallet
+from skale.wallets import SgxWallet, Web3Wallet
 
 from core.schains.cleaner import (
     remove_config_dir,
     remove_schain_container,
     remove_schain_volume
 )
+from core.node import Node
 from core.schains.config.main import save_schain_config
 from core.schains.config.helper import get_schain_config
 from core.schains.firewall.types import IHostFirewallController
@@ -26,8 +32,11 @@ from core.schains.runner import run_schain_container, run_ima_container, get_con
 
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
+from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.containers import SCHAIN_CONTAINER
 
+
+logger = logging.getLogger(__name__)
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
@@ -36,6 +45,10 @@ TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
     DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'manager.json')
 TEST_IMA_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
     DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'ima.json')
+TEST_ETH_AMOUNT = 1
+TEST2_TYPE = 1
+TEST_SRW_FUND_VALUE = 3000000000000000000
+DEFAULT_SCHAIN_LIFETIME = 3600  # 1 hour
 
 
 CONTAINERS_JSON = {
@@ -290,4 +303,150 @@ def run_custom_schain_container(dutils, schain_name, entrypoint):
         image_name=image_name,
         name=container_name,
         entrypoint=entrypoint
+    )
+
+
+def ensure_in_maintenance(skale, node_id):
+    if skale.nodes.get_node_status(node_id) == NodeStatus.ACTIVE:
+        skale.nodes.set_node_in_maintenance(node_id)
+
+
+def ensure_not_in_maintenance(skale, node_id):
+    if skale.nodes.get_node_status(node_id) == NodeStatus.IN_MAINTENANCE:
+        skale.nodes.remove_node_from_in_maintenance(node_id)
+
+
+def generate_sgx_wallets(skale, n_of_keys):
+    logger.info(f'Generating {n_of_keys} test wallets')
+    return [
+        SgxWallet(
+            SGX_SERVER_URL,
+            skale.web3,
+            path_to_cert=SGX_CERTIFICATES_FOLDER
+        )
+        for _ in range(n_of_keys)
+    ]
+
+
+def link_node_address(skale, wallet):
+    validator_id = skale.validator_service.validator_id_by_address(
+        skale.wallet.address)
+    main_wallet = skale.wallet
+    skale.wallet = wallet
+    signature = skale.validator_service.get_link_node_signature(
+        validator_id=validator_id
+    )
+    skale.wallet = main_wallet
+    skale.validator_service.link_node_address(
+        node_address=wallet.address,
+        signature=signature
+    )
+
+
+def transfer_eth_to_wallets(skale, wallets):
+    logger.info(
+        'Transfering %d ETH to %d test wallets',
+        TEST_ETH_AMOUNT, len(wallets)
+    )
+    for wallet in wallets:
+        send_ether(skale.web3, skale.wallet, wallet.address, TEST_ETH_AMOUNT)
+
+
+def link_addresses_to_validator(skale, wallets):
+    logger.info('Linking addresses to validator')
+    for wallet in wallets:
+        link_node_address(skale, wallet)
+
+
+@dataclass
+class TestNodeConfig:
+    id: int
+    ip: str
+    name: str
+
+
+def register_node(skale):
+    ip, public_ip, port, name = generate_random_node_data()
+    port = 10000
+    skale.manager.create_node(
+        ip=ip,
+        port=port,
+        name=name,
+        public_ip=public_ip,
+        domain_name=DEFAULT_DOMAIN_NAME
+    )
+    node_id = skale.nodes.node_name_to_index(name)
+    logger.info('Registered node %s, ID: %d', name, node_id)
+    node_config = TestNodeConfig(id=node_id, ip=ip, name=name)
+    return Node(skale, config=node_config)
+
+
+def register_nodes(skale_instances):
+    nodes = [
+        register_node(sk)
+        for sk in skale_instances
+    ]
+    return nodes
+
+
+def sgx_wallets(skale, amount=1):
+    wallets = generate_sgx_wallets(skale, amount)
+    transfer_eth_to_wallets(skale, wallets)
+    link_addresses_to_validator(skale, wallets)
+    return wallets
+
+
+def skale_sgx_instances(skale, sgx_wallets):
+    return [
+        init_skale_from_wallet(w)
+        for w in sgx_wallets
+    ]
+
+
+def remove_schain(skale, schain_name):
+    print('Cleanup nodes and schains')
+    if schain_name is not None:
+        if skale.schains_internal.is_schain_exist(schain_name):
+            skale.manager.delete_schain(schain_name)
+
+
+def remove_nodes(skale, nodes):
+    for node_id in nodes:
+        ensure_not_in_maintenance(skale, node_id)
+        if skale.nodes.get_node_status(node_id) == NodeStatus.ACTIVE:
+            skale.nodes.init_exit(node_id)
+            skale.manager.node_exit(node_id)
+
+
+def create_nodes(skale, amount=1):
+    wallets = sgx_wallets(skale, amount=amount)
+    skales = skale_sgx_instances(skale, wallets)
+    return register_nodes(skales)
+
+
+def create_schains(skale, amount=1):
+    names = [generate_random_name(len=10) for _ in range(amount)]
+    for name in names:
+        create_schain(skale, name)
+    return names
+
+
+def create_schain(
+    skale: Skale,
+    name: str,
+    lifetime_seconds: int = DEFAULT_SCHAIN_LIFETIME,
+    type_of_nodes: int = TEST2_TYPE,
+    srw_fund: int = TEST_SRW_FUND_VALUE
+) -> None:
+    _ = skale.schains.get_schain_price(
+        type_of_nodes, lifetime_seconds
+    )
+    skale.schains.grant_role(skale.schains.schain_creator_role(),
+                             skale.wallet.address)
+    skale.schains.add_schain_by_foundation(
+        lifetime_seconds,
+        type_of_nodes,
+        0,
+        name,
+        value=srw_fund
     )

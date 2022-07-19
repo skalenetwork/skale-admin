@@ -7,9 +7,7 @@ import string
 import subprocess
 
 import pytest
-from skale.utils.contracts_provision.main import (
-    create_nodes, create_schain, cleanup_nodes_schains
-)
+from skale.utils.contracts_provision.main import create_nodes, create_schain
 
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
@@ -34,10 +32,12 @@ from web.models.schain import create_tables, SChainRecord, upsert_schain_record
 
 from tests.utils import (
     CONTAINERS_JSON,
+    ensure_not_in_maintenance,
     generate_cert,
     get_test_rule_controller,
     init_skale_ima,
-    init_web3_skale
+    init_web3_skale,
+    NodeStatus
 )
 
 
@@ -45,8 +45,10 @@ from tests.utils import (
 def containers_json():
     with open(CONTAINERS_FILEPATH, 'w') as cf:
         json.dump(CONTAINERS_JSON, cf)
-    yield CONTAINERS_FILEPATH
-    os.remove(CONTAINERS_FILEPATH)
+    try:
+        yield CONTAINERS_FILEPATH
+    finally:
+        os.remove(CONTAINERS_FILEPATH)
 
 
 @pytest.fixture
@@ -76,9 +78,11 @@ def cert_key_pair(ssl_folder):
     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
     key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
     generate_cert(cert_path, key_path)
-    yield cert_path, key_path
-    pathlib.Path(cert_path).unlink(missing_ok=True)
-    pathlib.Path(key_path).unlink(missing_ok=True)
+    try:
+        yield cert_path, key_path
+    finally:
+        pathlib.Path(cert_path).unlink(missing_ok=True)
+        pathlib.Path(key_path).unlink(missing_ok=True)
 
 
 def get_random_string(length=8):
@@ -251,8 +255,10 @@ def schain_config(_schain_name):
         json.dump(schain_config, config_file)
     with open(secret_key_path, 'w') as key_file:
         json.dump(SECRET_KEY, key_file)
-    yield schain_config
-    rm_schain_dir(_schain_name)
+    try:
+        yield schain_config
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 def generate_schain_skaled_status_file(_schain_name, **kwargs):
@@ -270,55 +276,69 @@ def rm_schain_dir(schain_name):
 
 @pytest.fixture
 def skaled_status(_schain_name):
-    generate_schain_skaled_status_file(_schain_name)
-    yield init_skaled_status(_schain_name)
-    rm_schain_dir(_schain_name)
+    try:
+        generate_schain_skaled_status_file(_schain_name)
+        yield init_skaled_status(_schain_name)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
 def skaled_status_downloading_snapshot(_schain_name):
     generate_schain_skaled_status_file(_schain_name, snapshot_downloader=True)
-    yield init_skaled_status(_schain_name)
-    rm_schain_dir(_schain_name)
+    try:
+        yield init_skaled_status(_schain_name)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
 def skaled_status_exit_time_reached(_schain_name):
     generate_schain_skaled_status_file(_schain_name, exit_time_reached=True)
-    yield init_skaled_status(_schain_name)
-    rm_schain_dir(_schain_name)
+    try:
+        yield init_skaled_status(_schain_name)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
 def skaled_status_repair(_schain_name):
     generate_schain_skaled_status_file(_schain_name, clear_data_dir=True, start_from_snapshot=True)
-    yield init_skaled_status(_schain_name)
-    rm_schain_dir(_schain_name)
+    try:
+        yield init_skaled_status(_schain_name)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
 def skaled_status_reload(_schain_name):
     generate_schain_skaled_status_file(_schain_name, start_again=True)
-    yield init_skaled_status(_schain_name)
-    rm_schain_dir(_schain_name)
+    try:
+        yield init_skaled_status(_schain_name)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
 def skaled_status_broken_file(_schain_name):
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
     pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
-    status_filepath = skaled_status_filepath(_schain_name)
-    with open(status_filepath, "w") as text_file:
-        text_file.write('abcd')
-    yield SkaledStatus(status_filepath)
-    rm_schain_dir(_schain_name)
+    try:
+        status_filepath = skaled_status_filepath(_schain_name)
+        with open(status_filepath, "w") as text_file:
+            text_file.write('abcd')
+        yield SkaledStatus(status_filepath)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
 def db():
     create_tables()
-    yield
-    SChainRecord.drop_table()
+    try:
+        yield
+    finally:
+        SChainRecord.drop_table()
 
 
 @pytest.fixture
@@ -339,17 +359,49 @@ def meta_file():
     }
     with open(META_FILEPATH, 'w') as meta_file:
         json.dump(meta_info, meta_file)
-    yield meta_info
-    os.remove(META_FILEPATH)
+    try:
+        yield meta_info
+    finally:
+        os.remove(META_FILEPATH)
 
 
 @pytest.fixture
-def schain_on_contracts(skale, _schain_name) -> str:
-    cleanup_nodes_schains(skale)
+def schain_on_contracts(skale, _schain_name, cleanup_contracts) -> str:
     create_nodes(skale)
     create_schain(skale, _schain_name)
-    yield _schain_name
-    cleanup_nodes_schains(skale)
+    return _schain_name
+
+
+@pytest.fixture
+def cleanup(cleanup_contracts, cleanup_folders, cleanup_schain_containers):
+    return
+
+
+@pytest.fixture
+def cleanup_contracts(skale):
+    try:
+        yield
+    finally:
+        for schain_id in skale.schains_internal.get_all_schains_ids():
+            schain_data = skale.schains.get(schain_id)
+            schain_name = schain_data.get('name', None)
+            if schain_name is not None:
+                skale.manager.delete_schain_by_root(schain_name)
+        nodes_number = skale.nodes.get_nodes_number()
+        for node_id in range(nodes_number):
+            ensure_not_in_maintenance(skale, node_id)
+            if skale.nodes.get_node_status(node_id) == NodeStatus.ACTIVE:
+                skale.nodes.init_exit(node_id)
+                skale.manager.node_exit(node_id)
+
+
+@pytest.fixture
+def cleanup_folders():
+    try:
+        yield
+    finally:
+        if os.path.isdir(SCHAINS_DIR_PATH):
+            shutil.rmtree(SCHAINS_DIR_PATH)
 
 
 @pytest.fixture
@@ -373,23 +425,27 @@ def skaled_mock_image(scope='module'):
         nocache=True,
         path='tests/skaled-mock'
     )
-    yield name
-    dutils.client.images.remove(name, force=True)
+    try:
+        yield name
+    finally:
+        dutils.client.images.remove(name, force=True)
 
 
 @pytest.fixture
 def cleanup_schain_dirs_before():
     shutil.rmtree(SCHAINS_DIR_PATH)
     pathlib.Path(SCHAINS_DIR_PATH).mkdir(parents=True, exist_ok=True)
-    yield
+    return
 
 
 @pytest.fixture
 def cleanup_schain_containers(dutils):
-    yield
-    containers = dutils.get_all_schain_containers(all=True)
-    for container in containers:
-        dutils.safe_rm(container.name, force=True)
+    try:
+        yield
+    finally:
+        containers = dutils.get_all_schain_containers(all=True)
+        for container in containers:
+            dutils.safe_rm(container.name, force=True)
 
 
 @pytest.fixture
@@ -470,3 +526,13 @@ def skale_manager_opts():
         schains_internal_address='0x1656',
         nodes_address='0x7742'
     )
+
+
+@pytest.fixture()
+def other_in_maintenance(skale):
+    nodes = skale.nodes.get_active_node_ids()
+    for nid in nodes:
+        skale.nodes.set_node_in_maintenance(nid)
+    yield
+    for nid in nodes:
+        skale.nodes.remove_node_from_in_maintenance(nid)

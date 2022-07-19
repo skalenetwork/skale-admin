@@ -6,24 +6,33 @@ import os
 import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor as Executor
+from dataclasses import dataclass
+from datetime import datetime
 
 import mock
 import pytest
 import warnings
+from freezegun import freeze_time
 from skale import Skale
 from skale.utils.account_tools import send_ether
 from skale.wallets import SgxWallet
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
+from skale.utils.helper import ip_from_bytes
 
+from core.node import Node, NodeStatus, _get_node_status
 from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, safe_run_dkg
 from core.schains.config import init_schain_config_dir
 
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
+    ensure_in_maintenance,
+    ensure_not_in_maintenance,
     generate_random_node_data,
     generate_random_schain_data,
     init_skale_from_wallet,
-    init_web3_skale
+    init_web3_skale,
+    remove_nodes,
+    remove_schain
 )
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -42,6 +51,13 @@ logger = logging.getLogger(__name__)
 
 class DkgTestError(Exception):
     pass
+
+
+@dataclass
+class NodeConfigMock:
+    id: int
+    ip: str
+    name: str
 
 
 def generate_sgx_wallets(skale, n_of_keys):
@@ -114,18 +130,18 @@ def register_nodes(skale_instances):
     return nodes
 
 
-def run_dkg_all(skale, skale_sgx_instances, schain_name, nodes):
+def run_dkg_all(skale, skale_instances, schain_name, nodes, wait_for=True):
     futures = []
-    nodes.sort(key=lambda x: x['node_id'])
+    # nodes.sort(key=lambda x: x['node_id'])
     with Executor(max_workers=MAX_WORKERS) as executor:
-        for i, (node_skale, node_data) in \
-                enumerate(zip(skale_sgx_instances, nodes)):
+        for i, (node_skale, node_data) in enumerate(zip(skale_instances, nodes)):
             futures.append(executor.submit(
                 run_node_dkg,
                 node_skale, schain_name, i, node_data['node_id']
             ))
 
-    return [f.result() for f in futures]
+    if wait_for:
+        return [f.result() for f in futures]
 
 
 def run_node_dkg(skale, schain_name, index, node_id):
@@ -165,18 +181,6 @@ def create_schain(skale: Skale, name: str, lifetime_seconds: int) -> None:
 def cleanup_schain_config(schain_name: str) -> None:
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
     subprocess.run(['rm', '-rf', schain_dir_path])
-
-
-def remove_schain(skale, schain_name):
-    print('Cleanup nodes and schains')
-    if schain_name is not None:
-        skale.manager.delete_schain(schain_name, wait_for=True)
-
-
-def remove_nodes(skale, nodes):
-    for node_id in nodes:
-        skale.nodes.init_exit(node_id)
-        skale.manager.node_exit(node_id, wait_for=True)
 
 
 class TestDKG:
@@ -321,3 +325,54 @@ class TestDKG:
         )
         with pytest.raises(DKGKeyGenerationError):
             generate_bls_keys(dkg_client)
+
+    def test_node_exit_with_schains(
+        self,
+        skale,
+        schain_creation_data,
+        skale_sgx_instances,
+        nodes,
+        schain
+    ):
+        schain_name, _ = schain_creation_data
+        schain_node_ids = set(skale.schains_internal.get_node_ids_for_schain(schain_name))
+        schain_nodes = []
+        schain_skales = []
+        other_node = None
+        node_to_exit = None
+
+        # Split schain nodes with with other node that will be a new one for schain
+        for i, (node_skale, node) in enumerate(zip(skale_sgx_instances, nodes)):
+            if node['node_id'] in schain_node_ids:
+                if node_to_exit is None:
+                    node_to_exit = Node(
+                        node_skale,
+                        NodeConfigMock(
+                            node['node_id'],
+                            ip_from_bytes(node['node']['publicIP']),
+                            node['node']['name']
+                        )
+                    )
+                schain_nodes.append(node)
+                schain_skales.append(skale_sgx_instances[i])
+            else:
+                other_node = node
+        ensure_in_maintenance(skale, other_node['node_id'])
+
+        # Run DKG
+        _ = run_dkg_all(
+            skale,
+            schain_skales,
+            schain_name,
+            schain_nodes
+        )
+        time.sleep(2)
+        ensure_not_in_maintenance(skale, other_node['node_id'])
+        skale.nodes.init_exit(node_to_exit.config.id)
+        node_to_exit.exit()
+        time.sleep(3)
+        remove_schain(skale, schain_name)
+        time.sleep(2)
+        _get_node_status(node_to_exit.info) == NodeStatus.FROZEN
+        with freeze_time(datetime.utcfromtimestamp(node_to_exit.info['finish_time'] + 10)):
+            _get_node_status(node_to_exit.info) == NodeStatus.LEFT
