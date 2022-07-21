@@ -18,7 +18,12 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import NODE_DATA_PATH, CONFIG_FOLDER, NODE_DATA_PATH_HOST
+from tools.configs import (
+    CONFIG_FOLDER,
+    NODE_DATA_PATH,
+    NODE_DATA_PATH_HOST,
+    SKALE_LIB_PATH
+)
 
 SCHAINS_DIR_NAME = 'schains'
 SCHAINS_DIR_PATH = os.path.join(NODE_DATA_PATH, SCHAINS_DIR_NAME)
@@ -42,3 +47,7 @@ NODE_OWNER_ALLOC = 1000000000000000000000000000000
 MAX_SCHAIN_FAILED_RPC_COUNT = int(os.getenv('MAX_SCHAIN_FAILED_RPC_COUNT', 1))
 
 SKALED_STATUS_FILENAME = 'skaled.status'
+
+STATIC_SCHAIN_DIR_NAME = 'schains'
+SCHAINS_STATE_PATH = os.path.join(SKALE_LIB_PATH, 'schains')
+SCHAINS_STATIC_PATH = os.path.join(SKALE_LIB_PATH, 'filestorage')

@@ -40,6 +40,7 @@ from core.schains.firewall.types import IRuleController
 from core.schains.runner import get_container_name
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.process_manager_helper import is_monitor_process_alive
+from core.schains.volume import is_volume_exists
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.configs.ima import DISABLE_IMA
@@ -83,6 +84,7 @@ class SChainChecks:
         rotation_id: int = 0,
         *,
         ima_linked: bool = True,
+        sync_node: bool = False,
         dutils: DockerUtils = None
     ):
         self.name = schain_name
@@ -93,6 +95,7 @@ class SChainChecks:
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.ima_linked = ima_linked
         self.rc = rule_controller
+        self.sync_node = sync_node
 
     @property
     def config_dir(self) -> CheckRes:
@@ -122,7 +125,13 @@ class SChainChecks:
     @property
     def volume(self) -> CheckRes:
         """Checks that sChain volume exists"""
-        return CheckRes(self.dutils.is_data_volume_exists(self.name))
+
+        return CheckRes(
+            is_volume_exists(
+                self.name,
+                sync_node=self.sync_node,
+                dutils=self.dutils)
+            )
 
     @property
     def firewall_rules(self) -> CheckRes:

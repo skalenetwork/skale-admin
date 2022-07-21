@@ -18,9 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import os
 
 from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
+from tools.configs.schains import SCHAINS_STATE_PATH, SCHAINS_STATIC_PATH
 from tools.configs.containers import (
     SHARED_SPACE_VOLUME_NAME,
     SHARED_SPACE_CONTAINER_PATH
@@ -31,9 +33,14 @@ from tools.docker_utils import DockerUtils
 logger = logging.getLogger(__name__)
 
 
-def is_volume_exists(schain_name, dutils=None):
+def is_volume_exists(schain_name, sync_node=False, dutils=None):
     dutils = dutils or DockerUtils()
-    return dutils.is_data_volume_exists(schain_name)
+    if sync_node:
+        schain_state = os.path.join(SCHAINS_STATE_PATH, schain_name)
+        schain_static_path = os.path.join(SCHAINS_STATIC_PATH, schain_name)
+        return os.path.isdir(schain_state) and os.path.isdir(schain_static_path)
+    else:
+        return dutils.is_data_volume_exists(schain_name)
 
 
 def init_data_volume(
@@ -54,11 +61,30 @@ def init_data_volume(
     return dutils.create_data_volume(schain_name, disk_limit)
 
 
-def get_schain_volume_config(name, mount_path, mode=None):
+def ensure_data_dir_path(schain: dict) -> None:
+    schain_state = os.path.join(SCHAINS_STATE_PATH, schain['name'])
+    os.makedirs(schain_state, exist_ok=True)
+    schain_filestorage_state = os.path.join(schain_state, 'filestorage')
+    schain_static_path = os.path.join(SCHAINS_STATIC_PATH, schain['name'])
+    os.symlink(
+        schain_filestorage_state,
+        schain_static_path,
+        target_is_directory=True
+    )
+
+
+def get_schain_volume_config(name, mount_path, mode=None, sync_node=False):
     mode = mode or 'rw'
+    if sync_node:
+        datadir_src = os.path.join(SCHAINS_STATE_PATH, name)
+        shared_space_src = os.path.join(SCHAINS_STATE_PATH, SHARED_SPACE_VOLUME_NAME)
+    else:
+        datadir_src = name
+        shared_space_src = SHARED_SPACE_VOLUME_NAME
+
     config = {
-        f'{name}': {'bind': mount_path, 'mode': mode},
-        SHARED_SPACE_VOLUME_NAME: {
+        datadir_src: {'bind': mount_path, 'mode': mode},
+        shared_space_src: {
             'bind': SHARED_SPACE_CONTAINER_PATH,
             'mode': mode
         }
