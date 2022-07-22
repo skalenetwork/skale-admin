@@ -19,6 +19,7 @@
 
 import logging
 import os
+import shutil
 
 from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
@@ -51,21 +52,31 @@ def init_data_volume(
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
 
-    if dutils.is_data_volume_exists(schain_name):
+    if is_volume_exists(schain_name, sync_node=sync_node, dutils=dutils):
         logger.debug(f'Volume already exists: {schain_name}')
         return
 
     logger.info(f'Creating volume for schain: {schain_name}')
-    schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
-    disk_limit = get_schain_limit(schain_type, MetricType.disk)
-    return dutils.create_data_volume(schain_name, disk_limit)
+    if sync_node:
+        ensure_data_dir_path(schain['schain_name'])
+    else:
+        schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
+        disk_limit = get_schain_limit(schain_type, MetricType.disk)
+        dutils.create_data_volume(schain_name, disk_limit)
 
 
-def ensure_data_dir_path(schain: dict) -> None:
-    schain_state = os.path.join(SCHAINS_STATE_PATH, schain['name'])
+def remove_data_dir(schain_name):
+    schain_state = os.path.join(SCHAINS_STATE_PATH, schain_name)
+    schain_static_path = os.path.join(SCHAINS_STATIC_PATH, schain_name)
+    os.remove(schain_static_path)
+    shutil.rmtree(schain_state)
+
+
+def ensure_data_dir_path(schain_name: str) -> None:
+    schain_state = os.path.join(SCHAINS_STATE_PATH, schain_name)
     os.makedirs(schain_state, exist_ok=True)
     schain_filestorage_state = os.path.join(schain_state, 'filestorage')
-    schain_static_path = os.path.join(SCHAINS_STATIC_PATH, schain['name'])
+    schain_static_path = os.path.join(SCHAINS_STATIC_PATH, schain_name)
     os.symlink(
         schain_filestorage_state,
         schain_static_path,

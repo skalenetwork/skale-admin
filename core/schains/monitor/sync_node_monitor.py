@@ -20,7 +20,6 @@
 import logging
 
 from core.schains.monitor import BaseMonitor
-from core.schains.volume import ensure_data_dir_path
 from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
@@ -30,15 +29,6 @@ class SyncNodeMonitor(BaseMonitor):
     """
     SyncNodeMonitor is executed only on the sync node.
     """
-
-    @BaseMonitor.monitor_block
-    def volume(self) -> bool:
-        initial_status = self.checks.volume.status
-        if not initial_status:
-            ensure_data_dir_path(self.schain)
-        else:
-            logger.info(f'{self.p} volume - ok')
-        return initial_status
 
     def run(self):
         logger.info(arguments_list_string({
