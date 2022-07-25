@@ -39,7 +39,7 @@ def is_volume_exists(schain_name, sync_node=False, dutils=None):
     if sync_node:
         schain_state = os.path.join(SCHAINS_STATE_PATH, schain_name)
         schain_static_path = os.path.join(SCHAINS_STATIC_PATH, schain_name)
-        return os.path.isdir(schain_state) and os.path.isdir(schain_static_path)
+        return os.path.isdir(schain_state) and os.path.islink(schain_static_path)
     else:
         return dutils.is_data_volume_exists(schain_name)
 
@@ -58,7 +58,7 @@ def init_data_volume(
 
     logger.info(f'Creating volume for schain: {schain_name}')
     if sync_node:
-        ensure_data_dir_path(schain['schain_name'])
+        ensure_data_dir_path(schain['name'])
     else:
         schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
         disk_limit = get_schain_limit(schain_type, MetricType.disk)
@@ -77,6 +77,8 @@ def ensure_data_dir_path(schain_name: str) -> None:
     os.makedirs(schain_state, exist_ok=True)
     schain_filestorage_state = os.path.join(schain_state, 'filestorage')
     schain_static_path = os.path.join(SCHAINS_STATIC_PATH, schain_name)
+    if os.path.islink(schain_static_path):
+        os.unlink(schain_static_path)
     os.symlink(
         schain_filestorage_state,
         schain_static_path,

@@ -55,7 +55,7 @@ def monitor_schain_container(
     schain_name = schain['name']
     logger.info(f'Monitoring container for sChain {schain_name}')
 
-    if not is_volume_exists(schain_name, dutils=dutils):
+    if not is_volume_exists(schain_name, sync_node=sync_node, dutils=dutils):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
         return
 
