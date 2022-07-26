@@ -25,6 +25,7 @@ def test_is_sync_rotation_mode(schain_db, skale, schain_on_contracts, node_confi
         node_config.id,
         schain_record=schain_record,
         rule_controller=rc,
+        sync_node=True,
         dutils=dutils
     )
 

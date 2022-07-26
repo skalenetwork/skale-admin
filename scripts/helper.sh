@@ -2,6 +2,7 @@
 
 export_test_env () {
     export SKALE_DIR_HOST=$PWD/tests/skale-data
+    export SKALE_LIB_PATH=$PWD/tests/skale-data/lib
     export RUNNING_ON_HOST=True
     export PYTHONPATH=${PYTHONPATH}:.
     export ENV=dev

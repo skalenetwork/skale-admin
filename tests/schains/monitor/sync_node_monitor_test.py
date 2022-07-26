@@ -61,6 +61,7 @@ def test_sync_node_monitor(
         node_config.id,
         schain_record=schain_record,
         rule_controller=rc,
+        sync_node=True,
         dutils=dutils
     )
     ima_data = ImaData(False, '0x1')
