@@ -49,5 +49,5 @@ MAX_SCHAIN_FAILED_RPC_COUNT = int(os.getenv('MAX_SCHAIN_FAILED_RPC_COUNT', 1))
 SKALED_STATUS_FILENAME = 'skaled.status'
 
 STATIC_SCHAIN_DIR_NAME = 'schains'
-SCHAINS_STATE_PATH = os.path.join(SKALE_LIB_PATH, 'schains')
-SCHAINS_STATIC_PATH = os.path.join(SKALE_LIB_PATH, 'filestorage')
+SCHAIN_STATE_PATH = os.path.join(SKALE_LIB_PATH, 'schains')
+SCHAIN_STATIC_PATH = os.path.join(SKALE_LIB_PATH, 'filestorage')
