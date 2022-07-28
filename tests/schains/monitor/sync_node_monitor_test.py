@@ -1,6 +1,5 @@
 import logging
 import os
-import shutil
 
 import pytest
 from skale.schain_config.generator import get_nodes_for_schain
@@ -35,7 +34,9 @@ def skale_lib_path():
         os.makedirs(SCHAIN_STATIC_PATH, exist_ok=True)
         yield SKALE_LIB_PATH
     finally:
-        shutil.rmtree(SKALE_LIB_PATH)
+        pass
+        # Cannot remove without sudo
+        # shutil.rmtree(SKALE_LIB_PATH)
 
 
 def test_sync_node_monitor(
