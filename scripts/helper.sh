@@ -23,6 +23,7 @@ export_test_env () {
     export ALLOWED_TS_DIFF=9000000
     export SCHAIN_STOP_TIMEOUT=1
 
+    mkdir -p $SKALE_DIR_HOST/contracts_info
     cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info
 }
 
