@@ -23,7 +23,6 @@ export_test_env () {
     export ALLOWED_TS_DIFF=9000000
     export SCHAIN_STOP_TIMEOUT=1
 
-    mkdir -p $SKALE_DIR_HOST/contracts_info $SKALE_DIR_HOST/node_data $SKALE_DIR_HOST/config
     cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info
 }
 
@@ -31,7 +30,7 @@ export_test_env () {
 tests_cleanup () {
     export_test_env
     docker rm -f skale_schain_test && docker volume rm test || true
-    sudo rm -r tests/skale-data/
+    sudo rm -r tests/skale-data/lib
     rm tests/skale-data/node_data/node_config.json || true
     docker rm -f sgx-simulator || true
     docker rm -f skale_schain_test1 skale_schain_test2 skale_schain_test3 || true
