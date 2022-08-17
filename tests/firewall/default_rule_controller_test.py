@@ -181,16 +181,16 @@ def run_concurrent_rc_syncing(
     for r in sync_agent_ranges:
         assert sum(
             map(lambda x: x[0] == r.start_ip, rules)
-        ) == schain_number, ip
+        ) == schain_number * 2, ip
         assert sum(
             map(lambda x: x.first_ip == r.start_ip, c.rules)
-        ) == schain_number, ip
+        ) == schain_number * 2, ip
         assert sum(
             map(lambda x: x[1] == r.end_ip, rules)
-        ) == schain_number, ip
+        ) == schain_number * 2, ip
         assert sum(
             map(lambda x: x.last_ip == r.end_ip, c.rules)
-        ) == schain_number, ip
+        ) == schain_number * 2, ip
 
     for port in public_ports:
         assert sum(map(lambda x: x[2] == port, rules)) == 1, port
