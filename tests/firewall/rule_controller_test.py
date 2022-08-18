@@ -78,6 +78,8 @@ def test_schain_rule_controller():
         SChainRule(port=10069, first_ip='1.1.1.1', last_ip=None),
         SChainRule(port=10069, first_ip='4.4.4.4', last_ip=None),
         SChainRule(port=10069, first_ip='5.5.5.5', last_ip=None),
+        SChainRule(port=10069, first_ip='10.10.10.10', last_ip='15.15.15.15'),
+        SChainRule(port=10069, first_ip='15.15.15.15', last_ip='18.18.18.18'),
         SChainRule(port=10071, first_ip=None, last_ip=None),
         SChainRule(port=10072, first_ip=None, last_ip=None),
         SChainRule(port=10073, first_ip=None, last_ip=None)
