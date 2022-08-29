@@ -1,5 +1,6 @@
 from marionette_predeployed import MARIONETTE_ADDRESS
 from etherbase_predeployed import ETHERBASE_ADDRESS
+from filestorage_predeployed import FILESTORAGE_ADDRESS
 
 from core.schains.types import SchainType
 from core.schains.config.predeployed import (
@@ -38,6 +39,9 @@ def test_generate_v1_predeployed_contracts():
     assert v1_precompiled_contracts.get('0xd2Ba3ED200000000000000000000000000000000')
     assert v1_precompiled_contracts.get('0xD2c0DeFACe000000000000000000000000000000')
     assert v1_precompiled_contracts.get('0xd2c0defaCeD20000000000000000000000000000')
+    assert v1_precompiled_contracts.get('0xD3002000000000000000000000000000000000d3')
 
     etherbase_balance = v1_precompiled_contracts[ETHERBASE_ADDRESS]['balance']
     assert etherbase_balance == hex(ETHERBASE_ALLOC)
+
+    assert v1_precompiled_contracts.get(FILESTORAGE_ADDRESS)['version'] == '1.1.0.dev4'
