@@ -43,5 +43,3 @@ def test_generate_v1_predeployed_contracts():
 
     etherbase_balance = v1_precompiled_contracts[ETHERBASE_ADDRESS]['balance']
     assert etherbase_balance == hex(ETHERBASE_ALLOC)
-
-    assert '1.1.0.dev4' in v1_precompiled_contracts.get(FILESTORAGE_ADDRESS)['storage'].values()
