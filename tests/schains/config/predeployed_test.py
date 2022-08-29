@@ -1,6 +1,5 @@
 from marionette_predeployed import MARIONETTE_ADDRESS
 from etherbase_predeployed import ETHERBASE_ADDRESS
-from filestorage_predeployed import FILESTORAGE_ADDRESS
 
 from core.schains.types import SchainType
 from core.schains.config.predeployed import (
