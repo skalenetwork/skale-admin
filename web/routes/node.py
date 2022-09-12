@@ -31,7 +31,6 @@ from core.node import (
     get_meta_info, get_node_hardware_info, get_btrfs_info, check_validator_nodes, get_abi_hash
 )
 
-from tools.configs import SGX_SERVER_URL
 from tools.configs.web3 import ABI_FILEPATH, ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.custom_thread import CustomThread
@@ -211,7 +210,6 @@ def endpoint_info():
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'meta-info'), methods=['GET'])
 def meta_info():
     logger.debug(request)
-    raise Exception(f"SGX_SERVER_URL {SGX_SERVER_URL}")
     version_data = get_meta_info()
     return construct_ok_response(version_data)
 
