@@ -50,11 +50,11 @@ def compose_hiding_patterns():
 
 class RequestFormatter(logging.Formatter):
     def format(self, record):
-        if has_request_context():
-            record.url = request.full_path[:-1]
-        else:
-            record.url = None
-
+        if not isinstance(record, str):
+            if has_request_context():
+                record.url = request.full_path[:-1]
+            else:
+                record.url = None
         return super().format(record)
 
 

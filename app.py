@@ -95,7 +95,7 @@ def recursion_error_handler(e):
 
 @app.errorhandler(werkzeug.exceptions.InternalServerError)
 def any_error_handler(e):
-    logger.exception('Request failed with error %s', e)
+    logger.exception('Request failed with error %s', e.original_exception)
     return construct_err_response(
         status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         msg=str(e)
