@@ -173,6 +173,7 @@ def check_config(node_id, all_node_ids, config):
         config,
         ['sealEngine', 'params', 'genesis', 'accounts', 'skaleConfig']
     )
+    assert config['params']['skaleDisableChainIdCheck'] is True
     check_node_info(node_id, config['skaleConfig']['nodeInfo'])
     check_schain_info(all_node_ids, config['skaleConfig']['sChain'])
 
