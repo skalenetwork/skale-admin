@@ -162,24 +162,24 @@ def get_schain_env(ulimit_check=True):
     return env
 
 
-def get_schain_container_cmd(schain_name: str,
-                             public_key: str = None,
-                             start_ts: int = None,
-                             enable_ssl: bool = True) -> str:
+def get_schain_container_cmd(
+    schain_name: str,
+    public_key: str = None,
+    start_ts: int = None,
+    enable_ssl: bool = True
+) -> str:
     opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
     if public_key:
-        sync_opts = get_schain_container_sync_opts(public_key, start_ts)
+        sync_opts = get_schain_container_sync_opts(start_ts)
         opts.extend(sync_opts)
     return ' '.join(opts)
 
 
 def get_schain_container_sync_opts(
-    public_key: str,
     start_ts: int = None
 ) -> list:
     sync_opts = [
-        '--download-snapshot readfromconfig',  # TODO: update in the next version
-        f'--public-key {public_key}'
+        '--download-snapshot readfromconfig',  # TODO: remove in the next version
     ]
     if start_ts:
         sync_opts.append(f'--start-timestamp {start_ts}')
