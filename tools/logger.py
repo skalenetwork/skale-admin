@@ -17,15 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import hashlib
 import logging
 import re
 import sys
-from logging import Formatter, StreamHandler
+from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
+from urllib.parse import urlparse
 
 from flask import has_request_context, request
 
+from tools.configs import SGX_SERVER_URL
 from tools.configs.logs import (
     ADMIN_LOG_FORMAT,
     ADMIN_LOG_PATH,
@@ -34,55 +35,62 @@ from tools.configs.logs import (
     LOG_FILE_SIZE_BYTES,
     LOG_BACKUP_COUNT
 )
+from tools.configs.web3 import ENDPOINT
 
 
-HIDING_PATTERNS = [
-    r'NEK\:\w+',
-    r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
-    r'ws[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-]
+def compose_hiding_patterns():
+    sgx_ip = urlparse(SGX_SERVER_URL).hostname
+    eth_ip = urlparse(ENDPOINT).hostname
+    return {
+        rf'{sgx_ip}': '[SGX_IP]',
+        rf'{eth_ip}': '[ETH_IP]',
+        r'NEK\:\w+': '[SGX_KEY]'
+    }
 
 
 class RequestFormatter(logging.Formatter):
     def format(self, record):
-        if has_request_context():
-            record.url = request.full_path[:-1]
-        else:
-            record.url = None
-
+        if not isinstance(record, str):
+            if has_request_context():
+                record.url = request.full_path[:-1]
+            else:
+                record.url = None
         return super().format(record)
 
 
-class HidingFormatter:
-    def __init__(self, base_formatter, patterns):
-        self.base_formatter = base_formatter
-        self._patterns = patterns
+class HidingFormatter(RequestFormatter):
+    def __init__(self, log_format: str, patterns: dict) -> None:
+        super().__init__(log_format)
+        self._patterns: dict = patterns
 
-    @classmethod
-    def convert_match_to_sha3(cls, match):
-        return hashlib.sha3_256(match.group(0).encode('utf-8')).digest().hex()
-
-    def format(self, record):
-        msg = self.base_formatter.format(record)
-        for pattern in self._patterns:
-            pat = re.compile(pattern)
-            msg = pat.sub(self.convert_match_to_sha3, msg)
+    def _filter_sensitive(self, msg) -> str:
+        for match, replacement in self._patterns.items():
+            pat = re.compile(match)
+            msg = pat.sub(replacement, msg)
         return msg
 
-    def __getattr__(self, attr):
-        return getattr(self.base_formatter, attr)
+    def format(self, record) -> str:
+        msg = super().format(record)
+        return self._filter_sensitive(msg)
+
+    def formatException(self, exc_info) -> str:
+        msg = super().formatException(exc_info)
+        return self._filter_sensitive(msg)
+
+    def formatStack(self, stack_info) -> str:
+        msg = super().formatStack(stack_info)
+        return self._filter_sensitive(msg)
 
 
 def init_logger(
-    base_formatter,
     log_format,
     log_file_path=None,
     debug_file_path=None
 ):
     handlers = []
 
-    base_formatter = base_formatter(log_format)
-    formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
+    hiding_patterns = compose_hiding_patterns()
+    formatter = HidingFormatter(log_format, hiding_patterns)
     if log_file_path:
         f_handler = RotatingFileHandler(
             log_file_path,
@@ -111,8 +119,8 @@ def init_logger(
 
 
 def init_admin_logger():
-    init_logger(Formatter, ADMIN_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
+    init_logger(ADMIN_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
 
 
 def init_api_logger():
-    init_logger(RequestFormatter, API_LOG_FORMAT, API_LOG_PATH)
+    init_logger(API_LOG_FORMAT, API_LOG_PATH)
