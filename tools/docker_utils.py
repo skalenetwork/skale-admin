@@ -251,7 +251,7 @@ class DockerUtils:
         self,
         container_name: Container,
         head: int = 100,
-        tail: int = 1000
+        tail: int = 200
     ) -> None:
         container = self.safe_get_container(container_name)
         if not container:

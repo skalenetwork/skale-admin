@@ -15,6 +15,7 @@ def test_custom_formatter():
         'ttt://127.0.0.1.com, '
         'foo://127.0.0.1.com, '
         'NEK//127.0.0.1.com, '
+        '127.0 .1.1'
     )
     record = logging.makeLogRecord({'msg': text})
 

@@ -71,11 +71,13 @@ def monitor_schain_container(
 
     if skaled_status.exit_time_reached:
         logger.info(f'{schain_name} - Skipping container monitor: exit time reached')
+        skaled_status.log()
         schain_record.reset_failed_conunters()
         return
 
     if skaled_status.clear_data_dir and skaled_status.start_from_snapshot:
         logger.info(f'{schain_name} - Skipping container monitor: sChain should be repaired')
+        skaled_status.log()
         schain_record.reset_failed_conunters()
         return
 
