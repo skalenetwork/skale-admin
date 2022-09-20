@@ -94,13 +94,13 @@ def init():
 
 
 def main():
-    init()
-    while True:
-        try:
+    try:
+        init()
+        while True:
             worker()
-        except Exception:
-            logger.exception('Admin worker failed')
-        time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
+            time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
+    except Exception:
+        logger.exception('Admin worker failed')
 
 
 if __name__ == '__main__':

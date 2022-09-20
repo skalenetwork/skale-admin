@@ -349,8 +349,10 @@ def schain_on_contracts(skale, _schain_name) -> str:
     cleanup_nodes_schains(skale)
     create_nodes(skale)
     create_schain(skale, _schain_name)
-    yield _schain_name
-    cleanup_nodes_schains(skale)
+    try:
+        yield _schain_name
+    finally:
+        cleanup_nodes_schains(skale)
 
 
 @pytest.fixture

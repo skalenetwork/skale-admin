@@ -155,16 +155,23 @@ class SChainRuleController(IRuleController):
 
     @property  # type: ignore
     @configured_only
-    def sync_agent_port(self) -> int:
-        return self.base_port + self.port_allocation.CATCHUP.value
+    def sync_agent_ports(self) -> Iterable[int]:
+        return (
+            self.base_port + offset.value
+            for offset in (
+                self.port_allocation.CATCHUP,
+                self.port_allocation.ZMQ_BROADCAST
+            )
+        )
 
     @property
     def sync_agent_rules(self) -> Iterable[SChainRule]:
         if not self.sync_ip_ranges:
             return []
         return (
-            SChainRule(self.sync_agent_port, r.start_ip, r.end_ip)
+            SChainRule(port, r.start_ip, r.end_ip)
             for r in self.sync_ip_ranges
+            for port in self.sync_agent_ports
         )
 
     def expected_rules(self) -> Iterable[SChainRule]:

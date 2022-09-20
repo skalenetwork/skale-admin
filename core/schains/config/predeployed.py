@@ -50,6 +50,7 @@ from core.schains.limits import get_fs_allocated_storage
 from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC, ETHERBASE_ALLOC
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.helper import read_json
+from importlib.metadata import version
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +134,8 @@ def generate_v1_predeployed_contracts(
         implementation_address=FILESTORAGE_IMPLEMENTATION_ADDRESS,
         schain_owner=on_chain_owner,
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
-        allocated_storage=allocated_storage
+        allocated_storage=allocated_storage,
+        version=version('filestorage_predeployed')
     )
 
     config_generator = UpgradeableConfigControllerGenerator()
