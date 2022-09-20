@@ -41,3 +41,9 @@ def test_no_status_file():
 def test_broken_status_file(skaled_status_broken_file):
     assert not skaled_status_broken_file.exit_time_reached
     assert not skaled_status_broken_file.downloading_snapshot
+
+
+def test_log(skaled_status, _schain_name, caplog):
+    status_filepath = skaled_status_filepath(_schain_name)
+    skaled_status = SkaledStatus(filepath=status_filepath)
+    skaled_status.log()

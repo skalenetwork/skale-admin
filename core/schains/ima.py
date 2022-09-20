@@ -20,7 +20,7 @@
 from dataclasses import dataclass
 
 from core.schains.config.directory import schain_config_dir
-from core.schains.config.helper import get_schain_ports, get_schain_config
+from core.schains.config.helper import get_schain_ports, get_schain_config, get_chain_id
 from core.ima.schain import get_schain_ima_abi_filepath
 
 import json
@@ -74,6 +74,7 @@ class ImaEnv:
     tm_url_mainnet: str
 
     cid_main_net: int
+    cid_schain: str
 
     monitoring_port: int
 
@@ -99,6 +100,7 @@ class ImaEnv:
             'NODE_ADDRESS': self.node_address,
             'TM_URL_MAIN_NET': self.tm_url_mainnet,
             'CID_MAIN_NET': self.cid_main_net,
+            'CID_SCHAIN': self.cid_schain,
             'MONITORING_PORT': self.monitoring_port,
             'TIME_FRAMING': self.time_framing
         }
@@ -138,6 +140,8 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
     schain_index = schain_index_to_node_number(public_node_info)
     node_address = public_node_info['owner']
 
+    schain_chain_id = get_chain_id(schain_name)
+
     return ImaEnv(
         schain_dir=schain_config_dir(schain_name),
         manager_abi_path=ABI_FILEPATH,
@@ -156,6 +160,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         node_address=node_address,
         tm_url_mainnet=REDIS_URI,
         cid_main_net=mainnet_chain_id,
+        cid_schain=schain_chain_id,
         monitoring_port=node_info['imaMonitoringPort'],
         time_framing=IMA_TIME_FRAMING
     )
