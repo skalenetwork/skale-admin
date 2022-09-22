@@ -8,6 +8,7 @@ on:
       - beta
       - stable
       - sync-node
+      - beta-sync-node
 
 jobs:
   build:
