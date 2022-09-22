@@ -143,7 +143,8 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
     volume_config = get_schain_volume_config(
         schain_name,
         DATA_DIR_CONTAINER_PATH,
-        mode=volume_mode
+        mode=volume_mode,
+        sync_node=sync_node
     )
     env = get_schain_env(ulimit_check=ulimit_check)
     cmd = get_schain_container_cmd(

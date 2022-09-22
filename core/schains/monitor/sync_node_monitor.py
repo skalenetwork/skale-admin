@@ -29,6 +29,7 @@ class SyncNodeMonitor(BaseMonitor):
     """
     SyncNodeMonitor is executed only on the sync node.
     """
+
     def run(self):
         logger.info(arguments_list_string({
            'sChain name': self.name
