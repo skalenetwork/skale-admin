@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import json
 import logging
 from json.decoder import JSONDecodeError
 
@@ -92,6 +93,9 @@ class SkaledStatus:
         except JSONDecodeError:
             log_broken_status_file(self.filepath)
             return {}
+
+    def log(self) -> None:
+        logger.info('skaled status file: \n' + json.dumps(self.all, indent=4))
 
 
 def init_skaled_status(schain_name) -> SkaledStatus:

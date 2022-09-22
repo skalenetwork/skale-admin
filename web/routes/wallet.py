@@ -24,44 +24,47 @@ from skale.transactions.tools import send_eth_with_skale
 from skale.utils.web3_utils import to_checksum_address
 from web3 import Web3
 
-from web.helper import construct_ok_response, construct_err_response, get_api_url
-from tools.helper import init_skale
+from web.helper import (
+    construct_ok_response,
+    construct_err_response,
+    get_api_url,
+    g_skale
+)
 from tools.wallet_utils import wallet_with_balance
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'wallet'
 
 
-def construct_wallet_bp():
-    wallet_bp = Blueprint(BLUEPRINT_NAME, __name__)
+wallet_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
-    @wallet_bp.route(get_api_url(BLUEPRINT_NAME, 'info'), methods=['GET'])
-    def info():
-        logger.debug(request)
-        skale = init_skale(g.wallet)
-        res = wallet_with_balance(skale)
-        return construct_ok_response(data=res)
 
-    @wallet_bp.route(get_api_url(BLUEPRINT_NAME, 'send-eth'), methods=['POST'])
-    def send_eth():
-        logger.debug(request)
-        raw_address = request.json.get('address')
-        eth_amount = request.json.get('amount')
-        wei_amount = Web3.toWei(eth_amount, 'ether')
-        if not raw_address:
-            return construct_err_response('Address is empty')
-        if not eth_amount:
-            return construct_err_response('Amount is empty')
-        try:
-            address = to_checksum_address(raw_address)
-            logger.info(
-                f'Sending {eth_amount} wei to {address}'
-            )
-            skale = init_skale(g.wallet)
-            send_eth_with_skale(skale, address, wei_amount)
-        except Exception:
-            logger.exception('Funds were not sent due to error')
-            return construct_err_response(msg='Funds sending failed')
-        return construct_ok_response()
+@wallet_bp.route(get_api_url(BLUEPRINT_NAME, 'info'), methods=['GET'])
+@g_skale
+def info():
+    logger.debug(request)
+    res = wallet_with_balance(g.skale)
+    return construct_ok_response(data=res)
 
-    return wallet_bp
+
+@wallet_bp.route(get_api_url(BLUEPRINT_NAME, 'send-eth'), methods=['POST'])
+@g_skale
+def send_eth():
+    logger.debug(request)
+    raw_address = request.json.get('address')
+    eth_amount = request.json.get('amount')
+    wei_amount = Web3.toWei(eth_amount, 'ether')
+    if not raw_address:
+        return construct_err_response('Address is empty')
+    if not eth_amount:
+        return construct_err_response('Amount is empty')
+    try:
+        address = to_checksum_address(raw_address)
+        logger.info(
+            f'Sending {eth_amount} wei to {address}'
+        )
+        send_eth_with_skale(g.skale, address, wei_amount)
+    except Exception:
+        logger.exception('Funds were not sent due to error')
+        return construct_err_response(msg='Funds sending failed')
+    return construct_ok_response()
