@@ -153,11 +153,11 @@ def check_pid_psutil(pid):
     return p.is_running() and p.status() != psutil.STATUS_ZOMBIE
 
 
-def get_endpoint_call_speed(skale):
+def get_endpoint_call_speed(web3):
     scores = []
     for _ in range(10):
         start = time.time()
-        result = skale.web3.eth.gasPrice
+        result = web3.eth.gasPrice
         if result:
             scores.append(time.time() - start)
     if len(scores) == 0:
