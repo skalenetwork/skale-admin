@@ -41,7 +41,7 @@ from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminG
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS, generate_contracts
 
 from core.schains.config.accounts import add_to_accounts, generate_account
-from core.schains.config.generation import gen0, gen1
+from core.schains.config.generation import gen0, gen1, gen2
 from core.schains.config.helper import _string_to_storage, get_context_contract
 
 from core.schains.types import SchainType
@@ -81,7 +81,7 @@ def generate_predeployed_accounts(
 
     if gen0(generation):
         pass
-    if gen1(generation):
+    if gen1(generation) or gen2(generation):
         v1_predeployed_contracts = generate_v1_predeployed_contracts(
             schain_type=schain_type,
             on_chain_owner=on_chain_owner,
@@ -187,7 +187,7 @@ def generate_owner_accounts(
     accounts = {}
     if gen0(generation):
         add_to_accounts(accounts, on_chain_owner, generate_account(SCHAIN_OWNER_ALLOC))
-    if gen1(generation):
+    if gen1(generation) or gen2(generation):
         add_to_accounts(accounts, originator_address, generate_account(SCHAIN_OWNER_ALLOC))
     for node in schain_nodes:
         node_owner = public_key_to_address(node['publicKey'])

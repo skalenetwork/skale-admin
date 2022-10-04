@@ -31,8 +31,8 @@ from core.schains.config.skale_manager_opts import SkaleManagerOpts, init_skale_
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
 from core.schains.config.predeployed import generate_predeployed_accounts
 from core.schains.config.precompiled import generate_precompiled_accounts
-from core.schains.config.generation import gen0, gen1
-from core.schains.config.helper import get_chain_id
+from core.schains.config.generation import gen0, gen1, gen2
+from core.schains.config.helper import get_chain_id, get_schain_id
 from core.schains.limits import get_schain_type
 
 from tools.helper import read_json
@@ -88,7 +88,7 @@ def get_on_chain_owner(schain: dict, generation: int, is_owner_contract: bool) -
     """
     if gen0(generation) or not is_owner_contract:
         return schain['mainnetOwner']
-    if gen1(generation):
+    if gen1(generation) or gen2(generation):
         return MARIONETTE_ADDRESS
 
 
@@ -98,8 +98,18 @@ def get_on_chain_etherbase(schain: dict, generation: int) -> str:
     """
     if gen0(generation):
         return schain['mainnetOwner']
-    if gen1(generation):
+    if gen1(generation) or gen2(generation):
         return ETHERBASE_ADDRESS
+
+
+def get_schain_id_for_chain(schain_name: str, generation: int) -> int:
+    """
+    Returns schain_id depending on sChain generation.
+    """
+    if gen0(generation) or gen1(generation):
+        return 1
+    if gen2(generation):
+        return get_schain_id(schain_name)
 
 
 def get_schain_originator(schain: dict):
@@ -112,7 +122,7 @@ def get_schain_originator(schain: dict):
 
 
 def generate_schain_config(
-    schain: dict, schain_id: int, node_id: int, node: dict, ecdsa_key_name: str,
+    schain: dict, node_id: int, node: dict, ecdsa_key_name: str,
     schains_on_node: list, rotation_id: int, schain_nodes_with_schains: list,
     node_groups: list, generation: int, is_owner_contract: bool,
     skale_manager_opts: SkaleManagerOpts
@@ -121,13 +131,15 @@ def generate_schain_config(
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
         f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}, '
-        f'ecdsa keyname: {ecdsa_key_name}, schain_id: {schain_id}'
+        f'ecdsa keyname: {ecdsa_key_name}'
     )
 
     on_chain_etherbase = get_on_chain_etherbase(schain, generation)
     on_chain_owner = get_on_chain_owner(schain, generation, is_owner_contract)
     mainnet_owner = schain['mainnetOwner']
     schain_type = get_schain_type(schain['partOfNode'])
+
+    schain_id = get_schain_id_for_chain(schain['name'], generation)
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
@@ -192,7 +204,6 @@ def generate_schain_config_with_skale(
     rotation_data: dict,
     ecdsa_key_name: str
 ) -> SChainConfig:
-    schain_id = 1  # todo: remove this later (should be removed from the skaled first)
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
     schains_on_node = skale.schains.get_schains_for_node(node_id)
     schain = skale.schains.get_by_name(schain_name)
@@ -205,7 +216,6 @@ def generate_schain_config_with_skale(
 
     return generate_schain_config(
         schain=schain,
-        schain_id=schain_id,
         node=node,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,

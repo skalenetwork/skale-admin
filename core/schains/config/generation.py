@@ -24,3 +24,7 @@ def gen0(generation: int) -> bool:
 
 def gen1(generation: int) -> bool:
     return generation == 1
+
+
+def gen2(generation: int) -> bool:
+    return generation == 2
