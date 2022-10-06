@@ -31,7 +31,7 @@ from core.schains.config.skale_manager_opts import SkaleManagerOpts, init_skale_
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
 from core.schains.config.predeployed import generate_predeployed_accounts
 from core.schains.config.precompiled import generate_precompiled_accounts
-from core.schains.config.generation import gen0, gen1, gen2
+from core.schains.config.generation import Gen
 from core.schains.config.helper import get_chain_id, get_schain_id
 from core.schains.limits import get_schain_type
 
@@ -86,30 +86,30 @@ def get_on_chain_owner(schain: dict, generation: int, is_owner_contract: bool) -
     """
     Returns on-chain owner depending on sChain generation.
     """
-    if gen0(generation) or not is_owner_contract:
-        return schain['mainnetOwner']
-    if gen1(generation) or gen2(generation):
+    if generation >= Gen.ONE:
         return MARIONETTE_ADDRESS
+    if generation == Gen.ZERO or not is_owner_contract:
+        return schain['mainnetOwner']
 
 
 def get_on_chain_etherbase(schain: dict, generation: int) -> str:
     """
     Returns on-chain owner depending on sChain generation.
     """
-    if gen0(generation):
-        return schain['mainnetOwner']
-    if gen1(generation) or gen2(generation):
+    if generation >= Gen.ONE:
         return ETHERBASE_ADDRESS
+    if generation == Gen.ZERO:
+        return schain['mainnetOwner']
 
 
 def get_schain_id_for_chain(schain_name: str, generation: int) -> int:
     """
     Returns schain_id depending on sChain generation.
     """
-    if gen0(generation) or gen1(generation):
-        return 1
-    if gen2(generation):
+    if generation >= Gen.TWO:
         return get_schain_id(schain_name)
+    if generation >= Gen.ZERO:
+        return 1
 
 
 def get_schain_originator(schain: dict):
