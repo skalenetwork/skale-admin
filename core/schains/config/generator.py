@@ -86,9 +86,11 @@ def get_on_chain_owner(schain: dict, generation: int, is_owner_contract: bool) -
     """
     Returns on-chain owner depending on sChain generation.
     """
+    if not is_owner_contract:
+        return schain['mainnetOwner']
     if generation >= Gen.ONE:
         return MARIONETTE_ADDRESS
-    if generation == Gen.ZERO or not is_owner_contract:
+    if generation == Gen.ZERO:
         return schain['mainnetOwner']
 
 
