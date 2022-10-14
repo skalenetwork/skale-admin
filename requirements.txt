@@ -13,7 +13,7 @@ simple-crypt==4.1.7
 pycryptodome==3.12.0
 python-iptables==0.14.0
 
-skale.py==5.7dev7
+skale.py==5.8dev0
 
 ima-predeployed==1.1.3b0
 etherbase-predeployed==1.0.0
