@@ -24,7 +24,7 @@ multisigwallet-predeployed==0.0.1a5
 predeployed-generator==1.1.0a8
 
 pyyaml==5.4
-psutil==5.7.0
+psutil==5.9.3
 
 colorful==0.5.4
 celery==4.4.6
