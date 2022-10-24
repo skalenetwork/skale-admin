@@ -103,13 +103,25 @@ def active_node(skale):
     config.id = node_id
     config.ip = ip
     config.name = name
-    yield Node(skale, config)
-    status = skale.nodes.get_node_status(node_id)
-    if status not in (NodeStatus.FROZEN.value, NodeStatus.LEFT.value):
-        if status == NodeStatus.IN_MAINTENANCE.value:
-            skale.nodes.remove_node_from_in_maintenance(node_id)
-        skale.nodes.init_exit(node_id)
-        skale.manager.node_exit(node_id)
+    try:
+        yield Node(skale, config)
+    finally:
+        status = skale.nodes.get_node_status(node_id)
+        if status not in (NodeStatus.FROZEN.value, NodeStatus.LEFT.value):
+            if status == NodeStatus.IN_MAINTENANCE.value:
+                skale.nodes.remove_node_from_in_maintenance(node_id)
+            skale.nodes.init_exit(node_id)
+            skale.manager.node_exit(node_id)
+
+
+@pytest.fixture
+def maintenance_node(skale, active_node):
+    node = active_node
+    try:
+        skale.nodes.set_node_in_maintenance(node.config.id)
+        yield node
+    finally:
+        skale.nodes.remove_node_from_in_maintenance(node.config.id)
 
 
 def test_get_node_id_active_node(active_node):
@@ -179,7 +191,7 @@ def test_start_exit(skale, active_node):
     assert status != NodeExitStatus.ACTIVE
 
 
-def test_exit_status(skale, active_node):
+def test_exit_status_active_forzen(skale, active_node):
     active_status_data = active_node.get_exit_status()
     assert list(active_status_data.keys()) == ['status', 'data', 'exit_time']
     assert active_status_data['status'] == NodeExitStatus.ACTIVE.name
@@ -192,6 +204,13 @@ def test_exit_status(skale, active_node):
     assert exit_status_data['status'] == NodeExitStatus.WAIT_FOR_ROTATIONS.name
     assert exit_status_data['exit_time'] != 0
     assert active_node.info['status'] == NodeStatus.FROZEN.value
+
+
+def test_exit_status_maintenance(skale, maintenance_node):
+    node_data = maintenance_node.get_exit_status()
+    assert list(node_data.keys()) == ['status', 'data', 'exit_time']
+    assert node_data['status'] == NodeExitStatus.IN_MAINTENANCE.name
+    assert node_data['exit_time'] == 0
 
 
 def test_node_maintenance(active_node, skale):

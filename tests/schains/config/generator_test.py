@@ -9,6 +9,7 @@ from core.schains.config.generator import (
 )
 from core.schains.config.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
 from tools.configs.schains import SCHAINS_DIR_PATH
+from core.schains.config.helper import get_schain_id
 
 from etherbase_predeployed import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
@@ -20,8 +21,6 @@ from config_controller_predeployed import (
 from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
 
-
-SCHAIN_ID = 1
 
 NODE_ID = 1
 ECDSA_KEY_NAME = 'TEST:KEY:NAME'
@@ -173,6 +172,7 @@ def check_config(node_id, all_node_ids, config):
         config,
         ['sealEngine', 'params', 'genesis', 'accounts', 'skaleConfig']
     )
+    assert config['params']['skaleDisableChainIdCheck'] is True
     check_node_info(node_id, config['skaleConfig']['nodeInfo'])
     check_schain_info(all_node_ids, config['skaleConfig']['sChain'])
 
@@ -206,14 +206,13 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
         'multitransactionMode': True
     }
 
-    node_id, schain_id, generation, rotation_id = 1, 1, 0, 0
+    node_id, generation, rotation_id = 1, 0, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
         schain=schain,
-        schain_id=schain_id,
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -232,14 +231,13 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
 
 
 def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale_manager_opts):
-    node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
+    node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITH_ORIGINATOR,
-        schain_id=schain_id,
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -279,14 +277,13 @@ def test_generate_schain_config_gen1_pk_owner(
     schain_secret_key_file_default_chain,
     skale_manager_opts
 ):
-    node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
+    node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITHOUT_ORIGINATOR,
-        schain_id=schain_id,
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -302,6 +299,97 @@ def test_generate_schain_config_gen1_pk_owner(
 
     assert not config['accounts'].get(TEST_ORIGINATOR_ADDRESS)
     assert config['accounts'].get(TEST_MAINNET_OWNER_ADDRESS)
+
+
+def test_generate_schain_config_gen2_schain_id(
+    schain_secret_key_file_default_chain,
+    skale_manager_opts
+):
+    node_id, generation, rotation_id = 1, 2, 0
+    ecdsa_key_name = 'test'
+    schains_on_node = [{'name': 'test_schain'}]
+    node_groups = {}
+
+    schain_config = generate_schain_config(
+        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        schains_on_node=schains_on_node,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts
+    )
+    config = schain_config.to_dict()
+    assert config['skaleConfig']['sChain']['schainID'] == 2755779573749746
+
+
+def test_generate_schain_config_gen1_schain_id(
+    schain_secret_key_file_default_chain,
+    skale_manager_opts
+):
+    node_id, generation, rotation_id = 1, 1, 0
+    schain_config = generate_schain_config(
+        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name='test',
+        schains_on_node=[{'name': 'test_schain'}],
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
+        node_groups={},
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts
+    )
+    config = schain_config.to_dict()
+    assert config['skaleConfig']['sChain']['schainID'] == 1
+
+
+def test_generate_schain_config_gen0_schain_id(
+    schain_secret_key_file_default_chain,
+    skale_manager_opts
+):
+    node_id, generation, rotation_id = 1, 0, 0
+    schain_config = generate_schain_config(
+        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name='test',
+        schains_on_node=[{'name': 'test_schain'}],
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
+        node_groups={},
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts
+    )
+    config = schain_config.to_dict()
+    assert config['skaleConfig']['sChain']['schainID'] == 1
+
+
+def test_generate_schain_config_with_skale_gen2(
+    skale,
+    schain_on_contracts,
+    schain_secret_key_file
+):
+    schain_name = schain_on_contracts
+    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    current_node_id = node_ids[0]
+    schain_config = generate_schain_config_with_skale(
+        skale=skale,
+        schain_name=schain_name,
+        node_id=current_node_id,
+        rotation_data={'rotation_id': 0, 'leaving_node': 1},
+        ecdsa_key_name=ECDSA_KEY_NAME,
+        generation=2
+    )
+    schain_config_dict = schain_config.to_dict()
+    check_config(current_node_id, node_ids, schain_config_dict)
+    assert schain_config_dict['skaleConfig']['sChain']['schainID'] == get_schain_id(schain_name)
 
 
 def test_get_schain_originator():

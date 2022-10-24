@@ -24,7 +24,7 @@ from http import HTTPStatus
 import requests
 from flask import Blueprint, abort, g, request
 
-from core.node import Node
+from core.node import Node, NodeStatus
 from tools.helper import get_endpoint_call_speed
 
 from core.node import (
@@ -147,6 +147,8 @@ def send_tg_notification():
 @g_skale
 def exit_start():
     node = Node(g.skale, g.config)
+    if g.skale.nodes.get_node_status(g.config.id) == NodeStatus.IN_MAINTENANCE.value:
+        return construct_err_response(msg='Node is in maintenance')
     exit_thread = CustomThread('Start node exit', node.exit, once=True)
     exit_thread.start()
     return construct_ok_response()
@@ -186,7 +188,6 @@ def endpoint_info():
     logger.debug(request)
     call_speed = get_endpoint_call_speed(g.web3)
     block_number = g.web3.eth.blockNumber
-    syncing = g.web3.eth.syncing
     trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
     try:
         eth_client_version = g.web3.clientVersion
@@ -194,12 +195,20 @@ def endpoint_info():
         logger.exception('Cannot get client version')
         eth_client_version = 'unknown'
     geth_client = 'Geth' in eth_client_version
+    syncing = False
+    try:
+        syncing = g.web3.eth.syncing
+        if syncing is not False:
+            syncing = True
+    except Exception:
+        logger.exception('eth_syncing request errored')
+        syncing = None
     info = {
         'block_number': block_number,
-        'syncing': syncing,
         'trusted': trusted and geth_client,
         'client': eth_client_version,
-        'call_speed': call_speed
+        'call_speed': call_speed,
+        'syncing': syncing
     }
     logger.info(f'endpoint info: {info}')
     return construct_ok_response(info)
@@ -245,14 +254,14 @@ def _validator_nodes():
     return construct_ok_response(data=res['data'])
 
 
-@node_bp.route(get_api_url(BLUEPRINT_NAME, 'sm_abi'), methods=['GET'])
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'sm-abi'), methods=['GET'])
 def sm_abi():
     logger.debug(request)
     abi_hash = get_abi_hash(ABI_FILEPATH)
     return construct_ok_response(data=abi_hash)
 
 
-@node_bp.route(get_api_url(BLUEPRINT_NAME, 'ima_abi'), methods=['GET'])
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'ima-abi'), methods=['GET'])
 def ima_abi():
     logger.debug(request)
     abi_hash = get_abi_hash(MAINNET_IMA_ABI_FILEPATH)

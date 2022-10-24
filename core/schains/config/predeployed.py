@@ -41,7 +41,7 @@ from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminG
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS, generate_contracts
 
 from core.schains.config.accounts import add_to_accounts, generate_account
-from core.schains.config.generation import gen0, gen1
+from core.schains.config.generation import Gen
 from core.schains.config.helper import _string_to_storage, get_context_contract
 
 from core.schains.types import SchainType
@@ -50,6 +50,7 @@ from core.schains.limits import get_fs_allocated_storage
 from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC, ETHERBASE_ALLOC
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.helper import read_json
+from importlib.metadata import version
 
 logger = logging.getLogger(__name__)
 
@@ -78,9 +79,7 @@ def generate_predeployed_accounts(
         **generate_ima_accounts(on_chain_owner, schain_name)
     }
 
-    if gen0(generation):
-        pass
-    if gen1(generation):
+    if generation >= Gen.ONE:
         v1_predeployed_contracts = generate_v1_predeployed_contracts(
             schain_type=schain_type,
             on_chain_owner=on_chain_owner,
@@ -89,6 +88,8 @@ def generate_predeployed_accounts(
             message_proxy_for_schain_address=MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
         )
         predeployed_section.update(v1_predeployed_contracts)
+    if generation == Gen.ZERO:
+        pass  # no predeployeds for gen 0
     return predeployed_section
 
 
@@ -133,7 +134,8 @@ def generate_v1_predeployed_contracts(
         implementation_address=FILESTORAGE_IMPLEMENTATION_ADDRESS,
         schain_owner=on_chain_owner,
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
-        allocated_storage=allocated_storage
+        allocated_storage=allocated_storage,
+        version=version('filestorage_predeployed')
     )
 
     config_generator = UpgradeableConfigControllerGenerator()
@@ -183,10 +185,10 @@ def generate_owner_accounts(
     :rtype: dict
     """
     accounts = {}
-    if gen0(generation):
-        add_to_accounts(accounts, on_chain_owner, generate_account(SCHAIN_OWNER_ALLOC))
-    if gen1(generation):
+    if generation >= Gen.ONE:
         add_to_accounts(accounts, originator_address, generate_account(SCHAIN_OWNER_ALLOC))
+    if generation == Gen.ZERO:
+        add_to_accounts(accounts, on_chain_owner, generate_account(SCHAIN_OWNER_ALLOC))
     for node in schain_nodes:
         node_owner = public_key_to_address(node['publicKey'])
         add_to_accounts(accounts, node_owner, generate_account(NODE_OWNER_ALLOC))

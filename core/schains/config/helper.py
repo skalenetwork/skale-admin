@@ -56,12 +56,16 @@ def fix_address(address):
     return Web3.toChecksumAddress(address)
 
 
-def get_chain_id(schain_name):
+def get_chain_id(schain_name: str) -> str:
     keccak_hash = keccak.new(digest_bits=256)
     keccak_hash.update(schain_name.encode("utf-8"))
     hash_ = keccak_hash.hexdigest()
     hash_ = hash_[:13]			# use 52 bits
     return "0x" + hash_
+
+
+def get_schain_id(schain_name: str) -> int:
+    return int(get_chain_id(schain_name), 16)
 
 
 def _string_to_storage(slot: int, string: str) -> dict:
@@ -162,24 +166,24 @@ def get_schain_env(ulimit_check=True):
     return env
 
 
-def get_schain_container_cmd(schain_name: str,
-                             public_key: str = None,
-                             start_ts: int = None,
-                             enable_ssl: bool = True) -> str:
+def get_schain_container_cmd(
+    schain_name: str,
+    public_key: str = None,
+    start_ts: int = None,
+    enable_ssl: bool = True
+) -> str:
     opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
     if public_key:
-        sync_opts = get_schain_container_sync_opts(public_key, start_ts)
+        sync_opts = get_schain_container_sync_opts(start_ts)
         opts.extend(sync_opts)
     return ' '.join(opts)
 
 
 def get_schain_container_sync_opts(
-    public_key: str,
     start_ts: int = None
 ) -> list:
     sync_opts = [
-        '--download-snapshot readfromconfig',  # TODO: update in the next version
-        f'--public-key {public_key}'
+        '--download-snapshot readfromconfig',  # TODO: remove in the next version
     ]
     if start_ts:
         sync_opts.append(f'--start-timestamp {start_ts}')

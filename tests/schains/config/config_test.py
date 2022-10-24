@@ -79,14 +79,12 @@ def test_get_schain_volume_config():
 
 
 def test_get_schain_container_sync_opts():
-    sync_opts = get_schain_container_sync_opts(public_key='0x01', start_ts=123)
+    sync_opts = get_schain_container_sync_opts(start_ts=123)
     assert sync_opts == [
         '--download-snapshot readfromconfig',
-        '--public-key 0x01',
         '--start-timestamp 123'
     ]
-    sync_opts = get_schain_container_sync_opts(public_key='0x01')
+    sync_opts = get_schain_container_sync_opts()
     assert sync_opts == [
-        '--download-snapshot readfromconfig',
-        '--public-key 0x01'
+        '--download-snapshot readfromconfig'
     ]

@@ -129,7 +129,8 @@ def generate_schain_config(schain_name):
             "minimumDifficulty": "0x020000",
             "difficultyBoundDivisor": "0x0800",
             "durationLimit": "0x0d",
-            "blockReward": "0x4563918244F40000"
+            "blockReward": "0x4563918244F40000",
+            "skaleDisableChainIdCheck": True
         },
         "genesis": {
             "nonce": "0x0000000000000042",
@@ -348,8 +349,10 @@ def schain_on_contracts(skale, _schain_name) -> str:
     cleanup_nodes_schains(skale)
     create_nodes(skale)
     create_schain(skale, _schain_name)
-    yield _schain_name
-    cleanup_nodes_schains(skale)
+    try:
+        yield _schain_name
+    finally:
+        cleanup_nodes_schains(skale)
 
 
 @pytest.fixture

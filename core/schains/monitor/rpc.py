@@ -52,11 +52,13 @@ def monitor_schain_rpc(
 
     if skaled_status.exit_time_reached:
         logger.info(f'{schain_name} - Skipping RPC monitor: exit time reached')
+        skaled_status.log()
         schain_record.set_failed_rpc_count(0)
         return
 
     if skaled_status.downloading_snapshot:
         logger.info(f'{schain_name} - Skipping RPC monitor: downloading snapshot')
+        skaled_status.log()
         schain_record.set_failed_rpc_count(0)
         return
 
