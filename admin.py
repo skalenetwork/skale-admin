@@ -20,57 +20,87 @@
 import logging
 import time
 
-from skale import Skale
-from skale.wallets import RPCWallet
+from skale import Skale, SkaleIma
+from filelock import FileLock
 
 from core.node_config import NodeConfig
-from core.schains.creator import run_creator
+from core.schains.process_manager import run_process_manager
 from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
+from core.filebeat import update_filebeat_service
 
-from tools.configs import BACKUP_RUN
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, TM_URL
+from tools.configs import BACKUP_RUN, INIT_LOCK_PATH
+from tools.configs.web3 import (
+    ENDPOINT, ABI_FILEPATH, STATE_FILEPATH)
+from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
+from tools.sgx_utils import generate_sgx_key
+from tools.wallet_utils import init_wallet
 
-from web.models.schain import set_schains_first_run
-from web.migrations import run_migrations
+from web.models.schain import create_tables, set_schains_first_run, set_schains_monitor_id
+from web.migrations import migrate
 
 
 init_admin_logger()
 logger = logging.getLogger(__name__)
 
-INITIAL_SLEEP_INTERVAL = 135
-SLEEP_INTERVAL = 50
-MONITOR_INTERVAL = 45
+SLEEP_INTERVAL = 90
+WORKER_RESTART_SLEEP_INTERVAL = 2
 
 
-def monitor(skale, node_config):
+def monitor(skale, skale_ima, node_config):
     while True:
-        run_creator(skale, node_config)
-        time.sleep(MONITOR_INTERVAL)
+        try:
+            run_process_manager(skale, skale_ima, node_config)
+        except Exception:
+            logger.exception('Process manager procedure failed!')
+        logger.info(
+            f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager'
+        )
+        time.sleep(SLEEP_INTERVAL)
         run_cleaner(skale, node_config)
-        time.sleep(MONITOR_INTERVAL)
+        logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_cleaner')
+        time.sleep(SLEEP_INTERVAL)
 
 
-def main():
-    time.sleep(INITIAL_SLEEP_INTERVAL)
+def worker():
     node_config = NodeConfig()
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
-    rpc_wallet = RPCWallet(TM_URL, retry_if_failed=True)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, rpc_wallet)
-
-    soft_updates(skale, node_config)
-    run_migrations()
-
-    set_schains_first_run()
-    cleanup_notification_state()
+    wallet = init_wallet(node_config=node_config)
+    skale = Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
+    skale_ima = SkaleIma(ENDPOINT, MAINNET_IMA_ABI_FILEPATH, wallet)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
-    monitor(skale, node_config)
+    update_filebeat_service(node_config.ip, node_config.id, skale)
+    monitor(skale, skale_ima, node_config)
+
+
+def init():
+    skale = Skale(ENDPOINT, ABI_FILEPATH, state_path=STATE_FILEPATH)
+    node_config = NodeConfig()
+    init_lock = FileLock(INIT_LOCK_PATH)
+    with init_lock:
+        generate_sgx_key(node_config)
+        soft_updates(skale, node_config)
+        create_tables()
+        migrate()
+        set_schains_first_run()
+        set_schains_monitor_id()
+        cleanup_notification_state()
+
+
+def main():
+    try:
+        init()
+        while True:
+            worker()
+            time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
+    except Exception:
+        logger.exception('Admin worker failed')
 
 
 if __name__ == '__main__':

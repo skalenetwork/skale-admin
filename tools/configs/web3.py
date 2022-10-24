@@ -18,10 +18,22 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME
+from tools.configs import (
+    CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME
+)
 
-TM_URL = os.environ['TM_URL']
+from tools.configs import NODE_DATA_PATH
+
 ENDPOINT = os.environ['ENDPOINT']
-ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME)
+
+UNTRUSTED_PROVIDERS = ["infura.io", "gateway.pokt.network"]
+ABI_FILEPATH = os.getenv('ABI_FILEPATH') or \
+            os.path.join(CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME)
+STATE_FILENAME = os.getenv('STATE_FILENAME')
+STATE_BASE_PATH = os.path.join(NODE_DATA_PATH, 'eth-state')
+STATE_FILEPATH = None if not STATE_FILENAME \
+                    else os.path.join(STATE_BASE_PATH, STATE_FILENAME)
 
 NODE_REGISTER_CONFIRMATION_BLOCKS = 5
+
+ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'

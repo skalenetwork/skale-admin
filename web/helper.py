@@ -17,10 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import logging
 import json
+from functools import wraps
 from http import HTTPStatus
-from flask import Response
+
+from flask import g, Response
+from skale import Skale
+from skale.utils.web3_utils import init_web3
+
+from core.node_config import NodeConfig
+from tools.helper import init_skale
+from tools.wallet_utils import init_wallet
+from tools.configs.web3 import ENDPOINT
+
+from web import API_VERSION_PREFIX
 
 
 logger = logging.getLogger(__name__)
@@ -50,3 +62,32 @@ def construct_key_error_response(absent_keys):
     keys_str = ', '.join(absent_keys)
     msg = f'Required arguments: {keys_str}'
     return construct_err_response(msg=msg)
+
+
+def get_api_url(blueprint_name, method_name):
+    return os.path.join(API_VERSION_PREFIX, blueprint_name, method_name)
+
+
+def init_skale_from_node_config(node_config: NodeConfig) -> Skale:
+    wallet = init_wallet(node_config)
+    return init_skale(wallet)
+
+
+def g_web3(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        g.web3 = init_web3(ENDPOINT)
+        return func(*args, **kwargs)
+    return wrapper
+
+
+def g_skale(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if getattr(g, 'wallet', None) is None:
+            g.skale = init_skale_from_node_config(g.config)
+            g.wallet = g.skale.wallet
+        else:
+            g.skale = init_skale(g.wallet)
+        return func(*args, **kwargs)
+    return wrapper

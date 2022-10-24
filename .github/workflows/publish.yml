@@ -17,6 +17,8 @@ jobs:
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: true
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
       with:
@@ -24,13 +26,16 @@ jobs:
     - name: Build and publish container
       run: |
         export BRANCH=${GITHUB_REF##*/}
-        echo "Branch $BRANCH"
-        export VERSION=$(bash ./scripts/calculate_version.sh)
+        export VERSION=$(cat VERSION)
+        echo "Branch: $BRANCH"
+        echo "Base version: $VERSION"
+        export VERSION=$(bash ./helper-scripts/calculate_version.sh)
         echo "VERSION=$VERSION" >> $GITHUB_ENV
         echo "Version $VERSION"
         export RELEASE=true
         echo "RELEASE=$RELEASE" >> $GITHUB_ENV
-        bash ./scripts/build_and_publish.sh
+        export CONTAINER_NAME="admin"
+        bash ./helper-scripts/build_and_publish.sh
     - name: Checkout code
       uses: actions/checkout@master
     - name: Create Release

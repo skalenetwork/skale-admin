@@ -17,10 +17,15 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 from skale import Skale
 from skale.utils.helper import ip_from_bytes
 
 from core.node_config import NodeConfig
+from core.ima.schain import update_predeployed_ima
+
+
+logger = logging.getLogger(__name__)
 
 
 def soft_updates(skale: Skale, node_config: NodeConfig) -> None:
@@ -33,21 +38,21 @@ def soft_updates(skale: Skale, node_config: NodeConfig) -> None:
     wallet (Wallet): Instance of skale.py wallet
     node_config (NodeConfig): Instance of NodeConfig class
     """
+    logger.info('Performing soft updates ...')
     update_node_config_file(skale, node_config)
+    update_predeployed_ima()
 
 
 def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:
     """
-    - Fix for node_id field in the config file
-    - Add node name field to node config
+    - Ensure node config name field
+    - Ensure node config ip field
     """
     if node_config.id is not None:
-        if node_config.id == 0:
-            active_node_ids = skale.nodes.get_active_node_ids_by_address(skale.wallet.address)
-            node_config.id = active_node_ids[0]
-        if node_config.name is None:
-            node_info = skale.nodes.get(node_config.id)
-            node_config.name = node_info['name']
-        if node_config.ip is None:
-            node_info = skale.nodes.get(node_config.id)
-            node_config.ip = ip_from_bytes(node_info['ip'])
+        node_info = skale.nodes.get(node_config.id)
+        ip_bytes, name = node_info['ip'], node_info['name']
+        ip = ip_from_bytes(ip_bytes)
+        if node_config.ip != ip:
+            node_config.ip = ip
+        if node_config.name != name:
+            node_config.name = name

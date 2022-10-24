@@ -18,45 +18,74 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME, CONFIG_FOLDER
+from tools.configs import (
+    CONTRACTS_INFO_FOLDER,
+    IMA_CONTRACTS_INFO_NAME,
+    SCHAIN_CONFIG_DIR_SKALED
+)
 
 IMA_ENDPOINT = os.environ['IMA_ENDPOINT']
+MAINNET_IMA_ABI_FILEPATH = os.getenv('MAINNET_IMA_ABI_FILEPATH') or \
+    os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
 
-PROXY_ABI_FILENAME = 'proxy.json'
-MAINNET_PROXY_PATH = os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
+DISABLE_IMA = os.getenv('DISABLE_IMA') == 'True'
 
-IMA_DATA_FILENAME = 'ima_data.json'
-IMA_DATA_FILEPATH = os.path.join(CONFIG_FOLDER, IMA_DATA_FILENAME)
+SCHAIN_IMA_ABI_FILENAME = 'schain_ima_abi.json'
+SCHAIN_IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, SCHAIN_IMA_ABI_FILENAME)
 
-PRECOMPILED_IMA_CONTRACTS = {
-    'skale_features': {
-        'filename': 'SkaleFeatures'
+IMA_STATE_PATH = 'ima_state.json'
+IMA_STATE_CONTAINER_PATH = os.path.join(SCHAIN_CONFIG_DIR_SKALED, IMA_STATE_PATH)
+
+SCHAIN_IMA_CONTRACTS = {
+    'token_manager_eth': {
+        'filename': 'TokenManagerEth'
     },
-    'lock_and_data_for_schain': {
-        'filename': 'LockAndDataForSchain'
+    'token_manager_erc20': {
+        'filename': 'TokenManagerERC20'
     },
-    'eth_erc20': {
-        'filename': 'EthERC20'
+    'token_manager_erc721': {
+        'filename': 'TokenManagerERC721'
     },
-    'token_manager': {
-        'filename': 'TokenManager'
+    'token_manager_erc1155': {
+        'filename': 'TokenManagerERC1155'
     },
-    'lock_and_data_for_schain_erc20': {
-        'filename': 'LockAndDataForSchainERC20'
-    },
-    'erc20_module_for_schain': {
-        'filename': 'ERC20ModuleForSchain'
-    },
-    'lock_and_data_for_schain_erc721': {
-        'filename': 'LockAndDataForSchainERC721'
-    },
-    'erc721_module_for_schain': {
-        'filename': 'ERC721ModuleForSchain'
-    },
-    'token_factory': {
-        'filename': 'TokenFactory'
+    'token_manager_erc721_with_metadata': {
+        'filename': 'TokenManagerERC721WithMetadata'
     },
     'message_proxy_chain': {
         'filename': 'MessageProxyForSchain'
+    },
+    'token_manager_linker': {
+        'filename': 'TokenManagerLinker'
+    },
+    'community_locker': {
+        'filename': 'CommunityLocker'
+    },
+    'eth_erc20': {
+        'filename': 'EthERC20'
     }
 }
+
+
+MAINNET_IMA_CONTRACTS = {
+    'message_proxy_mainnet': {
+        'filename': 'MessageProxyForMainnet'
+    },
+    'linker': {
+        'filename': 'Linker'
+    },
+    'deposit_box_eth': {
+        'filename': 'DepositBoxEth'
+    },
+    'deposit_box_erc20': {
+        'filename': 'DepositBoxERC20'
+    },
+    'deposit_box_erc721': {
+        'filename': 'DepositBoxERC721'
+    },
+    'deposit_box_erc1155': {
+        'filename': 'DepositBoxERC1155'
+    }
+}
+
+IMA_TIME_FRAMING = 1800  # 30 min

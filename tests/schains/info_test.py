@@ -6,7 +6,7 @@ def test_get_schain_info_by_name(skale, schain_on_contracts, schain_db):
     info = get_schain_info_by_name(skale, name)
     assert info.name == name
     assert info.schain_id == skale.schains.name_to_id(name)
-    assert info.part_of_node == 0
+    assert info.part_of_node == 1
     assert info.dkg_status == 1
     assert not info.is_deleted
     assert info.first_run
@@ -15,8 +15,8 @@ def test_get_schain_info_by_name(skale, schain_on_contracts, schain_db):
     assert info.to_dict() == {
        'name': name,
        'id': skale.schains.name_to_id(name),
-       'owner': info.owner,
-       'part_of_node': 0,
+       'mainnet_owner': info.mainnet_owner,
+       'part_of_node': 1,
        'dkg_status': 1,
        'is_deleted': False,
        'first_run': True,

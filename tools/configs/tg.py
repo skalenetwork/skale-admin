@@ -21,3 +21,7 @@ import os
 
 TG_API_KEY = os.getenv('TG_API_KEY', None)
 TG_CHAT_ID = os.getenv('TG_CHAT_ID', None)
+
+CHECKS_STATE_EXPIRATION = int(
+    os.getenv('CHECKS_STATE_EXPIRATION', 24 * 60 * 60)
+)

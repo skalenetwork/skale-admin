@@ -17,34 +17,42 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import logging
+import os
 import shutil
 from multiprocessing import Process
 
-
-from core.schains.checks import SChainChecks
-from core.schains.helper import get_schain_dir_path
-from core.schains.runner import get_container_name, is_exited
-from core.schains.config.helper import get_allowed_endpoints
-from core.schains.types import ContainerType
-
 from sgx import SgxClient
 
-from tools.bls.dkg_utils import get_secret_key_share_filepath
+from core.schains.checks import SChainChecks
+from core.schains.config.directory import schain_config_dir
+from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.schains.firewall.utils import get_default_rule_controller
+from core.schains.config.helper import (
+    get_base_port_from_config,
+    get_node_ips_from_config,
+    get_own_ip_from_config,
+    get_schain_config
+)
+from core.schains.process_manager_helper import terminate_schain_process
+from core.schains.runner import get_container_name, is_exited
+from core.schains.types import ContainerType
+from core.schains.firewall.utils import get_sync_agent_ranges
+
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from tools.configs.containers import (
+    SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
+)
+from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
-from tools.iptables import remove_rules as remove_iptables_rules
-from tools.helper import read_json
+from tools.helper import merged_unique, read_json, is_node_part_of_chain
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
-from web.models.schain import mark_schain_deleted
+from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
 
 
 logger = logging.getLogger(__name__)
-docker_utils = DockerUtils()
 
 JOIN_TIMEOUT = 1800
 
@@ -52,7 +60,10 @@ JOIN_TIMEOUT = 1800
 def run_cleaner(skale, node_config):
     process = Process(target=monitor, args=(skale, node_config))
     process.start()
+    logger.info('Cleaner process started')
     process.join(JOIN_TIMEOUT)
+    logger.info('Cleaner process is joined.')
+    logger.info('Terminating the process')
     process.terminate()
     process.join()
 
@@ -62,20 +73,25 @@ def log_remove(component_name, schain_name):
 
 
 def remove_schain_volume(schain_name: str, dutils: DockerUtils = None) -> None:
-    dutils = dutils or docker_utils
+    dutils = dutils or DockerUtils()
     log_remove('volume', schain_name)
     dutils.rm_vol(schain_name)
 
 
 def remove_schain_container(schain_name: str, dutils: DockerUtils = None):
-    dutils = dutils or docker_utils
+    dutils = dutils or DockerUtils()
     log_remove('container', schain_name)
     schain_container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
-    return dutils.safe_rm(schain_container_name, v=True, force=True)
+    return dutils.safe_rm(
+        schain_container_name,
+        v=True,
+        force=True,
+        stop_timeout=SCHAIN_STOP_TIMEOUT
+    )
 
 
 def remove_ima_container(schain_name: str, dutils: DockerUtils = None):
-    dutils = dutils or docker_utils
+    dutils = dutils or DockerUtils()
     log_remove('IMA container', schain_name)
     ima_container_name = get_container_name(IMA_CONTAINER, schain_name)
     dutils.safe_rm(ima_container_name, v=True, force=True)
@@ -83,24 +99,34 @@ def remove_ima_container(schain_name: str, dutils: DockerUtils = None):
 
 def remove_config_dir(schain_name: str) -> None:
     log_remove('config directory', schain_name)
-    schain_dir_path = get_schain_dir_path(schain_name)
+    schain_dir_path = schain_config_dir(schain_name)
     shutil.rmtree(schain_dir_path)
 
 
-def monitor(skale, node_config):
+def monitor(skale, node_config, dutils=None):
+    dutils = dutils or DockerUtils()
     logger.info('Cleaner procedure started.')
-    schains_on_node = get_schains_on_node()
-    schain_names_on_contracts = get_schain_names_from_contract(skale,
-                                                               node_config.id)
-    logger.info(f'Found such schains on contracts: {schain_names_on_contracts}')
-    logger.info(f'Found such schains on node: {schains_on_node}')
-    for schain_name in schains_on_node:
-        try:
-            if schain_name not in schain_names_on_contracts:
-                ensure_schain_removed(skale, schain_name, node_config.id)
-        except Exception:
-            logger.exception(f'Removing schain {schain_name} failed')
+    schains_on_node = get_schains_on_node(dutils=dutils)
+    schain_names_on_contracts = get_schain_names_from_contract(
+        skale,
+        node_config.id
+    )
+    logger.info(f'\nsChains on contracts: {schain_names_on_contracts}\n\
+sChains on node: {schains_on_node}')
 
+    for schain_name in schains_on_node:
+        if schain_name not in schain_names_on_contracts:
+            logger.warning(f'sChain {schain_name} was found on node, but not on contracts: \
+{schain_names_on_contracts}, going to remove it!')
+            try:
+                ensure_schain_removed(
+                    skale,
+                    schain_name,
+                    node_config.id,
+                    dutils=dutils
+                )
+            except Exception:
+                logger.exception(f'sChain removal {schain_name} failed')
     logger.info('Cleanup procedure finished')
 
 
@@ -109,19 +135,24 @@ def get_schain_names_from_contract(skale, node_id):
     return list(map(lambda schain: schain['name'], schains_on_contract))
 
 
-def get_schains_on_node(dutils=None):
-    dutils = dutils or docker_utils
-    # get all schain dirs
-    schain_dirs = os.listdir(SCHAINS_DIR_PATH)
-    # get all schain containers
+def get_schains_with_containers(dutils=None):
+    dutils = dutils or DockerUtils()
+    return [
+        c.name.replace('skale_schain_', '', 1)
+        for c in dutils.get_all_schain_containers(all=True)
+    ]
 
-    schain_containers = dutils.get_all_schain_containers(all=True)
-    schain_containers_names = []
-    for container in schain_containers:
-        schain_name = container.name.replace('skale_schain_', '', 1)
-        schain_containers_names.append(schain_name)
-    # merge 2 lists without duplicates
-    return sorted(list(set(schain_dirs + schain_containers_names)))
+
+def get_schains_on_node(dutils=None):
+    dutils = dutils or DockerUtils()
+    schains_with_dirs = os.listdir(SCHAINS_DIR_PATH)
+    schains_with_container = get_schains_with_containers(dutils)
+    schains_active_records = get_schains_names()
+    return sorted(merged_unique(
+        schains_with_dirs,
+        schains_with_container,
+        schains_active_records
+    ))
 
 
 def schain_names_to_ids(skale, schain_names):
@@ -132,34 +163,85 @@ def schain_names_to_ids(skale, schain_names):
     return ids
 
 
-def remove_firewall_rules(schain_name):
-    endpoints = get_allowed_endpoints(schain_name)
-    remove_iptables_rules(endpoints)
-
-
 def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
-    if not skale.schains_internal.is_schain_exist(schain_name) or \
-            is_exited(schain_name, dutils=dutils):
-        logger.info(arguments_list_string(
-            {'sChain name': schain_name}, 'Removed sChain found')
+    dutils = dutils or DockerUtils()
+    is_schain_exist = skale.schains_internal.is_schain_exist(schain_name)
+
+    if not is_schain_exist:
+        msg = arguments_list_string(
+            {'sChain name': schain_name},
+            'Going to remove this sChain because it was removed from contracts'
         )
-        delete_bls_keys(skale, schain_name)
-        cleanup_schain(node_id, schain_name)
+        return remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
+
+    if skale.node_rotation.is_rotation_active(schain_name):
+        msg = arguments_list_string(
+            {'sChain name': schain_name},
+            'Rotation is in progress (new group created), skipping cleaner'
+        )
+        logger.info(msg)
+        return
+
+    if not is_node_part_of_chain(skale, schain_name, node_id):
+        msg = arguments_list_string(
+            {'sChain name': schain_name},
+            'Going to remove this sChain because this node is not in the group'
+        )
+        return remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
+
+    msg = arguments_list_string(
+        {'sChain name': schain_name},
+        'sChain do not satisfy removal condidions'
+    )
+    logger.warning(msg)
 
 
-def cleanup_schain(node_id, schain_name, dutils=None):
-    checks = SChainChecks(schain_name, node_id)
-    if checks.container or is_exited(schain_name, container_type=ContainerType.schain,
-                                     dutils=dutils):
-        remove_schain_container(schain_name)
-    if checks.volume:
-        remove_schain_volume(schain_name)
-    if checks.firewall_rules:
-        remove_firewall_rules(schain_name)
-    if checks.ima_container or is_exited(schain_name, container_type=ContainerType.ima,
-                                         dutils=dutils):
-        remove_ima_container(schain_name)
-    if checks.data_dir:
+def remove_schain(skale, node_id, schain_name, msg, dutils=None) -> None:
+    schain_record = upsert_schain_record(schain_name)
+    logger.warning(msg)
+    terminate_schain_process(schain_record)
+    delete_bls_keys(skale, schain_name)
+    sync_agent_ranges = get_sync_agent_ranges(skale)
+    cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=dutils)
+
+
+def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None) -> None:
+    dutils = dutils or DockerUtils()
+    schain_record = upsert_schain_record(schain_name)
+
+    rc = get_default_rule_controller(
+        name=schain_name,
+        sync_agent_ranges=sync_agent_ranges
+    )
+    checks = SChainChecks(
+        schain_name,
+        node_id,
+        rule_controller=rc,
+        schain_record=schain_record
+    )
+    if checks.skaled_container.status or is_exited(
+        schain_name,
+        container_type=ContainerType.schain,
+        dutils=dutils
+    ):
+        remove_schain_container(schain_name, dutils=dutils)
+    if checks.volume.status:
+        remove_schain_volume(schain_name, dutils=dutils)
+        if checks.firewall_rules.status:
+            conf = get_schain_config(schain_name)
+            base_port = get_base_port_from_config(conf)
+            own_ip = get_own_ip_from_config(conf)
+            node_ips = get_node_ips_from_config(conf)
+            rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
+            rc.cleanup()
+    if not DISABLE_IMA:
+        if checks.ima_container.status or is_exited(
+            schain_name,
+            container_type=ContainerType.ima,
+            dutils=dutils
+        ):
+            remove_ima_container(schain_name, dutils=dutils)
+    if checks.config_dir.status:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
 
@@ -168,9 +250,11 @@ def delete_bls_keys(skale, schain_name):
     last_rotation_id = skale.schains.get_last_rotation_id(schain_name)
     for i in range(last_rotation_id + 1):
         try:
-            secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)
+            secret_key_share_filepath = get_secret_key_share_filepath(
+                schain_name, i)
             if os.path.isfile(secret_key_share_filepath):
-                secret_key_share_config = read_json(secret_key_share_filepath) or {}
+                secret_key_share_config = read_json(
+                    secret_key_share_filepath) or {}
                 bls_key_name = secret_key_share_config.get('key_share_name')
                 if bls_key_name:
                     sgx = SgxClient(SGX_SERVER_URL,

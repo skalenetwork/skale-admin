@@ -18,7 +18,8 @@
     "minimumDifficulty": "0x020000",
     "difficultyBoundDivisor": "0x0800",
     "durationLimit": "0x0d",
-    "blockReward": "0x4563918244F40000"
+    "blockReward": "0x4563918244F40000",
+    "skaleDisableChainIdCheck": true
   },
   "unddos": {
 		"origins": [
@@ -55,7 +56,10 @@
             "httpsRpcPort": 10002,
             "wsRpcPort": 10003,
             "wssRpcPort": 10008,
-            "bindIP": "0.0.0.0"
+            "infoHttpRpcPort": 10009,
+            "info-acceptors": 1,
+            "bindIP": "0.0.0.0",
+            "imaMonitoringPort": 10006
         },
         "sChain": {
             "schainID": 1,

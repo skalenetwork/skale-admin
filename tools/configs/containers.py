@@ -22,6 +22,8 @@ from tools.configs import CONFIG_FOLDER
 from tools.helper import read_json
 
 DATA_DIR_CONTAINER_PATH = '/data_dir'
+SHARED_SPACE_CONTAINER_PATH = '/shared-space'
+SHARED_SPACE_VOLUME_NAME = 'shared-space'
 
 SCHAIN_CONTAINER = 'schain'
 IMA_CONTAINER = 'ima'
@@ -34,6 +36,20 @@ CONTAINERS_INFO = read_json(CONTAINERS_FILEPATH)
 
 CONTAINER_NOT_FOUND = 'not_found'
 EXITED_STATUS = 'exited'
+CREATED_STATUS = 'created'
 RUNNING_STATUS = 'running'
 
 LOCAL_IP = '127.0.0.1'
+
+DOCKER_DEFAULT_HEAD_LINES = 400
+DOCKER_DEFAULT_TAIL_LINES = 10000
+
+DOCKER_DEFAULT_STOP_TIMEOUT = 20
+
+SCHAIN_STOP_TIMEOUT = int(os.getenv('SCHAIN_STOP_TIMEOUT', 60))
+
+DEFAULT_DOCKER_HOST = 'unix:///var/run/skale/docker.sock'
+
+MAX_SCHAIN_RESTART_COUNT = int(os.getenv('MAX_SCHAIN_RESTART_COUNT', 5))
+
+CONTAINER_LOGS_SEPARATOR = b'=' * 80 + b'\n'

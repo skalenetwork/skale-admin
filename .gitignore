@@ -25,7 +25,8 @@ server/*_tmp*
 *_tmp*
 *.db
 
-log/
+# log/
+*.log
 config/data.json
 
 # terraform files
@@ -50,7 +51,22 @@ dkgpython.so
 # tests
 node_config.json
 unique.json
-test_abi.json
 *.key
 *.crt
 *.csr
+logs.tar.gz
+
+tests/skale-data/node_data/schains/*
+test_abi.json
+schain_status_sample.json
+
+*.lock
+
+skale-manager-*
+
+tests/skale-data/contracts_info/ima.json
+tests/skale-data/contracts_info/schain_ima_abi.json
+temp_*
+
+.DS_Store
+.coverage*

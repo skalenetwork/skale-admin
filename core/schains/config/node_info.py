@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2019-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -18,16 +18,20 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
+
 from skale.dataclasses.node_info import NodeInfo
+from skale.dataclasses.skaled_ports import SkaledPorts
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
-from core.schains.config.ima import get_message_proxy_addresses
+from core.schains.config.skale_manager_opts import SkaleManagerOpts
 from core.schains.limits import get_schain_type
-from tools.configs import SGX_SERVER_URL
-from tools.configs.ima import IMA_ENDPOINT
+from tools.configs import (
+    SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, ENV_TYPE, ALLOCATION_FILEPATH
+)
+from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILEPATH
 
-from tools.bls.dkg_utils import get_secret_key_share_filepath
-from tools.helper import read_json
+from core.schains.dkg.utils import get_secret_key_share_filepath
+from tools.helper import read_json, safe_load_yml
 
 
 @dataclass
@@ -36,7 +40,6 @@ class CurrentNodeInfo(NodeInfo):
     bind_ip: str
     log_level: str
     log_level_config: str
-    ima_mainnet: str
     ima_message_proxy_schain: str
     ima_message_proxy_mainnet: str
     rotate_after_block: int
@@ -50,6 +53,8 @@ class CurrentNodeInfo(NodeInfo):
     transaction_queue_size: int
     max_open_leveldb_files: int
 
+    skale_manager_opts: SkaleManagerOpts
+
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         return {
@@ -58,7 +63,6 @@ class CurrentNodeInfo(NodeInfo):
                 'bindIP': self.bind_ip,
                 'logLevel': self.log_level,
                 'logLevelConfig': self.log_level_config,
-                'imaMainNet': self.ima_mainnet,
                 'imaMessageProxySChain': self.ima_message_proxy_schain,
                 'imaMessageProxyMainNet': self.ima_message_proxy_mainnet,
                 'rotateAfterBlock': self.rotate_after_block,
@@ -70,38 +74,51 @@ class CurrentNodeInfo(NodeInfo):
                 'collectionDuration': self.collection_duration,
                 'transactionQueueSize': self.transaction_queue_size,
                 'maxOpenLeveldbFiles': self.max_open_leveldb_files,
+                'info-acceptors': 1,
+                'imaMonitoringPort': self.base_port + SkaledPorts.IMA_MONITORING.value,
+                'skale-manager': self.skale_manager_opts.to_dict()
             }
         }
 
 
-def generate_current_node_info(node: dict, node_id: int, ecdsa_key_name: str,
-                               static_schain_params: dict, schain: dict,
-                               schains_on_node: list, rotation_id: int) -> CurrentNodeInfo:
+def get_rotate_after_block(schain_type_name: str) -> int:
+    schain_allocation_data = safe_load_yml(ALLOCATION_FILEPATH)
+    return schain_allocation_data[ENV_TYPE]['rotate_after_block'][schain_type_name]
+
+
+def generate_current_node_info(
+    node: dict, node_id: int, ecdsa_key_name: str, static_schain_params: dict,
+    schain: dict, schains_on_node: list, rotation_id: int, skale_manager_opts: SkaleManagerOpts
+) -> CurrentNodeInfo:
     schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain['name'],
                                                             node['port'])
-    schain_type_name = get_schain_type(schain).name
+    schain_type_name = get_schain_type(schain['partOfNode']).name
+    rotate_after_block = get_rotate_after_block(schain_type_name)
     return CurrentNodeInfo(
         node_id=node_id,
         name=node['name'],
         base_port=schain_base_port_on_node,
-        ima_mainnet=IMA_ENDPOINT,
         ecdsa_key_name=ecdsa_key_name,
         wallets=generate_wallets_config(schain['name'], rotation_id),
+        rotate_after_block=rotate_after_block,
+        skale_manager_opts=skale_manager_opts,
         **get_message_proxy_addresses(),
         **static_schain_params['current_node_info'],
         **static_schain_params['cache_options'][schain_type_name]
     )
 
 
-def generate_wallets_config(schain_name, rotation_id):
+def generate_wallets_config(schain_name: str, rotation_id: int) -> dict:
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
     secret_key_share_config = read_json(secret_key_share_filepath)
+
     wallets = {
         'ima': {
-            'url': SGX_SERVER_URL,
             'keyShareName': secret_key_share_config['key_share_name'],
             't': secret_key_share_config['t'],
-            'n': secret_key_share_config['n']
+            'n': secret_key_share_config['n'],
+            'certFile': SGX_SSL_CERT_FILEPATH,
+            'keyFile': SGX_SSL_KEY_FILEPATH
         }
     }
     common_public_keys = secret_key_share_config['common_public_key']
@@ -115,3 +132,14 @@ def generate_wallets_config(schain_name, rotation_id):
         wallets['ima'][name] = str(value)
 
     return wallets
+
+
+def get_message_proxy_addresses():
+    mainnet_ima_abi = read_json(MAINNET_IMA_ABI_FILEPATH)
+    schain_ima_abi = read_json(SCHAIN_IMA_ABI_FILEPATH)
+    ima_mp_schain = schain_ima_abi['message_proxy_chain_address']
+    ima_mp_mainnet = mainnet_ima_abi['message_proxy_mainnet_address']
+    return {
+        'ima_message_proxy_schain': ima_mp_schain,
+        'ima_message_proxy_mainnet': ima_mp_mainnet
+    }

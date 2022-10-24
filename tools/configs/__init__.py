@@ -16,9 +16,8 @@ else:
     SKALE_VOLUME_PATH = '/skale_vol'
     NODE_DATA_PATH = '/skale_node_data'
 
-
 SCHAIN_NODE_DATA_PATH = '/skale_node_data'
-SCHAIN_DATA_PATH = '/skale_schain_data'
+SCHAIN_CONFIG_DIR_SKALED = '/schain_config'
 CONFIG_FOLDER_NAME = 'config'
 CONTRACTS_INFO_FOLDER_NAME = 'contracts_info'
 
@@ -41,8 +40,8 @@ SSL_CERTIFICATES_FILEPATH = os.path.join(NODE_DATA_PATH, SSL_CERTIFICATES_FILENA
 BACKUP_RUN = os.getenv('BACKUP_RUN', False)
 SGX_SERVER_URL = os.environ.get('SGX_SERVER_URL')
 
-SGX_URL = urlparse(SGX_SERVER_URL)
-SGX_HTTPS_ENABLED = SGX_URL.scheme == 'https'
+PARSED_SGX_URL = urlparse(SGX_SERVER_URL)
+SGX_HTTPS_ENABLED = PARSED_SGX_URL.scheme == 'https'
 
 SGX_CERTIFICATES_FOLDER_NAME = os.getenv('SGX_CERTIFICATES_DIR_NAME')
 SGX_SSL_KEY_NAME = 'sgx.key'
@@ -60,15 +59,26 @@ else:
     SGX_SSL_KEY_FILEPATH = None
     SGX_SSL_CERT_FILEPATH = None
 
-NODE_CONFIG_LOCK_PATH = os.getenv('LOCK_PATH')
+NODE_CONFIG_LOCK_PATH = os.getenv('NODE_CONFIG_LOCK_PATH')
 if not NODE_CONFIG_LOCK_PATH:
-    NODE_CONFIG_LOCK_PATH = '/tmp/skale_node_config.lock'
+    NODE_CONFIG_LOCK_PATH = os.path.join(NODE_DATA_PATH,
+                                         'node_config.lock')
+INIT_LOCK_PATH = os.getenv('INIT_LOCK_PATH')
+if not INIT_LOCK_PATH:
+    INIT_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'init.lock')
 
-ROTATION_FLAG_FILENAME = '.rotation'
+META_FILEPATH = os.path.join(NODE_DATA_PATH, 'meta.json')
 
-D_ALLOWED_TIMESTAMP_DIFF = 120
-ALLOWED_TIMESTAMP_DIFF = os.getenv('ALLOWED_TIMESTAMP_DIFF', D_ALLOWED_TIMESTAMP_DIFF)
-try:
-    ALLOWED_TIMESTAMP_DIFF = int(ALLOWED_TIMESTAMP_DIFF)
-except TypeError:
-    ALLOWED_TIMESTAMP_DIFF = D_ALLOWED_TIMESTAMP_DIFF
+ALLOWED_TIMESTAMP_DIFF = int(os.getenv('ALLOWED_TIMESTAMP_DIFF', 120))
+
+ENV_TYPE = os.environ.get('ENV_TYPE')
+ALLOCATION_FILEPATH = os.path.join(CONFIG_FOLDER, 'schain_allocation.yml')
+
+DEFAULT_POOL = 'transactions'
+
+WATCHDOG_PORT = 3009
+
+ZMQ_PORT = 1031
+ZMQ_TIMEOUT = 5
+
+CHECK_REPORT_PATH = os.path.join(SKALE_VOLUME_PATH, 'reports', 'checks.json')

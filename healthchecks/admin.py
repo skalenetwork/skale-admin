@@ -21,7 +21,8 @@ import os
 import time
 
 MAX_ALLOWED_LOG_TIME_DIFF = os.getenv('MAX_ALLOWED_LOG_TIME_DIFF', 600)
-ADMIN_LOG_FILEPATH = os.getenv('ADMIN_LOG_FILEPATH', '/skale_node_data/log/admin.log')
+ADMIN_LOG_FILEPATH = os.getenv('ADMIN_LOG_FILEPATH',
+                               '/skale_node_data/log/admin.log')
 
 
 def run_healthcheck():
@@ -29,7 +30,8 @@ def run_healthcheck():
     current_time = time.time()
     time_diff = current_time - modification_time
 
-    print(f'Modification time diff: {time_diff}, limit is {MAX_ALLOWED_LOG_TIME_DIFF}')
+    print(f'Modification time diff: {time_diff}, limit is '
+          f'{MAX_ALLOWED_LOG_TIME_DIFF}')
     if time_diff > int(MAX_ALLOWED_LOG_TIME_DIFF):
         exit(3)
     else:
