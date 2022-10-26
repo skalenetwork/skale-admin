@@ -52,13 +52,21 @@ def checks(
 
 
 @pytest.fixture
-def bad_checks(schain_db, _schain_name, rule_controller, node_config, ima_data):
+def bad_checks(
+    schain_db,
+    _schain_name,
+    rule_controller,
+    node_config,
+    ima_data,
+    dutils
+):
     schain_record = upsert_schain_record(schain_db)
     return SChainChecksMockBad(
         _schain_name,
         node_config.id,
         schain_record,
-        rule_controller=rule_controller
+        rule_controller=rule_controller,
+        dutils=dutils
     )
 
 
@@ -139,7 +147,7 @@ def test_is_reload_mode(schain_db, checks, bad_checks, skaled_status_reload):
     assert get_monitor_type(schain_record, bad_checks, False, skaled_status_reload) == ReloadMonitor
 
 
-def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db):
+def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db, dutils):
     with mock.patch('core.schains.monitor.main.RegularMonitor', CrashingTestMonitor), \
             mock.patch('core.schains.monitor.main.is_node_part_of_chain', return_value=True):
         assert not run_monitor_for_schain(
@@ -147,7 +155,8 @@ def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db):
             skale_ima,
             node_config,
             {'name': schain_db, 'partOfNode': 0, 'generation': 0},
-            once=True
+            once=True,
+            dutils=dutils
         )
     with mock.patch('core.schains.monitor.main.RegularMonitor', BaseTestMonitor):
         assert run_monitor_for_schain(
@@ -155,7 +164,8 @@ def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db):
             skale_ima,
             node_config,
             {'name': schain_db, 'partOfNode': 0, 'generation': 0},
-            once=True
+            once=True,
+            dutils=dutils
         )
 
 
