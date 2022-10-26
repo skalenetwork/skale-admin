@@ -108,7 +108,7 @@ def post_bp_files_data(bp, request, file_data, full_response=False, **kwargs):
 def test_upload(skale_bp, ssl_folder, db, cert_key_pair_host):
     cert_path, key_path = cert_key_pair_host
     with mock.patch('web.routes.ssl.set_schains_need_reload'), \
-            mock.patch('core.nginx.restart_nginx_container'):
+            mock.patch('web.routes.ssl.reload_nginx'):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(
                 skale_bp,
@@ -141,7 +141,7 @@ def test_upload_bad_cert(skale_bp, db, ssl_folder, bad_cert_host):
 def test_upload_cert_exist(skale_bp, db, cert_key_pair_host, cert_key_pair):
     cert_path, key_path = cert_key_pair_host
     with mock.patch('web.routes.ssl.set_schains_need_reload'), \
-            mock.patch('core.nginx.restart_nginx_container'):
+            mock.patch('web.routes.ssl.reload_nginx'):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(
                 skale_bp,
