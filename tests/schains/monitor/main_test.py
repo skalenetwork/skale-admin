@@ -33,13 +33,21 @@ class SChainChecksMockBad(SChainChecks):
 
 
 @pytest.fixture
-def checks(schain_db, _schain_name, rule_controller, node_config, ima_data):
+def checks(
+    schain_db,
+    _schain_name,
+    rule_controller,
+    node_config,
+    ima_data,
+    dutils
+):
     schain_record = upsert_schain_record(schain_db)
     return SChainChecksMock(
         _schain_name,
         node_config.id,
         schain_record,
-        rule_controller=rule_controller
+        rule_controller=rule_controller,
+        dutils=dutils
     )
 
 

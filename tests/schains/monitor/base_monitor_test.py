@@ -128,7 +128,8 @@ def test_crashing_monitor(
         node_config=node_config,
         rotation_data={'rotation_id': 1, 'leaving_node': 1},
         checks=schain_checks,
-        rule_controller=rule_controller
+        rule_controller=rule_controller,
+        dutils=dutils
     )
     with pytest.raises(Exception):
         test_monitor.run()
