@@ -49,9 +49,6 @@ SCHAIN_IMA_CONTRACTS = {
     'token_manager_erc1155': {
         'filename': 'TokenManagerERC1155'
     },
-    'token_manager_erc721_with_metadata': {
-        'filename': 'TokenManagerERC721WithMetadata'
-    },
     'message_proxy_chain': {
         'filename': 'MessageProxyForSchain'
     },
