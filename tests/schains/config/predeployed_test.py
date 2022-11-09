@@ -8,7 +8,7 @@ from core.schains.config.predeployed import (
 from tools.configs.schains import ETHERBASE_ALLOC
 
 
-NUM_OF_PREDEPLOYED_CONTRACTS = 23
+NUM_OF_PREDEPLOYED_CONTRACTS = 21
 
 
 def test_generate_predeployed_accounts():
