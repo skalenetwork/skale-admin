@@ -22,7 +22,6 @@ import logging
 from flask import Blueprint, g, request
 from skale.utils.account_tools import send_eth as send_eth_
 from skale.utils.web3_utils import to_checksum_address
-from web3 import Web3
 
 from web.helper import (
     construct_ok_response,

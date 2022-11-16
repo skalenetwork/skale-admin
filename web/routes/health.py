@@ -36,7 +36,7 @@ from core.schains.firewall.utils import (
 )
 from core.schains.ima import get_ima_log_checks
 from tools.sgx_utils import SGX_SERVER_URL
-from tools.configs import SGX_CERTIFICATES_FOLDER, ZMQ_PORT, ZMQ_TIMEOUT
+from tools.configs import ZMQ_PORT, ZMQ_TIMEOUT
 from web.models.schain import SChainRecord
 from web.helper import (
     construct_err_response,
