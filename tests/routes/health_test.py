@@ -21,7 +21,7 @@ TEST_SGX_KEYNAME = 'test_keyname'
 
 
 @pytest.fixture
-def skale_bp(skale, dutils):
+def skale_bp(skale, nodes, dutils):
     app = Flask(__name__)
     app.register_blueprint(health_bp)
 
@@ -29,12 +29,14 @@ def skale_bp(skale, dutils):
         g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
-        g.config.id = 1
+        g.config.id = nodes[0]
 
     with appcontext_pushed.connected_to(handler, app):
         SChainRecord.create_table()
-        yield app.test_client()
-        SChainRecord.drop_table()
+        try:
+            yield app.test_client()
+        finally:
+            SChainRecord.drop_table()
 
 
 @pytest.fixture

@@ -27,14 +27,13 @@ from core.schains.runner import run_schain_container, run_ima_container, get_con
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
 from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.web3 import ABI_FILEPATH
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
-TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
-    DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'manager.json')
-TEST_IMA_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
+IMA_ABI_FILEPATH = os.getenv('IMA_ABI_FILEPATH') or os.path.join(
     DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'ima.json')
 
 
@@ -178,14 +177,14 @@ def init_web3_skale() -> Skale:
 
 
 def init_skale_from_wallet(wallet) -> Skale:
-    return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
+    return Skale(ENDPOINT, ABI_FILEPATH, wallet)
 
 
 def init_skale_ima():
-    print(ENDPOINT, TEST_IMA_ABI_FILEPATH)
+    print(ENDPOINT, IMA_ABI_FILEPATH)
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    return SkaleIma(ENDPOINT, TEST_IMA_ABI_FILEPATH, wallet)
+    return SkaleIma(ENDPOINT, IMA_ABI_FILEPATH, wallet)
 
 
 def init_web3_wallet() -> Web3Wallet:

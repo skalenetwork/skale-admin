@@ -123,11 +123,12 @@ def ima_log_checks():
 @health_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx'), methods=['GET'])
 def sgx_info():
     logger.debug(request)
-    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+    sgx = SgxClient(SGX_SERVER_URL)
     try:
         status = sgx.get_server_status()
         version = sgx.get_server_version()
-    except Exception:  # todo: catch specific error - edit sgx.py
+    except Exception as e:  # todo: catch specific error - edit sgx.py
+        print(e)
         status = 1
         version = None
     sgx_host = urlparse(SGX_SERVER_URL).hostname

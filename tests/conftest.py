@@ -7,10 +7,26 @@ import string
 import subprocess
 
 import pytest
-from skale.utils.contracts_provision.main import (
-    create_nodes, create_schain, cleanup_nodes_schains
-)
 
+from skale import SkaleManager
+from skale.wallets import Web3Wallet
+from skale.utils.account_tools import generate_account, send_eth
+from skale.utils.contracts_provision.fake_multisig_contract import (
+    deploy_fake_multisig_contract
+)
+from skale.utils.contracts_provision.main import (
+    add_test_permissions,
+    add_test2_schain_type,
+    cleanup_nodes,
+    cleanup_nodes_schains,
+    create_nodes,
+    create_schain,
+    link_nodes_to_validator,
+    setup_validator
+)
+from skale.utils.web3_utils import init_web3
+
+from core.ima.schain import update_predeployed_ima
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
 from core.schains.config.helper import (
@@ -26,6 +42,7 @@ from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
 from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.web3 import ABI_FILEPATH
 from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.docker_utils import DockerUtils
 from tools.helper import write_json
@@ -34,11 +51,21 @@ from web.models.schain import create_tables, SChainRecord, upsert_schain_record
 
 from tests.utils import (
     CONTAINERS_JSON,
+    ENDPOINT,
+    ETH_PRIVATE_KEY,
     generate_cert,
     get_test_rule_controller,
-    init_skale_ima,
-    init_web3_skale
+    init_skale_from_wallet,
+    init_skale_ima
 )
+
+NUMBER_OF_NODES = 2
+ETH_AMOUNT_PER_NODE = 1
+
+
+@pytest.fixture(scope='session')
+def predeployed_ima():
+    update_predeployed_ima()
 
 
 @pytest.fixture
@@ -49,9 +76,64 @@ def containers_json():
     os.remove(CONTAINERS_FILEPATH)
 
 
+@pytest.fixture(scope='session')
+def web3():
+    """ Returns a SKALE Manager instance with provider from config """
+    w3 = init_web3(ENDPOINT)
+    return w3
+
+
+@pytest.fixture(scope='session')
+def skale(web3):
+    """ Returns a SKALE Manager instance with provider from config """
+    wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
+    skale_obj = init_skale_from_wallet(wallet)
+    add_test_permissions(skale_obj)
+    add_test2_schain_type(skale_obj)
+    if skale_obj.constants_holder.get_launch_timestamp() != 0:
+        skale_obj.constants_holder.set_launch_timestamp(0)
+    deploy_fake_multisig_contract(skale_obj.web3, skale_obj.wallet)
+    return skale_obj
+
+
+@pytest.fixture(scope='session')
+def validator(skale):
+    return setup_validator(skale)
+
+
 @pytest.fixture
-def skale():
-    return init_web3_skale()
+def node_wallets(skale):
+    wallets = []
+    for i in range(NUMBER_OF_NODES):
+        acc = generate_account(skale.web3)
+        pk = acc['private_key']
+        wallet = Web3Wallet(pk, skale.web3)
+        send_eth(
+            web3=skale.web3,
+            wallet=skale.wallet,
+            receiver_address=wallet.address,
+            amount=ETH_AMOUNT_PER_NODE
+        )
+        wallets.append(wallet)
+    return wallets
+
+
+@pytest.fixture
+def node_skales(skale, node_wallets):
+    return [
+        SkaleManager(ENDPOINT, ABI_FILEPATH, wallet)
+        for wallet in node_wallets
+    ]
+
+
+@pytest.fixture
+def nodes(skale, node_skales, validator):
+    link_nodes_to_validator(skale, validator, node_skales)
+    ids = create_nodes(node_skales)
+    try:
+        yield ids
+    finally:
+        cleanup_nodes(skale, ids)
 
 
 @pytest.fixture
@@ -318,8 +400,10 @@ def skaled_status_broken_file(_schain_name):
 @pytest.fixture
 def db():
     create_tables()
-    yield
-    SChainRecord.drop_table()
+    try:
+        yield
+    finally:
+        SChainRecord.drop_table()
 
 
 @pytest.fixture
@@ -340,17 +424,20 @@ def meta_file():
     }
     with open(META_FILEPATH, 'w') as meta_file:
         json.dump(meta_info, meta_file)
-    yield meta_info
-    os.remove(META_FILEPATH)
+    try:
+        yield meta_info
+    finally:
+        os.remove(META_FILEPATH)
 
 
 @pytest.fixture
-def schain_on_contracts(skale, _schain_name) -> str:
-    cleanup_nodes_schains(skale)
-    create_nodes(skale)
-    create_schain(skale, _schain_name)
+def schain_on_contracts(skale, nodes, _schain_name) -> str:
     try:
-        yield _schain_name
+        yield create_schain(
+            skale,
+            schain_type=1,  # test2 should have 1 index
+            random_name=True
+        )
     finally:
         cleanup_nodes_schains(skale)
 
@@ -408,9 +495,9 @@ def cleanup_schain_container(schain_name: str, dutils: DockerUtils):
 
 
 @pytest.fixture
-def node_config(skale):
+def node_config(skale, nodes):
     node_config = NodeConfig()
-    node_config.id = 0
+    node_config.id = nodes[0]
     return node_config
 
 

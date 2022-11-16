@@ -17,7 +17,7 @@ from tools.configs import (
     SGX_SERVER_URL
 )
 
-from web.models.schain import SChainRecord
+from web.models.schain import SChainRecord, upsert_schain_record
 
 from tests.dkg_utils import safe_run_dkg_mock, get_bls_public_keys
 from tests.utils import (
@@ -40,6 +40,7 @@ def test_regular_monitor(
     schain_on_contracts
 ):
     schain_name = schain_on_contracts
+    upsert_schain_record(schain_name)
     schain = skale.schains.get_by_name(schain_name)
     nodes = get_nodes_for_schain(skale, schain_name)
 

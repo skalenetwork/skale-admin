@@ -20,7 +20,7 @@
 import logging
 
 from flask import Blueprint, g, request
-from skale.transactions.tools import send_eth_with_skale
+from skale.utils.account_tools import send_eth as send_eth_
 from skale.utils.web3_utils import to_checksum_address
 from web3 import Web3
 
@@ -53,7 +53,6 @@ def send_eth():
     logger.debug(request)
     raw_address = request.json.get('address')
     eth_amount = request.json.get('amount')
-    wei_amount = Web3.toWei(eth_amount, 'ether')
     if not raw_address:
         return construct_err_response('Address is empty')
     if not eth_amount:
@@ -63,7 +62,7 @@ def send_eth():
         logger.info(
             f'Sending {eth_amount} wei to {address}'
         )
-        send_eth_with_skale(g.skale, address, wei_amount)
+        send_eth_(g.skale.web3, g.skale.wallet, address, eth_amount)
     except Exception:
         logger.exception('Funds were not sent due to error')
         return construct_err_response(msg='Funds sending failed')
