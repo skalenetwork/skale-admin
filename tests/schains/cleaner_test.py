@@ -76,16 +76,17 @@ def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils):
     with mock.patch('core.schains.cleaner.ensure_schain_removed',
                     ensure_schain_removed_mock):
         monitor(skale, node_config, dutils=dutils)
+
         ensure_schain_removed_mock.assert_any_call(
             skale,
             TEST_SCHAIN_NAME_1,
-            0,
+            node_config.id,
             dutils=dutils
         )
         ensure_schain_removed_mock.assert_any_call(
             skale,
             TEST_SCHAIN_NAME_2,
-            0,
+            node_config.id,
             dutils=dutils
         )
 
