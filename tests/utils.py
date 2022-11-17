@@ -37,6 +37,8 @@ IMA_ABI_FILEPATH = os.getenv('IMA_ABI_FILEPATH') or os.path.join(
     DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'ima.json')
 
 
+ETH_AMOUNT_PER_NODE = 1
+
 CONTAINERS_JSON = {
   "schain": {
     "name": "skalenetwork/schain",

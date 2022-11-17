@@ -52,6 +52,7 @@ from web.models.schain import create_tables, SChainRecord, upsert_schain_record
 from tests.utils import (
     CONTAINERS_JSON,
     ENDPOINT,
+    ETH_AMOUNT_PER_NODE,
     ETH_PRIVATE_KEY,
     generate_cert,
     get_test_rule_controller,
@@ -60,7 +61,6 @@ from tests.utils import (
 )
 
 NUMBER_OF_NODES = 2
-ETH_AMOUNT_PER_NODE = 1
 
 
 @pytest.fixture(scope='session')
@@ -158,9 +158,11 @@ def cert_key_pair(ssl_folder):
     cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
     key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
     generate_cert(cert_path, key_path)
-    yield cert_path, key_path
-    pathlib.Path(cert_path).unlink(missing_ok=True)
-    pathlib.Path(key_path).unlink(missing_ok=True)
+    try:
+        yield cert_path, key_path
+    finally:
+        pathlib.Path(cert_path).unlink(missing_ok=True)
+        pathlib.Path(key_path).unlink(missing_ok=True)
 
 
 def get_random_string(length=8):
@@ -334,8 +336,10 @@ def schain_config(_schain_name):
         json.dump(schain_config, config_file)
     with open(secret_key_path, 'w') as key_file:
         json.dump(SECRET_KEY, key_file)
-    yield schain_config
-    rm_schain_dir(_schain_name)
+    try:
+        yield schain_config
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 def generate_schain_skaled_status_file(_schain_name, **kwargs):
@@ -354,36 +358,46 @@ def rm_schain_dir(schain_name):
 @pytest.fixture
 def skaled_status(_schain_name):
     generate_schain_skaled_status_file(_schain_name)
-    yield init_skaled_status(_schain_name)
-    rm_schain_dir(_schain_name)
+    try:
+        yield init_skaled_status(_schain_name)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
 def skaled_status_downloading_snapshot(_schain_name):
     generate_schain_skaled_status_file(_schain_name, snapshot_downloader=True)
-    yield init_skaled_status(_schain_name)
-    rm_schain_dir(_schain_name)
+    try:
+        yield init_skaled_status(_schain_name)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
 def skaled_status_exit_time_reached(_schain_name):
     generate_schain_skaled_status_file(_schain_name, exit_time_reached=True)
-    yield init_skaled_status(_schain_name)
-    rm_schain_dir(_schain_name)
+    try:
+        yield init_skaled_status(_schain_name)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
 def skaled_status_repair(_schain_name):
     generate_schain_skaled_status_file(_schain_name, clear_data_dir=True, start_from_snapshot=True)
-    yield init_skaled_status(_schain_name)
-    rm_schain_dir(_schain_name)
+    try:
+        yield init_skaled_status(_schain_name)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
 def skaled_status_reload(_schain_name):
     generate_schain_skaled_status_file(_schain_name, start_again=True)
-    yield init_skaled_status(_schain_name)
-    rm_schain_dir(_schain_name)
+    try:
+        yield init_skaled_status(_schain_name)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
@@ -393,8 +407,10 @@ def skaled_status_broken_file(_schain_name):
     status_filepath = skaled_status_filepath(_schain_name)
     with open(status_filepath, "w") as text_file:
         text_file.write('abcd')
-    yield SkaledStatus(status_filepath)
-    rm_schain_dir(_schain_name)
+    try:
+        yield SkaledStatus(status_filepath)
+    finally:
+        rm_schain_dir(_schain_name)
 
 
 @pytest.fixture
@@ -471,22 +487,26 @@ def skaled_mock_image(scope='module'):
 def cleanup_schain_dirs_before():
     shutil.rmtree(SCHAINS_DIR_PATH)
     pathlib.Path(SCHAINS_DIR_PATH).mkdir(parents=True, exist_ok=True)
-    yield
+    return
 
 
 @pytest.fixture
 def cleanup_schain_containers(dutils):
-    yield
-    containers = dutils.get_all_schain_containers(all=True)
-    for container in containers:
-        dutils.safe_rm(container.name, force=True)
+    try:
+        yield
+    finally:
+        containers = dutils.get_all_schain_containers(all=True)
+        for container in containers:
+            dutils.safe_rm(container.name, force=True)
 
 
 @pytest.fixture
 def cleanup_container(schain_config, dutils):
-    yield
-    schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    cleanup_schain_container(schain_name, dutils)
+    try:
+        yield
+    finally:
+        schain_name = schain_config['skaleConfig']['sChain']['schainName']
+        cleanup_schain_container(schain_name, dutils)
 
 
 def cleanup_schain_container(schain_name: str, dutils: DockerUtils):
