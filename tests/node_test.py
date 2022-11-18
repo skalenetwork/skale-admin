@@ -247,11 +247,13 @@ def test_node_maintenance_error(node, skale):
     res = node.set_maintenance_off()
     assert res == {'status': 'error',
                    'errors': ['Node is not in maintenance mode']}
-
-    res = node.set_maintenance_on()
-    assert res == {'data': None, 'status': 'ok'}
-    with pytest.raises(RevertError):
+    try:
         res = node.set_maintenance_on()
+        assert res == {'data': None, 'status': 'ok'}
+        with pytest.raises(RevertError):
+            res = node.set_maintenance_on()
+    finally:
+        node.set_maintenance_off()
 
 
 @mock.patch('core.node.get_block_device_size', return_value=300)
