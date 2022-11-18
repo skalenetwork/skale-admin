@@ -41,9 +41,10 @@ from core.schains.skaled_status import init_skaled_status, SkaledStatus
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
 from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
+from tools.configs.containers import CONTAINERS_FILEPATH
+from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ABI_FILEPATH
-from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.docker_utils import DockerUtils
 from tools.helper import write_json
 
@@ -65,7 +66,11 @@ NUMBER_OF_NODES = 2
 
 @pytest.fixture(scope='session')
 def predeployed_ima():
-    update_predeployed_ima()
+    try:
+        update_predeployed_ima()
+        yield
+    finally:
+        os.remove(SCHAIN_IMA_ABI_FILEPATH)
 
 
 @pytest.fixture
@@ -325,7 +330,7 @@ def _schain_name():
 
 
 @pytest.fixture
-def schain_config(_schain_name):
+def schain_config(_schain_name, predeployed_ima):
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
     pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
     config_path = os.path.join(schain_dir_path,

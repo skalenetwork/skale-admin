@@ -37,7 +37,8 @@ def test_regular_monitor(
     skale_ima,
     dutils,
     ssl_folder,
-    schain_on_contracts
+    schain_on_contracts,
+    predeployed_ima
 ):
     schain_name = schain_on_contracts
     upsert_schain_record(schain_name)

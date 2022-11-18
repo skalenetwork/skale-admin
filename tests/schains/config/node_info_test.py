@@ -45,7 +45,12 @@ def test_get_rotate_after_block():
         assert get_rotate_after_block('large') == 3276803
 
 
-def test_generate_current_node_info(skale_manager_opts, schain_config, _schain_name):
+def test_generate_current_node_info(
+    skale_manager_opts,
+    schain_config,
+    _schain_name,
+    predeployed_ima
+):
     static_schain_params = get_static_schain_params()
     with mock.patch('core.schains.config.node_info.ENV_TYPE', new='testnet'):
         current_node_info = generate_current_node_info(
@@ -86,7 +91,12 @@ def test_generate_current_node_info(skale_manager_opts, schain_config, _schain_n
     assert current_node_info_dict['rotateAfterBlock'] == 1024000
 
 
-def test_skale_manager_opts(skale_manager_opts, schain_config, _schain_name):
+def test_skale_manager_opts(
+    skale_manager_opts,
+    schain_config,
+    _schain_name,
+    predeployed_ima
+):
     static_schain_params = get_static_schain_params()
     with mock.patch('core.schains.config.node_info.ENV_TYPE', new='testnet'):
         current_node_info = generate_current_node_info(
