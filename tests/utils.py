@@ -29,6 +29,8 @@ from tools.helper import run_cmd
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs.web3 import ABI_FILEPATH
 
+from web.models.schain import upsert_schain_record
+
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
@@ -38,6 +40,7 @@ IMA_ABI_FILEPATH = os.getenv('IMA_ABI_FILEPATH') or os.path.join(
 
 
 ETH_AMOUNT_PER_NODE = 1
+CONFIG_STREAM = "1.0.0-testnet"
 
 CONTAINERS_JSON = {
   "schain": {
@@ -292,3 +295,10 @@ def run_custom_schain_container(dutils, schain_name, entrypoint):
         name=container_name,
         entrypoint=entrypoint
     )
+
+
+def upsert_schain_record_with_config(name, version=None):
+    version = version or CONFIG_STREAM
+    r = upsert_schain_record(name)
+    r.set_config_version(version)
+    return r

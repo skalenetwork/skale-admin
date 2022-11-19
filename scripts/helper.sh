@@ -25,7 +25,6 @@ export_test_env () {
     export IMA_ABI_FILEPATH=${IMA_ABI_FILEPATH}
 
     cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info
-    cp $PWD/helper-scripts/contracts_data/schain_ima_abi.json $SKALE_DIR_HOST/contracts_info
 }
 
 

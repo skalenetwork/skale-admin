@@ -48,9 +48,10 @@ from tools.configs.web3 import ABI_FILEPATH
 from tools.docker_utils import DockerUtils
 from tools.helper import write_json
 
-from web.models.schain import create_tables, SChainRecord, upsert_schain_record
+from web.models.schain import create_tables, SChainRecord
 
 from tests.utils import (
+    CONFIG_STREAM,
     CONTAINERS_JSON,
     ENDPOINT,
     ETH_AMOUNT_PER_NODE,
@@ -58,7 +59,8 @@ from tests.utils import (
     generate_cert,
     get_test_rule_controller,
     init_skale_from_wallet,
-    init_skale_ima
+    init_skale_ima,
+    upsert_schain_record_with_config
 )
 
 NUMBER_OF_NODES = 2
@@ -430,9 +432,7 @@ def db():
 @pytest.fixture
 def schain_db(db, _schain_name, meta_file):
     """ Database with default schain inserted """
-    config_version = meta_file['config_stream']
-    r = upsert_schain_record(_schain_name)
-    r.set_config_version(config_version)
+    upsert_schain_record_with_config(_schain_name)
     return _schain_name
 
 
@@ -440,7 +440,7 @@ def schain_db(db, _schain_name, meta_file):
 def meta_file():
     meta_info = {
         "version": "0.0.0",
-        "config_stream": "1.0.0-testnet",
+        "config_stream": CONFIG_STREAM,
         "docker_lvmpy_stream": "1.1.1"
     }
     with open(META_FILEPATH, 'w') as meta_file:

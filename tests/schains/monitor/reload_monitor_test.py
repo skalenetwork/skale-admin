@@ -19,13 +19,14 @@ from tools.configs import (
 )
 from tools.configs.containers import SCHAIN_CONTAINER
 
-from web.models.schain import SChainRecord, upsert_schain_record
+from web.models.schain import SChainRecord
 
 from tests.dkg_utils import safe_run_dkg_mock, get_bls_public_keys
 from tests.utils import (
     alter_schain_config,
     get_test_rule_controller,
-    no_schain_artifacts
+    no_schain_artifacts,
+    upsert_schain_record_with_config
 )
 
 
@@ -42,7 +43,7 @@ def test_reload_monitor(
     schain_on_contracts
 ):
     schain_name = schain_on_contracts
-    upsert_schain_record(schain_name)
+    upsert_schain_record_with_config(schain_name)
     schain = skale.schains.get_by_name(schain_name)
     nodes = get_nodes_for_schain(skale, schain_name)
     image_name, container_name, _, _ = get_container_info(
