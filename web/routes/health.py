@@ -35,7 +35,7 @@ from core.schains.firewall.utils import (
     get_sync_agent_ranges
 )
 from core.schains.ima import get_ima_log_checks
-from tools.sgx_utils import SGX_SERVER_URL
+from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.configs import ZMQ_PORT, ZMQ_TIMEOUT
 from web.models.schain import SChainRecord
 from web.helper import (
@@ -123,19 +123,19 @@ def ima_log_checks():
 @health_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx'), methods=['GET'])
 def sgx_info():
     logger.debug(request)
-    sgx = SgxClient(SGX_SERVER_URL)
+    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
     try:
         status = sgx.get_server_status()
         version = sgx.get_server_version()
     except Exception as e:  # todo: catch specific error - edit sgx.py
-        print(e)
+        logger.info(e)
         status = 1
         version = None
     sgx_host = urlparse(SGX_SERVER_URL).hostname
     tn = telnetlib.Telnet()
+    zmq_status = 0
     try:
         tn.open(sgx_host, ZMQ_PORT, timeout=ZMQ_TIMEOUT)
-        zmq_status = 0
     except Exception as err:
         zmq_status = 1
         logger.error(err)

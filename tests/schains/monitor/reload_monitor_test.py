@@ -121,12 +121,14 @@ def test_reload_monitor(
         ):
             regular_monitor.run()
         alter_schain_config(schain_name, sgx_wallet.public_key)
+        time.sleep(5)
 
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
         initial_started_at = state['StartedAt']
 
         reload_monitor.run()
+        time.sleep(5)
 
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
@@ -139,8 +141,6 @@ def test_reload_monitor(
         assert schain_checks.volume.status
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
-
-        time.sleep(5)
 
         if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker  # noqa
             assert schain_checks.rpc.status
