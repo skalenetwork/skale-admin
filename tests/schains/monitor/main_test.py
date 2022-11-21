@@ -183,7 +183,6 @@ def sync_ranges(skale):
 
 def test_get_sync_agent_ranges(skale, sync_ranges):
     ranges = get_sync_agent_ranges(skale)
-    print(ranges)
     assert ranges == [
         IpRange(start_ip='127.0.0.1', end_ip='127.0.0.2'),
         IpRange(start_ip='127.0.0.5', end_ip='127.0.0.7')

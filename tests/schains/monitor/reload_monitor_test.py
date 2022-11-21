@@ -40,7 +40,8 @@ def test_reload_monitor(
     skale_ima,
     dutils,
     ssl_folder,
-    schain_on_contracts
+    schain_on_contracts,
+    predeployed_ima
 ):
     schain_name = schain_on_contracts
     upsert_schain_record_with_config(schain_name)
@@ -48,7 +49,7 @@ def test_reload_monitor(
     nodes = get_nodes_for_schain(skale, schain_name)
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER,
-        schain_db
+        schain_name
     )
 
     # not using rule_controller fixture to avoid config generation
@@ -123,6 +124,8 @@ def test_reload_monitor(
         alter_schain_config(schain_name, sgx_wallet.public_key)
         time.sleep(5)
 
+        info = dutils.get_info(container_name)
+        assert info['status'] == 'not_found'
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
         initial_started_at = state['StartedAt']

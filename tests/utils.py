@@ -186,7 +186,6 @@ def init_skale_from_wallet(wallet) -> Skale:
 
 
 def init_skale_ima():
-    print(ENDPOINT, IMA_ABI_FILEPATH)
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
     return SkaleIma(ENDPOINT, IMA_ABI_FILEPATH, wallet)
