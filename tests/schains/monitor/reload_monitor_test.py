@@ -124,8 +124,6 @@ def test_reload_monitor(
         alter_schain_config(schain_name, sgx_wallet.public_key)
         time.sleep(5)
 
-        info = dutils.get_info(container_name)
-        assert info['status'] == 'not_found'
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
         initial_started_at = state['StartedAt']
