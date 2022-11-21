@@ -70,6 +70,7 @@ class SChainConfig:
     unddos: dict
     genesis: dict
     accounts: dict
+    patches: dict
     skale_config: SkaleConfig
 
     def to_dict(self):
@@ -80,6 +81,7 @@ class SChainConfig:
             'unddos': self.unddos,
             'genesis': self.genesis,
             'accounts': self.accounts,
+            'patches': self.patches,
             'skaleConfig': self.skale_config.to_dict(),
         }
 
@@ -181,6 +183,7 @@ def generate_schain_config(
         },
         unddos=base_config.config['unddos'],
         genesis=base_config.config['genesis'],
+        patches=base_config.config['patches'],
         accounts={
             **base_config.config['accounts'],
             **predeployed_accounts,
