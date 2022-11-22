@@ -77,7 +77,7 @@ SCHAIN_WITH_ORIGINATOR = {
 
 
 @pytest.fixture
-def schain_secret_key_file(schain_on_contracts):
+def schain_secret_key_file(schain_on_contracts, predeployed_ima):
     schain_name = schain_on_contracts
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
     Path(schain_dir_path).mkdir(exist_ok=True)
@@ -92,7 +92,7 @@ def schain_secret_key_file(schain_on_contracts):
 
 
 @pytest.fixture
-def schain_secret_key_file_default_chain():
+def schain_secret_key_file_default_chain(predeployed_ima):
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, 'test_schain')
     Path(schain_dir_path).mkdir(exist_ok=True)
     secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')
@@ -392,7 +392,7 @@ def test_generate_schain_config_with_skale_gen2(
     assert schain_config_dict['skaleConfig']['sChain']['schainID'] == get_schain_id(schain_name)
 
 
-def test_get_schain_originator():
+def test_get_schain_originator(predeployed_ima):
     originator = get_schain_originator(SCHAIN_WITHOUT_ORIGINATOR)
     assert originator == TEST_MAINNET_OWNER_ADDRESS
 
