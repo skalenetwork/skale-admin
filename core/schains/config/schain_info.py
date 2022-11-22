@@ -17,7 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, make_dataclass
 
 from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
@@ -67,7 +67,7 @@ class SChainInfo:
             'nodeGroups': self.node_groups,
             'multiTransactionMode': self.multitransaction_mode,
             'nodes': self.nodes,
-            'patches': self.patches
+            **self.patches
         }
 
 
