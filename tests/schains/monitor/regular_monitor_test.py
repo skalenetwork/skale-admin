@@ -1,5 +1,6 @@
 import logging
 import platform
+import time
 
 import mock
 
@@ -23,7 +24,8 @@ from tests.dkg_utils import safe_run_dkg_mock, get_bls_public_keys
 from tests.utils import (
     alter_schain_config,
     get_test_rule_controller,
-    no_schain_artifacts
+    no_schain_artifacts,
+    upsert_schain_record_with_config
 )
 
 
@@ -37,9 +39,12 @@ def test_regular_monitor(
     skale_ima,
     dutils,
     ssl_folder,
-    schain_on_contracts
+    schain_on_contracts,
+    predeployed_ima
 ):
     schain_name = schain_on_contracts
+    upsert_schain_record_with_config(schain_name)
+
     schain = skale.schains.get_by_name(schain_name)
     nodes = get_nodes_for_schain(skale, schain_name)
 
@@ -90,6 +95,8 @@ def test_regular_monitor(
         assert schain_checks.dkg.status
         assert schain_checks.config.status
         assert schain_checks.volume.status
+        # make sure container intialized
+        time.sleep(3)
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
 

@@ -183,7 +183,6 @@ def sync_ranges(skale):
 
 def test_get_sync_agent_ranges(skale, sync_ranges):
     ranges = get_sync_agent_ranges(skale)
-    print(ranges)
     assert ranges == [
         IpRange(start_ip='127.0.0.1', end_ip='127.0.0.2'),
         IpRange(start_ip='127.0.0.5', end_ip='127.0.0.7')
@@ -197,11 +196,11 @@ def test_get_sync_agent_ranges_empty(skale):
 
 def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
     chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, node_config.id)
-    assert not chain_on_node
+    assert chain_on_node
 
     chain_on_node = is_node_part_of_chain(skale, 'a', node_config.id)
     assert not chain_on_node
 
-    max_node_id = skale.nodes.get_nodes_number()
-    chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, max_node_id - 1)
-    assert chain_on_node
+    node_exist_node = 10000
+    chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, node_exist_node)
+    assert not chain_on_node
