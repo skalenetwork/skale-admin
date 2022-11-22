@@ -23,7 +23,7 @@ predeployed-generator==1.1.0a8
 psutil==5.9.3
 
 colorful==0.5.4
-celery==5.0.2
+celery==5.2.2
 
 filelock==3.0.12
 
