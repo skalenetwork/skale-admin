@@ -6,6 +6,7 @@ import shutil
 import string
 import subprocess
 
+import docker
 import pytest
 
 from skale import SkaleManager
@@ -52,7 +53,6 @@ from web.models.schain import create_tables, SChainRecord
 
 from tests.utils import (
     CONFIG_STREAM,
-    CONTAINERS_JSON,
     ENDPOINT,
     ETH_AMOUNT_PER_NODE,
     ETH_PRIVATE_KEY,
@@ -67,20 +67,30 @@ NUMBER_OF_NODES = 2
 
 
 @pytest.fixture(scope='session')
+def images():
+    dclient = docker.from_env()
+    cinfo = {}
+    with open(CONTAINERS_FILEPATH, 'r') as cf:
+        json.load(cinfo, cf)
+    schain_image = '{}/{}'.format(
+        cinfo['schain']['name'],
+        cinfo['schain']['version']
+    )
+    ima_image = '{}/{}'.format(
+        cinfo['ima']['name'],
+        cinfo['ima']['version']
+    )
+    dclient.images.pull(schain_image)
+    dclient.images.pull(ima_image)
+
+
+@pytest.fixture(scope='session')
 def predeployed_ima():
     try:
         update_predeployed_ima()
         yield
     finally:
         os.remove(SCHAIN_IMA_ABI_FILEPATH)
-
-
-@pytest.fixture
-def containers_json():
-    with open(CONTAINERS_FILEPATH, 'w') as cf:
-        json.dump(CONTAINERS_JSON, cf)
-    yield CONTAINERS_FILEPATH
-    os.remove(CONTAINERS_FILEPATH)
 
 
 @pytest.fixture(scope='session')
