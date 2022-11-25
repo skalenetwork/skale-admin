@@ -45,6 +45,7 @@ class SChainInfo:
 
     node_groups: dict
     nodes: list
+    patches: dict
 
     multitransaction_mode: bool
 
@@ -65,7 +66,8 @@ class SChainInfo:
             'maxReservedStorageBytes': self.max_reserved_storage_bytes,
             'nodeGroups': self.node_groups,
             'multiTransactionMode': self.multitransaction_mode,
-            'nodes': self.nodes
+            'nodes': self.nodes,
+            **self.patches
         }
 
 

@@ -18,6 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from typing import Optional
+
 from tools.helper import process_template
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -25,12 +27,12 @@ from tools.str_formatters import arguments_list_string
 from tools.configs.filebeat import (FILEBEAT_TEMPLATE_PATH, FILEBEAT_CONTAINER_NAME,
                                     FILEBEAT_CONFIG_PATH)
 
-dutils = DockerUtils()
 logger = logging.getLogger(__name__)
 
 
-def update_filebeat_service(node_ip, node_id, skale):
+def update_filebeat_service(node_ip, node_id, skale, dutils: Optional[DockerUtils] = None):
     logger.info('Going to update filebeat service...')
+    dutils = dutils or DockerUtils()
     contract_address = skale.manager.address
     template_data = {
         'ip': node_ip,

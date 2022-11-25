@@ -188,14 +188,15 @@ def test_blocks_check(schain_checks):
             assert not schain_checks.blocks.status
 
 
-def test_init_checks(skale, schain_db, uninited_rule_controller):
+def test_init_checks(skale, schain_db, uninited_rule_controller, dutils):
     schain_name = schain_db
     schain_record = SChainRecord.get_by_name(schain_name)
     checks = SChainChecks(
         schain_name,
         TEST_NODE_ID,
         schain_record=schain_record,
-        rule_controller=uninited_rule_controller
+        rule_controller=uninited_rule_controller,
+        dutils=dutils
     )
     assert checks.name == schain_name
     assert checks.node_id == TEST_NODE_ID

@@ -25,7 +25,8 @@ from tests.dkg_utils import safe_run_dkg_mock, get_bls_public_keys
 from tests.utils import (
     alter_schain_config,
     get_test_rule_controller,
-    no_schain_artifacts
+    no_schain_artifacts,
+    upsert_schain_record_with_config
 )
 
 
@@ -39,14 +40,16 @@ def test_reload_monitor(
     skale_ima,
     dutils,
     ssl_folder,
-    schain_on_contracts
+    schain_on_contracts,
+    predeployed_ima
 ):
     schain_name = schain_on_contracts
+    upsert_schain_record_with_config(schain_name)
     schain = skale.schains.get_by_name(schain_name)
     nodes = get_nodes_for_schain(skale, schain_name)
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER,
-        schain_db
+        schain_name
     )
 
     # not using rule_controller fixture to avoid config generation
@@ -119,12 +122,14 @@ def test_reload_monitor(
         ):
             regular_monitor.run()
         alter_schain_config(schain_name, sgx_wallet.public_key)
+        time.sleep(5)
 
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
         initial_started_at = state['StartedAt']
 
         reload_monitor.run()
+        time.sleep(5)
 
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
@@ -137,8 +142,6 @@ def test_reload_monitor(
         assert schain_checks.volume.status
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
-
-        time.sleep(5)
 
         if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker  # noqa
             assert schain_checks.rpc.status
