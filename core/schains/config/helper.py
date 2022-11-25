@@ -56,12 +56,16 @@ def fix_address(address):
     return Web3.toChecksumAddress(address)
 
 
-def get_chain_id(schain_name):
+def get_chain_id(schain_name: str) -> str:
     keccak_hash = keccak.new(digest_bits=256)
     keccak_hash.update(schain_name.encode("utf-8"))
     hash_ = keccak_hash.hexdigest()
     hash_ = hash_[:13]			# use 52 bits
     return "0x" + hash_
+
+
+def get_schain_id(schain_name: str) -> int:
+    return int(get_chain_id(schain_name), 16)
 
 
 def _string_to_storage(slot: int, string: str) -> dict:

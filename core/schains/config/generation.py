@@ -17,10 +17,11 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
-def gen0(generation: int) -> bool:
-    return generation == 0
+from enum import Enum
 
 
-def gen1(generation: int) -> bool:
-    return generation == 1
+class Gen(int, Enum):
+    """This class contains available schain generations"""
+    ZERO = 0
+    ONE = 1
+    TWO = 2

@@ -27,62 +27,20 @@ from core.schains.runner import run_schain_container, run_ima_container, get_con
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
 from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.web3 import ABI_FILEPATH
+
+from web.models.schain import upsert_schain_record
 
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
-TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
-    DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'manager.json')
-TEST_IMA_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH') or os.path.join(
+IMA_ABI_FILEPATH = os.getenv('IMA_ABI_FILEPATH') or os.path.join(
     DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'ima.json')
 
 
-CONTAINERS_JSON = {
-  "schain": {
-    "name": "skalenetwork/schain",
-    "version": "3.15.9-develop.4",
-    "custom_args": {
-      "ulimits_list": [
-        {
-          "name": "core",
-          "soft": -1,
-          "hard": -1
-        }
-      ],
-      "logs": {
-        "max-size": "250m",
-        "max-file": "5"
-      }
-    },
-    "args": {
-      "security_opt": [
-        "seccomp=unconfined"
-      ],
-      "restart_policy": {
-        "MaximumRetryCount": 0,
-        "Name": "on-failure"
-      },
-      "network": "host",
-      "cap_add": [
-        "SYS_PTRACE",
-        "SYS_ADMIN"
-      ]
-    }
-  },
-  "ima": {
-    "name": "skalenetwork/ima",
-    "version": "1.0.0-develop.208",
-    "custom_args": {},
-    "args": {
-      "restart_policy": {
-        "MaximumRetryCount": 10,
-        "Name": "on-failure"
-      },
-      "network": "host"
-    }
-  }
-}
+ETH_AMOUNT_PER_NODE = 1
+CONFIG_STREAM = "1.0.0-testnet"
 
 
 class FailedAPICall(Exception):
@@ -178,14 +136,13 @@ def init_web3_skale() -> Skale:
 
 
 def init_skale_from_wallet(wallet) -> Skale:
-    return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
+    return Skale(ENDPOINT, ABI_FILEPATH, wallet)
 
 
 def init_skale_ima():
-    print(ENDPOINT, TEST_IMA_ABI_FILEPATH)
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    return SkaleIma(ENDPOINT, TEST_IMA_ABI_FILEPATH, wallet)
+    return SkaleIma(ENDPOINT, IMA_ABI_FILEPATH, wallet)
 
 
 def init_web3_wallet() -> Web3Wallet:
@@ -291,3 +248,10 @@ def run_custom_schain_container(dutils, schain_name, entrypoint):
         name=container_name,
         entrypoint=entrypoint
     )
+
+
+def upsert_schain_record_with_config(name, version=None):
+    version = version or CONFIG_STREAM
+    r = upsert_schain_record(name)
+    r.set_config_version(version)
+    return r

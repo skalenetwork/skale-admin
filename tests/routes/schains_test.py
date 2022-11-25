@@ -11,7 +11,7 @@ from Crypto.Hash import keccak
 from core.node_config import NodeConfig
 from core.schains.config.directory import schain_config_filepath
 from tests.utils import get_bp_data, get_test_rule_controller, post_bp_data
-from web.models.schain import SChainRecord
+from web.models.schain import SChainRecord, upsert_schain_record
 from web.routes.schains import schains_bp
 from web.helper import get_api_url
 
@@ -111,13 +111,34 @@ def test_enable_repair_mode(skale_bp, schain_db):
     }
 
 
-def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
+def test_get_schain(
+    skale_bp,
+    skale,
+    schain_db,
+    meta_file,
+    schain_on_contracts
+):
     schain_name = schain_on_contracts
     keccak_hash = keccak.new(data=schain_name.encode("utf8"), digest_bits=256)
     schain_id = '0x' + keccak_hash.hexdigest()
 
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'get'),
-                       params={'schain_name': schain_name})
+    data = get_bp_data(
+        skale_bp,
+        get_api_url(BLUEPRINT_NAME, 'get'),
+        params={'schain_name': schain_name}
+    )
+    assert data == {
+        'payload': f'No schain with name {schain_name}',
+        'status': 'error'
+    }
+
+    r = upsert_schain_record(schain_name)
+    r.set_config_version(meta_file['config_stream'])
+    data = get_bp_data(
+        skale_bp,
+        get_api_url(BLUEPRINT_NAME, 'get'),
+        params={'schain_name': schain_name}
+    )
     assert data == {
         'status': 'ok',
         'payload': {
@@ -127,13 +148,6 @@ def test_get_schain(skale_bp, skale, schain_db, schain_on_contracts):
             'part_of_node': 1, 'dkg_status': 1, 'is_deleted': False,
             'first_run': True, 'repair_mode': False
         }
-    }
-
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'get'),
-                       params={'schain_name': 'undefined-schain'})
-    assert data == {
-        'payload': 'No schain with name undefined-schain',
-        'status': 'error'
     }
 
 
