@@ -42,52 +42,6 @@ IMA_ABI_FILEPATH = os.getenv('IMA_ABI_FILEPATH') or os.path.join(
 ETH_AMOUNT_PER_NODE = 1
 CONFIG_STREAM = "1.0.0-testnet"
 
-CONTAINERS_JSON = {
-  "schain": {
-    "name": "skalenetwork/schain",
-    "version": "3.15.9-develop.4",
-    "custom_args": {
-      "ulimits_list": [
-        {
-          "name": "core",
-          "soft": -1,
-          "hard": -1
-        }
-      ],
-      "logs": {
-        "max-size": "250m",
-        "max-file": "5"
-      }
-    },
-    "args": {
-      "security_opt": [
-        "seccomp=unconfined"
-      ],
-      "restart_policy": {
-        "MaximumRetryCount": 0,
-        "Name": "on-failure"
-      },
-      "network": "host",
-      "cap_add": [
-        "SYS_PTRACE",
-        "SYS_ADMIN"
-      ]
-    }
-  },
-  "ima": {
-    "name": "skalenetwork/ima",
-    "version": "1.0.0-develop.208",
-    "custom_args": {},
-    "args": {
-      "restart_policy": {
-        "MaximumRetryCount": 10,
-        "Name": "on-failure"
-      },
-      "network": "host"
-    }
-  }
-}
-
 
 class FailedAPICall(Exception):
     pass
