@@ -141,7 +141,12 @@ def test_monitor_container_exited(schain_db, dutils, cleanup_schain_containers, 
     assert container_info['stats']['State']['FinishedAt'] == finished_at
 
 
-def test_handle_failed_schain_rpc_stuck(schain_db, dutils, cleanup_schain_containers, skaled_status):
+def test_handle_failed_schain_rpc_stuck(
+        schain_db,
+        dutils,
+        cleanup_schain_containers,
+        skaled_status
+):
     schain_record = SChainRecord.get_by_name(schain_db)
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain_db)
