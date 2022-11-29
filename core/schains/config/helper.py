@@ -24,7 +24,6 @@ from typing import Dict, List
 
 from Crypto.Hash import keccak
 from web3 import Web3
-import yaml
 
 from skale.dataclasses.skaled_ports import SkaledPorts
 
@@ -40,6 +39,7 @@ from tools.configs import ENVIRONMENT_PARAMS_FILEPATH, ENV_TYPE, SGX_SERVER_URL
 from tools.configs.containers import LOCAL_IP
 from tools.configs.ima import IMA_ENDPOINT
 from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
+from tools.helper import safe_load_yml
 
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ def get_static_schain_params():
 
 def get_environment_params(env_type=ENV_TYPE, path=ENVIRONMENT_PARAMS_FILEPATH):
     with open(path) as requirements_file:
-        ydata = yaml.load(requirements_file, Loader=yaml.Loader)
+        ydata = safe_load_yml(requirements_file)
         return ydata['envs'][env_type]
 
 
