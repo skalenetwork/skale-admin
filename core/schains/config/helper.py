@@ -50,9 +50,8 @@ def get_static_schain_params():
 
 
 def get_environment_params(env_type=ENV_TYPE, path=ENVIRONMENT_PARAMS_FILEPATH):
-    with open(path) as requirements_file:
-        ydata = safe_load_yml(requirements_file)
-        return ydata['envs'][env_type]
+    ydata = safe_load_yml(path)
+    return ydata['envs'][env_type]
 
 
 def get_patches(env_type=ENV_TYPE, env_params_path=ENVIRONMENT_PARAMS_FILEPATH):
