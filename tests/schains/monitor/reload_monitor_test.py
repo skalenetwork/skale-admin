@@ -1,6 +1,5 @@
 import logging
 import platform
-import time
 
 import mock
 
@@ -122,14 +121,12 @@ def test_reload_monitor(
         ):
             regular_monitor.run()
         alter_schain_config(schain_name, sgx_wallet.public_key)
-        time.sleep(5)
 
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
         initial_started_at = state['StartedAt']
 
         reload_monitor.run()
-        time.sleep(5)
 
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
