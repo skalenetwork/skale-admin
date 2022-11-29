@@ -158,7 +158,7 @@ def check_schain_info(node_ids, schain_info):
          'dbStorageLimit', 'snapshotIntervalSec', 'emptyBlockIntervalMs',
          'maxConsensusStorageBytes', 'maxSkaledLeveldbStorageBytes',
          'maxFileStorageBytes', 'maxReservedStorageBytes',
-         'nodes']
+         'nodes', 'revertableFSPatchTimestamp', 'contractStoragePatchTimestamp']
     )
     for index, (nid, schain_node_info) in enumerate(zip(
         node_ids,

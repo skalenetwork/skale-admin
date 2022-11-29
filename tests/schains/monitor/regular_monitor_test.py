@@ -1,6 +1,5 @@
 import logging
 import platform
-import time
 
 import mock
 
@@ -95,8 +94,6 @@ def test_regular_monitor(
         assert schain_checks.dkg.status
         assert schain_checks.config.status
         assert schain_checks.volume.status
-        # make sure container intialized
-        time.sleep(3)
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
 
