@@ -24,7 +24,6 @@ from typing import Dict, List
 
 from Crypto.Hash import keccak
 from web3 import Web3
-import yaml
 
 from skale.dataclasses.skaled_ports import SkaledPorts
 
@@ -35,7 +34,7 @@ from tools.configs.containers import (
     SHARED_SPACE_CONTAINER_PATH
 )
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from tools.helper import read_json
+from tools.helper import read_json, safe_load_yml
 from tools.configs import ENVIRONMENT_PARAMS_FILEPATH, ENV_TYPE, SGX_SERVER_URL
 from tools.configs.containers import LOCAL_IP
 from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
@@ -50,9 +49,8 @@ def get_static_schain_params():
 
 
 def get_environment_params(env_type=ENV_TYPE, path=ENVIRONMENT_PARAMS_FILEPATH):
-    with open(path) as requirements_file:
-        ydata = yaml.load(requirements_file, Loader=yaml.Loader)
-        return ydata['envs'][env_type]
+    ydata = safe_load_yml(path)
+    return ydata['envs'][env_type]
 
 
 def get_patches(env_type=ENV_TYPE, env_params_path=ENVIRONMENT_PARAMS_FILEPATH):
