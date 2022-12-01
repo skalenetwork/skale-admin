@@ -41,7 +41,7 @@ from core.schains.rotation import get_schain_public_key
 from core.schains.limits import get_schain_type
 
 from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
-from core.schains.monitor.rpc import monitor_schain_rpc
+from core.schains.monitor.rpc import handle_failed_schain_rpc
 from core.schains.runner import (
     restart_container, is_container_exists, get_container_name
 )
@@ -296,7 +296,7 @@ class BaseMonitor(ABC):
         initial_status = self.checks.rpc.status
         if not initial_status:
             self.display_skaled_logs()
-            monitor_schain_rpc(
+            handle_failed_schain_rpc(
                 self.schain,
                 schain_record=self.schain_record,
                 skaled_status=self.skaled_status,

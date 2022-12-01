@@ -21,31 +21,33 @@ import os
 import time
 import logging
 
-from core.schains.skaled_exit_codes import SkaledExitCodes
-from core.schains.rpc import check_endpoint_alive, check_endpoint_blocks
-from core.schains.config.main import schain_config_version_match
-from core.schains.config.helper import (
-    get_base_port_from_config,
-    get_node_ips_from_config,
-    get_own_ip_from_config,
-    get_local_schain_http_endpoint
-)
 from core.schains.config.directory import (
     get_schain_config,
     schain_config_dir,
     schain_config_filepath,
     get_schain_check_filepath
 )
-from core.schains.firewall.types import IRuleController
-from core.schains.runner import get_container_name
+from core.schains.config.helper import (
+    get_base_port_from_config,
+    get_node_ips_from_config,
+    get_own_ip_from_config,
+    get_local_schain_http_endpoint
+)
+from core.schains.config.main import schain_config_version_match
 from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.schains.firewall.types import IRuleController
 from core.schains.process_manager_helper import is_monitor_process_alive
+from core.schains.rpc import (
+    check_endpoint_alive, check_endpoint_blocks, get_endpoint_alive_check_timeout
+)
+from core.schains.runner import get_container_name
+from core.schains.skaled_exit_codes import SkaledExitCodes
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
-from tools.str_formatters import arguments_list_string
 from tools.helper import write_json
+from tools.str_formatters import arguments_list_string
 
 from web.models.schain import SChainRecord
 
@@ -167,7 +169,10 @@ class SChainChecks:
         res = False
         if self.config.status:
             http_endpoint = get_local_schain_http_endpoint(self.name)
-            res = check_endpoint_alive(http_endpoint)
+            timeout = get_endpoint_alive_check_timeout(
+                self.schain_record.failed_rpc_count
+            )
+            res = check_endpoint_alive(http_endpoint, timeout=timeout)
         return CheckRes(res)
 
     @property
