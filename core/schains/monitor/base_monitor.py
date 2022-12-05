@@ -80,6 +80,7 @@ class BaseMonitor(ABC):
         rotation_data: dict,
         checks: SChainChecks,
         rule_controller: IRuleController,
+        schain_config: SChainConfig,
         dutils: DockerUtils = None
     ):
         self.skale = skale
@@ -94,6 +95,7 @@ class BaseMonitor(ABC):
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
         self.rc = rule_controller
+        self.schain_config = schain_config
 
         self.finish_ts = skale.node_rotation.get_schain_finish_ts(
             node_id=rotation_data['leaving_node'],
@@ -206,15 +208,9 @@ class BaseMonitor(ABC):
     def config(self, overwrite=False) -> bool:
         initial_status = self.checks.config.status
         if not initial_status or overwrite:
-            init_schain_config(
-                skale=self.skale,
-                node_id=self.node_config.id,
-                schain_name=self.name,
-                generation=self.generation,
-                ecdsa_sgx_key_name=self.node_config.sgx_key_name,
-                rotation_data=self.rotation_data,
-                schain_record=self.schain_record
-            )
+            save_schain_config(self.schain_config.to_dict(), schain_name)
+            update_schain_config_version(schain_name, schain_record=schain_record)
+            schain_record.set_needs_reload(True)
         else:
             logger.info(f'{self.p} config - ok')
         return initial_status
