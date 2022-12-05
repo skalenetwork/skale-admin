@@ -33,7 +33,8 @@ from core.schains.config.helper import (
     get_own_ip_from_config,
     get_local_schain_http_endpoint
 )
-from core.schains.config.main import schain_config_version_match
+from core.schains.config.generator import SChainConfig
+from core.schains.config.main import is_schain_config_version_match
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
 from core.schains.process_manager_helper import is_monitor_process_alive
@@ -82,6 +83,7 @@ class SChainChecks:
         node_id: int,
         schain_record: SChainRecord,
         rule_controller: IRuleController,
+        needed_config: SChainConfig,
         rotation_id: int = 0,
         *,
         ima_linked: bool = True,
@@ -91,6 +93,7 @@ class SChainChecks:
         self.node_id = node_id
         self.schain_record = schain_record
         self.rotation_id = rotation_id
+        self.needed_config = needed_config
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.ima_linked = ima_linked
@@ -112,14 +115,11 @@ class SChainChecks:
         return CheckRes(os.path.isfile(secret_key_share_filepath))
 
     @property
-    def config(self) -> CheckRes:
-        """Checks that sChain config file exists"""
+    def config(self, needed_config: SChainConfig) -> CheckRes:
+        """Checks that sChain config vailidity """
         config_filepath = schain_config_filepath(self.name)
-        if not os.path.isfile(config_filepath):
-            return CheckRes(False)
-        return CheckRes(
-            schain_config_version_match(self.name, self.schain_record)
-        )
+        return os.path.isfile(config_filepath) and \
+           read_json(config_filepath) == needed_config
 
     @property
     def volume(self) -> CheckRes:
