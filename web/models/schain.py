@@ -39,6 +39,7 @@ class SChainRecord(BaseModel):
     new_schain = BooleanField(default=True)
     repair_mode = BooleanField(default=False)
     needs_reload = BooleanField(default=False)
+    reload_time = DateTimeField()
 
     monitor_last_seen = DateTimeField()
     monitor_id = IntegerField(default=0)
@@ -90,6 +91,7 @@ class SChainRecord(BaseModel):
             'needs_reload': record.needs_reload,
             'monitor_last_seen': record.monitor_last_seen.timestamp(),
             'monitor_id': record.monitor_id,
+            'reload_time': record.reload_time,
             'config_version': record.config_version
         }
 
@@ -132,6 +134,11 @@ class SChainRecord(BaseModel):
     def set_needs_reload(self, value):
         logger.info(f'Changing needs_reload for {self.name} to {value}')
         self.needs_reload = value
+        self.save()
+
+    def set_reload_time(self, value):
+        logger.info(f'Changing reload_time for {self.name} to {value}')
+        self.reload_time = value
         self.save()
 
     def set_monitor_last_seen(self, value):

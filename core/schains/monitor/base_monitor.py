@@ -20,20 +20,22 @@
 import time
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 
 from skale import Skale
+from skale.schain_config.generator import get_nodes_for_schain
 
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
 from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.schains.firewall.types import IRuleController
 from core.schains.cleaner import (
     remove_schain_container,
     remove_schain_volume
 )
-from core.schains.firewall.types import IRuleController
+from core.schains.config.main import save_schain_config, update_schain_config_version
 
 from core.schains.volume import init_data_volume
 from core.schains.rotation import get_schain_public_key
@@ -45,13 +47,15 @@ from core.schains.monitor.rpc import handle_failed_schain_rpc
 from core.schains.runner import (
     restart_container, is_container_exists, get_container_name
 )
-from core.schains.config import init_schain_config, init_schain_config_dir
+from core.schains.config import init_schain_config_dir
+from core.schains.config.generator import SChainConfig
 from core.schains.config.directory import get_schain_config
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config
 )
+from core.schains import MONITOR_INTERVAL
 from core.schains.ima import ImaData
 from core.schains.skaled_status import init_skaled_status
 
@@ -68,6 +72,11 @@ logger = logging.getLogger(__name__)
 
 CONTAINER_POST_RUN_DELAY = 20
 SCHAIN_CLEANUP_TIMEOUT = 10
+
+
+def get_reload_datetime(schain_nodes, node_id):
+    index = list(map(lambda n: n['id'], schain_nodes)).index(node_id)
+    return datetime.now() + timedelta(index * 2 * MONITOR_INTERVAL)
 
 
 class BaseMonitor(ABC):
@@ -208,9 +217,14 @@ class BaseMonitor(ABC):
     def config(self, overwrite=False) -> bool:
         initial_status = self.checks.config.status
         if not initial_status or overwrite:
-            save_schain_config(self.schain_config.to_dict(), schain_name)
-            update_schain_config_version(schain_name, schain_record=schain_record)
-            schain_record.set_needs_reload(True)
+            save_schain_config(self.schain_config.to_dict(), self.name)
+            update_schain_config_version(self.name, schain_record=self.schain_record)
+            reload_datetime = get_reload_datetime(
+                get_nodes_for_schain(self.skale, self.name),
+                self.node_config.id
+            )
+            self.schain_record.set_needs_reload(True)
+            self.schain_record.set_reload_time(reload_datetime)
         else:
             logger.info(f'{self.p} config - ok')
         return initial_status
