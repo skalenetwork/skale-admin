@@ -143,11 +143,9 @@ def test_run_schain_container_sync(
 
 def test_get_image_name_sync():
     image_name = get_image_name(SCHAIN_CONTAINER)
-    assert '-sync' in image_name
     assert '-historic' not in image_name
 
     image_name = get_image_name(SCHAIN_CONTAINER, historic_state=True)
-    assert '-sync' in image_name
     assert '-historic' in image_name
 
 

@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 class NodeConfig(JsonObject):
-    def __init__(self):
-        super().__init__(filepath=NODE_CONFIG_FILEPATH)
+    def __init__(self, filepath: str = NODE_CONFIG_FILEPATH):
+        super().__init__(filepath=filepath)
 
     @property
     def id(self) -> int:
