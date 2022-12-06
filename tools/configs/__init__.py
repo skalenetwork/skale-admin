@@ -91,3 +91,6 @@ ZMQ_TIMEOUT = 5
 CHECK_REPORT_PATH = os.path.join(SKALE_VOLUME_PATH, 'reports', 'checks.json')
 
 SYNC_NODE_ROTATION_TS_DIFF = 600
+
+NODE_OPTIONS_FILEPATH = os.path.join(NODE_DATA_PATH, 'node_options.json')
+NODE_OPTIONS_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'node_options.json.lock')

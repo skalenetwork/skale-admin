@@ -59,6 +59,7 @@ from tools.docker_utils import DockerUtils
 from tools.notifications.messages import notify_checks, is_checks_passed
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import SCHAIN_CONTAINER
+from tools.node_options import NodeOptions
 
 from web.models.schain import upsert_schain_record, set_first_run, SChainRecord
 
@@ -81,7 +82,8 @@ class BaseMonitor(ABC):
         checks: SChainChecks,
         rule_controller: IRuleController,
         dutils: DockerUtils = None,
-        sync_node: bool = False
+        sync_node: bool = False,
+        node_options: NodeOptions = NodeOptions()
     ):
         self.skale = skale
         self.ima_data = ima_data
@@ -89,6 +91,7 @@ class BaseMonitor(ABC):
         self.name = schain['name']
         self.generation = schain['generation']
         self.node_config = node_config
+        self.node_options = node_options
         self.checks = checks
         self.executed_blocks = {}
         self.sync_node = sync_node
@@ -105,8 +108,7 @@ class BaseMonitor(ABC):
 
         self.skaled_status = init_skaled_status(self.name)
 
-        self.schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
-
+        self.schain_type = get_schain_type(schain['partOfNode'])
         self.dutils = dutils or DockerUtils()
         self.p = f'{type(self).__name__} - schain: {self.name} -'
 
@@ -216,7 +218,8 @@ class BaseMonitor(ABC):
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,
                 schain_record=self.schain_record,
-                sync_node=self.sync_node
+                sync_node=self.sync_node,
+                node_options=self.node_options
             )
         else:
             logger.info(f'{self.p} config - ok')
@@ -270,7 +273,8 @@ class BaseMonitor(ABC):
                 public_key=public_key,
                 start_ts=start_ts,
                 dutils=self.dutils,
-                sync_node=self.sync_node
+                sync_node=self.sync_node,
+                historic_state=self.node_options.historic_state
             )
             time.sleep(CONTAINER_POST_RUN_DELAY)
         else:

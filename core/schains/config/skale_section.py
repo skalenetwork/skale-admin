@@ -49,7 +49,7 @@ def generate_skale_section(
     schain: dict, on_chain_etherbase: str, on_chain_owner: str, schain_id: int, node_id: int,
     node: dict, ecdsa_key_name: str, schains_on_node: list, schain_nodes_with_schains: list,
     rotation_id: int, node_groups: dict, skale_manager_opts: SkaleManagerOpts,
-    sync_node: bool = False
+    sync_node: bool = False, archive=None, catchup=None
 ) -> SkaleConfig:
     static_schain_params = get_static_schain_params()
 
@@ -84,7 +84,9 @@ def generate_skale_section(
         static_schain_params=static_schain_params,
         nodes=schain_nodes,
         node_groups=node_groups,
-        sync_node=sync_node
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup
     )
 
     return SkaleConfig(

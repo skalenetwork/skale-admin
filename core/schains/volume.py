@@ -60,7 +60,7 @@ def init_data_volume(
     if sync_node:
         ensure_data_dir_path(schain['name'])
     else:
-        schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
+        schain_type = get_schain_type(schain['partOfNode'])
         disk_limit = get_schain_limit(schain_type, MetricType.disk)
         dutils.create_data_volume(schain_name, disk_limit)
 
