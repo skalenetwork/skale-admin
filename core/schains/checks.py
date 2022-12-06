@@ -20,6 +20,7 @@
 import os
 import time
 import logging
+from typing import Optional
 
 from core.schains.config.directory import (
     get_schain_config,
@@ -47,7 +48,7 @@ from core.schains.skaled_exit_codes import SkaledExitCodes
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
-from tools.helper import write_json
+from tools.helper import read_json, write_json
 from tools.str_formatters import arguments_list_string
 
 from web.models.schain import SChainRecord
@@ -70,6 +71,10 @@ API_ALLOWED_CHECKS = [
 ]
 
 
+class MissingExpectedConfigError(Exception):
+    pass
+
+
 class CheckRes:
     def __init__(self, status: bool, data: dict = None):
         self.status = status
@@ -83,8 +88,8 @@ class SChainChecks:
         node_id: int,
         schain_record: SChainRecord,
         rule_controller: IRuleController,
-        needed_config: SChainConfig,
         rotation_id: int = 0,
+        needed_config: Optional[SChainConfig] = None,
         *,
         ima_linked: bool = True,
         dutils: DockerUtils = None
@@ -115,11 +120,14 @@ class SChainChecks:
         return CheckRes(os.path.isfile(secret_key_share_filepath))
 
     @property
-    def config(self, needed_config: SChainConfig) -> CheckRes:
-        """Checks that sChain config vailidity """
+    def config(self) -> CheckRes:
+        """ Checks that sChain config is generated and up to date """
+        if not self.needed_config:
+            raise MissingExpectedConfigError(f'Config is {self.needed_config}')
         config_filepath = schain_config_filepath(self.name)
-        return os.path.isfile(config_filepath) and \
-           read_json(config_filepath) == needed_config
+        plain_result = os.path.isfile(config_filepath) and \
+            read_json(config_filepath) == self.needed_config
+        return CheckRes(plain_result)
 
     @property
     def volume(self) -> CheckRes:
