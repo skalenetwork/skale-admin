@@ -546,6 +546,7 @@ def schain_checks(schain_config, schain_db, rule_controller, dutils):
         node_id,
         schain_record=schain_record,
         rule_controller=rule_controller,
+        needed_config=schain_config,
         dutils=dutils
     )
 

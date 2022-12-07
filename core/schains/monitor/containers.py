@@ -17,9 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import requests
+import json
 import logging
+import time
 
-from core.schains.volume import is_volume_exists
+from core.schains.config.helper import get_skaled_http_address
 from core.schains.runner import (
     is_schain_container_failed,
     restart_container,
@@ -27,8 +30,9 @@ from core.schains.runner import (
     is_container_exists,
     run_ima_container
 )
-from core.ima.schain import copy_schain_ima_abi
+from core.schains.volume import is_volume_exists
 from core.schains.ima import ImaData
+from core.ima.schain import copy_schain_ima_abi
 
 from tools.configs.containers import (
     MAX_SCHAIN_RESTART_COUNT,
@@ -40,6 +44,45 @@ from tools.docker_utils import DockerUtils
 
 
 logger = logging.getLogger(__name__)
+
+
+SECONDS_IN_EPOCH = 80
+NODES_IN_SCHAIN = 16
+
+
+def get_restart_ts(schain_nodes, node_id):
+    index = list(map(lambda n: n['id'], schain_nodes)).index(node_id)
+    ts = time.time()
+    epoch = int(ts) // SECONDS_IN_EPOCH
+    slot = SECONDS_IN_EPOCH / NODES_IN_SCHAIN
+    return (epoch + 1) * SECONDS_IN_EPOCH + index * slot
+
+
+def set_exit_ts(schain_name: str, timestamp: int) -> None:
+    logger.info('sChain %s restart scheduled for %d', schain_name, timestamp)
+    url = get_skaled_http_address(schain_name)
+    send_exit_request(url, timestamp)
+
+
+def send_exit_request(url, timestamp):
+    logger.info(f'Send rotation request: {timestamp}')
+    headers = {'content-type': 'application/json'}
+    data = {
+        'finishTime': timestamp
+    }
+    call_data = {
+        "id": 0,
+        "jsonrpc": "2.0",
+        "method": "setSchainExitTime",
+        "params": data,
+    }
+    response = requests.post(
+        url=url,
+        data=json.dumps(call_data),
+        headers=headers,
+    ).json()
+    if response.get('error'):
+        raise Exception(response['error']['message'])
 
 
 def monitor_schain_container(

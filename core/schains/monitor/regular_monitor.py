@@ -18,7 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from core.schains.monitor.base_monitor import BaseMonitor
+
+from skale.schain_config.generator import get_nodes_for_schain
+
+from core.schains.monitor.base_monitor import BaseMonitor, ConfigStatus
+from core.schains.monitor.containers import get_restart_slot_ts, set_exit_ts
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +33,12 @@ class RegularMonitor(BaseMonitor):
     def run(self):
         self.config_dir()
         self.dkg()
-        self.config()
+        if self.config() == ConfigStatus.NEEDS_RELOAD:
+            exit_ts = get_restart_slot_ts(
+                get_nodes_for_schain(self.skale, self.name),
+                self.node_config.id
+            )
+            set_exit_ts(self.name, exit_ts)
         self.volume()
         self.firewall_rules()
         self.skaled_container()

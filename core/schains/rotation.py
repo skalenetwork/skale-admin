@@ -21,13 +21,14 @@ import json
 import logging
 import requests
 
-from core.schains.config.helper import get_skaled_http_address
-
+from skale import SkaleManager
+from skale.schain_config.rotation_history import get_previous_schain_groups, get_new_nodes_list
 
 logger = logging.getLogger(__name__)
 
 
-def set_rotation_for_schain(schain_name: str, timestamp: int) -> None:
+def set_exit_request(schain_name: str, timestamp: int) -> None:
+    logger.info('sChain %s restart scheduled for %d', schain_name, timestamp)
     url = get_skaled_http_address(schain_name)
     _send_rotation_request(url, timestamp)
 
@@ -61,3 +62,21 @@ def get_schain_public_key(skale, schain_name):
         raw_public_key = skale.key_storage.get_common_public_key(group_idx)
         public_key_array = [*raw_public_key[0], *raw_public_key[1]]
     return ':'.join(map(str, public_key_array))
+
+
+def get_new_nodes_for_schain(
+    skale: SkaleManager,
+    name: str,
+    leaving_node: int
+) -> list:
+    node_groups = get_previous_schain_groups(
+        skale=skale,
+        schain_name=name,
+        leaving_node_id=leaving_node,
+        include_keys=False
+    )
+    return get_new_nodes_list(
+        skale=skale,
+        name=name,
+        node_groups=node_groups
+    )

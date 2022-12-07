@@ -20,8 +20,7 @@
 import logging
 
 from core.schains.monitor.base_monitor import BaseMonitor
-from core.schains.rotation import set_rotation_for_schain
-from skale.schain_config.rotation_history import get_previous_schain_groups, get_new_nodes_list
+from core.schains.rotation import get_new_nodes_for_schain, set_exit_ts
 
 logger = logging.getLogger(__name__)
 
@@ -48,16 +47,10 @@ class RotationMonitor(BaseMonitor):
         if self._is_new_rotation_node():
             logger.info(f'{self.p} current node is the new node in this rotation')
             return True
-        node_groups = get_previous_schain_groups(
-            skale=self.skale,
-            schain_name=self.name,
-            leaving_node_id=self.rotation_data['leaving_node'],
-            include_keys=False
-        )
-        new_nodes = get_new_nodes_list(
-            skale=self.skale,
-            name=self.name,
-            node_groups=node_groups
+        new_nodes = get_new_nodes_for_schain(
+            self.skale,
+            self.name,
+            self.rotation_data['leaving_node']
         )
         logger.info(f'{self.p} new nodes: {new_nodes}, current node: {self.node_config.id}')
         if self.node_config.id in new_nodes:
@@ -69,7 +62,7 @@ class RotationMonitor(BaseMonitor):
         return self.rotation_data['leaving_node'] == self.node_config.id
 
     def rotation_request(self) -> None:
-        set_rotation_for_schain(self.name, self.finish_ts)
+        set_exit_ts(self.name, self.finish_ts)
 
     def new_node(self) -> None:
         self.config_dir()
@@ -93,7 +86,7 @@ class RotationMonitor(BaseMonitor):
         self.skaled_rpc()
         self.ima_container()
         self.dkg()
-        self.rotation_request()
+        self.config()
 
     def get_rotation_mode_func(self):
         if self._is_leaving_node():

@@ -20,14 +20,15 @@
 import time
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime, timedelta
+from datetime import datetime
+from enum import Enum
 from functools import wraps
 
 from skale import Skale
 from skale.schain_config.generator import get_nodes_for_schain
 
 from core.node_config import NodeConfig
-from core.schains.checks import SChainChecks
+from core.schains.checks import ConfigCheckMsg, SChainChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
@@ -36,6 +37,7 @@ from core.schains.cleaner import (
     remove_schain_volume
 )
 from core.schains.config.main import save_schain_config, update_schain_config_version
+from core.schains.config.generator import generate_schain_config_with_skale
 
 from core.schains.volume import init_data_volume
 from core.schains.rotation import get_schain_public_key
@@ -55,7 +57,6 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config
 )
-from core.schains import MONITOR_INTERVAL
 from core.schains.ima import ImaData
 from core.schains.skaled_status import init_skaled_status
 
@@ -74,9 +75,10 @@ CONTAINER_POST_RUN_DELAY = 20
 SCHAIN_CLEANUP_TIMEOUT = 10
 
 
-def get_reload_datetime(schain_nodes, node_id):
-    index = list(map(lambda n: n['id'], schain_nodes)).index(node_id)
-    return datetime.now() + timedelta(index * 2 * MONITOR_INTERVAL)
+class ConfigStatus(int, Enum):
+    OK = 0
+    SAVED = 1
+    RELOAD_NEEDED = 2
 
 
 class BaseMonitor(ABC):
@@ -214,20 +216,29 @@ class BaseMonitor(ABC):
         return initial_status
 
     @monitor_block
-    def config(self, overwrite=False) -> bool:
-        initial_status = self.checks.config.status
-        if not initial_status or overwrite:
-            save_schain_config(self.schain_config.to_dict(), self.name)
-            update_schain_config_version(self.name, schain_record=self.schain_record)
-            reload_datetime = get_reload_datetime(
-                get_nodes_for_schain(self.skale, self.name),
-                self.node_config.id
-            )
-            self.schain_record.set_needs_reload(True)
-            self.schain_record.set_reload_time(reload_datetime)
+    def config(self, overwrite=False) -> ConfigStatus:
+        schain_config = generate_schain_config_with_skale(
+            skale=self.skale,
+            schain_name=self.name,
+            generation=self.generation,
+            node_id=self.node_config.id,
+            rotation_data=self.rotation_data,
+            ecdsa_key_name=self.node_config.sgx_key_name
+        )
+        self.checks.needed_config = schain_config
+        check_result = self.checks.config
+        if overwrite or not check_result.status:
+            if check_result.msg in ConfigCheckMsg.NO_FILE:
+                logger.info('Saving %s sChain config', self.name)
+                save_schain_config(schain_config.to_dict(), self.name)
+                update_schain_config_version(self.name, schain_record=self.schain_record)
+                return ConfigStatus.SAVED
+            else:
+                return ConfigStatus.RELOAD_NEEDED
         else:
             logger.info(f'{self.p} config - ok')
-        return initial_status
+            return ConfigStatus.OK
+        return check_result.status
 
     @monitor_block
     def volume(self) -> bool:

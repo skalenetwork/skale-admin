@@ -10,7 +10,7 @@ import docker
 import pytest
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
-from core.schains.checks import SChainChecks, CheckRes
+from core.schains.checks import MissingExpectedConfigError, SChainChecks, CheckRes
 from core.schains.runner import get_container_info
 from core.schains.config.directory import get_schain_check_filepath
 
@@ -77,6 +77,7 @@ def sample_false_checks(schain_config, schain_db, rule_controller, dutils):
         NOT_EXISTS_SCHAIN_NAME,
         TEST_NODE_ID,
         schain_record=schain_record,
+        needed_config=schain_config,
         rule_controller=rule_controller,
         dutils=dutils
     )
@@ -95,6 +96,7 @@ def rules_unsynced_checks(
         schain_name,
         TEST_NODE_ID,
         schain_record=schain_record,
+        needed_config=schain_config,
         rule_controller=uninited_rule_controller,
         dutils=dutils
     )
@@ -111,13 +113,13 @@ def test_dkg_check(schain_checks, sample_false_checks):
 
 
 def test_config_check(schain_checks, sample_false_checks):
-    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert schain_checks.config.status
-        assert not sample_false_checks.config.status
+    assert schain_checks.config.status
+    assert not sample_false_checks.config.status
 
 
 def test_config_check_wrong_version(schain_checks):
     schain_checks.schain_record = SchainRecordMock('9.8.7')
+    schain_checks.needed_config['version'] = '9.9.8'
     assert not schain_checks.config.status
 
 
@@ -132,10 +134,8 @@ def test_volume_check(schain_checks, sample_false_checks, dutils):
 
 def test_firewall_rules_check(schain_checks, rules_unsynced_checks):
     schain_checks.rc.sync()
-    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert schain_checks.firewall_rules.status
-    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert not rules_unsynced_checks.firewall_rules.status
+    assert schain_checks.firewall_rules.status
+    assert not rules_unsynced_checks.firewall_rules.status
 
 
 def test_container_check(schain_checks, sample_false_checks):
@@ -197,12 +197,11 @@ def test_rpc_check(schain_checks, schain_db):
 
 def test_blocks_check(schain_checks):
     res_mock = response_mock(HTTPStatus.OK, ETH_GET_BLOCK_RESULT)
-    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        with mock.patch('requests.post', return_value=res_mock), \
-                mock.patch('time.time', return_value=TEST_TIMESTAMP):
+    with mock.patch('requests.post', return_value=res_mock):
+        with mock.patch('time.time', return_value=TEST_TIMESTAMP):
             assert schain_checks.blocks.status
-        with mock.patch('requests.post', return_value=res_mock):
-            assert not schain_checks.blocks.status
+    with mock.patch('requests.post', return_value=res_mock):
+        assert not schain_checks.blocks.status
 
 
 def test_init_checks(skale, schain_db, uninited_rule_controller, dutils):
@@ -274,6 +273,7 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
         schain_db,
         node_id,
         schain_record=schain_record,
+        needed_config=schain_config,
         rule_controller=rule_controller,
         dutils=dutils
     )
@@ -294,6 +294,7 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
         schain_db,
         node_id,
         schain_record=schain_record,
+        needed_config=schain_config,
         rule_controller=rule_controller,
         dutils=dutils,
         ima_linked=False
@@ -311,12 +312,20 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
     assert len(filtered_checks) == 0
 
 
-def test_get_all_with_save(node_config, rule_controller, dutils, schain_db):
-    schain_record = upsert_schain_record(schain_db)
+def test_get_all_with_save(
+    node_config,
+    schain_config,
+    rule_controller,
+    dutils,
+    schain_db
+):
+    name = schain_db
+    record = SChainRecord.get_by_name(name)
     checks = SChainChecksMock(
         schain_db,
-        node_config.id,
-        schain_record=schain_record,
+        TEST_NODE_ID,
+        schain_record=record,
+        needed_config=schain_config,
         rule_controller=rule_controller,
         dutils=dutils
     )
@@ -326,3 +335,25 @@ def test_get_all_with_save(node_config, rule_controller, dutils, schain_db):
     assert os.path.isfile(schain_check_path)
     checks_from_file = read_json(schain_check_path)
     assert schain_checks == checks_from_file['checks']
+
+
+def test_config_check_wtihout_needed_config(
+    skale,
+    node_config,
+    rule_controller,
+    schain_db,
+    dutils
+):
+    name = schain_db
+    record = upsert_schain_record(name)
+    checks = SChainChecks(
+        name,
+        TEST_NODE_ID,
+        schain_record=record,
+        rule_controller=rule_controller,
+        dutils=dutils
+    )
+    with pytest.raises(MissingExpectedConfigError):
+        checks.config
+    with pytest.raises(MissingExpectedConfigError):
+        checks.get_all()

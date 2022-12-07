@@ -3,7 +3,7 @@ import json
 
 from core.schains.process_manager import get_leaving_schains_for_node
 from core.schains.runner import is_exited
-from core.schains.rotation import set_rotation_for_schain
+from core.schains.rotation import set_exit_ts
 
 
 class ResponseMock:
@@ -11,11 +11,11 @@ class ResponseMock:
         return {}
 
 
-def test_set_rotation(schain_config):
+def test_set_exit_ts(schain_config):
     with mock.patch('core.schains.rotation.requests.post',
                     new=mock.Mock(return_value=ResponseMock())) as post:
         schain_name = schain_config['skaleConfig']['sChain']['schainName']
-        set_rotation_for_schain(schain_name, 100)
+        set_exit_ts(schain_name, 100)
         args, kwargs = post.call_args
         data = json.loads(kwargs['data'])
         params = {

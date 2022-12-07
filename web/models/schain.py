@@ -57,6 +57,7 @@ class SChainRecord(BaseModel):
                     added_at=datetime.now(),
                     dkg_status=DKGStatus.NOT_STARTED.value,
                     new_schain=True,
+                    reload_time=datetime.now(),
                     monitor_last_seen=datetime.now()
                 )
             return (schain, None)

@@ -20,6 +20,7 @@
 import os
 import time
 import logging
+from enum import Enum
 from typing import Optional
 
 from core.schains.config.directory import (
@@ -35,7 +36,7 @@ from core.schains.config.helper import (
     get_local_schain_http_endpoint
 )
 from core.schains.config.generator import SChainConfig
-from core.schains.config.main import is_schain_config_version_match
+from core.schains.config.main import schain_config_version_match
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
 from core.schains.process_manager_helper import is_monitor_process_alive
@@ -71,14 +72,22 @@ API_ALLOWED_CHECKS = [
 ]
 
 
+class ConfigCheckMsg(str, Enum):
+    EMPTY = ''
+    OK = 'ok'
+    NO_FILE = 'no file'
+    VERSION_DISCREPANCY = 'version discrepancy'
+    OUTDATED = 'outdated'
+
+
 class MissingExpectedConfigError(Exception):
     pass
 
 
 class CheckRes:
-    def __init__(self, status: bool, data: dict = None):
+    def __init__(self, status: bool, msg: Optional[str] = None):
         self.status = status
-        self.data = data if data else {}
+        self.msg = msg if msg else ''
 
 
 class SChainChecks:
@@ -125,9 +134,13 @@ class SChainChecks:
         if not self.needed_config:
             raise MissingExpectedConfigError(f'Config is {self.needed_config}')
         config_filepath = schain_config_filepath(self.name)
-        plain_result = os.path.isfile(config_filepath) and \
-            read_json(config_filepath) == self.needed_config
-        return CheckRes(plain_result)
+        if not os.path.isfile(config_filepath):
+            return CheckRes(False, ConfigCheckMsg.NO_FILE)
+        if not schain_config_version_match(self.name, self.schain_record):
+            return CheckRes(False, ConfigCheckMsg.VERSION_DISCREPANCY)
+        if read_json(config_filepath) == self.needed_config:
+            return CheckRes(False, ConfigCheckMsg.OUTDATED)
+        return CheckRes(True, ConfigCheckMsg.OK)
 
     @property
     def volume(self) -> CheckRes:
