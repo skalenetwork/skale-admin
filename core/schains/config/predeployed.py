@@ -19,7 +19,6 @@
 
 import logging
 
-from web3 import Web3
 from skale.wallets.web3_wallet import public_key_to_address
 
 from etherbase_predeployed import (
@@ -42,7 +41,6 @@ from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS, generate
 
 from core.schains.config.accounts import add_to_accounts, generate_account
 from core.schains.config.generation import Gen
-from core.schains.config.helper import _string_to_storage, get_context_contract
 
 from core.schains.types import SchainType
 from core.schains.limits import get_fs_allocated_storage
@@ -75,7 +73,6 @@ def generate_predeployed_accounts(
     """
     predeployed_section = {
         **generate_owner_accounts(on_chain_owner, originator_address, schain_nodes, generation),
-        **generate_context_accounts(schain_name, on_chain_owner),
         **generate_ima_accounts(on_chain_owner, schain_name)
     }
 
@@ -192,32 +189,6 @@ def generate_owner_accounts(
     for node in schain_nodes:
         node_owner = public_key_to_address(node['publicKey'])
         add_to_accounts(accounts, node_owner, generate_account(NODE_OWNER_ALLOC))
-    return accounts
-
-
-def generate_context_accounts(schain_name: dict, on_chain_owner: str) -> dict:
-    """
-    Generates accounts for the context predeployed SC
-
-    :param schain_name: Name of the sChain
-    :type schain_name: str
-    :param on_chain_owner: Address of the sChain owner
-    :type on_chain_owner: str
-    :returns: Dictionary with accounts
-    :rtype: dict
-    """
-    accounts = {}
-    context_contract = get_context_contract()
-
-    storage = {hex(0): str(Web3.toChecksumAddress(on_chain_owner))}
-    storage = {**storage, **_string_to_storage(1, schain_name)}
-
-    account = generate_account(
-        balance=0,
-        code=context_contract['bytecode'],
-        storage=storage
-    )
-    add_to_accounts(accounts, context_contract['address'], account)
     return accounts
 
 

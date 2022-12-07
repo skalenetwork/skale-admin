@@ -38,15 +38,10 @@ from tools.helper import read_json
 from tools.configs import ENVIRONMENT_PARAMS_FILEPATH, ENV_TYPE, SGX_SERVER_URL
 from tools.configs.containers import LOCAL_IP
 from tools.configs.ima import IMA_ENDPOINT
-from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
 from tools.helper import safe_load_yml
 
 
 logger = logging.getLogger(__name__)
-
-
-def get_static_schain_params():
-    return read_json(STATIC_SCHAIN_PARAMS_FILEPATH)
 
 
 def get_environment_params(env_type=ENV_TYPE, path=ENVIRONMENT_PARAMS_FILEPATH):
@@ -57,10 +52,6 @@ def get_environment_params(env_type=ENV_TYPE, path=ENVIRONMENT_PARAMS_FILEPATH):
 def get_patches(env_type=ENV_TYPE, env_params_path=ENVIRONMENT_PARAMS_FILEPATH):
     params_for_env_type = get_environment_params(env_type, path=env_params_path)
     return params_for_env_type.get('patches', {})
-
-
-def get_context_contract():
-    return get_static_schain_params()['context_contract']
 
 
 def fix_address(address):
@@ -77,32 +68,6 @@ def get_chain_id(schain_name: str) -> str:
 
 def get_schain_id(schain_name: str) -> int:
     return int(get_chain_id(schain_name), 16)
-
-
-def _string_to_storage(slot: int, string: str) -> dict:
-    # https://solidity.readthedocs.io/en/develop/miscellaneous.html#bytes-and-string
-    storage = dict()
-    binary = string.encode()
-    length = len(binary)
-    if length < 32:
-        binary += (2 * length).to_bytes(32 - length, 'big')
-        storage[hex(slot)] = '0x' + binary.hex()
-    else:
-        storage[hex(slot)] = hex(2 * length + 1)
-
-        keccak_hash = keccak.new(digest_bits=256)
-        keccak_hash.update(slot.to_bytes(32, 'big'))
-        offset = int.from_bytes(keccak_hash.digest(), 'big')
-
-        def chunks(size, source):
-            for i in range(0, len(source), size):
-                yield source[i:i + size]
-
-        for index, data in enumerate(chunks(32, binary)):
-            if len(data) < 32:
-                data += int(0).to_bytes(32 - len(data), 'big')
-            storage[hex(offset + index)] = '0x' + data.hex()
-    return storage
 
 
 def get_node_ips_from_config(config: Dict) -> List[str]:
@@ -207,8 +172,12 @@ def get_schain_container_base_opts(schain_name: str,
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
 
-    static_schain_params = get_static_schain_params()
-    static_schain_cmd = static_schain_params.get('schain_cmd', None)
+    # static_schain_params = get_static_schain_params()
+    # static_schain_cmd = static_schain_params.get('schain_cmd', None)
+
+    static_schain_cmd = 1
+
+    # todo: get from env params
     cmd = [
         f'--config {config_filepath}',
         f'-d {DATA_DIR_CONTAINER_PATH}',
