@@ -398,3 +398,25 @@ def test_generate_sync_node_config_archive_catchup(
 
     assert config['skaleConfig']['sChain'].get('syncFromCatchup')
     assert config['skaleConfig']['sChain'].get('archiveMode') is False
+
+    schain_config = generate_schain_config(
+        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain_id=schain_id,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        schains_on_node=schains_on_node,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts,
+        sync_node=False,
+        archive=False,
+        catchup=True
+    )
+    config = schain_config.to_dict()
+
+    assert config['skaleConfig']['sChain'].get('syncFromCatchup') is None
+    assert config['skaleConfig']['sChain'].get('archiveMode') is None

@@ -50,6 +50,7 @@ class SChainInfo:
 
     archive: bool
     catchup: bool
+    sync_node: bool
 
     def to_dict(self):
         """Returns camel-case representation of the SChainInfo object"""
@@ -70,9 +71,9 @@ class SChainInfo:
             'multiTransactionMode': self.multitransaction_mode,
             'nodes': self.nodes
         }
-        if self.archive is not None:
+        if self.archive is not None and self.sync_node:
             schain_info['archiveMode'] = self.archive
-        if self.catchup is not None:
+        if self.catchup is not None and self.sync_node:
             schain_info['syncFromCatchup'] = self.catchup
         return schain_info
 
@@ -98,6 +99,7 @@ def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
         multitransaction_mode=schain['multitransactionMode'],
         archive=archive,
         catchup=catchup,
+        sync_node=sync_node,
         **volume_limits,
         **static_schain_params['schain']
     )
