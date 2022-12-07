@@ -49,7 +49,8 @@ def monitor_schain_container(
     public_key=None,
     start_ts=None,
     dutils=None,
-    sync_node: bool = False
+    sync_node: bool = False,
+    historic_state: bool = False
 ) -> None:
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
@@ -66,7 +67,8 @@ def monitor_schain_container(
             public_key=public_key,
             start_ts=start_ts,
             dutils=dutils,
-            sync_node=sync_node
+            sync_node=sync_node,
+            historic_state=historic_state
         )
         schain_record.reset_failed_conunters()
         return

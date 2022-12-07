@@ -33,8 +33,9 @@ from core.schains.ima import get_ima_env
 from core.schains.config.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
-from tools.configs.containers import (CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER,
-                                      IMA_CONTAINER, DATA_DIR_CONTAINER_PATH)
+from tools.configs.containers import (
+    CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER, IMA_CONTAINER, DATA_DIR_CONTAINER_PATH,
+    HISTORIC_STATE_IMAGE_POSTFIX)
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
                            SKALE_VOLUME_PATH, SCHAIN_CONFIG_DIR_SKALED)
 from tools.helper import get_containers_data
@@ -59,9 +60,12 @@ def is_container_running(
     return dutils.is_container_running(container_name)
 
 
-def get_image_name(type):
-    container_info = get_containers_data()[type]
-    return f'{container_info["name"]}:{container_info["version"]}'
+def get_image_name(_type, historic_state: bool = False) -> str:
+    container_info = get_containers_data()[_type]
+    image_name = f'{container_info["name"]}:{container_info["version"]}'
+    if historic_state and _type == SCHAIN_CONTAINER:
+        image_name += HISTORIC_STATE_IMAGE_POSTFIX
+    return image_name
 
 
 def get_container_name(type, schain_name):
@@ -76,8 +80,8 @@ def get_container_custom_args(type):
     return copy.deepcopy(get_containers_data()[type]['custom_args'])
 
 
-def get_container_info(type, schain_name):
-    return (get_image_name(type), get_container_name(type, schain_name),
+def get_container_info(type, schain_name: str, historic_state: bool = False):
+    return (get_image_name(type, historic_state), get_container_name(type, schain_name),
             get_container_args(type), get_container_custom_args(type))
 
 
@@ -91,11 +95,11 @@ def get_ulimits_config(config):
 
 
 def run_container(type, schain_name, env, cmd=None, volume_config=None,
-                  cpu_shares_limit=None, mem_limit=None,
-                  dutils=None, volume_mode=None):
+                  cpu_shares_limit=None, mem_limit=None, dutils=None,
+                  volume_mode=None, historic_state=False):
     dutils = dutils or DockerUtils()
     image_name, container_name, run_args, custom_args = get_container_info(
-        type, schain_name)
+        type, schain_name, historic_state)
 
     add_config_volume(run_args, schain_name, mode=volume_mode)
 
@@ -134,11 +138,12 @@ def restart_container(type, schain, dutils=None):
 
 def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
                          volume_mode=None, ulimit_check=True, enable_ssl=True,
-                         sync_node: bool = False):
+                         sync_node: bool = False, historic_state: bool = False):
     schain_name = schain['name']
-    schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
-    cpu_limit = get_schain_limit(schain_type, MetricType.cpu_shares)
-    mem_limit = get_schain_limit(schain_type, MetricType.mem)
+    schain_type = get_schain_type(schain['partOfNode'])
+
+    cpu_limit = None if sync_node else get_schain_limit(schain_type, MetricType.cpu_shares)
+    mem_limit = None if sync_node else get_schain_limit(schain_type, MetricType.mem)
 
     volume_config = get_schain_volume_config(
         schain_name,
@@ -154,9 +159,10 @@ def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
         enable_ssl=enable_ssl,
         sync_node=sync_node
     )
-    run_container(SCHAIN_CONTAINER, schain_name, env, cmd,
-                  volume_config, cpu_limit,
-                  mem_limit, dutils=dutils, volume_mode=volume_mode)
+    run_container(
+        SCHAIN_CONTAINER, schain_name, env, cmd, volume_config, cpu_limit, mem_limit,
+        dutils=dutils, volume_mode=volume_mode, historic_state=historic_state
+    )
 
 
 def run_ima_container(
@@ -167,7 +173,7 @@ def run_ima_container(
     dutils = dutils or DockerUtils()
     env = get_ima_env(schain['name'], mainnet_chain_id)
 
-    schain_type = get_schain_type(schain['partOfNode'], sync_node=False)
+    schain_type = get_schain_type(schain['partOfNode'])
     cpu_limit = get_ima_limit(schain_type, MetricType.cpu_shares)
     mem_limit = get_ima_limit(schain_type, MetricType.mem)
 

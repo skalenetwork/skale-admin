@@ -48,9 +48,13 @@ class SChainInfo:
 
     multitransaction_mode: bool
 
+    archive: bool
+    catchup: bool
+    sync_node: bool
+
     def to_dict(self):
         """Returns camel-case representation of the SChainInfo object"""
-        return {
+        schain_info = {
             'schainID': self.schain_id,
             'schainName': self.name,
             'blockAuthor': self.block_author,
@@ -67,12 +71,18 @@ class SChainInfo:
             'multiTransactionMode': self.multitransaction_mode,
             'nodes': self.nodes
         }
+        if self.archive is not None and self.sync_node:
+            schain_info['archiveMode'] = self.archive
+        if self.catchup is not None and self.sync_node:
+            schain_info['syncFromCatchup'] = self.catchup
+        return schain_info
 
 
 def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
                          static_schain_params: dict, node_groups: dict,
-                         nodes: dict, sync_node: bool) -> SChainInfo:
-    schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
+                         nodes: dict, sync_node: bool, archive=None,
+                         catchup=None) -> SChainInfo:
+    schain_type = get_schain_type(schain['partOfNode'])
     volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)
     leveldb_limits = get_schain_limit(schain_type, MetricType.leveldb_limits)
     contract_storage_limit = leveldb_limits['contract_storage']
@@ -87,6 +97,9 @@ def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
         node_groups=node_groups,
         nodes=nodes,
         multitransaction_mode=schain['multitransactionMode'],
+        archive=archive,
+        catchup=catchup,
+        sync_node=sync_node,
         **volume_limits,
         **static_schain_params['schain']
     )

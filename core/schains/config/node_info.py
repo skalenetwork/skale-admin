@@ -90,7 +90,7 @@ def generate_current_node_info(
 ) -> CurrentNodeInfo:
     schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain['name'],
                                                             node['port'])
-    schain_type_name = get_schain_type(schain['partOfNode'], sync_node=sync_node).name
+    schain_type_name = get_schain_type(schain['partOfNode']).name
 
     wallets = {} if sync_node else generate_wallets_config(schain['name'], rotation_id)
 
