@@ -55,11 +55,14 @@ class CurrentNodeInfo(NodeInfo):
     max_open_leveldb_files: int
 
     skale_manager_opts: SkaleManagerOpts
+
     sync_node: bool
+    archive: bool
+    catchup: bool
 
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
-        return {
+        node_info = {
             **super().to_dict(),
             **{
                 'bindIP': self.bind_ip,
@@ -81,12 +84,17 @@ class CurrentNodeInfo(NodeInfo):
                 'syncNode': self.sync_node
             }
         }
+        if self.archive is not None and self.sync_node:
+            node_info['archiveMode'] = self.archive
+        if self.catchup is not None and self.sync_node:
+            node_info['syncFromCatchup'] = self.catchup
+        return node_info
 
 
 def generate_current_node_info(
     node: dict, node_id: int, ecdsa_key_name: str, static_schain_params: dict,
     schain: dict, schains_on_node: list, rotation_id: int, skale_manager_opts: SkaleManagerOpts,
-    sync_node: bool = False
+    sync_node: bool = False, archive: bool = False, catchup: bool = False
 ) -> CurrentNodeInfo:
     schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain['name'],
                                                             node['port'])
@@ -106,6 +114,8 @@ def generate_current_node_info(
         wallets=wallets,
         skale_manager_opts=skale_manager_opts,
         sync_node=sync_node,
+        archive=archive,
+        catchup=catchup,
         **get_message_proxy_addresses(),
         **static_schain_params['current_node_info'],
         **static_schain_params['cache_options'][schain_type_name]
