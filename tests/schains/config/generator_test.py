@@ -374,8 +374,8 @@ def test_generate_sync_node_config_archive_catchup(
     )
     config = schain_config.to_dict()
 
-    assert not config['skaleConfig']['sChain'].get('syncFromCatchup')
-    assert not config['skaleConfig']['sChain'].get('archiveMode')
+    assert not config['skaleConfig']['nodeInfo'].get('syncFromCatchup')
+    assert not config['skaleConfig']['nodeInfo'].get('archiveMode')
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITHOUT_ORIGINATOR,
@@ -396,8 +396,8 @@ def test_generate_sync_node_config_archive_catchup(
     )
     config = schain_config.to_dict()
 
-    assert config['skaleConfig']['sChain'].get('syncFromCatchup')
-    assert config['skaleConfig']['sChain'].get('archiveMode') is False
+    assert config['skaleConfig']['nodeInfo'].get('syncFromCatchup')
+    assert config['skaleConfig']['nodeInfo'].get('archiveMode') is False
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITHOUT_ORIGINATOR,
@@ -418,5 +418,5 @@ def test_generate_sync_node_config_archive_catchup(
     )
     config = schain_config.to_dict()
 
-    assert config['skaleConfig']['sChain'].get('syncFromCatchup') is None
-    assert config['skaleConfig']['sChain'].get('archiveMode') is None
+    assert config['skaleConfig']['nodeInfo'].get('syncFromCatchup') is None
+    assert config['skaleConfig']['nodeInfo'].get('archiveMode') is None

@@ -67,7 +67,9 @@ def generate_skale_section(
         schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         skale_manager_opts=skale_manager_opts,
-        sync_node=sync_node
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup
     )
 
     schain_nodes = generate_schain_nodes(
@@ -83,10 +85,7 @@ def generate_skale_section(
         on_chain_etherbase=on_chain_etherbase,
         static_schain_params=static_schain_params,
         nodes=schain_nodes,
-        node_groups=node_groups,
-        sync_node=sync_node,
-        archive=archive,
-        catchup=catchup
+        node_groups=node_groups
     )
 
     return SkaleConfig(
