@@ -217,7 +217,7 @@ class DockerUtils:
             logger.warning(e)
             logger.warning(f'No such container: {container_name}')
 
-    def safe_rm(self, container_name: str, stop_timeout=DOCKER_DEFAULT_STOP_TIMEOUT, **kwargs):
+    def safe_rm(self, container_name: str, timeout=DOCKER_DEFAULT_STOP_TIMEOUT, **kwargs):
         """
         Saves docker container logs (last N lines) in the .skale/node_data/log/.removed_containers
         folder. Then stops and removes container with specified params.
@@ -226,8 +226,8 @@ class DockerUtils:
         if not container:
             return
         logger.info(
-            f'Stopping container: {container_name}, timeout: {stop_timeout}')
-        container.stop(timeout=stop_timeout)
+            f'Stopping container: {container_name}, timeout: {timeout}')
+        container.stop(timeout=timeout)
         self.backup_container_logs(container)
         logger.info(f'Removing container: {container_name}, kwargs: {kwargs}')
         container.remove(**kwargs)
@@ -308,17 +308,25 @@ class DockerUtils:
         log_file_name = f'{container.name}-{container_index}.log'
         return os.path.join(REMOVED_CONTAINERS_FOLDER_PATH, log_file_name)
 
-    def restart(self, container_name: str, **kwargs):
+    def restart(
+        self,
+        container_name: str,
+        timeout: int = DOCKER_DEFAULT_STOP_TIMEOUT,
+        **kwargs
+    ):
         logger.info(f'Restarting container: {container_name}')
         try:
             container = self.client.containers.get(container_name)
-            res = container.restart(**kwargs)
+            res = container.restart(timeout=timeout, **kwargs)
             logger.info(f'Container restarted: {container_name}')
             return res
         except docker.errors.APIError:
             logger.error(f'No such container: {container_name}')
 
-    def restart_all_schains(self) -> None:
+    def restart_all_schains(
+        self,
+        timeout: int = DOCKER_DEFAULT_STOP_TIMEOUT
+    ) -> None:
         containers = self.get_all_schain_containers()
         for container in containers:
-            self.restart(container.name)
+            self.restart(container.name, timeout=timeout)
