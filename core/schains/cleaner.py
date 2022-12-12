@@ -86,7 +86,7 @@ def remove_schain_container(schain_name: str, dutils: DockerUtils = None):
         schain_container_name,
         v=True,
         force=True,
-        stop_timeout=SCHAIN_STOP_TIMEOUT
+        timeout=SCHAIN_STOP_TIMEOUT
     )
 
 
