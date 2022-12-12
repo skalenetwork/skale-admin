@@ -38,6 +38,7 @@ from config_controller_predeployed import (
 from multisigwallet_predeployed import MultiSigWalletGenerator, MULTISIGWALLET_ADDRESS
 from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminGenerator
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS, generate_contracts
+from context_predeployed import ContextGenerator, CONTEXT_ADDRESS
 
 from core.schains.config.accounts import add_to_accounts, generate_account
 from core.schains.config.generation import Gen
@@ -82,7 +83,8 @@ def generate_predeployed_accounts(
             on_chain_owner=on_chain_owner,
             mainnet_owner=mainnet_owner,
             originator_address=originator_address,
-            message_proxy_for_schain_address=MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
+            message_proxy_for_schain_address=MESSAGE_PROXY_FOR_SCHAIN_ADDRESS,
+            schain_name=schain_name
         )
         predeployed_section.update(v1_predeployed_contracts)
     if generation == Gen.ZERO:
@@ -95,7 +97,8 @@ def generate_v1_predeployed_contracts(
     on_chain_owner: str,
     mainnet_owner: str,
     originator_address: str,
-    message_proxy_for_schain_address: str
+    message_proxy_for_schain_address: str,
+    schain_name: str
 ) -> dict:
     proxy_admin_generator = ProxyAdminGenerator()
     proxy_admin_predeployed = proxy_admin_generator.generate_allocation(
@@ -149,7 +152,12 @@ def generate_v1_predeployed_contracts(
         originator_addresses=[originator_address]
     )
 
-    # TODO: add context manager SC (later)
+    context_generator = ContextGenerator()
+    context_predeployed = context_generator.generate_allocation(
+        CONTEXT_ADDRESS,
+        schain_owner=on_chain_owner,
+        schain_name=schain_name
+    )
 
     return {
         **proxy_admin_predeployed,
@@ -157,7 +165,8 @@ def generate_v1_predeployed_contracts(
         **marionette_predeployed,
         **filestorage_predeployed,
         **config_controller_predeployed,
-        **multisigwallet_predeployed
+        **multisigwallet_predeployed,
+        **context_predeployed
     }
 
 
