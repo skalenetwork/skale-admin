@@ -22,7 +22,7 @@ import logging
 from skale.schain_config.generator import get_nodes_for_schain
 
 from core.schains.monitor.base_monitor import BaseMonitor, ConfigStatus
-from core.schains.monitor.containers import get_restart_slot_ts, set_exit_ts
+from core.schains.monitor.containers import get_restart_ts, set_exit_ts
 
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class RegularMonitor(BaseMonitor):
         self.config_dir()
         self.dkg()
         if self.config() == ConfigStatus.NEEDS_RELOAD:
-            exit_ts = get_restart_slot_ts(
+            exit_ts = get_restart_ts(
                 get_nodes_for_schain(self.skale, self.name),
                 self.node_config.id
             )
