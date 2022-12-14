@@ -18,23 +18,23 @@ jobs:
       IMA_ENDPOINT: ${{ secrets.IMA_ENDPOINT }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    - name: Install python dependencies
-      run: bash ./scripts/install_python_dependencies.sh
-    - name: Lint with flake8
-      run: flake8 .
-    - name: Deploy manager & ima contracts
-      run: |
-        bash ./helper-scripts/deploy_test_ima.sh
-    - name: Run core tests
-      run: |
-        bash ./scripts/run_core_tests.sh
-    - name: Run codecov
-      run: |
-        codecov -t $CODECOV_TOKEN
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install python dependencies
+        run: bash ./scripts/install_python_dependencies.sh
+      - name: Lint with flake8
+        run: flake8 .
+      - name: Deploy manager & ima contracts
+        run: |
+          bash ./helper-scripts/deploy_test_ima.sh
+      - name: Run core tests
+        run: |
+          bash ./scripts/run_core_tests.sh
+      - name: Run codecov
+        run: |
+          codecov -t $CODECOV_TOKEN

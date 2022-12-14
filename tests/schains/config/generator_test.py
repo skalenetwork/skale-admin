@@ -130,7 +130,7 @@ def check_node_info(node_id, info):
     keys = ['nodeID', 'nodeName', 'basePort', 'httpRpcPort', 'httpsRpcPort',
             'wsRpcPort', 'wssRpcPort', 'bindIP', 'logLevel', 'logLevelConfig',
             'imaMessageProxySChain', 'imaMessageProxyMainNet',
-            'rotateAfterBlock', 'ecdsaKeyName', 'wallets', 'minCacheSize',
+            'ecdsaKeyName', 'wallets', 'minCacheSize',
             'maxCacheSize', 'collectionQueueSize', 'collectionDuration',
             'transactionQueueSize', 'maxOpenLeveldbFiles']
     check_keys(info, keys)

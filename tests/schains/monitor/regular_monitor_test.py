@@ -7,15 +7,13 @@ from skale.schain_config.generator import get_nodes_for_schain
 from skale.wallets import SgxWallet
 from skale.utils.helper import ip_from_bytes
 
+from core.schains.runner import get_container_name
 from core.schains.checks import SChainChecks
 from core.schains.monitor import RegularMonitor
 from core.schains.ima import ImaData
 
-
-from tools.configs import (
-    SGX_CERTIFICATES_FOLDER,
-    SGX_SERVER_URL
-)
+from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.configs.containers import SCHAIN_CONTAINER
 
 from web.models.schain import SChainRecord
 
@@ -94,6 +92,9 @@ def test_regular_monitor(
         assert schain_checks.dkg.status
         assert schain_checks.config.status
         assert schain_checks.volume.status
+        if not schain_checks.skaled_container.status:
+            container_name = get_container_name(SCHAIN_CONTAINER, schain['name'])
+            print(dutils.display_container_logs(container_name))
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
 
