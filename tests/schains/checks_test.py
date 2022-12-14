@@ -112,15 +112,29 @@ def test_dkg_check(schain_checks, sample_false_checks):
     assert not sample_false_checks.dkg.status
 
 
-def test_config_check(schain_checks, sample_false_checks):
-    assert schain_checks.config.status
-    assert not sample_false_checks.config.status
+def test_config_check(schain_checks, schain_config):
+    r = schain_checks.config
+    assert r.msg == 'ok'
+    assert r.status
+    nconfig = schain_checks.needed_config
+    nconfig['skaleConfig']['sChain']['nodes'][0]['publicIp'] = '127.0.0.3'
+    r = schain_checks.config
+    assert r.msg == 'outdated'
+    assert not r.status
+
+
+def test_config_check_no_file(sample_false_checks):
+    r = sample_false_checks.config
+    assert not r.status
+    assert r.msg == 'no file'
 
 
 def test_config_check_wrong_version(schain_checks):
     schain_checks.schain_record = SchainRecordMock('9.8.7')
     schain_checks.needed_config['version'] = '9.9.8'
-    assert not schain_checks.config.status
+    r = schain_checks.config
+    assert not r.status
+    assert r.msg == 'version discrepancy'
 
 
 def test_volume_check(schain_checks, sample_false_checks, dutils):

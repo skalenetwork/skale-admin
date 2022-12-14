@@ -138,7 +138,7 @@ class SChainChecks:
             return CheckRes(False, ConfigCheckMsg.NO_FILE)
         if not schain_config_version_match(self.name, self.schain_record):
             return CheckRes(False, ConfigCheckMsg.VERSION_DISCREPANCY)
-        if read_json(config_filepath) == self.needed_config:
+        if read_json(config_filepath) != self.needed_config:
             return CheckRes(False, ConfigCheckMsg.OUTDATED)
         return CheckRes(True, ConfigCheckMsg.OK)
 
