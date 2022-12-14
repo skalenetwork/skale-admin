@@ -34,8 +34,13 @@ from core.schains.config.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (
-    CONTAINER_NAME_PREFIX, SCHAIN_CONTAINER, IMA_CONTAINER, DATA_DIR_CONTAINER_PATH,
-    HISTORIC_STATE_IMAGE_POSTFIX)
+    CONTAINER_NAME_PREFIX,
+    DATA_DIR_CONTAINER_PATH,
+    IMA_CONTAINER,
+    HISTORIC_STATE_IMAGE_POSTFIX,
+    SCHAIN_CONTAINER,
+    SCHAIN_STOP_TIMEOUT
+)
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
                            SKALE_VOLUME_PATH, SCHAIN_CONFIG_DIR_SKALED)
 from tools.helper import get_containers_data
@@ -43,8 +48,11 @@ from tools.helper import get_containers_data
 logger = logging.getLogger(__name__)
 
 
-def is_container_exists(schain_name,
-                        container_type=SCHAIN_CONTAINER, dutils=None):
+def is_container_exists(
+    schain_name,
+    container_type=SCHAIN_CONTAINER,
+    dutils=None
+):
     dutils = dutils or DockerUtils()
     container_name = get_container_name(container_type, schain_name)
     return dutils.is_container_exists(container_name)
@@ -94,9 +102,18 @@ def get_ulimits_config(config):
                     Ulimit(name=ulimit['name'], soft=ulimit['soft'], hard=ulimit['hard']), config))
 
 
-def run_container(type, schain_name, env, cmd=None, volume_config=None,
-                  cpu_shares_limit=None, mem_limit=None, dutils=None,
-                  volume_mode=None, historic_state=False):
+def run_container(
+    type,
+    schain_name,
+    env,
+    cmd=None,
+    volume_config=None,
+    cpu_shares_limit=None,
+    mem_limit=None,
+    dutils=None,
+    volume_mode=None,
+    historic_state=False
+):
     dutils = dutils or DockerUtils()
     image_name, container_name, run_args, custom_args = get_container_info(
         type, schain_name, historic_state)
@@ -125,20 +142,33 @@ def run_container(type, schain_name, env, cmd=None, volume_config=None,
     return cont
 
 
-def restart_container(type, schain, dutils=None):
+def restart_container(
+    type,
+    schain,
+    timeout=SCHAIN_STOP_TIMEOUT,
+    dutils=None
+):
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
     container_name = get_container_name(type, schain_name)
 
     logger.info(arguments_list_string({'Container name': container_name},
                                       'Restarting container...'))
-    cont = dutils.restart(container_name)
+    cont = dutils.restart(container_name, timeout=SCHAIN_STOP_TIMEOUT)
     return cont
 
 
-def run_schain_container(schain, public_key=None, start_ts=None, dutils=None,
-                         volume_mode=None, ulimit_check=True, enable_ssl=True,
-                         sync_node: bool = False, historic_state: bool = False):
+def run_schain_container(
+    schain,
+    public_key=None,
+    start_ts=None,
+    dutils=None,
+    volume_mode=None,
+    ulimit_check=True,
+    enable_ssl=True,
+    sync_node=False,
+    historic_state=False
+):
     schain_name = schain['name']
     schain_type = get_schain_type(schain['partOfNode'])
 
