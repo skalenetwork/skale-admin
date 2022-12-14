@@ -26,7 +26,7 @@ psutil==5.9.3
 colorful==0.5.4
 celery==5.0.2
 
-filelock==3.0.12
+filelock==3.8.2
 
 pyOpenSSL==19.1.0
 cryptography==35.0.0
