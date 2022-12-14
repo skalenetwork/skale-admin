@@ -18,20 +18,20 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from core.schains.types import SchainType
-from core.schains.config.helper import get_environment_params
+from core.schains.config.helper import get_static_params
 from tools.configs import ENV_TYPE
 
 
 def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:
-    environment_params = get_environment_params(env_type)
-    return environment_params['schain_cmd']
+    static_params = get_static_params(env_type)
+    return static_params['schain_cmd']
 
 
 def get_static_schain_info(env_type: str = ENV_TYPE) -> dict:
-    environment_params = get_environment_params(env_type)
-    return environment_params['schain']
+    static_params = get_static_params(env_type)
+    return static_params['schain']
 
 
 def get_static_node_info(schain_type: SchainType, env_type: str = ENV_TYPE) -> dict:
-    environment_params = get_environment_params(env_type)
-    return {**environment_params['node']['common'], **environment_params['node'][schain_type.name]}
+    static_params = get_static_params(env_type)
+    return {**static_params['node']['common'], **static_params['node'][schain_type.name]}

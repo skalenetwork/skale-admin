@@ -1,6 +1,6 @@
 import mock
 
-from core.schains.config.env_params import get_static_node_info
+from core.schains.config.static_params import get_static_node_info
 from core.schains.config.node_info import generate_wallets_config, generate_current_node_info
 from core.schains.types import SchainType
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
@@ -37,7 +37,7 @@ def test_generate_current_node_info(
     _schain_name,
     predeployed_ima
 ):
-    with mock.patch('core.schains.config.env_params.ENV_TYPE', new='testnet'):
+    with mock.patch('core.schains.config.static_params.ENV_TYPE', new='testnet'):
         static_node_info = get_static_node_info(SchainType.medium)
         current_node_info = generate_current_node_info(
             node={'name': 'test', 'port': 10000},
@@ -61,7 +61,7 @@ def test_generate_current_node_info(
     assert current_node_info_dict['maxCacheSize'] == 16000000
     assert current_node_info_dict['collectionQueueSize'] == 20
 
-    with mock.patch('core.schains.config.env_params.ENV_TYPE', new='mainnet'):
+    with mock.patch('core.schains.config.static_params.ENV_TYPE', new='mainnet'):
         static_node_info = get_static_node_info(SchainType.medium)
         current_node_info = generate_current_node_info(
             node={'name': 'test', 'port': 10000},
@@ -83,7 +83,7 @@ def test_skale_manager_opts(
     _schain_name,
     predeployed_ima
 ):
-    with mock.patch('core.schains.config.env_params.ENV_TYPE', new='testnet'):
+    with mock.patch('core.schains.config.static_params.ENV_TYPE', new='testnet'):
         static_node_info = get_static_node_info(SchainType.medium)
         current_node_info = generate_current_node_info(
             node={'name': 'test', 'port': 10000},

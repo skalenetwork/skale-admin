@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from core.schains.config.helper import get_schain_ports
-from core.schains.config.env_params import get_static_schain_cmd
+from core.schains.config.static_params import get_static_schain_cmd
 from core.schains.ssl import get_ssl_filepath
 from core.schains.config.directory import schain_config_filepath
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH, SHARED_SPACE_CONTAINER_PATH

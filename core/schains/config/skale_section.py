@@ -26,7 +26,7 @@ from core.schains.config.node_info import CurrentNodeInfo, generate_current_node
 from core.schains.config.schain_info import SChainInfo, generate_schain_info
 from core.schains.config.schain_node import generate_schain_nodes
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
-from core.schains.config.env_params import get_static_schain_info, get_static_node_info
+from core.schains.config.static_params import get_static_schain_info, get_static_node_info
 from core.schains.limits import get_schain_type
 
 

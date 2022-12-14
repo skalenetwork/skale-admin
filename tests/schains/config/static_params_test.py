@@ -1,5 +1,5 @@
 from core.schains.types import SchainType
-from core.schains.config.env_params import (
+from core.schains.config.static_params import (
     get_static_schain_cmd, get_static_schain_info, get_static_node_info
 )
 

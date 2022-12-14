@@ -139,7 +139,7 @@ def test_reload_monitor(
         assert schain_checks.volume.status
         if not schain_checks.skaled_container.status:
             container_name = get_container_name(SCHAIN_CONTAINER, schain['name'])
-            dutils.display_container_logs(container_name, to_loggger=False)
+            print(dutils.display_container_logs(container_name))
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
 
