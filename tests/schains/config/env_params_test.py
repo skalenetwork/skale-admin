@@ -14,7 +14,7 @@ def test_get_static_schain_info():
     assert schain_info == {
         "revertableFSPatchTimestamp": 1000000,
         "contractStoragePatchTimestamp": 1000000,
-        "snapshotIntervalSec": 86400,
+        "snapshotIntervalSec": 0,
         "emptyBlockIntervalMs": 10000,
         "snapshotDownloadTimeout": 18000,
         "snapshotDownloadInactiveTimeout": 120
