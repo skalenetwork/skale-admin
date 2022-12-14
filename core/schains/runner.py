@@ -25,10 +25,8 @@ from core.schains.volume import get_schain_volume_config
 from core.schains.limits import get_schain_limit, get_ima_limit, get_schain_type
 from core.schains.types import MetricType, ContainerType
 from core.schains.skaled_exit_codes import SkaledExitCodes
-from core.schains.config.helper import (
-    get_schain_container_cmd,
-    get_schain_env
-)
+from core.schains.cmd import get_schain_container_cmd
+from core.schains.config.helper import get_schain_env
 from core.schains.ima import get_ima_env
 from core.schains.config.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
