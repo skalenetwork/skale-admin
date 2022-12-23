@@ -25,7 +25,6 @@ from enum import Enum
 from functools import wraps
 
 from skale import Skale
-from skale.schain_config.generator import get_nodes_for_schain
 
 from core.node_config import NodeConfig
 from core.schains.checks import ConfigCheckMsg, SChainChecks
@@ -50,7 +49,6 @@ from core.schains.runner import (
     restart_container, is_container_exists, get_container_name
 )
 from core.schains.config import init_schain_config_dir
-from core.schains.config.generator import SChainConfig
 from core.schains.config.directory import get_schain_config
 from core.schains.config.helper import (
     get_base_port_from_config,
@@ -91,7 +89,6 @@ class BaseMonitor(ABC):
         rotation_data: dict,
         checks: SChainChecks,
         rule_controller: IRuleController,
-        schain_config: SChainConfig,
         dutils: DockerUtils = None
     ):
         self.skale = skale
@@ -106,7 +103,6 @@ class BaseMonitor(ABC):
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
         self.rc = rule_controller
-        self.schain_config = schain_config
 
         self.finish_ts = skale.node_rotation.get_schain_finish_ts(
             node_id=rotation_data['leaving_node'],
@@ -225,10 +221,10 @@ class BaseMonitor(ABC):
             rotation_data=self.rotation_data,
             ecdsa_key_name=self.node_config.sgx_key_name
         )
-        self.checks.needed_config = schain_config
+        self.checks.needed_config = schain_config.to_dict()
         check_result = self.checks.config
         if overwrite or not check_result.status:
-            if check_result.msg in ConfigCheckMsg.NO_FILE:
+            if check_result.msg in (ConfigCheckMsg.NO_FILE, ConfigCheckMsg.OUTDATED):
                 logger.info('Saving %s sChain config', self.name)
                 save_schain_config(schain_config.to_dict(), self.name)
                 update_schain_config_version(self.name, schain_record=self.schain_record)
@@ -238,7 +234,6 @@ class BaseMonitor(ABC):
         else:
             logger.info(f'{self.p} config - ok')
             return ConfigStatus.OK
-        return check_result.status
 
     @monitor_block
     def volume(self) -> bool:
