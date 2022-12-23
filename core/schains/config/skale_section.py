@@ -25,8 +25,9 @@ from core.schains.config.contract_settings import (
 from core.schains.config.node_info import CurrentNodeInfo, generate_current_node_info
 from core.schains.config.schain_info import SChainInfo, generate_schain_info
 from core.schains.config.schain_node import generate_schain_nodes
-from core.schains.config.helper import get_patches, get_static_schain_params
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
+from core.schains.config.static_params import get_static_schain_info, get_static_node_info
+from core.schains.limits import get_schain_type
 
 
 @dataclass
@@ -50,19 +51,20 @@ def generate_skale_section(
     node: dict, ecdsa_key_name: str, schains_on_node: list, schain_nodes_with_schains: list,
     rotation_id: int, node_groups: dict, skale_manager_opts: SkaleManagerOpts
 ) -> SkaleConfig:
-    static_schain_params = get_static_schain_params()
-    patches = get_patches()
-
     contract_settings = generate_contract_settings(
         on_chain_owner=on_chain_owner,
         schain_nodes=schain_nodes_with_schains
     )
 
+    schain_type = get_schain_type(schain['partOfNode'])
+    static_node_info = get_static_node_info(schain_type)
+    static_schain_info = get_static_schain_info()
+
     node_info = generate_current_node_info(
         node_id=node_id,
         node=node,
         ecdsa_key_name=ecdsa_key_name,
-        static_schain_params=static_schain_params,
+        static_node_info=static_node_info,
         schain=schain,
         schains_on_node=schains_on_node,
         rotation_id=rotation_id,
@@ -79,10 +81,9 @@ def generate_skale_section(
         schain_id=schain_id,
         schain=schain,
         on_chain_etherbase=on_chain_etherbase,
-        static_schain_params=static_schain_params,
+        static_schain_info=static_schain_info,
         nodes=schain_nodes,
-        node_groups=node_groups,
-        patches=patches
+        node_groups=node_groups
     )
 
     return SkaleConfig(
