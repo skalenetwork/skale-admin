@@ -46,15 +46,15 @@ from tools.docker_utils import DockerUtils
 logger = logging.getLogger(__name__)
 
 
-SECONDS_IN_EPOCH = 80
+SECONDS_IN_SLOT = 450
 NODES_IN_SCHAIN = 16
 
 
 def get_restart_ts(schain_nodes, node_id):
-    index = list(map(lambda n: n['id'], schain_nodes)).index(node_id)
+    index = sorted(map(lambda n: n['id'], schain_nodes)).index(node_id)
+    seconds_in_epoch = SECONDS_IN_SLOT * NODES_IN_SCHAIN
     ts = time.time()
-    epoch = int(ts) // SECONDS_IN_EPOCH
-    slot = SECONDS_IN_EPOCH / NODES_IN_SCHAIN
+    epoch = int(ts) // seconds_in_epoch
     return (epoch + 1) * SECONDS_IN_EPOCH + index * slot
 
 
