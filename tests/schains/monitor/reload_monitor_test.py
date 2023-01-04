@@ -39,6 +39,7 @@ def test_reload_monitor(
     skale_ima,
     dutils,
     ssl_folder,
+    schain_config,
     schain_on_contracts,
     predeployed_ima
 ):
@@ -120,22 +121,23 @@ def test_reload_monitor(
             return_value=get_bls_public_keys()
         ):
             regular_monitor.run()
-        alter_schain_config(schain_name, sgx_wallet.public_key)
 
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
         initial_started_at = state['StartedAt']
 
+        alter_schain_config(schain_name, sgx_wallet.public_key)
         reload_monitor.run()
 
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
         assert state['StartedAt'] > initial_started_at
+        schain_checks.needed_config = schain_config
 
         assert schain_record.needs_reload is False
         assert schain_checks.config_dir.status
         assert schain_checks.dkg.status
-        assert schain_checks.config.status
+        assert schain_checks.config.msg == 'ok'
         assert schain_checks.volume.status
         if not schain_checks.skaled_container.status:
             container_name = get_container_name(SCHAIN_CONTAINER, schain['name'])

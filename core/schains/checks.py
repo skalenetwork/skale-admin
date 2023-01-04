@@ -78,6 +78,7 @@ class ConfigCheckMsg(str, Enum):
     NO_FILE = 'no file'
     VERSION_DISCREPANCY = 'version discrepancy'
     OUTDATED = 'outdated'
+    NO_CONFIG_SET = 'no config set'
 
 
 class MissingExpectedConfigError(Exception):
@@ -132,13 +133,14 @@ class SChainChecks:
     def config(self) -> CheckRes:
         """ Checks that sChain config is generated and up to date """
         if not self.needed_config:
-            raise MissingExpectedConfigError(f'Config is {self.needed_config}')
+            return CheckRes(False, ConfigCheckMsg.NO_CONFIG_SET)
         config_filepath = schain_config_filepath(self.name)
         if not os.path.isfile(config_filepath):
             return CheckRes(False, ConfigCheckMsg.NO_FILE)
         if not schain_config_version_match(self.name, self.schain_record):
             return CheckRes(False, ConfigCheckMsg.VERSION_DISCREPANCY)
-        if read_json(config_filepath) != self.needed_config:
+        actual_config = read_json(config_filepath)
+        if actual_config != self.needed_config:
             return CheckRes(False, ConfigCheckMsg.OUTDATED)
         return CheckRes(True, ConfigCheckMsg.OK)
 

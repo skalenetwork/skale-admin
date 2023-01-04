@@ -20,7 +20,8 @@
 import logging
 
 from core.schains.monitor.base_monitor import BaseMonitor
-from core.schains.rotation import get_new_nodes_for_schain, set_exit_ts
+from core.schains.monitor.containers import set_exit_ts
+from core.schains.rotation import get_new_nodes_for_schain
 
 logger = logging.getLogger(__name__)
 

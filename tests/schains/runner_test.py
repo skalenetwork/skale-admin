@@ -1,9 +1,9 @@
 import mock
 import json
 
+from core.schains.monitor.containers import set_exit_ts
 from core.schains.process_manager import get_leaving_schains_for_node
 from core.schains.runner import is_exited
-from core.schains.rotation import set_exit_ts
 
 
 class ResponseMock:

@@ -367,7 +367,4 @@ def test_config_check_wtihout_needed_config(
         rule_controller=rule_controller,
         dutils=dutils
     )
-    with pytest.raises(MissingExpectedConfigError):
-        checks.config
-    with pytest.raises(MissingExpectedConfigError):
-        checks.get_all()
+    assert checks.config.msg == 'no config set'

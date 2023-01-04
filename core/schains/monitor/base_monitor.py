@@ -223,6 +223,7 @@ class BaseMonitor(ABC):
         )
         self.checks.needed_config = schain_config.to_dict()
         check_result = self.checks.config
+        logger.info('Config check result %s', check_result.msg)
         if overwrite or not check_result.status:
             if check_result.msg in (ConfigCheckMsg.NO_FILE, ConfigCheckMsg.OUTDATED):
                 logger.info('Saving %s sChain config', self.name)

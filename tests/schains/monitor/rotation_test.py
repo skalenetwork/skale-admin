@@ -57,6 +57,7 @@ def test_is_new_node_multiple_new_nodes(
     skale,
     _schain_name,
     ima_data,
+    schain_config,
     schain_db,
     dutils,
     new_checks
@@ -72,14 +73,14 @@ def test_is_new_node_multiple_new_nodes(
         rule_controller=get_test_rule_controller(_schain_name),
         dutils=dutils
     )
-    with mock.patch('core.schains.monitor.rotation_monitor.get_previous_schain_groups'):
+    with mock.patch('core.schains.rotation.get_previous_schain_groups'):
         with mock.patch(
-            'core.schains.monitor.rotation_monitor.get_new_nodes_list',
+            'core.schains.rotation.get_new_nodes_list',
             return_value=[node_config.id]
         ):
             assert test_monitor.get_rotation_mode_func() == test_monitor.new_node
         with mock.patch(
-                'core.schains.monitor.rotation_monitor.get_new_nodes_list', return_value=[]):
+                'core.schains.rotation.get_new_nodes_list', return_value=[]):
             assert test_monitor.get_rotation_mode_func() != test_monitor.new_node
 
 
@@ -99,8 +100,8 @@ def test_is_new_node(
         'new_node': node_config.id,
         'leaving_node': 1999
     }
-    with mock.patch('core.schains.monitor.rotation_monitor.get_previous_schain_groups'), \
-            mock.patch('core.schains.monitor.rotation_monitor.get_new_nodes_list'):
+    with mock.patch('core.schains.rotation.get_previous_schain_groups'), \
+            mock.patch('core.schains.rotation.get_new_nodes_list'):
         test_monitor = get_rotation_monitor(
             skale=skale,
             name=_schain_name,
@@ -144,8 +145,8 @@ def test_is_leaving_node(
         'new_node': 9999,
         'leaving_node': node_config.id,
     }
-    with mock.patch('core.schains.monitor.rotation_monitor.get_previous_schain_groups'), \
-            mock.patch('core.schains.monitor.rotation_monitor.get_new_nodes_list'):
+    with mock.patch('core.schains.rotation.get_previous_schain_groups'), \
+            mock.patch('core.schains.rotation.get_new_nodes_list'):
         test_monitor = get_rotation_monitor(
             skale=skale,
             name=_schain_name,
@@ -195,8 +196,8 @@ def test_is_staying_node(
         rule_controller=rule_controller,
         dutils=dutils
     )
-    with mock.patch('core.schains.monitor.rotation_monitor.get_previous_schain_groups'), \
-            mock.patch('core.schains.monitor.rotation_monitor.get_new_nodes_list'):
+    with mock.patch('core.schains.rotation.get_previous_schain_groups'), \
+            mock.patch('core.schains.rotation.get_new_nodes_list'):
         assert test_monitor.get_rotation_mode_func() == test_monitor.staying_node
 
 
