@@ -26,6 +26,7 @@ from typing import Optional
 from core.schains.config.directory import (
     get_schain_config,
     schain_config_dir,
+    schain_config_exists,
     schain_config_filepath,
     get_schain_check_filepath
 )
@@ -134,12 +135,11 @@ class SChainChecks:
         """ Checks that sChain config is generated and up to date """
         if not self.needed_config:
             return CheckRes(False, ConfigCheckMsg.NO_CONFIG_SET)
-        config_filepath = schain_config_filepath(self.name)
-        if not os.path.isfile(config_filepath):
+        if not schain_config_exists(self.name):
             return CheckRes(False, ConfigCheckMsg.NO_FILE)
         if not schain_config_version_match(self.name, self.schain_record):
             return CheckRes(False, ConfigCheckMsg.VERSION_DISCREPANCY)
-        actual_config = read_json(config_filepath)
+        actual_config = get_schain_config(self.name)
         if actual_config != self.needed_config:
             return CheckRes(False, ConfigCheckMsg.OUTDATED)
         return CheckRes(True, ConfigCheckMsg.OK)
@@ -152,7 +152,7 @@ class SChainChecks:
     @property
     def firewall_rules(self) -> CheckRes:
         """Checks that firewall rules are set correctly"""
-        if self.config.status:
+        if schain_config_exists(self.name):
             conf = get_schain_config(self.name)
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
@@ -162,7 +162,7 @@ class SChainChecks:
                 own_ip=own_ip,
                 node_ips=node_ips
             )
-            logger.info(f'Rule controller {self.rc.expected_rules()}')
+            logger.info('Rule controller %s', self.rc.expected_rules())
             return CheckRes(self.rc.is_rules_synced())
         return CheckRes(False)
 
@@ -190,7 +190,7 @@ class SChainChecks:
     def rpc(self) -> CheckRes:
         """Checks that local skaled RPC is accessible"""
         res = False
-        if self.config.status:
+        if self.skaled_container.status:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             timeout = get_endpoint_alive_check_timeout(
                 self.schain_record.failed_rpc_count
@@ -201,7 +201,7 @@ class SChainChecks:
     @property
     def blocks(self) -> CheckRes:
         """Checks that local skaled is mining blocks"""
-        if self.config.status:
+        if self.skaled_container.status:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             return CheckRes(check_endpoint_blocks(http_endpoint))
         return CheckRes(False)

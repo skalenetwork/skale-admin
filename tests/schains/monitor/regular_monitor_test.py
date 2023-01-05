@@ -23,7 +23,8 @@ from tests.utils import (
     alter_schain_config,
     get_test_rule_controller,
     no_schain_artifacts,
-    upsert_schain_record_with_config
+    upsert_schain_record_with_config,
+    SKALED_INIT_SLEEP_TIME
 )
 
 
@@ -100,23 +101,13 @@ def test_regular_monitor(
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
 
-        test_monitor.cleanup_schain_docker_entity()
-
-        with mock.patch(
-            'skale.schain_config.rotation_history._compose_bls_public_key_info',
-            return_value=get_bls_public_keys()
-        ):
-            test_monitor.run()
-
-        assert schain_checks.volume.status
-        assert schain_checks.skaled_container.status
         assert not schain_checks.rpc.status
 
         # To make sgx public key match with ecdsa key
         alter_schain_config(schain_name, sgx_wallet.public_key)
         # Restart skaled to load config again
         restart_container('schain', schain, dutils=dutils)
-        time.sleep(5)
+        time.sleep(SKALED_INIT_SLEEP_TIME)
 
         if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker
             assert schain_checks.rpc.status

@@ -1,5 +1,6 @@
 import logging
 import platform
+import time
 
 import mock
 
@@ -10,7 +11,7 @@ from skale.utils.helper import ip_from_bytes
 from core.schains.checks import SChainChecks
 from core.schains.ima import ImaData
 from core.schains.monitor import RegularMonitor, ReloadMonitor
-from core.schains.runner import get_container_info, get_container_name
+from core.schains.runner import get_container_info, get_container_name, restart_container
 
 from tools.configs import (
     SGX_CERTIFICATES_FOLDER,
@@ -25,7 +26,8 @@ from tests.utils import (
     alter_schain_config,
     get_test_rule_controller,
     no_schain_artifacts,
-    upsert_schain_record_with_config
+    upsert_schain_record_with_config,
+    SKALED_INIT_SLEEP_TIME
 )
 
 
@@ -39,7 +41,6 @@ def test_reload_monitor(
     skale_ima,
     dutils,
     ssl_folder,
-    schain_config,
     schain_on_contracts,
     predeployed_ima
 ):
@@ -126,13 +127,11 @@ def test_reload_monitor(
         assert state['Status'] == 'running'
         initial_started_at = state['StartedAt']
 
-        alter_schain_config(schain_name, sgx_wallet.public_key)
         reload_monitor.run()
 
         state = dutils.get_info(container_name)['stats']['State']
         assert state['Status'] == 'running'
         assert state['StartedAt'] > initial_started_at
-        schain_checks.needed_config = schain_config
 
         assert schain_record.needs_reload is False
         assert schain_checks.config_dir.status
@@ -144,6 +143,12 @@ def test_reload_monitor(
             print(dutils.display_container_logs(container_name))
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
+
+        # To make sgx public key match with ecdsa key
+        alter_schain_config(schain_name, sgx_wallet.public_key)
+        # Restart skaled to load config again
+        restart_container('schain', schain, dutils=dutils)
+        time.sleep(SKALED_INIT_SLEEP_TIME)
 
         if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker  # noqa
             assert schain_checks.rpc.status

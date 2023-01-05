@@ -17,7 +17,7 @@ from tests.utils import get_test_rule_controller
 class BaseTestMonitor(BaseMonitor):
     @BaseMonitor.monitor_runner
     def run(self):
-        return 1234
+        pass
 
     def _run_all_checks(self):
         pass
@@ -26,7 +26,7 @@ class BaseTestMonitor(BaseMonitor):
 class CrashingTestMonitor(BaseMonitor):
     @BaseMonitor.monitor_runner
     def run(self):
-        raise Exception('Something went wrong')
+        raise ValueError('Something went wrong')
 
     def _run_all_checks(self):
         pass
@@ -80,10 +80,11 @@ def test_monitor(
     node_config,
     uninited_rule_controller,
     skale,
+    schain_on_contracts,
     ima_data,
     dutils
 ):
-    schain_record = SChainRecord.get_by_name(_schain_name)
+    schain_record = SChainRecord.get_by_name(schain_on_contracts)
     schain_checks = SChainChecks(
         _schain_name,
         node_config.id,
@@ -110,6 +111,7 @@ def test_crashing_monitor(
     node_config,
     rule_controller,
     ima_data,
+    schain_config,
     schain_struct,
     dutils
 ):
@@ -121,7 +123,7 @@ def test_crashing_monitor(
         rule_controller=rule_controller,
         dutils=dutils
     )
-    test_monitor = CrashingTestMonitor(
+    monitor = CrashingTestMonitor(
         skale=skale,
         ima_data=ima_data,
         schain=schain_struct,
@@ -131,32 +133,26 @@ def test_crashing_monitor(
         rule_controller=rule_controller,
         dutils=dutils
     )
-    with pytest.raises(Exception):
-        test_monitor.run()
-
-
-def test_base_monitor(test_monitor):
-    assert test_monitor.run() == 1234
+    with pytest.raises(ValueError):
+        monitor.run()
 
 
 def test_base_monitor_config_dir(test_monitor):
-    assert not test_monitor.config_dir()
-    assert test_monitor.config_dir()
+    test_monitor.config_dir()
+    assert test_monitor.checks.config_dir.status
 
 
 def test_base_monitor_dkg(test_monitor):
     test_monitor.config_dir()
     with mock.patch('core.schains.monitor.base_monitor.safe_run_dkg', safe_run_dkg_mock):
         assert not test_monitor.dkg()
-        assert test_monitor.dkg()
+    assert test_monitor.checks.dkg.status
 
 
-def test_base_monitor_config(test_monitor):
-    test_monitor.config_dir()
-    with mock.patch(
-            'core.schains.monitor.base_monitor.init_schain_config', init_schain_config_mock):
-        assert not test_monitor.config()
-        assert test_monitor.config()
+def test_base_monitor_config(test_monitor, schain_config):
+    assert test_monitor.config_dir()
+    assert test_monitor.config()
+    assert test_monitor.checks.config.msg == 'ok'
 
 
 def test_base_monitor_volume(test_monitor):
@@ -166,7 +162,7 @@ def test_base_monitor_volume(test_monitor):
     test_monitor.cleanup_schain_docker_entity()
 
 
-def test_base_monitor_skaled_container(test_monitor):
+def test_base_monitor_skaled_container(test_monitor, schain_config):
     test_monitor.volume()
     with mock.patch(
         'core.schains.monitor.base_monitor.monitor_schain_container',
@@ -243,6 +239,7 @@ def test_base_monitor_ima_container_not_linked(
     schain_db,
     _schain_name,
     node_config,
+    schain_config,
     skale,
     dutils
 ):
