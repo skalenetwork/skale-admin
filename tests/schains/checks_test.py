@@ -182,6 +182,7 @@ def test_rpc_check(schain_checks, schain_db):
         "jsonrpc": "2.0",
         "result": "0x4b7"
     })
+    schain_checks.dutils.is_container_running = mock.Mock(return_value=True)
     with mock.patch('requests.post', new=request_mock(ok_result)):
         assert schain_checks.rpc.status
 
@@ -210,6 +211,7 @@ def test_rpc_check(schain_checks, schain_db):
 
 
 def test_blocks_check(schain_checks):
+    schain_checks.dutils.is_container_running = mock.Mock(return_value=True)
     res_mock = response_mock(HTTPStatus.OK, ETH_GET_BLOCK_RESULT)
     with mock.patch('requests.post', return_value=res_mock):
         with mock.patch('time.time', return_value=TEST_TIMESTAMP):
