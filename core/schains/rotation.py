@@ -22,8 +22,9 @@ import logging
 import requests
 
 from skale import SkaleManager
-from skale.schain_config.helper import get_skaled_http_address
 from skale.schain_config.rotation_history import get_previous_schain_groups, get_new_nodes_list
+
+from core.schain.config.helper import get_skaled_http_address
 
 logger = logging.getLogger(__name__)
 
