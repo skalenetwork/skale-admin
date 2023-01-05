@@ -27,7 +27,6 @@ from core.schains.config.directory import (
     get_schain_config,
     schain_config_dir,
     schain_config_exists,
-    schain_config_filepath,
     get_schain_check_filepath
 )
 from core.schains.config.helper import (
@@ -50,7 +49,7 @@ from core.schains.skaled_exit_codes import SkaledExitCodes
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
-from tools.helper import read_json, write_json
+from tools.helper import write_json
 from tools.str_formatters import arguments_list_string
 
 from web.models.schain import SChainRecord
@@ -80,10 +79,6 @@ class ConfigCheckMsg(str, Enum):
     VERSION_DISCREPANCY = 'version discrepancy'
     OUTDATED = 'outdated'
     NO_CONFIG_SET = 'no config set'
-
-
-class MissingExpectedConfigError(Exception):
-    pass
 
 
 class CheckRes:

@@ -55,7 +55,7 @@ def get_restart_ts(schain_nodes, node_id):
     seconds_in_epoch = SECONDS_IN_SLOT * NODES_IN_SCHAIN
     ts = time.time()
     epoch = int(ts) // seconds_in_epoch
-    return (epoch + 1) * SECONDS_IN_EPOCH + index * slot
+    return (epoch + 1) * seconds_in_epoch + index * SECONDS_IN_SLOT
 
 
 def set_exit_ts(schain_name: str, timestamp: int) -> None:

@@ -10,7 +10,7 @@ import docker
 import pytest
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
-from core.schains.checks import MissingExpectedConfigError, SChainChecks, CheckRes
+from core.schains.checks import SChainChecks, CheckRes
 from core.schains.runner import get_container_info
 from core.schains.config.directory import get_schain_check_filepath
 
