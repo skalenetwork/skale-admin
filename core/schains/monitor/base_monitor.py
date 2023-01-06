@@ -267,7 +267,7 @@ class BaseMonitor(ABC):
         return initial_status
 
     def schedule_skaled_exit(self):
-        schain_nodes = get_nodes_for_schain(self.skale, self.name),
+        schain_nodes = get_nodes_for_schain(self.skale, self.name)
         schedule_exit(self.name, schain_nodes, self.node_config.id)
 
     @monitor_block
