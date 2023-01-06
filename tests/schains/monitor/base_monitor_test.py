@@ -5,7 +5,7 @@ from core.schains.checks import SChainChecks
 from core.schains.cleaner import remove_ima_container
 from core.schains.config.main import save_schain_config
 from core.schains.ima import ImaData
-from core.schains.monitor import BaseMonitor
+from core.schains.monitor.base_monitor import BaseMonitor, ConfigStatus
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord
@@ -151,8 +151,12 @@ def test_base_monitor_dkg(test_monitor):
 
 def test_base_monitor_config(test_monitor, schain_config):
     assert test_monitor.config_dir()
+    status = test_monitor.config()
+    # Config from schain_config fixture is different from actul one
+    assert test_monitor.checks.config.msg == 'outdated'
+    assert status == ConfigStatus.RELOAD_NEEDED
     assert test_monitor.config()
-    assert test_monitor.checks.config.msg == 'ok'
+    assert test_monitor.checks.config.msg == 'outdated'
 
 
 def test_base_monitor_volume(test_monitor):
