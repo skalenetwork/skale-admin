@@ -21,6 +21,7 @@ import requests
 import json
 import logging
 import time
+from typing import Dict, List
 
 from core.schains.config.helper import get_skaled_http_address
 from core.schains.runner import (
@@ -35,9 +36,10 @@ from core.schains.ima import ImaData
 from core.ima.schain import copy_schain_ima_abi
 
 from tools.configs.containers import (
+    IMA_CONTAINER,
     MAX_SCHAIN_RESTART_COUNT,
     SCHAIN_CONTAINER,
-    IMA_CONTAINER
+    SECONDS_IN_SLOT
 )
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
@@ -46,11 +48,7 @@ from tools.docker_utils import DockerUtils
 logger = logging.getLogger(__name__)
 
 
-SECONDS_IN_SLOT = 450
-NODES_IN_SCHAIN = 16
-
-
-def schedule_exit(schain_name: str, schain_nodes: list[dict], node_id: int) -> None:
+def schedule_exit(schain_name: str, schain_nodes: List[Dict], node_id: int) -> None:
     exit_ts = get_restart_ts(
         schain_nodes,
         node_id
@@ -58,9 +56,9 @@ def schedule_exit(schain_name: str, schain_nodes: list[dict], node_id: int) -> N
     set_exit_ts(schain_name, exit_ts)
 
 
-def get_restart_ts(schain_nodes: list[dict], node_id: int) -> int:
+def get_restart_ts(schain_nodes: List[Dict], node_id: int) -> int:
     index = sorted(map(lambda n: n['id'], schain_nodes)).index(node_id)
-    seconds_in_epoch = SECONDS_IN_SLOT * NODES_IN_SCHAIN
+    seconds_in_epoch = SECONDS_IN_SLOT * len(schain_nodes)
     ts = time.time()
     epoch = int(ts) // seconds_in_epoch
     return (epoch + 1) * seconds_in_epoch + index * SECONDS_IN_SLOT
