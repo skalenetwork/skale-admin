@@ -144,10 +144,10 @@ def test_get_schain(
     data = get_bp_data(
         skale_bp,
         get_api_url(BLUEPRINT_NAME, 'get'),
-        params={'schain_name': schain_name}
+        params={'schain_name': not_existing_schain}
     )
     assert data == {
-        'payload': f'No schain with name {schain_name}',
+        'payload': f'No schain with name {not_existing_schain}',
         'status': 'error'
     }
 
