@@ -50,7 +50,15 @@ SECONDS_IN_SLOT = 450
 NODES_IN_SCHAIN = 16
 
 
-def get_restart_ts(schain_nodes, node_id):
+def schedule_exit(schain_name: str, schain_nodes: list[dict], node_id: int) -> None:
+    exit_ts = get_restart_ts(
+        schain_nodes,
+        node_id
+    )
+    set_exit_ts(schain_name, exit_ts)
+
+
+def get_restart_ts(schain_nodes: list[dict], node_id: int) -> int:
     index = sorted(map(lambda n: n['id'], schain_nodes)).index(node_id)
     seconds_in_epoch = SECONDS_IN_SLOT * NODES_IN_SCHAIN
     ts = time.time()

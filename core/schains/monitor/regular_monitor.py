@@ -33,14 +33,11 @@ class RegularMonitor(BaseMonitor):
     def run(self):
         self.config_dir()
         self.dkg()
-        if self.config() == ConfigStatus.RELOAD_NEEDED:
-            exit_ts = get_restart_ts(
-                get_nodes_for_schain(self.skale, self.name),
-                self.node_config.id
-            )
-            set_exit_ts(self.name, exit_ts)
+        config_status = self.config()
         self.volume()
         self.firewall_rules()
-        self.skaled_container()
+        self.skaled_container(exit_request_needed=exit_request_needed)
         self.skaled_rpc()
         self.ima_container()
+        if config_status == ConfigStatus.RELOAD_NEEDED:
+            self.schedule_skaled_exit()

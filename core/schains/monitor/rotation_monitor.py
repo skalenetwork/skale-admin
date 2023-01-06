@@ -19,7 +19,7 @@
 
 import logging
 
-from core.schains.monitor.base_monitor import BaseMonitor
+from core.schains.monitor.base_monitor import BaseMonitor, ConfigStatus
 from core.schains.monitor.containers import set_exit_ts
 from core.schains.rotation import get_new_nodes_for_schain
 
@@ -68,11 +68,13 @@ class RotationMonitor(BaseMonitor):
     def new_node(self) -> None:
         self.config_dir()
         self.dkg()
-        self.config()
+        config_status = self.config()
         self.volume()
         self.firewall_rules()
         self.skaled_container(download_snapshot=True, delay_start=True)
         self.ima_container()
+        if config_status == ConfigStatus.RELOAD_NEEDED:
+            self.schedule_skaled_exit()
 
     def leaving_node(self) -> None:
         self.firewall_rules()
@@ -82,12 +84,14 @@ class RotationMonitor(BaseMonitor):
         self.rotation_request()
 
     def staying_node(self) -> None:
+        config_status = self.config()
         self.firewall_rules()
         self.skaled_container()
         self.skaled_rpc()
         self.ima_container()
         self.dkg()
-        self.config()
+        if config_status == ConfigStatus.RELOAD_NEEDED:
+            self.schedule_skaled_exit()
 
     def get_rotation_mode_func(self):
         if self._is_leaving_node():

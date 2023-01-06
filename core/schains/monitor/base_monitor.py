@@ -25,6 +25,7 @@ from enum import Enum
 from functools import wraps
 
 from skale import Skale
+from skale.schain_config.generator import get_nodes_for_schain
 
 from core.node_config import NodeConfig
 from core.schains.checks import ConfigCheckMsg, SChainChecks
@@ -43,7 +44,11 @@ from core.schains.rotation import get_schain_public_key
 
 from core.schains.limits import get_schain_type
 
-from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
+from core.schains.monitor.containers import (
+    monitor_ima_container,
+    monitor_schain_container,
+    schedule_exit
+)
 from core.schains.monitor.rpc import handle_failed_schain_rpc
 from core.schains.runner import (
     restart_container, is_container_exists, get_container_name
@@ -223,17 +228,16 @@ class BaseMonitor(ABC):
         )
         self.checks.needed_config = schain_config.to_dict()
         check_result = self.checks.config
-        logger.info('Config check result %s', check_result.msg)
-        if overwrite or not check_result.status:
-            if check_result.msg in (ConfigCheckMsg.NO_FILE, ConfigCheckMsg.OUTDATED):
-                logger.info('Saving %s sChain config', self.name)
-                save_schain_config(schain_config.to_dict(), self.name)
-                update_schain_config_version(self.name, schain_record=self.schain_record)
-                return ConfigStatus.SAVED
-            else:
-                return ConfigStatus.RELOAD_NEEDED
+        logger.info('%s config check result %s', self.p, check_result.msg)
+        if overwrite or check_result.msg == ConfigCheckMsg.NO_FILE:
+            logger.info('%s updating config', self.p)
+            save_schain_config(schain_config.to_dict(), self.name)
+            update_schain_config_version(self.name, schain_record=self.schain_record)
+        elif not check_result.status:
+            logger.info('%s config is outdated', self.p)
+            return ConfigStatus.RELOAD_NEEDED
         else:
-            logger.info(f'{self.p} config - ok')
+            logger.info('%s config - ok', self.p)
             return ConfigStatus.OK
 
     @monitor_block
@@ -261,6 +265,10 @@ class BaseMonitor(ABC):
             )
             self.rc.sync()
         return initial_status
+
+    def schedule_skaled_exit(self):
+        schain_nodes = get_nodes_for_schain(self.skale, self.name),
+        schedule_exit(self.name, schain_nodes, self.node_config.id)
 
     @monitor_block
     def skaled_container(self, download_snapshot: bool = False, delay_start: bool = False) -> bool:
