@@ -36,7 +36,7 @@ class RegularMonitor(BaseMonitor):
         config_status = self.config()
         self.volume()
         self.firewall_rules()
-        self.skaled_container(exit_request_needed=exit_request_needed)
+        self.skaled_container()
         self.skaled_rpc()
         self.ima_container()
         if config_status == ConfigStatus.RELOAD_NEEDED:
