@@ -95,8 +95,6 @@ def test_schains_checks(
     schain_config,
     dutils
 ):
-    schain_name = schain_db
-
     class SChainChecksMock(SChainChecks):
         def __init__(self, *args, **kwargs):
             super(SChainChecksMock, self).__init__(*args, dutils=dutils, **kwargs)

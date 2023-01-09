@@ -40,6 +40,7 @@ class SChainRecord(BaseModel):
     repair_mode = BooleanField(default=False)
     needs_reload = BooleanField(default=False)
     reload_time = DateTimeField()
+    exit_requested = BooleanField(default=False)
 
     monitor_last_seen = DateTimeField()
     monitor_id = IntegerField(default=0)
@@ -93,7 +94,10 @@ class SChainRecord(BaseModel):
             'monitor_last_seen': record.monitor_last_seen.timestamp(),
             'monitor_id': record.monitor_id,
             'reload_time': record.reload_time,
-            'config_version': record.config_version
+            'config_version': record.config_version,
+            'restart_count': record.restart_count,
+            'failed_rpc_count': record.failed_rpc_count,
+            'exit_requested': record.exit_requested
         }
 
     def dkg_started(self):
@@ -165,6 +169,11 @@ class SChainRecord(BaseModel):
     def set_failed_rpc_count(self, value: int) -> None:
         logger.info(f'Changing failed rpc count for {self.name} to {value}')
         self.failed_rpc_count = value
+        self.save()
+
+    def set_exit_requested(self, value: bool) -> None:
+        logger.info(f'Changing exit_requested for {self.name} to {value}')
+        self.exit_requested = value
         self.save()
 
     def reset_failed_conunters(self) -> None:

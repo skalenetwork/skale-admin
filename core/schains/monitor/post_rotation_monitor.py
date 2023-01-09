@@ -36,3 +36,8 @@ class PostRotationMonitor(BaseMonitor):
         self.config(overwrite=True)
         self.firewall_rules()
         self.reloaded_skaled_container()
+        record = self.schain_record
+        record.set_restart_count(0)
+        record.set_failed_rpc_count(0)
+        record.set_needs_reload(False)
+        record.set_exit_requested(False)

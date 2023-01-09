@@ -19,10 +19,7 @@
 
 import logging
 
-from skale.schain_config.generator import get_nodes_for_schain
-
 from core.schains.monitor.base_monitor import BaseMonitor, ConfigStatus
-from core.schains.monitor.containers import get_restart_ts, set_exit_ts
 
 
 logger = logging.getLogger(__name__)
@@ -39,5 +36,6 @@ class RegularMonitor(BaseMonitor):
         self.skaled_container()
         self.skaled_rpc()
         self.ima_container()
-        if config_status == ConfigStatus.RELOAD_NEEDED:
+        if config_status == ConfigStatus.RELOAD_NEEDED and \
+           not self.schain_record.exit_requested:
             self.schedule_skaled_exit()
