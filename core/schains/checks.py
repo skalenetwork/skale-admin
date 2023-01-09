@@ -217,7 +217,7 @@ class SChainChecks:
                 logger.warning(f'Check {check} is not allowed or does not exist')
             else:
                 result = getattr(self, check)
-                if not check == 'config' or result.msg != ConfigCheckMsg.NO_CONFIG_SET:
+                if check != 'config' or result.msg != ConfigCheckMsg.NO_CONFIG_SET:
                     checks_dict[check] = result.status
         if log:
             log_checks_dict(self.name, checks_dict)

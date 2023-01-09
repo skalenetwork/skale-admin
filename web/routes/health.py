@@ -34,6 +34,7 @@ from core.schains.firewall.utils import (
     get_default_rule_controller,
     get_sync_agent_ranges
 )
+from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.ima import get_ima_log_checks
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.configs import ZMQ_PORT, ZMQ_TIMEOUT
@@ -89,6 +90,15 @@ def schains_checks():
         if schain.get('name') != '':
             rotation_data = g.skale.node_rotation.get_rotation(schain['name'])
             rotation_id = rotation_data['rotation_id']
+
+            schain_config = generate_schain_config_with_skale(
+                skale=g.skale,
+                schain_name=schain['name'],
+                generation=schain['generation'],
+                node_id=node_id,
+                rotation_data=rotation_data,
+                ecdsa_key_name=g.config.sgx_key_name
+            )
             if SChainRecord.added(schain['name']):
                 rc = get_default_rule_controller(
                     name=schain['name'],
@@ -100,6 +110,7 @@ def schains_checks():
                     node_id,
                     schain_record=schain_record,
                     rule_controller=rc,
+                    needed_config=schain_config,
                     rotation_id=rotation_id
                 ).get_all(checks_filter=checks_filter)
                 checks.append({

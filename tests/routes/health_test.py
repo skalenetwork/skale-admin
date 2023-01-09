@@ -87,7 +87,14 @@ def test_containers_all(skale_bp, dutils, schain_db, cleanup_schain_containers):
     assert data == expected
 
 
-def test_schains_checks(skale_bp, skale, schain_db, dutils):
+def test_schains_checks(
+    skale_bp,
+    skale,
+    schain_db,
+    schain_on_contracts,
+    schain_config,
+    dutils
+):
     schain_name = schain_db
 
     class SChainChecksMock(SChainChecks):
@@ -98,46 +105,47 @@ def test_schains_checks(skale_bp, skale, schain_db, dutils):
         def firewall_rules(self) -> CheckRes:
             return CheckRes(True)
 
-    def get_schains_for_node_mock(self, node_id):
-        return [
-            {'name': schain_name},
-            {'name': 'test-schain'},
-            {'name': ''}
-        ]
-
     with mock.patch('web.routes.health.SChainChecks', SChainChecksMock), \
             mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
-        with mock.patch(
-            'skale.contracts.manager.schains.SChains.get_schains_for_node',
-            get_schains_for_node_mock
-        ):
-            data = get_bp_data(skale_bp, get_api_url('health', 'schains'))
-            assert data['status'] == 'ok'
-            payload = data['payload']
-            assert len(payload) == 1
-            test_schain_checks = payload[0]['healthchecks']
-            assert test_schain_checks == {
-                'config_dir': False,
-                'dkg': False,
-                'config': False,
-                'volume': False,
-                'firewall_rules': True,
-                'skaled_container': False,
-                'exit_code_ok': True,
-                'rpc': False,
-                'blocks': False,
-                'process': False,
-                'ima_container': False
-            }
+        data = get_bp_data(skale_bp, get_api_url('health', 'schains'))
+        assert data['status'] == 'ok'
+        payload = data['payload']
+        assert len(payload) == 1
+        test_schain_checks = payload[0]['healthchecks']
+        assert test_schain_checks == {
+            'config_dir': True,
+            'dkg': True,
+            'config': False,
+            'volume': False,
+            'firewall_rules': True,
+            'skaled_container': False,
+            'exit_code_ok': True,
+            'rpc': False,
+            'blocks': False,
+            'process': False,
+            'ima_container': False
+        }
 
-            request_params = {'checks_filter': 'skaled_container,volume,config'}
-            data = get_bp_data(skale_bp, get_api_url('health', 'schains'), params=request_params)
+        request_params = {'checks_filter': 'skaled_container,volume,config'}
+        data = get_bp_data(skale_bp, get_api_url('health', 'schains'), params=request_params)
 
-            assert data['payload'][0]['healthchecks'] == {
-                'skaled_container': False,
-                'volume': False,
-                'config': False
-            }
+        assert data['payload'][0]['healthchecks'] == {
+            'skaled_container': False,
+            'volume': False,
+            'config': False
+        }
+
+    def get_schains_for_node_mock(self, node_id):
+        return [{'name': '', 'generation': 3}]
+
+    with mock.patch(
+        'skale.contracts.manager.schains.SChains.get_schains_for_node',
+        get_schains_for_node_mock
+    ):
+        data = get_bp_data(skale_bp, get_api_url('health', 'schains'))
+        assert data['status'] == 'ok'
+        payload = data['payload']
+        assert len(payload) == 0
 
 
 def test_schains_checks_no_node(unregistered_skale_bp, skale):
