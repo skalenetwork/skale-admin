@@ -7,8 +7,14 @@ from core.schains.checks import SChainChecks, CheckRes
 from core.schains.config.directory import schain_config_dir
 from core.schains.firewall.types import IpRange
 from core.schains.monitor.main import (
-    run_monitor_for_schain, get_monitor_type, BackupMonitor, RepairMonitor, PostRotationMonitor,
-    RotationMonitor, RegularMonitor, ReloadMonitor
+    run_monitor_for_schain,
+    get_monitor_type,
+    BackupMonitor,
+    RepairMonitor,
+    RestartExitedMonitor,
+    RotationMonitor,
+    RegularMonitor,
+    ReloadMonitor
 )
 from core.schains.runner import get_container_info
 from core.schains.firewall.utils import get_sync_agent_ranges
@@ -109,17 +115,17 @@ def test_is_repair_mode_skaled_status(schain_db, checks, bad_checks, skaled_stat
         schain_record, bad_checks, False, skaled_status_repair) == RepairMonitor
 
 
-def test_not_post_rotation_mode(schain_db, checks, skaled_status):
+def test_not_restart_exited_mode(schain_db, checks, skaled_status):
     schain_record = upsert_schain_record(schain_db)
-    assert get_monitor_type(schain_record, checks, False, skaled_status) != PostRotationMonitor
+    assert get_monitor_type(schain_record, checks, False, skaled_status) != RestartExitedMonitor
 
 
-def test_is_post_rotation_mode(schain_db, bad_checks, skaled_status_exit_time_reached):
+def test_is_restart_exited_mode(schain_db, bad_checks, skaled_status_exit_time_reached):
     schain_record = upsert_schain_record(schain_db)
     schain_dir_path = schain_config_dir(schain_db)
     os.makedirs(schain_dir_path, exist_ok=True)
     assert get_monitor_type(
-        schain_record, bad_checks, False, skaled_status_exit_time_reached) == PostRotationMonitor
+        schain_record, bad_checks, False, skaled_status_exit_time_reached) == RestartExitedMonitor
 
 
 def test_is_rotation_mode(schain_db, checks, skaled_status):

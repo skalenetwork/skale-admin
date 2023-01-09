@@ -25,10 +25,10 @@ from core.schains.monitor.base_monitor import BaseMonitor
 logger = logging.getLogger(__name__)
 
 
-class PostRotationMonitor(BaseMonitor):
+class RestartExitedMonitor(BaseMonitor):
     """
-    PostRotationMonitor be executed for the sChain on the staying node when rotation is complete.
-    This type of monitor reloads skaled container.
+    RestartExitedMonitor is executed for the sChain
+    when skaled has requested restart by exiting with specific code.
     """
     @BaseMonitor.monitor_runner
     def run(self):

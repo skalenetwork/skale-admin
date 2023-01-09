@@ -22,5 +22,5 @@ from .regular_monitor import RegularMonitor  # noqa
 from .repair_monitor import RepairMonitor  # noqa
 from .backup_monitor import BackupMonitor  # noqa
 from .rotation_monitor import RotationMonitor  # noqa
-from .post_rotation_monitor import PostRotationMonitor  # noqa
+from .post_rotation_monitor import RestartExitedMonitor  # noqa
 from .reload_monitor import ReloadMonitor  # noqa
