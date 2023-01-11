@@ -60,6 +60,9 @@ class CurrentNodeInfo(NodeInfo):
     archive: bool
     catchup: bool
 
+    pg_threads: int
+    pg_threads_limit: int
+
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         node_info = {
@@ -81,7 +84,9 @@ class CurrentNodeInfo(NodeInfo):
                 'info-acceptors': 1,
                 'imaMonitoringPort': self.base_port + SkaledPorts.IMA_MONITORING.value,
                 'skale-manager': self.skale_manager_opts.to_dict(),
-                'syncNode': self.sync_node
+                'syncNode': self.sync_node,
+                'pg-threads': self.pg_threads,
+                'pg-threads-limit': self.pg_threads_limit
             }
         }
         if self.archive is not None and self.sync_node:
