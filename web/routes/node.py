@@ -31,10 +31,12 @@ from core.node import (
     get_meta_info, get_node_hardware_info, get_btrfs_info, check_validator_nodes, get_abi_hash
 )
 
+from tools.configs import TM_POOL_NAME
 from tools.configs.web3 import ABI_FILEPATH, ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
+from tools.redis_api import get_zset_size
 from web.helper import (
     construct_err_response,
     construct_ok_response,
@@ -266,3 +268,10 @@ def ima_abi():
     logger.debug(request)
     abi_hash = get_abi_hash(MAINNET_IMA_ABI_FILEPATH)
     return construct_ok_response(data=abi_hash)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'tm-pool-size'), methods=['GET'])
+def tm_pool_size():
+    logger.debug(request)
+    size = get_zset_size(TM_POOL_NAME)
+    return construct_ok_response(data=size)

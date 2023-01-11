@@ -272,3 +272,8 @@ def test_exit_maintenance(skale_bp, node_config_in_maintenance):
     )
     assert data['status'] == 'error'
     data['payload'] == {}
+
+
+def test_tm_pool_size(skale_bp):
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'tm-pool-size'))
+    assert data == 0
