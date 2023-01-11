@@ -134,7 +134,7 @@ def check_node_info(node_id, info):
         'imaMessageProxySChain', 'imaMessageProxyMainNet', 'ecdsaKeyName', 'wallets',
         'minCacheSize', 'maxCacheSize', 'collectionQueueSize', 'collectionDuration',
         'transactionQueueSize', 'maxOpenLeveldbFiles', 'info-acceptors', 'imaMonitoringPort',
-        'skale-manager', 'syncNode'
+        'skale-manager', 'syncNode', 'pg-threads', 'pg-threads-limit'
     ]
 
     check_keys(info, keys)

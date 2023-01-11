@@ -57,6 +57,9 @@ class CurrentNodeInfo(NodeInfo):
     skale_manager_opts: SkaleManagerOpts
     sync_node: bool
 
+    pg_threads: int
+    pg_threads_limit: int
+
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         return {
@@ -78,7 +81,9 @@ class CurrentNodeInfo(NodeInfo):
                 'info-acceptors': 1,
                 'imaMonitoringPort': self.base_port + SkaledPorts.IMA_MONITORING.value,
                 'skale-manager': self.skale_manager_opts.to_dict(),
-                'syncNode': self.sync_node
+                'syncNode': self.sync_node,
+                'pg-threads': self.pg_threads,
+                'pg-threads-limit': self.pg_threads_limit
             }
         }
 
