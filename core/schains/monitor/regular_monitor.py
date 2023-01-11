@@ -18,7 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from core.schains.monitor.base_monitor import BaseMonitor
+
+from core.schains.monitor.base_monitor import BaseMonitor, ConfigStatus
 
 
 logger = logging.getLogger(__name__)
@@ -29,9 +30,12 @@ class RegularMonitor(BaseMonitor):
     def run(self):
         self.config_dir()
         self.dkg()
-        self.config()
+        config_status = self.config()
         self.volume()
         self.firewall_rules()
         self.skaled_container()
         self.skaled_rpc()
         self.ima_container()
+        if config_status == ConfigStatus.RELOAD_NEEDED and \
+           not self.schain_record.exit_requested:
+            self.schedule_skaled_exit()

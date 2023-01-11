@@ -39,3 +39,4 @@ class ReloadMonitor(BaseMonitor):
         record.set_restart_count(0)
         record.set_failed_rpc_count(0)
         record.set_needs_reload(False)
+        record.set_exit_requested(False)

@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
 import logging
 from dataclasses import dataclass
 
@@ -210,7 +211,8 @@ def generate_schain_config_with_skale(
     schains_on_node = skale.schains.get_schains_for_node(node_id)
     schain = skale.schains.get_by_name(schain_name)
     node = skale.nodes.get(node_id)
-    node_groups = get_previous_schain_groups(skale, schain_name)
+    int_keys_groups = get_previous_schain_groups(skale, schain_name)
+    node_groups = json.loads(json.dumps(int_keys_groups))
 
     is_owner_contract = is_address_contract(skale.web3, schain['mainnetOwner'])
 

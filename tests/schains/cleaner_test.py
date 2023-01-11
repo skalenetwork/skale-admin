@@ -145,16 +145,15 @@ def test_remove_schain_container(
     assert not is_container_running(dutils, container_name)
 
 
-def test_remove_ima_container(dutils, schain_container):
+def test_remove_ima_container(dutils, schain_container, schain_config):
     schain_name = schain_container
     schain_data = get_schain_contracts_data(schain_name)
-    with mock.patch('core.schains.runner.get_ima_env', return_value=ImaEnv(
-        schain_dir='/'
-    )):
-        run_simple_ima_container(schain_data, dutils)
+    run_simple_ima_container(schain_data, dutils)
     container_name = IMA_CONTAINER_NAME_TEMPLATE.format(schain_name)
-    assert is_container_running(dutils, container_name)
-    remove_ima_container(schain_name, dutils=dutils)
+    try:
+        assert is_container_running(dutils, container_name)
+    finally:
+        remove_ima_container(schain_name, dutils=dutils)
     assert not is_container_running(dutils, container_name)
 
 

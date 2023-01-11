@@ -150,7 +150,7 @@ def nodes(skale, node_skales, validator):
     try:
         yield ids
     finally:
-        cleanup_nodes(skale, ids)
+        cleanup_nodes(skale)
 
 
 @pytest.fixture
@@ -467,7 +467,7 @@ def schain_on_contracts(skale, nodes, _schain_name) -> str:
         yield create_schain(
             skale,
             schain_type=1,  # test2 should have 1 index
-            random_name=True
+            schain_name=_schain_name
         )
     finally:
         cleanup_nodes_schains(skale)
@@ -546,6 +546,7 @@ def schain_checks(schain_config, schain_db, rule_controller, dutils):
         node_id,
         schain_record=schain_record,
         rule_controller=rule_controller,
+        needed_config=schain_config,
         dutils=dutils
     )
 

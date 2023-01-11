@@ -41,6 +41,7 @@ IMA_ABI_FILEPATH = os.getenv('IMA_ABI_FILEPATH') or os.path.join(
 
 ETH_AMOUNT_PER_NODE = 1
 CONFIG_STREAM = "1.0.0-testnet"
+SKALED_INIT_SLEEP_TIME = 5
 
 
 class FailedAPICall(Exception):

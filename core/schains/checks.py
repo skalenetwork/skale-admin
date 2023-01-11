@@ -20,11 +20,13 @@
 import os
 import time
 import logging
+from enum import Enum
+from typing import Optional
 
 from core.schains.config.directory import (
     get_schain_config,
     schain_config_dir,
-    schain_config_filepath,
+    schain_config_exists,
     get_schain_check_filepath
 )
 from core.schains.config.helper import (
@@ -33,6 +35,7 @@ from core.schains.config.helper import (
     get_own_ip_from_config,
     get_local_schain_http_endpoint
 )
+from core.schains.config.generator import SChainConfig
 from core.schains.config.main import schain_config_version_match
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
@@ -43,7 +46,13 @@ from core.schains.rpc import (
 from core.schains.runner import get_container_name
 from core.schains.skaled_exit_codes import SkaledExitCodes
 
-from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
+from tools.configs.containers import (
+    IMA_CONTAINER,
+    MAX_SCHAIN_RESTART_COUNT,
+    SCHAIN_CONTAINER
+)
+from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
+
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 from tools.helper import write_json
@@ -69,10 +78,19 @@ API_ALLOWED_CHECKS = [
 ]
 
 
+class ConfigCheckMsg(str, Enum):
+    EMPTY = ''
+    OK = 'ok'
+    NO_FILE = 'no file'
+    VERSION_DISCREPANCY = 'version discrepancy'
+    OUTDATED = 'outdated'
+    NO_CONFIG_SET = 'no config set'
+
+
 class CheckRes:
-    def __init__(self, status: bool, data: dict = None):
+    def __init__(self, status: bool, msg: Optional[str] = None):
         self.status = status
-        self.data = data if data else {}
+        self.msg = msg if msg else ''
 
 
 class SChainChecks:
@@ -83,6 +101,7 @@ class SChainChecks:
         schain_record: SChainRecord,
         rule_controller: IRuleController,
         rotation_id: int = 0,
+        needed_config: Optional[SChainConfig] = None,
         *,
         ima_linked: bool = True,
         dutils: DockerUtils = None
@@ -91,6 +110,7 @@ class SChainChecks:
         self.node_id = node_id
         self.schain_record = schain_record
         self.rotation_id = rotation_id
+        self.needed_config = needed_config
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.ima_linked = ima_linked
@@ -113,13 +133,17 @@ class SChainChecks:
 
     @property
     def config(self) -> CheckRes:
-        """Checks that sChain config file exists"""
-        config_filepath = schain_config_filepath(self.name)
-        if not os.path.isfile(config_filepath):
-            return CheckRes(False)
-        return CheckRes(
-            schain_config_version_match(self.name, self.schain_record)
-        )
+        """ Checks that sChain config is generated and up to date """
+        if not self.needed_config:
+            return CheckRes(False, ConfigCheckMsg.NO_CONFIG_SET)
+        if not schain_config_exists(self.name):
+            return CheckRes(False, ConfigCheckMsg.NO_FILE)
+        if not schain_config_version_match(self.name, self.schain_record):
+            return CheckRes(False, ConfigCheckMsg.VERSION_DISCREPANCY)
+        actual_config = get_schain_config(self.name)
+        if actual_config != self.needed_config:
+            return CheckRes(False, ConfigCheckMsg.OUTDATED)
+        return CheckRes(True, ConfigCheckMsg.OK)
 
     @property
     def volume(self) -> CheckRes:
@@ -129,7 +153,7 @@ class SChainChecks:
     @property
     def firewall_rules(self) -> CheckRes:
         """Checks that firewall rules are set correctly"""
-        if self.config.status:
+        if schain_config_exists(self.name):
             conf = get_schain_config(self.name)
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
@@ -139,7 +163,7 @@ class SChainChecks:
                 own_ip=own_ip,
                 node_ips=node_ips
             )
-            logger.info(f'Rule controller {self.rc.expected_rules()}')
+            logger.info('Rule controller %s', self.rc.expected_rules())
             return CheckRes(self.rc.is_rules_synced())
         return CheckRes(False)
 
@@ -167,7 +191,7 @@ class SChainChecks:
     def rpc(self) -> CheckRes:
         """Checks that local skaled RPC is accessible"""
         res = False
-        if self.config.status:
+        if self.skaled_container.status:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             timeout = get_endpoint_alive_check_timeout(
                 self.schain_record.failed_rpc_count
@@ -176,9 +200,15 @@ class SChainChecks:
         return CheckRes(res)
 
     @property
+    def rpc_stuck(self) -> CheckRes:
+        return CheckRes(
+            self.schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
+        )
+
+    @property
     def blocks(self) -> CheckRes:
         """Checks that local skaled is mining blocks"""
-        if self.config.status:
+        if self.skaled_container.status:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             return CheckRes(check_endpoint_blocks(http_endpoint))
         return CheckRes(False)
@@ -198,7 +228,9 @@ class SChainChecks:
             elif check not in API_ALLOWED_CHECKS:
                 logger.warning(f'Check {check} is not allowed or does not exist')
             else:
-                checks_dict[check] = getattr(self, check).status
+                result = getattr(self, check)
+                if check != 'config' or result.msg != ConfigCheckMsg.NO_CONFIG_SET:
+                    checks_dict[check] = result.status
         if log:
             log_checks_dict(self.name, checks_dict)
         if save:

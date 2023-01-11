@@ -14,7 +14,8 @@ from web.migrations import (
     add_monitor_last_seen_field,
     add_monitor_id_field,
     add_config_version_field,
-    add_restart_count_field
+    add_restart_count_field,
+    add_exit_requested_field
 )
 
 
@@ -109,4 +110,10 @@ def test_add_restart_count_field(upserted_db, migrator, model):
 def test_add_failed_rpc_count_field(upserted_db, migrator, model):
     add_failed_rpc_count_field(upserted_db, migrator)
     for r in model.select().execute():
-        r.restart_count == 0
+        r.failed_rpc_count == 0
+
+
+def test_add_exit_requested_field(upserted_db, migrator, model):
+    add_exit_requested_field(upserted_db, migrator)
+    for r in model.select().execute():
+        r.exit_requested is False

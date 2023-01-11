@@ -31,7 +31,7 @@ from core.schains.ima import ImaData
 from core.schains.monitor import (
     BaseMonitor,
     BackupMonitor,
-    PostRotationMonitor,
+    RestartExitedMonitor,
     RegularMonitor,
     RepairMonitor,
     RotationMonitor,
@@ -75,7 +75,7 @@ def _is_rotation_mode(is_rotation_active: bool) -> bool:
     return is_rotation_active
 
 
-def _is_post_rotation_mode(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
+def _is_restart_exited_mode(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
     skaled_status.log()
     return not checks.skaled_container.status and skaled_status.exit_time_reached
 
@@ -108,8 +108,8 @@ def get_monitor_type(
         return RepairMonitor
     if _is_rotation_mode(is_rotation_active):
         return RotationMonitor
-    if _is_post_rotation_mode(checks, skaled_status):
-        return PostRotationMonitor
+    if _is_restart_exited_mode(checks, skaled_status):
+        return RestartExitedMonitor
     if _is_reload_mode(schain_record):
         return ReloadMonitor
     return RegularMonitor

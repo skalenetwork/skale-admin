@@ -17,9 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import requests
+import json
 import logging
+import time
+from typing import Dict, List
 
-from core.schains.volume import is_volume_exists
+from core.schains.config.helper import get_skaled_http_address
 from core.schains.runner import (
     is_schain_container_failed,
     restart_container,
@@ -27,19 +31,65 @@ from core.schains.runner import (
     is_container_exists,
     run_ima_container
 )
-from core.ima.schain import copy_schain_ima_abi
+from core.schains.volume import is_volume_exists
 from core.schains.ima import ImaData
+from core.ima.schain import copy_schain_ima_abi
 
 from tools.configs.containers import (
+    IMA_CONTAINER,
     MAX_SCHAIN_RESTART_COUNT,
     SCHAIN_CONTAINER,
-    IMA_CONTAINER
+    SECONDS_IN_SLOT
 )
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 
 
 logger = logging.getLogger(__name__)
+
+
+def schedule_exit(schain_name: str, schain_nodes: List[Dict], node_id: int) -> None:
+    exit_ts = get_restart_ts(
+        schain_nodes,
+        node_id
+    )
+    set_exit_ts(schain_name, exit_ts)
+
+
+def get_restart_ts(schain_nodes: List[Dict], node_id: int) -> int:
+    index = sorted(map(lambda n: n['id'], schain_nodes)).index(node_id)
+    seconds_in_epoch = SECONDS_IN_SLOT * len(schain_nodes)
+    ts = time.time()
+    epoch = int(ts) // seconds_in_epoch
+    return (epoch + 1) * seconds_in_epoch + index * SECONDS_IN_SLOT
+
+
+def set_exit_ts(schain_name: str, timestamp: int) -> None:
+    logger.info('sChain %s restart scheduled for %d', schain_name, timestamp)
+    url = get_skaled_http_address(schain_name)
+    send_exit_request(url, timestamp)
+
+
+def send_exit_request(url, timestamp):
+    logger.info('Sending exit at %d request for %s', timestamp, url)
+    headers = {'content-type': 'application/json'}
+    data = {
+        'finishTime': timestamp
+    }
+    call_data = {
+        "id": 0,
+        "jsonrpc": "2.0",
+        "method": "setSchainExitTime",
+        "params": data,
+    }
+    response = requests.post(
+        url=url,
+        data=json.dumps(call_data),
+        headers=headers,
+    ).json()
+    logger.info('Exit at %d request for %s was successfully sent', timestamp, url)
+    if response.get('error'):
+        raise Exception(response['error']['message'])
 
 
 def monitor_schain_container(
