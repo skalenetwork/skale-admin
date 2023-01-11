@@ -229,7 +229,7 @@ class BaseMonitor(ABC):
         self.checks.needed_config = schain_config.to_dict()
         check_result = self.checks.config
         logger.info('%s config check result %s', self.p, check_result.msg)
-        if overwrite or check_result.msg == ConfigCheckMsg.NO_FILE:
+        if self.checks.rpc_stuck.status or check_result.msg == ConfigCheckMsg.NO_FILE or overwrite:
             logger.info('%s updating config', self.p)
             save_schain_config(schain_config.to_dict(), self.name)
             update_schain_config_version(self.name, schain_record=self.schain_record)
@@ -271,7 +271,7 @@ class BaseMonitor(ABC):
             logger.info('%s requesting exit', self.p)
             schain_nodes = get_nodes_for_schain(self.skale, self.name)
             schedule_exit(self.name, schain_nodes, self.node_config.id)
-            self.schain_record.exit_requested(True)
+            self.schain_record.set_exit_requested(True)
         else:
             logger.info('%s exit has been already requested', self.p)
 

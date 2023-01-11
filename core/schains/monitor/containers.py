@@ -71,7 +71,7 @@ def set_exit_ts(schain_name: str, timestamp: int) -> None:
 
 
 def send_exit_request(url, timestamp):
-    logger.info(f'Send rotation request: {timestamp}')
+    logger.info('Sending exit at %d request for %s', timestamp, url)
     headers = {'content-type': 'application/json'}
     data = {
         'finishTime': timestamp
@@ -87,6 +87,7 @@ def send_exit_request(url, timestamp):
         data=json.dumps(call_data),
         headers=headers,
     ).json()
+    logger.info('Exit at %d request for %s was successfully sent', timestamp, url)
     if response.get('error'):
         raise Exception(response['error']['message'])
 

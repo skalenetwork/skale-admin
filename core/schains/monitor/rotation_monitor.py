@@ -84,7 +84,10 @@ class RotationMonitor(BaseMonitor):
         self.rotation_request()
 
     def staying_node(self) -> None:
-        config_status = self.config()
+        overwrite_config = False
+        if not self.checks.skaled_container:
+            overwrite_config = True
+        config_status = self.config(overwrite=overwrite_config)
         self.firewall_rules()
         self.skaled_container()
         self.skaled_rpc()

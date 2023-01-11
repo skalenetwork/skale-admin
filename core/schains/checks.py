@@ -46,7 +46,13 @@ from core.schains.rpc import (
 from core.schains.runner import get_container_name
 from core.schains.skaled_exit_codes import SkaledExitCodes
 
-from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
+from tools.configs.containers import (
+    IMA_CONTAINER,
+    MAX_SCHAIN_RESTART_COUNT,
+    SCHAIN_CONTAINER
+)
+from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
+
 from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 from tools.helper import write_json
@@ -192,6 +198,12 @@ class SChainChecks:
             )
             res = check_endpoint_alive(http_endpoint, timeout=timeout)
         return CheckRes(res)
+
+    @property
+    def rpc_stuck(self) -> CheckRes:
+        return CheckRes(
+            self.schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
+        )
 
     @property
     def blocks(self) -> CheckRes:
