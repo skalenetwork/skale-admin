@@ -47,8 +47,8 @@ def zset_records(pname: str, rs: redis.Redis = grs) -> List[Dict]:
 
 def are_meta_and_method_same(
     record: Dict,
-    meta: Optional[Dict],
-    method: Optional[str]
+    meta: Optional[Dict] = None,
+    method: Optional[str] = None
 ) -> bool:
     return (meta is None or record.get('meta') == meta) \
             and (method is None or record.get('method') == method)

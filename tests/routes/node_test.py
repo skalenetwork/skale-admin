@@ -274,6 +274,39 @@ def test_exit_maintenance(skale_bp, node_config_in_maintenance):
     data['payload'] == {}
 
 
-def test_tm_pool_size(skale_bp):
+def test_tm_pool_size(skale_bp, rs):
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'tm-pool-size'))
-    assert data == 0
+    assert data['payload'] == 4
+
+
+def test_tm_pool_records(skale_bp, rs):
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'tm-pool-records'))
+    assert data['payload'] == [{'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': {'chain': 'test_1'}, 'method': 'createNode', 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-a', 'value': 1}, {'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': {'chain': 'test_1'}, 'method': None, 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-b', 'value': 1}, {'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': None, 'method': None, 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-c', 'value': 1}, {'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': {'chain': 'test_2'}, 'method': 'broadcast', 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-d', 'value': 1}]  # noqa
+
+    data = get_bp_data(
+         skale_bp,
+         get_api_url(BLUEPRINT_NAME, 'tm-pool-records'),
+         json={'method': 'createNode'}
+     )
+    assert data['payload'] == [{'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': {'chain': 'test_1'}, 'method': 'createNode', 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-a', 'value': 1}]  # noqa
+
+    data = get_bp_data(
+        skale_bp,
+        get_api_url(BLUEPRINT_NAME, 'tm-pool-records'),
+        json={'meta': {'chain': 'test_1'}}
+    )
+    assert data['payload'] == [{'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': {'chain': 'test_1'}, 'method': 'createNode', 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-a', 'value': 1}, {'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': {'chain': 'test_1'}, 'method': None, 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-b', 'value': 1}]  # noqa
+
+    data = get_bp_data(
+        skale_bp,
+        get_api_url(BLUEPRINT_NAME, 'tm-pool-records'),
+        json={'method': 'createNode', 'meta': {'chain': 'test_1'}}
+    )
+    assert data['payload'] == [{'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': {'chain': 'test_1'}, 'method': 'createNode', 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-a', 'value': 1}]  # noqa
+
+    data = get_bp_data(
+        skale_bp,
+        get_api_url(BLUEPRINT_NAME, 'tm-pool-records'),
+        json={'method': 'notExist'}
+    )
+    assert data['payload'] == []

@@ -255,3 +255,21 @@ def upsert_schain_record_with_config(name, version=None):
     r = upsert_schain_record(name)
     r.set_config_version(version)
     return r
+
+
+def insert_samples_into_redis_pool(pname, rs):
+    record_a = {'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': {'chain': 'test_1'}, 'method': 'createNode', 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-a', 'value': 1}  # noqa
+    rs.set(record_a['tx_id'], json.dumps(record_a).encode('utf-8'))
+    rs.zadd(pname, {record_a['tx_id']: 0})
+
+    record_b = {'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': {'chain': 'test_1'}, 'method': None, 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-b', 'value': 1}  # noqa
+    rs.set(record_b['tx_id'], json.dumps(record_b).encode('utf-8'))
+    rs.zadd(pname, {record_b['tx_id']: 1})
+
+    record_c = {'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': None, 'method': None, 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-c', 'value': 1}  # noqa
+    rs.set(record_c['tx_id'], json.dumps(record_c).encode('utf-8'))
+    rs.zadd(pname, {record_c['tx_id']: 2})
+
+    record_d = {'attempts': 0, 'chainId': None, 'data': {'test': 1}, 'from': None, 'gas': 22000, 'gasPrice': 1000000000, 'hashes': [], 'maxFeePerGas': None, 'maxPriorityFeePerGas': None, 'meta': {'chain': 'test_2'}, 'method': 'broadcast', 'multiplier': 1.2, 'nonce': 3, 'score': 1, 'sent_ts': None, 'status': 'PROPOSED', 'to': '0x1', 'tx_hash': None, 'tx_id': 'tx-d', 'value': 1}  # noqa
+    rs.set(record_d['tx_id'], json.dumps(record_d).encode('utf-8'))
+    rs.zadd(pname, {record_d['tx_id']: 3})

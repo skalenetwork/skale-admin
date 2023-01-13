@@ -287,8 +287,11 @@ def tm_pool_size():
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'tm-pool-records'), methods=['GET'])
 def tm_pool_records():
     logger.debug(request)
-    meta = request.args.get('meta')
-    method = request.args.get('method')
+    data = request.json
+    meta, method = None, None
+    if data:
+        meta = data.get('meta')
+        method = data.get('method')
     records = get_records_by_meta_and_method(
         pname=TM_POOL_NAME,
         meta=meta,
