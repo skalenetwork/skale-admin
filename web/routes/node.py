@@ -41,6 +41,7 @@ from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
 from tools.redis_api import (
+    get_record,
     get_records_by_meta_and_method,
     get_zset_size
 )
@@ -281,6 +282,23 @@ def ima_abi():
 def tm_pool_size():
     logger.debug(request)
     size = get_zset_size(pname=TM_POOL_NAME)
+    return construct_ok_response(data=size)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'tm-tx'), methods=['GET'])
+def tm_tx():
+    """ Get TM tx info by id """
+    logger.debug(request)
+    tx_id = None
+    data = request.json
+    if data:
+        tx_id = data.get('tx')
+    if not tx_id:
+        return construct_err_response(
+            status_code=HTTPStatus.BAD_REQUEST,
+            msg='Invalid tx id'
+        )
+    size = get_record(tx_id.encode('utf-8'))
     return construct_ok_response(data=size)
 
 

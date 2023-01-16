@@ -26,6 +26,17 @@ import redis
 grs = redis.Redis(connection_pool=redis.BlockingConnectionPool())
 
 
+def record_from_bytes(record_bytes: bytes) -> Dict:
+    return json.loads(record_bytes.decode('utf-8'))
+
+
+def get_record(key: bytes, rs: redis.Redis = grs) -> Optional[Dict]:
+    raw_record = rs.get(key)
+    if raw_record:
+        return record_from_bytes(raw_record)
+    return None
+
+
 def get_zset_size(pname: str, rs: redis.Redis = grs) -> int:
     return rs.zcard(pname)
 
@@ -34,24 +45,21 @@ def get_zset_as_list(pname: str, rs: redis.Redis = grs) -> List[bytes]:
     return rs.zrange(pname, 0, -1)
 
 
-def record_from_bytes(record_bytes: bytes) -> Dict:
-    return json.loads(record_bytes.decode('utf-8'))
-
-
-def zset_records(pname: str, rs: redis.Redis = grs) -> List[Dict]:
+def get_zset_keys(pname: str, rs: redis.Redis = grs):
     return [
-        record_from_bytes(rs.get(key))
-        for key in get_zset_as_list(pname, rs)
+        raw_key.decode('utf-8')
+        for raw_key in get_zset_as_list(pname, rs)
     ]
 
 
 def are_meta_and_method_same(
-    record: Dict,
+    key: bytes,
     meta: Optional[Dict] = None,
     method: Optional[str] = None
 ) -> bool:
+    record = get_record(key)
     return (meta is None or record.get('meta') == meta) \
-            and (method is None or record.get('method') == method)
+        and (method is None or record.get('method') == method)
 
 
 def get_records_by_meta_and_method(
@@ -61,4 +69,4 @@ def get_records_by_meta_and_method(
     method: Optional[str] = None
 ) -> List[Dict]:
     predicate = partial(are_meta_and_method_same, meta=meta, method=method)
-    return list(filter(predicate, zset_records(pname, rs)))
+    return list(filter(predicate, get_zset_keys(pname, rs)))
