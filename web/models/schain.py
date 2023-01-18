@@ -203,14 +203,19 @@ def set_schains_monitor_id():
 
 def upsert_schain_record(name):
     if not SChainRecord.added(name):
-        logger.debug(f'Could not find sChain record: {name}, going to add')
-        schain_record, _ = SChainRecord.add(name)
+        logger.debug('Could not find sChain record: %s, going to add', name)
+        schain_record, query_log = SChainRecord.add(name)
     else:
-        logger.debug(f'Getting sChain record by name: {name}')
+        logger.debug('Getting sChain record by name %s', name)
         schain_record = SChainRecord.get_by_name(name)
 
     if not schain_record:
-        logger.error(f'schain_record is None for {name}')
+        logger.error(
+            'schain_record is %s empty for %s, query_log %s',
+            schain_record,
+            name,
+            query_log
+        )
 
     return schain_record
 
