@@ -28,13 +28,23 @@ from core.node import Node, NodeStatus
 from tools.helper import get_endpoint_call_speed
 
 from core.node import (
-    get_meta_info, get_node_hardware_info, get_btrfs_info, check_validator_nodes, get_abi_hash
+    get_meta_info,
+    get_node_hardware_info,
+    get_btrfs_info,
+    check_validator_nodes,
+    get_abi_hash
 )
 
+from tools.configs import TM_POOL_NAME
 from tools.configs.web3 import ABI_FILEPATH, ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
+from tools.redis_api import (
+    get_record,
+    get_records_by_meta_and_method,
+    get_zset_size
+)
 from web.helper import (
     construct_err_response,
     construct_ok_response,
@@ -266,3 +276,43 @@ def ima_abi():
     logger.debug(request)
     abi_hash = get_abi_hash(MAINNET_IMA_ABI_FILEPATH)
     return construct_ok_response(data=abi_hash)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'tm-pool-size'), methods=['GET'])
+def tm_pool_size():
+    logger.debug(request)
+    size = get_zset_size(pname=TM_POOL_NAME)
+    return construct_ok_response(data=size)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'tm-tx'), methods=['GET'])
+def tm_tx():
+    """ Get TM tx info by id """
+    logger.debug(request)
+    tx_id = None
+    data = request.json
+    if data:
+        tx_id = data.get('tx')
+    if not tx_id:
+        return construct_err_response(
+            status_code=HTTPStatus.BAD_REQUEST,
+            msg='Invalid tx id'
+        )
+    size = get_record(tx_id.encode('utf-8'))
+    return construct_ok_response(data=size)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'tm-pool-records'), methods=['GET'])
+def tm_pool_records():
+    logger.debug(request)
+    data = request.json
+    meta, method = None, None
+    if data:
+        meta = data.get('meta')
+        method = data.get('method')
+    records = get_records_by_meta_and_method(
+        pname=TM_POOL_NAME,
+        meta=meta,
+        method=method
+    )
+    return construct_ok_response(data=records)

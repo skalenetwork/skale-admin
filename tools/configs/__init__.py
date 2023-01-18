@@ -84,3 +84,5 @@ ZMQ_PORT = 1031
 ZMQ_TIMEOUT = 5
 
 CHECK_REPORT_PATH = os.path.join(SKALE_VOLUME_PATH, 'reports', 'checks.json')
+
+TM_POOL_NAME = os.getenv('TM_POOL_NAME', 'transactions')

@@ -8,6 +8,7 @@ import subprocess
 
 import docker
 import pytest
+import redis
 
 from skale import SkaleManager
 from skale.wallets import Web3Wallet
@@ -41,7 +42,7 @@ from core.schains.ima import ImaData
 from core.schains.skaled_status import init_skaled_status, SkaledStatus
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
-from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
+from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH, TM_POOL_NAME
 from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -58,6 +59,7 @@ from tests.utils import (
     ETH_PRIVATE_KEY,
     generate_cert,
     get_test_rule_controller,
+    insert_samples_into_redis_pool,
     init_skale_from_wallet,
     init_skale_ima,
     upsert_schain_record_with_config
@@ -595,3 +597,13 @@ def skale_manager_opts():
         schains_internal_address='0x1656',
         nodes_address='0x7742'
     )
+
+
+@pytest.fixture
+def rs():
+    rs = redis.Redis()
+    insert_samples_into_redis_pool(TM_POOL_NAME, rs)
+    try:
+        yield rs
+    finally:
+        rs.flushall()
