@@ -111,6 +111,7 @@ def monitor_sync_node(
         rule_controller=rc,
         rotation_id=rotation_data['rotation_id'],
         ima_linked=False,
+        sync_node=True,
         dutils=dutils
     )
 

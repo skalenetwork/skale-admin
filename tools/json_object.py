@@ -18,24 +18,33 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from filelock import FileLock
 
-from core.schains.monitor import BaseMonitor
-from tools.str_formatters import arguments_list_string
+from tools.helper import read_json, write_json, init_file
+
 
 logger = logging.getLogger(__name__)
 
 
-class SyncNodeMonitor(BaseMonitor):
-    """
-    SyncNodeMonitor is executed only on the sync node.
-    """
+class JsonObject:
+    def __init__(
+        self,
+        filepath: str
+    ):
+        self.filepath = filepath
+        self.lock_filepath = filepath + '.lock'
+        init_file(filepath, {})
 
-    def run(self):
-        logger.info(arguments_list_string({
-           'sChain name': self.name
-        }, 'Monitoring sync node'))
-        self.config_dir()
-        self.config()
-        self.volume()
-        self.firewall_rules()
-        self.skaled_container()
+    def _get(self, field_name: str):
+        config = read_json(self.filepath)
+        return config.get(field_name, None)
+
+    def _set(self, field_name: str, field_value) -> None:
+        lock = FileLock(self.lock_filepath)
+        with lock:
+            config = read_json(self.filepath)
+            config[field_name] = field_value
+            write_json(self.filepath, config)
+
+    def all(self) -> dict:
+        return read_json(self.filepath)

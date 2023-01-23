@@ -18,9 +18,12 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import os
+import shutil
 
 from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
+from tools.configs.schains import SCHAIN_STATE_PATH, SCHAIN_STATIC_PATH
 from tools.configs.containers import (
     SHARED_SPACE_VOLUME_NAME,
     SHARED_SPACE_CONTAINER_PATH
@@ -31,9 +34,14 @@ from tools.docker_utils import DockerUtils
 logger = logging.getLogger(__name__)
 
 
-def is_volume_exists(schain_name, dutils=None):
+def is_volume_exists(schain_name, sync_node=False, dutils=None):
     dutils = dutils or DockerUtils()
-    return dutils.is_data_volume_exists(schain_name)
+    if sync_node:
+        schain_state = os.path.join(SCHAIN_STATE_PATH, schain_name)
+        schain_static_path = os.path.join(SCHAIN_STATIC_PATH, schain_name)
+        return os.path.isdir(schain_state) and os.path.islink(schain_static_path)
+    else:
+        return dutils.is_data_volume_exists(schain_name)
 
 
 def init_data_volume(
@@ -44,21 +52,52 @@ def init_data_volume(
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
 
-    if dutils.is_data_volume_exists(schain_name):
+    if is_volume_exists(schain_name, sync_node=sync_node, dutils=dutils):
         logger.debug(f'Volume already exists: {schain_name}')
         return
 
     logger.info(f'Creating volume for schain: {schain_name}')
-    schain_type = get_schain_type(schain['partOfNode'], sync_node=sync_node)
-    disk_limit = get_schain_limit(schain_type, MetricType.disk)
-    return dutils.create_data_volume(schain_name, disk_limit)
+    if sync_node:
+        ensure_data_dir_path(schain['name'])
+    else:
+        schain_type = get_schain_type(schain['partOfNode'])
+        disk_limit = get_schain_limit(schain_type, MetricType.disk)
+        dutils.create_data_volume(schain_name, disk_limit)
 
 
-def get_schain_volume_config(name, mount_path, mode=None):
+def remove_data_dir(schain_name):
+    schain_state = os.path.join(SCHAIN_STATE_PATH, schain_name)
+    schain_static_path = os.path.join(SCHAIN_STATIC_PATH, schain_name)
+    os.remove(schain_static_path)
+    shutil.rmtree(schain_state)
+
+
+def ensure_data_dir_path(schain_name: str) -> None:
+    schain_state = os.path.join(SCHAIN_STATE_PATH, schain_name)
+    os.makedirs(schain_state, exist_ok=True)
+    schain_filestorage_state = os.path.join(schain_state, 'filestorage')
+    schain_static_path = os.path.join(SCHAIN_STATIC_PATH, schain_name)
+    if os.path.islink(schain_static_path):
+        os.unlink(schain_static_path)
+    os.symlink(
+        schain_filestorage_state,
+        schain_static_path,
+        target_is_directory=True
+    )
+
+
+def get_schain_volume_config(name, mount_path, mode=None, sync_node=False):
     mode = mode or 'rw'
+    if sync_node:
+        datadir_src = os.path.join(SCHAIN_STATE_PATH, name)
+        shared_space_src = os.path.join(SCHAIN_STATE_PATH, SHARED_SPACE_VOLUME_NAME)
+    else:
+        datadir_src = name
+        shared_space_src = SHARED_SPACE_VOLUME_NAME
+
     config = {
-        f'{name}': {'bind': mount_path, 'mode': mode},
-        SHARED_SPACE_VOLUME_NAME: {
+        datadir_src: {'bind': mount_path, 'mode': mode},
+        shared_space_src: {
             'bind': SHARED_SPACE_CONTAINER_PATH,
             'mode': mode
         }

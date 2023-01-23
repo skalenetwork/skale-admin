@@ -49,13 +49,14 @@ def monitor_schain_container(
     public_key=None,
     start_ts=None,
     dutils=None,
-    sync_node: bool = False
+    sync_node: bool = False,
+    historic_state: bool = False
 ) -> None:
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
     logger.info(f'Monitoring container for sChain {schain_name}')
 
-    if not is_volume_exists(schain_name, dutils=dutils):
+    if not is_volume_exists(schain_name, sync_node=sync_node, dutils=dutils):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
         return
 
@@ -66,18 +67,21 @@ def monitor_schain_container(
             public_key=public_key,
             start_ts=start_ts,
             dutils=dutils,
-            sync_node=sync_node
+            sync_node=sync_node,
+            historic_state=historic_state
         )
         schain_record.reset_failed_conunters()
         return
 
     if skaled_status.exit_time_reached:
         logger.info(f'{schain_name} - Skipping container monitor: exit time reached')
+        skaled_status.log()
         schain_record.reset_failed_conunters()
         return
 
     if skaled_status.clear_data_dir and skaled_status.start_from_snapshot:
         logger.info(f'{schain_name} - Skipping container monitor: sChain should be repaired')
+        skaled_status.log()
         schain_record.reset_failed_conunters()
         return
 

@@ -77,6 +77,7 @@ def _is_rotation_mode(is_rotation_active: bool) -> bool:
 
 
 def _is_post_rotation_mode(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
+    skaled_status.log()
     return not checks.skaled_container.status and skaled_status.exit_time_reached
 
 
@@ -85,11 +86,13 @@ def _is_reload_mode(schain_record: SChainRecord) -> bool:
 
 
 def _is_skaled_repair_status(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
+    skaled_status.log()
     needs_repair = skaled_status.clear_data_dir and skaled_status.start_from_snapshot
     return not checks.skaled_container.status and needs_repair
 
 
 def _is_skaled_reload_status(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
+    skaled_status.log()
     needs_reload = skaled_status.start_again and not skaled_status.start_from_snapshot
     return not checks.skaled_container.status and needs_reload
 

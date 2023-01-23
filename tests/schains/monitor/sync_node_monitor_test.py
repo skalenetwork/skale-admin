@@ -1,5 +1,7 @@
 import logging
+import os
 
+import pytest
 from skale.schain_config.generator import get_nodes_for_schain
 from skale.wallets import SgxWallet
 from skale.utils.helper import ip_from_bytes
@@ -11,9 +13,11 @@ from core.schains.runner import get_container_info
 
 from tools.configs import (
     SGX_CERTIFICATES_FOLDER,
-    SGX_SERVER_URL
+    SGX_SERVER_URL,
+    SKALE_LIB_PATH
 )
 from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.schains import SCHAIN_STATIC_PATH, SCHAIN_STATE_PATH
 
 from web.models.schain import SChainRecord
 
@@ -23,6 +27,18 @@ from tests.utils import get_test_rule_controller
 logger = logging.getLogger(__name__)
 
 
+@pytest.fixture
+def skale_lib_path():
+    try:
+        os.makedirs(SCHAIN_STATE_PATH, exist_ok=True)
+        os.makedirs(SCHAIN_STATIC_PATH, exist_ok=True)
+        yield SKALE_LIB_PATH
+    finally:
+        pass
+        # Cannot remove without sudo
+        # shutil.rmtree(SKALE_LIB_PATH)
+
+
 def test_sync_node_monitor(
     schain_db,
     skale,
@@ -30,7 +46,8 @@ def test_sync_node_monitor(
     skale_ima,
     dutils,
     ssl_folder,
-    schain_on_contracts
+    schain_on_contracts,
+    skale_lib_path
 ):
     schain_name = schain_on_contracts
     schain = skale.schains.get_by_name(schain_name)
@@ -61,6 +78,7 @@ def test_sync_node_monitor(
         node_config.id,
         schain_record=schain_record,
         rule_controller=rc,
+        sync_node=True,
         dutils=dutils
     )
     ima_data = ImaData(False, '0x1')

@@ -29,6 +29,7 @@ from core.schains.config.directory import get_tmp_schain_config_filepath
 from core.schains.config.directory import schain_config_filepath
 
 from tools.str_formatters import arguments_list_string
+from tools.node_options import NodeOptions
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
@@ -44,13 +45,15 @@ def init_schain_config(
     ecdsa_sgx_key_name: str,
     rotation_data: dict,
     schain_record: SChainRecord,
-    sync_node: bool
+    sync_node: bool,
+    node_options: NodeOptions
 ):
     config_filepath = schain_config_filepath(schain_name)
 
     logger.warning(arguments_list_string({
         'sChain name': schain_name,
         'config_filepath': config_filepath,
+        'generation': generation,
         'sync_node': sync_node
         }, 'Generating sChain config'))
 
@@ -61,7 +64,8 @@ def init_schain_config(
         node_id=node_id,
         rotation_data=rotation_data,
         ecdsa_key_name=ecdsa_sgx_key_name,
-        sync_node=sync_node
+        sync_node=sync_node,
+        node_options=node_options
     )
     save_schain_config(schain_config.to_dict(), schain_name)
     update_schain_config_version(schain_name, schain_record=schain_record)

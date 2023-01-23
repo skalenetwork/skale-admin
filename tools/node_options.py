@@ -19,23 +19,25 @@
 
 import logging
 
-from core.schains.monitor import BaseMonitor
-from tools.str_formatters import arguments_list_string
+from tools.json_object import JsonObject
+from tools.configs import NODE_OPTIONS_FILEPATH
+
 
 logger = logging.getLogger(__name__)
 
 
-class SyncNodeMonitor(BaseMonitor):
-    """
-    SyncNodeMonitor is executed only on the sync node.
-    """
+class NodeOptions(JsonObject):
+    def __init__(self):
+        super().__init__(filepath=NODE_OPTIONS_FILEPATH)
 
-    def run(self):
-        logger.info(arguments_list_string({
-           'sChain name': self.name
-        }, 'Monitoring sync node'))
-        self.config_dir()
-        self.config()
-        self.volume()
-        self.firewall_rules()
-        self.skaled_container()
+    @property
+    def archive(self) -> bool:
+        return self._get('archive')
+
+    @property
+    def catchup(self) -> bool:
+        return self._get('catchup')
+
+    @property
+    def historic_state(self) -> bool:
+        return self._get('historic_state')

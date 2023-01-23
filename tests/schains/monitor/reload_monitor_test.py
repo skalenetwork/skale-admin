@@ -10,7 +10,7 @@ from core.schains.checks import SChainChecks
 from core.schains.ssl import ssl_reload_needed
 from core.schains.ima import ImaData
 from core.schains.monitor import ReloadMonitor
-from core.schains.runner import get_container_info
+from core.schains.runner import get_container_info, get_container_name
 
 from tools.configs import (
     SGX_CERTIFICATES_FOLDER,
@@ -107,4 +107,7 @@ def test_reload_monitor(
 
             schain_record = SChainRecord.get_by_name(schain_name)
             assert ssl_reload_needed(schain_record) is False
+            if not schain_checks.skaled_container.status:
+                container_name = get_container_name(SCHAIN_CONTAINER, schain['name'])
+                dutils.display_container_logs(container_name, to_loggger=False)
             assert schain_checks.skaled_container.status

@@ -9,6 +9,7 @@ from core.schains.config.generator import (
 )
 from core.schains.config.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.node_options import NodeOptions
 
 from etherbase_predeployed import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
@@ -134,7 +135,7 @@ def check_node_info(node_id, info):
         'imaMessageProxySChain', 'imaMessageProxyMainNet', 'ecdsaKeyName', 'wallets',
         'minCacheSize', 'maxCacheSize', 'collectionQueueSize', 'collectionDuration',
         'transactionQueueSize', 'maxOpenLeveldbFiles', 'info-acceptors', 'imaMonitoringPort',
-        'skale-manager', 'syncNode'
+        'skale-manager', 'syncNode', 'pg-threads', 'pg-threads-limit'
     ]
 
     check_keys(info, keys)
@@ -176,6 +177,7 @@ def check_config(node_id, all_node_ids, config):
         config,
         ['sealEngine', 'params', 'unddos', 'genesis', 'accounts', 'skaleConfig']
     )
+    assert config['params']['skaleDisableChainIdCheck'] is True
     check_node_info(node_id, config['skaleConfig']['nodeInfo'])
     check_schain_info(all_node_ids, config['skaleConfig']['sChain'])
 
@@ -194,7 +196,8 @@ def test_generate_schain_config_with_skale(
         node_id=current_node_id,
         rotation_data={'rotation_id': 0, 'leaving_node': 1},
         ecdsa_key_name=ECDSA_KEY_NAME,
-        generation=0
+        generation=0,
+        node_options=NodeOptions()
     )
     check_config(current_node_id, node_ids, schain_config.to_dict())
 
@@ -342,4 +345,78 @@ def test_generate_sync_node_config(
     config = schain_config.to_dict()
 
     assert config['skaleConfig']['nodeInfo']['syncNode']
-    assert config['skaleConfig']['sChain']['dbStorageLimit'] == -1
+    assert config['skaleConfig']['sChain']['dbStorageLimit'] == 1331999539
+
+
+def test_generate_sync_node_config_archive_catchup(
+    schain_secret_key_file_default_chain,
+    skale_manager_opts
+):
+    node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
+    ecdsa_key_name = 'test'
+    schains_on_node = [{'name': 'test_schain'}]
+    node_groups = {}
+
+    schain_config = generate_schain_config(
+        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain_id=schain_id,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        schains_on_node=schains_on_node,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts,
+        sync_node=True
+    )
+    config = schain_config.to_dict()
+
+    assert not config['skaleConfig']['nodeInfo'].get('syncFromCatchup')
+    assert not config['skaleConfig']['nodeInfo'].get('archiveMode')
+
+    schain_config = generate_schain_config(
+        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain_id=schain_id,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        schains_on_node=schains_on_node,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts,
+        sync_node=True,
+        archive=False,
+        catchup=True
+    )
+    config = schain_config.to_dict()
+
+    assert config['skaleConfig']['nodeInfo'].get('syncFromCatchup')
+    assert config['skaleConfig']['nodeInfo'].get('archiveMode') is False
+
+    schain_config = generate_schain_config(
+        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain_id=schain_id,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        schains_on_node=schains_on_node,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=TEST_SCHAIN_NODE_WITH_SCHAINS,
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts,
+        sync_node=False,
+        archive=False,
+        catchup=True
+    )
+    config = schain_config.to_dict()
+
+    assert config['skaleConfig']['nodeInfo'].get('syncFromCatchup') is None
+    assert config['skaleConfig']['nodeInfo'].get('archiveMode') is None

@@ -38,6 +38,8 @@ from core.schains.limits import get_schain_type
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
 from tools.helper import is_zero_address, is_address_contract
+from tools.node_options import NodeOptions
+
 
 logger = logging.getLogger(__name__)
 
@@ -115,19 +117,21 @@ def generate_schain_config(
     schain: dict, schain_id: int, node_id: int, node: dict, ecdsa_key_name: str,
     schains_on_node: list, rotation_id: int, schain_nodes_with_schains: list,
     node_groups: list, generation: int, is_owner_contract: bool,
-    skale_manager_opts: SkaleManagerOpts, sync_node: bool = False
+    skale_manager_opts: SkaleManagerOpts, sync_node: bool = False,
+    archive=None, catchup=None
 ) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
         f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}, '
-        f'ecdsa keyname: {ecdsa_key_name}, schain_id: {schain_id}'
+        f'ecdsa keyname: {ecdsa_key_name}, schain_id: {schain_id}, archive: {archive}, '
+        f'catchup: {catchup}'
     )
 
     on_chain_etherbase = get_on_chain_etherbase(schain, generation)
     on_chain_owner = get_on_chain_owner(schain, generation, is_owner_contract)
     mainnet_owner = schain['mainnetOwner']
-    schain_type = get_schain_type(schain['partOfNode'], sync_node=False)
+    schain_type = get_schain_type(schain['partOfNode'])
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
@@ -164,7 +168,9 @@ def generate_schain_config(
         rotation_id=rotation_id,
         node_groups=node_groups,
         skale_manager_opts=skale_manager_opts,
-        sync_node=sync_node
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup
     )
 
     schain_config = SChainConfig(
@@ -192,7 +198,8 @@ def generate_schain_config_with_skale(
     node_id: int,
     rotation_data: dict,
     ecdsa_key_name: str,
-    sync_node: bool = False
+    sync_node: bool = False,
+    node_options: NodeOptions = NodeOptions()
 ) -> SChainConfig:
     schain_id = 1  # todo: remove this later (should be removed from the skaled first)
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
@@ -218,5 +225,7 @@ def generate_schain_config_with_skale(
         generation=generation,
         is_owner_contract=is_owner_contract,
         skale_manager_opts=skale_manager_opts,
-        sync_node=sync_node
+        sync_node=sync_node,
+        archive=node_options.archive,
+        catchup=node_options.catchup
     )

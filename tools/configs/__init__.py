@@ -20,6 +20,7 @@ SCHAIN_NODE_DATA_PATH = '/skale_node_data'
 SCHAIN_CONFIG_DIR_SKALED = '/schain_config'
 CONFIG_FOLDER_NAME = 'config'
 CONTRACTS_INFO_FOLDER_NAME = 'contracts_info'
+SKALE_LIB_PATH = os.getenv('SKALE_LIB_PATH', '/var/lib/skale')
 
 MANAGER_CONTRACTS_INFO_NAME = 'manager.json'
 IMA_CONTRACTS_INFO_NAME = 'ima.json'
@@ -90,3 +91,6 @@ ZMQ_TIMEOUT = 5
 CHECK_REPORT_PATH = os.path.join(SKALE_VOLUME_PATH, 'reports', 'checks.json')
 
 SYNC_NODE_ROTATION_TS_DIFF = 600
+
+NODE_OPTIONS_FILEPATH = os.path.join(NODE_DATA_PATH, 'node_options.json')
+NODE_OPTIONS_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'node_options.json.lock')

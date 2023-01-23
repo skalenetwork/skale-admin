@@ -24,15 +24,10 @@ from tools.configs.resource_allocation import (
 )
 
 
-def get_schain_type(
-    schain_part_of_node: int,
-    sync_node: bool
-) -> SchainType:
+def get_schain_type(schain_part_of_node: int) -> SchainType:
     """
     Returns SKALE chain type based on part_of_node value from the sChain structure.
     """
-    if sync_node:
-        return SchainType.sync_node
     if isinstance(schain_part_of_node, str):
         schain_part_of_node = int(schain_part_of_node)
     return SchainType(schain_part_of_node)
