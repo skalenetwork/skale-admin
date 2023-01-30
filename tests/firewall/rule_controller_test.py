@@ -113,7 +113,10 @@ def test_schain_rule_controller_no_sync_rules():
         SChainRule(port=10005, first_ip='4.4.4.4', last_ip=None),
         SChainRule(port=10007, first_ip=None, last_ip=None),
         SChainRule(port=10008, first_ip=None, last_ip=None),
-        SChainRule(port=10009, first_ip=None, last_ip=None)
+        SChainRule(port=10009, first_ip=None, last_ip=None),
+        SChainRule(port=10010, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10010, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10010, first_ip='4.4.4.4', last_ip=None)
     }
     src = SChainTestRuleController(
         'test',
@@ -158,7 +161,10 @@ def test_schain_rule_controller_configure():
         SChainRule(port=10005, first_ip='4.4.4.4', last_ip=None),
         SChainRule(port=10007, first_ip=None, last_ip=None),
         SChainRule(port=10008, first_ip=None, last_ip=None),
-        SChainRule(port=10009, first_ip=None, last_ip=None)
+        SChainRule(port=10009, first_ip=None, last_ip=None),
+        SChainRule(port=10010, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10010, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10010, first_ip='4.4.4.4', last_ip=None)
     }
     src.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
     assert not src.is_rules_synced()
@@ -190,7 +196,10 @@ def test_schain_rule_controller_configure():
         SChainRule(port=10005, first_ip='5.5.5.5', last_ip=None),
         SChainRule(port=10007, first_ip=None, last_ip=None),
         SChainRule(port=10008, first_ip=None, last_ip=None),
-        SChainRule(port=10009, first_ip=None, last_ip=None)
+        SChainRule(port=10009, first_ip=None, last_ip=None),
+        SChainRule(port=10010, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10010, first_ip='3.3.3.3', last_ip=None),
+        SChainRule(port=10010, first_ip='5.5.5.5', last_ip=None),
     }
     assert not src.is_rules_synced()
     assert list(src.expected_rules()) == list(sorted(expected_rules))
