@@ -9,4 +9,5 @@ def test_get_ima_env(_schain_name, schain_config):
     ima_env_dict = ima_env.to_dict()
     assert len(ima_env_dict) == 20
     assert ima_env_dict['CID_MAIN_NET'] == 123
+    assert ima_env_dict['IMA_RPC'] == 10010
     isinstance(ima_env_dict['CID_SCHAIN'], str)

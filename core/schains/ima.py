@@ -17,15 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
+import logging
+import os
 from dataclasses import dataclass
+
+from flask import g
+from skale.dataclasses.skaled_ports import SkaledPorts
+from websocket import create_connection
 
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.helper import get_schain_ports, get_schain_config, get_chain_id
 from core.ima.schain import get_schain_ima_abi_filepath
 
-import json
-import logging
-import os
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import CONTAINERS_INFO
 from tools.configs.db import REDIS_URI
@@ -37,8 +41,6 @@ from tools.configs.ima import (
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ABI_FILEPATH
-from flask import g
-from websocket import create_connection
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +104,7 @@ class ImaEnv:
             'CID_MAIN_NET': self.cid_main_net,
             'CID_SCHAIN': self.cid_schain,
             'MONITORING_PORT': self.monitoring_port,
+            'RPC_PORT': self.rpc_port,
             'TIME_FRAMING': self.time_framing
         }
 
@@ -162,6 +165,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         cid_main_net=mainnet_chain_id,
         cid_schain=schain_chain_id,
         monitoring_port=node_info['imaMonitoringPort'],
+        rpc_port=get_ima_rpc_port(schain_name),
         time_framing=IMA_TIME_FRAMING
     )
 
@@ -177,6 +181,12 @@ def get_ima_monitoring_port(schain_name):
         return int(node_info["imaMonitoringPort"])
     else:
         return None
+
+
+def get_ima_rpc_port(schain_name):
+    config = get_schain_config(schain_name)
+    base_port = config['skaleConfig']['nodeInfo']['basePort']
+    return base_port + SkaledPorts.IMA_RPC.value
 
 
 def get_ima_container_statuses():
