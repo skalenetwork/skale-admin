@@ -82,6 +82,8 @@ class ImaEnv:
 
     time_framing: int
 
+    rpc_port: int
+
     def to_dict(self):
         """Returns upper-case representation of the ImaEnv object"""
         return {
