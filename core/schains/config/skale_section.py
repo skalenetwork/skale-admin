@@ -25,7 +25,7 @@ from core.schains.config.contract_settings import (
 from core.schains.config.node_info import CurrentNodeInfo, generate_current_node_info
 from core.schains.config.schain_info import SChainInfo, generate_schain_info
 from core.schains.config.schain_node import generate_schain_nodes
-from core.schains.config.helper import get_static_schain_params
+from core.schains.config.helper import get_patches, get_static_schain_params
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
 
@@ -52,6 +52,7 @@ def generate_skale_section(
     sync_node: bool = False, archive=None, catchup=None
 ) -> SkaleConfig:
     static_schain_params = get_static_schain_params()
+    patches = get_patches()
 
     contract_settings = generate_contract_settings(
         on_chain_owner=on_chain_owner,
@@ -85,7 +86,8 @@ def generate_skale_section(
         on_chain_etherbase=on_chain_etherbase,
         static_schain_params=static_schain_params,
         nodes=schain_nodes,
-        node_groups=node_groups
+        node_groups=node_groups,
+        patches=patches
     )
 
     return SkaleConfig(

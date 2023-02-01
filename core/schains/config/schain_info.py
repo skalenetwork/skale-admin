@@ -45,6 +45,7 @@ class SChainInfo:
 
     node_groups: dict
     nodes: list
+    patches: dict
 
     multitransaction_mode: bool
 
@@ -65,13 +66,20 @@ class SChainInfo:
             'maxReservedStorageBytes': self.max_reserved_storage_bytes,
             'nodeGroups': self.node_groups,
             'multiTransactionMode': self.multitransaction_mode,
-            'nodes': self.nodes
+            'nodes': self.nodes,
+            **self.patches
         }
 
 
-def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
-                         static_schain_params: dict, node_groups: dict,
-                         nodes: dict) -> SChainInfo:
+def generate_schain_info(
+    schain_id: int,
+    schain: dict,
+    on_chain_etherbase: str,
+    static_schain_params: dict,
+    node_groups: dict,
+    nodes: dict,
+    patches: dict
+) -> SChainInfo:
     schain_type = get_schain_type(schain['partOfNode'])
     volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)
     leveldb_limits = get_schain_limit(schain_type, MetricType.leveldb_limits)
@@ -87,6 +95,7 @@ def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
         node_groups=node_groups,
         nodes=nodes,
         multitransaction_mode=schain['multitransactionMode'],
+        patches=patches,
         **volume_limits,
         **static_schain_params['schain']
     )

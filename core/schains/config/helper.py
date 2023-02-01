@@ -22,8 +22,8 @@ import logging
 import os
 from typing import Dict, List
 
-from web3 import Web3
 from Crypto.Hash import keccak
+from web3 import Web3
 
 from skale.dataclasses.skaled_ports import SkaledPorts
 
@@ -34,8 +34,8 @@ from tools.configs.containers import (
     SHARED_SPACE_CONTAINER_PATH
 )
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from tools.helper import read_json
-from tools.configs import SGX_SERVER_URL
+from tools.helper import read_json, safe_load_yml
+from tools.configs import ENVIRONMENT_PARAMS_FILEPATH, ENV_TYPE, SGX_SERVER_URL
 from tools.configs.containers import LOCAL_IP
 from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
 from tools.configs.web3 import ENDPOINT
@@ -46,6 +46,16 @@ logger = logging.getLogger(__name__)
 
 def get_static_schain_params():
     return read_json(STATIC_SCHAIN_PARAMS_FILEPATH)
+
+
+def get_environment_params(env_type=ENV_TYPE, path=ENVIRONMENT_PARAMS_FILEPATH):
+    ydata = safe_load_yml(path)
+    return ydata['envs'][env_type]
+
+
+def get_patches(env_type=ENV_TYPE, env_params_path=ENVIRONMENT_PARAMS_FILEPATH):
+    params_for_env_type = get_environment_params(env_type, path=env_params_path)
+    return params_for_env_type.get('patches', {})
 
 
 def get_context_contract():
