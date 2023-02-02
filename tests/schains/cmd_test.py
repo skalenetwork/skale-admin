@@ -35,6 +35,17 @@ def test_get_schain_container_cmd(schain_config, cert_key_pair):
     )
     assert container_opts == expected_opts
 
+    container_opts = get_schain_container_cmd(schain_name, snapshot_from='1.1.1.1')
+    expected_opts = (
+        f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
+        f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '
+        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data '
+        f'--main-net-url {IMA_ENDPOINT} -v 3 '
+        f'--web3-trace --enable-debug-behavior-apis '
+        f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path} --no-major-snapshot 1.1.1.1'
+    )
+    assert container_opts == expected_opts
+
 
 def test_get_schain_container_sync_opts():
     sync_opts = get_schain_container_sync_opts(start_ts=123)
