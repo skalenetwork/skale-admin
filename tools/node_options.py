@@ -31,13 +31,5 @@ class NodeOptions(JsonObject):
         super().__init__(filepath=NODE_OPTIONS_FILEPATH)
 
     @property
-    def archive(self) -> bool:
-        return self._get('archive')
-
-    @property
-    def catchup(self) -> bool:
-        return self._get('catchup')
-
-    @property
-    def historic_state(self) -> bool:
-        return self._get('historic_state')
+    def snapshot_from(self) -> bool:
+        return self._get('snapshot_from')
