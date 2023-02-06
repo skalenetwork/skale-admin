@@ -174,6 +174,7 @@ def run_schain_container(
     env = get_schain_env(ulimit_check=ulimit_check)
 
     node_options = NodeOptions()
+    logger.info('Node options for chians %s', node_options.all())
     snapshot_from = node_options.snapshot_from
     cmd = get_schain_container_cmd(
         schain_name,

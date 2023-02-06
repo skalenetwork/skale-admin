@@ -42,7 +42,8 @@ def test_get_schain_container_cmd(schain_config, cert_key_pair):
         f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data '
         f'--main-net-url {IMA_ENDPOINT} -v 3 '
         f'--web3-trace --enable-debug-behavior-apis '
-        f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path} --no-major-snapshot 1.1.1.1'
+        f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path} '
+        '--no-snapshot-majority 1.1.1.1'
     )
     assert container_opts == expected_opts
 
