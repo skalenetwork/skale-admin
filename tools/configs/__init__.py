@@ -84,3 +84,5 @@ ZMQ_PORT = 1031
 ZMQ_TIMEOUT = 5
 
 CHECK_REPORT_PATH = os.path.join(SKALE_VOLUME_PATH, 'reports', 'checks.json')
+
+NODE_OPTIONS_FILEPATH = os.path.join(NODE_DATA_PATH, 'node_options.json')
