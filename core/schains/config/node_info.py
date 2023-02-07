@@ -103,7 +103,6 @@ def generate_current_node_info(
         sync_node=sync_node,
         archive=archive,
         catchup=catchup,
-        skale_manager_opts=skale_manager_opts,
         static_node_info=static_node_info,
         **get_message_proxy_addresses()
     )

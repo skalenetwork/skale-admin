@@ -24,6 +24,7 @@ from tools.configs import (
     SCHAIN_CONFIG_DIR_SKALED
 )
 
+IMA_ENDPOINT = os.getenv('IMA_ENDPOINT')
 MAINNET_IMA_ABI_FILEPATH = os.getenv('MAINNET_IMA_ABI_FILEPATH') or \
     os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
 
