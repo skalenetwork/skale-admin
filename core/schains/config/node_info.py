@@ -50,9 +50,6 @@ class CurrentNodeInfo(NodeInfo):
     archive: bool
     catchup: bool
 
-    pg_threads: int
-    pg_threads_limit: int
-
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         node_info = {
