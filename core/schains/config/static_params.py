@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2022 SKALE Labs
+#   Copyright (C) 2022-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,31 +17,21 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
-
-from tools.json_object import JsonObject
-from tools.configs import NODE_OPTIONS_FILEPATH
-
-
-logger = logging.getLogger(__name__)
+from core.schains.types import SchainType
+from core.schains.config.helper import get_static_params
+from tools.configs import ENV_TYPE
 
 
-class NodeOptions(JsonObject):
-    def __init__(self):
-        super().__init__(filepath=NODE_OPTIONS_FILEPATH)
+def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:
+    static_params = get_static_params(env_type)
+    return static_params['schain_cmd']
 
-    @property
-    def archive(self) -> bool:
-        return self._get('archive')
 
-    @property
-    def catchup(self) -> bool:
-        return self._get('catchup')
+def get_static_schain_info(env_type: str = ENV_TYPE) -> dict:
+    static_params = get_static_params(env_type)
+    return static_params['schain']
 
-    @property
-    def historic_state(self) -> bool:
-        return self._get('historic_state')
 
-    @property
-    def snapshot_from(self) -> bool:
-        return self._get('snapshot_from')
+def get_static_node_info(schain_type: SchainType, env_type: str = ENV_TYPE) -> dict:
+    static_params = get_static_params(env_type)
+    return {**static_params['node']['common'], **static_params['node'][schain_type.name]}

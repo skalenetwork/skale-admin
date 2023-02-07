@@ -253,7 +253,7 @@ class DockerUtils:
         head: int = 100,
         tail: int = 200,
         to_loggger: bool = True
-    ) -> None:
+    ) -> str:
         container = self.safe_get_container(container_name)
         if not container:
             return
@@ -268,6 +268,7 @@ class DockerUtils:
             logger.info(pretext + logs)
         else:
             print(pretext + logs)
+        return logs
 
     @classmethod
     def save_container_logs(

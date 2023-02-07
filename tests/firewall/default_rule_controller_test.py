@@ -104,13 +104,16 @@ def run_concurrent_rc_syncing(
         base_port + offset
         for offset in [
             SkaledPorts.PROPOSAL.value,
-            SkaledPorts.BINARY_CONSENSUS.value,
-            SkaledPorts.ZMQ_BROADCAST.value
+            SkaledPorts.BINARY_CONSENSUS.value
         ]
         for base_port in base_ports
     ]
     catchup_ports = [
         base_port + SkaledPorts.CATCHUP.value
+        for base_port in base_ports
+    ]
+    zmq_ports = [
+        base_port + SkaledPorts.ZMQ_BROADCAST.value
         for base_port in base_ports
     ]
     public_ports = [
@@ -168,20 +171,26 @@ def run_concurrent_rc_syncing(
         assert sum(map(lambda x: x[2] == p, rules)) == catchup_e_number, p
         assert sum(map(lambda x: x.port == p, c.rules)) == catchup_e_number, p
 
+    # Check ZMQ rules including sync agents rules
+    zmq_e_number = node_number + sync_agent_ranges_number - 1
+    for p in zmq_ports:
+        assert sum(map(lambda x: x[2] == p, rules)) == zmq_e_number, p
+        assert sum(map(lambda x: x.port == p, c.rules)) == zmq_e_number, p
+
     # Check sync ip ranges rules
     for r in sync_agent_ranges:
         assert sum(
             map(lambda x: x[0] == r.start_ip, rules)
-        ) == schain_number, ip
+        ) == schain_number * 2, ip
         assert sum(
             map(lambda x: x.first_ip == r.start_ip, c.rules)
-        ) == schain_number, ip
+        ) == schain_number * 2, ip
         assert sum(
             map(lambda x: x[1] == r.end_ip, rules)
-        ) == schain_number, ip
+        ) == schain_number * 2, ip
         assert sum(
             map(lambda x: x.last_ip == r.end_ip, c.rules)
-        ) == schain_number, ip
+        ) == schain_number * 2, ip
 
     for port in public_ports:
         assert sum(map(lambda x: x[2] == port, rules)) == 1, port

@@ -1,8 +1,10 @@
 from core.schains.info import get_schain_info_by_name
+from tests.utils import upsert_schain_record_with_config
 
 
 def test_get_schain_info_by_name(skale, schain_on_contracts, schain_db):
     name = schain_on_contracts
+    upsert_schain_record_with_config(name)
     info = get_schain_info_by_name(skale, name)
     assert info.name == name
     assert info.schain_id == skale.schains.name_to_id(name)

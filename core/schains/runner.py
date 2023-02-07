@@ -25,10 +25,8 @@ from core.schains.volume import get_schain_volume_config
 from core.schains.limits import get_schain_limit, get_ima_limit, get_schain_type
 from core.schains.types import MetricType, ContainerType
 from core.schains.skaled_exit_codes import SkaledExitCodes
-from core.schains.config.helper import (
-    get_schain_container_cmd,
-    get_schain_env
-)
+from core.schains.cmd import get_schain_container_cmd
+from core.schains.config.helper import get_schain_env
 from core.schains.ima import get_ima_env
 from core.schains.config.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
@@ -44,6 +42,7 @@ from tools.configs.containers import (
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
                            SKALE_VOLUME_PATH, SCHAIN_CONFIG_DIR_SKALED)
 from tools.helper import get_containers_data
+from tools.node_options import NodeOptions
 
 logger = logging.getLogger(__name__)
 
@@ -182,6 +181,10 @@ def run_schain_container(
         sync_node=sync_node
     )
     env = get_schain_env(ulimit_check=ulimit_check)
+
+    node_options = NodeOptions()
+    logger.info('Node options for chians %s', node_options.all())
+    snapshot_from = node_options.snapshot_from
     cmd = get_schain_container_cmd(
         schain_name,
         public_key,
@@ -191,7 +194,8 @@ def run_schain_container(
     )
     run_container(
         SCHAIN_CONTAINER, schain_name, env, cmd, volume_config, cpu_limit, mem_limit,
-        dutils=dutils, volume_mode=volume_mode, historic_state=historic_state
+        dutils=dutils, volume_mode=volume_mode, historic_state=historic_state,
+        snapshot_from=snapshot_from
     )
 
 

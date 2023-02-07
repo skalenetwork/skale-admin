@@ -1,4 +1,5 @@
 import logging
+import platform
 
 import mock
 
@@ -7,9 +8,8 @@ from skale.wallets import SgxWallet
 from skale.utils.helper import ip_from_bytes
 
 from core.schains.checks import SChainChecks
-from core.schains.ssl import ssl_reload_needed
 from core.schains.ima import ImaData
-from core.schains.monitor import ReloadMonitor
+from core.schains.monitor import RegularMonitor, ReloadMonitor
 from core.schains.runner import get_container_info, get_container_name
 
 from tools.configs import (
@@ -22,8 +22,10 @@ from web.models.schain import SChainRecord
 
 from tests.dkg_utils import safe_run_dkg_mock, get_bls_public_keys
 from tests.utils import (
+    alter_schain_config,
     get_test_rule_controller,
-    no_schain_artifacts
+    no_schain_artifacts,
+    upsert_schain_record_with_config
 )
 
 
@@ -36,15 +38,17 @@ def test_reload_monitor(
     node_config,
     skale_ima,
     dutils,
+    ssl_folder,
     schain_on_contracts,
-    cert_key_pair
+    predeployed_ima
 ):
     schain_name = schain_on_contracts
+    upsert_schain_record_with_config(schain_name)
     schain = skale.schains.get_by_name(schain_name)
     nodes = get_nodes_for_schain(skale, schain_name)
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER,
-        schain_db
+        schain_name
     )
 
     # not using rule_controller fixture to avoid config generation
@@ -81,8 +85,33 @@ def test_reload_monitor(
         rule_controller=rc,
         dutils=dutils
     )
+    regular_monitor = RegularMonitor(
+        skale=skale,
+        ima_data=ima_data,
+        schain=schain,
+        node_config=node_config,
+        rotation_data={'rotation_id': 0, 'leaving_node': 1},
+        checks=schain_checks,
+        rule_controller=rc,
+        dutils=dutils
+    )
+
+    schain_record.set_needs_reload(True)
 
     with no_schain_artifacts(schain['name'], dutils):
+        reload_monitor.config_dir()
+
+        with mock.patch(
+            'skale.schain_config.rotation_history._compose_bls_public_key_info',
+            return_value=get_bls_public_keys()
+        ):
+            reload_monitor.run()
+
+        schain_record = SChainRecord.get_by_name(schain_name)
+        assert schain_record.needs_reload is False
+        info = dutils.get_info(container_name)
+        assert info['status'] == 'not_found'
+
         with mock.patch(
             'core.schains.monitor.base_monitor.safe_run_dkg',
             safe_run_dkg_mock
@@ -90,24 +119,30 @@ def test_reload_monitor(
             'skale.schain_config.rotation_history._compose_bls_public_key_info',
             return_value=get_bls_public_keys()
         ):
-            reload_monitor.config_dir()
-            reload_monitor.dkg()
-            reload_monitor.config()
-            reload_monitor.volume()
-            reload_monitor.skaled_container()
+            regular_monitor.run()
+        alter_schain_config(schain_name, sgx_wallet.public_key)
 
-            assert ssl_reload_needed(schain_record) is True
-            assert schain_checks.skaled_container.status
+        state = dutils.get_info(container_name)['stats']['State']
+        assert state['Status'] == 'running'
+        initial_started_at = state['StartedAt']
 
-            with mock.patch(
-                'skale.schain_config.rotation_history._compose_bls_public_key_info',
-                return_value=get_bls_public_keys()
-            ):
-                reload_monitor.run()
+        reload_monitor.run()
 
-            schain_record = SChainRecord.get_by_name(schain_name)
-            assert ssl_reload_needed(schain_record) is False
-            if not schain_checks.skaled_container.status:
-                container_name = get_container_name(SCHAIN_CONTAINER, schain['name'])
-                dutils.display_container_logs(container_name, to_loggger=False)
-            assert schain_checks.skaled_container.status
+        state = dutils.get_info(container_name)['stats']['State']
+        assert state['Status'] == 'running'
+        assert state['StartedAt'] > initial_started_at
+
+        assert schain_record.needs_reload is False
+        assert schain_checks.config_dir.status
+        assert schain_checks.dkg.status
+        assert schain_checks.config.status
+        assert schain_checks.volume.status
+        if not schain_checks.skaled_container.status:
+            container_name = get_container_name(SCHAIN_CONTAINER, schain['name'])
+            dutils.display_container_logs(container_name, to_loggger=False)
+        assert schain_checks.skaled_container.status
+        assert not schain_checks.ima_container.status
+
+        if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker  # noqa
+            assert schain_checks.rpc.status
+            assert schain_checks.blocks.status

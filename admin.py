@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 
 SLEEP_INTERVAL = 90
 WORKER_RESTART_SLEEP_INTERVAL = 2
+ERROR_SLEEP_INTERVAL = 1
 
 
 def monitor(skale, skale_ima, node_config):
@@ -94,13 +95,14 @@ def init():
 
 
 def main():
-    init()
-    while True:
-        try:
+    try:
+        init()
+        while True:
             worker()
-        except Exception:
-            logger.exception('Admin worker failed')
-        time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
+            time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
+    except Exception:
+        logger.exception('Admin worker failed')
+        time.sleep(ERROR_SLEEP_INTERVAL)
 
 
 if __name__ == '__main__':
