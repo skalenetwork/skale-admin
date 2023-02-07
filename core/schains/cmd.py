@@ -33,6 +33,7 @@ def get_schain_container_cmd(
     public_key: str = None,
     start_ts: int = None,
     enable_ssl: bool = True,
+    sync_node: bool = False,
     snapshot_from: Optional[str] = None
 ) -> str:
     """Returns parameters that will be passed to skaled binary in the sChain container"""
