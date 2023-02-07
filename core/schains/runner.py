@@ -19,6 +19,8 @@
 
 import logging
 import copy
+from typing import Optional
+
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_schain_volume_config
@@ -109,9 +111,9 @@ def run_container(
     volume_config=None,
     cpu_shares_limit=None,
     mem_limit=None,
-    dutils=None,
     volume_mode=None,
-    historic_state=False
+    historic_state=False,
+    dutils=None
 ):
     dutils = dutils or DockerUtils()
     image_name, container_name, run_args, custom_args = get_container_info(
@@ -166,7 +168,8 @@ def run_schain_container(
     ulimit_check=True,
     enable_ssl=True,
     sync_node=False,
-    historic_state=False
+    historic_state=False,
+    snapshot_from: Optional[str] = None
 ):
     schain_name = schain['name']
     schain_type = get_schain_type(schain['partOfNode'])
@@ -190,12 +193,20 @@ def run_schain_container(
         public_key,
         start_ts,
         enable_ssl=enable_ssl,
-        sync_node=sync_node
+        sync_node=sync_node,
+        snapshot_from=snapshot_from
     )
     run_container(
-        SCHAIN_CONTAINER, schain_name, env, cmd, volume_config, cpu_limit, mem_limit,
-        dutils=dutils, volume_mode=volume_mode, historic_state=historic_state,
-        snapshot_from=snapshot_from
+        SCHAIN_CONTAINER,
+        schain_name,
+        env,
+        cmd,
+        volume_config,
+        cpu_limit,
+        mem_limit,
+        volume_mode=volume_mode,
+        historic_state=historic_state,
+        dutils=dutils
     )
 
 
