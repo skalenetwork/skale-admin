@@ -41,7 +41,6 @@ from tools.configs.containers import (
 )
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
                            SKALE_VOLUME_PATH, SCHAIN_CONFIG_DIR_SKALED)
-from tools.node_options import NodeOptions
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +158,7 @@ def run_schain_container(
     dutils=None,
     volume_mode=None,
     ulimit_check=True,
+    snapshot_from: str = '',
     enable_ssl=True
 ):
     schain_name = schain['name']
@@ -173,9 +173,6 @@ def run_schain_container(
     )
     env = get_schain_env(ulimit_check=ulimit_check)
 
-    node_options = NodeOptions()
-    logger.info('Node options for chians %s', node_options.all())
-    snapshot_from = node_options.snapshot_from
     cmd = get_schain_container_cmd(
         schain_name,
         public_key,
