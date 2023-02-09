@@ -30,10 +30,13 @@ def get_schain_container_cmd(
     schain_name: str,
     public_key: str = None,
     start_ts: int = None,
-    enable_ssl: bool = True
+    enable_ssl: bool = True,
+    snapshot_from: str = ''
 ) -> str:
     """Returns parameters that will be passed to skaled binary in the sChain container"""
     opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
+    if snapshot_from:
+        opts.extend(['--no-snapshot-majority', snapshot_from])
     if public_key:
         sync_opts = get_schain_container_sync_opts(start_ts)
         opts.extend(sync_opts)

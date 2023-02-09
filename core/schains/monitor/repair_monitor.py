@@ -20,6 +20,7 @@
 import logging
 from core.schains.monitor.base_monitor import BaseMonitor
 from tools.notifications.messages import notify_repair_mode
+from web.models.schain import switch_off_repair_mode
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class RepairMonitor(BaseMonitor):
         )
 
     def disable_repair_mode(self) -> None:
-        self.schain_record.set_repair_mode(False)
+        switch_off_repair_mode(self.name)
 
     @BaseMonitor.monitor_runner
     def run(self):

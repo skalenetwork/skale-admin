@@ -136,7 +136,8 @@ def firewall_rules():
 def repair():
     logger.debug(request)
     schain_name = request.json.get('schain_name')
-    result = toggle_schain_repair_mode(schain_name)
+    snapshot_from = request.json.get('snapshot_from', '')
+    result = toggle_schain_repair_mode(schain_name, snapshot_from=snapshot_from)
     if result:
         return construct_ok_response()
     else:

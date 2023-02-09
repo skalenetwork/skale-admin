@@ -64,6 +64,7 @@ def monitor_schain_container(
             schain=schain,
             public_key=public_key,
             start_ts=start_ts,
+            snapshot_from=schain_record.snapshot_from,
             dutils=dutils
         )
         schain_record.reset_failed_conunters()
