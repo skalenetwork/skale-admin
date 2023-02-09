@@ -25,7 +25,7 @@ from core.schains.ssl import get_ssl_filepath
 from core.schains.config.directory import schain_config_filepath
 from tools.configs.containers import DATA_DIR_CONTAINER_PATH, SHARED_SPACE_CONTAINER_PATH
 from tools.configs import SGX_SERVER_URL
-from tools.configs.ima import IMA_ENDPOINT
+from tools.configs.web3 import ENDPOINT
 
 
 def get_schain_container_cmd(
@@ -37,7 +37,7 @@ def get_schain_container_cmd(
     snapshot_from: Optional[str] = None
 ) -> str:
     """Returns parameters that will be passed to skaled binary in the sChain container"""
-    opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
+    opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl, sync_node=sync_node)
     if snapshot_from:
         opts.extend(['--no-snapshot-majority', snapshot_from])
     if public_key:
@@ -55,12 +55,16 @@ def get_schain_container_sync_opts(start_ts: int = None) -> list:
     return sync_opts
 
 
-def get_schain_container_base_opts(schain_name: str,
-                                   enable_ssl: bool = True) -> list:
+def get_schain_container_base_opts(
+    schain_name: str,
+    enable_ssl: bool = True,
+    sync_node: bool = False
+) -> list:
     config_filepath = schain_config_filepath(schain_name, in_schain_container=True)
     ssl_key, ssl_cert = get_ssl_filepath()
     ports = get_schain_ports(schain_name)
     static_schain_cmd = get_static_schain_cmd()
+
     cmd = [
         f'--config {config_filepath}',
         f'-d {DATA_DIR_CONTAINER_PATH}',
@@ -69,10 +73,14 @@ def get_schain_container_base_opts(schain_name: str,
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
         f'--wss-port {ports["wss"]}',
-        f'--sgx-url {SGX_SERVER_URL}',
-        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data',
-        f'--main-net-url {IMA_ENDPOINT}'
+        f'--main-net-url {ENDPOINT}'
     ]
+
+    if not sync_node:
+        cmd.extend([
+            f'--sgx-url {SGX_SERVER_URL}',
+            f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data'
+        ])
 
     if static_schain_cmd:
         cmd.extend(static_schain_cmd)

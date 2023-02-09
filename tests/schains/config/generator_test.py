@@ -409,14 +409,13 @@ def test_generate_sync_node_config(
     schain_secret_key_file_default_chain,
     skale_manager_opts
 ):
-    node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
+    node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITHOUT_ORIGINATOR,
-        schain_id=schain_id,
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -439,14 +438,13 @@ def test_generate_sync_node_config_archive_catchup(
     schain_secret_key_file_default_chain,
     skale_manager_opts
 ):
-    node_id, schain_id, generation, rotation_id = 1, 1, 1, 0
+    node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITHOUT_ORIGINATOR,
-        schain_id=schain_id,
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -466,7 +464,6 @@ def test_generate_sync_node_config_archive_catchup(
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITHOUT_ORIGINATOR,
-        schain_id=schain_id,
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -488,7 +485,6 @@ def test_generate_sync_node_config_archive_catchup(
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITHOUT_ORIGINATOR,
-        schain_id=schain_id,
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
