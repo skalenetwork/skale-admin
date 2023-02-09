@@ -41,7 +41,3 @@ class NodeOptions(JsonObject):
     @property
     def historic_state(self) -> bool:
         return self._get('historic_state')
-
-    @property
-    def snapshot_from(self) -> bool:
-        return self._get('snapshot_from')

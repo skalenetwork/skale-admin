@@ -19,7 +19,6 @@
 
 import logging
 import copy
-from typing import Optional
 
 from docker.types import LogConfig, Ulimit
 
@@ -44,7 +43,6 @@ from tools.configs.containers import (
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
                            SKALE_VOLUME_PATH, SCHAIN_CONFIG_DIR_SKALED)
 from tools.helper import get_containers_data
-from tools.node_options import NodeOptions
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +167,7 @@ def run_schain_container(
     enable_ssl=True,
     sync_node=False,
     historic_state=False,
-    snapshot_from: Optional[str] = None
+    snapshot_from: str = ''
 ):
     schain_name = schain['name']
     schain_type = get_schain_type(schain['partOfNode'])
@@ -185,9 +183,6 @@ def run_schain_container(
     )
     env = get_schain_env(ulimit_check=ulimit_check)
 
-    node_options = NodeOptions()
-    logger.info('Node options for chians %s', node_options.all())
-    snapshot_from = node_options.snapshot_from
     cmd = get_schain_container_cmd(
         schain_name,
         public_key,
