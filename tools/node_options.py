@@ -29,7 +29,3 @@ logger = logging.getLogger(__name__)
 class NodeOptions(JsonObject):
     def __init__(self):
         super().__init__(filepath=NODE_OPTIONS_FILEPATH)
-
-    @property
-    def snapshot_from(self) -> bool:
-        return self._get('snapshot_from')

@@ -44,6 +44,7 @@ class SChainRecord(BaseModel):
     monitor_id = IntegerField(default=0)
 
     config_version = CharField(default=DEFAULT_CONFIG_VERSION)
+    snapshot_from = CharField(default='')
     restart_count = IntegerField(default=0)
     failed_rpc_count = IntegerField(default=0)
 
@@ -159,6 +160,11 @@ class SChainRecord(BaseModel):
         self.failed_rpc_count = value
         self.save()
 
+    def set_snapshot_from(self, value: str) -> None:
+        logger.info(f'Changing snapshot from for {self.name} to {value}')
+        self.snapshot_from = value
+        self.save()
+
     def reset_failed_conunters(self) -> None:
         logger.info(f'Resetting failed counters for {self.name}')
         self.set_restart_count(0)
@@ -236,9 +242,21 @@ def get_schains_statuses(include_deleted=False):
             for r in SChainRecord.get_all_records(include_deleted)]
 
 
-def toggle_schain_repair_mode(name):
+def toggle_schain_repair_mode(name, snapshot_from: str = ''):
     logger.info(f'Toggling repair mode for schain {name}')
-    query = SChainRecord.update(repair_mode=True).where(
-        SChainRecord.name == name)
+    query = SChainRecord.update(
+        repair_mode=True,
+        snapshot_from=snapshot_from
+    ).where(SChainRecord.name == name)
+    count = query.execute()
+    return count > 0
+
+
+def switch_off_repair_mode(name):
+    logger.info(f'Disabling repair mode for schain {name}')
+    query = SChainRecord.update(
+        repair_mode=False,
+        snapshot_from=''
+    ).where(SChainRecord.name == name)
     count = query.execute()
     return count > 0
