@@ -158,6 +158,7 @@ def run_schain_container(
     dutils=None,
     volume_mode=None,
     ulimit_check=True,
+    snapshot_from: str = '',
     enable_ssl=True
 ):
     schain_name = schain['name']
@@ -171,11 +172,13 @@ def run_schain_container(
         mode=volume_mode
     )
     env = get_schain_env(ulimit_check=ulimit_check)
+
     cmd = get_schain_container_cmd(
         schain_name,
         public_key,
         start_ts,
-        enable_ssl=enable_ssl
+        enable_ssl=enable_ssl,
+        snapshot_from=snapshot_from
     )
     run_container(SCHAIN_CONTAINER, schain_name, env, cmd,
                   volume_config, cpu_limit,

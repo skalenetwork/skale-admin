@@ -103,6 +103,22 @@ def test_enable_repair_mode(skale_bp, schain_db):
         'payload': {},
         'status': 'ok'
     }
+    r = upsert_schain_record(schain_name)
+    assert r.repair_mode
+    assert r.snapshot_from == ''
+
+    data = post_bp_data(
+        skale_bp,
+        get_api_url(BLUEPRINT_NAME, 'repair'),
+        params={'schain_name': schain_name, 'snapshot_from': '1.1.1.1'}
+    )
+    assert data == {
+        'payload': {},
+        'status': 'ok'
+    }
+    r = upsert_schain_record(schain_name)
+    assert r.repair_mode
+    assert r.snapshot_from == '1.1.1.1'
 
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'repair'),
                         params={'schain_name': 'undefined-schain'})

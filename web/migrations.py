@@ -55,6 +55,9 @@ def run_migrations(db, migrator):
     add_restart_count_field(db, migrator)
     add_failed_rpc_count_field(db, migrator)
 
+    # 2.3 -> 2.4 update fields
+    add_failed_snapshot_from(db, migrator)
+
 
 def add_new_schain_field(db, migrator):
     add_column(
@@ -109,6 +112,13 @@ def add_failed_rpc_count_field(db, migrator):
     add_column(
         db, migrator, 'SChainRecord', 'failed_rpc_count',
         IntegerField(default=0)
+    )
+
+
+def add_failed_snapshot_from(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'snapshot_from',
+        CharField(default='')
     )
 
 
