@@ -36,7 +36,10 @@ def test_schain_rule_controller():
         SChainRule(port=10069, first_ip='15.15.15.15', last_ip='18.18.18.18'),
         SChainRule(port=10071, first_ip=None, last_ip=None),
         SChainRule(port=10072, first_ip=None, last_ip=None),
-        SChainRule(port=10073, first_ip=None, last_ip=None)
+        SChainRule(port=10073, first_ip=None, last_ip=None),
+        SChainRule(port=10074, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10074, first_ip='2.2.2.2', last_ip=None),
+        SChainRule(port=10074, first_ip='4.4.4.4', last_ip=None)
     }
     src = SChainTestRuleController(
         'test',
@@ -82,7 +85,10 @@ def test_schain_rule_controller():
         SChainRule(port=10069, first_ip='20.20.20.20', last_ip='21.21.21.21'),
         SChainRule(port=10071, first_ip=None, last_ip=None),
         SChainRule(port=10072, first_ip=None, last_ip=None),
-        SChainRule(port=10073, first_ip=None, last_ip=None)
+        SChainRule(port=10073, first_ip=None, last_ip=None),
+        SChainRule(port=10074, first_ip='1.1.1.1', last_ip=None),
+        SChainRule(port=10074, first_ip='4.4.4.4', last_ip=None),
+        SChainRule(port=10074, first_ip='5.5.5.5', last_ip=None)
     }
     assert src.is_rules_synced()
     assert list(src.expected_rules()) == list(sorted(expected_rules))
