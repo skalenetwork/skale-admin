@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019-Present SKALE Labs
+#   Copyright (C) 2022 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,11 +17,15 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import Enum
+import logging
+
+from tools.json_object import JsonObject
+from tools.configs import NODE_OPTIONS_FILEPATH
 
 
-class Gen(int, Enum):
-    """This class contains available schain generations"""
-    ZERO = 0
-    ONE = 1
-    TWO = 2
+logger = logging.getLogger(__name__)
+
+
+class NodeOptions(JsonObject):
+    def __init__(self):
+        super().__init__(filepath=NODE_OPTIONS_FILEPATH)

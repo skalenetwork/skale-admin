@@ -22,41 +22,32 @@ import logging
 import os
 from typing import Dict, List
 
-from web3 import Web3
 from Crypto.Hash import keccak
+from web3 import Web3
 
 from skale.dataclasses.skaled_ports import SkaledPorts
 
-from core.schains.ssl import get_ssl_filepath
 from core.schains.config.directory import schain_config_filepath
-from tools.configs.containers import (
-    DATA_DIR_CONTAINER_PATH,
-    SHARED_SPACE_CONTAINER_PATH
-)
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json
-from tools.configs import SGX_SERVER_URL
+from tools.configs import STATIC_PARAMS_FILEPATH, ENV_TYPE
 from tools.configs.containers import LOCAL_IP
-from tools.configs.ima import IMA_ENDPOINT
-from tools.configs.schains import STATIC_SCHAIN_PARAMS_FILEPATH
+from tools.helper import safe_load_yml
 
 
 logger = logging.getLogger(__name__)
 
 
-def get_static_schain_params():
-    return read_json(STATIC_SCHAIN_PARAMS_FILEPATH)
-
-
-def get_context_contract():
-    return get_static_schain_params()['context_contract']
+def get_static_params(env_type=ENV_TYPE, path=STATIC_PARAMS_FILEPATH):
+    ydata = safe_load_yml(path)
+    return ydata['envs'][env_type]
 
 
 def fix_address(address):
     return Web3.toChecksumAddress(address)
 
 
-def get_chain_id(schain_name):
+def get_chain_id(schain_name: str) -> str:
     keccak_hash = keccak.new(digest_bits=256)
     keccak_hash.update(schain_name.encode("utf-8"))
     hash_ = keccak_hash.hexdigest()
@@ -64,30 +55,8 @@ def get_chain_id(schain_name):
     return "0x" + hash_
 
 
-def _string_to_storage(slot: int, string: str) -> dict:
-    # https://solidity.readthedocs.io/en/develop/miscellaneous.html#bytes-and-string
-    storage = dict()
-    binary = string.encode()
-    length = len(binary)
-    if length < 32:
-        binary += (2 * length).to_bytes(32 - length, 'big')
-        storage[hex(slot)] = '0x' + binary.hex()
-    else:
-        storage[hex(slot)] = hex(2 * length + 1)
-
-        keccak_hash = keccak.new(digest_bits=256)
-        keccak_hash.update(slot.to_bytes(32, 'big'))
-        offset = int.from_bytes(keccak_hash.digest(), 'big')
-
-        def chunks(size, source):
-            for i in range(0, len(source), size):
-                yield source[i:i + size]
-
-        for index, data in enumerate(chunks(32, binary)):
-            if len(data) < 32:
-                data += int(0).to_bytes(32 - len(data), 'big')
-            storage[hex(offset + index)] = '0x' + data.hex()
-    return storage
+def get_schain_id(schain_name: str) -> int:
+    return int(get_chain_id(schain_name), 16)
 
 
 def get_node_ips_from_config(config: Dict) -> List[str]:
@@ -160,62 +129,6 @@ def get_schain_env(ulimit_check=True):
             'NO_ULIMIT_CHECK': 1
         })
     return env
-
-
-def get_schain_container_cmd(schain_name: str,
-                             public_key: str = None,
-                             start_ts: int = None,
-                             enable_ssl: bool = True) -> str:
-    opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
-    if public_key:
-        sync_opts = get_schain_container_sync_opts(public_key, start_ts)
-        opts.extend(sync_opts)
-    return ' '.join(opts)
-
-
-def get_schain_container_sync_opts(
-    public_key: str,
-    start_ts: int = None
-) -> list:
-    sync_opts = [
-        '--download-snapshot readfromconfig',  # TODO: update in the next version
-        f'--public-key {public_key}'
-    ]
-    if start_ts:
-        sync_opts.append(f'--start-timestamp {start_ts}')
-    return sync_opts
-
-
-def get_schain_container_base_opts(schain_name: str,
-                                   enable_ssl: bool = True) -> list:
-    config_filepath = schain_config_filepath(schain_name, in_schain_container=True)
-    ssl_key, ssl_cert = get_ssl_filepath()
-    ports = get_schain_ports(schain_name)
-
-    static_schain_params = get_static_schain_params()
-    static_schain_cmd = static_schain_params.get('schain_cmd', None)
-    cmd = [
-        f'--config {config_filepath}',
-        f'-d {DATA_DIR_CONTAINER_PATH}',
-        f'--ipcpath {DATA_DIR_CONTAINER_PATH}',
-        f'--http-port {ports["http"]}',
-        f'--https-port {ports["https"]}',
-        f'--ws-port {ports["ws"]}',
-        f'--wss-port {ports["wss"]}',
-        f'--sgx-url {SGX_SERVER_URL}',
-        f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data',
-        f'--main-net-url {IMA_ENDPOINT}'
-    ]
-
-    if static_schain_cmd:
-        cmd.extend(static_schain_cmd)
-
-    if enable_ssl:
-        cmd.extend([
-            f'--ssl-key {ssl_key}',
-            f'--ssl-cert {ssl_cert}'
-        ])
-    return cmd
 
 
 def get_schain_rpc_ports(schain_id):

@@ -35,8 +35,8 @@ from core.schains.firewall.utils import (
     get_sync_agent_ranges
 )
 from core.schains.ima import get_ima_log_checks
-from tools.sgx_utils import SGX_SERVER_URL
-from tools.configs import SGX_CERTIFICATES_FOLDER, ZMQ_PORT, ZMQ_TIMEOUT
+from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.configs import ZMQ_PORT, ZMQ_TIMEOUT
 from web.models.schain import SChainRecord
 from web.helper import (
     construct_err_response,
@@ -127,14 +127,15 @@ def sgx_info():
     try:
         status = sgx.get_server_status()
         version = sgx.get_server_version()
-    except Exception:  # todo: catch specific error - edit sgx.py
+    except Exception as e:  # todo: catch specific error - edit sgx.py
+        logger.info(e)
         status = 1
         version = None
     sgx_host = urlparse(SGX_SERVER_URL).hostname
     tn = telnetlib.Telnet()
+    zmq_status = 0
     try:
         tn.open(sgx_host, ZMQ_PORT, timeout=ZMQ_TIMEOUT)
-        zmq_status = 0
     except Exception as err:
         zmq_status = 1
         logger.error(err)

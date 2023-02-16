@@ -1,6 +1,5 @@
 import logging
 import platform
-import time
 
 import mock
 
@@ -11,7 +10,7 @@ from skale.utils.helper import ip_from_bytes
 from core.schains.checks import SChainChecks
 from core.schains.ima import ImaData
 from core.schains.monitor import RegularMonitor, ReloadMonitor
-from core.schains.runner import get_container_info
+from core.schains.runner import get_container_info, get_container_name
 
 from tools.configs import (
     SGX_CERTIFICATES_FOLDER,
@@ -25,7 +24,8 @@ from tests.dkg_utils import safe_run_dkg_mock, get_bls_public_keys
 from tests.utils import (
     alter_schain_config,
     get_test_rule_controller,
-    no_schain_artifacts
+    no_schain_artifacts,
+    upsert_schain_record_with_config
 )
 
 
@@ -39,14 +39,16 @@ def test_reload_monitor(
     skale_ima,
     dutils,
     ssl_folder,
-    schain_on_contracts
+    schain_on_contracts,
+    predeployed_ima
 ):
     schain_name = schain_on_contracts
+    upsert_schain_record_with_config(schain_name)
     schain = skale.schains.get_by_name(schain_name)
     nodes = get_nodes_for_schain(skale, schain_name)
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER,
-        schain_db
+        schain_name
     )
 
     # not using rule_controller fixture to avoid config generation
@@ -135,10 +137,11 @@ def test_reload_monitor(
         assert schain_checks.dkg.status
         assert schain_checks.config.status
         assert schain_checks.volume.status
+        if not schain_checks.skaled_container.status:
+            container_name = get_container_name(SCHAIN_CONTAINER, schain['name'])
+            print(dutils.display_container_logs(container_name))
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
-
-        time.sleep(5)
 
         if platform.system() != 'Darwin':  # not working due to the macOS networking in Docker  # noqa
             assert schain_checks.rpc.status

@@ -43,7 +43,6 @@ def test_send_eth(skale_bp, skale):
     address = skale.wallet.address
     amount = '0.01'
     amount_wei = skale.web3.toWei(amount, 'ether')
-
     receiver_0 = '0xf38b5dddd74b8901c9b5fb3ebd60bf5e7c1e9763'
     checksum_receiver_0 = to_checksum_address(receiver_0)
     receiver_balance_0 = skale.web3.eth.getBalance(checksum_receiver_0)

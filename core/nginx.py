@@ -9,7 +9,6 @@ from tools.configs.nginx import (
 from tools.docker_utils import DockerUtils
 from tools.helper import process_template
 
-gdutils = DockerUtils()
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +17,7 @@ def reload_nginx(
     config_filepath=NGINX_CONFIG_FILEPATH,
     dutils=None
 ):
-    dutils = dutils or gdutils
+    dutils = dutils or DockerUtils()
     generate_nginx_config(
         template_filepath=template_filepath,
         config_filepath=config_filepath
@@ -40,6 +39,6 @@ def generate_nginx_config(
 
 
 def restart_nginx_container(dutils=None):
-    dutils = dutils or gdutils
+    dutils = dutils or DockerUtils()
     nginx_container = dutils.client.containers.get(NGINX_CONTAINER_NAME)
     nginx_container.restart()

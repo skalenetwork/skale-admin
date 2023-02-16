@@ -163,19 +163,36 @@ def test_ima_check(schain_checks, sample_false_checks):
 
 
 def test_rpc_check(schain_checks, schain_db):
-    res_mock = response_mock(HTTPStatus.OK, {
+    ok_result = response_mock(HTTPStatus.OK, {
         "id": 83,
         "jsonrpc": "2.0",
         "result": "0x4b7"
     })
-    with mock.patch('requests.post', new=request_mock(res_mock)):
+    with mock.patch('requests.post', new=request_mock(ok_result)):
         assert schain_checks.rpc.status
 
-    for _ in range(4):
-        assert not schain_checks.rpc.status
+    failed_attempts = 4
+    none_result = response_mock(None)
+    with mock.patch('requests.post', new=request_mock(none_result)):
+        for _ in range(failed_attempts):
+            assert not schain_checks.rpc.status
 
-    with mock.patch('requests.post', new=request_mock(res_mock)):
+    err_result = response_mock(HTTPStatus.BAD_REQUEST, {})
+    with mock.patch('requests.post', new=request_mock(err_result)):
+        for _ in range(failed_attempts):
+            assert not schain_checks.rpc.status
+
+    rmock = request_mock(ok_result)
+    schain_checks.schain_record.set_failed_rpc_count(3)
+    expected_timeout = 60
+    with mock.patch('requests.post', rmock):
         assert schain_checks.rpc.status
+        assert rmock.call_args == mock.call(
+            'http://0.0.0.0:10003',
+            json={'jsonrpc': '2.0', 'method': 'eth_blockNumber', 'params': [], 'id': 1},
+            cookies=None,
+            timeout=expected_timeout
+        )
 
 
 def test_blocks_check(schain_checks):
@@ -188,14 +205,15 @@ def test_blocks_check(schain_checks):
             assert not schain_checks.blocks.status
 
 
-def test_init_checks(skale, schain_db, uninited_rule_controller):
+def test_init_checks(skale, schain_db, uninited_rule_controller, dutils):
     schain_name = schain_db
     schain_record = SChainRecord.get_by_name(schain_name)
     checks = SChainChecks(
         schain_name,
         TEST_NODE_ID,
         schain_record=schain_record,
-        rule_controller=uninited_rule_controller
+        rule_controller=uninited_rule_controller,
+        dutils=dutils
     )
     assert checks.name == schain_name
     assert checks.node_id == TEST_NODE_ID

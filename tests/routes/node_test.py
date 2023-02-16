@@ -52,18 +52,18 @@ def node_contracts(skale):
 
 
 @pytest.fixture
-def node_config():
-    return NodeConfig()
+def node_config(node_contracts):
+    config = NodeConfig()
+    config.id = node_contracts
+    return config
 
 
-def test_node_info(skale_bp, skale, node_contracts, node_config):
-    node_id = node_contracts
-    node_config.id = node_id
+def test_node_info(skale_bp, skale, node_config):
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'info'))
     status = NodeStatus.ACTIVE.value
     assert data['status'] == 'ok'
     node_info = data['payload']['node_info']
-    assert node_info['id'] == node_id
+    assert node_info['id'] == node_config.id
     assert node_info['status'] == status
     assert to_checksum_address(node_info['owner']) == skale.wallet.address
 
@@ -230,7 +230,14 @@ def test_btrfs_info(skale_bp, skale):
     assert payload['kernel_module'] is False
 
 
-def test_exit_status(skale_bp, skale, schain_on_contracts):
+@pytest.fixture
+def node_config_for_schain(skale, schain_on_contracts, node_config):
+    nodes = skale.schains_internal.get_node_ids_for_schain(schain_on_contracts)
+    node_config.id = nodes[0]
+    return node_config
+
+
+def test_exit_status(skale_bp, skale, schain_on_contracts, node_config_for_schain):
     schain_id = skale.schains.name_to_id(schain_on_contracts)
     with mock.patch(
         'skale.contracts.manager.node_rotation.NodeRotation.get_leaving_history',
@@ -239,5 +246,29 @@ def test_exit_status(skale_bp, skale, schain_on_contracts):
         data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'exit/status'))
         assert data['status'] == 'ok'
         payload = data['payload']
-        assert payload['status'] == 'WAIT_FOR_ROTATIONS'
+        assert payload['status'] == 'ACTIVE'
         assert payload['data'][0]['status']
+
+
+def test_exit(skale_bp, skale, node_config_for_schain):
+    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'exit/start'))
+    assert data['status'] == 'ok'
+    data['payload'] == {}
+
+
+@pytest.fixture
+def node_config_in_maintenance(skale, node_config):
+    try:
+        skale.nodes.set_node_in_maintenance(node_config.id)
+        yield node_config
+    finally:
+        skale.nodes.remove_node_from_in_maintenance(node_config.id)
+
+
+def test_exit_maintenance(skale_bp, node_config_in_maintenance):
+    data = post_bp_data(
+        skale_bp,
+        get_api_url(BLUEPRINT_NAME, 'exit/start'),
+    )
+    assert data['status'] == 'error'
+    data['payload'] == {}
