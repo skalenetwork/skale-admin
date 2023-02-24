@@ -43,6 +43,16 @@ def refreshed(func: Callable) -> Callable:
     return wrapper
 
 
+def is_like_number(value):
+    if value is None:
+        return False
+    try:
+        int(value)
+    except ValueError:
+        return False
+    return True
+
+
 class IptablesController(IHostFirewallController):
     def __init__(self, table: str = TABLE, chain: str = CHAIN):
         self.table = table
@@ -71,7 +81,7 @@ class IptablesController(IHostFirewallController):
         return all((
             rule_d.get('protocol') == 'tcp',
             rule_d.get('target') == 'ACCEPT',
-            rule_d.get('tcp', {}).get('dport') is not None
+            is_like_number(rule_d.get('tcp', {}).get('dport'))
         ))
 
     @property  # type: ignore

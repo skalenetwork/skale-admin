@@ -19,16 +19,15 @@
 
 import logging
 import copy
+
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_schain_volume_config
 from core.schains.limits import get_schain_limit, get_ima_limit, get_schain_type
 from core.schains.types import MetricType, ContainerType
 from core.schains.skaled_exit_codes import SkaledExitCodes
-from core.schains.config.helper import (
-    get_schain_container_cmd,
-    get_schain_env
-)
+from core.schains.cmd import get_schain_container_cmd
+from core.schains.config.helper import get_schain_env
 from core.schains.ima import get_ima_env
 from core.schains.config.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
@@ -110,9 +109,9 @@ def run_container(
     volume_config=None,
     cpu_shares_limit=None,
     mem_limit=None,
-    dutils=None,
     volume_mode=None,
-    historic_state=False
+    historic_state=False,
+    dutils=None
 ):
     dutils = dutils or DockerUtils()
     image_name, container_name, run_args, custom_args = get_container_info(
@@ -167,7 +166,8 @@ def run_schain_container(
     ulimit_check=True,
     enable_ssl=True,
     sync_node=False,
-    historic_state=False
+    historic_state=False,
+    snapshot_from: str = ''
 ):
     schain_name = schain['name']
     schain_type = get_schain_type(schain['partOfNode'])
@@ -182,16 +182,26 @@ def run_schain_container(
         sync_node=sync_node
     )
     env = get_schain_env(ulimit_check=ulimit_check)
+
     cmd = get_schain_container_cmd(
         schain_name,
         public_key,
         start_ts,
         enable_ssl=enable_ssl,
-        sync_node=sync_node
+        sync_node=sync_node,
+        snapshot_from=snapshot_from
     )
     run_container(
-        SCHAIN_CONTAINER, schain_name, env, cmd, volume_config, cpu_limit, mem_limit,
-        dutils=dutils, volume_mode=volume_mode, historic_state=historic_state
+        SCHAIN_CONTAINER,
+        schain_name,
+        env,
+        cmd,
+        volume_config,
+        cpu_limit,
+        mem_limit,
+        volume_mode=volume_mode,
+        historic_state=historic_state,
+        dutils=dutils
     )
 
 

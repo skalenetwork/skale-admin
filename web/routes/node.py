@@ -24,7 +24,7 @@ from http import HTTPStatus
 import requests
 from flask import Blueprint, abort, g, request
 
-from core.node import Node
+from core.node import Node, NodeStatus
 from tools.helper import get_endpoint_call_speed
 
 from core.node import (
@@ -147,6 +147,8 @@ def send_tg_notification():
 @g_skale
 def exit_start():
     node = Node(g.skale, g.config)
+    if g.skale.nodes.get_node_status(g.config.id) == NodeStatus.IN_MAINTENANCE.value:
+        return construct_err_response(msg='Node is in maintenance')
     exit_thread = CustomThread('Start node exit', node.exit, once=True)
     exit_thread.start()
     return construct_ok_response()

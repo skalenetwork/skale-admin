@@ -12,7 +12,6 @@ from core.schains.checks import SChainChecks
 from core.schains.monitor import RegularMonitor
 from core.schains.ima import ImaData
 
-
 from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.configs.containers import SCHAIN_CONTAINER
 
@@ -22,7 +21,8 @@ from tests.dkg_utils import safe_run_dkg_mock, get_bls_public_keys
 from tests.utils import (
     alter_schain_config,
     get_test_rule_controller,
-    no_schain_artifacts
+    no_schain_artifacts,
+    upsert_schain_record_with_config
 )
 
 
@@ -36,9 +36,12 @@ def test_regular_monitor(
     skale_ima,
     dutils,
     ssl_folder,
-    schain_on_contracts
+    schain_on_contracts,
+    predeployed_ima
 ):
     schain_name = schain_on_contracts
+    upsert_schain_record_with_config(schain_name)
+
     schain = skale.schains.get_by_name(schain_name)
     nodes = get_nodes_for_schain(skale, schain_name)
 
@@ -91,7 +94,7 @@ def test_regular_monitor(
         assert schain_checks.volume.status
         if not schain_checks.skaled_container.status:
             container_name = get_container_name(SCHAIN_CONTAINER, schain['name'])
-            dutils.display_container_logs(container_name, to_loggger=False)
+            dutils.display_container_logs(container_name, to_logger=False)
         assert schain_checks.skaled_container.status
         assert not schain_checks.ima_container.status
 

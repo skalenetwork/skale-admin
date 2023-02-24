@@ -81,7 +81,7 @@ ALLOWED_TIMESTAMP_DIFF = int(os.getenv('ALLOWED_TIMESTAMP_DIFF', 120))
 ENV_TYPE = os.environ.get('ENV_TYPE')
 ALLOCATION_FILEPATH = os.path.join(CONFIG_FOLDER, 'schain_allocation.yml')
 
-ENVIRONMENT_PARAMS_FILEPATH = os.path.join(CONFIG_FOLDER, 'environment_params.yaml')
+STATIC_PARAMS_FILEPATH = os.path.join(CONFIG_FOLDER, 'static_params.yaml')
 
 DEFAULT_POOL = 'transactions'
 
@@ -95,4 +95,3 @@ CHECK_REPORT_PATH = os.path.join(SKALE_VOLUME_PATH, 'reports', 'checks.json')
 SYNC_NODE_ROTATION_TS_DIFF = 600
 
 NODE_OPTIONS_FILEPATH = os.path.join(NODE_DATA_PATH, 'node_options.json')
-NODE_OPTIONS_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'node_options.json.lock')
