@@ -132,7 +132,8 @@ def test_crashing_monitor(
         node_config=node_config,
         rotation_data={'rotation_id': 1, 'leaving_node': 1},
         checks=schain_checks,
-        rule_controller=rule_controller
+        rule_controller=rule_controller,
+        dutils=dutils
     )
     with pytest.raises(Exception):
         test_monitor.run()
@@ -234,7 +235,7 @@ def test_base_monitor_restart_skaled_container(test_monitor):
     test_monitor.cleanup_schain_docker_entity()
 
 
-def test_base_monitor_ima_container(test_monitor, schain_config):
+def test_base_monitor_ima_container(test_monitor, schain_config, predeployed_ima):
     test_monitor.config_dir()
     test_monitor.ima_data.linked = True
     with mock.patch(

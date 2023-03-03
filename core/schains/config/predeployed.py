@@ -19,7 +19,6 @@
 
 import logging
 
-from web3 import Web3
 from skale.wallets.web3_wallet import public_key_to_address
 
 from etherbase_predeployed import (
@@ -39,10 +38,10 @@ from config_controller_predeployed import (
 from multisigwallet_predeployed import MultiSigWalletGenerator, MULTISIGWALLET_ADDRESS
 from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminGenerator
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS, generate_contracts
+from context_predeployed import ContextGenerator, CONTEXT_ADDRESS
 
 from core.schains.config.accounts import add_to_accounts, generate_account
-from core.schains.config.generation import gen0, gen1
-from core.schains.config.helper import _string_to_storage, get_context_contract
+from core.schains.config.generation import Gen
 
 from core.schains.types import SchainType
 from core.schains.limits import get_fs_allocated_storage
@@ -50,6 +49,7 @@ from core.schains.limits import get_fs_allocated_storage
 from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC, ETHERBASE_ALLOC
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.helper import read_json
+from importlib.metadata import version
 
 logger = logging.getLogger(__name__)
 
@@ -74,21 +74,21 @@ def generate_predeployed_accounts(
     """
     predeployed_section = {
         **generate_owner_accounts(on_chain_owner, originator_address, schain_nodes, generation),
-        **generate_context_accounts(schain_name, on_chain_owner),
         **generate_ima_accounts(on_chain_owner, schain_name)
     }
 
-    if gen0(generation):
-        pass
-    if gen1(generation):
+    if generation >= Gen.ONE:
         v1_predeployed_contracts = generate_v1_predeployed_contracts(
             schain_type=schain_type,
             on_chain_owner=on_chain_owner,
             mainnet_owner=mainnet_owner,
             originator_address=originator_address,
-            message_proxy_for_schain_address=MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
+            message_proxy_for_schain_address=MESSAGE_PROXY_FOR_SCHAIN_ADDRESS,
+            schain_name=schain_name
         )
         predeployed_section.update(v1_predeployed_contracts)
+    if generation == Gen.ZERO:
+        pass  # no predeployeds for gen 0
     return predeployed_section
 
 
@@ -97,7 +97,8 @@ def generate_v1_predeployed_contracts(
     on_chain_owner: str,
     mainnet_owner: str,
     originator_address: str,
-    message_proxy_for_schain_address: str
+    message_proxy_for_schain_address: str,
+    schain_name: str
 ) -> dict:
     proxy_admin_generator = ProxyAdminGenerator()
     proxy_admin_predeployed = proxy_admin_generator.generate_allocation(
@@ -133,7 +134,8 @@ def generate_v1_predeployed_contracts(
         implementation_address=FILESTORAGE_IMPLEMENTATION_ADDRESS,
         schain_owner=on_chain_owner,
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
-        allocated_storage=allocated_storage
+        allocated_storage=allocated_storage,
+        version=version('filestorage_predeployed')
     )
 
     config_generator = UpgradeableConfigControllerGenerator()
@@ -150,7 +152,12 @@ def generate_v1_predeployed_contracts(
         originator_addresses=[originator_address]
     )
 
-    # TODO: add context manager SC (later)
+    context_generator = ContextGenerator()
+    context_predeployed = context_generator.generate_allocation(
+        CONTEXT_ADDRESS,
+        schain_owner=on_chain_owner,
+        schain_name=schain_name
+    )
 
     return {
         **proxy_admin_predeployed,
@@ -158,7 +165,8 @@ def generate_v1_predeployed_contracts(
         **marionette_predeployed,
         **filestorage_predeployed,
         **config_controller_predeployed,
-        **multisigwallet_predeployed
+        **multisigwallet_predeployed,
+        **context_predeployed
     }
 
 
@@ -183,39 +191,13 @@ def generate_owner_accounts(
     :rtype: dict
     """
     accounts = {}
-    if gen0(generation):
-        add_to_accounts(accounts, on_chain_owner, generate_account(SCHAIN_OWNER_ALLOC))
-    if gen1(generation):
+    if generation >= Gen.ONE:
         add_to_accounts(accounts, originator_address, generate_account(SCHAIN_OWNER_ALLOC))
+    if generation == Gen.ZERO:
+        add_to_accounts(accounts, on_chain_owner, generate_account(SCHAIN_OWNER_ALLOC))
     for node in schain_nodes:
         node_owner = public_key_to_address(node['publicKey'])
         add_to_accounts(accounts, node_owner, generate_account(NODE_OWNER_ALLOC))
-    return accounts
-
-
-def generate_context_accounts(schain_name: dict, on_chain_owner: str) -> dict:
-    """
-    Generates accounts for the context predeployed SC
-
-    :param schain_name: Name of the sChain
-    :type schain_name: str
-    :param on_chain_owner: Address of the sChain owner
-    :type on_chain_owner: str
-    :returns: Dictionary with accounts
-    :rtype: dict
-    """
-    accounts = {}
-    context_contract = get_context_contract()
-
-    storage = {hex(0): str(Web3.toChecksumAddress(on_chain_owner))}
-    storage = {**storage, **_string_to_storage(1, schain_name)}
-
-    account = generate_account(
-        balance=0,
-        code=context_contract['bytecode'],
-        storage=storage
-    )
-    add_to_accounts(accounts, context_contract['address'], account)
     return accounts
 
 

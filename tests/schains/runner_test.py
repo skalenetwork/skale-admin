@@ -26,7 +26,7 @@ def test_set_rotation(schain_config):
         assert data['params'] == params
 
 
-def test_is_exited():
+def test_is_exited(dutils):
     schain_name = 'schain_test'
     info_mock = {
         'status': 'exited',
@@ -36,9 +36,12 @@ def test_is_exited():
             }
         }
     }
-    with mock.patch('core.schains.runner.DockerUtils.get_info',
-                    new=mock.Mock(return_value=info_mock)):
-        assert is_exited(schain_name)
+    get_info = dutils.get_info
+    try:
+        dutils.get_info = mock.Mock(return_value=info_mock)
+        assert is_exited(schain_name, dutils=dutils)
+    finally:
+        dutils.get_info = get_info
 
 
 def test_get_leaving_schains_for_node(skale, node_config):  # TODO: improve test

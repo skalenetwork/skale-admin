@@ -1,10 +1,9 @@
+import datetime
 import filecmp
 import json
 import os
 import pathlib
-import time
 from contextlib import contextmanager
-from datetime import datetime
 
 import mock
 
@@ -47,14 +46,16 @@ def cert_key_pair_host():
     cert_path = os.path.join(CONFIG_FOLDER, 'temp_ssl_cert')
     key_path = os.path.join(CONFIG_FOLDER, 'temp_ssl_key')
     generate_cert(cert_path, key_path)
-    yield cert_path, key_path
-    pathlib.Path(cert_path).unlink(missing_ok=True)
-    pathlib.Path(key_path).unlink(missing_ok=True)
-    # Ensure uploaded certs are removed
-    cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
-    pathlib.Path(cert_path).unlink(missing_ok=True)
-    pathlib.Path(key_path).unlink(missing_ok=True)
+    try:
+        yield cert_path, key_path
+    finally:
+        pathlib.Path(cert_path).unlink(missing_ok=True)
+        pathlib.Path(key_path).unlink(missing_ok=True)
+        # Ensure uploaded certs are removed
+        cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+        key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+        pathlib.Path(cert_path).unlink(missing_ok=True)
+        pathlib.Path(key_path).unlink(missing_ok=True)
 
 
 @pytest.fixture
@@ -62,16 +63,20 @@ def bad_cert_host(cert_key_pair_host):
     cert, key = cert_key_pair_host
     with open(cert, 'w') as cert_file:
         cert_file.write('WRONG CERT')
-    yield cert, key
+    try:
+        yield cert, key
+    finally:
+        os.remove(cert)
 
 
 def test_status(skale_bp, cert_key_pair):
-    year = int(datetime.utcfromtimestamp(time.time()).strftime('%Y'))
-    month = datetime.utcfromtimestamp(time.time()).strftime('%m')
-    day = datetime.utcfromtimestamp(time.time()).strftime('%d')
-    year += 1
+    dt = datetime.datetime.now() + datetime.timedelta(days=365)
+    year = dt.strftime('%Y')
+    month = dt.strftime('%m')
+    day = dt.strftime('%d')
     expire_day_line = f'{year}-{month}-{day}'
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'status'))
+    print(expire_day_line, data['payload']['expiration_date'])
     assert data['status'] == 'ok'
     assert data['payload']['issued_to'] is None
     assert data['payload']['expiration_date'].startswith(expire_day_line)
@@ -108,7 +113,7 @@ def post_bp_files_data(bp, request, file_data, full_response=False, **kwargs):
 def test_upload(skale_bp, ssl_folder, db, cert_key_pair_host):
     cert_path, key_path = cert_key_pair_host
     with mock.patch('web.routes.ssl.set_schains_need_reload'), \
-            mock.patch('core.nginx.restart_nginx_container'):
+            mock.patch('web.routes.ssl.reload_nginx'):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(
                 skale_bp,
@@ -141,7 +146,7 @@ def test_upload_bad_cert(skale_bp, db, ssl_folder, bad_cert_host):
 def test_upload_cert_exist(skale_bp, db, cert_key_pair_host, cert_key_pair):
     cert_path, key_path = cert_key_pair_host
     with mock.patch('web.routes.ssl.set_schains_need_reload'), \
-            mock.patch('core.nginx.restart_nginx_container'):
+            mock.patch('web.routes.ssl.reload_nginx'):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(
                 skale_bp,

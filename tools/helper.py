@@ -45,10 +45,15 @@ logger = logging.getLogger(__name__)
 POST_REQUEST_TIMEOUT = 30
 
 
-def post_request(url, json, cookies=None):
+def post_request(url, json, cookies=None, timeout=None):
+    timeout = timeout or POST_REQUEST_TIMEOUT
     try:
-        return requests.post(url, json=json, cookies=cookies,
-                             timeout=POST_REQUEST_TIMEOUT)
+        return requests.post(
+            url,
+            json=json,
+            cookies=cookies,
+            timeout=timeout
+        )
     except requests.exceptions.RequestException as err:
         logger.error(f'Post request failed with: {err}')
         return None

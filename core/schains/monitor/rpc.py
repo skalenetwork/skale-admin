@@ -32,7 +32,7 @@ from tools.configs.containers import (
 logger = logging.getLogger(__name__)
 
 
-def monitor_schain_rpc(
+def handle_failed_schain_rpc(
     schain,
     schain_record,
     skaled_status,
