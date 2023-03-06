@@ -23,8 +23,8 @@ import os
 import time
 from http import HTTPStatus
 
+import werkzeug
 from flask import Flask, g
-from skale.utils.web3_utils import EthClientOutdatedError
 
 from core.node_config import NodeConfig
 
@@ -93,8 +93,10 @@ def recursion_error_handler(e):
     )
 
 
-@app.errorhandler(EthClientOutdatedError)
-def outdated_eth_client_error_handler(e):
+@app.errorhandler(werkzeug.exceptions.InternalServerError)
+def any_error_handler(e):
+    original = getattr(e, "original_exception", None)
+    logger.exception('Request failed with error %s', original)
     return construct_err_response(
         status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         msg=str(e)

@@ -34,24 +34,40 @@ class SChainChecksMockBad(SChainChecks):
 
 
 @pytest.fixture
-def checks(schain_db, _schain_name, rule_controller, node_config, ima_data):
+def checks(
+    schain_db,
+    _schain_name,
+    rule_controller,
+    node_config,
+    ima_data,
+    dutils
+):
     schain_record = upsert_schain_record(schain_db)
     return SChainChecksMock(
         _schain_name,
         node_config.id,
         schain_record,
-        rule_controller=rule_controller
+        rule_controller=rule_controller,
+        dutils=dutils
     )
 
 
 @pytest.fixture
-def bad_checks(schain_db, _schain_name, rule_controller, node_config, ima_data):
+def bad_checks(
+    schain_db,
+    _schain_name,
+    rule_controller,
+    node_config,
+    ima_data,
+    dutils
+):
     schain_record = upsert_schain_record(schain_db)
     return SChainChecksMockBad(
         _schain_name,
         node_config.id,
         schain_record,
-        rule_controller=rule_controller
+        rule_controller=rule_controller,
+        dutils=dutils
     )
 
 
@@ -138,7 +154,7 @@ def test_is_reload_mode(schain_db, checks, bad_checks, skaled_status, cert_key_p
     assert get_monitor_type(schain_record, bad_checks, False, skaled_status) != ReloadMonitor
 
 
-def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db):
+def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db, dutils):
     with mock.patch('core.schains.monitor.main.RegularMonitor', CrashingTestMonitor), \
             mock.patch('core.schains.monitor.main.is_node_part_of_chain', return_value=True):
         assert not run_monitor_for_schain(
@@ -146,7 +162,8 @@ def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db):
             skale_ima,
             node_config,
             {'name': schain_db, 'partOfNode': 0, 'generation': 0},
-            once=True
+            once=True,
+            dutils=dutils
         )
     with mock.patch('core.schains.monitor.main.RegularMonitor', BaseTestMonitor):
         assert run_monitor_for_schain(
@@ -154,7 +171,8 @@ def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db):
             skale_ima,
             node_config,
             {'name': schain_db, 'partOfNode': 0, 'generation': 0},
-            once=True
+            once=True,
+            dutils=dutils
         )
 
 
@@ -172,7 +190,6 @@ def sync_ranges(skale):
 
 def test_get_sync_agent_ranges(skale, sync_ranges):
     ranges = get_sync_agent_ranges(skale)
-    print(ranges)
     assert ranges == [
         IpRange(start_ip='127.0.0.1', end_ip='127.0.0.2'),
         IpRange(start_ip='127.0.0.5', end_ip='127.0.0.7')
@@ -186,11 +203,11 @@ def test_get_sync_agent_ranges_empty(skale):
 
 def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
     chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, node_config.id)
-    assert not chain_on_node
+    assert chain_on_node
 
     chain_on_node = is_node_part_of_chain(skale, 'a', node_config.id)
     assert not chain_on_node
 
-    max_node_id = skale.nodes.get_nodes_number()
-    chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, max_node_id - 1)
-    assert chain_on_node
+    node_exist_node = 10000
+    chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, node_exist_node)
+    assert not chain_on_node

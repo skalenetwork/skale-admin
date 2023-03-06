@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2022 SKALE Labs
+#   Copyright (C) 2022-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,27 +17,21 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
-
-from core.schains.monitor import BaseMonitor
-from core.schains.ssl import update_ssl_change_date
-
-logger = logging.getLogger(__name__)
+from core.schains.types import SchainType
+from core.schains.config.helper import get_static_params
+from tools.configs import ENV_TYPE
 
 
-class ReloadMonitor(BaseMonitor):
-    """
-    ReloadMonitor is executed when new SSL certificates were uploaded or when reload is requested.
-    """
-    @BaseMonitor.monitor_runner
-    def run(self):
-        logger.info(
-            '%s. Reload requested. Going to restart sChain container',
-            self.p
-        )
-        self.reloaded_skaled_container()
-        record = self.schain_record
-        record.set_restart_count(0)
-        record.set_failed_rpc_count(0)
-        update_ssl_change_date(record)
-        record.set_needs_reload(False)
+def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:
+    static_params = get_static_params(env_type)
+    return static_params['schain_cmd']
+
+
+def get_static_schain_info(env_type: str = ENV_TYPE) -> dict:
+    static_params = get_static_params(env_type)
+    return static_params['schain']
+
+
+def get_static_node_info(schain_type: SchainType, env_type: str = ENV_TYPE) -> dict:
+    static_params = get_static_params(env_type)
+    return {**static_params['node']['common'], **static_params['node'][schain_type.name]}

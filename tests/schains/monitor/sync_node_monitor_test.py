@@ -19,9 +19,7 @@ from tools.configs import (
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.configs.schains import SCHAIN_STATIC_PATH, SCHAIN_STATE_PATH
 
-from web.models.schain import SChainRecord
-
-from tests.utils import get_test_rule_controller
+from tests.utils import get_test_rule_controller, upsert_schain_record_with_config
 
 
 logger = logging.getLogger(__name__)
@@ -47,9 +45,11 @@ def test_sync_node_monitor(
     dutils,
     ssl_folder,
     schain_on_contracts,
-    skale_lib_path
+    skale_lib_path,
+    predeployed_ima
 ):
     schain_name = schain_on_contracts
+    schain_record = upsert_schain_record_with_config(schain_name)
     schain = skale.schains.get_by_name(schain_name)
     nodes = get_nodes_for_schain(skale, schain_name)
     image_name, container_name, _, _ = get_container_info(
@@ -70,7 +70,6 @@ def test_sync_node_monitor(
     node_config.ip = ip_from_bytes(nodes[0]['ip'])
     node_config.sgx_key_name = sgx_wallet.key_name
 
-    schain_record = SChainRecord.get_by_name(schain_name)
     schain_record.set_needs_reload(True)
 
     schain_checks = SChainChecks(

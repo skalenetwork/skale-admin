@@ -25,7 +25,6 @@ from skale.dataclasses.skaled_ports import SkaledPorts
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
-from core.schains.limits import get_schain_type
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILEPATH
 
@@ -39,54 +38,32 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CurrentNodeInfo(NodeInfo):
     """Dataclass that represents nodeInfo key of the skaleConfig section"""
-    bind_ip: str
-    log_level: str
-    log_level_config: str
     ima_message_proxy_schain: str
     ima_message_proxy_mainnet: str
     ecdsa_key_name: str
     wallets: dict
 
-    min_cache_size: int
-    max_cache_size: int
-    collection_queue_size: int
-    collection_duration: int
-    transaction_queue_size: int
-    max_open_leveldb_files: int
-
     skale_manager_opts: SkaleManagerOpts
+    static_node_info: dict
 
     sync_node: bool
     archive: bool
     catchup: bool
-
-    pg_threads: int
-    pg_threads_limit: int
 
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         node_info = {
             **super().to_dict(),
             **{
-                'bindIP': self.bind_ip,
-                'logLevel': self.log_level,
-                'logLevelConfig': self.log_level_config,
                 'imaMessageProxySChain': self.ima_message_proxy_schain,
                 'imaMessageProxyMainNet': self.ima_message_proxy_mainnet,
                 'ecdsaKeyName': self.ecdsa_key_name,
                 'wallets': self.wallets,
-                'minCacheSize': self.min_cache_size,
-                'maxCacheSize': self.max_cache_size,
-                'collectionQueueSize': self.collection_queue_size,
-                'collectionDuration': self.collection_duration,
-                'transactionQueueSize': self.transaction_queue_size,
-                'maxOpenLeveldbFiles': self.max_open_leveldb_files,
-                'info-acceptors': 1,
                 'imaMonitoringPort': self.base_port + SkaledPorts.IMA_MONITORING.value,
                 'skale-manager': self.skale_manager_opts.to_dict(),
                 'syncNode': self.sync_node,
-                'pg-threads': self.pg_threads,
-                'pg-threads-limit': self.pg_threads_limit
+                'info-acceptors': 1,
+                **self.static_node_info
             }
         }
         if self.archive is not None and self.sync_node:
@@ -97,13 +74,15 @@ class CurrentNodeInfo(NodeInfo):
 
 
 def generate_current_node_info(
-    node: dict, node_id: int, ecdsa_key_name: str, static_schain_params: dict,
+    node: dict, node_id: int, ecdsa_key_name: str, static_node_info: dict,
     schain: dict, schains_on_node: list, rotation_id: int, skale_manager_opts: SkaleManagerOpts,
     sync_node: bool = False, archive: bool = False, catchup: bool = False
 ) -> CurrentNodeInfo:
-    schain_base_port_on_node = get_schain_base_port_on_node(schains_on_node, schain['name'],
-                                                            node['port'])
-    schain_type_name = get_schain_type(schain['partOfNode']).name
+    schain_base_port_on_node = get_schain_base_port_on_node(
+        schains_on_node,
+        schain['name'],
+        node['port']
+    )
 
     wallets = {} if sync_node else generate_wallets_config(schain['name'], rotation_id)
 
@@ -121,9 +100,8 @@ def generate_current_node_info(
         sync_node=sync_node,
         archive=archive,
         catchup=catchup,
-        **get_message_proxy_addresses(),
-        **static_schain_params['current_node_info'],
-        **static_schain_params['cache_options'][schain_type_name]
+        static_node_info=static_node_info,
+        **get_message_proxy_addresses()
     )
 
 

@@ -33,11 +33,6 @@ class SChainInfo:
     contract_storage_limit: int
     db_storage_limit: int
 
-    snapshot_interval_sec: int
-    empty_block_interval_ms: int
-
-    free_contract_deployment: bool
-
     max_consensus_storage_bytes: int
     max_skaled_leveldb_storage_bytes: int
     max_file_storage_bytes: int
@@ -45,6 +40,7 @@ class SChainInfo:
 
     node_groups: dict
     nodes: list
+    static_schain_info: dict
 
     multitransaction_mode: bool
 
@@ -56,22 +52,25 @@ class SChainInfo:
             'blockAuthor': self.block_author,
             'contractStorageLimit': self.contract_storage_limit,
             'dbStorageLimit': self.db_storage_limit,
-            'snapshotIntervalSec': self.snapshot_interval_sec,
-            'emptyBlockIntervalMs': self.empty_block_interval_ms,
-            'freeContractDeployment': self.free_contract_deployment,
             'maxConsensusStorageBytes': self.max_consensus_storage_bytes,
             'maxSkaledLeveldbStorageBytes': self.max_skaled_leveldb_storage_bytes,
             'maxFileStorageBytes': self.max_file_storage_bytes,
             'maxReservedStorageBytes': self.max_reserved_storage_bytes,
             'nodeGroups': self.node_groups,
             'multiTransactionMode': self.multitransaction_mode,
-            'nodes': self.nodes
+            'nodes': self.nodes,
+            **self.static_schain_info
         }
 
 
-def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
-                         static_schain_params: dict, node_groups: dict,
-                         nodes: dict) -> SChainInfo:
+def generate_schain_info(
+    schain_id: int,
+    schain: dict,
+    on_chain_etherbase: str,
+    static_schain_info: dict,
+    node_groups: dict,
+    nodes: dict
+) -> SChainInfo:
     schain_type = get_schain_type(schain['partOfNode'])
     volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)
     leveldb_limits = get_schain_limit(schain_type, MetricType.leveldb_limits)
@@ -87,6 +86,6 @@ def generate_schain_info(schain_id: int, schain: dict, on_chain_etherbase: str,
         node_groups=node_groups,
         nodes=nodes,
         multitransaction_mode=schain['multitransactionMode'],
-        **volume_limits,
-        **static_schain_params['schain']
+        static_schain_info=static_schain_info,
+        **volume_limits
     )
