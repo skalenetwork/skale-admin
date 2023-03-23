@@ -23,6 +23,7 @@ filestorage-predeployed==1.1.0b2
 config-controller-predeployed==1.0.1b0
 
 psutil==5.9.3
+distro==1.8.0
 
 colorful==0.5.4
 celery==5.2.2
@@ -34,3 +35,5 @@ cryptography==35.0.0
 python-dateutil==2.8.1
 python-telegram-bot==12.8
 sh==1.14.1
+
+eth-utils==1.10.0
