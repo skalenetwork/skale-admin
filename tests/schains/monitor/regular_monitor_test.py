@@ -12,6 +12,8 @@ from core.schains.checks import SChainChecks
 from core.schains.monitor import RegularMonitor
 from core.schains.ima import ImaData
 
+from core.schains.config.directory import get_schain_config
+
 from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.configs.containers import SCHAIN_CONTAINER
 
@@ -100,6 +102,13 @@ def test_regular_monitor(
 
         test_monitor.cleanup_schain_docker_entity()
         alter_schain_config(schain_name, sgx_wallet.public_key)
+
+        # TODO
+        schain_config = get_schain_config(schain_name)
+        print('==================================================')
+        print(schain_config)
+        print('==================================================')
+        assert 1 == 2
 
         with mock.patch(
             'skale.schain_config.rotation_history._compose_bls_public_key_info',
