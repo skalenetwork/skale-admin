@@ -25,7 +25,6 @@ import psutil
 import logging
 import platform
 import hashlib
-import distro
 
 import requests
 
@@ -314,8 +313,6 @@ def get_node_hardware_info() -> dict:
     system_release = f'{platform.system()}-{platform.release()}'
     uname_version = platform.uname().version
     attached_storage_size = get_block_device_size()
-    os_name = distro.id()
-    os_version = distro.version()
     return {
         'cpu_total_cores': psutil.cpu_count(logical=True),
         'cpu_physical_cores': psutil.cpu_count(logical=False),
@@ -325,9 +322,7 @@ def get_node_hardware_info() -> dict:
         'mem_available': psutil.virtual_memory().available,
         'system_release': system_release,
         'uname_version': uname_version,
-        'attached_storage_size': attached_storage_size,
-        'os_name': os_name,
-        'os_version': os_version
+        'attached_storage_size': attached_storage_size
     }
 
 
