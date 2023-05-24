@@ -29,7 +29,7 @@ celery==5.2.2
 
 filelock==3.0.12
 
-pyOpenSSL==19.1.0
+pyOpenSSL==23.1.1
 cryptography==39.0.1
 python-dateutil==2.8.1
 python-telegram-bot==12.8
