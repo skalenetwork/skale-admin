@@ -88,7 +88,8 @@ def test_firewall_rules_route(skale_bp, schain_config):
                 {'port': 10005, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
                 {'port': 10007, 'first_ip': None, 'last_ip': None},
                 {'port': 10008, 'first_ip': None, 'last_ip': None},
-                {'port': 10009, 'first_ip': None, 'last_ip': None}
+                {'port': 10009, 'first_ip': None, 'last_ip': None},
+                {'port': 10010, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'}
             ]
         }
     }

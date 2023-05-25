@@ -104,7 +104,8 @@ def run_concurrent_rc_syncing(
         base_port + offset
         for offset in [
             SkaledPorts.PROPOSAL.value,
-            SkaledPorts.BINARY_CONSENSUS.value
+            SkaledPorts.BINARY_CONSENSUS.value,
+            SkaledPorts.IMA_RPC.value
         ]
         for base_port in base_ports
     ]
@@ -155,10 +156,10 @@ def run_concurrent_rc_syncing(
         if ip != own_ip:
             assert sum(
                 map(lambda x: x[0] == ip, rules)
-            ) == 4 * schain_number, ip
+            ) == 5 * schain_number, ip
             assert sum(
                 map(lambda x: x.first_ip == ip, c.rules)
-            ) == 4 * schain_number, ip
+            ) == 5 * schain_number, ip
 
     # Check that all internal ports rules are there except CATCHUP
     for p in internal_ports:
