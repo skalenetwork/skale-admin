@@ -20,6 +20,8 @@
 import os
 import time
 import logging
+from abc import ABC, abstractmethod
+from typing import Any, Dict
 
 from core.schains.config.directory import (
     get_schain_config,
@@ -75,26 +77,28 @@ class CheckRes:
         self.data = data if data else {}
 
 
-class SChainChecks:
+class IChecks(ABC):
+    @abstractmethod
+    def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
+        pass
+
+    @abstractmethod
+    def is_healthy(self) -> bool:
+        pass
+
+
+class ConfigChecks(IChecks):
     def __init__(
         self,
         schain_name: str,
         node_id: int,
         schain_record: SChainRecord,
-        rule_controller: IRuleController,
-        rotation_id: int = 0,
-        *,
-        ima_linked: bool = True,
-        dutils: DockerUtils = None
+        rotation_id: int
     ):
         self.name = schain_name
         self.node_id = node_id
         self.schain_record = schain_record
         self.rotation_id = rotation_id
-        self.dutils = dutils or DockerUtils()
-        self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
-        self.ima_linked = ima_linked
-        self.rc = rule_controller
 
     @property
     def config_dir(self) -> CheckRes:
@@ -113,6 +117,7 @@ class SChainChecks:
 
     @property
     def config(self) -> CheckRes:
+        # TODO: this should be check for the newest config
         """Checks that sChain config file exists"""
         config_filepath = schain_config_filepath(self.name)
         if not os.path.isfile(config_filepath):
@@ -120,6 +125,72 @@ class SChainChecks:
         return CheckRes(
             schain_config_version_match(self.name, self.schain_record)
         )
+
+    def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
+        if not checks_filter:
+            checks_filter = API_ALLOWED_CHECKS
+        checks_dict = {}
+        for check in checks_filter:
+            if hasattr(self, check):
+                if check not in API_ALLOWED_CHECKS:
+                    logger.warning('Check %s is not allowed or does not exist', check)
+                else:
+                    checks_dict[check] = getattr(self, check).status
+        if log:
+            log_checks_dict(self.name, checks_dict)
+        if save:
+            save_checks_dict(self.name, checks_dict)
+        return checks_dict
+
+    def is_healthy(self) -> bool:
+        checks = self.get_all()
+        return False not in checks.values()
+
+
+class ContainerChecks(IChecks):
+    def __init__(
+        self,
+        schain_name: str,
+        schain_record: SChainRecord,
+        rule_controller: IRuleController,
+        *,
+        ima_linked: bool = True,
+        dutils: DockerUtils = None
+    ):
+        self.name = schain_name
+        self.schain_record = schain_record
+        self.dutils = dutils or DockerUtils()
+        self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
+        self.ima_linked = ima_linked
+        self.rc = rule_controller
+
+    def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
+        if not checks_filter:
+            checks_filter = API_ALLOWED_CHECKS
+        checks_dict = {}
+        for check in checks_filter:
+            if check == 'ima_container' and (DISABLE_IMA or not self.ima_linked):
+                logger.info(f'Check {check} will be skipped - IMA is not linked')
+            elif check not in API_ALLOWED_CHECKS:
+                logger.warning(f'Check {check} is not allowed or does not exist')
+            else:
+                if hasattr(self, check):
+                    checks_dict[check] = getattr(self, check).status
+        if log:
+            log_checks_dict(self.name, checks_dict)
+        if save:
+            save_checks_dict(self.name, checks_dict)
+        return checks_dict
+
+    def is_healthy(self) -> bool:
+        checks = self.get_all()
+        return False not in checks.values()
+
+    @property
+    def config_file(self) -> CheckRes:
+        """ Checks that at least one sChain config file exists """
+        config_filepath = schain_config_filepath(self.name)
+        return CheckRes(os.path.isfile(config_filepath))
 
     @property
     def volume(self) -> CheckRes:
@@ -129,7 +200,7 @@ class SChainChecks:
     @property
     def firewall_rules(self) -> CheckRes:
         """Checks that firewall rules are set correctly"""
-        if self.config.status:
+        if self.config_file.status:
             conf = get_schain_config(self.name)
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
@@ -167,7 +238,7 @@ class SChainChecks:
     def rpc(self) -> CheckRes:
         """Checks that local skaled RPC is accessible"""
         res = False
-        if self.config.status:
+        if self.config_file.status:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             timeout = get_endpoint_alive_check_timeout(
                 self.schain_record.failed_rpc_count
@@ -178,7 +249,7 @@ class SChainChecks:
     @property
     def blocks(self) -> CheckRes:
         """Checks that local skaled is mining blocks"""
-        if self.config.status:
+        if self.config_file.status:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             return CheckRes(check_endpoint_blocks(http_endpoint))
         return CheckRes(False)
@@ -188,22 +259,59 @@ class SChainChecks:
         """Checks that sChain monitor process is running"""
         return CheckRes(is_monitor_process_alive(self.schain_record.monitor_id))
 
+
+class SChainChecks(IChecks):
+    def __init__(
+        self,
+        schain_name: str,
+        node_id: int,
+        schain_record: SChainRecord,
+        rule_controller: IRuleController,
+        rotation_id: int = 0,
+        *,
+        ima_linked: bool = True,
+        dutils: DockerUtils = None
+    ):
+        self._subjects = [
+            ConfigChecks(
+                schain_name=schain_name,
+                node_id=node_id,
+                schain_record=schain_record,
+                rotation_id=rotation_id
+            ),
+            ContainerChecks(
+                schain_name=schain_name,
+                schain_record=schain_record,
+                rule_controller=rule_controller,
+                ima_linked=ima_linked,
+                dutils=dutils
+            )
+        ]
+
+    def __getattr__(self, attr: str) -> Any:
+        for subj in self._subjects:
+            if attr in dir(subj):
+                return getattr(subj, attr)
+        raise AttributeError(f'No such attribute {attr}')
+
     def get_all(self, log=True, save=False, checks_filter=None):
         if not checks_filter:
             checks_filter = API_ALLOWED_CHECKS
-        checks_dict = {}
-        for check in checks_filter:
-            if check == 'ima_container' and (DISABLE_IMA or not self.ima_linked):
-                logger.info(f'Check {check} will be skipped - IMA is not linked')
-            elif check not in API_ALLOWED_CHECKS:
-                logger.warning(f'Check {check} is not allowed or does not exist')
-            else:
-                checks_dict[check] = getattr(self, check).status
+
+        plain_checks = {}
+        for subj in self._subjects:
+            subj_checks = subj.get_all(
+                log=False,
+                save=False,
+                checks_filter=checks_filter
+            )
+            plain_checks.update(subj_checks)
+
         if log:
-            log_checks_dict(self.name, checks_dict)
+            log_checks_dict(self.name, plain_checks)
         if save:
-            save_checks_dict(self.name, checks_dict)
-        return checks_dict
+            save_checks_dict(self.name, plain_checks)
+        return plain_checks
 
     def is_healthy(self):
         checks = self.get_all()

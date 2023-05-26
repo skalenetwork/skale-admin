@@ -117,7 +117,7 @@ def test_config_check(schain_checks, sample_false_checks):
 
 
 def test_config_check_wrong_version(schain_checks):
-    schain_checks.schain_record = SchainRecordMock('9.8.7')
+    schain_checks._subjects[0].schain_record = SchainRecordMock('9.8.7')
     assert not schain_checks.config.status
 
 
