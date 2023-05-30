@@ -147,7 +147,7 @@ class ConfigChecks(IChecks):
         return False not in checks.values()
 
 
-class ContainerChecks(IChecks):
+class SkaledChecks(IChecks):
     def __init__(
         self,
         schain_name: str,

@@ -182,14 +182,14 @@ class ConfigActionManager(BaseActionManager):
         return initial_status
 
 
-class ContainerActionManager(BaseActionManager):
+class SkaledActionManager(BaseActionManager):
     def __init__(
         self,
-        ima_data: ImaData,
         schain: dict,
-        checks: IChecks,
+        ima_data: ImaData,
         rule_controller: IRuleController,
         finish_ts: int,
+        checks: IChecks,
         dutils: DockerUtils = None
     ):
         self.ima_data = ima_data
@@ -198,7 +198,7 @@ class ContainerActionManager(BaseActionManager):
         self.checks = checks
 
         self.rc = rule_controller
-        self.skaled_status = init_skaled_status(self.name)
+        self.skaled_status = init_skaled_status(self.schain['name'])
         self.schain_type = get_schain_type(schain['partOfNode'])
 
         self.dutils = dutils or DockerUtils()
