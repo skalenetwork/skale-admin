@@ -40,11 +40,8 @@ def config_am(
     config_checks
 ):
     name = schain_db
-    print('IVD', name)
-    print('IVD', schain_on_contracts)
     rotation_data = skale.node_rotation.get_rotation(name)
     schain = skale.schains.get_by_name(name)
-    print('IVD', schain)
     return ConfigActionManager(
         skale=skale,
         schain=schain,

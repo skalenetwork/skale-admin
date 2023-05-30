@@ -1,7 +1,7 @@
 import pytest
 
-from core.schains.checks import ContainerChecks
-from core.schains.monitor.action import ContainerActionManager
+from core.schains.checks import SkaledChecks
+from core.schains.monitor.action import SkaledActionManager
 
 from web.models.schain import SChainRecord
 
@@ -12,7 +12,7 @@ def rotation_data(schain_db, skale):
 
 
 @pytest.fixture
-def container_checks(
+def skaled_checks(
     schain_db,
     skale,
     rule_controller,
@@ -20,7 +20,7 @@ def container_checks(
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
-    return ContainerChecks(
+    return SkaledChecks(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
@@ -30,7 +30,7 @@ def container_checks(
 
 
 @pytest.fixture
-def container_am(
+def skaled_am(
     schain_db,
     skale,
     node_config,
@@ -42,7 +42,7 @@ def container_am(
     ima_data,
     ssl_folder,
     dutils,
-    container_checks
+    skaled_checks
 ):
     name = schain_db
     finish_ts = skale.node_rotation.get_schain_finish_ts(
@@ -51,18 +51,25 @@ def container_am(
     )
     rotation_data = skale.node_rotation.get_rotation(name)
     schain = skale.schains.get_by_name(name)
-    return ContainerActionManager(
+    return SkaledActionManager(
         schain=schain,
         rule_controller=rule_controller,
         ima_data=ima_data,
         finish_ts=finish_ts,
-        checks=container_checks,
+        checks=skaled_checks,
         dutils=dutils
     )
 
 
-def test_container_actions(container_am, container_checks):
-    container_am.firewall_rules()
-    container_am.volume()
-    container_am.skaled_container()
-    container_am.ima_container()
+def test_skaled_actions(skaled_am, skaled_checks, cleanup_schain_containers):
+    try:
+        skaled_am.firewall_rules()
+        assert skaled_checks.firewall_rules
+        skaled_am.volume()
+        assert skaled_checks.volume
+        skaled_am.skaled_container()
+        assert skaled_checks.skaled_container
+        skaled_am.ima_container()
+        assert skaled_checks.ima_container
+    finally:
+        skaled_am.cleanup_schain_docker_entity()
