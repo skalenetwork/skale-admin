@@ -342,18 +342,28 @@ def _schain_name():
 
 
 @pytest.fixture
-def schain_config(_schain_name, predeployed_ima):
+def secret_key(_schain_name):
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
-    pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+    secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')
+    try:
+        pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+        with open(secret_key_path, 'w') as key_file:
+            json.dump(SECRET_KEY, key_file)
+        yield SECRET_KEY
+    finally:
+        rm_schain_dir(_schain_name)
+
+
+@pytest.fixture
+def schain_config(_schain_name, secret_key, predeployed_ima):
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
     config_path = os.path.join(schain_dir_path,
                                f'schain_{_schain_name}.json')
-    secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')
-    schain_config = generate_schain_config(_schain_name)
-    with open(config_path, 'w') as config_file:
-        json.dump(schain_config, config_file)
-    with open(secret_key_path, 'w') as key_file:
-        json.dump(SECRET_KEY, key_file)
     try:
+        pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+        schain_config = generate_schain_config(_schain_name)
+        with open(config_path, 'w') as config_file:
+            json.dump(schain_config, config_file)
         yield schain_config
     finally:
         rm_schain_dir(_schain_name)
@@ -467,7 +477,7 @@ def schain_on_contracts(skale, nodes, _schain_name) -> str:
         yield create_schain(
             skale,
             schain_type=1,  # test2 should have 1 index
-            random_name=True
+            schain_name=_schain_name
         )
     finally:
         cleanup_nodes_schains(skale)
