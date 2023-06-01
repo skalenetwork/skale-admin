@@ -26,7 +26,7 @@ from skale import Skale
 from core.node import get_skale_node_version
 from core.schains.config.generator import generate_schain_config_with_skale
 from core.schains.config.directory import get_tmp_schain_config_filepath
-from core.schains.config.directory import schain_config_filepath
+from core.schains.config.directory import new_schain_config_filepath, schain_config_filepath
 
 from tools.str_formatters import arguments_list_string
 
@@ -64,11 +64,46 @@ def init_schain_config(
     update_schain_config_version(schain_name, schain_record=schain_record)
 
 
+def init_schain_config2(
+    skale: Skale,
+    node_id: int,
+    schain_name: str,
+    generation: int,
+    ecdsa_sgx_key_name: str,
+    rotation_data: dict,
+    schain_record: SChainRecord
+):
+    logger.info('Generating sChain config for %s', schain_name)
+
+    schain_config = generate_schain_config_with_skale(
+        skale=skale,
+        schain_name=schain_name,
+        generation=generation,
+        node_id=node_id,
+        rotation_data=rotation_data,
+        ecdsa_key_name=ecdsa_sgx_key_name
+    )
+    save_new_schain_config(
+        schain_config.to_dict(),
+        schain_name,
+        rotation_data['rotation_id']
+    )
+    update_schain_config_version(schain_name, schain_record=schain_record)
+
+
 def save_schain_config(schain_config, schain_name):
+    tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
+    with open(tmp_config_fiepath, 'w') as outfile:
+        json.dump(schain_config, outfile, indent=4)
+    config_filepath = schain_config_filepath(schain_name)
+    shutil.move(tmp_config_filepath, config_filepath)
+
+
+def save_new_schain_config(schain_config, schain_name, rotation_id):
     tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
     with open(tmp_config_filepath, 'w') as outfile:
         json.dump(schain_config, outfile, indent=4)
-    config_filepath = schain_config_filepath(schain_name)
+    config_filepath = new_schain_config_filepath(schain_name, rotation_id)
     shutil.move(tmp_config_filepath, config_filepath)
 
 
@@ -83,6 +118,6 @@ def update_schain_config_version(schain_name, schain_record=None):
 def schain_config_version_match(schain_name, schain_record=None):
     schain_record = schain_record or upsert_schain_record(schain_name)
     skale_node_version = get_skale_node_version()
-    logger.debug(f'config check, schain: {schain_name}, config_version: \
+    logger.info(f'config check, schain: {schain_name}, config_version: \
 {schain_record.config_version}, skale_node_version: {skale_node_version}')
     return schain_record.config_version == skale_node_version

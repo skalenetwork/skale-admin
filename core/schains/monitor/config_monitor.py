@@ -21,7 +21,7 @@ import logging
 from abc import abstractmethod
 
 from core.schains.monitor.base_monitor import IMonitor
-from core.schains.monitor.action_manager import ConfigActionManager
+from core.schains.monitor.action import ConfigActionManager
 
 
 logger = logging.getLogger(__name__)

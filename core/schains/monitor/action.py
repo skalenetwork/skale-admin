@@ -44,7 +44,7 @@ from core.schains.monitor.rpc import handle_failed_schain_rpc
 from core.schains.runner import (
     restart_container, is_container_exists, get_container_name
 )
-from core.schains.config import init_schain_config, init_schain_config_dir
+from core.schains.config import init_schain_config2, init_schain_config_dir
 from core.schains.config.directory import get_schain_config
 from core.schains.config.helper import (
     get_base_port_from_config,
@@ -168,7 +168,7 @@ class ConfigActionManager(BaseActionManager):
     def config(self, overwrite=False) -> bool:
         initial_status = self.checks.config.status
         if not initial_status or overwrite:
-            init_schain_config(
+            init_schain_config2(
                 skale=self.skale,
                 node_id=self.node_config.id,
                 schain_name=self.name,

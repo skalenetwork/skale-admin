@@ -20,6 +20,7 @@
 import os
 import json
 import logging
+import time
 from pathlib import Path
 
 from tools.configs import SCHAIN_CONFIG_DIR_SKALED
@@ -34,6 +35,11 @@ logger = logging.getLogger(__name__)
 
 def _config_filename(name: str) -> str:
     return f'schain_{name}.json'
+
+
+def new_config_filename(name: str, rotation_id: int) -> str:
+    ts = int(time.time())
+    return f'schain_{name}_{rotation_id}_{ts}.json'
 
 
 def schain_config_dir(name: str) -> str:
@@ -57,6 +63,11 @@ def init_schain_config_dir(name: str) -> str:
 def schain_config_filepath(name: str, in_schain_container=False) -> str:
     schain_dir_path = SCHAIN_CONFIG_DIR_SKALED if in_schain_container else schain_config_dir(name)
     return os.path.join(schain_dir_path, _config_filename(name))
+
+
+def new_schain_config_filepath(name: str, rotation_id: int, in_schain_container=False) -> str:
+    schain_dir_path = SCHAIN_CONFIG_DIR_SKALED if in_schain_container else schain_config_dir(name)
+    return os.path.join(schain_dir_path, new_config_filename(name, rotation_id))
 
 
 def skaled_status_filepath(name: str) -> str:
