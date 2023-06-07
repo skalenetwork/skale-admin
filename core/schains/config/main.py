@@ -18,16 +18,21 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import os
 import shutil
 import logging
+from typing import Optional
 
 from skale import Skale
 
 from core.node import get_skale_node_version
+from core.schains.config.directory import (
+    get_tmp_schain_config_filepath,
+    new_schain_config_filepath,
+    schain_config_dir,
+    schain_config_filepath
+)
 from core.schains.config.generator import generate_schain_config_with_skale
-from core.schains.config.directory import get_tmp_schain_config_filepath
-from core.schains.config.directory import new_schain_config_filepath, schain_config_filepath
-
 from tools.str_formatters import arguments_list_string
 
 from web.models.schain import upsert_schain_record, SChainRecord
@@ -93,7 +98,7 @@ def init_schain_config2(
 
 def save_schain_config(schain_config, schain_name):
     tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
-    with open(tmp_config_fiepath, 'w') as outfile:
+    with open(tmp_config_filepath, 'w') as outfile:
         json.dump(schain_config, outfile, indent=4)
     config_filepath = schain_config_filepath(schain_name)
     shutil.move(tmp_config_filepath, config_filepath)
@@ -105,6 +110,11 @@ def save_new_schain_config(schain_config, schain_name, rotation_id):
         json.dump(schain_config, outfile, indent=4)
     config_filepath = new_schain_config_filepath(schain_name, rotation_id)
     shutil.move(tmp_config_filepath, config_filepath)
+
+
+def set_as_upstream_config(schain_name: str, config_path: str) -> None:
+    upstream_link_filepath = schain_config_filepath(schain_name)
+    shutil.copy(config_path, upstream_link_filepath)
 
 
 def update_schain_config_version(schain_name, schain_record=None):
@@ -121,3 +131,14 @@ def schain_config_version_match(schain_name, schain_record=None):
     logger.info(f'config check, schain: {schain_name}, config_version: \
 {schain_record.config_version}, skale_node_version: {skale_node_version}')
     return schain_record.config_version == skale_node_version
+
+
+def get_latest_config_filepath(schain_name) -> Optional[str]:
+    config_dir = schain_config_dir(schain_name)
+    dir_files = sorted(
+        filter(lambda f: not os.path.islink(f), os.listdir(config_dir)),
+        key=lambda fname: os.stat(fname, follow_symlinks=False).st_mtime
+    )
+    if not dir_files:
+        return None
+    return dir_files[-1]

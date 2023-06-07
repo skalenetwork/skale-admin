@@ -65,7 +65,7 @@ def run_process_manager(skale, skale_ima, node_config):
         schain_record = upsert_schain_record(schain['name'])
         log_prefix = f'sChain {schain["name"]} -'  # todo - move to logger formatter
 
-        terminate_stuck_schain_process(skale, schain_record, schain)
+        # terminate_stuck_schain_process(skale, schain_record, schain)
         monitor_process_alive = is_monitor_process_alive(schain_record.monitor_id)
 
         if not monitor_process_alive:

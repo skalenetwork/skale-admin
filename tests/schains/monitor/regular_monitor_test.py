@@ -9,7 +9,7 @@ from skale.utils.helper import ip_from_bytes
 
 from core.schains.runner import get_container_name
 from core.schains.checks import SChainChecks
-from core.schains.monitor import RegularMonitor
+from core.schains.monitor.config_monitor import RegularConfigMonitor
 from core.schains.ima import ImaData
 
 from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL

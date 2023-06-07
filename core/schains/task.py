@@ -31,8 +31,8 @@ def keep_tasks_running(
             futures[i] = executor.submit(task.run)
 
 
-def run_tasks(tasks: List[Task]) -> None:
-    with ThreadPoolExecutor(max_workers=len(tasks)) as executor:
+def run_tasks(name: str, tasks: List[Task]) -> None:
+    with ThreadPoolExecutor(max_workers=len(tasks), thread_name_prefix=name) as executor:
         futures: List[Optional[Future]] = [None for i in range(len(tasks))]
         while True:
             keep_tasks_running(executor, tasks, futures)

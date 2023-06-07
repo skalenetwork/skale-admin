@@ -21,15 +21,15 @@ import logging
 from abc import abstractmethod
 
 from core.schains.monitor.base_monitor import IMonitor
-from core.schains.monitor.action import ConfigActionManager
+from core.schains.monitor.action import SkaledActionManager
 
 
 logger = logging.getLogger(__name__)
 
 
 class BaseConfigMonitor(IMonitor):
-    def __init__(self, action_manager: ConfigActionManager):
-        self.action_manager = action_manager
+    def __init__(self, action_manager: SkaledActionManager):
+        self.am = action_manager
 
     @abstractmethod
     def run(self) -> None:
@@ -38,6 +38,6 @@ class BaseConfigMonitor(IMonitor):
 
 class RegularConfigMonitor(BaseConfigMonitor):
     def run(self) -> None:
-        self.action_manager.config_dir()
-        self.action_manager.dkg()
-        self.action_manager.config()
+        self.am.firewall_rules()
+        self.am.volume()
+        self.am.skaled_container()

@@ -17,15 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import functools
 import time
 import random
 import logging
-from importlib import reload
+from typing import Dict
 
-from web3._utils import request
+from skale import Skale, SkaleIma
 
 from core.node_config import NodeConfig
-from core.schains.checks import SChainChecks
+from core.schains.checks import ConfigChecks, SkaledChecks, SChainChecks
 from core.schains.firewall import get_default_rule_controller
 from core.schains.ima import ImaData
 from core.schains.monitor import (
@@ -37,13 +38,16 @@ from core.schains.monitor import (
     RotationMonitor,
     ReloadMonitor
 )
+from core.schains.monitor.config_monitor import RegularConfigMonitor
+from core.schains.monitor.skaled_monitor import RegularSkaledMonitor
+from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
+from core.schains.task import run_tasks, Task
 from core.schains.firewall.utils import get_sync_agent_ranges
-from core.schains.skaled_status import init_skaled_status, SkaledStatus
+from core.schains.skaled_status import SkaledStatus
 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.ima import DISABLE_IMA
-from tools.helper import is_node_part_of_chain
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
@@ -115,8 +119,89 @@ def get_monitor_type(
     return RegularMonitor
 
 
-def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, dutils=None,
-                           once=False):
+def monitor_config(skale: Skale, schain: Dict, node_config: NodeConfig) -> None:
+    name = schain['name']
+    schain_record = upsert_schain_record(name)
+    rotation_data = skale.node_rotation.get_rotation(name)
+    config_checks = ConfigChecks(
+        schain_name=name,
+        node_id=node_config.id,
+        schain_record=schain_record,
+        rotation_id=rotation_data['rotation_id']
+    )
+
+    config_am = ConfigActionManager(
+        skale=skale,
+        schain=schain,
+        node_config=node_config,
+        rotation_data=rotation_data,
+        checks=config_checks
+    )
+
+    mon = RegularConfigMonitor(config_am)
+    mon.run()
+
+
+def monitor_containers(
+    skale: Skale,
+    skale_ima: SkaleIma,
+    schain: Dict,
+    dutils: DockerUtils
+) -> None:
+    name = schain['name']
+    schain_record = upsert_schain_record(name)
+
+    dutils = dutils or DockerUtils()
+
+    rotation_data = skale.node_rotation.get_rotation(name)
+    ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
+
+    sync_agent_ranges = get_sync_agent_ranges(skale)
+
+    rc = get_default_rule_controller(
+        name=name,
+        sync_agent_ranges=sync_agent_ranges
+    )
+    skaled_checks = SkaledChecks(
+        schain_name=schain['name'],
+        schain_record=schain_record,
+        rule_controller=rc,
+        ima_linked=ima_linked,
+        dutils=dutils
+    )
+
+    finish_ts = skale.node_rotation.get_schain_finish_ts(
+      node_id=rotation_data['leaving_node'],
+      schain_name=name
+    )
+
+    ima_data = ImaData(
+        linked=ima_linked,
+        chain_id=skale_ima.web3.eth.chainId
+    )
+
+    # finish ts can be fetched from config
+    skaled_am = SkaledActionManager(
+        schain=schain,
+        rule_controller=rc,
+        ima_data=ima_data,
+        checks=skaled_checks,
+        finish_ts=finish_ts,
+        dutils=dutils
+    )
+
+    mon = RegularSkaledMonitor(skaled_am)
+    mon.run()
+
+
+def run_monitor_for_schain(
+    skale,
+    skale_ima,
+    node_config: NodeConfig,
+    schain,
+    dutils=None,
+    once=False
+):
     p = get_log_prefix(schain["name"])
 
     def post_monitor_sleep():
@@ -129,62 +214,84 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
 
     while True:
         try:
-            logger.info(f'{p} monitor created')
-            reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
-
             name = schain["name"]
-            dutils = dutils or DockerUtils()
+            tasks = [
+                Task(
+                    f'{name}-config',
+                    functools.partial(
+                        monitor_config,
+                        skale=skale,
+                        schain=schain,
+                        node_config=node_config
+                    )
+                ),
+                Task(
+                    f'{name}-skaled',
+                    functools.partial(
+                        monitor_containers,
+                        skale=skale,
+                        skale_ima=skale_ima,
+                        schain=schain,
+                        dutils=dutils
+                    ),
+                )
+            ]
+            run_tasks(name=name, tasks=tasks)
+            # logger.info(f'{p} monitor created')
+            # reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
 
-            is_rotation_active = skale.node_rotation.is_rotation_active(name)
+            # dutils = dutils or DockerUtils()
 
-            if not is_node_part_of_chain(skale, name, node_config.id) and not is_rotation_active:
-                logger.warning(f'{p} NOT ON NODE ({node_config.id}), finising process...')
-                return True
+            # is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
-            ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
-            rotation_data = skale.node_rotation.get_rotation(name)
+            # if not is_node_part_of_chain(skale, name, node_config.id) and not is_rotation_active:
+            #     logger.warning(f'{p} NOT ON NODE ({node_config.id}), finising process...')
+            #     return True
 
-            sync_agent_ranges = get_sync_agent_ranges(skale)
+            # ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
+            # rotation_data = skale.node_rotation.get_rotation(name)
 
-            rc = get_default_rule_controller(
-                name=name,
-                sync_agent_ranges=sync_agent_ranges
-            )
-            schain_record = upsert_schain_record(name)
-            checks = SChainChecks(
-                name,
-                node_config.id,
-                schain_record=schain_record,
-                rule_controller=rc,
-                rotation_id=rotation_data['rotation_id'],
-                ima_linked=ima_linked,
-                dutils=dutils
-            )
+            # sync_agent_ranges = get_sync_agent_ranges(skale)
 
-            ima_data = ImaData(
-                linked=ima_linked,
-                chain_id=skale_ima.web3.eth.chainId
-            )
-            skaled_status = init_skaled_status(name)
+            # rc = get_default_rule_controller(
+            #     name=name,
+            #     sync_agent_ranges=sync_agent_ranges
+            # )
+            # schain_record = upsert_schain_record(name)
+            # checks = SChainChecks(
+            #     name,
+            #     node_config.id,
+            #     schain_record=schain_record,
+            #     rule_controller=rc,
+            #     rotation_id=rotation_data['rotation_id'],
+            #     ima_linked=ima_linked,
+            #     dutils=dutils
+            # )
 
-            monitor_class = get_monitor_type(
-                schain_record,
-                checks,
-                is_rotation_active,
-                skaled_status
-            )
-            monitor = monitor_class(
-                skale=skale,
-                ima_data=ima_data,
-                schain=schain,
-                node_config=node_config,
-                rotation_data=rotation_data,
-                checks=checks,
-                rule_controller=rc
-            )
-            monitor.run()
-            if once:
-                return True
+            # ima_data = ImaData(
+            #     linked=ima_linked,
+            #     chain_id=skale_ima.web3.eth.chainId
+            # )
+            # skaled_status = init_skaled_status(name)
+
+            # monitor_class = get_monitor_type(
+            #     schain_record,
+            #     checks,
+            #     is_rotation_active,
+            #     skaled_status
+            # )
+            # monitor = monitor_class(
+            #     skale=skale,
+            #     ima_data=ima_data,
+            #     schain=schain,
+            #     node_config=node_config,
+            #     rotation_data=rotation_data,
+            #     checks=checks,
+            #     rule_controller=rc
+            # )
+            # monitor.run()
+            # if once:
+            #     return True
             post_monitor_sleep()
         except Exception:
             logger.exception(f'{p} monitor failed')

@@ -70,6 +70,12 @@ CONTAINER_POST_RUN_DELAY = 20
 SCHAIN_CLEANUP_TIMEOUT = 10
 
 
+class IMonitor(ABC):
+    @abstractmethod
+    def run(self):
+        pass
+
+
 class BaseMonitor(ABC):
     def __init__(
         self,

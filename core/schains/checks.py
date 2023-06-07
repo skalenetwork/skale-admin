@@ -279,7 +279,7 @@ class SChainChecks(IChecks):
                 schain_record=schain_record,
                 rotation_id=rotation_id
             ),
-            ContainerChecks(
+            SkaledChecks(
                 schain_name=schain_name,
                 schain_record=schain_record,
                 rule_controller=rule_controller,

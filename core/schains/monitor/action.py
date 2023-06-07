@@ -42,9 +42,16 @@ from core.schains.limits import get_schain_type
 from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
 from core.schains.monitor.rpc import handle_failed_schain_rpc
 from core.schains.runner import (
-    restart_container, is_container_exists, get_container_name
+    restart_container,
+    is_container_exists,
+    get_container_name
 )
-from core.schains.config import init_schain_config2, init_schain_config_dir
+from core.schains.config.main import (
+    get_latest_config_filepath,
+    init_schain_config2,
+    set_as_upstream_config
+)
+from core.schains.config import init_schain_config_dir
 from core.schains.config.directory import get_schain_config
 from core.schains.config.helper import (
     get_base_port_from_config,
@@ -312,6 +319,10 @@ class SkaledActionManager(BaseActionManager):
         time.sleep(SCHAIN_CLEANUP_TIMEOUT)
         remove_schain_volume(self.name, dutils=self.dutils)
         return True
+
+    def set_upstream_config(self) -> bool:
+        latest_filepath = get_latest_config_filepath(self.name)
+        set_as_upstream_config(self.name, latest_filepath)
 
     def log_executed_blocks(self) -> None:
         logger.info(arguments_list_string(
