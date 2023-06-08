@@ -24,10 +24,11 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 from core.schains.config.directory import (
+    get_schain_check_filepath,
     get_schain_config,
+    new_schain_config_filepath,
     schain_config_dir,
-    schain_config_filepath,
-    get_schain_check_filepath
+    schain_config_filepath
 )
 from core.schains.config.helper import (
     get_base_port_from_config,
@@ -35,7 +36,7 @@ from core.schains.config.helper import (
     get_own_ip_from_config,
     get_local_schain_http_endpoint
 )
-from core.schains.config.main import schain_config_version_match
+from core.schains.config.main import get_latest_config_filepath, schain_config_version_match
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
 from core.schains.process_manager_helper import is_monitor_process_alive
@@ -119,7 +120,7 @@ class ConfigChecks(IChecks):
     def config(self) -> CheckRes:
         # TODO: this should be check for the newest config
         """Checks that sChain config file exists"""
-        config_filepath = schain_config_filepath(self.name)
+        config_filepath = new_schain_config_filepath(self.name, self.rotation_id)
         if not os.path.isfile(config_filepath):
             return CheckRes(False)
         return CheckRes(
@@ -185,6 +186,17 @@ class SkaledChecks(IChecks):
     def is_healthy(self) -> bool:
         checks = self.get_all()
         return False not in checks.values()
+
+    @property
+    def config_exists(self) -> CheckRes:
+        pass
+
+    def config_latest(self) -> CheckRes:
+        upstream_path = schain_config_filepath(self.name)
+        latest_path = get_latest_config_filepath(self.name)
+        upstream_mtime = os.stat(upstream_path, follow_symlinks=False).st_mtime
+        latest_mtime = os.stat(latest_path, follow_symlinks=False).st_mtime
+        return CheckRes(upstream_mtime >= latest_mtime)
 
     @property
     def config_file(self) -> CheckRes:
