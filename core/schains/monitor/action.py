@@ -35,7 +35,10 @@ from core.schains.cleaner import (
 from core.schains.firewall.types import IRuleController
 
 from core.schains.volume import init_data_volume
-from core.schains.rotation import get_schain_public_key
+from core.schains.rotation import (
+    get_schain_public_key,
+    set_rotation_for_schain
+)
 
 from core.schains.limits import get_schain_type
 
@@ -281,6 +284,9 @@ class SkaledActionManager(BaseActionManager):
             remove_schain_container(self.name, dutils=self.dutils)
         else:
             logger.warning(f'sChain {self.name}: container doesn\'t exists')
+        self.schain_record.set_restart_count(0)
+        self.schain_record.set_failed_rpc_count(0)
+        self.schain_record.set_needs_reload(False)
         initial_status = self.skaled_container()
         return initial_status
 
@@ -320,9 +326,13 @@ class SkaledActionManager(BaseActionManager):
         remove_schain_volume(self.name, dutils=self.dutils)
         return True
 
-    def set_upstream_config(self) -> bool:
+    @BaseActionManager.monitor_block
+    def fetch_upstream_config(self) -> bool:
         latest_filepath = get_latest_config_filepath(self.name)
         set_as_upstream_config(self.name, latest_filepath)
+
+    def send_exit_request(self) -> None:
+        set_rotation_for_schain(self.name, self.finish_ts)
 
     def log_executed_blocks(self) -> None:
         logger.info(arguments_list_string(

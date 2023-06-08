@@ -39,11 +39,11 @@ from core.schains.monitor import (
     ReloadMonitor
 )
 from core.schains.monitor.config_monitor import RegularConfigMonitor
-from core.schains.monitor.skaled_monitor import RegularSkaledMonitor
+from core.schains.monitor.skaled_monitor import get_skaled_monitor
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.task import run_tasks, Task
 from core.schains.firewall.utils import get_sync_agent_ranges
-from core.schains.skaled_status import SkaledStatus
+from core.schains.skaled_status import init_skaled_status, SkaledStatus
 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
@@ -105,7 +105,7 @@ def get_monitor_type(
         checks: SChainChecks,
         is_rotation_active: bool,
         skaled_status: SkaledStatus
-        ) -> BaseMonitor:
+) -> BaseMonitor:
     if _is_backup_mode(schain_record):
         return BackupMonitor
     if _is_repair_mode(schain_record, checks, skaled_status):
@@ -138,7 +138,7 @@ def monitor_config(skale: Skale, schain: Dict, node_config: NodeConfig) -> None:
         checks=config_checks
     )
 
-    mon = RegularConfigMonitor(config_am)
+    mon = RegularConfigMonitor(config_am, config_checks)
     mon.run()
 
 
@@ -180,6 +180,8 @@ def monitor_containers(
         chain_id=skale_ima.web3.eth.chainId
     )
 
+    skaled_status = init_skaled_status(name)
+
     # finish ts can be fetched from config
     skaled_am = SkaledActionManager(
         schain=schain,
@@ -189,8 +191,13 @@ def monitor_containers(
         finish_ts=finish_ts,
         dutils=dutils
     )
-
-    mon = RegularSkaledMonitor(skaled_am)
+    mon = get_skaled_monitor(
+        action_manager=skaled_am,
+        checks=skaled_checks,
+        schain_record=schain_record,
+        skaled_status=skaled_status,
+        backup_run=BACKUP_RUN
+    )
     mon.run()
 
 
@@ -214,7 +221,7 @@ def run_monitor_for_schain(
 
     while True:
         try:
-            name = schain["name"]
+            name = schain['name']
             tasks = [
                 Task(
                     f'{name}-config',
@@ -237,61 +244,8 @@ def run_monitor_for_schain(
                 )
             ]
             run_tasks(name=name, tasks=tasks)
-            # logger.info(f'{p} monitor created')
-            # reload(request)  # fix for web3py multiprocessing issue (see SKALE-4251)
-
-            # dutils = dutils or DockerUtils()
-
-            # is_rotation_active = skale.node_rotation.is_rotation_active(name)
-
-            # if not is_node_part_of_chain(skale, name, node_config.id) and not is_rotation_active:
-            #     logger.warning(f'{p} NOT ON NODE ({node_config.id}), finising process...')
-            #     return True
-
-            # ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
-            # rotation_data = skale.node_rotation.get_rotation(name)
-
-            # sync_agent_ranges = get_sync_agent_ranges(skale)
-
-            # rc = get_default_rule_controller(
-            #     name=name,
-            #     sync_agent_ranges=sync_agent_ranges
-            # )
-            # schain_record = upsert_schain_record(name)
-            # checks = SChainChecks(
-            #     name,
-            #     node_config.id,
-            #     schain_record=schain_record,
-            #     rule_controller=rc,
-            #     rotation_id=rotation_data['rotation_id'],
-            #     ima_linked=ima_linked,
-            #     dutils=dutils
-            # )
-
-            # ima_data = ImaData(
-            #     linked=ima_linked,
-            #     chain_id=skale_ima.web3.eth.chainId
-            # )
-            # skaled_status = init_skaled_status(name)
-
-            # monitor_class = get_monitor_type(
-            #     schain_record,
-            #     checks,
-            #     is_rotation_active,
-            #     skaled_status
-            # )
-            # monitor = monitor_class(
-            #     skale=skale,
-            #     ima_data=ima_data,
-            #     schain=schain,
-            #     node_config=node_config,
-            #     rotation_data=rotation_data,
-            #     checks=checks,
-            #     rule_controller=rc
-            # )
-            # monitor.run()
-            # if once:
-            #     return True
+            if once:
+                return True
             post_monitor_sleep()
         except Exception:
             logger.exception(f'{p} monitor failed')

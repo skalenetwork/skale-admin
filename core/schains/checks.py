@@ -188,10 +188,7 @@ class SkaledChecks(IChecks):
         return False not in checks.values()
 
     @property
-    def config_exists(self) -> CheckRes:
-        pass
-
-    def config_latest(self) -> CheckRes:
+    def latest_config(self) -> CheckRes:
         upstream_path = schain_config_filepath(self.name)
         latest_path = get_latest_config_filepath(self.name)
         upstream_mtime = os.stat(upstream_path, follow_symlinks=False).st_mtime

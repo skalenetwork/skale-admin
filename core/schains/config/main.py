@@ -113,8 +113,8 @@ def save_new_schain_config(schain_config, schain_name, rotation_id):
 
 
 def set_as_upstream_config(schain_name: str, config_path: str) -> None:
-    upstream_link_filepath = schain_config_filepath(schain_name)
-    shutil.copy(config_path, upstream_link_filepath)
+    upstream_filepath = schain_config_filepath(schain_name)
+    shutil.copy(config_path, upstream_filepath)
 
 
 def update_schain_config_version(schain_name, schain_record=None):
