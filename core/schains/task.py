@@ -13,7 +13,10 @@ class Task:
         self.action = action
 
     def run(self) -> None:
-        self.action()
+        try:
+            self.action()
+        except Exception as e:
+            logger.exception('Task %s failed with %s', self.name, e)
 
 
 def keep_tasks_running(
