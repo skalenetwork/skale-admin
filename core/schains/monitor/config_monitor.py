@@ -48,5 +48,5 @@ class RegularConfigMonitor(BaseConfigMonitor):
             self.am.config_dir()
         if not self.checks.dkg:
             self.am.dkg()
-        if not self.checks.config:
-            self.am.config()
+        if not self.checks.upstream_config:
+            self.am.upstream_config()
