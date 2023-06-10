@@ -1,6 +1,6 @@
 #   -*- coding: utf-8 -*-
 #
-#   This file is part of SKALE Admin
+#  This file is part of SKALE Admin
 #
 #   Copyright (C) 2021-Present SKALE Labs
 #
@@ -50,9 +50,9 @@ from core.schains.runner import (
     get_container_name
 )
 from core.schains.config.main import (
-    get_latest_config_filepath,
-    init_schain_config2,
-    set_as_upstream_config
+    create_new_schain_config,
+    get_upstream_config_filepath,
+    sync_config_with_file
 )
 from core.schains.config import init_schain_config_dir
 from core.schains.config.directory import get_schain_config
@@ -175,10 +175,10 @@ class ConfigActionManager(BaseActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def config(self, overwrite=False) -> bool:
-        initial_status = self.checks.config.status
+    def upstream_config(self, overwrite=False) -> bool:
+        initial_status = self.checks.upstream_config.status
         if not initial_status or overwrite:
-            init_schain_config2(
+            create_new_schain_config(
                 skale=self.skale,
                 node_id=self.node_config.id,
                 schain_name=self.name,
@@ -226,7 +226,7 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def firewall_rules(self, overwrite=False) -> bool:
-        initial_status = self.checks.firewall_rules.status
+        initial_status = self.checks.firewall_rules
         if not initial_status:
             logger.info('Configuring firewall rules')
             conf = get_schain_config(self.name)
@@ -327,10 +327,13 @@ class SkaledActionManager(BaseActionManager):
         return True
 
     @BaseActionManager.monitor_block
-    def fetch_upstream_config(self) -> bool:
-        latest_filepath = get_latest_config_filepath(self.name)
-        set_as_upstream_config(self.name, latest_filepath)
+    def update_config(self) -> bool:
+        upstream_path = get_upstream_config_filepath(self.name)
+        if upstream_path:
+            sync_config_with_file(self.name, upstream_path)
+        return upstream_path is not None
 
+    @BaseActionManager.monitor_block
     def send_exit_request(self) -> None:
         set_rotation_for_schain(self.name, self.finish_ts)
 
