@@ -35,10 +35,7 @@ from core.schains.cleaner import (
 from core.schains.firewall.types import IRuleController
 
 from core.schains.volume import init_data_volume
-from core.schains.rotation import (
-    get_schain_public_key,
-    set_rotation_for_schain
-)
+from core.schains.rotation import set_rotation_for_schain
 
 from core.schains.limits import get_schain_type
 
@@ -199,6 +196,7 @@ class SkaledActionManager(BaseActionManager):
         ima_data: ImaData,
         rule_controller: IRuleController,
         finish_ts: int,
+        public_key: str,
         checks: IChecks,
         dutils: DockerUtils = None
     ):
@@ -210,6 +208,7 @@ class SkaledActionManager(BaseActionManager):
         self.rc = rule_controller
         self.skaled_status = init_skaled_status(self.schain['name'])
         self.schain_type = get_schain_type(schain['partOfNode'])
+        self.public_key = public_key
 
         self.dutils = dutils or DockerUtils()
 
@@ -248,7 +247,7 @@ class SkaledActionManager(BaseActionManager):
             public_key, start_ts = None, None
 
             if download_snapshot:
-                public_key = get_schain_public_key(self.skale, self.name)
+                public_key = self.public_key
             if delay_start:
                 start_ts = self.finish_ts
 
@@ -308,7 +307,7 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def ima_container(self) -> bool:
-        initial_status = self.checks.ima_container.status
+        initial_status = self.checks.ima_container
         if not initial_status:
             monitor_ima_container(
                 self.schain,

@@ -19,6 +19,7 @@
 
 import logging
 from abc import abstractmethod
+from typing import Optional
 
 from core.schains.monitor.base_monitor import IMonitor
 from core.schains.checks import SkaledChecks
@@ -122,7 +123,7 @@ def is_backup_mode(schain_record: SChainRecord, backup_run: bool) -> bool:
 def is_repair_mode(
     schain_record: SChainRecord,
     checks: SkaledChecks,
-    skaled_status: SkaledStatus
+    skaled_status: Optional[SkaledStatus]
 ) -> bool:
     return schain_record.repair_mode or is_skaled_repair_status(checks, skaled_status)
 
@@ -131,7 +132,9 @@ def is_new_config(checks: SkaledChecks) -> bool:
     return checks.config and not checks.config_updated
 
 
-def is_exit_time_reached(checks: SkaledChecks, skaled_status: SkaledStatus) -> bool:
+def is_exit_time_reached(checks: SkaledChecks, skaled_status: Optional[SkaledStatus]) -> bool:
+    if not skaled_status:
+        return False
     skaled_status.log()
     return not checks.skaled_container.status and skaled_status.exit_time_reached
 
@@ -140,13 +143,17 @@ def is_reload_mode(schain_record: SChainRecord) -> bool:
     return schain_record.needs_reload
 
 
-def is_skaled_repair_status(checks: SkaledChecks, skaled_status: SkaledStatus) -> bool:
+def is_skaled_repair_status(checks: SkaledChecks, skaled_status: Optional[SkaledStatus]) -> bool:
+    if skaled_status is None:
+        return False
     skaled_status.log()
     needs_repair = skaled_status.clear_data_dir and skaled_status.start_from_snapshot
     return not checks.skaled_container.status and needs_repair
 
 
-def is_skaled_reload_status(checks: SkaledChecks, skaled_status: SkaledStatus) -> bool:
+def is_skaled_reload_status(checks: SkaledChecks, skaled_status: Optional[SkaledStatus]) -> bool:
+    if skaled_status is None:
+        return False
     skaled_status.log()
     needs_reload = skaled_status.start_again and not skaled_status.start_from_snapshot
     return not checks.skaled_container.status and needs_reload
@@ -156,7 +163,7 @@ def get_skaled_monitor(
     action_manager: SkaledActionManager,
     checks: SkaledChecks,
     schain_record: SChainRecord,
-    skaled_status: SkaledStatus,
+    skaled_status: Optional[SkaledStatus],
     backup_run: bool = False
 ) -> BaseSkaledMonitor:
     mon_type = RegularSkaledMonitor
