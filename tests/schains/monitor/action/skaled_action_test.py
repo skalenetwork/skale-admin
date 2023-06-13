@@ -1,13 +1,23 @@
+import datetime
+import json
+import os
+import time
+
+import freezegun
 import pytest
 import mock
 
 from core.schains.checks import SkaledChecks
 from core.schains.cleaner import remove_ima_container
+from core.schains.config.directory import new_config_filename, schain_config_dir
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.rotation import get_schain_public_key
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord
+
+CURRENT_TIMESTAMP = 1594903080
+CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 
 
 def run_ima_container_mock(schain: dict, mainnet_chain_id: int, dutils=None):
@@ -174,7 +184,7 @@ def test_skaled_container_with_snapshot_action(skaled_am):
         skaled_am.cleanup_schain_docker_entity()
 
 
-def test_base_monitor_skaled_container_snapshot_delay_start(skaled_am):
+def test_skaled_container_snapshot_delay_start_action(skaled_am):
     try:
         skaled_am.volume()
         with mock.patch(
@@ -198,6 +208,7 @@ def test_base_monitor_skaled_container_snapshot_delay_start(skaled_am):
 
 
 def test_restart_skaled_container_action(skaled_am, skaled_checks):
+    skaled_am.reloaded_skaled_container()
     try:
         skaled_am.volume()
         with mock.patch(
@@ -209,11 +220,13 @@ def test_restart_skaled_container_action(skaled_am, skaled_checks):
             assert skaled_checks.skaled_container
             skaled_am.restart_skaled_container()
             assert skaled_checks.skaled_container
+            skaled_am.reloaded_skaled_container()
+            assert skaled_checks.skaled_container
     finally:
         skaled_am.cleanup_schain_docker_entity()
 
 
-def test_base_monitor_ima_container(skaled_am, skaled_checks, schain_config, predeployed_ima):
+def test_ima_container_action(skaled_am, skaled_checks, schain_config, predeployed_ima):
     try:
         skaled_am.ima_data.linked = True
         with mock.patch(
@@ -223,11 +236,13 @@ def test_base_monitor_ima_container(skaled_am, skaled_checks, schain_config, pre
             assert not skaled_checks.ima_container
             skaled_am.ima_container()
             assert skaled_checks.ima_container
+            skaled_am.ima_container()
+            assert skaled_checks.ima_container
     finally:
         remove_ima_container(skaled_am.name, dutils=skaled_am.dutils)
 
 
-def test_base_monitor_cleanup_empty(skaled_am, skaled_checks):
+def test_cleanup_empty_action(skaled_am, skaled_checks):
     skaled_am.cleanup_schain_docker_entity()
     assert not skaled_checks.skaled_container
 
@@ -239,6 +254,9 @@ def test_schain_finish_ts(skale, schain_on_contracts):
 
 
 def test_display_skaled_logs(skale, skaled_am, _schain_name):
+    skaled_am.log_executed_blocks()
+    # Don't display if no container
+    skaled_am.display_skaled_logs()
     try:
         skaled_am.volume()
         with mock.patch(
@@ -248,3 +266,54 @@ def test_display_skaled_logs(skale, skaled_am, _schain_name):
             skaled_am.skaled_container()
     finally:
         skaled_am.display_skaled_logs()
+        skaled_am.cleanup_schain_docker_entity()
+
+
+@freezegun.freeze_time(CURRENT_DATETIME)
+def test_upd_schain_record(skaled_am, skaled_checks):
+    # Prepare fake record
+    r = SChainRecord.get_by_name(skaled_am.name)
+    r.set_restart_count(1)
+    r.set_failed_rpc_count(1)
+
+    assert r.monitor_last_seen != CURRENT_DATETIME
+    skaled_am._upd_last_seen()
+    r = SChainRecord.get_by_name(skaled_am.name)
+    assert r.monitor_last_seen == CURRENT_DATETIME
+    skaled_am._upd_schain_record()
+    r = SChainRecord.get_by_name(skaled_am.name)
+
+    assert not r.first_run
+    assert not r.new_schain
+    r.restart_count == 0
+    r.failed_rpc_count == 0
+
+
+def test_update_config(skaled_am, skaled_checks):
+    folder = schain_config_dir(skaled_am.name)
+    config_path = os.path.join(folder, f'schain_{skaled_am.name}.json')
+    os.remove(config_path)
+
+    assert not skaled_checks.config
+    assert not skaled_checks.config_updated
+    upstream_path = os.path.join(folder, new_config_filename(skaled_am.name, rotation_id=5))
+    config_content = {'config': 'mock_v5'}
+    with open(upstream_path, 'w') as upstream_file:
+        json.dump(config_content, upstream_file)
+    skaled_am.update_config()
+    with open(config_path) as config_file:
+        json.load(config_file) == config_content
+    assert skaled_checks.config
+    assert skaled_checks.config_updated
+
+    time.sleep(1)
+    upstream_path = os.path.join(folder, new_config_filename(skaled_am.name, rotation_id=6))
+    config_content = {'config': 'mock_v6'}
+    with open(upstream_path, 'w') as upstream_file:
+        json.dump(config_content, upstream_file)
+
+    assert skaled_checks.config
+    assert not skaled_checks.config_updated
+    skaled_am.update_config()
+
+    assert skaled_checks.config_updated
