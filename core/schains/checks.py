@@ -203,9 +203,9 @@ class SkaledChecks(IChecks):
 
     @property
     def config(self) -> CheckRes:
-        """ Checks that upstream sChain config file exists """
+        """ Checks that sChain config file exists """
         config_path = schain_config_filepath(self.name)
-        return os.path.isfile(config_path)
+        return CheckRes(os.path.isfile(config_path))
 
     @property
     def volume(self) -> CheckRes:
@@ -253,7 +253,7 @@ class SkaledChecks(IChecks):
     def rpc(self) -> CheckRes:
         """Checks that local skaled RPC is accessible"""
         res = False
-        if self.config_file.status:
+        if self.config:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             timeout = get_endpoint_alive_check_timeout(
                 self.schain_record.failed_rpc_count
@@ -264,7 +264,7 @@ class SkaledChecks(IChecks):
     @property
     def blocks(self) -> CheckRes:
         """Checks that local skaled is mining blocks"""
-        if self.config_file.status:
+        if self.config:
             http_endpoint = get_local_schain_http_endpoint(self.name)
             return CheckRes(check_endpoint_blocks(http_endpoint))
         return CheckRes(False)
