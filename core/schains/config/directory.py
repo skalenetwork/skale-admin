@@ -37,7 +37,7 @@ def config_filename(name: str) -> str:
 
 
 def new_config_prefix(name: str) -> str:
-    return f'scain_{name}_'
+    return f'schain_{name}_'
 
 
 def new_config_filename(name: str, rotation_id: int) -> str:

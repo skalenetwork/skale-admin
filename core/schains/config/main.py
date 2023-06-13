@@ -135,18 +135,18 @@ def schain_config_version_match(schain_name, schain_record=None):
 
 
 def get_upstream_config_filepath(schain_name) -> Optional[str]:
-    # IVD TODO filter secret_key files
     config_dir = schain_config_dir(schain_name)
     prefix = new_config_prefix(schain_name)
     dir_files = None
     if os.path.isdir(config_dir):
+        configs = [
+            os.path.join(config_dir, fname)
+            for fname in os.listdir(config_dir)
+            if fname.startswith(prefix)
+        ]
         dir_files = sorted(
-            filter(lambda f: config_dir.startswith(prefix), os.listdir(config_dir)),
-            key=lambda fname: os.stat(
-                os.path.join(
-                    config_dir,
-                    fname
-                ), follow_symlinks=False).st_mtime
+            configs,
+            key=lambda path: os.stat(path, follow_symlinks=False).st_mtime
         )
     if not dir_files:
         return None
