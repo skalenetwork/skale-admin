@@ -79,7 +79,7 @@ class BaseActionManager:
     def __init__(self, name: str):
         self.name = name
         self.executed_blocks = {}
-        self.p = f'{type(self).__name__} - schain: {self.name} -'
+        self.p = f'[{self.name}:{type(self).__name__}]'
 
     @staticmethod
     def monitor_block(f):
@@ -110,7 +110,7 @@ class BaseActionManager:
         set_first_run(self.name, False)
         self.schain_record.set_new_schain(False)
         logger.info(
-            f'sChain {self.name}: '
+            f'{self.p}: '
             f'restart_count - {self.schain_record.restart_count}, '
             f'failed_rpc_count - {self.schain_record.failed_rpc_count}'
         )
@@ -277,12 +277,12 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def reloaded_skaled_container(self) -> bool:
-        logger.info('Starting skaled with reloaded configuration')
+        logger.info('%s Starting skaled with reloaded configuration', self.p)
         initial_status = True
         if is_container_exists(self.name, dutils=self.dutils):
             remove_schain_container(self.name, dutils=self.dutils)
         else:
-            logger.warning(f'sChain {self.name}: container doesn\'t exists')
+            logger.warning('%s: container doesn\'t exists', self.p)
         self.schain_record.set_restart_count(0)
         self.schain_record.set_failed_rpc_count(0)
         self.schain_record.set_needs_reload(False)
@@ -302,24 +302,26 @@ class SkaledActionManager(BaseActionManager):
             )
         else:
             self.schain_record.set_failed_rpc_count(0)
-            logger.info(f'{self.p} rpc - ok')
+            logger.info('%s rpc - ok', self.p)
         return initial_status
 
     @BaseActionManager.monitor_block
     def ima_container(self) -> bool:
         initial_status = self.checks.ima_container
         if not initial_status:
+            logger.info('%s trying to run IMA container', self.p)
             monitor_ima_container(
                 self.schain,
                 self.ima_data,
                 dutils=self.dutils
             )
         else:
-            logger.info(f'{self.p} ima_container - ok')
+            logger.info('%s ima_container - ok', self.p)
         return initial_status
 
     @BaseActionManager.monitor_block
     def cleanup_schain_docker_entity(self) -> bool:
+        logger.info('%s removing docker artifacts', self.p)
         remove_schain_container(self.name, dutils=self.dutils)
         time.sleep(SCHAIN_CLEANUP_TIMEOUT)
         remove_schain_volume(self.name, dutils=self.dutils)
@@ -329,7 +331,9 @@ class SkaledActionManager(BaseActionManager):
     def update_config(self) -> bool:
         upstream_path = get_upstream_config_filepath(self.name)
         if upstream_path:
+            logger.info('%s syncing with upstream %s', self.p, upstream_path)
             sync_config_with_file(self.name, upstream_path)
+        logger.info('%s no upstream config yet', self.p)
         return upstream_path is not None
 
     @BaseActionManager.monitor_block
