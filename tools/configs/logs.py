@@ -43,5 +43,5 @@ LOG_FILE_SIZE_BYTES = LOG_FILE_SIZE_MB * 1000000
 
 LOG_BACKUP_COUNT = 3
 
-ADMIN_LOG_FORMAT = '[%(asctime)s %(levelname)s] - %(process)d - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
+ADMIN_LOG_FORMAT = '[%(asctime)s %(levelname)s][%(process)d][%(processName)s][%(threadName)s] - %(name)s:%(lineno)d - %(message)s'  # noqa
 API_LOG_FORMAT = '[%(asctime)s] %(process)d %(levelname)s %(url)s %(module)s: %(message)s'  # noqa
