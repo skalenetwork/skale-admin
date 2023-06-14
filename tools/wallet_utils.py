@@ -20,11 +20,12 @@
 import logging
 
 
+import requests
 from redis import Redis
-
 from skale.utils.web3_utils import init_web3
 from skale.wallets import BaseWallet, RedisWalletAdapter, SgxWallet
 from skale.wallets.web3_wallet import to_checksum_address
+from web3.providers.rpc import HTTPProvider
 
 from tools.configs import (
     DEFAULT_POOL,
@@ -43,12 +44,12 @@ DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10 ** 18))
 
 def wallet_with_balance(skale):  # todo: move to the skale.py
     address = skale.wallet.address
-    eth_balance_wei = skale.web3.eth.getBalance(address)
+    eth_balance_wei = skale.web3.eth.get_balance(address)
     return {
         'address': to_checksum_address(address),
         'eth_balance_wei': eth_balance_wei,
         'skale_balance_wei': 0,
-        'eth_balance': str(skale.web3.fromWei(eth_balance_wei, 'ether')),
+        'eth_balance': str(skale.web3.from_wei(eth_balance_wei, 'ether')),
         'skale_balance': '0'
     }
 
@@ -71,3 +72,24 @@ def init_wallet(
         path_to_cert=SGX_CERTIFICATES_FOLDER
     )
     return RedisWalletAdapter(rs, pool, sgx_wallet)
+
+
+class HTTPProviderNoCache(HTTPProvider):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs, session=None)
+
+    def make_request(self, method, params):
+        logger.debug('Making request HTTPCustom. URI: %s, Method: %s',
+                     self.endpoint_uri, method)
+        request_data = self.encode_rpc_request(method, params)
+        raw_response = requests.post(
+            self.endpoint_uri,
+            request_data,
+            **self.get_request_kwargs()
+        )
+        raw_response.raise_for_status()
+        response = self.decode_rpc_response(raw_response.content)
+        logger.debug('Getting response HTTP Custom. URI: %s, '
+                     'Method: %s, Response: %s',
+                     self.endpoint_uri, method, response)
+        return response

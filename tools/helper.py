@@ -160,7 +160,7 @@ def get_endpoint_call_speed(web3):
     scores = []
     for _ in range(10):
         start = time.time()
-        result = web3.eth.gasPrice
+        result = web3.eth.gas_price
         if result:
             scores.append(time.time() - start)
     if len(scores) == 0:

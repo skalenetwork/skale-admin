@@ -102,7 +102,6 @@ class AfterExitTimeSkaledMonitor(BaseSkaledMonitor):
 
 
 class NewConfigSkaledMonitor(BaseSkaledMonitor):
-    # IVD should only be run for node rotation cases / or get timestamp for ip change.
     def run(self):
         if self.checks.config and not self.checks.firewall:
             self.am.firewall_rules()

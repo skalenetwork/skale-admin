@@ -22,8 +22,10 @@ import time
 import random
 import logging
 from typing import Dict
+from importlib import reload
 
 from skale import Skale, SkaleIma
+from web3._utils import request as web3_request
 
 from core.node_config import NodeConfig
 from core.schains.checks import ConfigChecks, SkaledChecks, SChainChecks
@@ -43,7 +45,8 @@ from core.schains.monitor.skaled_monitor import get_skaled_monitor
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.task import run_tasks, Task
 from core.schains.firewall.utils import get_sync_agent_ranges
-from core.schains.skaled_status import init_skaled_status, SkaledStatus
+from core.schains.rotation import get_schain_public_key
+from core.schains.skaled_status import get_skaled_status, SkaledStatus
 
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
@@ -119,7 +122,7 @@ def get_monitor_type(
     return RegularMonitor
 
 
-def monitor_config(skale: Skale, schain: Dict, node_config: NodeConfig) -> None:
+def run_config_pipeline(skale: Skale, schain: Dict, node_config: NodeConfig) -> None:
     name = schain['name']
     schain_record = upsert_schain_record(name)
     rotation_data = skale.node_rotation.get_rotation(name)
@@ -142,7 +145,7 @@ def monitor_config(skale: Skale, schain: Dict, node_config: NodeConfig) -> None:
     mon.run()
 
 
-def monitor_containers(
+def run_skaled_pipeline(
     skale: Skale,
     skale_ima: SkaleIma,
     schain: Dict,
@@ -177,10 +180,12 @@ def monitor_containers(
 
     ima_data = ImaData(
         linked=ima_linked,
-        chain_id=skale_ima.web3.eth.chainId
+        chain_id=skale_ima.web3.eth.chain_id
     )
 
-    skaled_status = init_skaled_status(name)
+    skaled_status = get_skaled_status(name)
+
+    public_key = get_schain_public_key(skale, name)
 
     # finish ts can be fetched from config
     skaled_am = SkaledActionManager(
@@ -188,6 +193,7 @@ def monitor_containers(
         rule_controller=rc,
         ima_data=ima_data,
         checks=skaled_checks,
+        public_key=public_key,
         finish_ts=finish_ts,
         dutils=dutils
     )
@@ -221,12 +227,13 @@ def run_monitor_for_schain(
 
     while True:
         try:
+            reload(web3_request)
             name = schain['name']
             tasks = [
                 Task(
                     f'{name}-config',
                     functools.partial(
-                        monitor_config,
+                        run_config_pipeline,
                         skale=skale,
                         schain=schain,
                         node_config=node_config
@@ -235,7 +242,7 @@ def run_monitor_for_schain(
                 Task(
                     f'{name}-skaled',
                     functools.partial(
-                        monitor_containers,
+                        run_skaled_pipeline,
                         skale=skale,
                         skale_ima=skale_ima,
                         schain=schain,
