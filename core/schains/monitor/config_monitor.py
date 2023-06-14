@@ -38,12 +38,22 @@ class BaseConfigMonitor(IMonitor):
         self.checks = checks
 
     @abstractmethod
-    def run(self) -> None:
+    def execute(self) -> None:
         pass
+
+    def run(self):
+        typename = type(self).__name__
+        logger.info('Monitor type %s:', typename)
+        self.am._upd_last_seen()
+        self.am._upd_schain_record()
+        self.execute()
+        self.am.log_executed_blocks()
+        self.am._upd_last_seen()
+        logger.info('Finished %s monitor runner', typename)
 
 
 class RegularConfigMonitor(BaseConfigMonitor):
-    def run(self) -> None:
+    def execute(self) -> None:
         if not self.checks.config_dir:
             self.am.config_dir()
         if not self.checks.dkg:
