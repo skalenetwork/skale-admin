@@ -1,3 +1,4 @@
+import json
 import os
 from time import sleep
 from http import HTTPStatus
@@ -9,10 +10,14 @@ import mock
 import docker
 import pytest
 
-from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.checks import SChainChecks, CheckRes
+from core.schains.config.directory import (
+    get_schain_check_filepath,
+    new_config_filename,
+    schain_config_dir
+)
+from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.runner import get_container_info
-from core.schains.config.directory import get_schain_check_filepath
 
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.helper import read_json
@@ -112,7 +117,7 @@ def test_dkg_check(schain_checks, sample_false_checks):
 
 def test_config_check(schain_checks, sample_false_checks):
     with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert schain_checks.config.status
+        assert schain_checks.config
         assert not sample_false_checks.config.status
 
 
@@ -200,9 +205,9 @@ def test_blocks_check(schain_checks):
     with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
         with mock.patch('requests.post', return_value=res_mock), \
                 mock.patch('time.time', return_value=TEST_TIMESTAMP):
-            assert schain_checks.blocks.status
+            assert schain_checks.blocks
         with mock.patch('requests.post', return_value=res_mock):
-            assert not schain_checks.blocks.status
+            assert not schain_checks.blocks
 
 
 def test_init_checks(skale, schain_db, uninited_rule_controller, dutils):
@@ -326,3 +331,25 @@ def test_get_all_with_save(node_config, rule_controller, dutils, schain_db):
     assert os.path.isfile(schain_check_path)
     checks_from_file = read_json(schain_check_path)
     assert schain_checks == checks_from_file['checks']
+
+
+def test_config_updated(skale, rule_controller, schain_db, dutils):
+    name = schain_db
+    folder = schain_config_dir(name)
+
+    schain_record = SChainRecord.get_by_name(name)
+
+    checks = SChainChecks(
+        name,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        rule_controller=rule_controller,
+        dutils=dutils
+    )
+    assert checks.config_updated
+
+    upstream_path = os.path.join(folder, new_config_filename(name, rotation_id=5))
+    config_content = {'config': 'mock_v5'}
+    with open(upstream_path, 'w') as upstream_file:
+        json.dump(config_content, upstream_file)
+    assert not checks.config_updated
