@@ -21,7 +21,7 @@ import json
 import os
 import shutil
 import logging
-from typing import Optional
+from typing import Dict, Optional
 
 from skale import Skale
 
@@ -151,3 +151,26 @@ def get_upstream_config_filepath(schain_name) -> Optional[str]:
     if not dir_files:
         return None
     return os.path.join(config_dir, dir_files[-1])
+
+
+def get_node_groups_from_config(config_path: str) -> Dict:
+    with open(config_path) as upstream_file:
+        upstream_config = json.load(upstream_file)
+        return upstream_config['skaleConfig']['sChain']['nodeGroups']
+
+
+def get_finish_ts(config_path: str) -> Optional[int]:
+    if not os.path.isfile(config_path):
+        return None
+    node_groups = get_node_groups_from_config(config_path)
+    return sorted(node_groups.keys())[-1]['finish_ts']
+
+
+def get_finish_ts_from_upstream_config(schain_name: str) -> Optional[int]:
+    upstream_path = get_upstream_config_filepath(schain_name)
+    return get_finish_ts(upstream_path)
+
+
+def get_finish_ts_from_config(schain_name: str) -> Optional[int]:
+    upstream_path = schain_config_filepath(schain_name)
+    return get_finish_ts(upstream_path)

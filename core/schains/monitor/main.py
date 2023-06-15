@@ -173,11 +173,6 @@ def run_skaled_pipeline(
         dutils=dutils
     )
 
-    finish_ts = skale.node_rotation.get_schain_finish_ts(
-      node_id=rotation_data['leaving_node'],
-      schain_name=name
-    )
-
     ima_data = ImaData(
         linked=ima_linked,
         chain_id=skale_ima.web3.eth.chain_id
@@ -194,7 +189,6 @@ def run_skaled_pipeline(
         ima_data=ima_data,
         checks=skaled_checks,
         public_key=public_key,
-        finish_ts=finish_ts,
         dutils=dutils
     )
     mon = get_skaled_monitor(

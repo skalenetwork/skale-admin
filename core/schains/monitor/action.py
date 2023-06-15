@@ -21,6 +21,7 @@ import time
 import logging
 from datetime import datetime
 from functools import wraps
+from typing import Optional
 
 from skale import Skale
 
@@ -48,6 +49,8 @@ from core.schains.runner import (
 )
 from core.schains.config.main import (
     create_new_schain_config,
+    get_finish_ts_from_config,
+    get_finish_ts_from_upstream_config,
     get_upstream_config_filepath,
     sync_config_with_file
 )
@@ -65,7 +68,13 @@ from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import SCHAIN_CONTAINER
 
-from web.models.schain import upsert_schain_record, set_first_run, SChainRecord
+from tools.notifications.messages import notify_repair_mode
+from web.models.schain import (
+    SChainRecord,
+    set_first_run,
+    switch_off_repair_mode,
+    upsert_schain_record
+)
 
 
 logger = logging.getLogger(__name__)
@@ -115,6 +124,10 @@ class BaseActionManager:
             f'failed_rpc_count - {self.schain_record.failed_rpc_count}'
         )
 
+    def log_executed_blocks(self) -> None:
+        logger.info(arguments_list_string(
+            self.executed_blocks, f'Finished monitor runner - {self.name}'))
+
 
 class ConfigActionManager(BaseActionManager):
     def __init__(
@@ -133,10 +146,6 @@ class ConfigActionManager(BaseActionManager):
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
-        self.finish_ts = skale.node_rotation.get_schain_finish_ts(
-            node_id=rotation_data['leaving_node'],
-            schain_name=self.schain['name']
-        )
         super().__init__(name=schain['name'])
 
     @BaseActionManager.monitor_block
@@ -172,9 +181,9 @@ class ConfigActionManager(BaseActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def upstream_config(self, overwrite=False) -> bool:
-        initial_status = self.checks.upstream_config.status
-        if not initial_status or overwrite:
+    def upstream_config(self) -> bool:
+        initial_status = self.checks.upstream_config
+        if not initial_status:
             create_new_schain_config(
                 skale=self.skale,
                 node_id=self.node_config.id,
@@ -195,15 +204,16 @@ class SkaledActionManager(BaseActionManager):
         schain: dict,
         ima_data: ImaData,
         rule_controller: IRuleController,
-        finish_ts: int,
         public_key: str,
         checks: IChecks,
+        node_config: NodeConfig,
         dutils: DockerUtils = None
     ):
         self.ima_data = ima_data
         self.schain = schain
         self.generation = schain['generation']
         self.checks = checks
+        self.node_config = node_config
 
         self.rc = rule_controller
         self.skaled_status = init_skaled_status(self.schain['name'])
@@ -241,15 +251,18 @@ class SkaledActionManager(BaseActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def skaled_container(self, download_snapshot: bool = False, delay_start: bool = False) -> bool:
+    def skaled_container(
+        self,
+        download_snapshot: bool = False,
+        start_ts: Optional[int] = None
+    ) -> bool:
         initial_status = self.checks.skaled_container.status
         if not initial_status:
-            public_key, start_ts = None, None
-
+            public_key = None
             if download_snapshot:
                 public_key = self.public_key
-            if delay_start:
-                start_ts = self.finish_ts
+                if start_ts is None:
+                    start_ts = self.finish_ts
 
             monitor_schain_container(
                 self.schain,
@@ -338,11 +351,17 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def send_exit_request(self) -> None:
-        set_rotation_for_schain(self.name, self.finish_ts)
+        finish_ts = self.upstream_finish_ts
+        if finish_ts is not None:
+            set_rotation_for_schain(self.name, finish_ts)
 
-    def log_executed_blocks(self) -> None:
-        logger.info(arguments_list_string(
-            self.executed_blocks, f'Finished monitor runner - {self.name}'))
+    @property
+    def upstream_finish_ts(self) -> Optional[int]:
+        return get_finish_ts_from_upstream_config(self.name)
+
+    @property
+    def finish_ts(self) -> Optional[int]:
+        return get_finish_ts_from_config(self.name)
 
     def display_skaled_logs(self) -> None:
         if is_container_exists(self.name, dutils=self.dutils):
@@ -350,3 +369,14 @@ class SkaledActionManager(BaseActionManager):
             self.dutils.display_container_logs(container_name)
         else:
             logger.warning(f'sChain {self.name}: container doesn\'t exists, could not show logs')
+
+    @BaseActionManager.monitor_block
+    def notify_repair_mode(self) -> None:
+        notify_repair_mode(
+            self.node_config.all(),
+            self.name
+        )
+
+    @BaseActionManager.monitor_block
+    def disable_repair_mode(self) -> None:
+        switch_off_repair_mode(self.name)
