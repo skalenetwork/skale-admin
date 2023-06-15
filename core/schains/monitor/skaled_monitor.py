@@ -61,12 +61,22 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.checks.volume:
             self.am.volume()
-        if self.checks.volume and not self.checks.skaled_container:
+            self.am.skaled_container(download_snapshot=True)
+        elif not self.checks.skaled_container:
             self.am.skaled_container()
+        if not self.checks.ima_container:
+            self.am.ima_container()
 
 
 class RepairSkaledMonitor(BaseSkaledMonitor):
     def execute(self) -> None:
+        logger.warning(
+            'Repair mode execution, record: %s, exit_code_ok: %s',
+            self.checks.schain_record.repair_mode,
+            self.checks.exit_code_ok.status
+        )
+        self.notify_repair_mode()
+        self.cleanup_schain_docker_entity()
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
         if not self.checks.volume:
