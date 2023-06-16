@@ -17,9 +17,11 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+import glob
 import json
 import logging
+import os
+import time
 from pathlib import Path
 
 from tools.configs import SCHAIN_CONFIG_DIR_SKALED
@@ -40,8 +42,14 @@ def new_config_prefix(name: str) -> str:
     return f'schain_{name}_'
 
 
-def new_config_filename(name: str, rotation_id: int) -> str:
-    return f'schain_{name}_{rotation_id}.json'
+def formatted_stream_version(stream_version: str) -> str:
+    return stream_version.replace('.', '_')
+
+
+def new_config_filename(name: str, rotation_id: int, stream_version: str) -> str:
+    ts = int(time.time())
+    formatted_version = formatted_stream_version(stream_version)
+    return f'schain_{name}_{ts}_{rotation_id}_{formatted_version}.json'
 
 
 def schain_config_dir(name: str) -> str:
@@ -67,9 +75,37 @@ def schain_config_filepath(name: str, in_schain_container=False) -> str:
     return os.path.join(schain_dir_path, config_filename(name))
 
 
-def new_schain_config_filepath(name: str, rotation_id: int, in_schain_container=False) -> str:
+def new_schain_config_filepath(
+    name: str,
+    rotation_id: int,
+    stream_version: str,
+    in_schain_container: bool = False
+) -> str:
     schain_dir_path = SCHAIN_CONFIG_DIR_SKALED if in_schain_container else schain_config_dir(name)
-    return os.path.join(schain_dir_path, new_config_filename(name, rotation_id))
+    return os.path.join(schain_dir_path, new_config_filename(name, rotation_id, stream_version))
+
+
+def config_exists_for_rotation_id_and_stream_version(
+    name: str,
+    rotation_id: int,
+    stream_version: str,
+    in_schain_container: bool = False
+) -> str:
+    schain_dir_path = SCHAIN_CONFIG_DIR_SKALED if in_schain_container else schain_config_dir(name)
+    version = formatted_stream_version(stream_version)
+    pattern = f'{schain_dir_path}/schain_{name}_*_{rotation_id}_{version}.json'
+    done = glob.glob(pattern)
+    return len(done) > 0
+
+
+def upstream_path_for_rotation_id_stream(
+    name: str,
+    rotation_id: int,
+    stream_version: str,
+    in_schain_container: bool = False
+):
+    schain_dir_path = SCHAIN_CONFIG_DIR_SKALED if in_schain_container else schain_config_dir(name)
+    return os.path.join(schain_dir_path)
 
 
 def skaled_status_filepath(name: str) -> str:

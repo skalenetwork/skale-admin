@@ -88,7 +88,6 @@ class BaseActionManager:
     def __init__(self, name: str):
         self.name = name
         self.executed_blocks = {}
-        self.p = f'[{self.name}:{type(self).__name__}]'
 
     @staticmethod
     def monitor_block(f):
@@ -119,7 +118,6 @@ class BaseActionManager:
         set_first_run(self.name, False)
         self.schain_record.set_new_schain(False)
         logger.info(
-            f'{self.p}: '
             f'restart_count - {self.schain_record.restart_count}, '
             f'failed_rpc_count - {self.schain_record.failed_rpc_count}'
         )
@@ -136,6 +134,7 @@ class ConfigActionManager(BaseActionManager):
         schain: dict,
         node_config: NodeConfig,
         rotation_data: dict,
+        stream_version: str,
         checks: IChecks
     ):
         self.skale = skale
@@ -143,6 +142,7 @@ class ConfigActionManager(BaseActionManager):
         self.generation = schain['generation']
         self.node_config = node_config
         self.checks = checks
+        self.stream_version = stream_version
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
@@ -154,7 +154,7 @@ class ConfigActionManager(BaseActionManager):
         if not initial_status:
             init_schain_config_dir(self.name)
         else:
-            logger.info(f'{self.p} config_dir - ok')
+            logger.info('config_dir - ok')
         return initial_status
 
     @BaseActionManager.monitor_block
@@ -175,9 +175,9 @@ class ConfigActionManager(BaseActionManager):
                 )
             self.schain_record.set_dkg_status(dkg_result.status)
             if not dkg_result.status.is_done():
-                raise DkgError(f'{self.p} DKG failed')
+                raise DkgError('DKG failed')
         else:
-            logger.info(f'{self.p} dkg - ok')
+            logger.info('dkg - ok')
         return initial_status
 
     @BaseActionManager.monitor_block
@@ -191,10 +191,11 @@ class ConfigActionManager(BaseActionManager):
                 generation=self.generation,
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,
+                stream_version=self.stream_version,
                 schain_record=self.schain_record
             )
         else:
-            logger.info(f'{self.p} config - ok')
+            logger.info('config - ok')
         return initial_status
 
 
@@ -230,7 +231,7 @@ class SkaledActionManager(BaseActionManager):
         if not initial_status:
             init_data_volume(self.schain, dutils=self.dutils)
         else:
-            logger.info(f'{self.p} volume - ok')
+            logger.info('Volume - ok')
         return initial_status
 
     @BaseActionManager.monitor_block
@@ -275,7 +276,7 @@ class SkaledActionManager(BaseActionManager):
             time.sleep(CONTAINER_POST_RUN_DELAY)
         else:
             self.schain_record.set_restart_count(0)
-            logger.info(f'{self.p} skaled_container - ok')
+            logger.info('skaled_container - ok')
         return initial_status
 
     @BaseActionManager.monitor_block
@@ -290,12 +291,12 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def reloaded_skaled_container(self) -> bool:
-        logger.info('%s Starting skaled with reloaded configuration', self.p)
+        logger.info('starting skaled with reloaded configuration')
         initial_status = True
         if is_container_exists(self.name, dutils=self.dutils):
             remove_schain_container(self.name, dutils=self.dutils)
         else:
-            logger.warning('%s: container doesn\'t exists', self.p)
+            logger.warning('container doesn\'t exists')
         self.schain_record.set_restart_count(0)
         self.schain_record.set_failed_rpc_count(0)
         self.schain_record.set_needs_reload(False)
@@ -315,26 +316,26 @@ class SkaledActionManager(BaseActionManager):
             )
         else:
             self.schain_record.set_failed_rpc_count(0)
-            logger.info('%s rpc - ok', self.p)
+            logger.info('rpc - ok')
         return initial_status
 
     @BaseActionManager.monitor_block
     def ima_container(self) -> bool:
         initial_status = self.checks.ima_container
         if not initial_status:
-            logger.info('%s trying to run IMA container', self.p)
+            logger.info('trying to run IMA container')
             monitor_ima_container(
                 self.schain,
                 self.ima_data,
                 dutils=self.dutils
             )
         else:
-            logger.info('%s ima_container - ok', self.p)
+            logger.info('ima_container - ok')
         return initial_status
 
     @BaseActionManager.monitor_block
     def cleanup_schain_docker_entity(self) -> bool:
-        logger.info('%s removing docker artifacts', self.p)
+        logger.info('removing docker artifacts')
         remove_schain_container(self.name, dutils=self.dutils)
         time.sleep(SCHAIN_CLEANUP_TIMEOUT)
         remove_schain_volume(self.name, dutils=self.dutils)
@@ -344,9 +345,9 @@ class SkaledActionManager(BaseActionManager):
     def update_config(self) -> bool:
         upstream_path = get_upstream_config_filepath(self.name)
         if upstream_path:
-            logger.info('%s syncing with upstream %s', self.p, upstream_path)
+            logger.info('syncing with upstream %s', upstream_path)
             sync_config_with_file(self.name, upstream_path)
-        logger.info('%s no upstream config yet', self.p)
+        logger.info('no upstream config yet')
         return upstream_path is not None
 
     @BaseActionManager.monitor_block

@@ -77,6 +77,7 @@ def create_new_schain_config(
     generation: int,
     ecdsa_sgx_key_name: str,
     rotation_data: dict,
+    stream_version: str,
     schain_record: SChainRecord
 ):
     logger.info('Generating sChain config for %s', schain_name)
@@ -92,7 +93,8 @@ def create_new_schain_config(
     save_new_schain_config(
         schain_config.to_dict(),
         schain_name,
-        rotation_data['rotation_id']
+        rotation_data['rotation_id'],
+        stream_version
     )
     update_schain_config_version(schain_name, schain_record=schain_record)
 
@@ -105,11 +107,11 @@ def save_schain_config(schain_config, schain_name):
     shutil.move(tmp_config_filepath, config_filepath)
 
 
-def save_new_schain_config(schain_config, schain_name, rotation_id):
+def save_new_schain_config(schain_config, schain_name, rotation_id, stream_version):
     tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
     with open(tmp_config_filepath, 'w') as outfile:
         json.dump(schain_config, outfile, indent=4)
-    config_filepath = new_schain_config_filepath(schain_name, rotation_id)
+    config_filepath = new_schain_config_filepath(schain_name, rotation_id, stream_version)
     shutil.move(tmp_config_filepath, config_filepath)
 
 
@@ -146,7 +148,6 @@ def get_upstream_config_filepath(schain_name) -> Optional[str]:
         ]
         dir_files = sorted(
             configs,
-            key=lambda path: os.stat(path, follow_symlinks=False).st_mtime
         )
     if not dir_files:
         return None
@@ -155,8 +156,8 @@ def get_upstream_config_filepath(schain_name) -> Optional[str]:
 
 def get_node_groups_from_config(config_path: str) -> Dict:
     with open(config_path) as upstream_file:
-        upstream_config = json.load(upstream_file)
-        return upstream_config['skaleConfig']['sChain']['nodeGroups']
+        config = json.load(upstream_file)
+        return config['skaleConfig']['sChain']['nodeGroups']
 
 
 def get_finish_ts(config_path: str) -> Optional[int]:
@@ -168,6 +169,8 @@ def get_finish_ts(config_path: str) -> Optional[int]:
 
 def get_finish_ts_from_upstream_config(schain_name: str) -> Optional[int]:
     upstream_path = get_upstream_config_filepath(schain_name)
+    if upstream_path is None:
+        return None
     return get_finish_ts(upstream_path)
 
 

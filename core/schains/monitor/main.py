@@ -27,6 +27,7 @@ from importlib import reload
 from skale import Skale, SkaleIma
 from web3._utils import request as web3_request
 
+from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.checks import ConfigChecks, SkaledChecks, SChainChecks
 from core.schains.firewall import get_default_rule_controller
@@ -122,7 +123,12 @@ def get_monitor_type(
     return RegularMonitor
 
 
-def run_config_pipeline(skale: Skale, schain: Dict, node_config: NodeConfig) -> None:
+def run_config_pipeline(
+    skale: Skale,
+    schain: Dict,
+    node_config: NodeConfig,
+    stream_version: str
+) -> None:
     name = schain['name']
     schain_record = upsert_schain_record(name)
     rotation_data = skale.node_rotation.get_rotation(name)
@@ -130,6 +136,7 @@ def run_config_pipeline(skale: Skale, schain: Dict, node_config: NodeConfig) -> 
         schain_name=name,
         node_id=node_config.id,
         schain_record=schain_record,
+        stream_version=stream_version,
         rotation_id=rotation_data['rotation_id']
     )
 
@@ -138,6 +145,7 @@ def run_config_pipeline(skale: Skale, schain: Dict, node_config: NodeConfig) -> 
         schain=schain,
         node_config=node_config,
         rotation_data=rotation_data,
+        stream_version=stream_version,
         checks=config_checks
     )
 
@@ -149,6 +157,7 @@ def run_skaled_pipeline(
     skale: Skale,
     skale_ima: SkaleIma,
     schain: Dict,
+    node_config: NodeConfig,
     dutils: DockerUtils
 ) -> None:
     name = schain['name']
@@ -156,7 +165,6 @@ def run_skaled_pipeline(
 
     dutils = dutils or DockerUtils()
 
-    rotation_data = skale.node_rotation.get_rotation(name)
     ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
 
     sync_agent_ranges = get_sync_agent_ranges(skale)
@@ -188,6 +196,7 @@ def run_skaled_pipeline(
         rule_controller=rc,
         ima_data=ima_data,
         checks=skaled_checks,
+        node_config=node_config,
         public_key=public_key,
         dutils=dutils
     )
@@ -210,6 +219,7 @@ def run_monitor_for_schain(
     once=False
 ):
     p = get_log_prefix(schain["name"])
+    stream_version = get_skale_node_version()
 
     def post_monitor_sleep():
         schain_monitor_sleep = random.randint(
@@ -223,6 +233,7 @@ def run_monitor_for_schain(
         try:
             reload(web3_request)
             name = schain['name']
+
             tasks = [
                 Task(
                     f'{name}-config',
@@ -230,7 +241,8 @@ def run_monitor_for_schain(
                         run_config_pipeline,
                         skale=skale,
                         schain=schain,
-                        node_config=node_config
+                        node_config=node_config,
+                        stream_version=stream_version
                     )
                 ),
                 Task(
@@ -240,6 +252,7 @@ def run_monitor_for_schain(
                         skale=skale,
                         skale_ima=skale_ima,
                         schain=schain,
+                        node_config=node_config,
                         dutils=dutils
                     ),
                 )

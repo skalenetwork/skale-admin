@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import filecmp
 import os
 import time
 import logging
@@ -24,11 +25,11 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 from core.schains.config.directory import (
+    config_exists_for_rotation_id_and_stream_version,
     get_schain_check_filepath,
     get_schain_config,
     schain_config_dir,
-    schain_config_filepath,
-    new_schain_config_filepath
+    schain_config_filepath
 )
 from core.schains.config.helper import (
     get_base_port_from_config,
@@ -36,12 +37,14 @@ from core.schains.config.helper import (
     get_own_ip_from_config,
     get_local_schain_http_endpoint
 )
-from core.schains.config.main import get_upstream_config_filepath, schain_config_version_match
+from core.schains.config.main import get_upstream_config_filepath
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
 from core.schains.process_manager_helper import is_monitor_process_alive
 from core.schains.rpc import (
-    check_endpoint_alive, check_endpoint_blocks, get_endpoint_alive_check_timeout
+    check_endpoint_alive,
+    check_endpoint_blocks,
+    get_endpoint_alive_check_timeout
 )
 from core.schains.runner import get_container_name
 from core.schains.skaled_exit_codes import SkaledExitCodes
@@ -97,12 +100,14 @@ class ConfigChecks(IChecks):
         schain_name: str,
         node_id: int,
         schain_record: SChainRecord,
-        rotation_id: int
+        rotation_id: int,
+        stream_version: str
     ):
         self.name = schain_name
         self.node_id = node_id
         self.schain_record = schain_record
         self.rotation_id = rotation_id
+        self.stream_version = stream_version
 
     @property
     def config_dir(self) -> CheckRes:
@@ -121,13 +126,15 @@ class ConfigChecks(IChecks):
 
     @property
     def upstream_config(self) -> CheckRes:
-        """Checks that sChain config file exists"""
-        upstream_path = new_schain_config_filepath(self.name, self.rotation_id)
-        if not os.path.isfile(upstream_path):
-            return CheckRes(False)
-        return CheckRes(
-            schain_config_version_match(self.name, self.schain_record)
+        """Checks that config exists for rotation id and stream"""
+        return config_exists_for_rotation_id_and_stream_version(
+            self.name,
+            self.rotation_id,
+            self.stream_version
         )
+
+    def new_schain(self) -> CheckRes:
+        return CheckRes(self.schain_record.new_schain)
 
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
         if not checks_filter:
@@ -166,6 +173,7 @@ class SkaledChecks(IChecks):
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.ima_linked = ima_linked
         self.rc = rule_controller
+        self._new_schain = self.schain_record.new_schain
 
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
         if not checks_filter:
@@ -190,6 +198,10 @@ class SkaledChecks(IChecks):
         return False not in checks.values()
 
     @property
+    def new_schain(self) -> CheckRes:
+        return CheckRes(self._new_schain)
+
+    @property
     def config_updated(self) -> CheckRes:
         if not self.config:
             return CheckRes(False)
@@ -197,9 +209,7 @@ class SkaledChecks(IChecks):
         config_path = schain_config_filepath(self.name)
         if not upstream_path:
             return CheckRes(True)
-        upstream_mtime = os.stat(upstream_path, follow_symlinks=False).st_mtime
-        config_mtime = os.stat(config_path, follow_symlinks=False).st_mtime
-        return CheckRes(config_mtime >= upstream_mtime)
+        return CheckRes(filecmp.cmp(upstream_path, config_path))
 
     @property
     def config(self) -> CheckRes:
@@ -282,6 +292,7 @@ class SChainChecks(IChecks):
         node_id: int,
         schain_record: SChainRecord,
         rule_controller: IRuleController,
+        stream_version: str,
         rotation_id: int = 0,
         *,
         ima_linked: bool = True,
@@ -292,7 +303,8 @@ class SChainChecks(IChecks):
                 schain_name=schain_name,
                 node_id=node_id,
                 schain_record=schain_record,
-                rotation_id=rotation_id
+                rotation_id=rotation_id,
+                stream_version=stream_version
             ),
             SkaledChecks(
                 schain_name=schain_name,
