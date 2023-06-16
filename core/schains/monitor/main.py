@@ -29,31 +29,23 @@ from web3._utils import request as web3_request
 
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
-from core.schains.checks import ConfigChecks, SkaledChecks, SChainChecks
+from core.schains.checks import ConfigChecks, SkaledChecks
 from core.schains.firewall import get_default_rule_controller
 from core.schains.ima import ImaData
 from core.schains.monitor import (
-    BaseMonitor,
-    BackupMonitor,
-    PostRotationMonitor,
-    RegularMonitor,
-    RepairMonitor,
-    RotationMonitor,
-    ReloadMonitor
+    get_skaled_monitor,
+    RegularConfigMonitor
 )
-from core.schains.monitor.config_monitor import RegularConfigMonitor
-from core.schains.monitor.skaled_monitor import get_skaled_monitor
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.task import run_tasks, Task
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.rotation import get_schain_public_key
-from core.schains.skaled_status import get_skaled_status, SkaledStatus
-
+from core.schains.skaled_status import get_skaled_status
 from tools.docker_utils import DockerUtils
 from tools.configs import BACKUP_RUN
 from tools.configs.ima import DISABLE_IMA
-
-from web.models.schain import upsert_schain_record, SChainRecord
+from tools.helper import is_node_part_of_chain
+from web.models.schain import upsert_schain_record
 
 
 MIN_SCHAIN_MONITOR_SLEEP_INTERVAL = 90
@@ -65,62 +57,6 @@ logger = logging.getLogger(__name__)
 
 def get_log_prefix(name):
     return f'schain: {name} -'
-
-
-def _is_backup_mode(schain_record: SChainRecord) -> bool:
-    return schain_record.first_run and not schain_record.new_schain and BACKUP_RUN
-
-
-def _is_repair_mode(
-    schain_record: SChainRecord,
-    checks: SChainChecks,
-    skaled_status: SkaledStatus
-) -> bool:
-    return schain_record.repair_mode or _is_skaled_repair_status(checks, skaled_status)
-
-
-def _is_rotation_mode(is_rotation_active: bool) -> bool:
-    return is_rotation_active
-
-
-def _is_post_rotation_mode(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
-    skaled_status.log()
-    return not checks.skaled_container.status and skaled_status.exit_time_reached
-
-
-def _is_reload_mode(schain_record: SChainRecord) -> bool:
-    return schain_record.needs_reload
-
-
-def _is_skaled_repair_status(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
-    skaled_status.log()
-    needs_repair = skaled_status.clear_data_dir and skaled_status.start_from_snapshot
-    return not checks.skaled_container.status and needs_repair
-
-
-def _is_skaled_reload_status(checks: SChainChecks, skaled_status: SkaledStatus) -> bool:
-    skaled_status.log()
-    needs_reload = skaled_status.start_again and not skaled_status.start_from_snapshot
-    return not checks.skaled_container.status and needs_reload
-
-
-def get_monitor_type(
-        schain_record: SChainRecord,
-        checks: SChainChecks,
-        is_rotation_active: bool,
-        skaled_status: SkaledStatus
-) -> BaseMonitor:
-    if _is_backup_mode(schain_record):
-        return BackupMonitor
-    if _is_repair_mode(schain_record, checks, skaled_status):
-        return RepairMonitor
-    if _is_rotation_mode(is_rotation_active):
-        return RotationMonitor
-    if _is_post_rotation_mode(checks, skaled_status):
-        return PostRotationMonitor
-    if _is_reload_mode(schain_record):
-        return ReloadMonitor
-    return RegularMonitor
 
 
 def run_config_pipeline(
@@ -190,7 +126,6 @@ def run_skaled_pipeline(
 
     public_key = get_schain_public_key(skale, name)
 
-    # finish ts can be fetched from config
     skaled_am = SkaledActionManager(
         schain=schain,
         rule_controller=rc,
@@ -218,7 +153,7 @@ def run_monitor_for_schain(
     dutils=None,
     once=False
 ):
-    p = get_log_prefix(schain["name"])
+    p = get_log_prefix(schain['name'])
     stream_version = get_skale_node_version()
 
     def post_monitor_sleep():
@@ -226,13 +161,19 @@ def run_monitor_for_schain(
             MIN_SCHAIN_MONITOR_SLEEP_INTERVAL,
             MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
         )
-        logger.info(f'{p} monitor completed, sleeping for {schain_monitor_sleep}s...')
+        logger.info('%s monitor completed, sleeping for {schain_monitor_sleep}s...', p)
         time.sleep(schain_monitor_sleep)
 
     while True:
         try:
             reload(web3_request)
             name = schain['name']
+
+            is_rotation_active = skale.node_rotation.is_rotation_active(name)
+
+            if not is_node_part_of_chain(skale, name, node_config.id) and not is_rotation_active:
+                logger.warning(f'{p} NOT ON NODE ({node_config.id}), finising process...')
+                return True
 
             tasks = [
                 Task(
@@ -262,7 +203,7 @@ def run_monitor_for_schain(
                 return True
             post_monitor_sleep()
         except Exception:
-            logger.exception(f'{p} monitor failed')
+            logger.exception('%s monitor failed', p)
             if once:
                 return False
             post_monitor_sleep()
