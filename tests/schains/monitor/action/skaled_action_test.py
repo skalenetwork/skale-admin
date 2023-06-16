@@ -50,11 +50,6 @@ def monitor_schain_container_mock(
 
 
 @pytest.fixture
-def rotation_data(schain_db, skale):
-    return skale.node_rotation.get_rotation(schain_db)
-
-
-@pytest.fixture
 def skaled_checks(
     schain_db,
     skale,
@@ -88,11 +83,6 @@ def skaled_am(
     skaled_checks
 ):
     name = schain_db
-    finish_ts = skale.node_rotation.get_schain_finish_ts(
-      node_id=rotation_data['leaving_node'],
-      schain_name=name
-    )
-    rotation_data = skale.node_rotation.get_rotation(name)
     schain = skale.schains.get_by_name(name)
     public_key = get_schain_public_key(skale, name)
     return SkaledActionManager(
@@ -100,7 +90,6 @@ def skaled_am(
         rule_controller=rule_controller,
         ima_data=ima_data,
         public_key=public_key,
-        finish_ts=finish_ts,
         checks=skaled_checks,
         dutils=dutils
     )

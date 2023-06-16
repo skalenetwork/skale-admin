@@ -263,6 +263,41 @@ def generate_schain_config(schain_name):
                 "schainID": 1,
                 "schainName": schain_name,
                 "schainOwner": "0x3483A10F7d6fDeE0b0C1E9ad39cbCE13BD094b12",
+
+                "nodeGroups": {
+                    "0": {
+                        "rotation": None,
+                        "nodes": {
+                            "0": [
+                                0,
+                                40,
+                                "0xc67d1931b00f2b203907fed1ef81cf29aab65d707eb65fbfed9f6d8e74c1d7129bb0e94403e8c315b1048a4077c473cebc59e74612616af4d7804e19731eab04"  # noqa
+                            ],
+                            "1": [
+                                1,
+                                38,
+                                "0x4523552de788999746ab13a0972021f5bf76ac38ca22f5310a5f921b7d28d89e576f5d71f8bcf047b371a999c5ce265012cd0c290931f9bc9d29146069ce79f1"  # noqa
+                            ],
+                            "2": [
+                                2,
+                                39,
+                                "0x12ec7d4531d7953c388ea3544a5e2273e3d9ec6924489ac5aa91c2e4990c586ce0d63f6c99ec7b4e7f404c7f6eb2c968fbda1eb6583e6af3c4eb8f64cfb031c9"  # noqa
+                            ],
+                            "3": [
+                                3,
+                                37,
+                                "0xcfbda7c9bbbfa26002c569ee92a07a306205da60af428666cd06ebefc6785df842284abd55a16b2635f895a6e5c5f5f523ab0a44b76e6bf93cf34d4e996cbd0b"  # noqa
+                            ]
+                        },
+                        "finish_ts": None,
+                        "bls_public_key": {
+                            "blsPublicKey0": "21092886060389550499034480408505112402900737789452520523953046451048727082686",  # noqa
+                            "blsPublicKey1": "4152187587365395389364717716976849075850656705989482065258061487623185446470",  # noqa
+                            "blsPublicKey2": "16705078395405524997550329250978551573025551514774956523868577739340207584290",  # noqa
+                            "blsPublicKey3": "10123946908466647712215451689564014152451116972533816450611813231481921711132"  # noqa
+                        }
+                    }
+                },
                 "nodes": [
                     {
                         "nodeID": 0,
@@ -556,6 +591,7 @@ def schain_checks(schain_config, schain_db, rule_controller, dutils):
         node_id,
         schain_record=schain_record,
         rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
         dutils=dutils
     )
 
