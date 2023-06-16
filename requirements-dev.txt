@@ -5,4 +5,4 @@ mock==4.0.2
 blinker==1.4
 
 pytest-cov==2.9.0
-codecov==2.1.9
+codecov==2.1.13

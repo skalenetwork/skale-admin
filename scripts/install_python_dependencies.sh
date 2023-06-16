@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -ea
 
 python -m pip install --upgrade pip
 pip install -r requirements.txt
