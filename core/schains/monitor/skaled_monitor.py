@@ -59,11 +59,13 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
+        download_snapshot = False
         if not self.checks.volume:
             self.am.volume()
-            self.am.skaled_container(download_snapshot=True)
-        elif not self.checks.skaled_container:
-            self.am.skaled_container()
+            if not self.checks.new_schain:
+                download_snapshot = True
+        if not self.checks.skaled_container:
+            self.am.skaled_container(download_snapshot=download_snapshot)
         if not self.checks.ima_container:
             self.am.ima_container()
 
@@ -75,8 +77,8 @@ class RepairSkaledMonitor(BaseSkaledMonitor):
             self.checks.schain_record.repair_mode,
             self.checks.exit_code_ok.status
         )
-        self.notify_repair_mode()
-        self.cleanup_schain_docker_entity()
+        self.am.notify_repair_mode()
+        self.am.cleanup_schain_docker_entity()
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
         if not self.checks.volume:
@@ -95,7 +97,7 @@ class BackupSkaledMonitor(BaseSkaledMonitor):
             self.am.skaled_container(download_snapshot=True)
         if not self.checks.rpc:
             self.am.skaled_rpc()
-        if not self.ima_container:
+        if not self.checks.ima_container:
             self.am.ima_container()
 
 
