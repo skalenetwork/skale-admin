@@ -164,7 +164,8 @@ def get_finish_ts(config_path: str) -> Optional[int]:
     if not os.path.isfile(config_path):
         return None
     node_groups = get_node_groups_from_config(config_path)
-    return sorted(node_groups.keys())[-1]['finish_ts']
+    last_rotation = sorted(node_groups.keys())[-1]
+    return node_groups[last_rotation]['finish_ts']
 
 
 def get_finish_ts_from_upstream_config(schain_name: str) -> Optional[int]:
