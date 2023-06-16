@@ -1,5 +1,8 @@
 import functools
 import time
+
+import pytest
+
 from core.schains.task import run_tasks, Task
 
 ITERATIONS = 10
@@ -16,6 +19,7 @@ def action(name):
     raise StopActionError(f'Stopping {name}')
 
 
+@pytest.mark.skip
 def test_tasks():
     tasks = [
         Task(

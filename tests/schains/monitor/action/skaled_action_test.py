@@ -16,6 +16,8 @@ from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord
 
+from tests.utils import CONFIG_STREAM
+
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 
@@ -75,7 +77,6 @@ def skaled_am(
     rule_controller,
     schain_on_contracts,
     predeployed_ima,
-    rotation_data,
     secret_key,
     ima_data,
     ssl_folder,
@@ -91,39 +92,9 @@ def skaled_am(
         ima_data=ima_data,
         public_key=public_key,
         checks=skaled_checks,
+        node_config=node_config,
         dutils=dutils
     )
-
-
-# def test_skaled_actions(skaled_am, skaled_checks, cleanup_schain_containers):
-#     try:
-#         skaled_am.firewall_rules()
-#         assert skaled_checks.firewall_rules
-#         skaled_am.volume()
-#         assert skaled_checks.volume
-#         skaled_am.skaled_container()
-#         assert skaled_checks.skaled_container
-#         skaled_am.ima_container()
-#         assert skaled_checks.ima_container
-#         # Try to create already created volume
-#         skaled_am.volume()
-#         assert skaled_checks.volume
-#         # Try to create already created container
-#         skaled_am.skaled_container()
-#         assert skaled_checks.skaled_container
-#     finally:
-#         skaled_am.cleanup_schain_docker_entity()
-#
-#
-# def test_skaled_restart_reload_actions(skaled_am, skaled_checks, cleanup_schain_containers):
-#     try:
-#         skaled_am.volume()
-#         assert skaled_checks.volume
-#         skaled_am.skaled_container()
-#         skaled_am.reloaded_skaled_container()
-#         assert skaled_checks.skaled_container
-#     finally:
-#         skaled_am.cleanup_schain_docker_entity()
 
 
 def test_volume_action(skaled_am, skaled_checks):
@@ -174,21 +145,21 @@ def test_skaled_container_with_snapshot_action(skaled_am):
 
 
 def test_skaled_container_snapshot_delay_start_action(skaled_am):
+    ts = int(time.time())
     try:
         skaled_am.volume()
         with mock.patch(
             'core.schains.monitor.action.monitor_schain_container',
             new=mock.Mock()
         ) as monitor_schain_mock:
-            skaled_am.finish_ts = 1245
-            skaled_am.skaled_container(download_snapshot=True, delay_start=True)
+            skaled_am.skaled_container(download_snapshot=True, start_ts=ts)
 
         monitor_schain_mock.assert_called_with(
             skaled_am.schain,
             schain_record=skaled_am.schain_record,
             skaled_status=skaled_am.skaled_status,
             public_key='0:0:1:0',
-            start_ts=1245,
+            start_ts=ts,
             dutils=skaled_am.dutils
         )
         assert monitor_schain_mock.call_count == 1
@@ -285,7 +256,14 @@ def test_update_config(skaled_am, skaled_checks):
 
     assert not skaled_checks.config
     assert not skaled_checks.config_updated
-    upstream_path = os.path.join(folder, new_config_filename(skaled_am.name, rotation_id=5))
+    upstream_path = os.path.join(
+        folder,
+        new_config_filename(
+            skaled_am.name,
+            rotation_id=5,
+            stream_version=CONFIG_STREAM
+        )
+    )
     config_content = {'config': 'mock_v5'}
     with open(upstream_path, 'w') as upstream_file:
         json.dump(config_content, upstream_file)
@@ -296,7 +274,14 @@ def test_update_config(skaled_am, skaled_checks):
     assert skaled_checks.config_updated
 
     time.sleep(1)
-    upstream_path = os.path.join(folder, new_config_filename(skaled_am.name, rotation_id=6))
+    upstream_path = os.path.join(
+        folder,
+        new_config_filename(
+            skaled_am.name,
+            rotation_id=6,
+            stream_version=CONFIG_STREAM
+        )
+    )
     config_content = {'config': 'mock_v6'}
     with open(upstream_path, 'w') as upstream_file:
         json.dump(config_content, upstream_file)

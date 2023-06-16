@@ -8,6 +8,8 @@ from core.schains.monitor.action import ConfigActionManager
 
 from web.models.schain import SChainRecord
 
+from tests.utils import CONFIG_STREAM
+
 
 @pytest.fixture
 def rotation_data(schain_db, skale):
@@ -28,7 +30,8 @@ def config_checks(
         schain_name=name,
         node_id=node_config.id,
         schain_record=schain_record,
-        rotation_id=rotation_data['rotation_id']
+        rotation_id=rotation_data['rotation_id'],
+        stream_version=CONFIG_STREAM
     )
 
 
@@ -50,7 +53,8 @@ def config_am(
         schain=schain,
         node_config=node_config,
         rotation_data=rotation_data,
-        checks=config_checks
+        checks=config_checks,
+        stream_version=CONFIG_STREAM
     )
 
 
