@@ -75,7 +75,7 @@ class Filter:
         return True
 
     def parse_event(self, receipt):
-        event_data = receipt['logs'][0]['data'][2:]
+        event_data = receipt['logs'][0]['data'].hex()[2:]
         node_index = int(receipt['logs'][0]['topics'][2].hex()[2:], 16)
         vv = event_data[192: 192 + self.t * 256]
         skc = event_data[192 + 64 + self.t * 256: 192 + 64 + self.t * 256 + 192 * self.n]
