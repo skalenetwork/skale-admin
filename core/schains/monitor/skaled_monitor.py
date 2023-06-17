@@ -18,12 +18,14 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 from abc import abstractmethod
 from typing import Optional
 
 from core.schains.monitor.base_monitor import IMonitor
 from core.schains.checks import SkaledChecks
 from core.schains.monitor.action import SkaledActionManager
+from core.schains.config import get_number_of_secret_shares
 from core.schains.skaled_status import SkaledStatus
 from web.models.schain import SChainRecord
 
@@ -59,13 +61,10 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
-        download_snapshot = False
         if not self.checks.volume:
             self.am.volume()
-            if not self.checks.new_schain:
-                download_snapshot = True
         if not self.checks.skaled_container:
-            self.am.skaled_container(download_snapshot=download_snapshot)
+            self.am.skaled_container()
         if not self.checks.ima_container:
             self.am.ima_container()
 
@@ -136,6 +135,23 @@ class NoConfigMonitor(BaseSkaledMonitor):
             logger.info('Waiting for upstream config')
 
 
+class NewNodeMonitor(BaseSkaledMonitor):
+    def execute(self):
+        if not self.checks.config_updated:
+            self.am.update_config()
+        if not self.checks.volume:
+            self.am.volume()
+        if not self.checks.firewall_rules:
+            self.am.firewall_rules()
+        if not self.am.skaled_container:
+            self.am.skaled_container(
+                download_snapshot=True,
+                start_ts=self.am.finish_ts
+            )
+        if not self.checks.ima_container:
+            self.am.ima_container()
+
+
 def is_backup_mode(schain_record: SChainRecord, backup_run: bool) -> bool:
     return schain_record.first_run and not schain_record.new_schain and backup_run
 
@@ -161,6 +177,12 @@ def is_exit_time_reached(checks: SkaledChecks, skaled_status: Optional[SkaledSta
 
 def is_reload_mode(schain_record: SChainRecord) -> bool:
     return schain_record.needs_reload
+
+
+def is_new_node_mode(schain_record: SChainRecord, finish_ts: int) -> bool:
+    ts = int(time.time())
+    secret_shares = get_number_of_secret_shares(schain_record.name)
+    return finish_ts > ts and secret_shares == 1
 
 
 def is_skaled_repair_status(checks: SkaledChecks, skaled_status: Optional[SkaledStatus]) -> bool:
@@ -193,6 +215,8 @@ def get_skaled_monitor(
         mon_type = BackupSkaledMonitor
     elif is_repair_mode(schain_record, checks, skaled_status):
         mon_type = RepairSkaledMonitor
+    elif is_new_node_mode(schain_record, action_manager.upstream_finish_ts):
+        mon_type = NewNodeMonitor
     elif is_exit_time_reached(checks, skaled_status):
         mon_type = AfterExitTimeSkaledMonitor
     elif is_new_config(checks):

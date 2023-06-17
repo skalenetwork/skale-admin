@@ -262,8 +262,6 @@ class SkaledActionManager(BaseActionManager):
             public_key = None
             if download_snapshot:
                 public_key = self.public_key
-                if start_ts is None:
-                    start_ts = self.finish_ts
 
             monitor_schain_container(
                 self.schain,

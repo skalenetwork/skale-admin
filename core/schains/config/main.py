@@ -21,7 +21,7 @@ import json
 import os
 import shutil
 import logging
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from skale import Skale
 
@@ -136,19 +136,22 @@ def schain_config_version_match(schain_name, schain_record=None):
     return schain_record.config_version == skale_node_version
 
 
-def get_upstream_config_filepath(schain_name) -> Optional[str]:
-    config_dir = schain_config_dir(schain_name)
-    prefix = new_config_prefix(schain_name)
-    dir_files = None
+def get_files_with_prefix(config_dir: str, prefix: str) -> List[str]:
+    prefix_files = []
     if os.path.isdir(config_dir):
         configs = [
             os.path.join(config_dir, fname)
             for fname in os.listdir(config_dir)
             if fname.startswith(prefix)
         ]
-        dir_files = sorted(
-            configs,
-        )
+        prefix_files = sorted(configs)
+    return prefix_files
+
+
+def get_upstream_config_filepath(schain_name) -> Optional[str]:
+    config_dir = schain_config_dir(schain_name)
+    prefix = new_config_prefix(schain_name)
+    dir_files = get_files_with_prefix(config_dir, prefix)
     if not dir_files:
         return None
     return os.path.join(config_dir, dir_files[-1])
@@ -178,3 +181,9 @@ def get_finish_ts_from_upstream_config(schain_name: str) -> Optional[int]:
 def get_finish_ts_from_config(schain_name: str) -> Optional[int]:
     upstream_path = schain_config_filepath(schain_name)
     return get_finish_ts(upstream_path)
+
+
+def get_number_of_secret_shares(schain_name: str) -> Optional[int]:
+    config_dir = schain_config_dir(schain_name)
+    prefix = 'secret_key_'
+    return get_files_with_prefix(config_dir, prefix)
