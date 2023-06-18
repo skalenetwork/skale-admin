@@ -25,7 +25,7 @@ from typing import Optional
 from core.schains.monitor.base_monitor import IMonitor
 from core.schains.checks import SkaledChecks
 from core.schains.monitor.action import SkaledActionManager
-from core.schains.config import get_number_of_secret_shares
+from core.schains.config.main import get_number_of_secret_shares
 from core.schains.skaled_status import SkaledStatus
 from web.models.schain import SChainRecord
 
@@ -103,6 +103,8 @@ class BackupSkaledMonitor(BaseSkaledMonitor):
 class RecreateSkaledMonitor(BaseSkaledMonitor):
     def execute(self) -> None:
         logger.info('Reload requested. Recreating sChain container')
+        if self.checks.volume:
+            self.am.volume()
         self.am.reloaded_skaled_container()
 
 
@@ -112,6 +114,8 @@ class AfterExitTimeSkaledMonitor(BaseSkaledMonitor):
             self.am.update_config()
         if self.checks.config and not self.checks.firewall_rules:
             self.am.firewall_rules()
+        if self.checks.volume:
+            self.am.volume()
         self.am.reloaded_skaled_container()
 
 
@@ -179,9 +183,11 @@ def is_reload_mode(schain_record: SChainRecord) -> bool:
     return schain_record.needs_reload
 
 
-def is_new_node_mode(schain_record: SChainRecord, finish_ts: int) -> bool:
+def is_new_node_mode(schain_record: SChainRecord, finish_ts: Optional[int]) -> bool:
     ts = int(time.time())
     secret_shares = get_number_of_secret_shares(schain_record.name)
+    if finish_ts is None:
+        return False
     return finish_ts > ts and secret_shares == 1
 
 
