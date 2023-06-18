@@ -9,6 +9,7 @@ on:
       - stable
       - sync-node
       - beta-sync-node
+      - static-accounts-build
 
 jobs:
   build:
