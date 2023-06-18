@@ -32,6 +32,7 @@ from core.schains.config.skale_section import SkaleConfig, generate_skale_sectio
 from core.schains.config.predeployed import generate_predeployed_accounts
 from core.schains.config.precompiled import generate_precompiled_accounts
 from core.schains.config.generation import Gen
+from core.schains.config.static_accounts import is_static_accounts, static_accounts
 from core.schains.config.helper import get_chain_id, get_schain_id
 from core.schains.limits import get_schain_type
 
@@ -155,20 +156,6 @@ def generate_schain_config(
 
     originator_address = get_schain_originator(schain)
 
-    predeployed_accounts = generate_predeployed_accounts(
-        schain_name=schain['name'],
-        schain_type=schain_type,
-        schain_nodes=schain_nodes_with_schains,
-        on_chain_owner=on_chain_owner,
-        mainnet_owner=mainnet_owner,
-        originator_address=originator_address,
-        generation=generation
-    )
-
-    precompiled_accounts = generate_precompiled_accounts(
-        on_chain_owner=on_chain_owner
-    )
-
     skale_config = generate_skale_section(
         schain=schain,
         on_chain_etherbase=on_chain_etherbase,
@@ -187,6 +174,30 @@ def generate_schain_config(
         catchup=catchup
     )
 
+    accounts = {}
+    if is_static_accounts(schain['name']):
+        logger.info(f'Found static account for {schain["name"]}, going to use in config')
+        accounts = static_accounts(schain['name'])['accounts']
+    else:
+        logger.info('Static accounts not found, generating regular accounts section')
+        predeployed_accounts = generate_predeployed_accounts(
+            schain_name=schain['name'],
+            schain_type=schain_type,
+            schain_nodes=schain_nodes_with_schains,
+            on_chain_owner=on_chain_owner,
+            mainnet_owner=mainnet_owner,
+            originator_address=originator_address,
+            generation=generation
+        )
+        precompiled_accounts = generate_precompiled_accounts(
+            on_chain_owner=on_chain_owner
+        )
+        accounts = {
+            **base_config.config['accounts'],
+            **predeployed_accounts,
+            **precompiled_accounts,
+        }
+
     schain_config = SChainConfig(
         seal_engine=base_config.config['sealEngine'],
         params={
@@ -195,11 +206,7 @@ def generate_schain_config(
         },
         unddos=base_config.config['unddos'],
         genesis=base_config.config['genesis'],
-        accounts={
-            **base_config.config['accounts'],
-            **predeployed_accounts,
-            **precompiled_accounts,
-        },
+        accounts=accounts,
         skale_config=skale_config
     )
     return schain_config
