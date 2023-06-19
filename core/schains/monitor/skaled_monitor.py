@@ -48,7 +48,7 @@ class BaseSkaledMonitor(IMonitor):
 
     def run(self):
         typename = type(self).__name__
-        logger.info('Monitor type %s:', typename)
+        logger.info('Monitor type %s', typename)
         self.am._upd_last_seen()
         self.am._upd_schain_record()
         self.execute()

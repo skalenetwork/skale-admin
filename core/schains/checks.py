@@ -83,6 +83,9 @@ class CheckRes:
     def __bool__(self) -> bool:
         return self.status
 
+    def __str__(self) -> str:
+        return f'CheckRes<{self.status}>'
+
 
 class IChecks(ABC):
     @abstractmethod
