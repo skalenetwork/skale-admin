@@ -2,7 +2,6 @@ import filecmp
 import json
 import os
 import pathlib
-import time
 from contextlib import contextmanager
 from datetime import datetime
 
