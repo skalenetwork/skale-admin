@@ -171,21 +171,12 @@ def run_monitor_for_schain(
 
             is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
-            if not is_node_part_of_chain(skale, name, node_config.id) and not is_rotation_active:
+            leaving_chain = not is_node_part_of_chain(skale, name, node_config.id)
+            if leaving_chain and not is_rotation_active:
                 logger.warning(f'{p} NOT ON NODE ({node_config.id}), finising process...')
                 return True
 
             tasks = [
-                Task(
-                    f'{name}-config',
-                    functools.partial(
-                        run_config_pipeline,
-                        skale=skale,
-                        schain=schain,
-                        node_config=node_config,
-                        stream_version=stream_version
-                    )
-                ),
                 Task(
                     f'{name}-skaled',
                     functools.partial(
@@ -198,6 +189,18 @@ def run_monitor_for_schain(
                     ),
                 )
             ]
+            if not leaving_chain:
+                tasks.append(
+                    Task(
+                        f'{name}-config',
+                        functools.partial(
+                            run_config_pipeline,
+                            skale=skale,
+                            schain=schain,
+                            node_config=node_config,
+                            stream_version=stream_version
+                        )
+                    ))
             run_tasks(name=name, tasks=tasks)
             if once:
                 return True

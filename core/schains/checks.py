@@ -25,7 +25,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 from core.schains.config.directory import (
-    config_exists_for_rotation_id_and_stream_version,
+    upstreams_for_rotation_id_version,
     get_schain_check_filepath,
     get_schain_config,
     schain_config_dir,
@@ -130,11 +130,13 @@ class ConfigChecks(IChecks):
     @property
     def upstream_config(self) -> CheckRes:
         """Checks that config exists for rotation id and stream"""
-        return config_exists_for_rotation_id_and_stream_version(
+        upstreams = upstreams_for_rotation_id_version(
             self.name,
             self.rotation_id,
             self.stream_version
         )
+        logger.debug('Upstream configs for %s: %s', self.name, upstreams)
+        return len(upstreams) > 0
 
     def new_schain(self) -> CheckRes:
         return CheckRes(self.schain_record.new_schain)

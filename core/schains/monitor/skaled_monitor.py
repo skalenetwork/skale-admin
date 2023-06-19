@@ -135,14 +135,15 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
 
 class NoConfigMonitor(BaseSkaledMonitor):
     def execute(self):
-        if not self.am.update_config():
+        if not self.checks.upstream_exists:
             logger.info('Waiting for upstream config')
+        else:
+            logger.info('Creating skaled config')
+            self.am.update_config()
 
 
 class NewNodeMonitor(BaseSkaledMonitor):
     def execute(self):
-        if not self.checks.config_updated:
-            self.am.update_config()
         if not self.checks.volume:
             self.am.volume()
         if not self.checks.firewall_rules:
@@ -207,8 +208,8 @@ def is_skaled_reload_status(checks: SkaledChecks, skaled_status: Optional[Skaled
     return not checks.skaled_container.status and needs_reload
 
 
-def no_upstream(checks: SkaledChecks) -> bool:
-    return not checks.upstream_exists
+def no_config(checks: SkaledChecks) -> bool:
+    return not checks.config
 
 
 def get_skaled_monitor(
@@ -220,7 +221,7 @@ def get_skaled_monitor(
 ) -> BaseSkaledMonitor:
     mon_type = RegularSkaledMonitor
     logger.info('Chosing skaled monitor. Upstream config %s', action_manager.upstream_config_path)
-    if no_upstream(checks):
+    if no_config(checks):
         mon_type = NoConfigMonitor
     elif is_backup_mode(schain_record, backup_run):
         mon_type = BackupSkaledMonitor

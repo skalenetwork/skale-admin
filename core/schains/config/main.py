@@ -28,10 +28,10 @@ from skale import Skale
 from core.node import get_skale_node_version
 from core.schains.config.directory import (
     get_tmp_schain_config_filepath,
-    new_config_prefix,
     schain_config_dir,
     schain_config_filepath,
-    new_schain_config_filepath
+    new_schain_config_filepath,
+    upstream_prefix
 )
 from core.schains.config.generator import generate_schain_config_with_skale
 from tools.str_formatters import arguments_list_string
@@ -150,37 +150,44 @@ def get_files_with_prefix(config_dir: str, prefix: str) -> List[str]:
 
 def get_upstream_config_filepath(schain_name) -> Optional[str]:
     config_dir = schain_config_dir(schain_name)
-    prefix = new_config_prefix(schain_name)
+    prefix = upstream_prefix(schain_name)
     dir_files = get_files_with_prefix(config_dir, prefix)
     if not dir_files:
         return None
     return os.path.join(config_dir, dir_files[-1])
 
 
-def get_node_groups_from_config(config_path: str) -> Dict:
-    with open(config_path) as upstream_file:
-        config = json.load(upstream_file)
-        return config['skaleConfig']['sChain']['nodeGroups']
+def get_node_groups_from_config(config: Dict) -> Dict:
+    return config['skaleConfig']['sChain']['nodeGroups']
 
 
-def get_finish_ts(config_path: str) -> Optional[int]:
-    if not os.path.isfile(config_path):
+def get_finish_ts(config: str) -> Optional[int]:
+    node_groups = get_node_groups_from_config(config)
+    rotation_ids = list(sorted(map(int, node_groups.keys())))
+    if len(rotation_ids) < 2:
         return None
-    node_groups = get_node_groups_from_config(config_path)
-    last_rotation = sorted(node_groups.keys())[-1]
-    return node_groups[last_rotation]['finish_ts']
+    prev_rotation = len(rotation_ids) - 2
+    return node_groups[str(prev_rotation)]['finish_ts']
 
 
 def get_finish_ts_from_upstream_config(schain_name: str) -> Optional[int]:
     upstream_path = get_upstream_config_filepath(schain_name)
-    if upstream_path is None:
+    logger.info('Retrieving finish_ts from %s', upstream_path)
+    if not os.path.isfile(upstream_path):
         return None
-    return get_finish_ts(upstream_path)
+    with open(upstream_path) as upstream_file:
+        config = json.load(upstream_file)
+        return get_finish_ts(config)
 
 
 def get_finish_ts_from_config(schain_name: str) -> Optional[int]:
-    upstream_path = schain_config_filepath(schain_name)
-    return get_finish_ts(upstream_path)
+    config_path = schain_config_filepath(schain_name)
+    logger.info('Retrieving finish_ts from %s', config_path)
+    if not os.path.isfile(config_path):
+        return None
+    with open(config_path) as config_file:
+        config = json.load(config_file)
+        return get_finish_ts(config)
 
 
 def get_number_of_secret_shares(schain_name: str) -> Optional[int]:

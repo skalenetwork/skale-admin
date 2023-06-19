@@ -351,6 +351,7 @@ class SkaledActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def send_exit_request(self) -> None:
         finish_ts = self.upstream_finish_ts
+        logger.info('Skaled exit finish_ts %s', finish_ts)
         if finish_ts is not None:
             set_rotation_for_schain(self.name, finish_ts)
 
