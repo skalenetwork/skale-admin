@@ -173,7 +173,7 @@ def get_finish_ts(config: str) -> Optional[int]:
 def get_finish_ts_from_upstream_config(schain_name: str) -> Optional[int]:
     upstream_path = get_upstream_config_filepath(schain_name)
     logger.info('Retrieving finish_ts from %s', upstream_path)
-    if not os.path.isfile(upstream_path):
+    if upstream_path is None or not os.path.isfile(upstream_path):
         return None
     with open(upstream_path) as upstream_file:
         config = json.load(upstream_file)
