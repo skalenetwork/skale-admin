@@ -205,6 +205,11 @@ class SkaledChecks(IChecks):
         return CheckRes(self._new_schain)
 
     @property
+    def upstream_exists(self) -> CheckRes:
+        upstream_path = get_upstream_config_filepath(self.name)
+        return CheckRes(upstream_path is not None)
+
+    @property
     def config_updated(self) -> CheckRes:
         if not self.config:
             return CheckRes(False)

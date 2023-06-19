@@ -355,6 +355,10 @@ class SkaledActionManager(BaseActionManager):
             set_rotation_for_schain(self.name, finish_ts)
 
     @property
+    def upstream_config_path(self) -> Optional[str]:
+        return get_upstream_config_filepath(self.name)
+
+    @property
     def upstream_finish_ts(self) -> Optional[int]:
         return get_finish_ts_from_upstream_config(self.name)
 

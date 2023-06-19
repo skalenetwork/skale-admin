@@ -48,13 +48,13 @@ class BaseSkaledMonitor(IMonitor):
 
     def run(self):
         typename = type(self).__name__
-        logger.info('Monitor type %s', typename)
+        logger.info('Skaled monitor type %s', typename)
         self.am._upd_last_seen()
         self.am._upd_schain_record()
         self.execute()
         self.am.log_executed_blocks()
         self.am._upd_last_seen()
-        logger.info('Finished %s monitor runner', typename)
+        logger.info('Finished %s skaled monitor runner', typename)
 
 
 class RegularSkaledMonitor(BaseSkaledMonitor):
@@ -207,6 +207,10 @@ def is_skaled_reload_status(checks: SkaledChecks, skaled_status: Optional[Skaled
     return not checks.skaled_container.status and needs_reload
 
 
+def no_upstream(checks: SkaledChecks) -> bool:
+    return not checks.upstream_exists
+
+
 def get_skaled_monitor(
     action_manager: SkaledActionManager,
     checks: SkaledChecks,
@@ -215,9 +219,10 @@ def get_skaled_monitor(
     backup_run: bool = False
 ) -> BaseSkaledMonitor:
     mon_type = RegularSkaledMonitor
-    if not checks.config:
+    logger.info('Chosing skaled monitor. Upstream config %s', action_manager.upstream_config_path)
+    if no_upstream(checks):
         mon_type = NoConfigMonitor
-    if is_backup_mode(schain_record, backup_run):
+    elif is_backup_mode(schain_record, backup_run):
         mon_type = BackupSkaledMonitor
     elif is_repair_mode(schain_record, checks, skaled_status):
         mon_type = RepairSkaledMonitor
