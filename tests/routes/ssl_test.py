@@ -66,12 +66,13 @@ def bad_cert_host(cert_key_pair_host):
 
 
 def test_status(skale_bp, cert_key_pair):
-    year = int(datetime.utcfromtimestamp(time.time()).strftime('%Y'))
-    month = datetime.utcfromtimestamp(time.time()).strftime('%m')
-    day = datetime.utcfromtimestamp(time.time()).strftime('%d')
-    year += 1
+    dt = datetime.datetime.now() + datetime.timedelta(days=365)
+    year = dt.strftime('%Y')
+    month = dt.strftime('%m')
+    day = dt.strftime('%d')
     expire_day_line = f'{year}-{month}-{day}'
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'status'))
+    print(expire_day_line, data['payload']['expiration_date'])
     assert data['status'] == 'ok'
     assert data['payload']['issued_to'] is None
     assert data['payload']['expiration_date'].startswith(expire_day_line)
