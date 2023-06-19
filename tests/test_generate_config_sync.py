@@ -1,13 +1,13 @@
 import json
 import pytest
 from skale.schain_config.rotation_history import get_previous_schain_groups
-from skale.schain_config.generator import get_schain_nodes_with_schains
 
 from core.schains.config.predeployed import generate_predeployed_accounts
 from core.schains.config.precompiled import generate_precompiled_accounts
 
 from core.schains.limits import get_schain_type
-from core.schains.config.generator import get_on_chain_owner, get_schain_originator, SChainBaseConfig
+from core.schains.config.generator import (
+    get_on_chain_owner, get_schain_originator, SChainBaseConfig)
 
 from tools.helper import is_address_contract
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
@@ -56,7 +56,7 @@ def test_generate_config(skale):
             generation=schain['generation']
         )
 
-        accounts={
+        accounts = {
             **base_config.config['accounts'],
             **predeployed_accounts,
             **precompiled_accounts,
