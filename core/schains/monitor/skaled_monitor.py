@@ -149,7 +149,7 @@ class NewNodeSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
-        if not self.am.skaled_container:
+        if not self.checks.skaled_container:
             self.am.skaled_container(
                 download_snapshot=True,
                 start_ts=self.am.finish_ts
@@ -225,7 +225,6 @@ def get_skaled_monitor(
     skaled_status: Optional[SkaledStatus],
     backup_run: bool = False
 ) -> BaseSkaledMonitor:
-
     logger.info('Choosing skaled monitor')
     logger.info('Upstream config %s', action_manager.upstream_config_path)
     if skaled_status:
