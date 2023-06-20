@@ -22,7 +22,9 @@ import time
 import random
 import logging
 from typing import Dict
+from concurrent.futures import Future, ThreadPoolExecutor
 from importlib import reload
+from typing import List, Optional
 
 from skale import Skale, SkaleIma
 from web3._utils import request as web3_request
@@ -37,7 +39,7 @@ from core.schains.monitor import (
     RegularConfigMonitor
 )
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
-from core.schains.task import run_tasks, Task
+from core.schains.task import keep_tasks_running, Task
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.rotation import get_schain_public_key
 from core.schains.skaled_status import get_skaled_status
@@ -53,10 +55,6 @@ MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 180
 
 
 logger = logging.getLogger(__name__)
-
-
-def get_log_prefix(name):
-    return f'schain: {name} -'
 
 
 def run_config_pipeline(
@@ -145,6 +143,64 @@ def run_skaled_pipeline(
     mon.run()
 
 
+def post_monitor_sleep():
+    schain_monitor_sleep = random.randint(
+        MIN_SCHAIN_MONITOR_SLEEP_INTERVAL,
+        MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
+    )
+    logger.info('%s monitor completed, sleeping for {schain_monitor_sleep}s...')
+    time.sleep(schain_monitor_sleep)
+
+
+def create_and_execute_tasks(
+    skale,
+    schain,
+    node_config: NodeConfig,
+    skale_ima: SkaleIma,
+    stream_version,
+    executor,
+    futures,
+    dutils
+):
+    reload(web3_request)
+    name = schain['name']
+
+    is_rotation_active = skale.node_rotation.is_rotation_active(name)
+
+    leaving_chain = not is_node_part_of_chain(skale, name, node_config.id)
+    if leaving_chain and not is_rotation_active:
+        logger.warning('NOT ON NODE ({node_config.id}), finising process...')
+        return True
+
+    tasks = [
+        Task(
+            f'{name}-skaled',
+            functools.partial(
+                run_skaled_pipeline,
+                skale=skale,
+                skale_ima=skale_ima,
+                schain=schain,
+                node_config=node_config,
+                dutils=dutils
+            ),
+        )
+    ]
+    if not leaving_chain:
+        tasks.append(
+            Task(
+                f'{name}-config',
+                functools.partial(
+                    run_config_pipeline,
+                    skale=skale,
+                    schain=schain,
+                    node_config=node_config,
+                    stream_version=stream_version
+                )
+            ))
+
+    keep_tasks_running(executor, tasks, futures)
+
+
 def run_monitor_for_schain(
     skale,
     skale_ima,
@@ -153,60 +209,28 @@ def run_monitor_for_schain(
     dutils=None,
     once=False
 ):
-    p = get_log_prefix(schain['name'])
     stream_version = get_skale_node_version()
 
-    def post_monitor_sleep():
-        schain_monitor_sleep = random.randint(
-            MIN_SCHAIN_MONITOR_SLEEP_INTERVAL,
-            MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
-        )
-        logger.info('%s monitor completed, sleeping for {schain_monitor_sleep}s...', p)
-        time.sleep(schain_monitor_sleep)
-
-    while True:
-        try:
-            reload(web3_request)
-            name = schain['name']
-
-            is_rotation_active = skale.node_rotation.is_rotation_active(name)
-
-            leaving_chain = not is_node_part_of_chain(skale, name, node_config.id)
-            if leaving_chain and not is_rotation_active:
-                logger.warning(f'{p} NOT ON NODE ({node_config.id}), finising process...')
-                return True
-
-            tasks = [
-                Task(
-                    f'{name}-skaled',
-                    functools.partial(
-                        run_skaled_pipeline,
-                        skale=skale,
-                        skale_ima=skale_ima,
-                        schain=schain,
-                        node_config=node_config,
-                        dutils=dutils
-                    ),
+    tasks_number = 2
+    with ThreadPoolExecutor(max_workers=tasks_number, thread_name_prefix='T') as executor:
+        futures: List[Optional[Future]] = [None for i in range(tasks_number)]
+        while True:
+            try:
+                create_and_execute_tasks(
+                    skale,
+                    schain,
+                    node_config,
+                    skale_ima,
+                    stream_version,
+                    executor,
+                    futures,
+                    dutils
                 )
-            ]
-            if not leaving_chain:
-                tasks.append(
-                    Task(
-                        f'{name}-config',
-                        functools.partial(
-                            run_config_pipeline,
-                            skale=skale,
-                            schain=schain,
-                            node_config=node_config,
-                            stream_version=stream_version
-                        )
-                    ))
-            run_tasks(name=name, tasks=tasks)
-            if once:
-                return True
-            post_monitor_sleep()
-        except Exception:
-            logger.exception('%s monitor failed', p)
-            if once:
-                return False
-            post_monitor_sleep()
+                if once:
+                    return True
+                post_monitor_sleep()
+            except Exception:
+                logger.exception('Monitor failed')
+                if once:
+                    return False
+                post_monitor_sleep()

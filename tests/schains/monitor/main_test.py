@@ -1,4 +1,5 @@
 import mock
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
@@ -8,34 +9,6 @@ from core.schains.monitor.main import run_monitor_for_schain
 from core.schains.task import Task
 
 from tools.helper import is_node_part_of_chain
-
-
-class TaskNoAction(Task):
-    def run(self):
-        pass
-
-
-@pytest.mark.skip
-def test_run_monitor_for_schain(skale, skale_ima, node_config, schain_db, dutils):
-    with mock.patch('core.schains.monitor.main.Task', TaskNoAction), \
-            mock.patch('core.schains.monitor.main.is_node_part_of_chain', return_value=True):
-        assert run_monitor_for_schain(
-            skale,
-            skale_ima,
-            node_config,
-            {'name': schain_db, 'partOfNode': 0, 'generation': 0},
-            once=True,
-            dutils=dutils
-        )
-    with mock.patch('core.schains.monitor.main.Task', TaskNoAction):
-        assert run_monitor_for_schain(
-            skale,
-            skale_ima,
-            node_config,
-            {'name': schain_db, 'partOfNode': 0, 'generation': 0},
-            once=True,
-            dutils=dutils
-        )
 
 
 @pytest.fixture
@@ -73,3 +46,45 @@ def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
     node_exist_node = 10000
     chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, node_exist_node)
     assert not chain_on_node
+
+
+def test_run_monitor_for_schain(
+    skale,
+    skale_ima,
+    schain_on_contracts,
+    node_config,
+    schain_db,
+    dutils
+):
+    with mock.patch('core.schains.monitor.main.keep_tasks_running') as keep_tasks_running_mock:
+        run_monitor_for_schain(
+            skale,
+            skale_ima,
+            node_config,
+            schain={'name': schain_db, 'partOfNode': 0, 'generation': 0},
+            dutils=dutils,
+            once=True
+        )
+        assert isinstance(keep_tasks_running_mock.call_args[0][0], ThreadPoolExecutor)
+        assert isinstance(keep_tasks_running_mock.call_args[0][1][0], Task)
+        assert isinstance(keep_tasks_running_mock.call_args[0][1][1], Task)
+        assert keep_tasks_running_mock.call_args[0][2] == [None, None]
+
+
+def test_run_monitor_for_schain_left(
+    skale,
+    skale_ima,
+    node_config,
+    schain_db,
+    dutils
+):
+    with mock.patch('core.schains.monitor.main.keep_tasks_running') as keep_tasks_running_mock:
+        run_monitor_for_schain(
+            skale,
+            skale_ima,
+            node_config,
+            schain={'name': 'not-on-node', 'partOfNode': 0, 'generation': 0},
+            dutils=dutils,
+            once=True
+        )
+        keep_tasks_running_mock.assert_not_called()
