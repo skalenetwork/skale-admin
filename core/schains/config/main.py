@@ -205,7 +205,7 @@ def get_finish_ts_from_config(schain_name: str) -> Optional[int]:
         return get_finish_ts(config)
 
 
-def get_number_of_secret_shares(schain_name: str) -> Optional[int]:
+def get_number_of_secret_shares(schain_name: str) -> int:
     config_dir = schain_config_dir(schain_name)
     prefix = 'secret_key_'
-    return get_files_with_prefix(config_dir, prefix)
+    return len(get_files_with_prefix(config_dir, prefix))

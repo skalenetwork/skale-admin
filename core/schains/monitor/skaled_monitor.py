@@ -134,7 +134,7 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
         self.am.send_exit_request()
 
 
-class NoConfigMonitor(BaseSkaledMonitor):
+class NoConfigSkaledMonitor(BaseSkaledMonitor):
     def execute(self):
         if not self.checks.upstream_exists:
             logger.info('Waiting for upstream config')
@@ -143,7 +143,7 @@ class NoConfigMonitor(BaseSkaledMonitor):
             self.am.update_config()
 
 
-class NewNodeMonitor(BaseSkaledMonitor):
+class NewNodeSkaledMonitor(BaseSkaledMonitor):
     def execute(self):
         if not self.checks.volume:
             self.am.volume()
@@ -170,7 +170,7 @@ def is_repair_mode(
     return schain_record.repair_mode or is_skaled_repair_status(checks, skaled_status)
 
 
-def is_new_config(checks: SkaledChecks) -> bool:
+def is_new_config_mode(checks: SkaledChecks) -> bool:
     return checks.config and not checks.config_updated
 
 
@@ -225,21 +225,24 @@ def get_skaled_monitor(
     skaled_status: Optional[SkaledStatus],
     backup_run: bool = False
 ) -> BaseSkaledMonitor:
-    mon_type = RegularSkaledMonitor
+
     logger.info('Choosing skaled monitor')
     logger.info('Upstream config %s', action_manager.upstream_config_path)
-    skaled_status.log()
+    if skaled_status:
+        skaled_status.log()
+
+    mon_type = RegularSkaledMonitor
     if no_config(checks):
-        mon_type = NoConfigMonitor
+        mon_type = NoConfigSkaledMonitor
     elif is_backup_mode(schain_record, backup_run):
         mon_type = BackupSkaledMonitor
     elif is_repair_mode(schain_record, checks, skaled_status):
         mon_type = RepairSkaledMonitor
-    elif is_new_node_mode(schain_record, action_manager.upstream_finish_ts):
-        mon_type = NewNodeMonitor
+    elif is_new_node_mode(schain_record, action_manager.finish_ts):
+        mon_type = NewNodeSkaledMonitor
     elif is_config_update_time(checks, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
-    elif is_new_config(checks):
+    elif is_new_config_mode(checks):
         mon_type = NewConfigSkaledMonitor
     elif is_reload_mode(schain_record):
         mon_type = RecreateSkaledMonitor
