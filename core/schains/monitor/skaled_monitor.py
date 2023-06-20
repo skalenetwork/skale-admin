@@ -206,14 +206,6 @@ def is_skaled_repair_status(checks: SkaledChecks, skaled_status: Optional[Skaled
     return not checks.skaled_container.status and needs_repair
 
 
-def is_skaled_reload_status(checks: SkaledChecks, skaled_status: Optional[SkaledStatus]) -> bool:
-    if skaled_status is None:
-        return False
-    skaled_status.log()
-    needs_reload = skaled_status.start_again and not skaled_status.start_from_snapshot
-    return not checks.skaled_container and needs_reload
-
-
 def no_config(checks: SkaledChecks) -> bool:
     return not checks.config
 
