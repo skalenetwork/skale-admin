@@ -1,9 +1,9 @@
+import datetime
 import filecmp
 import json
 import os
 import pathlib
 from contextlib import contextmanager
-from datetime import datetime
 
 import mock
 
@@ -46,14 +46,16 @@ def cert_key_pair_host():
     cert_path = os.path.join(CONFIG_FOLDER, 'temp_ssl_cert')
     key_path = os.path.join(CONFIG_FOLDER, 'temp_ssl_key')
     generate_cert(cert_path, key_path)
-    yield cert_path, key_path
-    pathlib.Path(cert_path).unlink(missing_ok=True)
-    pathlib.Path(key_path).unlink(missing_ok=True)
-    # Ensure uploaded certs are removed
-    cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
-    pathlib.Path(cert_path).unlink(missing_ok=True)
-    pathlib.Path(key_path).unlink(missing_ok=True)
+    try:
+        yield cert_path, key_path
+    finally:
+        pathlib.Path(cert_path).unlink(missing_ok=True)
+        pathlib.Path(key_path).unlink(missing_ok=True)
+        # Ensure uploaded certs are removed
+        cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+        key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+        pathlib.Path(cert_path).unlink(missing_ok=True)
+        pathlib.Path(key_path).unlink(missing_ok=True)
 
 
 @pytest.fixture
@@ -61,7 +63,10 @@ def bad_cert_host(cert_key_pair_host):
     cert, key = cert_key_pair_host
     with open(cert, 'w') as cert_file:
         cert_file.write('WRONG CERT')
-    yield cert, key
+    try:
+        yield cert, key
+    finally:
+        os.remove(cert)
 
 
 def test_status(skale_bp, cert_key_pair):
