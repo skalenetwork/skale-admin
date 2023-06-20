@@ -50,9 +50,11 @@ from tools.helper import is_node_part_of_chain
 from web.models.schain import upsert_schain_record
 
 
-MIN_SCHAIN_MONITOR_SLEEP_INTERVAL = 90
-MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 180
+MIN_SCHAIN_MONITOR_SLEEP_INTERVAL = 1
+MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 9
 
+SKALED_PIPELINE_SLEEP = 10
+CONFIG_PIPELINE_SLEEP = 40
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +150,7 @@ def post_monitor_sleep():
         MIN_SCHAIN_MONITOR_SLEEP_INTERVAL,
         MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
     )
-    logger.info('%s monitor completed, sleeping for {schain_monitor_sleep}s...')
+    logger.info('Monitor completed, sleeping for %d', schain_monitor_sleep)
     time.sleep(schain_monitor_sleep)
 
 
@@ -183,6 +185,7 @@ def create_and_execute_tasks(
                 node_config=node_config,
                 dutils=dutils
             ),
+            sleep=SKALED_PIPELINE_SLEEP
         )
     ]
     if not leaving_chain:
@@ -195,7 +198,8 @@ def create_and_execute_tasks(
                     schain=schain,
                     node_config=node_config,
                     stream_version=stream_version
-                )
+                ),
+                sleep=CONFIG_PIPELINE_SLEEP
             ))
 
     keep_tasks_running(executor, tasks, futures)

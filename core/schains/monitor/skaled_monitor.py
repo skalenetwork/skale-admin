@@ -48,13 +48,13 @@ class BaseSkaledMonitor(IMonitor):
 
     def run(self):
         typename = type(self).__name__
-        logger.info('Skaled monitor type %s', typename)
+        logger.info('Skaled monitor type %s starting', typename)
         self.am._upd_last_seen()
         self.am._upd_schain_record()
         self.execute()
         self.am.log_executed_blocks()
         self.am._upd_last_seen()
-        logger.info('Finished %s skaled monitor runner', typename)
+        logger.info('Skaled monitor type %s finished', typename)
 
 
 class RegularSkaledMonitor(BaseSkaledMonitor):
@@ -84,6 +84,7 @@ class RepairSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if self.checks.volume and not self.checks.skaled_container:
             self.am.skaled_container(download_snapshot=True)
+        self.am.disable_repair_mode()
 
 
 class BackupSkaledMonitor(BaseSkaledMonitor):

@@ -7,16 +7,25 @@ logger = logging.getLogger(__name__)
 
 
 class Task:
-    def __init__(self, name: str, action: Callable, index: int = 0) -> None:
+    def __init__(
+        self,
+        name: str,
+        action: Callable,
+        index: int = 0,
+        sleep: int = 2
+    ) -> None:
         self.name = name
         self.index = index
         self.action = action
+        self.sleep = sleep
 
     def run(self) -> None:
         try:
             self.action()
         except Exception as e:
             logger.exception('Task %s failed with %s', self.name, e)
+        logger.info('Sleeping after task execution for %d', self.sleep)
+        time.sleep(self.sleep)
 
 
 def keep_tasks_running(
