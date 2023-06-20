@@ -95,9 +95,9 @@ class IChecks(ABC):
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
         pass
 
-    @abstractmethod
     def is_healthy(self) -> bool:
-        pass
+        checks = self.get_all()
+        return False not in checks.values()
 
 
 class ConfigChecks(IChecks):
@@ -141,9 +141,6 @@ class ConfigChecks(IChecks):
         logger.debug('Upstream configs for %s: %s', self.name, upstreams)
         return len(upstreams) > 0
 
-    def new_schain(self) -> CheckRes:
-        return CheckRes(self.schain_record.new_schain)
-
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
         if not checks_filter:
             checks_filter = API_ALLOWED_CHECKS
@@ -181,7 +178,6 @@ class SkaledChecks(IChecks):
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.ima_linked = ima_linked
         self.rc = rule_controller
-        self._new_schain = self.schain_record.new_schain
 
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
         if not checks_filter:
@@ -201,14 +197,6 @@ class SkaledChecks(IChecks):
             save_checks_dict(self.name, checks_dict)
         return checks_dict
 
-    def is_healthy(self) -> bool:
-        checks = self.get_all()
-        return False not in checks.values()
-
-    @property
-    def new_schain(self) -> CheckRes:
-        return CheckRes(self._new_schain)
-
     @property
     def upstream_exists(self) -> CheckRes:
         upstream_path = get_upstream_config_filepath(self.name)
@@ -222,6 +210,11 @@ class SkaledChecks(IChecks):
         config_path = schain_config_filepath(self.name)
         upstream_rotations = get_rotation_ids_from_config_file(upstream_path)
         config_rotations = get_rotation_ids_from_config_file(config_path)
+        logger.debug(
+            'Comparing rotation_ids between upstream %s and %s',
+            upstream_path,
+            config_path
+        )
         return CheckRes(upstream_rotations == config_rotations)
 
     @property
@@ -230,6 +223,7 @@ class SkaledChecks(IChecks):
             return CheckRes(False)
         upstream_path = get_upstream_config_filepath(self.name)
         config_path = schain_config_filepath(self.name)
+        logger.debug('Checking if %s updated according to %s', config_path, upstream_path)
         if not upstream_path:
             return CheckRes(True)
         return CheckRes(filecmp.cmp(upstream_path, config_path))
