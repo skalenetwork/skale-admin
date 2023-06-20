@@ -24,6 +24,7 @@ from multiprocessing import Process
 
 from sgx import SgxClient
 
+from core.node import get_skale_node_version
 from core.schains.checks import SChainChecks
 from core.schains.config.directory import schain_config_dir
 from core.schains.dkg.utils import get_secret_key_share_filepath
@@ -58,7 +59,7 @@ JOIN_TIMEOUT = 1800
 
 
 def run_cleaner(skale, node_config):
-    process = Process(target=monitor, args=(skale, node_config))
+    process = Process(name='cleaner', target=monitor, args=(skale, node_config))
     process.start()
     logger.info('Cleaner process started')
     process.join(JOIN_TIMEOUT)
@@ -202,10 +203,18 @@ def remove_schain(skale, node_id, schain_name, msg, dutils=None) -> None:
     terminate_schain_process(schain_record)
     delete_bls_keys(skale, schain_name)
     sync_agent_ranges = get_sync_agent_ranges(skale)
-    cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=dutils)
+    rotation_data = skale.node_rotation.get_rotation(schain_name)
+    rotation_id = rotation_data['rotation_id']
+    cleanup_schain(
+        node_id,
+        schain_name,
+        sync_agent_ranges,
+        rotation_id=rotation_id,
+        dutils=dutils
+    )
 
 
-def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None) -> None:
+def cleanup_schain(node_id, schain_name, sync_agent_ranges, rotation_id, dutils=None) -> None:
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
 
@@ -213,11 +222,14 @@ def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None) -> None
         name=schain_name,
         sync_agent_ranges=sync_agent_ranges
     )
+    stream_version = get_skale_node_version()
     checks = SChainChecks(
         schain_name,
         node_id,
         rule_controller=rc,
-        schain_record=schain_record
+        stream_version=stream_version,
+        schain_record=schain_record,
+        rotation_id=rotation_id
     )
     if checks.skaled_container.status or is_exited(
         schain_name,

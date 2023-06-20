@@ -27,13 +27,17 @@ from core.schains.config.helper import get_skaled_http_address
 logger = logging.getLogger(__name__)
 
 
+class ExitRequestError(Exception):
+    pass
+
+
 def set_rotation_for_schain(schain_name: str, timestamp: int) -> None:
     url = get_skaled_http_address(schain_name)
     _send_rotation_request(url, timestamp)
 
 
 def _send_rotation_request(url, timestamp):
-    logger.info(f'Send rotation request: {timestamp}')
+    logger.info(f'Sending rotation request: {timestamp}')
     headers = {'content-type': 'application/json'}
     data = {
         'finishTime': timestamp
@@ -50,7 +54,7 @@ def _send_rotation_request(url, timestamp):
         headers=headers,
     ).json()
     if response.get('error'):
-        raise Exception(response['error']['message'])
+        raise ExitRequestError(response['error']['message'])
 
 
 def get_schain_public_key(skale, schain_name):
