@@ -5,9 +5,11 @@ import random
 import shutil
 import string
 import subprocess
+from pathlib import Path
 
 import docker
 import pytest
+
 
 from skale import SkaleManager
 from skale.wallets import Web3Wallet
@@ -35,7 +37,7 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config
 )
-from core.schains.config.directory import skaled_status_filepath
+from core.schains.config.directory import schain_config_dir, skaled_status_filepath
 from core.schains.cleaner import remove_schain_container, remove_schain_volume
 from core.schains.ima import ImaData
 from core.schains.skaled_status import init_skaled_status, SkaledStatus
@@ -677,3 +679,15 @@ def skale_manager_opts():
         schains_internal_address='0x1656',
         nodes_address='0x7742'
     )
+
+
+@pytest.fixture
+def new_upstream(schain_db):
+    name = schain_db
+    config_dir = schain_config_dir(name)
+    upath = os.path.join(f'schain_{name}_2_2_1_16_1687248983')
+    try:
+        Path(upath).touch()
+        yield upath
+    finally:
+        shutil.rmtree(config_dir)

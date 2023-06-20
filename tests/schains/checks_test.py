@@ -385,3 +385,34 @@ def test_config_updated(skale, rule_controller, schain_db, dutils):
     with open(upstream_path, 'w') as upstream_file:
         json.dump(config_content, upstream_file)
     assert not checks.config_updated
+
+
+def test_upstream_config_1check(
+    skale,
+    schain_db,
+    uninited_rule_controller,
+    new_upstream,
+    dutils
+):
+    schain_name = schain_db
+    schain_record = SChainRecord.get_by_name(schain_name)
+    checks = SChainChecks(
+        schain_name,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        rule_controller=uninited_rule_controller,
+        stream_version=CONFIG_STREAM,
+        dutils=dutils
+    )
+    assert not checks.upstream_config
+
+    checks = SChainChecks(
+        schain_name,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        rule_controller=uninited_rule_controller,
+        stream_version='2.1.16',
+        rotation_id=2,
+        dutils=dutils
+    )
+    assert checks.upstream_config

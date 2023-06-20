@@ -108,7 +108,7 @@ class RecreateSkaledMonitor(BaseSkaledMonitor):
         self.am.reloaded_skaled_container()
 
 
-class AfterExitSkaledMonitor(BaseSkaledMonitor):
+class UpdateConfigSkaledMonitor(BaseSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.config_updated:
             self.am.update_config()
@@ -131,7 +131,6 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
             self.am.skaled_rpc()
         if not self.checks.ima_container:
             self.am.ima_container()
-        # TODO Prevent exit requests from spamming
         self.am.send_exit_request()
 
 
@@ -181,10 +180,10 @@ def is_config_update_time(
 ) -> bool:
     if not skaled_status:
         return False
-    if not checks.skaled_container:
+    if not checks.skaled_container and not checks.config_updated:
         if not checks.rotation_id_updated or skaled_status.exit_time_reached:
             return True
-    return skaled_status.exit_time_reached
+    return False
 
 
 def is_reload_mode(schain_record: SChainRecord) -> bool:
@@ -193,10 +192,10 @@ def is_reload_mode(schain_record: SChainRecord) -> bool:
 
 def is_new_node_mode(schain_record: SChainRecord, finish_ts: Optional[int]) -> bool:
     ts = int(time.time())
-    secret_shares = get_number_of_secret_shares(schain_record.name)
+    secret_shares_number = get_number_of_secret_shares(schain_record.name)
     if finish_ts is None:
         return False
-    return finish_ts > ts and secret_shares == 1
+    return finish_ts > ts and secret_shares_number == 1
 
 
 def is_skaled_repair_status(checks: SkaledChecks, skaled_status: Optional[SkaledStatus]) -> bool:
@@ -227,7 +226,7 @@ def get_skaled_monitor(
     backup_run: bool = False
 ) -> BaseSkaledMonitor:
     mon_type = RegularSkaledMonitor
-    logger.info('Chosing skaled monitor')
+    logger.info('Choosing skaled monitor')
     logger.info('Upstream config %s', action_manager.upstream_config_path)
     skaled_status.log()
     if no_config(checks):
@@ -239,7 +238,7 @@ def get_skaled_monitor(
     elif is_new_node_mode(schain_record, action_manager.upstream_finish_ts):
         mon_type = NewNodeMonitor
     elif is_config_update_time(checks, skaled_status):
-        mon_type = AfterExitSkaledMonitor
+        mon_type = UpdateConfigSkaledMonitor
     elif is_new_config(checks):
         mon_type = NewConfigSkaledMonitor
     elif is_reload_mode(schain_record):

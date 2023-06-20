@@ -1,15 +1,10 @@
 import datetime
-import os
-import shutil
-from pathlib import Path
 
 import pytest
 
 from core.schains.checks import CheckRes, SkaledChecks
-from core.schains.config.directory import schain_config_dir
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.monitor.skaled_monitor import (
-    AfterExitSkaledMonitor,
     BackupSkaledMonitor,
     get_skaled_monitor,
     NewConfigSkaledMonitor,
@@ -17,7 +12,8 @@ from core.schains.monitor.skaled_monitor import (
     NoConfigMonitor,
     RecreateSkaledMonitor,
     RegularSkaledMonitor,
-    RepairSkaledMonitor
+    RepairSkaledMonitor,
+    UpdateConfigSkaledMonitor
 )
 from core.schains.rotation import get_schain_public_key
 from core.schains.runner import get_container_info
@@ -269,7 +265,7 @@ def test_get_skaled_monitor_new_config(
     assert isinstance(mon, NewConfigSkaledMonitor)
 
 
-def test_get_skaled_monitor_after_exit(
+def test_get_skaled_monitor_update_config(
     skaled_am,
     skaled_checks,
     schain_db,
@@ -284,22 +280,10 @@ def test_get_skaled_monitor_after_exit(
         schain_record,
         skaled_status_exit_time_reached
     )
-    assert isinstance(mon, AfterExitSkaledMonitor)
+    assert isinstance(mon, UpdateConfigSkaledMonitor)
 
 
-@pytest.fixture
-def new_upstream(schain_db):
-    name = schain_db
-    config_dir = schain_config_dir(name)
-    upath = os.path.join(f'schain_{name}_2_2_1_16_1687248983')
-    try:
-        Path(upath).touch()
-        yield upath
-    finally:
-        shutil.rmtree(config_dir)
-
-
-def test_get_skaled_monitor_after_exit_no_rotation(
+def test_get_skaled_monitor_update_config_no_rotation(
     skaled_am,
     skaled_checks,
     schain_db,
@@ -314,7 +298,7 @@ def test_get_skaled_monitor_after_exit_no_rotation(
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, AfterExitSkaledMonitor)
+    assert isinstance(mon, UpdateConfigSkaledMonitor)
 
 
 def test_get_skaled_monitor_recreate(
@@ -362,7 +346,7 @@ def test_recreate_skaled_monitor(skaled_am, skaled_checks):
 
 
 def test_after_exit_skaled_monitor(skaled_am, skaled_checks):
-    mon = AfterExitSkaledMonitor(skaled_am, skaled_checks)
+    mon = UpdateConfigSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
 
 
