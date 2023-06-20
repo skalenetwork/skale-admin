@@ -66,7 +66,7 @@ from core.schains.skaled_status import init_skaled_status
 
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
-from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 
 from tools.notifications.messages import notify_repair_mode
 from web.models.schain import (
@@ -285,6 +285,15 @@ class SkaledActionManager(BaseActionManager):
             initial_status = self.skaled_container()
         else:
             restart_container(SCHAIN_CONTAINER, self.schain, dutils=self.dutils)
+        return initial_status
+
+    @BaseActionManager.monitor_block
+    def restart_ima_container(self) -> bool:
+        initial_status = True
+        if not is_container_exists(self.name, container_type=IMA_CONTAINER, dutils=self.dutils):
+            initial_status = self.ima_container()
+        else:
+            restart_container(IMA_CONTAINER, self.schain, dutils=self.dutils)
         return initial_status
 
     @BaseActionManager.monitor_block

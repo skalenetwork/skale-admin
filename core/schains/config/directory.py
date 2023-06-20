@@ -97,7 +97,7 @@ def upstreams_for_rotation_id_version(
 ) -> List[str]:
     schain_dir_path = schain_config_dir(name)
     version = formatted_stream_version(stream_version)
-    prefix = upstream_rotation_version_prefix(name, rotation_id, version)
+    prefix = upstreams_for_rotation_id_version(name, rotation_id, version)
     pattern = os.path.join(schain_dir_path, prefix + '*.json')
     return glob.glob(pattern)
 

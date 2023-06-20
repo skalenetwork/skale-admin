@@ -108,7 +108,7 @@ class RecreateSkaledMonitor(BaseSkaledMonitor):
         self.am.reloaded_skaled_container()
 
 
-class AfterExitTimeSkaledMonitor(BaseSkaledMonitor):
+class AfterExitSkaledMonitor(BaseSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.config_updated:
             self.am.update_config()
@@ -117,6 +117,8 @@ class AfterExitTimeSkaledMonitor(BaseSkaledMonitor):
         if self.checks.volume:
             self.am.volume()
         self.am.reloaded_skaled_container()
+        if not self.checks.ima_container:
+            self.am.restart_ima_container()
 
 
 class NewConfigSkaledMonitor(BaseSkaledMonitor):
@@ -173,11 +175,16 @@ def is_new_config(checks: SkaledChecks) -> bool:
     return checks.config and not checks.config_updated
 
 
-def is_exit_time_reached(checks: SkaledChecks, skaled_status: Optional[SkaledStatus]) -> bool:
+def is_config_update_time(
+    checks: SkaledChecks,
+    skaled_status: Optional[SkaledStatus]
+) -> bool:
     if not skaled_status:
         return False
-    skaled_status.log()
-    return not checks.skaled_container.status and skaled_status.exit_time_reached
+    if not checks.skaled_container:
+        if not checks.rotation_id_updated or skaled_status.exit_time_reached:
+            return True
+    return skaled_status.exit_time_reached
 
 
 def is_reload_mode(schain_record: SChainRecord) -> bool:
@@ -205,7 +212,7 @@ def is_skaled_reload_status(checks: SkaledChecks, skaled_status: Optional[Skaled
         return False
     skaled_status.log()
     needs_reload = skaled_status.start_again and not skaled_status.start_from_snapshot
-    return not checks.skaled_container.status and needs_reload
+    return not checks.skaled_container and needs_reload
 
 
 def no_config(checks: SkaledChecks) -> bool:
@@ -220,7 +227,9 @@ def get_skaled_monitor(
     backup_run: bool = False
 ) -> BaseSkaledMonitor:
     mon_type = RegularSkaledMonitor
-    logger.info('Chosing skaled monitor. Upstream config %s', action_manager.upstream_config_path)
+    logger.info('Chosing skaled monitor')
+    logger.info('Upstream config %s', action_manager.upstream_config_path)
+    skaled_status.log()
     if no_config(checks):
         mon_type = NoConfigMonitor
     elif is_backup_mode(schain_record, backup_run):
@@ -229,8 +238,8 @@ def get_skaled_monitor(
         mon_type = RepairSkaledMonitor
     elif is_new_node_mode(schain_record, action_manager.upstream_finish_ts):
         mon_type = NewNodeMonitor
-    elif is_exit_time_reached(checks, skaled_status):
-        mon_type = AfterExitTimeSkaledMonitor
+    elif is_config_update_time(checks, skaled_status):
+        mon_type = AfterExitSkaledMonitor
     elif is_new_config(checks):
         mon_type = NewConfigSkaledMonitor
     elif is_reload_mode(schain_record):

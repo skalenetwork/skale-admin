@@ -1,14 +1,19 @@
 import datetime
+import os
+import shutil
+from pathlib import Path
 
 import pytest
 
 from core.schains.checks import CheckRes, SkaledChecks
+from core.schains.config.directory import schain_config_dir
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.monitor.skaled_monitor import (
-    AfterExitTimeSkaledMonitor,
+    AfterExitSkaledMonitor,
     BackupSkaledMonitor,
     get_skaled_monitor,
     NewConfigSkaledMonitor,
+    NewNodeMonitor,
     NoConfigMonitor,
     RecreateSkaledMonitor,
     RegularSkaledMonitor,
@@ -268,7 +273,7 @@ def test_get_skaled_monitor_after_exit(
     skaled_am,
     skaled_checks,
     schain_db,
-    skaled_status_exit_time_reached
+    skaled_status_exit_time_reached,
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
@@ -279,7 +284,37 @@ def test_get_skaled_monitor_after_exit(
         schain_record,
         skaled_status_exit_time_reached
     )
-    assert isinstance(mon, AfterExitTimeSkaledMonitor)
+    assert isinstance(mon, AfterExitSkaledMonitor)
+
+
+@pytest.fixture
+def new_upstream(schain_db):
+    name = schain_db
+    config_dir = schain_config_dir(name)
+    upath = os.path.join(f'schain_{name}_2_2_1_16_1687248983')
+    try:
+        Path(upath).touch()
+        yield upath
+    finally:
+        shutil.rmtree(config_dir)
+
+
+def test_get_skaled_monitor_after_exit_no_rotation(
+    skaled_am,
+    skaled_checks,
+    schain_db,
+    skaled_status,
+    new_upstream
+):
+    name = schain_db
+    schain_record = SChainRecord.get_by_name(name)
+    mon = get_skaled_monitor(
+        skaled_am,
+        skaled_checks,
+        schain_record,
+        skaled_status
+    )
+    assert isinstance(mon, AfterExitSkaledMonitor)
 
 
 def test_get_skaled_monitor_recreate(
@@ -327,10 +362,15 @@ def test_recreate_skaled_monitor(skaled_am, skaled_checks):
 
 
 def test_after_exit_skaled_monitor(skaled_am, skaled_checks):
-    mon = AfterExitTimeSkaledMonitor(skaled_am, skaled_checks)
+    mon = AfterExitSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
 
 
 def test_no_config_monitor(skaled_am, skaled_checks):
     mon = NoConfigMonitor(skaled_am, skaled_checks)
+    mon.run()
+
+
+def test_new_node_monitor(skaled_am, skaled_checks):
+    mon = NewNodeMonitor(skaled_am, skaled_checks)
     mon.run()

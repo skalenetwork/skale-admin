@@ -37,7 +37,10 @@ from core.schains.config.helper import (
     get_own_ip_from_config,
     get_local_schain_http_endpoint
 )
-from core.schains.config.main import get_upstream_config_filepath
+from core.schains.config.main import (
+    get_upstream_config_filepath,
+    get_rotation_ids_from_config_file
+)
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
 from core.schains.process_manager_helper import is_monitor_process_alive
@@ -210,6 +213,16 @@ class SkaledChecks(IChecks):
     def upstream_exists(self) -> CheckRes:
         upstream_path = get_upstream_config_filepath(self.name)
         return CheckRes(upstream_path is not None)
+
+    @property
+    def rotation_id_updated(self) -> int:
+        if not self.config:
+            return CheckRes(False)
+        upstream_path = get_upstream_config_filepath(self.name)
+        config_path = schain_config_filepath(self.name)
+        upstream_rotations = get_rotation_ids_from_config_file(upstream_path)
+        config_rotations = get_rotation_ids_from_config_file(config_path)
+        return CheckRes(upstream_rotations == config_rotations)
 
     @property
     def config_updated(self) -> CheckRes:
