@@ -161,6 +161,21 @@ def get_node_groups_from_config(config: Dict) -> Dict:
     return config['skaleConfig']['sChain']['nodeGroups']
 
 
+def get_rotation_ids_from_config(config: Dict) -> Dict:
+    node_groups = get_node_groups_from_config(config)
+    rotation_ids = list(sorted(map(int, node_groups.keys())))
+    return rotation_ids
+
+
+def get_rotation_ids_from_config_file(config_path: str) -> List[int]:
+    logger.info('Retrieving rotation_ids from %s', config_path)
+    if config_path is None or not os.path.isfile(config_path):
+        return []
+    with open(config_path) as config_file:
+        config = json.load(config_file)
+        return get_rotation_ids_from_config(config)
+
+
 def get_finish_ts(config: str) -> Optional[int]:
     node_groups = get_node_groups_from_config(config)
     rotation_ids = list(sorted(map(int, node_groups.keys())))
