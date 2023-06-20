@@ -35,8 +35,8 @@ class DKGEvent:
 class Filter:
     def __init__(self, skale, schain_name, n):
         self.skale = skale
-        self.group_index = skale.web3.sha3(text=schain_name)
-        self.group_index_str = self.skale.web3.toHex(self.group_index)
+        self.group_index = skale.web3.keccak(text=schain_name)
+        self.group_index_str = self.skale.web3.to_hex(self.group_index)
         self.first_unseen_block = -1
         self.dkg_contract = skale.dkg.contract
         self.dkg_contract_address = skale.dkg.address
@@ -44,7 +44,7 @@ class Filter:
         self.n = n
         self.t = (2 * n + 1) // 3
         # TODO: use scheme below to calculate event hash
-        # self.skale.web3.toHex(self.skale.web3.sha3(
+        # self.skale.web3.to_hex(self.skale.web3.keccak(
         #                             text="BroadcastAndKeyShare(bytes32,uint256,tuple[],tuple[])")
         #                 )
 
@@ -75,7 +75,7 @@ class Filter:
         return True
 
     def parse_event(self, receipt):
-        event_data = receipt['logs'][0]['data'][2:]
+        event_data = receipt['logs'][0]['data'].hex()[2:]
         node_index = int(receipt['logs'][0]['topics'][2].hex()[2:], 16)
         vv = event_data[192: 192 + self.t * 256]
         skc = event_data[192 + 64 + self.t * 256: 192 + 64 + self.t * 256 + 192 * self.n]
@@ -90,12 +90,12 @@ class Filter:
             ).call()
         else:
             start_block = self.first_unseen_block
-        current_block = self.skale.web3.eth.getBlock("latest")["number"]
+        current_block = self.skale.web3.eth.get_block("latest")["number"]
         logger.info(f'sChain {self.group_index_str}: Parsing broadcast events from {start_block}'
                     f' block to {current_block} block')
         events = []
         for block_number in range(start_block, current_block + 1):
-            block = self.skale.web3.eth.getBlock(block_number, full_transactions=True)
+            block = self.skale.web3.eth.get_block(block_number, full_transactions=True)
             txns = block["transactions"]
             for tx in txns:
                 try:
@@ -104,7 +104,7 @@ class Filter:
 
                     hash = tx.get("hash")
                     if hash:
-                        receipt = self.skale.web3.eth.getTransactionReceipt(hash)
+                        receipt = self.skale.web3.eth.get_transaction_receipt(hash)
                     else:
                         logger.info(f'sChain {self.group_index_str}: tx {tx}'
                                     f' does not have field "hash"')

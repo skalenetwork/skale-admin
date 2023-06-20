@@ -143,7 +143,7 @@ class DKGClient:
         self.t = t
         self.n = n
         self.eth_key_name = eth_key_name
-        group_index_str = str(int(skale.web3.toHex(self.group_index)[2:], 16))
+        group_index_str = str(int(skale.web3.to_hex(self.group_index)[2:], 16))
         self.poly_name = generate_poly_name(group_index_str, self.node_id_dkg, rotation_id)
         self.bls_name = generate_bls_key_name(group_index_str, self.node_id_dkg, rotation_id)
         self.incoming_verification_vector = ['0' for _ in range(n)]
@@ -153,7 +153,7 @@ class DKGClient:
         self.node_ids_contract = node_ids_contract
         self.dkg_contract_functions = self.skale.dkg.contract.functions
         self.dkg_timeout = self.skale.constants_holder.get_dkg_timeout()
-        self.complaint_error_event_hash = self.skale.web3.toHex(self.skale.web3.sha3(
+        self.complaint_error_event_hash = self.skale.web3.to_hex(self.skale.web3.keccak(
             text="ComplaintError(string)"
         ))
         logger.info(

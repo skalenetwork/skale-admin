@@ -31,8 +31,8 @@ REQUIRED_BALANCE_WEI = 10 ** 17
 
 
 def notify_if_not_enough_balance(skale: Skale, node_info: Dict) -> None:
-    eth_balance_wei = skale.web3.eth.getBalance(skale.wallet.address)
+    eth_balance_wei = skale.web3.eth.get_balance(skale.wallet.address)
     logger.info(f'Node account has {eth_balance_wei} WEI')
-    balance_in_skl = skale.web3.fromWei(eth_balance_wei, 'ether')
-    required_in_skl = skale.web3.fromWei(REQUIRED_BALANCE_WEI, 'ether')
+    balance_in_skl = skale.web3.from_wei(eth_balance_wei, 'ether')
+    required_in_skl = skale.web3.from_wei(REQUIRED_BALANCE_WEI, 'ether')
     notify_balance(node_info, balance_in_skl, required_in_skl)

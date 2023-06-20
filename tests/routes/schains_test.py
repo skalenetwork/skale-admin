@@ -139,16 +139,6 @@ def test_get_schain(
     keccak_hash = keccak.new(data=schain_name.encode("utf8"), digest_bits=256)
     schain_id = '0x' + keccak_hash.hexdigest()
 
-    data = get_bp_data(
-        skale_bp,
-        get_api_url(BLUEPRINT_NAME, 'get'),
-        params={'schain_name': schain_name}
-    )
-    assert data == {
-        'payload': f'No schain with name {schain_name}',
-        'status': 'error'
-    }
-
     r = upsert_schain_record(schain_name)
     r.set_config_version(meta_file['config_stream'])
     data = get_bp_data(
@@ -165,6 +155,17 @@ def test_get_schain(
             'part_of_node': 1, 'dkg_status': 1, 'is_deleted': False,
             'first_run': True, 'repair_mode': False
         }
+    }
+
+    not_existing_schain = 'not-existing-schain'
+    data = get_bp_data(
+        skale_bp,
+        get_api_url(BLUEPRINT_NAME, 'get'),
+        params={'schain_name': not_existing_schain}
+    )
+    assert data == {
+        'payload': f'No schain with name {not_existing_schain}',
+        'status': 'error'
     }
 
 

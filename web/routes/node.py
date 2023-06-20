@@ -187,10 +187,10 @@ def hardware():
 def endpoint_info():
     logger.debug(request)
     call_speed = get_endpoint_call_speed(g.web3)
-    block_number = g.web3.eth.blockNumber
+    block_number = g.web3.eth.block_number
     trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
     try:
-        eth_client_version = g.web3.clientVersion
+        eth_client_version = g.web3.client_version
     except Exception:
         logger.exception('Cannot get client version')
         eth_client_version = 'unknown'
