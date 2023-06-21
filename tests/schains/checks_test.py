@@ -1,5 +1,6 @@
+import json
 import os
-from time import sleep
+import time
 from http import HTTPStatus
 
 from collections import namedtuple
@@ -9,17 +10,21 @@ import mock
 import docker
 import pytest
 
-from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.checks import SChainChecks, CheckRes
+from core.schains.config.directory import (
+    get_schain_check_filepath,
+    new_config_filename,
+    schain_config_dir
+)
+from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.runner import get_container_info
-from core.schains.config.directory import get_schain_check_filepath
 
 from tools.configs.containers import SCHAIN_CONTAINER
 from tools.helper import read_json
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
-from tests.utils import response_mock, request_mock
+from tests.utils import CONFIG_STREAM, response_mock, request_mock
 
 
 NOT_EXISTS_SCHAIN_NAME = 'qwerty123'
@@ -32,6 +37,7 @@ CONTAINER_INFO_ERROR = {'status': 'exited'}
 
 TEST_TIMESTAMP_HEX = '0x55ba467c'
 TEST_TIMESTAMP = int(TEST_TIMESTAMP_HEX, 16)
+
 
 ETH_GET_BLOCK_RESULT = {
     "jsonrpc": "2.0",
@@ -78,6 +84,7 @@ def sample_false_checks(schain_config, schain_db, rule_controller, dutils):
         TEST_NODE_ID,
         schain_record=schain_record,
         rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
         dutils=dutils
     )
 
@@ -96,6 +103,7 @@ def rules_unsynced_checks(
         TEST_NODE_ID,
         schain_record=schain_record,
         rule_controller=uninited_rule_controller,
+        stream_version=CONFIG_STREAM,
         dutils=dutils
     )
 
@@ -110,15 +118,33 @@ def test_dkg_check(schain_checks, sample_false_checks):
     assert not sample_false_checks.dkg.status
 
 
+def test_upstream_config_check(schain_checks):
+    assert not schain_checks.upstream_config
+    ts = int(time.time())
+    name, rotation_id = schain_checks.name, schain_checks.rotation_id
+
+    upstream_path_wrong_version = os.path.join(
+        schain_config_dir(name),
+        f'schain_{name}_{rotation_id}_2.2.2_{ts}.json'
+    )
+    with open(upstream_path_wrong_version, 'w') as upstream_file:
+        json.dump({'config': 'wrong_upstream'}, upstream_file)
+    assert not schain_checks.upstream_config
+
+    formatter_version = CONFIG_STREAM.replace('.', '_')
+    upstream_path = os.path.join(
+        schain_config_dir(name),
+        f'schain_{name}_{rotation_id}_{formatter_version}_{ts}.json'
+    )
+
+    with open(upstream_path, 'w') as upstream_file:
+        json.dump({'config': 'upstream'}, upstream_file)
+    assert schain_checks.upstream_config
+
+
 def test_config_check(schain_checks, sample_false_checks):
-    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert schain_checks.config.status
-        assert not sample_false_checks.config.status
-
-
-def test_config_check_wrong_version(schain_checks):
-    schain_checks.schain_record = SchainRecordMock('9.8.7')
-    assert not schain_checks.config.status
+    assert schain_checks.config
+    assert not sample_false_checks.config
 
 
 def test_volume_check(schain_checks, sample_false_checks, dutils):
@@ -132,10 +158,8 @@ def test_volume_check(schain_checks, sample_false_checks, dutils):
 
 def test_firewall_rules_check(schain_checks, rules_unsynced_checks):
     schain_checks.rc.sync()
-    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert schain_checks.firewall_rules.status
-    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        assert not rules_unsynced_checks.firewall_rules.status
+    assert schain_checks.firewall_rules
+    assert not rules_unsynced_checks.firewall_rules.status
 
 
 def test_container_check(schain_checks, sample_false_checks):
@@ -197,12 +221,11 @@ def test_rpc_check(schain_checks, schain_db):
 
 def test_blocks_check(schain_checks):
     res_mock = response_mock(HTTPStatus.OK, ETH_GET_BLOCK_RESULT)
-    with mock.patch('core.schains.checks.schain_config_version_match', return_value=True):
-        with mock.patch('requests.post', return_value=res_mock), \
-                mock.patch('time.time', return_value=TEST_TIMESTAMP):
-            assert schain_checks.blocks.status
-        with mock.patch('requests.post', return_value=res_mock):
-            assert not schain_checks.blocks.status
+    with mock.patch('requests.post', return_value=res_mock), \
+            mock.patch('time.time', return_value=TEST_TIMESTAMP):
+        assert schain_checks.blocks
+    with mock.patch('requests.post', return_value=res_mock):
+        assert not schain_checks.blocks
 
 
 def test_init_checks(skale, schain_db, uninited_rule_controller, dutils):
@@ -213,6 +236,7 @@ def test_init_checks(skale, schain_db, uninited_rule_controller, dutils):
         TEST_NODE_ID,
         schain_record=schain_record,
         rule_controller=uninited_rule_controller,
+        stream_version=CONFIG_STREAM,
         dutils=dutils
     )
     assert checks.name == schain_name
@@ -232,12 +256,13 @@ def test_exit_code(skale, rule_controller, schain_db, dutils):
             name=container_name,
             entrypoint='bash -c "exit 200"'
         )
-        sleep(10)
+        time.sleep(10)
         checks = SChainChecks(
             test_schain_name,
             TEST_NODE_ID,
             schain_record=schain_record,
             rule_controller=rule_controller,
+            stream_version=CONFIG_STREAM,
             dutils=dutils
         )
         assert not checks.exit_code_ok.status
@@ -254,11 +279,12 @@ def test_process(skale, rule_controller, schain_db, dutils):
         TEST_NODE_ID,
         schain_record=schain_record,
         rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
         dutils=dutils
     )
     assert not checks.process.status
 
-    process = Process(target=sleep, args=(5,))
+    process = Process(target=time.sleep, args=(5,))
     process.start()
     schain_record.set_monitor_id(process.ident)
     assert checks.process.status
@@ -275,6 +301,7 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
         node_id,
         schain_record=schain_record,
         rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
         dutils=dutils
     )
     checks_dict = checks.get_all()
@@ -295,6 +322,7 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
         node_id,
         schain_record=schain_record,
         rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
         dutils=dutils,
         ima_linked=False
     )
@@ -318,6 +346,7 @@ def test_get_all_with_save(node_config, rule_controller, dutils, schain_db):
         node_config.id,
         schain_record=schain_record,
         rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
         dutils=dutils
     )
     schain_check_path = get_schain_check_filepath(schain_db)
@@ -326,3 +355,33 @@ def test_get_all_with_save(node_config, rule_controller, dutils, schain_db):
     assert os.path.isfile(schain_check_path)
     checks_from_file = read_json(schain_check_path)
     assert schain_checks == checks_from_file['checks']
+
+
+def test_config_updated(skale, rule_controller, schain_db, dutils):
+    name = schain_db
+    folder = schain_config_dir(name)
+
+    schain_record = SChainRecord.get_by_name(name)
+
+    checks = SChainChecks(
+        name,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
+        dutils=dutils
+    )
+    assert checks.config_updated
+
+    upstream_path = os.path.join(
+        folder,
+        new_config_filename(
+            name,
+            rotation_id=5,
+            stream_version=CONFIG_STREAM
+        )
+    )
+    config_content = {'config': 'mock_v5'}
+    with open(upstream_path, 'w') as upstream_file:
+        json.dump(config_content, upstream_file)
+    assert not checks.config_updated

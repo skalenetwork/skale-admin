@@ -112,7 +112,8 @@ class SChainRuleController(IRuleController):
                 self.port_allocation.CATCHUP,
                 self.port_allocation.PROPOSAL,
                 self.port_allocation.BINARY_CONSENSUS,
-                self.port_allocation.ZMQ_BROADCAST
+                self.port_allocation.ZMQ_BROADCAST,
+                self.port_allocation.IMA_RPC
             )
         )
 

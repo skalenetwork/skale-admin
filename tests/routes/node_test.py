@@ -142,7 +142,7 @@ def test_create_with_errors(skale_bp):
 
 
 def get_expected_signature(skale, validator_id):
-    unsigned_hash = Web3.solidityKeccak(['uint256'], [validator_id])
+    unsigned_hash = Web3.solidity_keccak(['uint256'], [validator_id])
     signed_hash = skale.wallet.sign_hash(unsigned_hash.hex())
     return signed_hash.signature.hex()
 

@@ -20,4 +20,5 @@
 from .firewall_manager import SChainFirewallManager  # noqa
 from .iptables import IptablesController  # noqa
 from .rule_controller import SChainRuleController  # noqa
+from .types import IRuleController  # noqa
 from .utils import get_default_rule_controller  # noqa

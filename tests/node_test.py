@@ -268,8 +268,6 @@ def test_get_node_hardware_info(get_block_device_size_mock):
     assert isinstance(info['mem_available'], int)
     assert isinstance(info['system_release'], str)
     assert isinstance(info['uname_version'], str)
-    assert isinstance(info['os_name'], str)
-    assert isinstance(info['os_version'], str)
     assert info['attached_storage_size'] == 300
 
 

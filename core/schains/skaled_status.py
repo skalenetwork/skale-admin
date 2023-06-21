@@ -21,6 +21,7 @@ import os
 import json
 import logging
 from json.decoder import JSONDecodeError
+from typing import Optional
 
 from core.schains.config.directory import skaled_status_filepath
 from tools.config_utils import config_getter, log_broken_status_file
@@ -101,3 +102,10 @@ class SkaledStatus:
 def init_skaled_status(schain_name) -> SkaledStatus:
     status_filepath = skaled_status_filepath(schain_name)
     return SkaledStatus(status_filepath)
+
+
+def get_skaled_status(schain_name) -> Optional[SkaledStatus]:
+    status_path = skaled_status_filepath(schain_name)
+    if os.path.isfile(status_path):
+        return SkaledStatus(status_path)
+    return None

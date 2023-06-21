@@ -147,7 +147,7 @@ class DockerUtils:
             container_info['stats'] = self.cli.inspect_container(container.id)
             container_info['status'] = container.status
         except docker.errors.NotFound:
-            logger.warning(
+            logger.debug(
                 f'Can not get info - no such container: {container_id}')
             container_info['status'] = CONTAINER_NOT_FOUND
         return container_info
@@ -179,7 +179,7 @@ class DockerUtils:
         try:
             return self.client.volumes.get(name)
         except docker.errors.NotFound:
-            logger.warning(f'Volume {name} is not exist')
+            logger.debug(f'Volume {name} is not exist')
             return None
 
     def rm_vol(self, name: str, retry_lvmpy_error: bool = True) -> None:
@@ -214,8 +214,8 @@ class DockerUtils:
         try:
             return self.client.containers.get(container_name)
         except docker.errors.APIError as e:
-            logger.warning(e)
-            logger.warning(f'No such container: {container_name}')
+            logger.debug(e)
+            logger.debug(f'No such container: {container_name}')
 
     def safe_rm(self, container_name: str, timeout=DOCKER_DEFAULT_STOP_TIMEOUT, **kwargs):
         """
