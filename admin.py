@@ -38,7 +38,12 @@ from tools.notifications.messages import cleanup_notification_state
 from tools.sgx_utils import generate_sgx_key
 from tools.wallet_utils import init_wallet
 
-from web.models.schain import create_tables, set_schains_first_run, set_schains_monitor_id
+from web.models.schain import (
+    create_tables,
+    set_schains_backup_run,
+    set_schains_first_run,
+    set_schains_monitor_id
+)
 from web.migrations import migrate
 
 
@@ -91,6 +96,8 @@ def init():
         migrate()
         set_schains_first_run()
         set_schains_monitor_id()
+        if BACKUP_RUN:
+            set_schains_backup_run()
         cleanup_notification_state()
 
 

@@ -50,8 +50,8 @@ class BaseSkaledMonitor(IMonitor):
         typename = type(self).__name__
         logger.info('Skaled monitor type %s starting', typename)
         self.am._upd_last_seen()
-        self.am._upd_schain_record()
         self.execute()
+        self.am._upd_schain_record()
         self.am.log_executed_blocks()
         self.am._upd_last_seen()
         logger.info('Skaled monitor type %s finished', typename)
@@ -95,6 +95,7 @@ class BackupSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.am.skaled_container:
             self.am.skaled_container(download_snapshot=True)
+        self.am.disable_backup_run()
         if not self.checks.rpc:
             self.am.skaled_rpc()
         if not self.checks.ima_container:
@@ -159,8 +160,8 @@ class NewNodeSkaledMonitor(BaseSkaledMonitor):
             self.am.ima_container()
 
 
-def is_backup_mode(schain_record: SChainRecord, backup_run: bool) -> bool:
-    return schain_record.first_run and not schain_record.new_schain and backup_run
+def is_backup_mode(schain_record: SChainRecord) -> bool:
+    return schain_record.backup_run and not schain_record.new_schain
 
 
 def is_repair_mode(
@@ -181,8 +182,9 @@ def is_config_update_time(
 ) -> bool:
     if not skaled_status:
         return False
-    if not checks.skaled_container and not checks.config_updated:
-        if not checks.rotation_id_updated or skaled_status.exit_time_reached:
+    logger.info('Rotation id updated status %s', checks.rotation_id_updated)
+    if not checks.config_updated:
+        if skaled_status.exit_time_reached or checks.rotation_id_updated:
             return True
     return False
 
@@ -226,12 +228,12 @@ def get_skaled_monitor(
     mon_type = RegularSkaledMonitor
     if no_config(checks):
         mon_type = NoConfigSkaledMonitor
-    elif is_backup_mode(schain_record, backup_run):
+    elif is_backup_mode(schain_record):
         mon_type = BackupSkaledMonitor
-    elif is_repair_mode(schain_record, checks, skaled_status):
-        mon_type = RepairSkaledMonitor
     elif is_new_node_mode(schain_record, action_manager.finish_ts):
         mon_type = NewNodeSkaledMonitor
+    elif is_repair_mode(schain_record, checks, skaled_status):
+        mon_type = RepairSkaledMonitor
     elif is_config_update_time(checks, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
     elif is_new_config_mode(checks):

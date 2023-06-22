@@ -45,7 +45,6 @@ class BaseConfigMonitor(IMonitor):
         typename = type(self).__name__
         logger.info('Config monitor type %s starting', typename)
         self.am._upd_last_seen()
-        self.am._upd_schain_record()
         self.execute()
         self.am.log_executed_blocks()
         self.am._upd_last_seen()

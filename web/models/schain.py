@@ -39,6 +39,7 @@ class SChainRecord(BaseModel):
     new_schain = BooleanField(default=True)
     repair_mode = BooleanField(default=False)
     needs_reload = BooleanField(default=False)
+    backup_run = BooleanField(default=False)
 
     monitor_last_seen = DateTimeField()
     monitor_id = IntegerField(default=0)
@@ -120,6 +121,11 @@ class SChainRecord(BaseModel):
         self.first_run = val
         self.save(only=[SChainRecord.first_run])
 
+    def set_backup_run(self, val):
+        logger.info(f'Changing backup_run for {self.name} to {val}')
+        self.backup_run = val
+        self.save(only=[SChainRecord.backup_run])
+
     def set_repair_mode(self, value):
         logger.info(f'Changing repair_mode for {self.name} to {value}')
         self.repair_mode = value
@@ -193,6 +199,13 @@ def set_schains_first_run():
     query.execute()
 
 
+def set_schains_backup_run():
+    logger.info('Setting backup_run=True for all sChain records')
+    query = SChainRecord.update(backup_run=True).where(
+        SChainRecord.backup_run == False)  # noqa
+    query.execute()
+
+
 def set_schains_need_reload():
     logger.info('Setting needs_reload=True for all sChain records')
     query = SChainRecord.update(needs_reload=True).where(
@@ -231,6 +244,12 @@ def set_first_run(name, value):
     if SChainRecord.added(name):
         schain_record = SChainRecord.get_by_name(name)
         schain_record.set_first_run(value)
+
+
+def set_backup_run(name, value):
+    if SChainRecord.added(name):
+        schain_record = SChainRecord.get_by_name(name)
+        schain_record.set_backup_run(value)
 
 
 def get_schains_names(include_deleted=False):

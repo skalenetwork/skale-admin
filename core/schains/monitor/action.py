@@ -381,6 +381,11 @@ class SkaledActionManager(BaseActionManager):
         if finish_ts is not None:
             set_rotation_for_schain(self.name, finish_ts)
 
+    @BaseActionManager.monitor_block
+    def disable_backup_run(self) -> None:
+        logger.debug('Turning off backup mode')
+        self.schain_record.set_backup_run(False)
+
     @property
     def upstream_config_path(self) -> Optional[str]:
         return get_upstream_config_filepath(self.name)
