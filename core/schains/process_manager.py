@@ -85,7 +85,7 @@ def run_process_manager(skale, skale_ima, node_config):
             logger.info(f'{log_prefix} Process started: PID = {process.ident}')
         else:
             logger.info(f'{log_prefix} Process is running: PID = {schain_record.monitor_id}')
-    logger.info('Creator procedure finished')
+    logger.info('Process manager procedure finished')
 
 
 def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:

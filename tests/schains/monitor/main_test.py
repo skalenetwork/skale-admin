@@ -9,6 +9,7 @@ from core.schains.monitor.main import run_monitor_for_schain
 from core.schains.task import Task
 
 from tools.helper import is_node_part_of_chain
+from web.models.schain import upsert_schain_record
 
 
 @pytest.fixture
@@ -78,12 +79,14 @@ def test_run_monitor_for_schain_left(
     schain_db,
     dutils
 ):
+    schain_not_exists = 'not-on-node'
+    upsert_schain_record(schain_not_exists)
     with mock.patch('core.schains.monitor.main.keep_tasks_running') as keep_tasks_running_mock:
         run_monitor_for_schain(
             skale,
             skale_ima,
             node_config,
-            schain={'name': 'not-on-node', 'partOfNode': 0, 'generation': 0},
+            schain={'name': schain_not_exists, 'partOfNode': 0, 'generation': 0},
             dutils=dutils,
             once=True
         )

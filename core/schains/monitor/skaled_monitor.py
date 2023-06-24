@@ -156,8 +156,6 @@ class NewNodeSkaledMonitor(BaseSkaledMonitor):
                 download_snapshot=True,
                 start_ts=self.am.finish_ts
             )
-        if not self.checks.ima_container:
-            self.am.ima_container()
 
 
 def is_backup_mode(schain_record: SChainRecord) -> bool:
@@ -184,7 +182,7 @@ def is_config_update_time(
         return False
     logger.info('Rotation id updated status %s', checks.rotation_id_updated)
     if not checks.config_updated:
-        if skaled_status.exit_time_reached or checks.rotation_id_updated:
+        if skaled_status.exit_time_reached or not checks.rotation_id_updated:
             return True
     return False
 
@@ -217,8 +215,7 @@ def get_skaled_monitor(
     action_manager: SkaledActionManager,
     checks: SkaledChecks,
     schain_record: SChainRecord,
-    skaled_status: Optional[SkaledStatus],
-    backup_run: bool = False
+    skaled_status: Optional[SkaledStatus]
 ) -> BaseSkaledMonitor:
     logger.info('Choosing skaled monitor')
     logger.info('Upstream config %s', action_manager.upstream_config_path)
@@ -230,6 +227,8 @@ def get_skaled_monitor(
         mon_type = NoConfigSkaledMonitor
     elif is_backup_mode(schain_record):
         mon_type = BackupSkaledMonitor
+    elif is_reload_mode(schain_record):
+        mon_type = RecreateSkaledMonitor
     elif is_new_node_mode(schain_record, action_manager.finish_ts):
         mon_type = NewNodeSkaledMonitor
     elif is_repair_mode(schain_record, checks, skaled_status):
@@ -238,8 +237,6 @@ def get_skaled_monitor(
         mon_type = UpdateConfigSkaledMonitor
     elif is_new_config_mode(checks):
         mon_type = NewConfigSkaledMonitor
-    elif is_reload_mode(schain_record):
-        mon_type = RecreateSkaledMonitor
 
     return mon_type(
         action_manager=action_manager,

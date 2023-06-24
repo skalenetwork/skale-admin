@@ -139,7 +139,7 @@ class ConfigChecks(IChecks):
             self.stream_version
         )
         logger.debug('Upstream configs for %s: %s', self.name, upstreams)
-        return len(upstreams) > 0
+        return len(upstreams) > 0 and self.schain_record.config_version == self.stream_version
 
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
         if not checks_filter:
@@ -300,6 +300,18 @@ class SkaledChecks(IChecks):
     def process(self) -> CheckRes:
         """Checks that sChain monitor process is running"""
         return CheckRes(is_monitor_process_alive(self.schain_record.monitor_id))
+
+    @property
+    def repair_run(self) -> CheckRes:
+        return self.schain_record.repair_mode
+
+    @property
+    def backup_run(self) -> CheckRes:
+        return self.schain_record.backup_run
+
+    @property
+    def new_schain(self) -> CheckRes:
+        return self.schain_record.new_schain
 
 
 class SChainChecks(IChecks):

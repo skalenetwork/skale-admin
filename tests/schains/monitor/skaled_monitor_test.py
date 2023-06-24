@@ -134,11 +134,11 @@ def skaled_checks_no_config(
 
 class SkaledChecksConfigOutdated(SkaledChecks):
     @property
-    def config_outdated(self) -> CheckRes:
+    def config_updated(self) -> CheckRes:
         return CheckRes(False)
 
     @property
-    def config_updated(self) -> CheckRes:
+    def rotation_id_updated(self) -> CheckRes:
         return CheckRes(False)
 
 
@@ -183,35 +183,32 @@ def test_get_skaled_monitor_regular_and_backup(skaled_am, skaled_checks, skaled_
     )
     assert isinstance(mon, RegularSkaledMonitor)
 
+    schain_record.set_backup_run(True)
     mon = get_skaled_monitor(
         skaled_am,
         skaled_checks,
         schain_record,
-        skaled_status,
-        backup_run=True
+        skaled_status
     )
     assert isinstance(mon, RegularSkaledMonitor)
 
-    schain_record.set_new_schain(False)
-    mon = get_skaled_monitor(
-        skaled_am,
-        skaled_checks,
-        schain_record,
-        skaled_status,
-        backup_run=True
-    )
-    assert isinstance(mon, BackupSkaledMonitor)
-
-    schain_record.set_new_schain(False)
     schain_record.set_first_run(False)
     mon = get_skaled_monitor(
         skaled_am,
         skaled_checks,
         schain_record,
-        skaled_status,
-        backup_run=True
+        skaled_status
     )
     assert isinstance(mon, RegularSkaledMonitor)
+
+    schain_record.set_new_schain(False)
+    mon = get_skaled_monitor(
+        skaled_am,
+        skaled_checks,
+        schain_record,
+        skaled_status
+    )
+    assert isinstance(mon, BackupSkaledMonitor)
 
 
 def test_get_skaled_monitor_repair(skaled_am, skaled_checks, skaled_status, schain_db):

@@ -46,7 +46,7 @@ from core.schains.skaled_status import get_skaled_status
 from tools.docker_utils import DockerUtils
 from tools.configs.ima import DISABLE_IMA
 from tools.helper import is_node_part_of_chain
-from web.models.schain import upsert_schain_record
+from web.models.schain import SChainRecord
 
 
 MIN_SCHAIN_MONITOR_SLEEP_INTERVAL = 20
@@ -65,7 +65,7 @@ def run_config_pipeline(
     stream_version: str
 ) -> None:
     name = schain['name']
-    schain_record = upsert_schain_record(name)
+    schain_record = SChainRecord.get_by_name(name)
     rotation_data = skale.node_rotation.get_rotation(name)
     config_checks = ConfigChecks(
         schain_name=name,
@@ -96,7 +96,7 @@ def run_skaled_pipeline(
     dutils: DockerUtils
 ) -> None:
     name = schain['name']
-    schain_record = upsert_schain_record(name)
+    schain_record = SChainRecord.get_by_name(name)
 
     dutils = dutils or DockerUtils()
 
@@ -174,6 +174,7 @@ def create_and_execute_tasks(
         return True
 
     tasks = []
+    logger.info('Config versions %s %s', schain_record.config_version, stream_version)
     if schain_record.config_version == stream_version:
         logger.info('Adding skaled task to pool')
         tasks.append(
@@ -221,7 +222,7 @@ def run_monitor_for_schain(
     with ThreadPoolExecutor(max_workers=tasks_number, thread_name_prefix='T') as executor:
         futures: List[Optional[Future]] = [None for i in range(tasks_number)]
         while True:
-            schain_record = upsert_schain_record(schain['name'])
+            schain_record = SChainRecord.get_by_name(schain['name'])
             try:
                 create_and_execute_tasks(
                     skale,
