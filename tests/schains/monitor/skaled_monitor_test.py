@@ -253,6 +253,10 @@ class SkaledChecksWithConfig(SkaledChecks):
         return CheckRes(True)
 
     @property
+    def rotation_id_updated(self) -> CheckRes:
+        return CheckRes(True)
+
+    @property
     def skaled_container(self) -> CheckRes:
         return CheckRes(True)
 

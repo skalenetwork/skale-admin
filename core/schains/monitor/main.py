@@ -176,7 +176,7 @@ def create_and_execute_tasks(
     tasks = []
     logger.info('Config versions %s %s', schain_record.config_version, stream_version)
     if schain_record.config_version == stream_version:
-        logger.info('Adding skaled task to pool')
+        logger.info('Adding skaled task to the pool')
         tasks.append(
             Task(
                 f'{name}-skaled',
@@ -191,7 +191,7 @@ def create_and_execute_tasks(
                 sleep=SKALED_PIPELINE_SLEEP
             ))
     if not leaving_chain:
-        logger.info('Adding config task to pool')
+        logger.info('Adding config task to the pool')
         tasks.append(
             Task(
                 f'{name}-config',
