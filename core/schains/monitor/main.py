@@ -44,17 +44,16 @@ from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.rotation import get_schain_public_key
 from core.schains.skaled_status import get_skaled_status
 from tools.docker_utils import DockerUtils
-from tools.configs import BACKUP_RUN
 from tools.configs.ima import DISABLE_IMA
 from tools.helper import is_node_part_of_chain
-from web.models.schain import upsert_schain_record
+from web.models.schain import SChainRecord
 
 
-MIN_SCHAIN_MONITOR_SLEEP_INTERVAL = 1
-MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 9
+MIN_SCHAIN_MONITOR_SLEEP_INTERVAL = 20
+MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 40
 
-SKALED_PIPELINE_SLEEP = 10
-CONFIG_PIPELINE_SLEEP = 40
+SKALED_PIPELINE_SLEEP = 2
+CONFIG_PIPELINE_SLEEP = 3
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +65,7 @@ def run_config_pipeline(
     stream_version: str
 ) -> None:
     name = schain['name']
-    schain_record = upsert_schain_record(name)
+    schain_record = SChainRecord.get_by_name(name)
     rotation_data = skale.node_rotation.get_rotation(name)
     config_checks = ConfigChecks(
         schain_name=name,
@@ -97,7 +96,7 @@ def run_skaled_pipeline(
     dutils: DockerUtils
 ) -> None:
     name = schain['name']
-    schain_record = upsert_schain_record(name)
+    schain_record = SChainRecord.get_by_name(name)
 
     dutils = dutils or DockerUtils()
 
@@ -139,8 +138,7 @@ def run_skaled_pipeline(
         action_manager=skaled_am,
         checks=skaled_checks,
         schain_record=schain_record,
-        skaled_status=skaled_status,
-        backup_run=BACKUP_RUN
+        skaled_status=skaled_status
     )
     mon.run()
 
@@ -160,6 +158,7 @@ def create_and_execute_tasks(
     node_config: NodeConfig,
     skale_ima: SkaleIma,
     stream_version,
+    schain_record,
     executor,
     futures,
     dutils
@@ -171,24 +170,28 @@ def create_and_execute_tasks(
 
     leaving_chain = not is_node_part_of_chain(skale, name, node_config.id)
     if leaving_chain and not is_rotation_active:
-        logger.warning('NOT ON NODE ({node_config.id}), finising process...')
+        logger.info('Not on node (%d), finishing process', node_config.id)
         return True
 
-    tasks = [
-        Task(
-            f'{name}-skaled',
-            functools.partial(
-                run_skaled_pipeline,
-                skale=skale,
-                skale_ima=skale_ima,
-                schain=schain,
-                node_config=node_config,
-                dutils=dutils
-            ),
-            sleep=SKALED_PIPELINE_SLEEP
-        )
-    ]
+    tasks = []
+    logger.info('Config versions %s %s', schain_record.config_version, stream_version)
+    if schain_record.config_version == stream_version:
+        logger.info('Adding skaled task to the pool')
+        tasks.append(
+            Task(
+                f'{name}-skaled',
+                functools.partial(
+                    run_skaled_pipeline,
+                    skale=skale,
+                    skale_ima=skale_ima,
+                    schain=schain,
+                    node_config=node_config,
+                    dutils=dutils
+                ),
+                sleep=SKALED_PIPELINE_SLEEP
+            ))
     if not leaving_chain:
+        logger.info('Adding config task to the pool')
         tasks.append(
             Task(
                 f'{name}-config',
@@ -219,6 +222,7 @@ def run_monitor_for_schain(
     with ThreadPoolExecutor(max_workers=tasks_number, thread_name_prefix='T') as executor:
         futures: List[Optional[Future]] = [None for i in range(tasks_number)]
         while True:
+            schain_record = SChainRecord.get_by_name(schain['name'])
             try:
                 create_and_execute_tasks(
                     skale,
@@ -226,6 +230,7 @@ def run_monitor_for_schain(
                     node_config,
                     skale_ima,
                     stream_version,
+                    schain_record,
                     executor,
                     futures,
                     dutils

@@ -53,7 +53,6 @@ from core.schains.runner import get_container_name
 from core.schains.skaled_exit_codes import SkaledExitCodes
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
-from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 from tools.helper import write_json
 from tools.str_formatters import arguments_list_string
@@ -99,6 +98,13 @@ class IChecks(ABC):
         checks = self.get_all()
         return False not in checks.values()
 
+    @classmethod
+    def get_check_names(cls):
+        return list(filter(
+            lambda c: not c.startswith('_') and isinstance(getattr(cls, c), property),
+            dir(cls)
+        ))
+
 
 class ConfigChecks(IChecks):
     def __init__(
@@ -114,6 +120,22 @@ class ConfigChecks(IChecks):
         self.schain_record = schain_record
         self.rotation_id = rotation_id
         self.stream_version = stream_version
+
+    def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
+        if checks_filter:
+            names = checks_filter
+        else:
+            names = self.get_check_names()
+
+        checks_dict = {}
+        for name in names:
+            if hasattr(self, name):
+                checks_dict[name] = getattr(self, name).status
+        if log:
+            log_checks_dict(self.name, checks_dict)
+        if save:
+            save_checks_dict(self.name, checks_dict)
+        return checks_dict
 
     @property
     def config_dir(self) -> CheckRes:
@@ -139,23 +161,7 @@ class ConfigChecks(IChecks):
             self.stream_version
         )
         logger.debug('Upstream configs for %s: %s', self.name, upstreams)
-        return len(upstreams) > 0
-
-    def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
-        if not checks_filter:
-            checks_filter = API_ALLOWED_CHECKS
-        checks_dict = {}
-        for check in checks_filter:
-            if hasattr(self, check):
-                if check not in API_ALLOWED_CHECKS:
-                    logger.warning('Check %s is not allowed or does not exist', check)
-                else:
-                    checks_dict[check] = getattr(self, check).status
-        if log:
-            log_checks_dict(self.name, checks_dict)
-        if save:
-            save_checks_dict(self.name, checks_dict)
-        return checks_dict
+        return len(upstreams) > 0 and self.schain_record.config_version == self.stream_version
 
     def is_healthy(self) -> bool:
         checks = self.get_all()
@@ -180,17 +186,15 @@ class SkaledChecks(IChecks):
         self.rc = rule_controller
 
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
-        if not checks_filter:
-            checks_filter = API_ALLOWED_CHECKS
+        if checks_filter:
+            names = checks_filter
+        else:
+            names = self.get_check_names()
+
         checks_dict = {}
-        for check in checks_filter:
-            if check == 'ima_container' and (DISABLE_IMA or not self.ima_linked):
-                logger.info(f'Check {check} will be skipped - IMA is not linked')
-            elif check not in API_ALLOWED_CHECKS:
-                logger.warning(f'Check {check} is not allowed or does not exist')
-            else:
-                if hasattr(self, check):
-                    checks_dict[check] = getattr(self, check).status
+        for name in names:
+            if hasattr(self, name):
+                checks_dict[name] = getattr(self, name).status
         if log:
             log_checks_dict(self.name, checks_dict)
         if save:

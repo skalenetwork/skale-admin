@@ -20,7 +20,7 @@
 import logging
 import time
 from abc import abstractmethod
-from typing import Optional
+from typing import Dict, Optional
 
 from core.schains.monitor.base_monitor import IMonitor
 from core.schains.checks import SkaledChecks
@@ -50,8 +50,8 @@ class BaseSkaledMonitor(IMonitor):
         typename = type(self).__name__
         logger.info('Skaled monitor type %s starting', typename)
         self.am._upd_last_seen()
-        self.am._upd_schain_record()
         self.execute()
+        self.am._upd_schain_record()
         self.am.log_executed_blocks()
         self.am._upd_last_seen()
         logger.info('Skaled monitor type %s finished', typename)
@@ -95,6 +95,7 @@ class BackupSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.am.skaled_container:
             self.am.skaled_container(download_snapshot=True)
+        self.am.disable_backup_run()
         if not self.checks.rpc:
             self.am.skaled_rpc()
         if not self.checks.ima_container:
@@ -155,34 +156,33 @@ class NewNodeSkaledMonitor(BaseSkaledMonitor):
                 download_snapshot=True,
                 start_ts=self.am.finish_ts
             )
-        if not self.checks.ima_container:
-            self.am.ima_container()
 
 
-def is_backup_mode(schain_record: SChainRecord, backup_run: bool) -> bool:
-    return schain_record.first_run and not schain_record.new_schain and backup_run
+def is_backup_mode(schain_record: SChainRecord) -> bool:
+    return schain_record.backup_run and not schain_record.new_schain
 
 
 def is_repair_mode(
     schain_record: SChainRecord,
-    checks: SkaledChecks,
+    status: Dict,
     skaled_status: Optional[SkaledStatus]
 ) -> bool:
-    return schain_record.repair_mode or is_skaled_repair_status(checks, skaled_status)
+    return schain_record.repair_mode or is_skaled_repair_status(status, skaled_status)
 
 
-def is_new_config_mode(checks: SkaledChecks) -> bool:
-    return checks.config and not checks.config_updated
+def is_new_config_mode(status: Dict) -> bool:
+    return status['config'] and not status['config_updated']
 
 
 def is_config_update_time(
-    checks: SkaledChecks,
+    status: Dict,
     skaled_status: Optional[SkaledStatus]
 ) -> bool:
     if not skaled_status:
         return False
-    if not checks.skaled_container and not checks.config_updated:
-        if not checks.rotation_id_updated or skaled_status.exit_time_reached:
+    logger.info('Rotation id updated status %s', status['rotation_id_updated'])
+    if not status['config_updated']:
+        if skaled_status.exit_time_reached or not status['rotation_id_updated']:
             return True
     return False
 
@@ -199,45 +199,46 @@ def is_new_node_mode(schain_record: SChainRecord, finish_ts: Optional[int]) -> b
     return finish_ts > ts and secret_shares_number == 1
 
 
-def is_skaled_repair_status(checks: SkaledChecks, skaled_status: Optional[SkaledStatus]) -> bool:
+def is_skaled_repair_status(status: Dict, skaled_status: Optional[SkaledStatus]) -> bool:
     if skaled_status is None:
         return False
     skaled_status.log()
     needs_repair = skaled_status.clear_data_dir and skaled_status.start_from_snapshot
-    return not checks.skaled_container.status and needs_repair
+    return not status['skaled_container'] and needs_repair
 
 
-def no_config(checks: SkaledChecks) -> bool:
-    return not checks.config
+def no_config(status: Dict) -> bool:
+    return not status['config']
 
 
 def get_skaled_monitor(
     action_manager: SkaledActionManager,
     checks: SkaledChecks,
     schain_record: SChainRecord,
-    skaled_status: Optional[SkaledStatus],
-    backup_run: bool = False
+    skaled_status: Optional[SkaledStatus]
 ) -> BaseSkaledMonitor:
     logger.info('Choosing skaled monitor')
     logger.info('Upstream config %s', action_manager.upstream_config_path)
     if skaled_status:
         skaled_status.log()
 
+    status: Dict = checks.get_all()
+
     mon_type = RegularSkaledMonitor
-    if no_config(checks):
+    if no_config(status):
         mon_type = NoConfigSkaledMonitor
-    elif is_backup_mode(schain_record, backup_run):
+    elif is_backup_mode(schain_record):
         mon_type = BackupSkaledMonitor
-    elif is_repair_mode(schain_record, checks, skaled_status):
-        mon_type = RepairSkaledMonitor
-    elif is_new_node_mode(schain_record, action_manager.finish_ts):
-        mon_type = NewNodeSkaledMonitor
-    elif is_config_update_time(checks, skaled_status):
-        mon_type = UpdateConfigSkaledMonitor
-    elif is_new_config_mode(checks):
-        mon_type = NewConfigSkaledMonitor
     elif is_reload_mode(schain_record):
         mon_type = RecreateSkaledMonitor
+    elif is_new_node_mode(schain_record, action_manager.finish_ts):
+        mon_type = NewNodeSkaledMonitor
+    elif is_repair_mode(schain_record, status, skaled_status):
+        mon_type = RepairSkaledMonitor
+    elif is_config_update_time(status, skaled_status):
+        mon_type = UpdateConfigSkaledMonitor
+    elif is_new_config_mode(status):
+        mon_type = NewConfigSkaledMonitor
 
     return mon_type(
         action_manager=action_manager,

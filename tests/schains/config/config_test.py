@@ -11,7 +11,11 @@ from core.schains.config.helper import (
     get_schain_env
 )
 from core.schains.config.directory import schain_config_dir
-from core.schains.config.main import get_finish_ts, get_upstream_config_filepath
+from core.schains.config.main import (
+    get_finish_ts,
+    get_rotation_ids_from_config,
+    get_upstream_config_filepath
+)
 from core.schains.volume import get_schain_volume_config
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 
@@ -87,3 +91,8 @@ def test_get_finish_ts(schain_config):
     schain_config['skaleConfig']['sChain']['nodeGroups'].pop('0')
     finish_ts = get_finish_ts(schain_config)
     assert finish_ts is None
+
+
+def test_get_rotation_ids_from_config(schain_config):
+    ids = get_rotation_ids_from_config(schain_config)
+    assert ids == [0, 1]
