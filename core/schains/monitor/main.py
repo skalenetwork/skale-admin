@@ -45,6 +45,7 @@ from core.schains.rotation import get_schain_public_key
 from core.schains.skaled_status import get_skaled_status
 from tools.docker_utils import DockerUtils
 from tools.configs.ima import DISABLE_IMA
+from tools.notifications.messages import notify_checks
 from tools.helper import is_node_part_of_chain
 from web.models.schain import SChainRecord
 
@@ -84,6 +85,8 @@ def run_config_pipeline(
         checks=config_checks
     )
 
+    status = config_checks.get_all(log=False)
+    logger.info('Config checks: %s', status)
     mon = RegularConfigMonitor(config_am, config_checks)
     mon.run()
 
@@ -134,13 +137,17 @@ def run_skaled_pipeline(
         public_key=public_key,
         dutils=dutils
     )
+    status = skaled_checks.get_all(log=False)
+    logger.info('Skaled checks: %s', status)
+    notify_checks(name, node_config.all(), status)
+
     mon = get_skaled_monitor(
         action_manager=skaled_am,
-        checks=skaled_checks,
+        status=status,
         schain_record=schain_record,
         skaled_status=skaled_status
     )
-    mon.run()
+    mon(skaled_am, skaled_checks).run()
 
 
 def post_monitor_sleep():

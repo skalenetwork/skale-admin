@@ -165,11 +165,11 @@ def test_get_skaled_monitor_no_config(skaled_am, skaled_checks_no_config, skaled
     schain_record = SChainRecord.get_by_name(name)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_no_config,
+        skaled_checks_no_config.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, NoConfigSkaledMonitor)
+    assert mon == NoConfigSkaledMonitor
 
 
 def test_get_skaled_monitor_regular_and_backup(skaled_am, skaled_checks, skaled_status, schain_db):
@@ -177,38 +177,38 @@ def test_get_skaled_monitor_regular_and_backup(skaled_am, skaled_checks, skaled_
     schain_record = SChainRecord.get_by_name(name)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, RegularSkaledMonitor)
+    assert mon == RegularSkaledMonitor
 
     schain_record.set_backup_run(True)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, RegularSkaledMonitor)
+    assert mon == RegularSkaledMonitor
 
     schain_record.set_first_run(False)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, RegularSkaledMonitor)
+    assert mon == RegularSkaledMonitor
 
     schain_record.set_new_schain(False)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, BackupSkaledMonitor)
+    assert mon == BackupSkaledMonitor
 
 
 def test_get_skaled_monitor_repair(skaled_am, skaled_checks, skaled_status, schain_db):
@@ -218,11 +218,11 @@ def test_get_skaled_monitor_repair(skaled_am, skaled_checks, skaled_status, scha
 
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, RepairSkaledMonitor)
+    assert mon == RepairSkaledMonitor
 
 
 def test_get_skaled_monitor_repair_skaled_status(
@@ -236,11 +236,11 @@ def test_get_skaled_monitor_repair_skaled_status(
 
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status_repair
     )
-    assert isinstance(mon, RepairSkaledMonitor)
+    assert mon == RepairSkaledMonitor
 
 
 class SkaledChecksWithConfig(SkaledChecks):
@@ -294,11 +294,11 @@ def test_get_skaled_monitor_new_config(
 
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_new_config,
+        skaled_checks_new_config.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, NewConfigSkaledMonitor)
+    assert mon == NewConfigSkaledMonitor
 
 
 @freezegun.freeze_time(CURRENT_DATETIME)
@@ -340,11 +340,11 @@ def test_get_skaled_monitor_new_node(
 
         mon = get_skaled_monitor(
             skaled_am,
-            skaled_checks,
+            skaled_checks.get_all(),
             schain_record,
             skaled_status
         )
-        assert isinstance(mon, NewNodeSkaledMonitor)
+        assert mon == NewNodeSkaledMonitor
 
 
 def test_get_skaled_monitor_update_config(
@@ -358,11 +358,11 @@ def test_get_skaled_monitor_update_config(
 
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_outdated_config,
+        skaled_checks_outdated_config.get_all(),
         schain_record,
         skaled_status_exit_time_reached
     )
-    assert isinstance(mon, UpdateConfigSkaledMonitor)
+    assert mon == UpdateConfigSkaledMonitor
 
 
 def test_get_skaled_monitor_update_config_no_rotation(
@@ -376,11 +376,11 @@ def test_get_skaled_monitor_update_config_no_rotation(
     schain_record = SChainRecord.get_by_name(name)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_outdated_config,
+        skaled_checks_outdated_config.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, UpdateConfigSkaledMonitor)
+    assert mon == UpdateConfigSkaledMonitor
 
 
 def test_get_skaled_monitor_recreate(
@@ -395,11 +395,11 @@ def test_get_skaled_monitor_recreate(
     schain_record.set_needs_reload(True)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, RecreateSkaledMonitor)
+    assert mon == RecreateSkaledMonitor
 
 
 def test_regular_skaled_monitor(skaled_am, skaled_checks):

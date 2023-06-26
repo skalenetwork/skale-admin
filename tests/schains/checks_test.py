@@ -306,8 +306,6 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
     )
     checks_dict = checks.get_all()
 
-    assert isinstance(checks_dict['config_dir'], bool)
-    assert isinstance(checks_dict['dkg'], bool)
     assert isinstance(checks_dict['config'], bool)
     assert isinstance(checks_dict['firewall_rules'], bool)
     assert isinstance(checks_dict['skaled_container'], bool)

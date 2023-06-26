@@ -182,7 +182,7 @@ def is_config_update_time(
         return False
     logger.info('Rotation id updated status %s', status['rotation_id_updated'])
     if not status['config_updated']:
-        if skaled_status.exit_time_reached or not status['rotation_id_updated']:
+        if skaled_status.exit_time_reached or status['rotation_id_updated']:
             return True
     return False
 
@@ -213,7 +213,7 @@ def no_config(status: Dict) -> bool:
 
 def get_skaled_monitor(
     action_manager: SkaledActionManager,
-    checks: SkaledChecks,
+    status: Dict,
     schain_record: SChainRecord,
     skaled_status: Optional[SkaledStatus]
 ) -> BaseSkaledMonitor:
@@ -221,8 +221,6 @@ def get_skaled_monitor(
     logger.info('Upstream config %s', action_manager.upstream_config_path)
     if skaled_status:
         skaled_status.log()
-
-    status: Dict = checks.get_all()
 
     mon_type = RegularSkaledMonitor
     if no_config(status):
@@ -240,7 +238,4 @@ def get_skaled_monitor(
     elif is_new_config_mode(status):
         mon_type = NewConfigSkaledMonitor
 
-    return mon_type(
-        action_manager=action_manager,
-        checks=checks
-    )
+    return mon_type
