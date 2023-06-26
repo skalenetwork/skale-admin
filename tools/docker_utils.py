@@ -82,7 +82,7 @@ class DockerUtils:
         self,
         host: str = DEFAULT_DOCKER_HOST
     ) -> DockerClient:
-        logger.info(f'Initing docker client with host {host}')
+        logger.debug('Initing docker client with host %s', host)
         return docker.DockerClient(base_url=host)
 
     def init_docker_cli(

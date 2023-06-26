@@ -168,7 +168,7 @@ def get_rotation_ids_from_config(config: Dict) -> Dict:
 
 
 def get_rotation_ids_from_config_file(config_path: str) -> List[int]:
-    logger.info('Retrieving rotation_ids from %s', config_path)
+    logger.debug('Retrieving rotation_ids from %s', config_path)
     if config_path is None or not os.path.isfile(config_path):
         return []
     with open(config_path) as config_file:
@@ -187,7 +187,7 @@ def get_finish_ts(config: str) -> Optional[int]:
 
 def get_finish_ts_from_upstream_config(schain_name: str) -> Optional[int]:
     upstream_path = get_upstream_config_filepath(schain_name)
-    logger.info('Retrieving finish_ts from %s', upstream_path)
+    logger.debug('Retrieving finish_ts from %s', upstream_path)
     if upstream_path is None or not os.path.isfile(upstream_path):
         return None
     with open(upstream_path) as upstream_file:
@@ -197,7 +197,7 @@ def get_finish_ts_from_upstream_config(schain_name: str) -> Optional[int]:
 
 def get_finish_ts_from_config(schain_name: str) -> Optional[int]:
     config_path = schain_config_filepath(schain_name)
-    logger.info('Retrieving finish_ts from %s', config_path)
+    logger.debug('Retrieving finish_ts from %s', config_path)
     if not os.path.isfile(config_path):
         return None
     with open(config_path) as config_file:

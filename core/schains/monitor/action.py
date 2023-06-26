@@ -29,11 +29,13 @@ from core.node_config import NodeConfig
 from core.schains.checks import IChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
 from core.schains.dkg.utils import get_secret_key_share_filepath
+
 from core.schains.cleaner import (
     remove_schain_container,
     remove_schain_volume
 )
 from core.schains.firewall.types import IRuleController
+from core.schains.firewall.utils import get_sync_agent_ranges, save_sync_ranges
 
 from core.schains.volume import init_data_volume
 from core.schains.rotation import set_rotation_for_schain
@@ -55,7 +57,7 @@ from core.schains.config.main import (
     sync_config_with_file
 )
 from core.schains.config import init_schain_config_dir
-from core.schains.config.directory import get_schain_config
+from core.schains.config.directory import get_schain_config, sync_ranges_filepath
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
@@ -118,8 +120,10 @@ class BaseActionManager:
         set_first_run(self.name, False)
         self.schain_record.set_new_schain(False)
         logger.info(
-            f'restart_count - {self.schain_record.restart_count}, '
-            f'failed_rpc_count - {self.schain_record.failed_rpc_count}'
+            'restart_count - %s, failed_rpc_count - %s',
+            'failed_rpc_count - %s',
+            self.schain_record.restart_count,
+            self.schain_record.failed_rpc_count
         )
 
     def log_executed_blocks(self) -> None:
@@ -150,13 +154,9 @@ class ConfigActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def config_dir(self) -> bool:
-        initial_status = self.checks.config_dir.status
-        if not initial_status:
-            logger.info('Initializing config dir')
-            init_schain_config_dir(self.name)
-        else:
-            logger.info('config_dir - ok')
-        return initial_status
+        logger.info('Initializing config dir')
+        init_schain_config_dir(self.name)
+        return True
 
     @BaseActionManager.monitor_block
     def dkg(self) -> bool:
@@ -184,7 +184,7 @@ class ConfigActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def upstream_config(self) -> bool:
-        initial_status = self.checks.upstream_config
+        initial_status = self.checks.upstream_config.status
         if not initial_status:
             logger.info(
                 'Creating new upstream_config rotation_id: %s, stream: %s',
@@ -203,6 +203,15 @@ class ConfigActionManager(BaseActionManager):
         else:
             logger.info('config - ok')
         return initial_status
+
+    @BaseActionManager.monitor_block
+    def sync_ranges_config(self) -> bool:
+        logger.info('Saving sync ranges config')
+        sync_ranges = get_sync_agent_ranges(self.skale)
+        logger.debug('New sync ranges %s', sync_ranges)
+        path = sync_ranges_filepath(self.name)
+        save_sync_ranges(sync_ranges, path)
+        return True
 
 
 class SkaledActionManager(BaseActionManager):
@@ -243,7 +252,7 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def firewall_rules(self, overwrite=False) -> bool:
-        initial_status = self.checks.firewall_rules
+        initial_status = self.checks.firewall_rules.status
         if not initial_status:
             logger.info('Configuring firewall rules')
             conf = get_schain_config(self.name)
@@ -345,7 +354,7 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def ima_container(self) -> bool:
-        initial_status = self.checks.ima_container
+        initial_status = self.checks.ima_container.status
         if not initial_status:
             logger.info('Running IMA container watchman')
             monitor_ima_container(

@@ -92,7 +92,7 @@ def test_schains_checks(skale_bp, skale, schain_db, dutils):
 
     class SChainChecksMock(SChainChecks):
         def __init__(self, *args, **kwargs):
-            super(SChainChecksMock, self).__init__(*args, dutils=dutils, **kwargs)
+            super().__init__(*args, dutils=dutils, **kwargs)
 
     def get_schains_for_node_mock(self, node_id):
         return [
@@ -112,8 +112,6 @@ def test_schains_checks(skale_bp, skale, schain_db, dutils):
             assert len(payload) == 1
             test_schain_checks = payload[0]['healthchecks']
             assert test_schain_checks == {
-                'config_dir': False,
-                'dkg': False,
                 'config': False,
                 'volume': False,
                 'firewall_rules': False,

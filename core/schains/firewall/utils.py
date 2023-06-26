@@ -17,8 +17,10 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
 import logging
-from typing import List, Optional
+
+from typing import List, Optional, Tuple
 
 from skale import Skale
 
@@ -53,4 +55,14 @@ def get_sync_agent_ranges(skale: Skale) -> List[IpRange]:
     rnum = skale.sync_manager.get_ip_ranges_number()
     for i in range(rnum):
         sync_agent_ranges.append(skale.sync_manager.get_ip_range_by_index(i))
-    return sync_agent_ranges
+    return sorted(sync_agent_ranges)
+
+
+def save_sync_ranges(sync_agent_ranges: List[IpRange], path: str) -> None:
+    output = {'ranges': [tuple(r) for r in sync_agent_ranges]}
+    with open(path, 'w') as out_file:
+        json.dump(output, out_file)
+
+
+def ranges_from_plain_tuples(plain_ranges: List[Tuple]) -> List[IpRange]:
+    return list(sorted(map(lambda r: IpRange(r) for r in plain_ranges)))

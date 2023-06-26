@@ -132,3 +132,8 @@ def schain_config_exists(schain_name):
 def read_base_config():
     json_data = open(BASE_SCHAIN_CONFIG_FILEPATH).read()
     return json.loads(json_data)
+
+
+def sync_ranges_filepath(name: str) -> str:
+    config_dir = schain_config_dir(name)
+    return os.path.join(config_dir, 'sync_ranges.json')

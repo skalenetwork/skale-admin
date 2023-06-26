@@ -29,7 +29,8 @@ from core.schains.config.directory import (
     get_schain_check_filepath,
     get_schain_config,
     schain_config_dir,
-    schain_config_filepath
+    schain_config_filepath,
+    sync_ranges_filepath
 )
 from core.schains.config.helper import (
     get_base_port_from_config,
@@ -43,6 +44,7 @@ from core.schains.config.main import (
 )
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
+from core.schains.firewall.utils import get_sync_agent_ranges, ranges_from_plain_tuples
 from core.schains.process_manager_helper import is_monitor_process_alive
 from core.schains.rpc import (
     check_endpoint_alive,
@@ -54,7 +56,7 @@ from core.schains.skaled_exit_codes import SkaledExitCodes
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import write_json
+from tools.helper import read_json, write_json
 from tools.str_formatters import arguments_list_string
 
 from web.models.schain import SChainRecord
@@ -63,8 +65,6 @@ logger = logging.getLogger(__name__)
 
 
 API_ALLOWED_CHECKS = [
-    'config_dir',
-    'dkg',
     'config',
     'volume',
     'firewall_rules',
@@ -163,6 +163,13 @@ class ConfigChecks(IChecks):
         logger.debug('Upstream configs for %s: %s', self.name, upstreams)
         return len(upstreams) > 0 and self.schain_record.config_version == self.stream_version
 
+    def sync_ranges(self) -> CheckRes:
+        plain_ranges = read_json(sync_ranges_filepath(self.name))
+        saved_ranges = ranges_from_plain_tuples(plain_ranges)
+        current_ranges = get_sync_agent_ranges(self.skale)
+        logger.debug('Comparing sync ranges. Current %s. Saved %s', current_ranges, saved_ranges)
+        return CheckRes(saved_ranges == current_ranges)
+
     def is_healthy(self) -> bool:
         checks = self.get_all()
         return False not in checks.values()
@@ -213,11 +220,16 @@ class SkaledChecks(IChecks):
         upstream_path = get_upstream_config_filepath(self.name)
         config_path = schain_config_filepath(self.name)
         upstream_rotations = get_rotation_ids_from_config_file(upstream_path)
-        config_rotations = get_rotation_ids_from_config_file(config_path)
         logger.debug(
-            'Comparing rotation_ids between upstream %s and %s',
+            'Upstream path. %s. Config path: %s',
             upstream_path,
             config_path
+        )
+        config_rotations = get_rotation_ids_from_config_file(config_path)
+        logger.debug(
+            'Comparing rotation_ids. Upstream: %s. Config: %s',
+            upstream_rotations,
+            config_rotations
         )
         return CheckRes(upstream_rotations == config_rotations)
 
@@ -256,7 +268,7 @@ class SkaledChecks(IChecks):
                 own_ip=own_ip,
                 node_ips=node_ips
             )
-            logger.info(f'Rule controller {self.rc.expected_rules()}')
+            logger.debug(f'Rule controller {self.rc.expected_rules()}')
             return CheckRes(self.rc.is_rules_synced())
         return CheckRes(False)
 
@@ -277,6 +289,8 @@ class SkaledChecks(IChecks):
     @property
     def ima_container(self) -> CheckRes:
         """Checks that IMA container is running"""
+        if not self.ima_linked:
+            return CheckRes(True)
         name = get_container_name(IMA_CONTAINER, self.name)
         return CheckRes(self.dutils.is_container_running(name))
 
