@@ -17,11 +17,11 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import time
 import logging
+import time
 from datetime import datetime
 from functools import wraps
-from typing import Optional
+from typing import List, Optional
 
 from skale import Skale
 
@@ -34,8 +34,11 @@ from core.schains.cleaner import (
     remove_schain_container,
     remove_schain_volume
 )
-from core.schains.firewall.types import IRuleController
-from core.schains.firewall.utils import get_sync_agent_ranges, save_sync_ranges
+from core.schains.firewall.types import IpRange, IRuleController
+from core.schains.firewall.utils import (
+    ranges_from_plain_tuples,
+    save_sync_ranges
+)
 
 from core.schains.volume import init_data_volume
 from core.schains.rotation import set_rotation_for_schain
@@ -53,6 +56,7 @@ from core.schains.config.main import (
     create_new_schain_config,
     get_finish_ts_from_config,
     get_finish_ts_from_upstream_config,
+    get_saved_sync_ranges_plain,
     get_upstream_config_filepath,
     sync_config_with_file
 )
@@ -121,7 +125,6 @@ class BaseActionManager:
         self.schain_record.set_new_schain(False)
         logger.info(
             'restart_count - %s, failed_rpc_count - %s',
-            'failed_rpc_count - %s',
             self.schain_record.restart_count,
             self.schain_record.failed_rpc_count
         )
@@ -139,7 +142,8 @@ class ConfigActionManager(BaseActionManager):
         node_config: NodeConfig,
         rotation_data: dict,
         stream_version: str,
-        checks: IChecks
+        checks: IChecks,
+        allowed_ranges: Optional[List[IpRange]] = None
     ):
         self.skale = skale
         self.schain = schain
@@ -150,6 +154,7 @@ class ConfigActionManager(BaseActionManager):
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
+        self.allowed_ranges = allowed_ranges or []
         super().__init__(name=schain['name'])
 
     @BaseActionManager.monitor_block
@@ -207,10 +212,9 @@ class ConfigActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def sync_ranges_config(self) -> bool:
         logger.info('Saving sync ranges config')
-        sync_ranges = get_sync_agent_ranges(self.skale)
-        logger.debug('New sync ranges %s', sync_ranges)
+        logger.debug('Allowed ip ranges %s', self.allowed_ranges)
         path = sync_ranges_filepath(self.name)
-        save_sync_ranges(sync_ranges, path)
+        save_sync_ranges(self.allowed_ranges, path)
         return True
 
 
@@ -255,14 +259,23 @@ class SkaledActionManager(BaseActionManager):
         initial_status = self.checks.firewall_rules.status
         if not initial_status:
             logger.info('Configuring firewall rules')
+
             conf = get_schain_config(self.name)
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
+
+            logger.debug('Base port %d', base_port)
+
+            plain_ranges = get_saved_sync_ranges_plain(self.name)
+            saved_ranges = ranges_from_plain_tuples(plain_ranges)
+            logger.debug('Adding saved ranges', saved_ranges)
+
             self.rc.configure(
                 base_port=base_port,
                 own_ip=own_ip,
-                node_ips=node_ips
+                node_ips=node_ips,
+                sync_ip_ranges=saved_ranges
             )
             self.rc.sync()
         return initial_status

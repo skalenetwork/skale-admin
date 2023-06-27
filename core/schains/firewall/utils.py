@@ -59,10 +59,10 @@ def get_sync_agent_ranges(skale: Skale) -> List[IpRange]:
 
 
 def save_sync_ranges(sync_agent_ranges: List[IpRange], path: str) -> None:
-    output = {'ranges': [tuple(r) for r in sync_agent_ranges]}
+    output = {'ranges': [list(r) for r in sync_agent_ranges]}
     with open(path, 'w') as out_file:
         json.dump(output, out_file)
 
 
 def ranges_from_plain_tuples(plain_ranges: List[Tuple]) -> List[IpRange]:
-    return list(sorted(map(lambda r: IpRange(r) for r in plain_ranges)))
+    return list(sorted(map(lambda r: IpRange(*r), plain_ranges)))

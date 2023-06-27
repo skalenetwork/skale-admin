@@ -1,5 +1,5 @@
-#   -*- coding: utf-8 -*-
 #
+#   -*- coding: utf-8 -*-
 #   This file is part of SKALE Admin
 #
 #   Copyright (C) 2021-Present SKALE Labs
@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import json
 import os
 import shutil
 import logging
@@ -31,10 +30,12 @@ from core.schains.config.directory import (
     schain_config_dir,
     schain_config_filepath,
     new_schain_config_filepath,
+    sync_ranges_filepath,
     upstream_prefix
 )
 from core.schains.config.generator import generate_schain_config_with_skale
 from tools.str_formatters import arguments_list_string
+from tools.helper import read_json, write_json
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
@@ -101,16 +102,14 @@ def create_new_schain_config(
 
 def save_schain_config(schain_config, schain_name):
     tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
-    with open(tmp_config_filepath, 'w') as outfile:
-        json.dump(schain_config, outfile, indent=4)
+    write_json(tmp_config_filepath, schain_config)
     config_filepath = schain_config_filepath(schain_name)
     shutil.move(tmp_config_filepath, config_filepath)
 
 
 def save_new_schain_config(schain_config, schain_name, rotation_id, stream_version):
     tmp_config_filepath = get_tmp_schain_config_filepath(schain_name)
-    with open(tmp_config_filepath, 'w') as outfile:
-        json.dump(schain_config, outfile, indent=4)
+    write_json(tmp_config_filepath, schain_config)
     config_filepath = new_schain_config_filepath(schain_name, rotation_id, stream_version)
     shutil.move(tmp_config_filepath, config_filepath)
 
@@ -171,9 +170,8 @@ def get_rotation_ids_from_config_file(config_path: str) -> List[int]:
     logger.debug('Retrieving rotation_ids from %s', config_path)
     if config_path is None or not os.path.isfile(config_path):
         return []
-    with open(config_path) as config_file:
-        config = json.load(config_file)
-        return get_rotation_ids_from_config(config)
+    config = read_json(config_path)
+    return get_rotation_ids_from_config(config)
 
 
 def get_finish_ts(config: str) -> Optional[int]:
@@ -190,9 +188,8 @@ def get_finish_ts_from_upstream_config(schain_name: str) -> Optional[int]:
     logger.debug('Retrieving finish_ts from %s', upstream_path)
     if upstream_path is None or not os.path.isfile(upstream_path):
         return None
-    with open(upstream_path) as upstream_file:
-        config = json.load(upstream_file)
-        return get_finish_ts(config)
+    config = read_json(upstream_path)
+    return get_finish_ts(config)
 
 
 def get_finish_ts_from_config(schain_name: str) -> Optional[int]:
@@ -200,12 +197,18 @@ def get_finish_ts_from_config(schain_name: str) -> Optional[int]:
     logger.debug('Retrieving finish_ts from %s', config_path)
     if not os.path.isfile(config_path):
         return None
-    with open(config_path) as config_file:
-        config = json.load(config_file)
-        return get_finish_ts(config)
+    config = read_json(config_path)
+    return get_finish_ts(config)
 
 
 def get_number_of_secret_shares(schain_name: str) -> int:
     config_dir = schain_config_dir(schain_name)
     prefix = 'secret_key_'
     return len(get_files_with_prefix(config_dir, prefix))
+
+
+def get_saved_sync_ranges_plain(schain_name: str) -> List:
+    ranges_path = sync_ranges_filepath(schain_name)
+    if not os.path.isfile(ranges_path):
+        return []
+    return read_json(ranges_path).get('ranges', [])

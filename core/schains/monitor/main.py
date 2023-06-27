@@ -33,6 +33,7 @@ from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.checks import ConfigChecks, SkaledChecks
 from core.schains.firewall import get_default_rule_controller
+from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.ima import ImaData
 from core.schains.monitor import (
     get_skaled_monitor,
@@ -40,7 +41,6 @@ from core.schains.monitor import (
 )
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.task import keep_tasks_running, Task
-from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.rotation import get_schain_public_key
 from core.schains.skaled_status import get_skaled_status
 from tools.docker_utils import DockerUtils
@@ -68,12 +68,14 @@ def run_config_pipeline(
     name = schain['name']
     schain_record = SChainRecord.get_by_name(name)
     rotation_data = skale.node_rotation.get_rotation(name)
+    allowed_ranges = get_sync_agent_ranges(skale)
     config_checks = ConfigChecks(
         schain_name=name,
         node_id=node_config.id,
         schain_record=schain_record,
         stream_version=stream_version,
-        rotation_id=rotation_data['rotation_id']
+        rotation_id=rotation_data['rotation_id'],
+        allowed_ranges=allowed_ranges
     )
 
     config_am = ConfigActionManager(
@@ -105,12 +107,7 @@ def run_skaled_pipeline(
 
     ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
 
-    sync_agent_ranges = get_sync_agent_ranges(skale)
-
-    rc = get_default_rule_controller(
-        name=name,
-        sync_agent_ranges=sync_agent_ranges
-    )
+    rc = get_default_rule_controller(name=name)
     skaled_checks = SkaledChecks(
         schain_name=schain['name'],
         schain_record=schain_record,

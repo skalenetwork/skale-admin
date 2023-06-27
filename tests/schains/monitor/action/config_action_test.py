@@ -3,12 +3,12 @@ import shutil
 import pytest
 
 from core.schains.checks import ConfigChecks
-from core.schains.config.directory import schain_config_dir
+from core.schains.config.directory import schain_config_dir, sync_ranges_filepath
 from core.schains.monitor.action import ConfigActionManager
-
+from tools.helper import read_json
 from web.models.schain import SChainRecord
 
-from tests.utils import CONFIG_STREAM
+from tests.utils import ALLOWED_RANGES, CONFIG_STREAM
 
 
 @pytest.fixture
@@ -31,7 +31,8 @@ def config_checks(
         node_id=node_config.id,
         schain_record=schain_record,
         rotation_id=rotation_data['rotation_id'],
-        stream_version=CONFIG_STREAM
+        stream_version=CONFIG_STREAM,
+        allowed_ranges=ALLOWED_RANGES
     )
 
 
@@ -54,7 +55,8 @@ def config_am(
         node_config=node_config,
         rotation_data=rotation_data,
         checks=config_checks,
-        stream_version=CONFIG_STREAM
+        stream_version=CONFIG_STREAM,
+        allowed_ranges=ALLOWED_RANGES
     )
 
 
@@ -83,3 +85,12 @@ def test_upstream_config_actions(config_am, config_checks):
     # Try to recreate config with no changes
     config_am.upstream_config()
     assert config_checks.upstream_config
+
+
+def test_sync_ranges_config_actions(config_am, config_checks):
+    config_am.config_dir()
+    assert not config_checks.sync_ranges
+    assert config_am.sync_ranges_config()
+    ranges = read_json(sync_ranges_filepath(config_am.name))
+    assert ranges == {'ranges': [['1.1.1.1', '2.2.2.2'], ['3.3.3.3', '4.4.4.4']]}
+    assert config_checks.sync_ranges

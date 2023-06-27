@@ -22,15 +22,16 @@ import os
 import time
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
+
+from skale import Skale
 
 from core.schains.config.directory import (
     upstreams_for_rotation_id_version,
     get_schain_check_filepath,
     get_schain_config,
     schain_config_dir,
-    schain_config_filepath,
-    sync_ranges_filepath
+    schain_config_filepath
 )
 from core.schains.config.helper import (
     get_base_port_from_config,
@@ -40,11 +41,12 @@ from core.schains.config.helper import (
 )
 from core.schains.config.main import (
     get_upstream_config_filepath,
-    get_rotation_ids_from_config_file
+    get_rotation_ids_from_config_file,
+    get_saved_sync_ranges_plain
 )
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from core.schains.firewall.types import IRuleController
-from core.schains.firewall.utils import get_sync_agent_ranges, ranges_from_plain_tuples
+from core.schains.firewall.types import IpRange, IRuleController
+from core.schains.firewall.utils import ranges_from_plain_tuples
 from core.schains.process_manager_helper import is_monitor_process_alive
 from core.schains.rpc import (
     check_endpoint_alive,
@@ -56,7 +58,7 @@ from core.schains.skaled_exit_codes import SkaledExitCodes
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import read_json, write_json
+from tools.helper import write_json
 from tools.str_formatters import arguments_list_string
 
 from web.models.schain import SChainRecord
@@ -113,13 +115,15 @@ class ConfigChecks(IChecks):
         node_id: int,
         schain_record: SChainRecord,
         rotation_id: int,
-        stream_version: str
+        stream_version: str,
+        allowed_ranges: Optional[List[IpRange]] = None
     ):
         self.name = schain_name
         self.node_id = node_id
         self.schain_record = schain_record
         self.rotation_id = rotation_id
         self.stream_version = stream_version
+        self.allowed_ranges = allowed_ranges or []
 
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
         if checks_filter:
@@ -161,18 +165,19 @@ class ConfigChecks(IChecks):
             self.stream_version
         )
         logger.debug('Upstream configs for %s: %s', self.name, upstreams)
-        return len(upstreams) > 0 and self.schain_record.config_version == self.stream_version
+        return CheckRes(
+            len(upstreams) > 0 and self.schain_record.config_version == self.stream_version
+        )
 
+    @property
     def sync_ranges(self) -> CheckRes:
-        plain_ranges = read_json(sync_ranges_filepath(self.name))
+        plain_ranges = get_saved_sync_ranges_plain(self.name)
         saved_ranges = ranges_from_plain_tuples(plain_ranges)
-        current_ranges = get_sync_agent_ranges(self.skale)
-        logger.debug('Comparing sync ranges. Current %s. Saved %s', current_ranges, saved_ranges)
-        return CheckRes(saved_ranges == current_ranges)
-
-    def is_healthy(self) -> bool:
-        checks = self.get_all()
-        return False not in checks.values()
+        logger.debug(
+            'Comparing sync ranges. Current %s. Saved %s',
+            self.allowed_ranges, saved_ranges
+        )
+        return CheckRes(saved_ranges == self.allowed_ranges)
 
 
 class SkaledChecks(IChecks):
@@ -328,6 +333,7 @@ class SChainChecks(IChecks):
         schain_record: SChainRecord,
         rule_controller: IRuleController,
         stream_version: str,
+        skale: Skale,
         rotation_id: int = 0,
         *,
         ima_linked: bool = True,
@@ -339,6 +345,7 @@ class SChainChecks(IChecks):
                 node_id=node_id,
                 schain_record=schain_record,
                 rotation_id=rotation_id,
+                skale=skale,
                 stream_version=stream_version
             ),
             SkaledChecks(
@@ -374,10 +381,6 @@ class SChainChecks(IChecks):
         if save:
             save_checks_dict(self.name, plain_checks)
         return plain_checks
-
-    def is_healthy(self):
-        checks = self.get_all()
-        return False not in checks.values()
 
 
 def save_checks_dict(schain_name, checks_dict):

@@ -20,7 +20,7 @@ from core.schains.cleaner import (
 )
 from core.schains.config.main import save_schain_config
 from core.schains.config.helper import get_schain_config
-from core.schains.firewall.types import IHostFirewallController
+from core.schains.firewall.types import IHostFirewallController, IpRange
 from core.schains.firewall import SChainFirewallManager, SChainRuleController
 from core.schains.runner import run_schain_container, run_ima_container, get_container_info
 
@@ -41,6 +41,12 @@ IMA_ABI_FILEPATH = os.getenv('IMA_ABI_FILEPATH') or os.path.join(
 
 ETH_AMOUNT_PER_NODE = 1
 CONFIG_STREAM = "1.0.0-testnet"
+
+
+ALLOWED_RANGES = [
+    IpRange('1.1.1.1', '2.2.2.2'),
+    IpRange('3.3.3.3', '4.4.4.4')
+]
 
 
 class FailedAPICall(Exception):
