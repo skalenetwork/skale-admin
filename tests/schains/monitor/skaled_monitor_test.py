@@ -292,9 +292,11 @@ def test_get_skaled_monitor_new_config(
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
 
+    state = skaled_checks_new_config.get_all()
+    state['rotation_id_updated'] = False
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_new_config.get_all(),
+        state,
         schain_record,
         skaled_status
     )
@@ -374,9 +376,11 @@ def test_get_skaled_monitor_update_config_no_rotation(
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
+    state = skaled_checks_outdated_config.get_all()
+    state['rotation_id_updated'] = True
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_outdated_config.get_all(),
+        state,
         schain_record,
         skaled_status
     )

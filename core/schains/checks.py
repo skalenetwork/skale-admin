@@ -19,12 +19,11 @@
 
 import filecmp
 import os
-import time
 import logging
+import threading
+import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-
-from skale import Skale
 
 from core.schains.config.directory import (
     upstreams_for_rotation_id_version,
@@ -77,6 +76,9 @@ API_ALLOWED_CHECKS = [
     'process',
     'ima_container'
 ]
+
+
+config_lock = threading.Lock()
 
 
 class CheckRes:
@@ -165,9 +167,10 @@ class ConfigChecks(IChecks):
             self.stream_version
         )
         logger.debug('Upstream configs for %s: %s', self.name, upstreams)
-        return CheckRes(
-            len(upstreams) > 0 and self.schain_record.config_version == self.stream_version
-        )
+        with config_lock:
+            return CheckRes(
+                len(upstreams) > 0 and self.schain_record.config_version == self.stream_version
+            )
 
     @property
     def sync_ranges(self) -> CheckRes:
@@ -215,39 +218,42 @@ class SkaledChecks(IChecks):
 
     @property
     def upstream_exists(self) -> CheckRes:
-        upstream_path = get_upstream_config_filepath(self.name)
-        return CheckRes(upstream_path is not None)
+        with config_lock:
+            upstream_path = get_upstream_config_filepath(self.name)
+            return CheckRes(upstream_path is not None)
 
     @property
     def rotation_id_updated(self) -> int:
         if not self.config:
             return CheckRes(False)
-        upstream_path = get_upstream_config_filepath(self.name)
-        config_path = schain_config_filepath(self.name)
-        upstream_rotations = get_rotation_ids_from_config_file(upstream_path)
-        logger.debug(
-            'Upstream path. %s. Config path: %s',
-            upstream_path,
-            config_path
-        )
-        config_rotations = get_rotation_ids_from_config_file(config_path)
-        logger.debug(
-            'Comparing rotation_ids. Upstream: %s. Config: %s',
-            upstream_rotations,
-            config_rotations
-        )
-        return CheckRes(upstream_rotations == config_rotations)
+        with config_lock:
+            upstream_path = get_upstream_config_filepath(self.name)
+            config_path = schain_config_filepath(self.name)
+            upstream_rotations = get_rotation_ids_from_config_file(upstream_path)
+            logger.debug(
+                'Upstream path. %s. Config path: %s',
+                upstream_path,
+                config_path
+            )
+            config_rotations = get_rotation_ids_from_config_file(config_path)
+            logger.debug(
+                'Comparing rotation_ids. Upstream: %s. Config: %s',
+                upstream_rotations,
+                config_rotations
+            )
+            return CheckRes(upstream_rotations == config_rotations)
 
     @property
     def config_updated(self) -> CheckRes:
         if not self.config:
             return CheckRes(False)
-        upstream_path = get_upstream_config_filepath(self.name)
-        config_path = schain_config_filepath(self.name)
-        logger.debug('Checking if %s updated according to %s', config_path, upstream_path)
-        if not upstream_path:
-            return CheckRes(True)
-        return CheckRes(filecmp.cmp(upstream_path, config_path))
+        with config_lock:
+            upstream_path = get_upstream_config_filepath(self.name)
+            config_path = schain_config_filepath(self.name)
+            logger.debug('Checking if %s updated according to %s', config_path, upstream_path)
+            if not upstream_path:
+                return CheckRes(True)
+            return CheckRes(filecmp.cmp(upstream_path, config_path))
 
     @property
     def config(self) -> CheckRes:
@@ -333,7 +339,6 @@ class SChainChecks(IChecks):
         schain_record: SChainRecord,
         rule_controller: IRuleController,
         stream_version: str,
-        skale: Skale,
         rotation_id: int = 0,
         *,
         ima_linked: bool = True,
@@ -345,7 +350,6 @@ class SChainChecks(IChecks):
                 node_id=node_id,
                 schain_record=schain_record,
                 rotation_id=rotation_id,
-                skale=skale,
                 stream_version=stream_version
             ),
             SkaledChecks(

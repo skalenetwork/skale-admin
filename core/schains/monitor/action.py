@@ -26,7 +26,7 @@ from typing import List, Optional
 from skale import Skale
 
 from core.node_config import NodeConfig
-from core.schains.checks import IChecks
+from core.schains.checks import config_lock, IChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
 from core.schains.dkg.utils import get_secret_key_share_filepath
 
@@ -189,12 +189,11 @@ class ConfigActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def upstream_config(self) -> bool:
-        initial_status = self.checks.upstream_config.status
-        if not initial_status:
-            logger.info(
-                'Creating new upstream_config rotation_id: %s, stream: %s',
-                self.rotation_data.get('rotation_id'), self.stream_version
-            )
+        logger.info(
+            'Creating new upstream_config rotation_id: %s, stream: %s',
+            self.rotation_data.get('rotation_id'), self.stream_version
+        )
+        with config_lock:
             create_new_schain_config(
                 skale=self.skale,
                 node_id=self.node_config.id,
@@ -205,9 +204,7 @@ class ConfigActionManager(BaseActionManager):
                 stream_version=self.stream_version,
                 schain_record=self.schain_record
             )
-        else:
-            logger.info('config - ok')
-        return initial_status
+        return True
 
     @BaseActionManager.monitor_block
     def sync_ranges_config(self) -> bool:
@@ -389,16 +386,19 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def update_config(self) -> bool:
-        upstream_path = get_upstream_config_filepath(self.name)
-        if upstream_path:
-            logger.info('Syncing config with upstream %s', upstream_path)
-            sync_config_with_file(self.name, upstream_path)
-        logger.info('No upstream config yet')
-        return upstream_path is not None
+        with config_lock:
+            upstream_path = get_upstream_config_filepath(self.name)
+            if upstream_path:
+                logger.info('Syncing config with upstream %s', upstream_path)
+                sync_config_with_file(self.name, upstream_path)
+            logger.info('No upstream config yet')
+            return upstream_path is not None
 
     @BaseActionManager.monitor_block
     def send_exit_request(self) -> None:
-        finish_ts = self.upstream_finish_ts
+        finish_ts = None
+        with config_lock:
+            finish_ts = self.upstream_finish_ts
         logger.info('Trying to set skaled exit time %s', finish_ts)
         if finish_ts is not None:
             set_rotation_for_schain(self.name, finish_ts)
