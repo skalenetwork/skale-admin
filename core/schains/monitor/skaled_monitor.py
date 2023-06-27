@@ -65,6 +65,8 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if not self.checks.skaled_container:
             self.am.skaled_container()
+        if not self.checks.rpc:
+            self.am.skaled_rpc()
         if not self.checks.ima_container:
             self.am.ima_container()
 
@@ -82,7 +84,7 @@ class RepairSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.checks.volume:
             self.am.volume()
-        if self.checks.volume and not self.checks.skaled_container:
+        if not self.checks.skaled_container:
             self.am.skaled_container(download_snapshot=True)
         self.am.disable_repair_mode()
 
@@ -114,7 +116,7 @@ class UpdateConfigSkaledMonitor(BaseSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.config_updated:
             self.am.update_config()
-        if self.checks.config and not self.checks.firewall_rules:
+        if self.checks.firewall_rules:
             self.am.firewall_rules()
         if self.checks.volume:
             self.am.volume()
