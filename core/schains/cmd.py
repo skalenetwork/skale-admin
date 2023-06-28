@@ -28,8 +28,8 @@ from tools.configs.ima import IMA_ENDPOINT
 
 def get_schain_container_cmd(
     schain_name: str,
-    public_key: str = None,
     start_ts: int = None,
+    download_snapshot: bool = False,
     enable_ssl: bool = True,
     snapshot_from: str = ''
 ) -> str:
@@ -37,7 +37,7 @@ def get_schain_container_cmd(
     opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
     if snapshot_from:
         opts.extend(['--no-snapshot-majority', snapshot_from])
-    if public_key:
+    if download_snapshot:
         sync_opts = get_schain_container_sync_opts(start_ts)
         opts.extend(sync_opts)
     return ' '.join(opts)
