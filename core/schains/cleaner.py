@@ -37,6 +37,7 @@ from core.schains.config.helper import (
 )
 from core.schains.process_manager_helper import terminate_schain_process
 from core.schains.runner import get_container_name, is_exited
+from core.schains.schain_eth_state import ExternalConfig
 from core.schains.types import ContainerType
 from core.schains.firewall.utils import get_sync_agent_ranges
 
@@ -45,7 +46,6 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
     SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
 )
-from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 from tools.helper import merged_unique, read_json, is_node_part_of_chain
 from tools.sgx_utils import SGX_SERVER_URL
@@ -205,16 +205,25 @@ def remove_schain(skale, node_id, schain_name, msg, dutils=None) -> None:
     sync_agent_ranges = get_sync_agent_ranges(skale)
     rotation_data = skale.node_rotation.get_rotation(schain_name)
     rotation_id = rotation_data['rotation_id']
+    estate = ExternalConfig(name=schain_name).get()
     cleanup_schain(
         node_id,
         schain_name,
         sync_agent_ranges,
         rotation_id=rotation_id,
+        estate=estate,
         dutils=dutils
     )
 
 
-def cleanup_schain(node_id, schain_name, sync_agent_ranges, rotation_id, dutils=None) -> None:
+def cleanup_schain(
+    node_id,
+    schain_name,
+    sync_agent_ranges,
+    rotation_id,
+    estate,
+    dutils=None
+) -> None:
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
 
@@ -229,7 +238,8 @@ def cleanup_schain(node_id, schain_name, sync_agent_ranges, rotation_id, dutils=
         rule_controller=rc,
         stream_version=stream_version,
         schain_record=schain_record,
-        rotation_id=rotation_id
+        rotation_id=rotation_id,
+        estate=estate
     )
     if checks.skaled_container.status or is_exited(
         schain_name,
@@ -246,7 +256,7 @@ def cleanup_schain(node_id, schain_name, sync_agent_ranges, rotation_id, dutils=
             node_ips = get_node_ips_from_config(conf)
             rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
             rc.cleanup()
-    if not DISABLE_IMA:
+    if estate.ima_linked:
         if checks.ima_container.status or is_exited(
             schain_name,
             container_type=ContainerType.ima,
