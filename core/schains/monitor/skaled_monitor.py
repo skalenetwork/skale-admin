@@ -95,13 +95,11 @@ class BackupSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
-        if not self.am.skaled_container:
+        if not self.checks.skaled_container:
             self.am.skaled_container(download_snapshot=True)
-        self.am.disable_backup_run()
-        if not self.checks.rpc:
-            self.am.skaled_rpc()
         if not self.checks.ima_container:
             self.am.ima_container()
+        self.am.disable_backup_run()
 
 
 class RecreateSkaledMonitor(BaseSkaledMonitor):
@@ -140,11 +138,11 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
 
 class NoConfigSkaledMonitor(BaseSkaledMonitor):
     def execute(self):
-        if not self.checks.upstream_exists:
-            logger.info('Waiting for upstream config')
-        else:
+        if self.checks.upstream_exists:
             logger.info('Creating skaled config')
             self.am.update_config()
+        else:
+            logger.debug('Waiting for upstream config')
 
 
 class NewNodeSkaledMonitor(BaseSkaledMonitor):
