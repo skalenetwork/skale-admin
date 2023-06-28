@@ -254,10 +254,12 @@ class SkaledChecks(IChecks):
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
+            ranges = self.econfig.ranges
             self.rc.configure(
                 base_port=base_port,
                 own_ip=own_ip,
-                node_ips=node_ips
+                node_ips=node_ips,
+                sync_ip_ranges=ranges
             )
             logger.debug(f'Rule controller {self.rc.expected_rules()}')
             return CheckRes(self.rc.is_rules_synced())
