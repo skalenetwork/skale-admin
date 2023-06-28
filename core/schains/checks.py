@@ -17,20 +17,20 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import filecmp
 import os
 import logging
-import threading
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from core.schains.config.directory import (
-    upstreams_for_rotation_id_version,
+    config_synced_with_upstream,
     get_schain_check_filepath,
     get_schain_config,
+    get_upstream_config_filepath,
     schain_config_dir,
-    schain_config_filepath
+    schain_config_filepath,
+    upstreams_for_rotation_id_version,
 )
 from core.schains.config.helper import (
     get_base_port_from_config,
@@ -38,20 +38,16 @@ from core.schains.config.helper import (
     get_own_ip_from_config,
     get_local_schain_http_endpoint
 )
-from core.schains.config.main import (
-    get_upstream_config_filepath,
-    get_rotation_ids_from_config_file,
-    get_saved_sync_ranges_plain
-)
+from core.schains.config.main import get_config_rotations_ids, get_upstream_rotation_ids
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from core.schains.firewall.types import IpRange, IRuleController
-from core.schains.firewall.utils import ranges_from_plain_tuples
+from core.schains.firewall.types import IRuleController
 from core.schains.process_manager_helper import is_monitor_process_alive
 from core.schains.rpc import (
     check_endpoint_alive,
     check_endpoint_blocks,
     get_endpoint_alive_check_timeout
 )
+from core.schains.schain_eth_state import ExternalConfig, ExternalState
 from core.schains.runner import get_container_name
 from core.schains.skaled_exit_codes import SkaledExitCodes
 
@@ -66,6 +62,8 @@ logger = logging.getLogger(__name__)
 
 
 API_ALLOWED_CHECKS = [
+    'config_dir',
+    'dkg',
     'config',
     'volume',
     'firewall_rules',
@@ -76,9 +74,6 @@ API_ALLOWED_CHECKS = [
     'process',
     'ima_container'
 ]
-
-
-config_lock = threading.Lock()
 
 
 class CheckRes:
@@ -118,14 +113,16 @@ class ConfigChecks(IChecks):
         schain_record: SChainRecord,
         rotation_id: int,
         stream_version: str,
-        allowed_ranges: Optional[List[IpRange]] = None
+        estate: ExternalState,
+        econfig: Optional[ExternalConfig] = None
     ):
         self.name = schain_name
         self.node_id = node_id
         self.schain_record = schain_record
         self.rotation_id = rotation_id
         self.stream_version = stream_version
-        self.allowed_ranges = allowed_ranges or []
+        self.estate = estate
+        self.econfig = econfig or ExternalConfig(schain_name)
 
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
         if checks_filter:
@@ -167,20 +164,18 @@ class ConfigChecks(IChecks):
             self.stream_version
         )
         logger.debug('Upstream configs for %s: %s', self.name, upstreams)
-        with config_lock:
-            return CheckRes(
-                len(upstreams) > 0 and self.schain_record.config_version == self.stream_version
-            )
+        return CheckRes(
+            len(upstreams) > 0 and self.schain_record.config_version == self.stream_version
+        )
 
     @property
-    def sync_ranges(self) -> CheckRes:
-        plain_ranges = get_saved_sync_ranges_plain(self.name)
-        saved_ranges = ranges_from_plain_tuples(plain_ranges)
+    def external_state(self) -> CheckRes:
+        actual_state = self.econfig.get()
         logger.debug(
-            'Comparing sync ranges. Current %s. Saved %s',
-            self.allowed_ranges, saved_ranges
+            'Checking external config. Current %s. Saved %s',
+            self.estate, actual_state
         )
-        return CheckRes(saved_ranges == self.allowed_ranges)
+        return CheckRes(self.econfig.synced(self.estate))
 
 
 class SkaledChecks(IChecks):
@@ -190,14 +185,14 @@ class SkaledChecks(IChecks):
         schain_record: SChainRecord,
         rule_controller: IRuleController,
         *,
-        ima_linked: bool = True,
+        econfig: Optional[ExternalConfig] = None,
         dutils: DockerUtils = None
     ):
         self.name = schain_name
         self.schain_record = schain_record
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
-        self.ima_linked = ima_linked
+        self.econfig = econfig or ExternalConfig(name=schain_name)
         self.rc = rule_controller
 
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
@@ -218,42 +213,27 @@ class SkaledChecks(IChecks):
 
     @property
     def upstream_exists(self) -> CheckRes:
-        with config_lock:
-            upstream_path = get_upstream_config_filepath(self.name)
-            return CheckRes(upstream_path is not None)
+        upstream_path = get_upstream_config_filepath(self.name)
+        return CheckRes(upstream_path is not None)
 
     @property
     def rotation_id_updated(self) -> int:
         if not self.config:
             return CheckRes(False)
-        with config_lock:
-            upstream_path = get_upstream_config_filepath(self.name)
-            config_path = schain_config_filepath(self.name)
-            upstream_rotations = get_rotation_ids_from_config_file(upstream_path)
-            logger.debug(
-                'Upstream path. %s. Config path: %s',
-                upstream_path,
-                config_path
-            )
-            config_rotations = get_rotation_ids_from_config_file(config_path)
-            logger.debug(
-                'Comparing rotation_ids. Upstream: %s. Config: %s',
-                upstream_rotations,
-                config_rotations
-            )
-            return CheckRes(upstream_rotations == config_rotations)
+        upstream_rotations = get_upstream_rotation_ids(self.name)
+        config_rotations = get_config_rotations_ids(self.name)
+        logger.debug(
+            'Comparing rotation_ids. Upstream: %s. Config: %s',
+            upstream_rotations,
+            config_rotations
+        )
+        return CheckRes(upstream_rotations == config_rotations)
 
     @property
     def config_updated(self) -> CheckRes:
         if not self.config:
             return CheckRes(False)
-        with config_lock:
-            upstream_path = get_upstream_config_filepath(self.name)
-            config_path = schain_config_filepath(self.name)
-            logger.debug('Checking if %s updated according to %s', config_path, upstream_path)
-            if not upstream_path:
-                return CheckRes(True)
-            return CheckRes(filecmp.cmp(upstream_path, config_path))
+        return CheckRes(config_synced_with_upstream(self.name))
 
     @property
     def config(self) -> CheckRes:
@@ -300,7 +280,7 @@ class SkaledChecks(IChecks):
     @property
     def ima_container(self) -> CheckRes:
         """Checks that IMA container is running"""
-        if not self.ima_linked:
+        if not self.econfig.ima_linked:
             return CheckRes(True)
         name = get_container_name(IMA_CONTAINER, self.name)
         return CheckRes(self.dutils.is_container_running(name))
@@ -339,9 +319,10 @@ class SChainChecks(IChecks):
         schain_record: SChainRecord,
         rule_controller: IRuleController,
         stream_version: str,
+        estate: ExternalState,
         rotation_id: int = 0,
         *,
-        ima_linked: bool = True,
+        econfig: Optional[ExternalConfig] = None,
         dutils: DockerUtils = None
     ):
         self._subjects = [
@@ -350,13 +331,15 @@ class SChainChecks(IChecks):
                 node_id=node_id,
                 schain_record=schain_record,
                 rotation_id=rotation_id,
-                stream_version=stream_version
+                stream_version=stream_version,
+                estate=estate,
+                econfig=econfig
             ),
             SkaledChecks(
                 schain_name=schain_name,
                 schain_record=schain_record,
                 rule_controller=rule_controller,
-                ima_linked=ima_linked,
+                econfig=econfig,
                 dutils=dutils
             )
         ]
@@ -379,6 +362,9 @@ class SChainChecks(IChecks):
                 checks_filter=checks_filter
             )
             plain_checks.update(subj_checks)
+        if not self.estate.ima_linked:
+            if 'ima_container' in plain_checks:
+                del plain_checks['ima_container']
 
         if log:
             log_checks_dict(self.name, plain_checks)
