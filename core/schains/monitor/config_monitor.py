@@ -57,7 +57,7 @@ class RegularConfigMonitor(BaseConfigMonitor):
             self.am.config_dir()
         if not self.checks.dkg:
             self.am.dkg()
-        if not self.checks.sync_ranges:
-            self.am.sync_ranges_config()
+        if not self.checks.external_state:
+            self.am.external_state()
         if not self.checks.upstream_config:
             self.am.upstream_config()
