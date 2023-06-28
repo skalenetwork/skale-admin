@@ -17,7 +17,6 @@ from core.schains.monitor.skaled_monitor import (
     RepairSkaledMonitor,
     UpdateConfigSkaledMonitor
 )
-from core.schains.rotation import get_schain_public_key
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord
@@ -42,7 +41,7 @@ def monitor_schain_container_mock(
     schain,
     schain_record,
     skaled_status,
-    public_key=None,
+    download_snapshot=False,
     start_ts=None,
     dutils=None
 ):
@@ -74,7 +73,6 @@ def skaled_checks(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        ima_linked=True,
         dutils=dutils
     )
 
@@ -89,20 +87,16 @@ def skaled_am(
     predeployed_ima,
     rotation_data,
     secret_key,
-    ima_data,
     ssl_folder,
     dutils,
     skaled_checks
 ):
     name = schain_db
     schain = skale.schains.get_by_name(name)
-    public_key = get_schain_public_key(skale, name)
     return SkaledActionManager(
         schain=schain,
         rule_controller=rule_controller,
-        ima_data=ima_data,
         node_config=node_config,
-        public_key=public_key,
         checks=skaled_checks,
         dutils=dutils
     )
@@ -127,7 +121,6 @@ def skaled_checks_no_config(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        ima_linked=True,
         dutils=dutils
     )
 
@@ -155,7 +148,6 @@ def skaled_checks_outdated_config(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        ima_linked=True,
         dutils=dutils
     )
 
@@ -278,7 +270,6 @@ def skaled_checks_new_config(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        ima_linked=True,
         dutils=dutils
     )
 
@@ -313,7 +304,6 @@ def test_get_skaled_monitor_new_node(
     predeployed_ima,
     rotation_data,
     secret_key,
-    ima_data,
     ssl_folder,
     skaled_status,
     skaled_checks,
@@ -322,7 +312,6 @@ def test_get_skaled_monitor_new_node(
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
     schain = skale.schains.get_by_name(name)
-    public_key = get_schain_public_key(skale, name)
 
     finish_ts = CURRENT_TIMESTAMP + 10
     with mock.patch(
@@ -332,9 +321,7 @@ def test_get_skaled_monitor_new_node(
         skaled_am = SkaledActionManager(
             schain=schain,
             rule_controller=rule_controller,
-            ima_data=ima_data,
             node_config=node_config,
-            public_key=public_key,
             checks=skaled_checks,
             dutils=dutils
         )

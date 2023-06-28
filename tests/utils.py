@@ -19,7 +19,7 @@ from core.schains.cleaner import (
     remove_schain_volume
 )
 from core.schains.config.main import save_schain_config
-from core.schains.config.helper import get_schain_config
+from core.schains.config.directory import get_schain_config
 from core.schains.firewall.types import IHostFirewallController, IpRange
 from core.schains.firewall import SChainFirewallManager, SChainRuleController
 from core.schains.runner import run_schain_container, run_ima_container, get_container_info
