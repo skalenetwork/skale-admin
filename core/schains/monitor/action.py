@@ -21,12 +21,12 @@ import logging
 import time
 from datetime import datetime
 from functools import wraps
-from typing import List, Optional
+from typing import Optional
 
 from skale import Skale
 
 from core.node_config import NodeConfig
-from core.schains.checks import config_lock, IChecks
+from core.schains.checks import IChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
 from core.schains.dkg.utils import get_secret_key_share_filepath
 
@@ -34,11 +34,7 @@ from core.schains.cleaner import (
     remove_schain_container,
     remove_schain_volume
 )
-from core.schains.firewall.types import IpRange, IRuleController
-from core.schains.firewall.utils import (
-    ranges_from_plain_tuples,
-    save_sync_ranges
-)
+from core.schains.firewall.types import IRuleController
 
 from core.schains.volume import init_data_volume
 from core.schains.rotation import set_rotation_for_schain
@@ -55,19 +51,21 @@ from core.schains.runner import (
 from core.schains.config.main import (
     create_new_schain_config,
     get_finish_ts_from_config,
-    get_finish_ts_from_upstream_config,
-    get_saved_sync_ranges_plain,
+    get_finish_ts_from_upstream_config
+)
+from core.schains.config import init_schain_config_dir
+from core.schains.config.directory import (
+    get_schain_config,
     get_upstream_config_filepath,
     sync_config_with_file
 )
-from core.schains.config import init_schain_config_dir
-from core.schains.config.directory import get_schain_config, sync_ranges_filepath
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config
 )
 from core.schains.ima import ImaData
+from core.schains.schain_eth_state import ExternalConfig, ExternalState
 from core.schains.skaled_status import init_skaled_status
 
 from tools.docker_utils import DockerUtils
@@ -143,7 +141,8 @@ class ConfigActionManager(BaseActionManager):
         rotation_data: dict,
         stream_version: str,
         checks: IChecks,
-        allowed_ranges: Optional[List[IpRange]] = None
+        estate: ExternalState,
+        econfig: Optional[ExternalConfig] = None
     ):
         self.skale = skale
         self.schain = schain
@@ -154,7 +153,8 @@ class ConfigActionManager(BaseActionManager):
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
-        self.allowed_ranges = allowed_ranges or []
+        self.estate = estate
+        self.econfig = econfig or ExternalConfig(name=schain['name'])
         super().__init__(name=schain['name'])
 
     @BaseActionManager.monitor_block
@@ -193,25 +193,23 @@ class ConfigActionManager(BaseActionManager):
             'Creating new upstream_config rotation_id: %s, stream: %s',
             self.rotation_data.get('rotation_id'), self.stream_version
         )
-        with config_lock:
-            create_new_schain_config(
-                skale=self.skale,
-                node_id=self.node_config.id,
-                schain_name=self.name,
-                generation=self.generation,
-                ecdsa_sgx_key_name=self.node_config.sgx_key_name,
-                rotation_data=self.rotation_data,
-                stream_version=self.stream_version,
-                schain_record=self.schain_record
-            )
+        create_new_schain_config(
+            skale=self.skale,
+            node_id=self.node_config.id,
+            schain_name=self.name,
+            generation=self.generation,
+            ecdsa_sgx_key_name=self.node_config.sgx_key_name,
+            rotation_data=self.rotation_data,
+            stream_version=self.stream_version,
+            schain_record=self.schain_record
+        )
         return True
 
     @BaseActionManager.monitor_block
-    def sync_ranges_config(self) -> bool:
-        logger.info('Saving sync ranges config')
-        logger.debug('Allowed ip ranges %s', self.allowed_ranges)
-        path = sync_ranges_filepath(self.name)
-        save_sync_ranges(self.allowed_ranges, path)
+    def external_state(self) -> bool:
+        logger.info('Updating external state config')
+        logger.debug('New state %s', self.estate)
+        self.econfig.update(self.estate)
         return True
 
 
@@ -219,14 +217,12 @@ class SkaledActionManager(BaseActionManager):
     def __init__(
         self,
         schain: dict,
-        ima_data: ImaData,
         rule_controller: IRuleController,
-        public_key: str,
         checks: IChecks,
         node_config: NodeConfig,
+        econfig: Optional[ExternalConfig] = None,
         dutils: DockerUtils = None
     ):
-        self.ima_data = ima_data
         self.schain = schain
         self.generation = schain['generation']
         self.checks = checks
@@ -235,7 +231,7 @@ class SkaledActionManager(BaseActionManager):
         self.rc = rule_controller
         self.skaled_status = init_skaled_status(self.schain['name'])
         self.schain_type = get_schain_type(schain['partOfNode'])
-        self.public_key = public_key
+        self.econfig = econfig or ExternalConfig(schain['name'])
 
         self.dutils = dutils or DockerUtils()
 
@@ -264,15 +260,13 @@ class SkaledActionManager(BaseActionManager):
 
             logger.debug('Base port %d', base_port)
 
-            plain_ranges = get_saved_sync_ranges_plain(self.name)
-            saved_ranges = ranges_from_plain_tuples(plain_ranges)
-            logger.debug('Adding saved ranges', saved_ranges)
-
+            ranges = self.econfig.ranges
+            logger.info('Adding ranges %s', ranges)
             self.rc.configure(
                 base_port=base_port,
                 own_ip=own_ip,
                 node_ips=node_ips,
-                sync_ip_ranges=saved_ranges
+                sync_ip_ranges=ranges
             )
             self.rc.sync()
         return initial_status
@@ -285,10 +279,6 @@ class SkaledActionManager(BaseActionManager):
     ) -> bool:
         initial_status = self.checks.skaled_container.status
         if not initial_status:
-            public_key = None
-            if download_snapshot:
-                public_key = self.public_key
-
             logger.info(
                 'Starting skaled container watchman snapshot: %s, start_ts: %s',
                 download_snapshot,
@@ -298,7 +288,7 @@ class SkaledActionManager(BaseActionManager):
                 self.schain,
                 schain_record=self.schain_record,
                 skaled_status=self.skaled_status,
-                public_key=public_key,
+                download_snapshot=download_snapshot,
                 start_ts=start_ts,
                 dutils=self.dutils
             )
@@ -367,9 +357,13 @@ class SkaledActionManager(BaseActionManager):
         initial_status = self.checks.ima_container.status
         if not initial_status:
             logger.info('Running IMA container watchman')
+            ima_data = ImaData(
+                linked=self.econfig.ima_linked,
+                chain_id=self.econfig.chain_id
+            )
             monitor_ima_container(
                 self.schain,
-                self.ima_data,
+                ima_data=ima_data,
                 dutils=self.dutils
             )
         else:
@@ -386,19 +380,17 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def update_config(self) -> bool:
-        with config_lock:
-            upstream_path = get_upstream_config_filepath(self.name)
-            if upstream_path:
-                logger.info('Syncing config with upstream %s', upstream_path)
-                sync_config_with_file(self.name, upstream_path)
-            logger.info('No upstream config yet')
-            return upstream_path is not None
+        upstream_path = get_upstream_config_filepath(self.name)
+        if upstream_path:
+            logger.info('Syncing config with upstream %s', upstream_path)
+            sync_config_with_file(self.name, upstream_path)
+        logger.info('No upstream config yet')
+        return upstream_path is not None
 
     @BaseActionManager.monitor_block
     def send_exit_request(self) -> None:
         finish_ts = None
-        with config_lock:
-            finish_ts = self.upstream_finish_ts
+        finish_ts = self.upstream_finish_ts
         logger.info('Trying to set skaled exit time %s', finish_ts)
         if finish_ts is not None:
             set_rotation_for_schain(self.name, finish_ts)
