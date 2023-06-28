@@ -35,6 +35,7 @@ from core.schains.firewall.utils import (
     get_sync_agent_ranges
 )
 from core.schains.ima import get_ima_log_checks
+from core.schains.schain_eth_state import ExternalState
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.configs import ZMQ_PORT, ZMQ_TIMEOUT
 from web.models.schain import SChainRecord
@@ -85,6 +86,11 @@ def schains_checks():
     schains = g.skale.schains.get_schains_for_node(node_id)
     sync_agent_ranges = get_sync_agent_ranges(g.skale)
     stream_version = get_skale_node_version()
+    estate = ExternalState(
+        chain_id=g.skale.web3.eth.chain_id,
+        ima_linked=True,
+        ranges=[]
+    )
     checks = []
     for schain in schains:
         if schain.get('name') != '':
@@ -102,7 +108,8 @@ def schains_checks():
                     schain_record=schain_record,
                     rule_controller=rc,
                     rotation_id=rotation_id,
-                    stream_version=stream_version
+                    stream_version=stream_version,
+                    estate=estate
                 ).get_all(checks_filter=checks_filter)
                 checks.append({
                     'name': schain['name'],
