@@ -65,7 +65,7 @@ from core.schains.config.helper import (
     get_own_ip_from_config
 )
 from core.schains.ima import ImaData
-from core.schains.schain_eth_state import ExternalConfig, ExternalState
+from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.skaled_status import init_skaled_status
 
 from tools.docker_utils import DockerUtils

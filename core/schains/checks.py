@@ -47,7 +47,7 @@ from core.schains.rpc import (
     check_endpoint_blocks,
     get_endpoint_alive_check_timeout
 )
-from core.schains.schain_eth_state import ExternalConfig, ExternalState
+from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.runner import get_container_name
 from core.schains.skaled_exit_codes import SkaledExitCodes
 

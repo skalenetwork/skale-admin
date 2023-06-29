@@ -1,4 +1,4 @@
-from core.schains.schain_eth_state import ExternalConfig, ExternalState
+from core.schains.external_config import ExternalConfig, ExternalState
 from tests.utils import ALLOWED_RANGES
 
 

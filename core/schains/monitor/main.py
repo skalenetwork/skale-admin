@@ -39,7 +39,7 @@ from core.schains.monitor import (
     RegularConfigMonitor
 )
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
-from core.schains.schain_eth_state import ExternalConfig, ExternalState
+from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.task import keep_tasks_running, Task
 from core.schains.skaled_status import get_skaled_status
 from tools.docker_utils import DockerUtils

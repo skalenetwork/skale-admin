@@ -35,7 +35,7 @@ from core.schains.firewall.utils import (
     get_sync_agent_ranges
 )
 from core.schains.ima import get_ima_log_checks
-from core.schains.schain_eth_state import ExternalState
+from core.schains.external_config import ExternalState
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.configs import ZMQ_PORT, ZMQ_TIMEOUT
 from web.models.schain import SChainRecord

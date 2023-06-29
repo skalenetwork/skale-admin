@@ -5,7 +5,7 @@ import pytest
 from core.schains.checks import ConfigChecks
 from core.schains.config.directory import schain_config_dir
 from core.schains.monitor.action import ConfigActionManager
-from core.schains.schain_eth_state import ExternalConfig
+from core.schains.external_config import ExternalConfig
 from tools.helper import read_json
 from web.models.schain import SChainRecord
 

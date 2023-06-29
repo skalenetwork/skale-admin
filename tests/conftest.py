@@ -40,7 +40,7 @@ from core.schains.config.helper import (
 from core.schains.config.directory import schain_config_dir, skaled_status_filepath
 from core.schains.cleaner import remove_schain_container, remove_schain_volume
 from core.schains.ima import ImaData
-from core.schains.schain_eth_state import ExternalConfig, ExternalState
+from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.skaled_status import init_skaled_status, SkaledStatus
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
