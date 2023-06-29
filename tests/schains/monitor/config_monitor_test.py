@@ -24,7 +24,8 @@ def config_checks(
     skale,
     node_config,
     schain_on_contracts,
-    rotation_data
+    rotation_data,
+    estate
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
@@ -33,7 +34,8 @@ def config_checks(
         node_id=node_config.id,
         schain_record=schain_record,
         rotation_id=rotation_data['rotation_id'],
-        stream_version=CONFIG_STREAM
+        stream_version=CONFIG_STREAM,
+        estate=estate
     )
 
 
@@ -45,7 +47,8 @@ def config_am(
     schain_on_contracts,
     predeployed_ima,
     secret_key,
-    config_checks
+    config_checks,
+    estate
 ):
     name = schain_db
     rotation_data = skale.node_rotation.get_rotation(name)
@@ -57,7 +60,8 @@ def config_am(
         node_config=node_config,
         rotation_data=rotation_data,
         stream_version=CONFIG_STREAM,
-        checks=config_checks
+        checks=config_checks,
+        estate=estate
     )
     am.dkg = lambda s: True
     return am

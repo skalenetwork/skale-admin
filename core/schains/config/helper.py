@@ -17,9 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import json
 import logging
-import os
 from typing import Dict, List
 
 from Crypto.Hash import keccak
@@ -27,7 +25,7 @@ from web3 import Web3
 
 from skale.dataclasses.skaled_ports import SkaledPorts
 
-from core.schains.config.directory import schain_config_filepath
+from core.schains.config.directory import get_schain_config
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json
 from tools.configs import STATIC_PARAMS_FILEPATH, ENV_TYPE
@@ -111,15 +109,6 @@ def get_skaled_http_address_from_config(config: Dict) -> str:
         LOCAL_IP,
         node['basePort'] + SkaledPorts.HTTP_JSON.value
     )
-
-
-def get_schain_config(schain_name):
-    config_filepath = schain_config_filepath(schain_name)
-    if not os.path.isfile(config_filepath):
-        return None
-    with open(config_filepath) as f:
-        schain_config = json.load(f)
-    return schain_config
 
 
 def get_schain_env(ulimit_check=True):

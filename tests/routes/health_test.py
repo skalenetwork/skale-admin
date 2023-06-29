@@ -92,7 +92,7 @@ def test_schains_checks(skale_bp, skale, schain_db, dutils):
 
     class SChainChecksMock(SChainChecks):
         def __init__(self, *args, **kwargs):
-            super(SChainChecksMock, self).__init__(*args, dutils=dutils, **kwargs)
+            super().__init__(*args, dutils=dutils, **kwargs)
 
     def get_schains_for_node_mock(self, node_id):
         return [

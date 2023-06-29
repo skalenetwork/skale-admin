@@ -65,6 +65,8 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if not self.checks.skaled_container:
             self.am.skaled_container()
+        if not self.checks.rpc:
+            self.am.skaled_rpc()
         if not self.checks.ima_container:
             self.am.ima_container()
 
@@ -82,7 +84,7 @@ class RepairSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.checks.volume:
             self.am.volume()
-        if self.checks.volume and not self.checks.skaled_container:
+        if not self.checks.skaled_container:
             self.am.skaled_container(download_snapshot=True)
         self.am.disable_repair_mode()
 
@@ -93,13 +95,11 @@ class BackupSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
-        if not self.am.skaled_container:
+        if not self.checks.skaled_container:
             self.am.skaled_container(download_snapshot=True)
-        self.am.disable_backup_run()
-        if not self.checks.rpc:
-            self.am.skaled_rpc()
         if not self.checks.ima_container:
             self.am.ima_container()
+        self.am.disable_backup_run()
 
 
 class RecreateSkaledMonitor(BaseSkaledMonitor):
@@ -114,7 +114,7 @@ class UpdateConfigSkaledMonitor(BaseSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.config_updated:
             self.am.update_config()
-        if self.checks.config and not self.checks.firewall_rules:
+        if self.checks.firewall_rules:
             self.am.firewall_rules()
         if self.checks.volume:
             self.am.volume()
@@ -138,11 +138,11 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
 
 class NoConfigSkaledMonitor(BaseSkaledMonitor):
     def execute(self):
-        if not self.checks.upstream_exists:
-            logger.info('Waiting for upstream config')
-        else:
+        if self.checks.upstream_exists:
             logger.info('Creating skaled config')
             self.am.update_config()
+        else:
+            logger.debug('Waiting for upstream config')
 
 
 class NewNodeSkaledMonitor(BaseSkaledMonitor):
@@ -182,7 +182,7 @@ def is_config_update_time(
         return False
     logger.info('Rotation id updated status %s', status['rotation_id_updated'])
     if not status['config_updated']:
-        if skaled_status.exit_time_reached or not status['rotation_id_updated']:
+        if skaled_status.exit_time_reached or status['rotation_id_updated']:
             return True
     return False
 
@@ -213,7 +213,7 @@ def no_config(status: Dict) -> bool:
 
 def get_skaled_monitor(
     action_manager: SkaledActionManager,
-    checks: SkaledChecks,
+    status: Dict,
     schain_record: SChainRecord,
     skaled_status: Optional[SkaledStatus]
 ) -> BaseSkaledMonitor:
@@ -221,8 +221,6 @@ def get_skaled_monitor(
     logger.info('Upstream config %s', action_manager.upstream_config_path)
     if skaled_status:
         skaled_status.log()
-
-    status: Dict = checks.get_all()
 
     mon_type = RegularSkaledMonitor
     if no_config(status):
@@ -240,7 +238,4 @@ def get_skaled_monitor(
     elif is_new_config_mode(status):
         mon_type = NewConfigSkaledMonitor
 
-    return mon_type(
-        action_manager=action_manager,
-        checks=checks
-    )
+    return mon_type

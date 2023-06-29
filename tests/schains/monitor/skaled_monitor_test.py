@@ -17,7 +17,6 @@ from core.schains.monitor.skaled_monitor import (
     RepairSkaledMonitor,
     UpdateConfigSkaledMonitor
 )
-from core.schains.rotation import get_schain_public_key
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord
@@ -42,7 +41,7 @@ def monitor_schain_container_mock(
     schain,
     schain_record,
     skaled_status,
-    public_key=None,
+    download_snapshot=False,
     start_ts=None,
     dutils=None
 ):
@@ -74,7 +73,6 @@ def skaled_checks(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        ima_linked=True,
         dutils=dutils
     )
 
@@ -89,20 +87,16 @@ def skaled_am(
     predeployed_ima,
     rotation_data,
     secret_key,
-    ima_data,
     ssl_folder,
     dutils,
     skaled_checks
 ):
     name = schain_db
     schain = skale.schains.get_by_name(name)
-    public_key = get_schain_public_key(skale, name)
     return SkaledActionManager(
         schain=schain,
         rule_controller=rule_controller,
-        ima_data=ima_data,
         node_config=node_config,
-        public_key=public_key,
         checks=skaled_checks,
         dutils=dutils
     )
@@ -127,7 +121,6 @@ def skaled_checks_no_config(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        ima_linked=True,
         dutils=dutils
     )
 
@@ -155,7 +148,6 @@ def skaled_checks_outdated_config(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        ima_linked=True,
         dutils=dutils
     )
 
@@ -165,11 +157,11 @@ def test_get_skaled_monitor_no_config(skaled_am, skaled_checks_no_config, skaled
     schain_record = SChainRecord.get_by_name(name)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_no_config,
+        skaled_checks_no_config.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, NoConfigSkaledMonitor)
+    assert mon == NoConfigSkaledMonitor
 
 
 def test_get_skaled_monitor_regular_and_backup(skaled_am, skaled_checks, skaled_status, schain_db):
@@ -177,38 +169,38 @@ def test_get_skaled_monitor_regular_and_backup(skaled_am, skaled_checks, skaled_
     schain_record = SChainRecord.get_by_name(name)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, RegularSkaledMonitor)
+    assert mon == RegularSkaledMonitor
 
     schain_record.set_backup_run(True)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, RegularSkaledMonitor)
+    assert mon == RegularSkaledMonitor
 
     schain_record.set_first_run(False)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, RegularSkaledMonitor)
+    assert mon == RegularSkaledMonitor
 
     schain_record.set_new_schain(False)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, BackupSkaledMonitor)
+    assert mon == BackupSkaledMonitor
 
 
 def test_get_skaled_monitor_repair(skaled_am, skaled_checks, skaled_status, schain_db):
@@ -218,11 +210,11 @@ def test_get_skaled_monitor_repair(skaled_am, skaled_checks, skaled_status, scha
 
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, RepairSkaledMonitor)
+    assert mon == RepairSkaledMonitor
 
 
 def test_get_skaled_monitor_repair_skaled_status(
@@ -236,11 +228,11 @@ def test_get_skaled_monitor_repair_skaled_status(
 
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status_repair
     )
-    assert isinstance(mon, RepairSkaledMonitor)
+    assert mon == RepairSkaledMonitor
 
 
 class SkaledChecksWithConfig(SkaledChecks):
@@ -278,7 +270,6 @@ def skaled_checks_new_config(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        ima_linked=True,
         dutils=dutils
     )
 
@@ -292,13 +283,15 @@ def test_get_skaled_monitor_new_config(
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
 
+    state = skaled_checks_new_config.get_all()
+    state['rotation_id_updated'] = False
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_new_config,
+        state,
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, NewConfigSkaledMonitor)
+    assert mon == NewConfigSkaledMonitor
 
 
 @freezegun.freeze_time(CURRENT_DATETIME)
@@ -311,7 +304,6 @@ def test_get_skaled_monitor_new_node(
     predeployed_ima,
     rotation_data,
     secret_key,
-    ima_data,
     ssl_folder,
     skaled_status,
     skaled_checks,
@@ -320,7 +312,6 @@ def test_get_skaled_monitor_new_node(
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
     schain = skale.schains.get_by_name(name)
-    public_key = get_schain_public_key(skale, name)
 
     finish_ts = CURRENT_TIMESTAMP + 10
     with mock.patch(
@@ -330,9 +321,7 @@ def test_get_skaled_monitor_new_node(
         skaled_am = SkaledActionManager(
             schain=schain,
             rule_controller=rule_controller,
-            ima_data=ima_data,
             node_config=node_config,
-            public_key=public_key,
             checks=skaled_checks,
             dutils=dutils
         )
@@ -340,11 +329,11 @@ def test_get_skaled_monitor_new_node(
 
         mon = get_skaled_monitor(
             skaled_am,
-            skaled_checks,
+            skaled_checks.get_all(),
             schain_record,
             skaled_status
         )
-        assert isinstance(mon, NewNodeSkaledMonitor)
+        assert mon == NewNodeSkaledMonitor
 
 
 def test_get_skaled_monitor_update_config(
@@ -358,11 +347,11 @@ def test_get_skaled_monitor_update_config(
 
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_outdated_config,
+        skaled_checks_outdated_config.get_all(),
         schain_record,
         skaled_status_exit_time_reached
     )
-    assert isinstance(mon, UpdateConfigSkaledMonitor)
+    assert mon == UpdateConfigSkaledMonitor
 
 
 def test_get_skaled_monitor_update_config_no_rotation(
@@ -374,13 +363,15 @@ def test_get_skaled_monitor_update_config_no_rotation(
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
+    state = skaled_checks_outdated_config.get_all()
+    state['rotation_id_updated'] = True
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_outdated_config,
+        state,
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, UpdateConfigSkaledMonitor)
+    assert mon == UpdateConfigSkaledMonitor
 
 
 def test_get_skaled_monitor_recreate(
@@ -395,11 +386,11 @@ def test_get_skaled_monitor_recreate(
     schain_record.set_needs_reload(True)
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks,
+        skaled_checks.get_all(),
         schain_record,
         skaled_status
     )
-    assert isinstance(mon, RecreateSkaledMonitor)
+    assert mon == RecreateSkaledMonitor
 
 
 def test_regular_skaled_monitor(skaled_am, skaled_checks):

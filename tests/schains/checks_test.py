@@ -76,7 +76,7 @@ class SChainChecksMock(SChainChecks):
 
 
 @pytest.fixture
-def sample_false_checks(schain_config, schain_db, rule_controller, dutils):
+def sample_false_checks(schain_config, schain_db, rule_controller, estate, dutils):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_record = SChainRecord.get_by_name(schain_name)
     return SChainChecks(
@@ -85,6 +85,7 @@ def sample_false_checks(schain_config, schain_db, rule_controller, dutils):
         schain_record=schain_record,
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
+        estate=estate,
         dutils=dutils
     )
 
@@ -94,6 +95,7 @@ def rules_unsynced_checks(
     schain_config,
     uninited_rule_controller,
     schain_db,
+    estate,
     dutils
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
@@ -104,6 +106,7 @@ def rules_unsynced_checks(
         schain_record=schain_record,
         rule_controller=uninited_rule_controller,
         stream_version=CONFIG_STREAM,
+        estate=estate,
         dutils=dutils
     )
 
@@ -228,7 +231,7 @@ def test_blocks_check(schain_checks):
         assert not schain_checks.blocks
 
 
-def test_init_checks(skale, schain_db, uninited_rule_controller, dutils):
+def test_init_checks(skale, schain_db, uninited_rule_controller, estate, dutils):
     schain_name = schain_db
     schain_record = SChainRecord.get_by_name(schain_name)
     checks = SChainChecks(
@@ -237,13 +240,14 @@ def test_init_checks(skale, schain_db, uninited_rule_controller, dutils):
         schain_record=schain_record,
         rule_controller=uninited_rule_controller,
         stream_version=CONFIG_STREAM,
+        estate=estate,
         dutils=dutils
     )
     assert checks.name == schain_name
     assert checks.node_id == TEST_NODE_ID
 
 
-def test_exit_code(skale, rule_controller, schain_db, dutils):
+def test_exit_code(skale, rule_controller, schain_db, estate, dutils):
     test_schain_name = schain_db
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, test_schain_name)
@@ -263,6 +267,7 @@ def test_exit_code(skale, rule_controller, schain_db, dutils):
             schain_record=schain_record,
             rule_controller=rule_controller,
             stream_version=CONFIG_STREAM,
+            estate=estate,
             dutils=dutils
         )
         assert not checks.exit_code_ok.status
@@ -272,7 +277,7 @@ def test_exit_code(skale, rule_controller, schain_db, dutils):
     dutils.safe_rm(container_name)
 
 
-def test_process(skale, rule_controller, schain_db, dutils):
+def test_process(skale, rule_controller, schain_db, estate, dutils):
     schain_record = SChainRecord.get_by_name(schain_db)
     checks = SChainChecks(
         schain_db,
@@ -280,6 +285,7 @@ def test_process(skale, rule_controller, schain_db, dutils):
         schain_record=schain_record,
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
+        estate=estate,
         dutils=dutils
     )
     assert not checks.process.status
@@ -292,7 +298,7 @@ def test_process(skale, rule_controller, schain_db, dutils):
     assert not checks.process.status
 
 
-def test_get_all(schain_config, rule_controller, dutils, schain_db):
+def test_get_all(schain_config, rule_controller, dutils, schain_db, estate):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_record = SChainRecord.get_by_name(schain_name)
     node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
@@ -302,12 +308,11 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
         schain_record=schain_record,
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
+        estate=estate,
         dutils=dutils
     )
     checks_dict = checks.get_all()
 
-    assert isinstance(checks_dict['config_dir'], bool)
-    assert isinstance(checks_dict['dkg'], bool)
     assert isinstance(checks_dict['config'], bool)
     assert isinstance(checks_dict['firewall_rules'], bool)
     assert isinstance(checks_dict['skaled_container'], bool)
@@ -317,30 +322,30 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db):
     assert isinstance(checks_dict['ima_container'], bool)
     assert isinstance(checks_dict['process'], bool)
 
-    # TODO: Fix test
-    # checks_without_ima = SChainChecksMock(
-    #     schain_db,
-    #     node_id,
-    #     schain_record=schain_record,
-    #     rule_controller=rule_controller,
-    #     stream_version=CONFIG_STREAM,
-    #     dutils=dutils,
-    #     ima_linked=False
-    # )
-    # checks_dict_without_ima = checks_without_ima.get_all()
-    # assert 'ima_container' not in checks_dict_without_ima
+    estate.ima_linked = False
+    checks_without_ima = SChainChecksMock(
+        schain_db,
+        node_id,
+        schain_record=schain_record,
+        rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
+        estate=estate,
+        dutils=dutils
+    )
+    checks_dict_without_ima = checks_without_ima.get_all()
+    assert 'ima_container' not in checks_dict_without_ima
 
-    # filtered_checks = checks_without_ima.get_all(checks_filter=['config', 'volume'])
-    # assert len(filtered_checks) == 2
+    filtered_checks = checks_without_ima.get_all(checks_filter=['config', 'volume'])
+    assert len(filtered_checks) == 2
 
-    # filtered_checks = checks_without_ima.get_all(checks_filter=['ima_container'])
-    # assert len(filtered_checks) == 0
+    filtered_checks = checks_without_ima.get_all(checks_filter=['ima_container'])
+    assert len(filtered_checks) == 0
 
-    # filtered_checks = checks_without_ima.get_all(checks_filter=['<0_0>'])
-    # assert len(filtered_checks) == 0
+    filtered_checks = checks_without_ima.get_all(checks_filter=['<0_0>'])
+    assert len(filtered_checks) == 0
 
 
-def test_get_all_with_save(node_config, rule_controller, dutils, schain_db):
+def test_get_all_with_save(node_config, rule_controller, dutils, schain_db, estate):
     schain_record = upsert_schain_record(schain_db)
     checks = SChainChecksMock(
         schain_db,
@@ -348,6 +353,7 @@ def test_get_all_with_save(node_config, rule_controller, dutils, schain_db):
         schain_record=schain_record,
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
+        estate=estate,
         dutils=dutils
     )
     schain_check_path = get_schain_check_filepath(schain_db)
@@ -358,7 +364,7 @@ def test_get_all_with_save(node_config, rule_controller, dutils, schain_db):
     assert schain_checks == checks_from_file['checks']
 
 
-def test_config_updated(skale, rule_controller, schain_db, dutils):
+def test_config_updated(skale, rule_controller, schain_db, estate, dutils):
     name = schain_db
     folder = schain_config_dir(name)
 
@@ -370,6 +376,7 @@ def test_config_updated(skale, rule_controller, schain_db, dutils):
         schain_record=schain_record,
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
+        estate=estate,
         dutils=dutils
     )
     assert checks.config_updated

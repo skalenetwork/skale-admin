@@ -46,7 +46,7 @@ def monitor_schain_container(
     schain,
     schain_record,
     skaled_status,
-    public_key=None,
+    download_snapshot=False,
     start_ts=None,
     dutils=None
 ) -> None:
@@ -62,7 +62,7 @@ def monitor_schain_container(
         logger.info(f'SChain {schain_name}: container doesn\'t exits')
         run_schain_container(
             schain=schain,
-            public_key=public_key,
+            download_snapshot=download_snapshot,
             start_ts=start_ts,
             snapshot_from=schain_record.snapshot_from,
             dutils=dutils

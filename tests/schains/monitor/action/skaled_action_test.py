@@ -10,8 +10,8 @@ import mock
 from core.schains.checks import SkaledChecks
 from core.schains.cleaner import remove_ima_container
 from core.schains.config.directory import new_config_filename, schain_config_dir
+from core.schains.firewall.types import SChainRule
 from core.schains.monitor.action import SkaledActionManager
-from core.schains.rotation import get_schain_public_key
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord
@@ -37,7 +37,7 @@ def monitor_schain_container_mock(
     schain,
     schain_record,
     skaled_status,
-    public_key=None,
+    download_snapshot=False,
     start_ts=None,
     dutils=None
 ):
@@ -64,7 +64,6 @@ def skaled_checks(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        ima_linked=True,
         dutils=dutils
     )
 
@@ -78,19 +77,15 @@ def skaled_am(
     schain_on_contracts,
     predeployed_ima,
     secret_key,
-    ima_data,
     ssl_folder,
     dutils,
     skaled_checks
 ):
     name = schain_db
     schain = skale.schains.get_by_name(name)
-    public_key = get_schain_public_key(skale, name)
     return SkaledActionManager(
         schain=schain,
         rule_controller=rule_controller,
-        ima_data=ima_data,
-        public_key=public_key,
         checks=skaled_checks,
         node_config=node_config,
         dutils=dutils
@@ -135,7 +130,7 @@ def test_skaled_container_with_snapshot_action(skaled_am):
             skaled_am.schain,
             schain_record=skaled_am.schain_record,
             skaled_status=skaled_am.skaled_status,
-            public_key='0:0:1:0',
+            download_snapshot=True,
             start_ts=None,
             dutils=skaled_am.dutils
         )
@@ -158,7 +153,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
             skaled_am.schain,
             schain_record=skaled_am.schain_record,
             skaled_status=skaled_am.skaled_status,
-            public_key='0:0:1:0',
+            download_snapshot=True,
             start_ts=ts,
             dutils=skaled_am.dutils
         )
@@ -188,7 +183,6 @@ def test_restart_skaled_container_action(skaled_am, skaled_checks):
 
 def test_ima_container_action(skaled_am, skaled_checks, schain_config, predeployed_ima):
     try:
-        skaled_am.ima_data.linked = True
         with mock.patch(
             'core.schains.monitor.containers.run_ima_container',
             run_ima_container_mock
@@ -291,3 +285,27 @@ def test_update_config(skaled_am, skaled_checks):
     skaled_am.update_config()
 
     assert skaled_checks.config_updated
+
+
+def test_firewall_rules_action(skaled_am, skaled_checks, rule_controller, econfig):
+    assert not skaled_checks.firewall_rules
+    skaled_am.firewall_rules()
+    assert skaled_checks.firewall_rules
+    added_rules = list(rule_controller.firewall_manager.rules)
+    print(added_rules)
+    assert added_rules == [
+        SChainRule(port=10000, first_ip='127.0.0.2', last_ip='127.0.0.2'),
+        SChainRule(port=10001, first_ip='1.1.1.1', last_ip='2.2.2.2'),
+        SChainRule(port=10001, first_ip='127.0.0.2', last_ip='127.0.0.2'),
+        SChainRule(port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
+        SChainRule(port=10002),
+        SChainRule(port=10003),
+        SChainRule(port=10004, first_ip='127.0.0.2', last_ip='127.0.0.2'),
+        SChainRule(port=10005, first_ip='1.1.1.1', last_ip='2.2.2.2'),
+        SChainRule(port=10005, first_ip='127.0.0.2', last_ip='127.0.0.2'),
+        SChainRule(port=10005, first_ip='3.3.3.3', last_ip='4.4.4.4'),
+        SChainRule(port=10007),
+        SChainRule(port=10008),
+        SChainRule(port=10009),
+        SChainRule(port=10010, first_ip='127.0.0.2', last_ip='127.0.0.2')
+    ]

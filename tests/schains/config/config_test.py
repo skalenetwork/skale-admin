@@ -10,12 +10,8 @@ from core.schains.config.helper import (
     get_own_ip_from_config,
     get_schain_env
 )
-from core.schains.config.directory import schain_config_dir
-from core.schains.config.main import (
-    get_finish_ts,
-    get_rotation_ids_from_config,
-    get_upstream_config_filepath
-)
+from core.schains.config.directory import get_upstream_config_filepath, schain_config_dir
+from core.schains.config.main import get_finish_ts, get_rotation_ids_from_config
 from core.schains.volume import get_schain_volume_config
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 

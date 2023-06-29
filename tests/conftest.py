@@ -40,6 +40,7 @@ from core.schains.config.helper import (
 from core.schains.config.directory import schain_config_dir, skaled_status_filepath
 from core.schains.cleaner import remove_schain_container, remove_schain_volume
 from core.schains.ima import ImaData
+from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.skaled_status import init_skaled_status, SkaledStatus
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
@@ -54,6 +55,7 @@ from tools.helper import write_json
 from web.models.schain import create_tables, SChainRecord
 
 from tests.utils import (
+    ALLOWED_RANGES,
     CONFIG_STREAM,
     ENDPOINT,
     ETH_AMOUNT_PER_NODE,
@@ -620,7 +622,7 @@ def node_config(skale, nodes):
 
 
 @pytest.fixture
-def schain_checks(schain_config, schain_db, rule_controller, dutils):
+def schain_checks(schain_config, schain_db, rule_controller, estate, dutils):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_record = SChainRecord.get_by_name(schain_name)
     node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
@@ -630,6 +632,7 @@ def schain_checks(schain_config, schain_db, rule_controller, dutils):
         schain_record=schain_record,
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
+        estate=estate,
         dutils=dutils
     )
 
@@ -691,3 +694,20 @@ def new_upstream(schain_db):
         yield upath
     finally:
         shutil.rmtree(config_dir)
+
+
+@pytest.fixture
+def estate(skale):
+    return ExternalState(
+        ima_linked=True,
+        chain_id=skale.web3.eth.chain_id,
+        ranges=ALLOWED_RANGES
+    )
+
+
+@pytest.fixture
+def econfig(schain_db, estate):
+    name = schain_db
+    ec = ExternalConfig(name)
+    ec.update(estate)
+    return ec

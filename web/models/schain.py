@@ -31,10 +31,9 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG_VERSION = '0.0.0'
 
-db_lock = threading.Lock()
-
 
 class SChainRecord(BaseModel):
+    _lock = threading.Lock()
     name = CharField(unique=True)
     added_at = DateTimeField()
     dkg_status = IntegerField()
@@ -100,7 +99,7 @@ class SChainRecord(BaseModel):
         }
 
     def upload(self, *args, **kwargs) -> None:
-        with db_lock:
+        with SChainRecord._lock:
             self.save(*args, **kwargs)
 
     def dkg_started(self):

@@ -5,7 +5,8 @@ import pytest
 from core.schains.checks import ConfigChecks
 from core.schains.config.directory import schain_config_dir
 from core.schains.monitor.action import ConfigActionManager
-
+from core.schains.external_config import ExternalConfig
+from tools.helper import read_json
 from web.models.schain import SChainRecord
 
 from tests.utils import CONFIG_STREAM
@@ -22,6 +23,7 @@ def config_checks(
     skale,
     node_config,
     schain_on_contracts,
+    estate,
     rotation_data
 ):
     name = schain_db
@@ -31,7 +33,8 @@ def config_checks(
         node_id=node_config.id,
         schain_record=schain_record,
         rotation_id=rotation_data['rotation_id'],
-        stream_version=CONFIG_STREAM
+        stream_version=CONFIG_STREAM,
+        estate=estate
     )
 
 
@@ -43,6 +46,7 @@ def config_am(
     schain_on_contracts,
     predeployed_ima,
     secret_key,
+    estate,
     config_checks
 ):
     name = schain_db
@@ -54,7 +58,8 @@ def config_am(
         node_config=node_config,
         rotation_data=rotation_data,
         checks=config_checks,
-        stream_version=CONFIG_STREAM
+        stream_version=CONFIG_STREAM,
+        estate=estate
     )
 
 
@@ -83,3 +88,22 @@ def test_upstream_config_actions(config_am, config_checks):
     # Try to recreate config with no changes
     config_am.upstream_config()
     assert config_checks.upstream_config
+
+
+@pytest.fixture
+def empty_econfig(schain_db):
+    name = schain_db
+    return ExternalConfig(name)
+
+
+def test_external_state_config_actions(config_am, config_checks, empty_econfig):
+    config_am.config_dir()
+    assert not config_checks.external_state
+    assert config_am.external_state()
+    econfig_data = read_json(empty_econfig.path)
+    assert econfig_data == {
+        'ima_linked': True,
+        'chain_id': config_am.skale.web3.eth.chain_id,
+        'ranges': [['1.1.1.1', '2.2.2.2'], ['3.3.3.3', '4.4.4.4']]
+    }
+    assert config_checks.external_state
