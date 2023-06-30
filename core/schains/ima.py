@@ -29,7 +29,6 @@ from websocket import create_connection
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.helper import get_schain_ports, get_schain_config, get_chain_id
 from core.ima.schain import get_schain_ima_abi_filepath
-
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import CONTAINERS_INFO
 from tools.configs.db import REDIS_URI
@@ -41,6 +40,7 @@ from tools.configs.ima import (
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ABI_FILEPATH
+from tools.helper import safe_load_yml
 
 logger = logging.getLogger(__name__)
 
@@ -256,3 +256,11 @@ def get_ima_log_checks():
                                                    'last_ima_errors': errors,
                                                    'error_categories': categories}})
     return all_ima_healthchecks
+
+
+def get_migration_schedule() -> dict:
+    return safe_load_yml('ima_migration_schedule.yaml')
+
+
+def get_migration_ts(name: str) -> int:
+    return get_migration_schedule().get('name', 0)

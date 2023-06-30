@@ -18,17 +18,21 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 
 from core.schains.volume import is_volume_exists
 from core.schains.runner import (
-    is_schain_container_failed,
-    restart_container,
-    run_schain_container,
+    get_image,
+    get_new_image,
     is_container_exists,
-    run_ima_container
+    is_schain_container_failed,
+    remove_container,
+    restart_container,
+    run_ima_container,
+    run_schain_container
 )
 from core.ima.schain import copy_schain_ima_abi
-from core.schains.ima import ImaData
+from core.schains.ima import get_migration_ts, ImaData
 
 from tools.configs.containers import (
     MAX_SCHAIN_RESTART_COUNT,
@@ -113,11 +117,21 @@ def monitor_ima_container(
 
     copy_schain_ima_abi(schain_name)
 
-    if not is_container_exists(schain_name, container_type=IMA_CONTAINER, dutils=dutils):
+    container_exists = is_container_exists(schain_name, container_type=IMA_CONTAINER, dutils=dutils)
+    image = get_image(type=IMA_CONTAINER)
+
+    migration_ts = get_migration_ts(schain_name)
+    if time.time() > migration_ts:
+        image = get_new_image(type=IMA_CONTAINER)
+        if container_exists:
+            remove_container(schain_name, IMA_CONTAINER, dutils)
+            container_exists = False
+    if not container_exists:
         logger.info(f'sChain {schain_name}: IMA container doesn\'t exits, creating...')
         run_ima_container(
             schain,
             ima_data.chain_id,
+            image=image,
             dutils=dutils
         )
     else:

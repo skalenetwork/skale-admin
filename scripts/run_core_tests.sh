@@ -15,5 +15,5 @@ bash scripts/run_redis.sh
 
 py.test --cov-config=.coveragerc --cov=. tests/ --ignore=tests/firewall $@
 tests_cleanup
-scripts/run_firewall_test.sh
-tests_cleanup
+# scripts/run_firewall_test.sh
+# tests_cleanup

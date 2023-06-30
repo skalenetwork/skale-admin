@@ -24,6 +24,7 @@ import logging
 import re
 import time
 from functools import wraps
+from typing import Optional
 
 import docker
 from docker import APIClient
@@ -331,3 +332,20 @@ class DockerUtils:
         containers = self.get_all_schain_containers()
         for container in containers:
             self.restart(container.name, timeout=timeout)
+
+    def pull(self, name: str, tag: str) -> None:
+        self.client.images.pull(name, tag=tag)
+
+    def pulled(self, name: str, tag: str) -> bool:
+        identifier = f'{name}:{tag}'
+        try:
+            self.client.images.get(identifier)
+        except docker.errors.NotFound:
+            return False
+        return True
+
+    def get_container_image_name(self, name: str) -> Optional[str]:
+        info = self.get_info(name)
+        if info.get('status') == CONTAINER_NOT_FOUND:
+            return None
+        return info['stats']['Config']['Image']

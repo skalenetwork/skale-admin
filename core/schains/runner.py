@@ -17,8 +17,10 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
 import copy
+import logging
+import time
+
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_schain_volume_config
@@ -27,7 +29,7 @@ from core.schains.types import MetricType, ContainerType
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.cmd import get_schain_container_cmd
 from core.schains.config.helper import get_schain_env
-from core.schains.ima import get_ima_env
+from core.schains.ima import get_ima_env, get_migration_ts as get_ima_migration_ts
 from core.schains.config.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -70,6 +72,17 @@ def get_image_name(type):
     return f'{container_info["name"]}:{container_info["version"]}'
 
 
+def get_new_ima_image():
+    return CONTAINERS_INFO['new_image']
+
+
+def get_new_image(type):
+    if type == SCHAIN_CONTAINER:
+        return get_image_name(type)
+    else:
+        return get_new_ima_image()
+
+
 def get_container_name(type, schain_name):
     return f"{CONTAINER_NAME_PREFIX}_{type}_{schain_name}"
 
@@ -104,12 +117,15 @@ def run_container(
     volume_config=None,
     cpu_shares_limit=None,
     mem_limit=None,
+    image=None,
     dutils=None,
     volume_mode=None
 ):
     dutils = dutils or DockerUtils()
-    image_name, container_name, run_args, custom_args = get_container_info(
+    default_image, container_name, run_args, custom_args = get_container_info(
         type, schain_name)
+
+    image_name = image or default_image
 
     add_config_volume(run_args, schain_name, mode=volume_mode)
 
@@ -188,6 +204,7 @@ def run_schain_container(
 def run_ima_container(
     schain: dict,
     mainnet_chain_id: int,
+    image: str,
     dutils: DockerUtils = None
 ) -> None:
     dutils = dutils or DockerUtils()
@@ -252,3 +269,27 @@ def is_schain_container_failed(
     if bad_state:
         logger.warning(f'{name} is in bad state - exited: {exited}, created: {created}')
     return bad_state
+
+
+def is_new_image_pulled(type: str, dutils: DockerUtils) -> bool:
+    image = get_new_image(type)
+    return dutils.pulled(image)
+
+
+def get_ima_expected_image(migration_ts, dutils: DockerUtils) -> str:
+    image = get_image_name(IMA_CONTAINER)
+    if time.time() >= migration_ts:
+        image = get_new_image(IMA_CONTAINER)
+    return image
+
+
+def get_expected_image(schain_name: str, type: str, dutils: DockerUtils) -> str:
+    if type == SCHAIN_CONTAINER:
+        return get_image_name(type=type)
+    migration_ts = get_ima_migration_ts(schain_name)
+    return get_ima_expected_image(migration_ts, dutils)
+
+
+def remove_container(schain_name: str, type: str, dutils: DockerUtils):
+    container = get_container_name(type=type, schain_name=schain_name)
+    dutils.safe_rm(container)

@@ -40,7 +40,7 @@ from core.schains.process_manager_helper import is_monitor_process_alive
 from core.schains.rpc import (
     check_endpoint_alive, check_endpoint_blocks, get_endpoint_alive_check_timeout
 )
-from core.schains.runner import get_container_name
+from core.schains.runner import get_container_name, get_expected_image, is_new_image_pulled
 from core.schains.skaled_exit_codes import SkaledExitCodes
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
@@ -160,8 +160,13 @@ class SChainChecks:
     @property
     def ima_container(self) -> CheckRes:
         """Checks that IMA container is running"""
-        name = get_container_name(IMA_CONTAINER, self.name)
-        return CheckRes(self.dutils.is_container_running(name))
+        container_name = get_container_name(IMA_CONTAINER, self.name)
+        new_image_pulled = is_new_image_pulled(type=IMA_CONTAINER)
+        expected_image = get_expected_image(self.name, type=IMA_CONTAINER)
+        image = self.dutils.get_container_image(container_name)
+        correct_image = image == expected_image
+        container_running = self.dutils.is_container_running(container_name)
+        return CheckRes(container_running and correct_image and new_image_pulled)
 
     @property
     def rpc(self) -> CheckRes:
