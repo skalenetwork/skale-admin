@@ -36,11 +36,12 @@ from core.schains.config.helper import (
 from core.schains.config.main import schain_config_version_match
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
+from core.schains.ima import get_migration_ts as get_ima_migration_ts
 from core.schains.process_manager_helper import is_monitor_process_alive
 from core.schains.rpc import (
     check_endpoint_alive, check_endpoint_blocks, get_endpoint_alive_check_timeout
 )
-from core.schains.runner import get_container_name, get_expected_image, is_new_image_pulled
+from core.schains.runner import get_container_name, get_image_name, is_new_image_pulled
 from core.schains.skaled_exit_codes import SkaledExitCodes
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
@@ -161,12 +162,24 @@ class SChainChecks:
     def ima_container(self) -> CheckRes:
         """Checks that IMA container is running"""
         container_name = get_container_name(IMA_CONTAINER, self.name)
-        new_image_pulled = is_new_image_pulled(type=IMA_CONTAINER)
-        expected_image = get_expected_image(self.name, type=IMA_CONTAINER)
-        image = self.dutils.get_container_image(container_name)
-        correct_image = image == expected_image
+        new_image_pulled = is_new_image_pulled(type=IMA_CONTAINER, dutils=self.dutils)
+
+        migration_ts = get_ima_migration_ts(self.name)
+        new = time.time() > migration_ts
+
+        expected_image = get_image_name(type=IMA_CONTAINER, new=new)
+        image = self.dutils.get_container_image_name(container_name)
+        updated_image = image == expected_image
+
         container_running = self.dutils.is_container_running(container_name)
-        return CheckRes(container_running and correct_image and new_image_pulled)
+        logger.debug(
+            'IMA check status - container: %s, updated: %s, pulled: %s',
+            container_running,
+            updated_image,
+            new_image_pulled
+        )
+        result: bool = container_running and updated_image and new_image_pulled
+        return CheckRes(result)
 
     @property
     def rpc(self) -> CheckRes:

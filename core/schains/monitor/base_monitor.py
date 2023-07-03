@@ -52,7 +52,7 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config
 )
-from core.schains.ima import ImaData
+from core.schains.ima import get_migration_ts as get_ima_migration_ts, ImaData
 from core.schains.skaled_status import init_skaled_status
 
 from tools.docker_utils import DockerUtils
@@ -310,12 +310,12 @@ class BaseMonitor(ABC):
     @monitor_block
     def ima_container(self) -> bool:
         initial_status = self.checks.ima_container.status
+        migration_ts = get_ima_migration_ts(self.name)
         if not initial_status:
-            if time.time() > migration_ts:
-                pass
             monitor_ima_container(
                 self.schain,
                 self.ima_data,
+                migration_ts=migration_ts,
                 dutils=self.dutils
             )
         else:

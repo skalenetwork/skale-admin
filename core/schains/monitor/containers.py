@@ -22,8 +22,7 @@ import time
 
 from core.schains.volume import is_volume_exists
 from core.schains.runner import (
-    get_image,
-    get_new_image,
+    get_image_name,
     is_container_exists,
     is_schain_container_failed,
     remove_container,
@@ -32,7 +31,7 @@ from core.schains.runner import (
     run_schain_container
 )
 from core.ima.schain import copy_schain_ima_abi
-from core.schains.ima import get_migration_ts, ImaData
+from core.schains.ima import ImaData
 
 from tools.configs.containers import (
     MAX_SCHAIN_RESTART_COUNT,
@@ -103,6 +102,7 @@ def monitor_schain_container(
 def monitor_ima_container(
     schain: dict,
     ima_data: ImaData,
+    migration_ts: int = 0,
     dutils: DockerUtils = None
 ) -> None:
     schain_name = schain["name"]
@@ -118,11 +118,11 @@ def monitor_ima_container(
     copy_schain_ima_abi(schain_name)
 
     container_exists = is_container_exists(schain_name, container_type=IMA_CONTAINER, dutils=dutils)
-    image = get_image(type=IMA_CONTAINER)
 
-    migration_ts = get_migration_ts(schain_name)
+    image = get_image_name(type=IMA_CONTAINER)
+
     if time.time() > migration_ts:
-        image = get_new_image(type=IMA_CONTAINER)
+        image = get_image_name(type=IMA_CONTAINER, new=True)
         if container_exists:
             remove_container(schain_name, IMA_CONTAINER, dutils)
             container_exists = False

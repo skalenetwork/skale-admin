@@ -242,12 +242,12 @@ def test_remove_volume_error(dutils):
 
 def test_images(dutils):
     try:
-        assert not dutils.pulled(name=TEST_IMAGE, tag='3.17')
+        assert not dutils.pulled(f'{TEST_IMAGE}:3.18')
         dutils.pull(name=TEST_IMAGE, tag='3.17')
-        assert dutils.pulled(name=TEST_IMAGE, tag='3.17')
-        assert not dutils.pulled(name=TEST_IMAGE, tag='3.18')
+        assert dutils.pulled(f'{TEST_IMAGE}:3.17')
+        assert not dutils.pulled(f'{TEST_IMAGE}:3.18')
         dutils.pull(name=TEST_IMAGE, tag='3.18')
-        assert dutils.pulled(name=TEST_IMAGE, tag='3.18')
+        assert dutils.pulled(f'{TEST_IMAGE}:3.18')
     finally:
         dutils.client.images.remove(f'{TEST_IMAGE}:3.18')
         dutils.client.images.remove(f'{TEST_IMAGE}:3.17')

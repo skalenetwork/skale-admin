@@ -19,7 +19,6 @@
 
 import copy
 import logging
-import time
 
 from docker.types import LogConfig, Ulimit
 
@@ -29,7 +28,7 @@ from core.schains.types import MetricType, ContainerType
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.cmd import get_schain_container_cmd
 from core.schains.config.helper import get_schain_env
-from core.schains.ima import get_ima_env, get_migration_ts as get_ima_migration_ts
+from core.schains.ima import get_ima_env
 from core.schains.config.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
@@ -67,20 +66,14 @@ def is_container_running(
     return dutils.is_container_running(container_name)
 
 
-def get_image_name(type):
+def get_image_name(type: str, new: bool = False) -> str:
+    tag_field = 'version'
+    if type == IMA_CONTAINER and new:
+        tag_field = 'new_version'
     container_info = CONTAINERS_INFO[type]
-    return f'{container_info["name"]}:{container_info["version"]}'
-
-
-def get_new_ima_image():
-    return CONTAINERS_INFO['new_image']
-
-
-def get_new_image(type):
-    if type == SCHAIN_CONTAINER:
-        return get_image_name(type)
-    else:
-        return get_new_ima_image()
+    container_name = container_info['name']
+    tag = container_info[tag_field]
+    return f'{container_name}:{tag}'
 
 
 def get_container_name(type, schain_name):
@@ -272,22 +265,8 @@ def is_schain_container_failed(
 
 
 def is_new_image_pulled(type: str, dutils: DockerUtils) -> bool:
-    image = get_new_image(type)
+    image = get_image_name(type, new=True)
     return dutils.pulled(image)
-
-
-def get_ima_expected_image(migration_ts, dutils: DockerUtils) -> str:
-    image = get_image_name(IMA_CONTAINER)
-    if time.time() >= migration_ts:
-        image = get_new_image(IMA_CONTAINER)
-    return image
-
-
-def get_expected_image(schain_name: str, type: str, dutils: DockerUtils) -> str:
-    if type == SCHAIN_CONTAINER:
-        return get_image_name(type=type)
-    migration_ts = get_ima_migration_ts(schain_name)
-    return get_ima_expected_image(migration_ts, dutils)
 
 
 def remove_container(schain_name: str, type: str, dutils: DockerUtils):

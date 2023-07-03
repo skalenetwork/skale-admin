@@ -336,8 +336,7 @@ class DockerUtils:
     def pull(self, name: str, tag: str) -> None:
         self.client.images.pull(name, tag=tag)
 
-    def pulled(self, name: str, tag: str) -> bool:
-        identifier = f'{name}:{tag}'
+    def pulled(self, identifier: str) -> bool:
         try:
             self.client.images.get(identifier)
         except docker.errors.NotFound:
@@ -348,4 +347,5 @@ class DockerUtils:
         info = self.get_info(name)
         if info.get('status') == CONTAINER_NOT_FOUND:
             return None
+        print(info)
         return info['stats']['Config']['Image']

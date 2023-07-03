@@ -516,6 +516,16 @@ def cleanup_schain_containers(dutils):
 
 
 @pytest.fixture
+def cleanup_ima_containers(dutils):
+    try:
+        yield
+    finally:
+        containers = dutils.get_all_ima_containers(all=True)
+        for container in containers:
+            dutils.safe_rm(container.name, force=True)
+
+
+@pytest.fixture
 def cleanup_container(schain_config, dutils):
     try:
         yield

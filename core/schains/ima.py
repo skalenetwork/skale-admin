@@ -30,7 +30,7 @@ from core.schains.config.directory import schain_config_dir
 from core.schains.config.helper import get_schain_ports, get_schain_config, get_chain_id
 from core.ima.schain import get_schain_ima_abi_filepath
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
-from tools.configs.containers import CONTAINERS_INFO
+from tools.configs.containers import CONTAINERS_INFO, IMA_MIGRATION_PATH
 from tools.configs.db import REDIS_URI
 from tools.configs.ima import (
     IMA_ENDPOINT,
@@ -259,8 +259,8 @@ def get_ima_log_checks():
 
 
 def get_migration_schedule() -> dict:
-    return safe_load_yml('ima_migration_schedule.yaml')
+    return safe_load_yml(IMA_MIGRATION_PATH)
 
 
 def get_migration_ts(name: str) -> int:
-    return get_migration_schedule().get('name', 0)
+    return get_migration_schedule().get(name, 0)

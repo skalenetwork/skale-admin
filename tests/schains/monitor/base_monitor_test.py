@@ -1,3 +1,5 @@
+import time
+
 import mock
 import pytest
 
@@ -62,12 +64,13 @@ def monitor_schain_container_mock(
     )
 
 
-def run_ima_container_mock(schain: dict, mainnet_chain_id: int, dutils=None):
-    image_name, container_name, _, _ = get_container_info(
+def run_ima_container_mock(schain: dict, mainnet_chain_id: int, image: str, dutils=None):
+    default_image, container_name, _, _ = get_container_info(
         IMA_CONTAINER, schain['name'])
+    image = image or default_image
     dutils.safe_rm(container_name)
     dutils.run_container(
-        image_name=image_name,
+        image_name=image,
         name=container_name,
         entrypoint='bash -c "while true; do foo; sleep 2; done"'
     )
@@ -227,19 +230,73 @@ def test_base_monitor_restart_skaled_container(test_monitor):
     test_monitor.cleanup_schain_docker_entity()
 
 
-def test_base_monitor_ima_container(test_monitor, schain_config, predeployed_ima):
+@pytest.fixture
+def cleanup_ima(dutils):
+    try:
+        yield
+    finally:
+        remove_ima_container(test_monitor.name, dutils=test_monitor.dutils)
+        dutils.remove_container()
+
+
+def test_base_monitor_ima_container_new_chain(
+    test_monitor,
+    schain_config,
+    predeployed_ima,
+    cleanup_ima_containers,
+    dutils
+):
     test_monitor.config_dir()
     test_monitor.ima_data.linked = True
     with mock.patch(
         'core.schains.monitor.containers.run_ima_container',
         run_ima_container_mock
     ):
-        assert not test_monitor.ima_container()
-        assert test_monitor.ima_container()
-    remove_ima_container(test_monitor.name, dutils=test_monitor.dutils)
+        test_monitor.ima_container()
+        containers = dutils.get_all_ima_containers(all=True)
+        assert len(containers) == 1
+        container_name = containers[0].name
+        assert container_name == f'skale_ima_{test_monitor.name}'
+        image = dutils.get_container_image_name(container_name)
+        assert image == 'skalenetwork/ima:2.0.0-develop.3'
 
 
-def test_base_monitor_ima_container_not_linked(
+@mock.patch('core.schains.monitor.containers.run_ima_container', run_ima_container_mock)
+def test_base_monitor_ima_container_old_chain(
+    test_monitor,
+    schain_config,
+    predeployed_ima,
+    cleanup_ima_containers,
+    dutils
+):
+    test_monitor.config_dir()
+    test_monitor.ima_data.linked = True
+
+    ts = int(time.time())
+    mts = ts + 3600
+    with mock.patch('core.schains.monitor.base_monitor.get_ima_migration_ts', return_value=mts):
+        test_monitor.ima_container()
+        containers = dutils.get_all_ima_containers(all=True)
+        assert len(containers) == 1
+        assert containers[0].name == f'skale_ima_{test_monitor.name}'
+        container_name = containers[0].name
+        assert container_name == f'skale_ima_{test_monitor.name}'
+        image = dutils.get_container_image_name(container_name)
+        assert image == 'skalenetwork/ima:1.3.4-beta.5'
+        assert dutils.pulled('skalenetwork/ima:2.0.0-develop.3')
+
+    mts = ts - 5
+    with mock.patch('core.schains.monitor.base_monitor.get_ima_migration_ts', return_value=mts):
+        test_monitor.ima_container()
+        containers = dutils.get_all_ima_containers(all=True)
+        assert len(containers) == 1
+        container_name = containers[0].name
+        assert container_name == f'skale_ima_{test_monitor.name}'
+        image = dutils.get_container_image_name(container_name)
+        assert image == 'skalenetwork/ima:2.0.0-develop.3'
+
+
+def _test_base_monitor_ima_container_not_linked(
     schain_db,
     _schain_name,
     node_config,
