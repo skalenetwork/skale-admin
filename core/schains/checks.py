@@ -173,13 +173,19 @@ class SChainChecks:
 
         container_running = self.dutils.is_container_running(container_name)
         logger.debug(
-            'IMA check status - container: %s, updated: %s, pulled: %s',
+            '%s, IMA check - container: %s, updated: %s, pulled: %s',
+            self.name,
             container_running,
             updated_image,
             new_image_pulled
         )
         result: bool = container_running and updated_image and new_image_pulled
-        return CheckRes(result)
+        data = {
+            'container_running': container_running,
+            'updated_image': updated_image,
+            'new_image_pulled': new_image_pulled
+        }
+        return CheckRes(result, data=data)
 
     @property
     def rpc(self) -> CheckRes:

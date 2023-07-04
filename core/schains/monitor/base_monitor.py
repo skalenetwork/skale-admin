@@ -311,6 +311,7 @@ class BaseMonitor(ABC):
     def ima_container(self) -> bool:
         initial_status = self.checks.ima_container.status
         migration_ts = get_ima_migration_ts(self.name)
+        logger.debug('Migration time for %s IMA - %d', self.name, migration_ts)
         if not initial_status:
             monitor_ima_container(
                 self.schain,

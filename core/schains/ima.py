@@ -69,6 +69,7 @@ class ImaEnv:
 
     sgx_url: str
     ecdsa_key_name: str
+    bls_key_name: str
     sgx_ssl_key_path: str
     sgx_ssl_cert_path: str
     node_address: str
@@ -99,6 +100,7 @@ class ImaEnv:
             'NODES_COUNT': self.nodes_count,
             'SGX_URL': self.sgx_url,
             'ECDSA_KEY_NAME': self.ecdsa_key_name,
+            'BLS_KEY_NAME': self.bls_key_name,
             'SGX_SSL_KEY_PATH': self.sgx_ssl_key_path,
             'SGX_SSL_CERT_PATH': self.sgx_ssl_cert_path,
             'NODE_ADDRESS': self.node_address,
@@ -139,6 +141,7 @@ def schain_index_to_node_number(node):
 def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
     schain_config = get_schain_config(schain_name)
     node_info = schain_config["skaleConfig"]["nodeInfo"]
+    bls_key_name = node_info['wallets']['ima']['keyShareName']
     schain_nodes = schain_config["skaleConfig"]["sChain"]
     public_node_info = get_current_node_from_nodes(node_info['nodeID'], schain_nodes)
 
@@ -160,6 +163,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         nodes_count=len(schain_nodes['nodes']),
         sgx_url=SGX_SERVER_URL,
         ecdsa_key_name=node_info['ecdsaKeyName'],
+        bls_key_name=bls_key_name,
         sgx_ssl_key_path=SGX_SSL_KEY_FILEPATH,
         sgx_ssl_cert_path=SGX_SSL_CERT_FILEPATH,
         node_address=node_address,

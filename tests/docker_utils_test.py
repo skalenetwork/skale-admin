@@ -56,7 +56,6 @@ def check_schain_container(schain_name: str, client: DockerUtils):
 
     info = client.get_info(containers[0].id)
     assert 'stats' in info
-    print('DEBUG', containers[0].logs())
     assert info['status'] == 'running'
     assert client.is_container_running(containers[0].id)
     assert containers[0].name

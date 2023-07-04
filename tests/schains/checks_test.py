@@ -156,28 +156,22 @@ def test_exit_code_ok_check(schain_checks, sample_false_checks):
         assert not sample_false_checks.exit_code_ok.status
 
 
-def test_ima_check(schain_checks, sample_false_checks):
-    with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
-        assert schain_checks.ima_container.status
-    with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_ERROR):
-        assert not sample_false_checks.ima_container.status
-
-
 def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
     dutils.is_container_running = lambda *args: True
     ts = int(time.time())
     mts = ts + 3600
     name = schain_checks.name
     schain = get_schain_contracts_data(name)
+    image = get_image_name(type=IMA_CONTAINER)
+    new_image = get_image_name(type=IMA_CONTAINER, new=True)
+    dutils.rmi(new_image)
 
     assert not schain_checks.ima_container.status
 
     with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
-        image = get_image_name(type=IMA_CONTAINER)
         run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
 
         assert not schain_checks.ima_container.status
-        new_image = get_image_name(type=IMA_CONTAINER, new=True)
 
         dutils.pull(*new_image.split(':'))
 

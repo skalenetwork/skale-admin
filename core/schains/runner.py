@@ -56,6 +56,16 @@ def is_container_exists(
     return dutils.is_container_exists(container_name)
 
 
+def get_container_image(
+    schain_name,
+    container_type=SCHAIN_CONTAINER,
+    dutils=None
+):
+    dutils = dutils or DockerUtils()
+    container_name = get_container_name(container_type, schain_name)
+    return dutils.get_container_image_name(container_name)
+
+
 def is_container_running(
     schain_name,
     container_type=SCHAIN_CONTAINER,
@@ -213,6 +223,7 @@ def run_ima_container(
         env=env.to_dict(),
         cpu_shares_limit=cpu_limit,
         mem_limit=mem_limit,
+        image=image,
         dutils=dutils
     )
 

@@ -343,9 +343,11 @@ class DockerUtils:
             return False
         return True
 
+    def rmi(self, identifier: str) -> None:
+        self.client.images.remove(identifier)
+
     def get_container_image_name(self, name: str) -> Optional[str]:
         info = self.get_info(name)
         if info.get('status') == CONTAINER_NOT_FOUND:
             return None
-        print(info)
         return info['stats']['Config']['Image']
