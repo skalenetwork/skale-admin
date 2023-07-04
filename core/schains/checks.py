@@ -167,11 +167,14 @@ class SChainChecks:
         migration_ts = get_ima_migration_ts(self.name)
         new = time.time() > migration_ts
 
-        expected_image = get_image_name(type=IMA_CONTAINER, new=new)
-        image = self.dutils.get_container_image_name(container_name)
-        updated_image = image == expected_image
-
         container_running = self.dutils.is_container_running(container_name)
+
+        updated_image = False
+        if container_running:
+            expected_image = get_image_name(type=IMA_CONTAINER, new=new)
+            image = self.dutils.get_container_image_name(container_name)
+            updated_image = image == expected_image
+
         logger.debug(
             '%s, IMA check - container: %s, updated: %s, pulled: %s',
             self.name,

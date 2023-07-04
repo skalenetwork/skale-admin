@@ -81,9 +81,9 @@ def get_image_name(type: str, new: bool = False) -> str:
     if type == IMA_CONTAINER and new:
         tag_field = 'new_version'
     container_info = CONTAINERS_INFO[type]
-    container_name = container_info['name']
+    image_base_name = container_info['name']
     tag = container_info[tag_field]
-    return f'{container_name}:{tag}'
+    return f'{image_base_name}:{tag}'
 
 
 def get_container_name(type, schain_name):
@@ -283,3 +283,10 @@ def is_new_image_pulled(type: str, dutils: DockerUtils) -> bool:
 def remove_container(schain_name: str, type: str, dutils: DockerUtils):
     container = get_container_name(type=type, schain_name=schain_name)
     dutils.safe_rm(container)
+
+
+def pull_new_image(type: str, dutils: DockerUtils) -> None:
+    image = get_image_name(type, new=True)
+    if not dutils.pulled(image):
+        logger.info('Pulling new image %s', image)
+        dutils.pull(image)

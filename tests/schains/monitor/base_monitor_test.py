@@ -296,7 +296,7 @@ def test_base_monitor_ima_container_old_chain(
         assert image == 'skalenetwork/ima:2.0.0-develop.3'
 
 
-def _test_base_monitor_ima_container_not_linked(
+def test_base_monitor_ima_container_not_linked(
     schain_db,
     _schain_name,
     node_config,

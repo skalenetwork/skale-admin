@@ -173,7 +173,7 @@ def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
 
         assert not schain_checks.ima_container.status
 
-        dutils.pull(*new_image.split(':'))
+        dutils.pull(new_image)
 
         assert schain_checks.ima_container.status
 
