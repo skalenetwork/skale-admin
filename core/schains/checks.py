@@ -175,19 +175,16 @@ class SChainChecks:
             image = self.dutils.get_container_image_name(container_name)
             updated_image = image == expected_image
 
-        logger.debug(
-            '%s, IMA check - container: %s, updated: %s, pulled: %s',
-            self.name,
-            container_running,
-            updated_image,
-            new_image_pulled
-        )
-        result: bool = container_running and updated_image and new_image_pulled
         data = {
             'container_running': container_running,
             'updated_image': updated_image,
             'new_image_pulled': new_image_pulled
         }
+        logger.debug(
+            '%s, IMA check - %s',
+            self.name, data
+        )
+        result: bool = container_running and updated_image and new_image_pulled
         return CheckRes(result, data=data)
 
     @property
