@@ -240,6 +240,10 @@ def test_remove_volume_error(dutils):
 
 
 def test_images(dutils):
+    if dutils.pulled(f'{TEST_IMAGE}:3.17'):
+        dutils.rmi(f'{TEST_IMAGE}:3.17')
+    if dutils.pulled(f'{TEST_IMAGE}:3.18'):
+        dutils.rmi(f'{TEST_IMAGE}:3.18')
     try:
         assert not dutils.pulled(f'{TEST_IMAGE}:3.17')
         assert not dutils.pulled(f'{TEST_IMAGE}:3.18')
