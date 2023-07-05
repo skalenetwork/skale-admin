@@ -17,8 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
 import copy
+import logging
+
 from docker.types import LogConfig, Ulimit
 
 from core.schains.volume import get_schain_volume_config
@@ -55,6 +56,16 @@ def is_container_exists(
     return dutils.is_container_exists(container_name)
 
 
+def get_container_image(
+    schain_name,
+    container_type=SCHAIN_CONTAINER,
+    dutils=None
+):
+    dutils = dutils or DockerUtils()
+    container_name = get_container_name(container_type, schain_name)
+    return dutils.get_container_image_name(container_name)
+
+
 def is_container_running(
     schain_name,
     container_type=SCHAIN_CONTAINER,
@@ -65,9 +76,14 @@ def is_container_running(
     return dutils.is_container_running(container_name)
 
 
-def get_image_name(type):
+def get_image_name(type: str, new: bool = False) -> str:
+    tag_field = 'version'
+    if type == IMA_CONTAINER and new:
+        tag_field = 'new_version'
     container_info = CONTAINERS_INFO[type]
-    return f'{container_info["name"]}:{container_info["version"]}'
+    image_base_name = container_info['name']
+    tag = container_info[tag_field]
+    return f'{image_base_name}:{tag}'
 
 
 def get_container_name(type, schain_name):
@@ -104,12 +120,15 @@ def run_container(
     volume_config=None,
     cpu_shares_limit=None,
     mem_limit=None,
+    image=None,
     dutils=None,
     volume_mode=None
 ):
     dutils = dutils or DockerUtils()
-    image_name, container_name, run_args, custom_args = get_container_info(
+    default_image, container_name, run_args, custom_args = get_container_info(
         type, schain_name)
+
+    image_name = image or default_image
 
     add_config_volume(run_args, schain_name, mode=volume_mode)
 
@@ -188,6 +207,7 @@ def run_schain_container(
 def run_ima_container(
     schain: dict,
     mainnet_chain_id: int,
+    image: str,
     dutils: DockerUtils = None
 ) -> None:
     dutils = dutils or DockerUtils()
@@ -203,6 +223,7 @@ def run_ima_container(
         env=env.to_dict(),
         cpu_shares_limit=cpu_limit,
         mem_limit=mem_limit,
+        image=image,
         dutils=dutils
     )
 
@@ -252,3 +273,20 @@ def is_schain_container_failed(
     if bad_state:
         logger.warning(f'{name} is in bad state - exited: {exited}, created: {created}')
     return bad_state
+
+
+def is_new_image_pulled(type: str, dutils: DockerUtils) -> bool:
+    image = get_image_name(type, new=True)
+    return dutils.pulled(image)
+
+
+def remove_container(schain_name: str, type: str, dutils: DockerUtils):
+    container = get_container_name(type=type, schain_name=schain_name)
+    dutils.safe_rm(container)
+
+
+def pull_new_image(type: str, dutils: DockerUtils) -> None:
+    image = get_image_name(type, new=True)
+    if not dutils.pulled(image):
+        logger.info('Pulling new image %s', image)
+        dutils.pull(image)

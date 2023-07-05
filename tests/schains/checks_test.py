@@ -1,5 +1,5 @@
 import os
-from time import sleep
+import time
 from http import HTTPStatus
 
 from collections import namedtuple
@@ -11,15 +11,16 @@ import pytest
 
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.checks import SChainChecks, CheckRes
-from core.schains.runner import get_container_info
+from core.schains.runner import get_container_info, get_image_name, run_ima_container
+from core.schains.cleaner import remove_ima_container
 from core.schains.config.directory import get_schain_check_filepath
 
-from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.helper import read_json
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
-from tests.utils import response_mock, request_mock
+from tests.utils import get_schain_contracts_data, response_mock, request_mock
 
 
 NOT_EXISTS_SCHAIN_NAME = 'qwerty123'
@@ -155,11 +156,37 @@ def test_exit_code_ok_check(schain_checks, sample_false_checks):
         assert not sample_false_checks.exit_code_ok.status
 
 
-def test_ima_check(schain_checks, sample_false_checks):
-    with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
+def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
+    dutils.is_container_running = lambda *args: True
+    ts = int(time.time())
+    mts = ts + 3600
+    name = schain_checks.name
+    schain = get_schain_contracts_data(name)
+    image = get_image_name(type=IMA_CONTAINER)
+    new_image = get_image_name(type=IMA_CONTAINER, new=True)
+
+    if dutils.pulled(new_image):
+        dutils.rmi(new_image)
+
+    assert not schain_checks.ima_container.status
+
+    with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
+        run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
+
+        assert not schain_checks.ima_container.status
+
+        dutils.pull(new_image)
+
         assert schain_checks.ima_container.status
-    with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_ERROR):
-        assert not sample_false_checks.ima_container.status
+
+    remove_ima_container(name, dutils)
+
+    mts = ts - 3600
+    with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
+        assert not schain_checks.ima_container.status
+        image = get_image_name(type=IMA_CONTAINER, new=True)
+        run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
+        assert schain_checks.ima_container.status
 
 
 def test_rpc_check(schain_checks, schain_db):
@@ -232,7 +259,7 @@ def test_exit_code(skale, rule_controller, schain_db, dutils):
             name=container_name,
             entrypoint='bash -c "exit 200"'
         )
-        sleep(10)
+        time.sleep(10)
         checks = SChainChecks(
             test_schain_name,
             TEST_NODE_ID,
@@ -258,7 +285,7 @@ def test_process(skale, rule_controller, schain_db, dutils):
     )
     assert not checks.process.status
 
-    process = Process(target=sleep, args=(5,))
+    process = Process(target=time.sleep, args=(5,))
     process.start()
     schain_record.set_monitor_id(process.ident)
     assert checks.process.status
