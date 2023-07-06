@@ -56,9 +56,9 @@ def upstreams(schain_db, schain_config):
     name = schain_db
     config_folder = schain_config_dir(name)
     files = [
-        f'schain_{name}_0_2_1_16_1687183338.json',
-        f'schain_{name}_1_2_1_16_1687183335.json',
-        f'schain_{name}_1_2_1_17_1687183336.json'
+        f'schain_{name}_1_1687183338_2_1_16.json',
+        f'schain_{name}_0_1687183335_2_1_16.json',
+        f'schain_{name}_1_1687183336_2_1_17.json'
     ]
     try:
         for fname in files:
@@ -72,7 +72,7 @@ def test_get_schain_upstream_config(schain_db, upstreams):
     name = schain_db
     config_folder = schain_config_dir(name)
     upstream_config = get_upstream_config_filepath(name)
-    expected = os.path.join(config_folder, f'schain_{name}_1_2_1_17_1687183336.json')
+    expected = os.path.join(config_folder, f'schain_{name}_1_1687183338_2_1_16.json')
     assert upstream_config == expected
 
     not_existing_chain = 'not-exist'
