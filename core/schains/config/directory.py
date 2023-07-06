@@ -61,7 +61,7 @@ def formatted_stream_version(stream_version: str) -> str:
 def new_config_filename(name: str, rotation_id: int, stream_version: str) -> str:
     ts = int(time.time())
     formatted_version = formatted_stream_version(stream_version)
-    return f'schain_{name}_{rotation_id}_{formatted_version}_{ts}.json'
+    return f'schain_{name}_{rotation_id}_{ts}_{formatted_version}.json'
 
 
 def schain_config_dir(name: str) -> str:
@@ -133,10 +133,11 @@ def upstreams_for_rotation_id_version(
 ) -> List[str]:
     schain_dir_path = schain_config_dir(name)
     version = formatted_stream_version(stream_version)
-    prefix = upstream_rotation_version_prefix(name, rotation_id, version)
-    pattern = os.path.join(schain_dir_path, prefix + '*.json')
+    prefix = upstream_prefix(name)
+    pattern = f'{prefix}{rotation_id}_*_{version}.json'
+    pattern_path = os.path.join(schain_dir_path, pattern)
     with config_lock:
-        return glob.glob(pattern)
+        return glob.glob(pattern_path)
 
 
 def skaled_status_filepath(name: str) -> str:
