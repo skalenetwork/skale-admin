@@ -128,16 +128,16 @@ def test_upstream_config_check(schain_checks):
 
     upstream_path_wrong_version = os.path.join(
         schain_config_dir(name),
-        f'schain_{name}_{rotation_id}_2.2.2_{ts}.json'
+        f'schain_{name}_{rotation_id}_{ts}_2-2-2.json'
     )
     with open(upstream_path_wrong_version, 'w') as upstream_file:
         json.dump({'config': 'wrong_upstream'}, upstream_file)
     assert not schain_checks.upstream_config
 
-    formatter_version = CONFIG_STREAM.replace('.', '_')
+    formatted_version = CONFIG_STREAM.replace('.', '_')
     upstream_path = os.path.join(
         schain_config_dir(name),
-        f'schain_{name}_{rotation_id}_{formatter_version}_{ts}.json'
+        f'schain_{name}_{rotation_id}_{ts}_{formatted_version}.json'
     )
 
     with open(upstream_path, 'w') as upstream_file:
