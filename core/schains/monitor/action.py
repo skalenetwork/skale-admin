@@ -29,6 +29,7 @@ from core.node_config import NodeConfig
 from core.schains.checks import IChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
 from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.schains.ima import get_migration_ts as get_ima_migration_ts
 
 from core.schains.cleaner import (
     remove_schain_container,
@@ -44,9 +45,10 @@ from core.schains.limits import get_schain_type
 from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
 from core.schains.monitor.rpc import handle_failed_schain_rpc
 from core.schains.runner import (
-    restart_container,
+    get_container_name,
     is_container_exists,
-    get_container_name
+    pull_new_image,
+    restart_container
 )
 from core.schains.config.main import (
     create_new_schain_config,
@@ -352,18 +354,21 @@ class SkaledActionManager(BaseActionManager):
             logger.info('rpc - ok')
         return initial_status
 
-    @BaseActionManager.monitor_block
     def ima_container(self) -> bool:
         initial_status = self.checks.ima_container.status
+        migration_ts = get_ima_migration_ts(self.name)
+        logger.debug('Migration time for %s IMA - %d', self.name, migration_ts)
         if not initial_status:
-            logger.info('Running IMA container watchman')
+            pull_new_image(type=IMA_CONTAINER, dutils=self.dutils)
             ima_data = ImaData(
                 linked=self.econfig.ima_linked,
                 chain_id=self.econfig.chain_id
             )
+            logger.info('Running IMA container watchman')
             monitor_ima_container(
                 self.schain,
-                ima_data=ima_data,
+                ima_data,
+                migration_ts=migration_ts,
                 dutils=self.dutils
             )
         else:
