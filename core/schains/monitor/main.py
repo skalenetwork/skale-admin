@@ -151,7 +151,7 @@ def post_monitor_sleep():
         MIN_SCHAIN_MONITOR_SLEEP_INTERVAL,
         MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
     )
-    logger.info('Monitor completed, sleeping for %d', schain_monitor_sleep)
+    logger.info('Monitor iteration completed, sleeping for %d', schain_monitor_sleep)
     time.sleep(schain_monitor_sleep)
 
 
@@ -242,7 +242,7 @@ def run_monitor_for_schain(
                     return True
                 post_monitor_sleep()
             except Exception:
-                logger.exception('Monitor failed')
+                logger.exception('Monitor iteration failed')
                 if once:
                     return False
                 post_monitor_sleep()

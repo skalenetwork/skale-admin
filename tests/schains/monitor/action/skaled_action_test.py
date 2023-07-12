@@ -182,21 +182,6 @@ def test_restart_skaled_container_action(skaled_am, skaled_checks):
         skaled_am.cleanup_schain_docker_entity()
 
 
-# def test_ima_container_action(skaled_am, skaled_checks, schain_config, predeployed_ima):
-#     try:
-#         with mock.patch(
-#             'core.schains.monitor.containers.run_ima_container',
-#             run_ima_container_mock
-#         ):
-#             assert not skaled_checks.ima_container
-#             skaled_am.ima_container()
-#             assert skaled_checks.ima_container
-#             skaled_am.ima_container()
-#             assert skaled_checks.ima_container
-#     finally:
-#         remove_ima_container(skaled_am.name, dutils=skaled_am.dutils)
-
-
 @pytest.fixture
 def cleanup_ima(dutils, skaled_am):
     try:
