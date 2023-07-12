@@ -608,6 +608,11 @@ def cleanup_schain_dirs_before():
 
 
 @pytest.fixture
+def clean_docker(dutils, cleanup_schain_containers, cleanup_ima_containers):
+    pass
+
+
+@pytest.fixture
 def cleanup_schain_containers(dutils):
     try:
         yield
