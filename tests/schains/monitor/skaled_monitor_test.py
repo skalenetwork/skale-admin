@@ -393,41 +393,41 @@ def test_get_skaled_monitor_recreate(
     assert mon == RecreateSkaledMonitor
 
 
-def test_regular_skaled_monitor(skaled_am, skaled_checks):
+def test_regular_skaled_monitor(skaled_am, skaled_checks, clean_docker):
     mon = RegularSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
 
 
-def test_backup_skaled_monitor(skaled_am, skaled_checks):
+def test_backup_skaled_monitor(skaled_am, skaled_checks, clean_docker):
     mon = BackupSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
 
 
-def test_repair_skaled_monitor(skaled_am, skaled_checks):
+def test_repair_skaled_monitor(skaled_am, skaled_checks, clean_docker):
     mon = RepairSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
 
 
-def test_new_config_skaled_monitor(skaled_am, skaled_checks):
+def test_new_config_skaled_monitor(skaled_am, skaled_checks, clean_docker):
     mon = NewConfigSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
 
 
-def test_recreate_skaled_monitor(skaled_am, skaled_checks):
+def test_recreate_skaled_monitor(skaled_am, skaled_checks, clean_docker):
     mon = RecreateSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
 
 
-def test_after_exit_skaled_monitor(skaled_am, skaled_checks):
+def test_after_exit_skaled_monitor(skaled_am, skaled_checks, clean_docker):
     mon = UpdateConfigSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
 
 
-def test_no_config_monitor(skaled_am, skaled_checks):
+def test_no_config_monitor(skaled_am, skaled_checks, clean_docker):
     mon = NoConfigSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
 
 
-def test_new_node_monitor(skaled_am, skaled_checks):
+def test_new_node_monitor(skaled_am, skaled_checks, clean_docker):
     mon = NewNodeSkaledMonitor(skaled_am, skaled_checks)
     mon.run()

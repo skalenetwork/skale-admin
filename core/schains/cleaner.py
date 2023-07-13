@@ -249,14 +249,22 @@ def cleanup_schain(
         remove_schain_container(schain_name, dutils=dutils)
     if checks.volume.status:
         remove_schain_volume(schain_name, dutils=dutils)
-        if checks.firewall_rules.status:
-            conf = get_schain_config(schain_name)
-            base_port = get_base_port_from_config(conf)
-            own_ip = get_own_ip_from_config(conf)
-            node_ips = get_node_ips_from_config(conf)
-            rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
-            rc.cleanup()
-    if estate.ima_linked:
+    if checks.firewall_rules.status:
+        conf = get_schain_config(schain_name)
+        base_port = get_base_port_from_config(conf)
+        own_ip = get_own_ip_from_config(conf)
+        node_ips = get_node_ips_from_config(conf)
+        ranges = []
+        if estate is not None:
+            ranges = estate.ranges
+        rc.configure(
+            base_port=base_port,
+            own_ip=own_ip,
+            node_ips=node_ips,
+            sync_ip_ranges=ranges
+        )
+        rc.cleanup()
+    if estate is not None and estate.ima_linked:
         if checks.ima_container.status or is_exited(
             schain_name,
             container_type=ContainerType.ima,
