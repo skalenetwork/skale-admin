@@ -384,12 +384,13 @@ class SkaledActionManager(BaseActionManager):
         if upstream_path:
             logger.info('Syncing config with upstream %s', upstream_path)
             sync_config_with_file(self.name, upstream_path)
-        logger.info('No upstream config yet')
-        return upstream_path is not None
+            return True
+        else:
+            logger.info('No upstream config yet')
+            return False
 
     @BaseActionManager.monitor_block
     def send_exit_request(self) -> None:
-        finish_ts = None
         finish_ts = self.upstream_finish_ts
         logger.info('Trying to set skaled exit time %s', finish_ts)
         if finish_ts is not None:

@@ -598,6 +598,7 @@ def cleanup_schain_containers(dutils):
         containers = dutils.get_all_schain_containers(all=True)
         for container in containers:
             dutils.safe_rm(container.name, force=True)
+            dutils.safe_rm(container.name.replace('schain', 'ima'), force=True)
 
 
 @pytest.fixture
