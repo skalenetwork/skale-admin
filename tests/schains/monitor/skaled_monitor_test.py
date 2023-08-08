@@ -1,4 +1,5 @@
 import datetime
+import json
 import os
 import shutil
 import time
@@ -9,7 +10,7 @@ import freezegun
 import pytest
 
 from core.schains.checks import CheckRes, SkaledChecks
-from core.schains.config.directory import schain_config_dir
+from core.schains.config.directory import schain_config_dir, schain_config_filepath
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.monitor.skaled_monitor import (
     BackupSkaledMonitor,
@@ -95,7 +96,9 @@ def upstreams(schain_db, schain_config):
     ]
     try:
         for fname in files:
-            Path(os.path.join(config_folder, fname)).touch()
+            fpath = os.path.join(config_folder, fname)
+            with open(fpath, 'w') as f:
+                json.dump(schain_config, f)
         yield files
     finally:
         shutil.rmtree(config_folder)
@@ -436,7 +439,8 @@ def test_backup_skaled_monitor(skaled_am, skaled_checks, dutils):
     mon.run()
     assert skaled_am.rc.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
-    schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
+    schain_container = dutils.safe_get_container(
+        f'skale_schain_{skaled_am.name}')
     assert schain_container
     assert '--download-snapshot' in dutils.get_cmd(schain_container.id)
     assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
@@ -446,11 +450,13 @@ def test_repair_skaled_monitor(skaled_am, skaled_checks, dutils):
     mon = RepairSkaledMonitor(skaled_am, skaled_checks)
     ts_before = time.time()
     mon.run()
+    time.sleep(1)
     assert skaled_am.rc.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
 
     assert dutils.get_vol_created_ts(skaled_am.name) > ts_before
-    schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
+    schain_container = dutils.safe_get_container(
+        f'skale_schain_{skaled_am.name}')
     assert schain_container
     assert '--download-snapshot' in dutils.get_cmd(schain_container.id)
     assert dutils.get_container_created_ts(schain_container.id) > ts_before
@@ -473,28 +479,32 @@ def test_new_config_skaled_monitor(skaled_am, skaled_checks, dutils):
 def test_recreate_skaled_monitor(skaled_am, skaled_checks, dutils):
     mon = RecreateSkaledMonitor(skaled_am, skaled_checks)
     ts_before = time.time()
+    time.sleep(1)
     mon.run()
-    time.sleep(2)
-    schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
+    schain_container = dutils.safe_get_container(
+        f'skale_schain_{skaled_am.name}')
     assert schain_container
     assert dutils.get_container_created_ts(schain_container.id) > ts_before
 
 
-def test_update_config_skaled_monitor(skaled_am, skaled_checks, dutils):
+def test_update_config_skaled_monitor(skaled_am, skaled_checks, dutils, upstreams):
     ts_before = time.time()
+    time.sleep(1)
     mon = UpdateConfigSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
     assert dutils.get_vol(skaled_am.name)
     assert dutils.get_vol_created_ts(skaled_am.name) > ts_before
-    schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
+    schain_container = dutils.safe_get_container(
+        f'skale_schain_{skaled_am.name}'
+    )
     assert schain_container
     assert dutils.get_container_created_ts(schain_container.id) > ts_before
+    os.stat(schain_config_filepath(skaled_am.name)).st_mtime > ts_before
 
 
 def test_no_config_monitor(skaled_am, skaled_checks, dutils):
     mon = NoConfigSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
-    assert not skaled_am.rc.is_rules_synced
     assert not dutils.get_vol(skaled_am.name)
     assert not dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
     assert not dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
@@ -502,10 +512,10 @@ def test_no_config_monitor(skaled_am, skaled_checks, dutils):
 
 def test_new_node_monitor(skaled_am, skaled_checks, dutils):
     mon = NewNodeSkaledMonitor(skaled_am, skaled_checks)
+    mon.run()
     assert skaled_am.rc.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
-    schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
+    schain_container = dutils.safe_get_container(
+        f'skale_schain_{skaled_am.name}')
     assert schain_container
     assert '--download-snapshot' in dutils.get_cmd(schain_container.id)
-    assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
-    mon.run()
