@@ -9,7 +9,8 @@ import mock
 
 from core.schains.checks import SkaledChecks
 from core.schains.cleaner import remove_ima_container
-from core.schains.config.directory import new_config_filename, schain_config_dir
+from core.schains.config.directory import schain_config_dir
+from core.schains.config.file_manager import ConfigFileManager, UpstreamConfigFilename
 from core.schains.firewall.types import SChainRule
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.runner import get_container_info
@@ -250,14 +251,10 @@ def test_update_config(skaled_am, skaled_checks):
 
     assert not skaled_checks.config
     assert not skaled_checks.config_updated
-    upstream_path = os.path.join(
-        folder,
-        new_config_filename(
-            skaled_am.name,
-            rotation_id=5,
-            stream_version=CONFIG_STREAM
-        )
-    )
+    ts = int(time.time())
+    upstream_path = UpstreamConfigFilename(
+        skaled_am, rotation_id=5, ts=int(time.time())).abspath(folder)
+
     config_content = {'config': 'mock_v5'}
     with open(upstream_path, 'w') as upstream_file:
         json.dump(config_content, upstream_file)
@@ -268,14 +265,9 @@ def test_update_config(skaled_am, skaled_checks):
     assert skaled_checks.config_updated
 
     time.sleep(1)
-    upstream_path = os.path.join(
-        folder,
-        new_config_filename(
-            skaled_am.name,
-            rotation_id=6,
-            stream_version=CONFIG_STREAM
-        )
-    )
+    upstream_path = UpstreamConfigFilename(
+        skaled_am, rotation_id=6, ts=int(time.time())).abspath(folder)
+
     config_content = {'config': 'mock_v6'}
     with open(upstream_path, 'w') as upstream_file:
         json.dump(config_content, upstream_file)

@@ -49,16 +49,12 @@ from core.schains.runner import (
     get_container_name
 )
 from core.schains.config.main import (
-    create_new_schain_config,
-    get_finish_ts_from_config,
-    get_finish_ts_from_upstream_config
+    create_new_upstream_config,
+    get_finish_ts_from_skaled_config,
+    get_finish_ts_from_latest_upstream
 )
 from core.schains.config import init_schain_config_dir
-from core.schains.config.directory import (
-    get_schain_config,
-    get_upstream_config_filepath,
-    sync_config_with_file
-)
+from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
@@ -155,6 +151,9 @@ class ConfigActionManager(BaseActionManager):
         self.rotation_id = rotation_data['rotation_id']
         self.estate = estate
         self.econfig = econfig or ExternalConfig(name=schain['name'])
+        self.cfm: ConfigFileManager = ConfigFileManager(
+            schain_name=self.schain['name']
+        )
         super().__init__(name=schain['name'])
 
     @BaseActionManager.monitor_block
@@ -193,7 +192,7 @@ class ConfigActionManager(BaseActionManager):
             'Creating new upstream_config rotation_id: %s, stream: %s',
             self.rotation_data.get('rotation_id'), self.stream_version
         )
-        create_new_schain_config(
+        create_new_upstream_config(
             skale=self.skale,
             node_id=self.node_config.id,
             schain_name=self.name,
@@ -201,7 +200,8 @@ class ConfigActionManager(BaseActionManager):
             ecdsa_sgx_key_name=self.node_config.sgx_key_name,
             rotation_data=self.rotation_data,
             stream_version=self.stream_version,
-            schain_record=self.schain_record
+            schain_record=self.schain_record,
+            file_manager=self.cfm
         )
         return True
 
@@ -232,6 +232,9 @@ class SkaledActionManager(BaseActionManager):
         self.skaled_status = init_skaled_status(self.schain['name'])
         self.schain_type = get_schain_type(schain['partOfNode'])
         self.econfig = econfig or ExternalConfig(schain['name'])
+        self.cfm: ConfigFileManager = ConfigFileManager(
+            schain_name=self.schain['name']
+        )
 
         self.dutils = dutils or DockerUtils()
 
@@ -253,7 +256,7 @@ class SkaledActionManager(BaseActionManager):
         if not initial_status:
             logger.info('Configuring firewall rules')
 
-            conf = get_schain_config(self.name)
+            conf = self.cfm.skaled_config
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
@@ -303,9 +306,11 @@ class SkaledActionManager(BaseActionManager):
         initial_status = True
         if is_container_exists(self.name, dutils=self.dutils):
             logger.info('Skaled container exists, restarting')
-            restart_container(SCHAIN_CONTAINER, self.schain, dutils=self.dutils)
+            restart_container(SCHAIN_CONTAINER, self.schain,
+                              dutils=self.dutils)
         else:
-            logger.info('Skaled container doesn\'t exists, running skaled watchman')
+            logger.info(
+                'Skaled container doesn\'t exists, running skaled watchman')
             initial_status = self.skaled_container()
         return initial_status
 
@@ -316,7 +321,8 @@ class SkaledActionManager(BaseActionManager):
             logger.info('IMA container exists, restarting')
             restart_container(IMA_CONTAINER, self.schain, dutils=self.dutils)
         else:
-            logger.info('IMA container doesn\'t exists, running skaled watchman')
+            logger.info(
+                'IMA container doesn\'t exists, running skaled watchman')
             initial_status = self.ima_container()
         return initial_status
 
@@ -380,14 +386,7 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def update_config(self) -> bool:
-        upstream_path = get_upstream_config_filepath(self.name)
-        if upstream_path:
-            logger.info('Syncing config with upstream %s', upstream_path)
-            sync_config_with_file(self.name, upstream_path)
-            return True
-        else:
-            logger.info('No upstream config yet')
-            return False
+        return self.cfm.sync_skaled_config_with_upstream()
 
     @BaseActionManager.monitor_block
     def send_exit_request(self) -> None:
@@ -403,22 +402,23 @@ class SkaledActionManager(BaseActionManager):
 
     @property
     def upstream_config_path(self) -> Optional[str]:
-        return get_upstream_config_filepath(self.name)
+        return self.cfm.latest_upstream_path
 
     @property
     def upstream_finish_ts(self) -> Optional[int]:
-        return get_finish_ts_from_upstream_config(self.name)
+        return get_finish_ts_from_latest_upstream(self.cfm)
 
     @property
     def finish_ts(self) -> Optional[int]:
-        return get_finish_ts_from_config(self.name)
+        return get_finish_ts_from_skaled_config(self.cfm)
 
     def display_skaled_logs(self) -> None:
         if is_container_exists(self.name, dutils=self.dutils):
             container_name = get_container_name(SCHAIN_CONTAINER, self.name)
             self.dutils.display_container_logs(container_name)
         else:
-            logger.warning(f'sChain {self.name}: container doesn\'t exists, could not show logs')
+            logger.warning(
+                f'sChain {self.name}: container doesn\'t exists, could not show logs')
 
     @BaseActionManager.monitor_block
     def notify_repair_mode(self) -> None:

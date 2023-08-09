@@ -17,15 +17,23 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import filecmp
+import logging
 import os
+import shutil
+import time
+import threading
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
-from typing import List, TypeVar
+from typing import Dict, List, Optional, TypeVar
 
-from tools.configs.schains import SCHAINS_DIR_PATH
 from core.schains.config.directory import get_files_with_prefix
+from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.helper import read_json, write_json
 
 IConfigFilenameType = TypeVar('IConfigFilenameType', bound='IConfigFilename')
+
+logger = logging.getLogger(__name__)
 
 
 class IConfigFilename(metaclass=ABCMeta):
@@ -69,6 +77,7 @@ class UpstreamConfigFilename(IConfigFilename):
     @classmethod
     def from_filename(cls, filename: str):
         rstem = Path(filename).stem[::-1]
+        print('IVD', rstem)
         ts_, rotation_id_, prefix_name = rstem.split('_', maxsplit=2)
         name = prefix_name[::-1].replace('schain_', '', 1)
         rotation_id: int = int(rotation_id_)
@@ -91,20 +100,104 @@ class SkaledConfigFilename(IConfigFilename):
 
 
 class ConfigFileManager:
+    CFM_LOCK = threading.Lock()
+
     def __init__(self, schain_name: str) -> None:
         self.schain_name: str = schain_name
         self.dirname: str = os.path.join(SCHAINS_DIR_PATH, schain_name)
         self.upstream_prefix = f'schain_{schain_name}_'
 
-    def get_upstream_configs(self) -> List[IConfigFilename]:
+    def get_upstream_configs(self) -> List[UpstreamConfigFilename]:
         filenames = get_files_with_prefix(self.dirname, self.upstream_prefix)
         return sorted(list(map(lambda f: UpstreamConfigFilename.from_filename(f), filenames)))
 
     @property
-    def latest_upstream_path(self) -> str:
-        filename = self.get_upstream_configs()[-1]
-        return filename.abspath(self.dirname)
+    def latest_upstream_path(self) -> Optional[str]:
+        upstreams = self.get_upstream_configs()
+        if len(upstreams) == 0:
+            return None
+        return upstreams[-1].abspath(self.dirname)
+
+    @property
+    def tmp_path(self) -> str:
+        return os.path.join(
+            self.dirname,
+            f'tmp_schain_{self.schain_name}.json'
+        )
 
     @property
     def skaled_config_path(self) -> str:
         return SkaledConfigFilename(self.schain_name).abspath(self.dirname)
+
+    def upstream_config_exists(self) -> bool:
+        path = self.latest_upstream_path
+        return path is not None and os.path.isfile(path)
+
+    def skaled_config_exists(self) -> bool:
+        path = SkaledConfigFilename(self.schain_name).abspath(self.dirname)
+        return os.path.isfile(path)
+
+    @property
+    def latest_upstream_config(self) -> Optional[Dict]:
+        if not self.upstream_config_exists():
+            return None
+        return read_json(self.latest_upstream_path)
+
+    @property
+    def skaled_config(self):
+        if not self.skaled_config_exists():
+            return None
+        return read_json(self.skaled_config_path)
+
+    def skaled_config_synced_with_upstream(self) -> bool:
+        if not self.skaled_config_exists():
+            return False
+        if not self.upstream_config_exists():
+            return True
+        with ConfigFileManager.CFM_LOCK:
+            return filecmp.cmp(
+                self.latest_upstream_path,
+                self.skaled_config_path
+            )
+
+    def get_new_upstream_filepath(self, rotation_id: int) -> str:
+        ts = int(time.time())
+        filename = UpstreamConfigFilename(
+            self.schain_name,
+            rotation_id=rotation_id,
+            ts=ts
+        )
+        return filename.abspath(self.dirname)
+
+    def save_new_upstream(self, rotation_id: int, config: Dict) -> None:
+        tmp_path = self.tmp_path
+        write_json(tmp_path, config)
+        config_filepath = self.get_new_upstream_filepath(rotation_id)
+        with ConfigFileManager.CFM_LOCK:
+            shutil.move(tmp_path, config_filepath)
+
+    def save_skaled_config(self, config: Dict) -> None:
+        tmp_path = self.tmp_path
+        write_json(tmp_path, config)
+        with ConfigFileManager.CFM_LOCK:
+            shutil.move(tmp_path, self.skaled_config_path)
+
+    def sync_skaled_config_with_upstream(self) -> bool:
+        with ConfigFileManager.CFM_LOCK:
+            if self.upstream_config_exists:
+                upath = self.latest_upstream_path
+                path = self.skaled_config_path
+                logger.debug('Syncing %s with %s', path, upath)
+                shutil.copy(upath, path)
+                return True
+        return False
+
+    def upstreams_by_rotation_id(self, rotation_id: int) -> List[str]:
+        return [
+            fp.abspath(self.dirname)
+            for fp in self.get_upstream_configs()
+            if fp.rotation_id == rotation_id
+        ]
+
+    def upstream_exist_for_rotation_id(self, rotation_id: int) -> bool:
+        return len(self.upstreams_by_rotation_id(rotation_id)) > 0
