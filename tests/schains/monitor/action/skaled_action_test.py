@@ -253,7 +253,7 @@ def test_update_config(skaled_am, skaled_checks):
     assert not skaled_checks.config_updated
     ts = int(time.time())
     upstream_path = UpstreamConfigFilename(
-        skaled_am, rotation_id=5, ts=int(time.time())).abspath(folder)
+        skaled_am.name, rotation_id=5, ts=int(time.time())).abspath(folder)
 
     config_content = {'config': 'mock_v5'}
     with open(upstream_path, 'w') as upstream_file:
@@ -266,7 +266,7 @@ def test_update_config(skaled_am, skaled_checks):
 
     time.sleep(1)
     upstream_path = UpstreamConfigFilename(
-        skaled_am, rotation_id=6, ts=int(time.time())).abspath(folder)
+        skaled_am.name, rotation_id=6, ts=int(time.time())).abspath(folder)
 
     config_content = {'config': 'mock_v6'}
     with open(upstream_path, 'w') as upstream_file:

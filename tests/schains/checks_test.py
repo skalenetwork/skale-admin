@@ -11,9 +11,9 @@ import docker
 import pytest
 
 from core.schains.checks import SChainChecks, CheckRes
+from core.schains.config.file_manager import UpstreamConfigFilename
 from core.schains.config.directory import (
     get_schain_check_filepath,
-    new_config_filename,
     schain_config_dir
 )
 from core.schains.skaled_exit_codes import SkaledExitCodes
@@ -122,27 +122,23 @@ def test_dkg_check(schain_checks, sample_false_checks):
 
 
 def test_upstream_config_check(schain_checks):
+    # IVD recheck test
     assert not schain_checks.upstream_config
     ts = int(time.time())
     name, rotation_id = schain_checks.name, schain_checks.rotation_id
 
-    upstream_path_wrong_version = os.path.join(
-        schain_config_dir(name),
-        f'schain_{name}_{rotation_id}_{ts}_2-2-2.json'
-    )
-    with open(upstream_path_wrong_version, 'w') as upstream_file:
-        json.dump({'config': 'wrong_upstream'}, upstream_file)
-    assert not schain_checks.upstream_config
-
-    formatted_version = CONFIG_STREAM.replace('.', '_')
     upstream_path = os.path.join(
         schain_config_dir(name),
-        f'schain_{name}_{rotation_id}_{ts}_{formatted_version}.json'
+        f'schain_{name}_{rotation_id}_{ts}.json'
     )
 
     with open(upstream_path, 'w') as upstream_file:
         json.dump({'config': 'upstream'}, upstream_file)
+
     assert schain_checks.upstream_config
+
+    schain_checks._subjects[0].stream_version = 'new-version'
+    assert not schain_checks.upstream_config
 
 
 def test_config_check(schain_checks, sample_false_checks):
@@ -216,7 +212,8 @@ def test_rpc_check(schain_checks, schain_db):
         assert schain_checks.rpc.status
         assert rmock.call_args == mock.call(
             'http://0.0.0.0:10003',
-            json={'jsonrpc': '2.0', 'method': 'eth_blockNumber', 'params': [], 'id': 1},
+            json={'jsonrpc': '2.0', 'method': 'eth_blockNumber',
+                  'params': [], 'id': 1},
             cookies=None,
             timeout=expected_timeout
         )
@@ -335,10 +332,12 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db, estate):
     checks_dict_without_ima = checks_without_ima.get_all()
     assert 'ima_container' not in checks_dict_without_ima
 
-    filtered_checks = checks_without_ima.get_all(checks_filter=['config', 'volume'])
+    filtered_checks = checks_without_ima.get_all(
+        checks_filter=['config', 'volume'])
     assert len(filtered_checks) == 2
 
-    filtered_checks = checks_without_ima.get_all(checks_filter=['ima_container'])
+    filtered_checks = checks_without_ima.get_all(
+        checks_filter=['ima_container'])
     assert len(filtered_checks) == 0
 
     filtered_checks = checks_without_ima.get_all(checks_filter=['<0_0>'])
@@ -381,14 +380,9 @@ def test_config_updated(skale, rule_controller, schain_db, estate, dutils):
     )
     assert checks.config_updated
 
-    upstream_path = os.path.join(
-        folder,
-        new_config_filename(
-            name,
-            rotation_id=5,
-            stream_version=CONFIG_STREAM
-        )
-    )
+    upstream_path = UpstreamConfigFilename(
+        name, rotation_id=5, ts=int(time.time())).abspath(folder)
+
     config_content = {'config': 'mock_v5'}
     with open(upstream_path, 'w') as upstream_file:
         json.dump(config_content, upstream_file)
