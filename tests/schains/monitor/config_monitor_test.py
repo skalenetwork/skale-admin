@@ -1,9 +1,10 @@
+import glob
 import os
 
 import pytest
 
 from core.schains.checks import ConfigChecks
-from core.schains.config.directory import new_schain_config_filepath
+from core.schains.config.directory import schain_config_dir
 
 from core.schains.monitor.action import ConfigActionManager
 from core.schains.monitor.config_monitor import RegularConfigMonitor
@@ -79,4 +80,11 @@ def test_regular_config_monitor(schain_db, regular_config_monitor, rotation_data
     name = schain_db
     rotation_id = rotation_data['rotation_id']
     regular_config_monitor.run()
-    assert os.path.isfile(new_schain_config_filepath(name, rotation_id, CONFIG_STREAM))
+    config_dir = schain_config_dir(name)
+
+    pattern = os.path.join(
+        config_dir,
+        f'schain_{name}_{rotation_id}_*.json'
+    )
+    filenames = glob.glob(pattern)
+    assert os.path.isfile(filenames[0])

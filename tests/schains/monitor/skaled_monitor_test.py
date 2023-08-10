@@ -84,27 +84,6 @@ def skaled_checks(
 
 
 @pytest.fixture
-def upstreams(schain_db, schain_config):
-    name = schain_db
-    config_folder = schain_config_dir(name)
-    files = [
-        f'schain_{name}_10_1687183338_2_1_16.json',
-        f'schain_{name}_9_1687183335_2_1_16.json',
-        f'schain_{name}_11_1687183336_2_1_17.json',
-        f'schain_{name}_11_1687183337_2_1_17.json',
-        f'schain_{name}_11_1687183337_2_1_18.json'
-    ]
-    try:
-        for fname in files:
-            fpath = os.path.join(config_folder, fname)
-            with open(fpath, 'w') as f:
-                json.dump(schain_config, f)
-        yield files
-    finally:
-        shutil.rmtree(config_folder)
-
-
-@pytest.fixture
 def skaled_am(
     schain_db,
     skale,
@@ -466,7 +445,8 @@ def test_repair_skaled_monitor(skaled_am, skaled_checks, dutils):
 def test_new_config_skaled_monitor(skaled_am, skaled_checks, dutils):
     mon = NewConfigSkaledMonitor(skaled_am, skaled_checks)
     ts = time.time()
-    with mock.patch('core.schains.monitor.action.get_finish_ts_from_upstream_config', return_value=ts):
+    with mock.patch('core.schains.monitor.action.get_finish_ts_from_latest_upstream',
+                    return_value=ts):
         with mock.patch('core.schains.monitor.action.set_rotation_for_schain') as set_exit_mock:
             mon.run()
             set_exit_mock.assert_called_with(skaled_am.name, ts)
