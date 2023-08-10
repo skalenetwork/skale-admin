@@ -76,12 +76,12 @@ class UpstreamConfigFilename(IConfigFilename):
 
     @classmethod
     def from_filename(cls, filename: str):
-        rstem = Path(filename).stem[::-1]
-        print('IVD', rstem)
-        ts_, rotation_id_, prefix_name = rstem.split('_', maxsplit=2)
-        name = prefix_name[::-1].replace('schain_', '', 1)
-        rotation_id: int = int(rotation_id_)
-        ts: int = int(ts_)
+        stem = Path(filename).stem
+        ts_start = stem.rfind('_', 0, len(stem))
+        ts: int = int(stem[ts_start + 1:])
+        rid_start = stem.rfind('_', 0, ts_start)
+        rotation_id: int = int(stem[rid_start + 1: ts_start])
+        name = stem[:rid_start].replace('schain_', '', 1)
         return cls(name=name, rotation_id=rotation_id, ts=ts)
 
 
@@ -154,9 +154,10 @@ class ConfigFileManager:
             return False
         if not self.upstream_config_exists():
             return True
+        upstream_path = self.latest_upstream_path or ''
         with ConfigFileManager.CFM_LOCK:
             return filecmp.cmp(
-                self.latest_upstream_path,
+                upstream_path,
                 self.skaled_config_path
             )
 
@@ -184,8 +185,8 @@ class ConfigFileManager:
 
     def sync_skaled_config_with_upstream(self) -> bool:
         with ConfigFileManager.CFM_LOCK:
-            if self.upstream_config_exists:
-                upath = self.latest_upstream_path
+            if self.upstream_config_exists():
+                upath = self.latest_upstream_path or ''
                 path = self.skaled_config_path
                 logger.debug('Syncing %s with %s', path, upath)
                 shutil.copy(upath, path)
