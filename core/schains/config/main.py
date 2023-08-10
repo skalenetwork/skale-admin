@@ -32,6 +32,7 @@ from core.schains.config.directory import (
     schain_config_dir,
     schain_config_filepath
 )
+from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.generator import generate_schain_config_with_skale
 from tools.str_formatters import arguments_list_string
 
@@ -55,7 +56,7 @@ def init_schain_config(
     logger.warning(arguments_list_string({
         'sChain name': schain_name,
         'config_filepath': config_filepath
-        }, 'Generating sChain config'))
+    }, 'Generating sChain config'))
 
     schain_config = generate_schain_config_with_skale(
         skale=skale,
@@ -69,7 +70,7 @@ def init_schain_config(
     update_schain_config_version(schain_name, schain_record=schain_record)
 
 
-def create_new_schain_config(
+def create_new_upstream_config(
     skale: Skale,
     node_id: int,
     schain_name: str,
@@ -77,7 +78,8 @@ def create_new_schain_config(
     ecdsa_sgx_key_name: str,
     rotation_data: dict,
     stream_version: str,
-    schain_record: SChainRecord
+    schain_record: SChainRecord,
+    file_manager: ConfigFileManager
 ):
     logger.info('Generating sChain config for %s', schain_name)
 
@@ -89,12 +91,8 @@ def create_new_schain_config(
         rotation_data=rotation_data,
         ecdsa_key_name=ecdsa_sgx_key_name
     )
-    save_new_schain_config(
-        schain_config.to_dict(),
-        schain_name,
-        rotation_data['rotation_id'],
-        stream_version
-    )
+    rotation_id = rotation_data['rotation_id']
+    file_manager.save_new_upstream(rotation_id, schain_config.to_dict())
     update_schain_config_version(schain_name, schain_record=schain_record)
 
 
@@ -126,19 +124,19 @@ def get_rotation_ids_from_config(config: Optional[Dict]) -> List[int]:
     return rotation_ids
 
 
-def get_upstream_rotation_ids(name: str) -> List[int]:
+def get_upstream_config_rotation_ids(file_manager: ConfigFileManager) -> List[int]:
     logger.debug('Retrieving upstream rotation_ids')
-    config = get_upstream_schain_config(name)
+    config = file_manager.latest_upstream_config
     return get_rotation_ids_from_config(config)
 
 
-def get_config_rotations_ids(name: str) -> List[int]:
+def get_skaled_config_rotations_ids(file_manager: ConfigFileManager) -> List[int]:
     logger.debug('Retrieving rotation_ids')
-    config = get_schain_config(name)
+    config = file_manager.skaled_config
     return get_rotation_ids_from_config(config)
 
 
-def get_finish_ts(config: str) -> Optional[int]:
+def get_finish_ts(config: Dict) -> Optional[int]:
     node_groups = get_node_groups_from_config(config)
     rotation_ids = list(sorted(map(int, node_groups.keys())))
     if len(rotation_ids) < 2:
@@ -147,15 +145,15 @@ def get_finish_ts(config: str) -> Optional[int]:
     return node_groups[str(prev_rotation)]['finish_ts']
 
 
-def get_finish_ts_from_upstream_config(schain_name: str) -> Optional[int]:
-    config = get_upstream_schain_config(schain_name)
+def get_finish_ts_from_latest_upstream(file_manager: ConfigFileManager) -> Optional[int]:
+    config = file_manager.latest_upstream_config
     if not config:
         return None
     return get_finish_ts(config)
 
 
-def get_finish_ts_from_config(schain_name: str) -> Optional[int]:
-    config = get_schain_config(schain_name)
+def get_finish_ts_from_skaled_config(file_manager: ConfigFileManager) -> Optional[int]:
+    config = file_manager.skaled_config
     return get_finish_ts(config)
 
 
