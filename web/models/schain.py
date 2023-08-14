@@ -178,7 +178,7 @@ class SChainRecord(BaseModel):
         self.snapshot_from = value
         self.upload()
 
-    def reset_failed_conunters(self) -> None:
+    def reset_failed_counters(self) -> None:
         logger.info(f'Resetting failed counters for {self.name}')
         self.set_restart_count(0)
         self.set_failed_rpc_count(0)
