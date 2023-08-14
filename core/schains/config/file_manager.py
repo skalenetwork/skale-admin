@@ -108,8 +108,12 @@ class ConfigFileManager:
         self.upstream_prefix = f'schain_{schain_name}_'
 
     def get_upstream_configs(self) -> List[UpstreamConfigFilename]:
-        filenames = get_files_with_prefix(self.dirname, self.upstream_prefix)
-        return sorted(list(map(lambda f: UpstreamConfigFilename.from_filename(f), filenames)))
+        with ConfigFileManager.CFM_LOCK:
+            filenames = get_files_with_prefix(
+                self.dirname,
+                self.upstream_prefix
+            )
+        return sorted(list(map(UpstreamConfigFilename.from_filename, filenames)))
 
     @property
     def latest_upstream_path(self) -> Optional[str]:
@@ -184,14 +188,14 @@ class ConfigFileManager:
             shutil.move(tmp_path, self.skaled_config_path)
 
     def sync_skaled_config_with_upstream(self) -> bool:
+        if not self.upstream_config_exists():
+            return False
+        upath = self.latest_upstream_path or ''
+        path = self.skaled_config_path
+        logger.debug('Syncing %s with %s', path, upath)
         with ConfigFileManager.CFM_LOCK:
-            if self.upstream_config_exists():
-                upath = self.latest_upstream_path or ''
-                path = self.skaled_config_path
-                logger.debug('Syncing %s with %s', path, upath)
-                shutil.copy(upath, path)
-                return True
-        return False
+            shutil.copy(upath, path)
+        return True
 
     def upstreams_by_rotation_id(self, rotation_id: int) -> List[str]:
         return [

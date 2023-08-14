@@ -23,51 +23,16 @@ from typing import Dict, List, Optional
 from skale import Skale
 
 from core.node import get_skale_node_version
-from core.schains.config.directory import (
-    get_files_with_prefix,
-    get_schain_config,
-    get_upstream_schain_config,
-    save_new_schain_config,
-    save_schain_config,
-    schain_config_dir,
-    schain_config_filepath
-)
-from core.schains.config.file_manager import ConfigFileManager
+from core.schains.config.directory import get_files_with_prefix, schain_config_dir
+from core.schains.config.file_manager import ConfigFileManager, SkaledConfigFilename
 from core.schains.config.generator import generate_schain_config_with_skale
-from tools.str_formatters import arguments_list_string
+
+from tools.configs import SCHAIN_CONFIG_DIR_SKALED
 
 from web.models.schain import upsert_schain_record, SChainRecord
 
 
 logger = logging.getLogger(__name__)
-
-
-def init_schain_config(
-    skale: Skale,
-    node_id: int,
-    schain_name: str,
-    generation: int,
-    ecdsa_sgx_key_name: str,
-    rotation_data: dict,
-    schain_record: SChainRecord
-):
-    config_filepath = schain_config_filepath(schain_name)
-
-    logger.warning(arguments_list_string({
-        'sChain name': schain_name,
-        'config_filepath': config_filepath
-    }, 'Generating sChain config'))
-
-    schain_config = generate_schain_config_with_skale(
-        skale=skale,
-        schain_name=schain_name,
-        generation=generation,
-        node_id=node_id,
-        rotation_data=rotation_data,
-        ecdsa_key_name=ecdsa_sgx_key_name
-    )
-    save_schain_config(schain_config.to_dict(), schain_name)
-    update_schain_config_version(schain_name, schain_record=schain_record)
 
 
 def create_new_upstream_config(
@@ -80,7 +45,7 @@ def create_new_upstream_config(
     stream_version: str,
     schain_record: SChainRecord,
     file_manager: ConfigFileManager
-):
+) -> Dict:
     logger.info('Generating sChain config for %s', schain_name)
 
     schain_config = generate_schain_config_with_skale(
@@ -91,9 +56,7 @@ def create_new_upstream_config(
         rotation_data=rotation_data,
         ecdsa_key_name=ecdsa_sgx_key_name
     )
-    rotation_id = rotation_data['rotation_id']
-    file_manager.save_new_upstream(rotation_id, schain_config.to_dict())
-    update_schain_config_version(schain_name, schain_record=schain_record)
+    return schain_config.to_dict()
 
 
 def update_schain_config_version(schain_name, schain_record=None):
@@ -161,3 +124,7 @@ def get_number_of_secret_shares(schain_name: str) -> int:
     config_dir = schain_config_dir(schain_name)
     prefix = 'secret_key_'
     return len(get_files_with_prefix(config_dir, prefix))
+
+
+def get_skaled_container_config_path(schain_name: str) -> str:
+    return SkaledConfigFilename(schain_name).abspath(SCHAIN_CONFIG_DIR_SKALED)

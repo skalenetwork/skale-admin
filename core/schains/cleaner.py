@@ -26,14 +26,14 @@ from sgx import SgxClient
 
 from core.node import get_skale_node_version
 from core.schains.checks import SChainChecks
+from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.directory import schain_config_dir
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.utils import get_default_rule_controller
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
-    get_own_ip_from_config,
-    get_schain_config
+    get_own_ip_from_config
 )
 from core.schains.process_manager_helper import terminate_schain_process
 from core.schains.runner import get_container_name, is_exited
@@ -59,7 +59,8 @@ JOIN_TIMEOUT = 1800
 
 
 def run_cleaner(skale, node_config):
-    process = Process(name='cleaner', target=monitor, args=(skale, node_config))
+    process = Process(name='cleaner', target=monitor,
+                      args=(skale, node_config))
     process.start()
     logger.info('Cleaner process started')
     process.join(JOIN_TIMEOUT)
@@ -250,7 +251,7 @@ def cleanup_schain(
     if checks.volume.status:
         remove_schain_volume(schain_name, dutils=dutils)
         if checks.firewall_rules.status:
-            conf = get_schain_config(schain_name)
+            conf = ConfigFileManager(schain_name).skaled_config
             base_port = get_base_port_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
             node_ips = get_node_ips_from_config(conf)

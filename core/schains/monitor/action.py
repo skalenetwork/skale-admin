@@ -21,12 +21,12 @@ import logging
 import time
 from datetime import datetime
 from functools import wraps
-from typing import Optional
+from typing import Dict, Optional
 
 from skale import Skale
 
 from core.node_config import NodeConfig
-from core.schains.checks import IChecks
+from core.schains.checks import ConfigChecks, SkaledChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
 from core.schains.dkg.utils import get_secret_key_share_filepath
 
@@ -54,10 +54,12 @@ from core.schains.config.main import (
     get_finish_ts_from_latest_upstream
 )
 from core.schains.config import init_schain_config_dir
+from core.schains.config.main import update_schain_config_version
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
+    get_local_schain_http_endpoint_from_config,
     get_own_ip_from_config
 )
 from core.schains.ima import ImaData
@@ -87,7 +89,7 @@ SCHAIN_CLEANUP_TIMEOUT = 10
 class BaseActionManager:
     def __init__(self, name: str):
         self.name = name
-        self.executed_blocks = {}
+        self.executed_blocks: Dict = {}
 
     @staticmethod
     def monitor_block(f):
@@ -136,7 +138,7 @@ class ConfigActionManager(BaseActionManager):
         node_config: NodeConfig,
         rotation_data: dict,
         stream_version: str,
-        checks: IChecks,
+        checks: ConfigChecks,
         estate: ExternalState,
         econfig: Optional[ExternalConfig] = None
     ):
@@ -192,7 +194,7 @@ class ConfigActionManager(BaseActionManager):
             'Creating new upstream_config rotation_id: %s, stream: %s',
             self.rotation_data.get('rotation_id'), self.stream_version
         )
-        create_new_upstream_config(
+        new_config = create_new_upstream_config(
             skale=self.skale,
             node_id=self.node_config.id,
             schain_name=self.name,
@@ -203,7 +205,18 @@ class ConfigActionManager(BaseActionManager):
             schain_record=self.schain_record,
             file_manager=self.cfm
         )
-        return True
+
+        result = False
+        if not self.cfm.upstream_config_exists() or new_config != self.cfm.latest_upstream_config:
+            rotation_id = self.rotation_data['rotation_id']
+            self.cfm.save_new_upstream(rotation_id, new_config)
+            result = True
+        else:
+            logger.info('Generated config is the same as latest upstream')
+
+        update_schain_config_version(
+            self.name, schain_record=self.schain_record)
+        return result
 
     @BaseActionManager.monitor_block
     def external_state(self) -> bool:
@@ -218,7 +231,7 @@ class SkaledActionManager(BaseActionManager):
         self,
         schain: dict,
         rule_controller: IRuleController,
-        checks: IChecks,
+        checks: SkaledChecks,
         node_config: NodeConfig,
         econfig: Optional[ExternalConfig] = None,
         dutils: DockerUtils = None
@@ -280,26 +293,21 @@ class SkaledActionManager(BaseActionManager):
         download_snapshot: bool = False,
         start_ts: Optional[int] = None
     ) -> bool:
-        initial_status = self.checks.skaled_container.status
-        if not initial_status:
-            logger.info(
-                'Starting skaled container watchman snapshot: %s, start_ts: %s',
-                download_snapshot,
-                start_ts
-            )
-            monitor_schain_container(
-                self.schain,
-                schain_record=self.schain_record,
-                skaled_status=self.skaled_status,
-                download_snapshot=download_snapshot,
-                start_ts=start_ts,
-                dutils=self.dutils
-            )
-            time.sleep(CONTAINER_POST_RUN_DELAY)
-        else:
-            self.schain_record.set_restart_count(0)
-            logger.info('skaled_container - ok')
-        return initial_status
+        logger.info(
+            'Starting skaled container watchman snapshot: %s, start_ts: %s',
+            download_snapshot,
+            start_ts
+        )
+        monitor_schain_container(
+            self.schain,
+            schain_record=self.schain_record,
+            skaled_status=self.skaled_status,
+            download_snapshot=download_snapshot,
+            start_ts=start_ts,
+            dutils=self.dutils
+        )
+        time.sleep(CONTAINER_POST_RUN_DELAY)
+        return True
 
     @BaseActionManager.monitor_block
     def restart_skaled_container(self) -> bool:
@@ -393,7 +401,9 @@ class SkaledActionManager(BaseActionManager):
         finish_ts = self.upstream_finish_ts
         logger.info('Trying to set skaled exit time %s', finish_ts)
         if finish_ts is not None:
-            set_rotation_for_schain(self.name, finish_ts)
+            url = get_local_schain_http_endpoint_from_config(
+                self.cfm.skaled_config)
+            set_rotation_for_schain(url, finish_ts)
 
     @BaseActionManager.monitor_block
     def disable_backup_run(self) -> None:

@@ -1,16 +1,13 @@
 import datetime
-import json
 import os
-import shutil
 import time
-from pathlib import Path
 from unittest import mock
 
 import freezegun
 import pytest
 
 from core.schains.checks import CheckRes, SkaledChecks
-from core.schains.config.directory import schain_config_dir, schain_config_filepath
+from core.schains.config.directory import schain_config_dir
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.monitor.skaled_monitor import (
     BackupSkaledMonitor,
@@ -449,7 +446,7 @@ def test_new_config_skaled_monitor(skaled_am, skaled_checks, dutils):
                     return_value=ts):
         with mock.patch('core.schains.monitor.action.set_rotation_for_schain') as set_exit_mock:
             mon.run()
-            set_exit_mock.assert_called_with(skaled_am.name, ts)
+            set_exit_mock.assert_called_with('http://127.0.0.1:10003', ts)
     assert skaled_am.rc.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
     assert dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
@@ -468,18 +465,20 @@ def test_recreate_skaled_monitor(skaled_am, skaled_checks, dutils):
 
 
 def test_update_config_skaled_monitor(skaled_am, skaled_checks, dutils, upstreams):
+    name = skaled_am.name
     ts_before = time.time()
     time.sleep(1)
     mon = UpdateConfigSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
-    assert dutils.get_vol(skaled_am.name)
-    assert dutils.get_vol_created_ts(skaled_am.name) > ts_before
+    assert dutils.get_vol(name)
+    assert dutils.get_vol_created_ts(name) > ts_before
     schain_container = dutils.safe_get_container(
-        f'skale_schain_{skaled_am.name}'
+        f'skale_schain_{name}'
     )
     assert schain_container
     assert dutils.get_container_created_ts(schain_container.id) > ts_before
-    os.stat(schain_config_filepath(skaled_am.name)).st_mtime > ts_before
+    os.stat(os.path.join(schain_config_dir(name),
+            f'schain_{name}.json')).st_mtime > ts_before
 
 
 def test_no_config_monitor(skaled_am, skaled_checks, dutils):

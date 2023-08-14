@@ -229,12 +229,12 @@ def get_skaled_monitor(
         mon_type = NoConfigSkaledMonitor
     elif is_backup_mode(schain_record):
         mon_type = BackupSkaledMonitor
+    elif is_repair_mode(schain_record, status, skaled_status):
+        mon_type = RepairSkaledMonitor
     elif is_reload_mode(schain_record):
         mon_type = RecreateSkaledMonitor
     elif is_new_node_mode(schain_record, action_manager.finish_ts):
         mon_type = NewNodeSkaledMonitor
-    elif is_repair_mode(schain_record, status, skaled_status):
-        mon_type = RepairSkaledMonitor
     elif is_config_update_time(status, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
     elif is_new_config_mode(status):

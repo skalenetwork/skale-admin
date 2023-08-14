@@ -29,7 +29,7 @@ from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
-    get_local_schain_http_endpoint
+    get_local_schain_http_endpoint_from_config
 )
 from core.schains.config.main import (
     get_skaled_config_rotations_ids,
@@ -161,12 +161,11 @@ class ConfigChecks(IChecks):
         exists = self.cfm.upstream_exist_for_rotation_id(self.rotation_id)
 
         logger.debug('Upstream configs status for %s: %s', self.name, exists)
-        print(self.stream_version, self.schain_record.config_version)
         return CheckRes(
             exists and self.schain_record.config_version == self.stream_version
         )
 
-    @ property
+    @property
     def external_state(self) -> CheckRes:
         actual_state = self.econfig.get()
         logger.debug(
@@ -212,11 +211,11 @@ class SkaledChecks(IChecks):
             save_checks_dict(self.name, checks_dict)
         return checks_dict
 
-    @ property
+    @property
     def upstream_exists(self) -> CheckRes:
         return CheckRes(self.cfm.upstream_config_exists())
 
-    @ property
+    @property
     def rotation_id_updated(self) -> CheckRes:
         if not self.config:
             return CheckRes(False)
@@ -229,23 +228,23 @@ class SkaledChecks(IChecks):
         )
         return CheckRes(upstream_rotations == config_rotations)
 
-    @ property
+    @property
     def config_updated(self) -> CheckRes:
         if not self.config:
             return CheckRes(False)
         return CheckRes(self.cfm.skaled_config_synced_with_upstream())
 
-    @ property
+    @property
     def config(self) -> CheckRes:
         """ Checks that sChain config file exists """
         return CheckRes(self.cfm.skaled_config_exists())
 
-    @ property
+    @property
     def volume(self) -> CheckRes:
         """Checks that sChain volume exists"""
         return CheckRes(self.dutils.is_data_volume_exists(self.name))
 
-    @ property
+    @property
     def firewall_rules(self) -> CheckRes:
         """Checks that firewall rules are set correctly"""
         if self.config:
@@ -264,13 +263,13 @@ class SkaledChecks(IChecks):
             return CheckRes(self.rc.is_rules_synced())
         return CheckRes(False)
 
-    @ property
+    @property
     def skaled_container(self) -> CheckRes:
         """Checks that skaled container is running"""
         # todo: modify check!
         return CheckRes(self.dutils.is_container_running(self.container_name))
 
-    @ property
+    @property
     def exit_code_ok(self) -> CheckRes:
         """Checks that skaled exit code is OK"""
         # todo: modify check!
@@ -278,7 +277,7 @@ class SkaledChecks(IChecks):
         res = int(exit_code) != SkaledExitCodes.EC_STATE_ROOT_MISMATCH
         return CheckRes(res)
 
-    @ property
+    @property
     def ima_container(self) -> CheckRes:
         """Checks that IMA container is running"""
         if not self.econfig.ima_linked:
@@ -286,27 +285,29 @@ class SkaledChecks(IChecks):
         name = get_container_name(IMA_CONTAINER, self.name)
         return CheckRes(self.dutils.is_container_running(name))
 
-    @ property
+    @property
     def rpc(self) -> CheckRes:
         """Checks that local skaled RPC is accessible"""
         res = False
         if self.config:
-            http_endpoint = get_local_schain_http_endpoint(self.name)
+            config = self.cfm.skaled_config
+            http_endpoint = get_local_schain_http_endpoint_from_config(config)
             timeout = get_endpoint_alive_check_timeout(
                 self.schain_record.failed_rpc_count
             )
             res = check_endpoint_alive(http_endpoint, timeout=timeout)
         return CheckRes(res)
 
-    @ property
+    @property
     def blocks(self) -> CheckRes:
         """Checks that local skaled is mining blocks"""
         if self.config:
-            http_endpoint = get_local_schain_http_endpoint(self.name)
+            config = self.cfm.skaled_config
+            http_endpoint = get_local_schain_http_endpoint_from_config(config)
             return CheckRes(check_endpoint_blocks(http_endpoint))
         return CheckRes(False)
 
-    @ property
+    @property
     def process(self) -> CheckRes:
         """Checks that sChain monitor process is running"""
         return CheckRes(is_monitor_process_alive(self.schain_record.monitor_id))

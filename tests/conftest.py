@@ -548,7 +548,7 @@ def meta_file():
 
 
 @pytest.fixture
-def schain_on_contracts(skale, nodes, _schain_name) -> str:
+def schain_on_contracts(skale, nodes, _schain_name):
     try:
         yield create_schain(
             skale,

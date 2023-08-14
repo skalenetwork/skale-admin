@@ -10,14 +10,12 @@ import mock
 from core.schains.checks import SkaledChecks
 from core.schains.cleaner import remove_ima_container
 from core.schains.config.directory import schain_config_dir
-from core.schains.config.file_manager import ConfigFileManager, UpstreamConfigFilename
+from core.schains.config.file_manager import UpstreamConfigFilename
 from core.schains.firewall.types import SChainRule
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord
-
-from tests.utils import CONFIG_STREAM
 
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
@@ -248,10 +246,9 @@ def test_update_config(skaled_am, skaled_checks):
     folder = schain_config_dir(skaled_am.name)
     config_path = os.path.join(folder, f'schain_{skaled_am.name}.json')
     os.remove(config_path)
-
     assert not skaled_checks.config
+
     assert not skaled_checks.config_updated
-    ts = int(time.time())
     upstream_path = UpstreamConfigFilename(
         skaled_am.name, rotation_id=5, ts=int(time.time())).abspath(folder)
 

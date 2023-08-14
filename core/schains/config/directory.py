@@ -21,6 +21,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import List
 
 from tools.configs.schains import (
     BASE_SCHAIN_CONFIG_FILEPATH,
@@ -65,3 +66,15 @@ def get_schain_check_filepath(schain_name):
 def read_base_config():
     json_data = open(BASE_SCHAIN_CONFIG_FILEPATH).read()
     return json.loads(json_data)
+
+
+def get_files_with_prefix(config_dir: str, prefix: str) -> List[str]:
+    prefix_files = []
+    if os.path.isdir(config_dir):
+        configs = [
+            os.path.join(config_dir, fname)
+            for fname in os.listdir(config_dir)
+            if fname.startswith(prefix)
+        ]
+        prefix_files = sorted(configs)
+    return prefix_files

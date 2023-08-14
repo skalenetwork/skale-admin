@@ -122,7 +122,6 @@ def test_dkg_check(schain_checks, sample_false_checks):
 
 
 def test_upstream_config_check(schain_checks):
-    # IVD recheck test
     assert not schain_checks.upstream_config
     ts = int(time.time())
     name, rotation_id = schain_checks.name, schain_checks.rotation_id
@@ -211,7 +210,7 @@ def test_rpc_check(schain_checks, schain_db):
     with mock.patch('requests.post', rmock):
         assert schain_checks.rpc.status
         assert rmock.call_args == mock.call(
-            'http://0.0.0.0:10003',
+            'http://127.0.0.1:10003',
             json={'jsonrpc': '2.0', 'method': 'eth_blockNumber',
                   'params': [], 'id': 1},
             cookies=None,

@@ -21,8 +21,6 @@ import json
 import logging
 import requests
 
-from core.schains.config.helper import get_skaled_http_address
-
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +29,7 @@ class ExitRequestError(Exception):
     pass
 
 
-def set_rotation_for_schain(schain_name: str, timestamp: int) -> None:
-    url = get_skaled_http_address(schain_name)
+def set_rotation_for_schain(url: str, timestamp: int) -> None:
     _send_rotation_request(url, timestamp)
 
 

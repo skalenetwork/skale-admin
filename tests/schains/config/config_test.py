@@ -1,6 +1,4 @@
 import os
-import shutil
-from pathlib import Path
 
 import pytest
 
@@ -10,7 +8,7 @@ from core.schains.config.helper import (
     get_own_ip_from_config,
     get_schain_env
 )
-from core.schains.config.directory import get_upstream_config_filepath, schain_config_dir
+from core.schains.config.directory import schain_config_dir
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.main import get_finish_ts, get_rotation_ids_from_config
 from core.schains.volume import get_schain_volume_config
@@ -64,8 +62,9 @@ def test_get_schain_upstream_config(schain_db, upstreams):
     assert upstream_config == expected
 
     not_existing_chain = 'not-exist'
-    upstream_config = get_upstream_config_filepath(not_existing_chain)
-    assert upstream_config is None
+    cfm = ConfigFileManager(not_existing_chain)
+    assert not cfm.upstream_config_exists()
+    assert cfm.latest_upstream_config is None
 
 
 def test_get_finish_ts(schain_config):
