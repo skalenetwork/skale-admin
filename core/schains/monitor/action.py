@@ -264,7 +264,7 @@ class SkaledActionManager(BaseActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def firewall_rules(self, overwrite=False) -> bool:
+    def firewall_rules(self) -> bool:
         initial_status = self.checks.firewall_rules.status
         if not initial_status:
             logger.info('Configuring firewall rules')
