@@ -10,7 +10,7 @@ from core.schains.config.helper import (
 )
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.file_manager import ConfigFileManager
-from core.schains.config.main import get_finish_ts, get_rotation_ids_from_config
+from core.schains.config.main import get_latest_finish_ts, get_rotation_ids_from_config
 from core.schains.volume import get_schain_volume_config
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 
@@ -67,12 +67,18 @@ def test_get_schain_upstream_config(schain_db, upstreams):
     assert cfm.latest_upstream_config is None
 
 
-def test_get_finish_ts(schain_config):
-    finish_ts = get_finish_ts(schain_config)
-    assert finish_ts == 1687180291
+def test_get_latest_finish_ts(schain_config):
+    schain_config['skaleConfig']['sChain']['nodeGroups'].update(
+        {
+            '2': {'finish_ts': None},
+            '3': {'finish_ts': None}
+        }
+    )
 
+    finish_ts = get_latest_finish_ts(schain_config)
+    assert finish_ts == 1687180291
     schain_config['skaleConfig']['sChain']['nodeGroups'].pop('0')
-    finish_ts = get_finish_ts(schain_config)
+    finish_ts = get_latest_finish_ts(schain_config)
     assert finish_ts is None
 
 

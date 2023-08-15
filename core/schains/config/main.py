@@ -99,25 +99,30 @@ def get_skaled_config_rotations_ids(file_manager: ConfigFileManager) -> List[int
     return get_rotation_ids_from_config(config)
 
 
-def get_finish_ts(config: Dict) -> Optional[int]:
+def get_latest_finish_ts(config: Dict) -> Optional[int]:
     node_groups = get_node_groups_from_config(config)
-    rotation_ids = list(sorted(map(int, node_groups.keys())))
-    if len(rotation_ids) < 2:
-        return None
-    prev_rotation = len(rotation_ids) - 2
-    return node_groups[str(prev_rotation)]['finish_ts']
+    rotation_ids = iter(sorted(map(int, node_groups.keys()), reverse=True))
+    finish_ts = None
+    try:
+        while finish_ts is None:
+            rotation_id = next(rotation_ids)
+            finish_ts = node_groups[str(rotation_id)]['finish_ts']
+    except StopIteration:
+        logger.debug('No finish_ts found in config')
+
+    return finish_ts
 
 
 def get_finish_ts_from_latest_upstream(file_manager: ConfigFileManager) -> Optional[int]:
     config = file_manager.latest_upstream_config
     if not config:
         return None
-    return get_finish_ts(config)
+    return get_latest_finish_ts(config)
 
 
 def get_finish_ts_from_skaled_config(file_manager: ConfigFileManager) -> Optional[int]:
     config = file_manager.skaled_config
-    return get_finish_ts(config)
+    return get_latest_finish_ts(config)
 
 
 def get_number_of_secret_shares(schain_name: str) -> int:

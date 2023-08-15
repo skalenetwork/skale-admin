@@ -20,12 +20,13 @@
 import io
 import itertools
 import logging
+import multiprocessing
 import os
 import re
 import time
 from datetime import datetime
 from functools import wraps
-from typing import Dict
+from typing import Dict, Optional
 
 import docker
 from docker import APIClient
@@ -71,6 +72,8 @@ def format_containers(f):
 
 
 class DockerUtils:
+    docker_lock = multiprocessing.Lock()
+
     def __init__(
         self,
         volume_driver: str = 'lvmpy',
@@ -356,3 +359,26 @@ class DockerUtils:
         containers = self.get_all_schain_containers()
         for container in containers:
             self.restart(container.name, timeout=timeout)
+
+    def pull(self, name: str) -> None:
+        with DockerUtils.docker_lock:
+            repo, tag = name.split(':')
+            self.client.images.pull(repository=repo, tag=tag)
+
+    def pulled(self, name: str) -> bool:
+        with DockerUtils.docker_lock:
+            try:
+                self.client.images.get(name)
+            except docker.errors.NotFound:
+                return False
+            return True
+
+    def rmi(self, name: str) -> None:
+        with DockerUtils.docker_lock:
+            self.client.images.remove(name)
+
+    def get_container_image_name(self, name: str) -> Optional[str]:
+        info = self.get_info(name)
+        if info.get('status') == CONTAINER_NOT_FOUND:
+            return None
+        return info['stats']['Config']['Image']

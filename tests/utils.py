@@ -21,11 +21,16 @@ from core.schains.cleaner import (
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.firewall.types import IHostFirewallController, IpRange
 from core.schains.firewall import SChainFirewallManager, SChainRuleController
-from core.schains.runner import run_schain_container, run_ima_container, get_container_info
+from core.schains.runner import (
+    get_image_name,
+    run_schain_container,
+    run_ima_container,
+    get_container_info
+)
 
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
-from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.configs.web3 import ABI_FILEPATH
 
 from web.models.schain import upsert_schain_record
@@ -131,7 +136,8 @@ def run_simple_schain_container_in_sync_mode(schain_data: dict,
 
 
 def run_simple_ima_container(schain: dict, dutils: DockerUtils):
-    run_ima_container(schain, mainnet_chain_id=1, dutils=dutils)
+    image = get_image_name(type=IMA_CONTAINER)
+    run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
 
 
 def init_web3_skale() -> Skale:

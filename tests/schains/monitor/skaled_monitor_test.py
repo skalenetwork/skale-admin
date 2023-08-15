@@ -399,7 +399,7 @@ def test_get_skaled_monitor_recreate(
 def test_regular_skaled_monitor(
     skaled_am,
     skaled_checks,
-    cleanup_schain_containers,
+    clean_docker,
     dutils
 ):
     mon = RegularSkaledMonitor(skaled_am, skaled_checks)
@@ -410,7 +410,7 @@ def test_regular_skaled_monitor(
     assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
 
 
-def test_backup_skaled_monitor(skaled_am, skaled_checks, dutils):
+def test_backup_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = BackupSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
     assert skaled_am.rc.is_rules_synced
@@ -422,7 +422,7 @@ def test_backup_skaled_monitor(skaled_am, skaled_checks, dutils):
     assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
 
 
-def test_repair_skaled_monitor(skaled_am, skaled_checks, dutils):
+def test_repair_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = RepairSkaledMonitor(skaled_am, skaled_checks)
     ts_before = time.time()
     mon.run()
@@ -439,7 +439,7 @@ def test_repair_skaled_monitor(skaled_am, skaled_checks, dutils):
     assert not dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
 
 
-def test_new_config_skaled_monitor(skaled_am, skaled_checks, dutils):
+def test_new_config_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = NewConfigSkaledMonitor(skaled_am, skaled_checks)
     ts = time.time()
     with mock.patch('core.schains.monitor.action.get_finish_ts_from_latest_upstream',
@@ -453,7 +453,7 @@ def test_new_config_skaled_monitor(skaled_am, skaled_checks, dutils):
     assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
 
 
-def test_recreate_skaled_monitor(skaled_am, skaled_checks, dutils):
+def test_recreate_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = RecreateSkaledMonitor(skaled_am, skaled_checks)
     ts_before = time.time()
     time.sleep(1)
@@ -464,8 +464,8 @@ def test_recreate_skaled_monitor(skaled_am, skaled_checks, dutils):
     assert dutils.get_container_created_ts(schain_container.id) > ts_before
 
 
-def test_update_config_skaled_monitor(skaled_am, skaled_checks, dutils, upstreams):
-    name = skaled_am.name
+def test_update_config_skaled_monitor(skaled_am, skaled_checks, dutils, clean_docker, upstreams):
+    name = skaled_checks.name
     ts_before = time.time()
     time.sleep(1)
     mon = UpdateConfigSkaledMonitor(skaled_am, skaled_checks)
@@ -481,7 +481,7 @@ def test_update_config_skaled_monitor(skaled_am, skaled_checks, dutils, upstream
             f'schain_{name}.json')).st_mtime > ts_before
 
 
-def test_no_config_monitor(skaled_am, skaled_checks, dutils):
+def test_no_config_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = NoConfigSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
     assert not dutils.get_vol(skaled_am.name)
@@ -489,7 +489,7 @@ def test_no_config_monitor(skaled_am, skaled_checks, dutils):
     assert not dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
 
 
-def test_new_node_monitor(skaled_am, skaled_checks, dutils):
+def test_new_node_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = NewNodeSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
     assert skaled_am.rc.is_rules_synced

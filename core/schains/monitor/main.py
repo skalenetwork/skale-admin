@@ -32,6 +32,7 @@ from web3._utils import request as web3_request
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.checks import ConfigChecks, SkaledChecks
+from core.schains.config.file_manager import ConfigFileManager
 from core.schains.firewall import get_default_rule_controller
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.monitor import (
@@ -151,7 +152,8 @@ def post_monitor_sleep():
         MIN_SCHAIN_MONITOR_SLEEP_INTERVAL,
         MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
     )
-    logger.info('Monitor completed, sleeping for %d', schain_monitor_sleep)
+    logger.info('Monitor iteration completed, sleeping for %d',
+                schain_monitor_sleep)
     time.sleep(schain_monitor_sleep)
 
 
@@ -177,7 +179,8 @@ def create_and_execute_tasks(
         return True
 
     tasks = []
-    logger.info('Config versions %s %s', schain_record.config_version, stream_version)
+    logger.info('Config versions %s %s',
+                schain_record.config_version, stream_version)
     if schain_record.config_version == stream_version:
         logger.info('Adding skaled task to the pool')
         tasks.append(
@@ -220,6 +223,9 @@ def run_monitor_for_schain(
     once=False
 ):
     stream_version = get_skale_node_version()
+    schain_record = SChainRecord.get_by_name(schain['name'])
+    if stream_version != schain_record.config_version:
+        ConfigFileManager(schain['name']).remove_skaled_config()
 
     tasks_number = 2
     with ThreadPoolExecutor(max_workers=tasks_number, thread_name_prefix='T') as executor:
@@ -242,7 +248,7 @@ def run_monitor_for_schain(
                     return True
                 post_monitor_sleep()
             except Exception:
-                logger.exception('Monitor failed')
+                logger.exception('Monitor iteration failed')
                 if once:
                     return False
                 post_monitor_sleep()

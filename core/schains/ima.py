@@ -30,9 +30,8 @@ from core.schains.config.directory import schain_config_dir
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import get_schain_ports_from_config, get_chain_id
 from core.ima.schain import get_schain_ima_abi_filepath
-
-from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
-from tools.configs.containers import CONTAINERS_INFO
+from tools.configs import ENV_TYPE, SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
+from tools.configs.containers import CONTAINERS_INFO, IMA_MIGRATION_PATH
 from tools.configs.db import REDIS_URI
 from tools.configs.ima import (
     IMA_ENDPOINT,
@@ -42,6 +41,7 @@ from tools.configs.ima import (
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ABI_FILEPATH
+from tools.helper import safe_load_yml
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,7 @@ class ImaEnv:
 
     sgx_url: str
     ecdsa_key_name: str
+    bls_key_name: str
     sgx_ssl_key_path: str
     sgx_ssl_cert_path: str
     node_address: str
@@ -100,6 +101,7 @@ class ImaEnv:
             'NODES_COUNT': self.nodes_count,
             'SGX_URL': self.sgx_url,
             'ECDSA_KEY_NAME': self.ecdsa_key_name,
+            'BLS_KEY_NAME': self.bls_key_name,
             'SGX_SSL_KEY_PATH': self.sgx_ssl_key_path,
             'SGX_SSL_CERT_PATH': self.sgx_ssl_cert_path,
             'NODE_ADDRESS': self.node_address,
@@ -143,6 +145,7 @@ def schain_index_to_node_number(node):
 def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
     schain_config = ConfigFileManager(schain_name).skaled_config
     node_info = schain_config["skaleConfig"]["nodeInfo"]
+    bls_key_name = node_info['wallets']['ima']['keyShareName']
     schain_nodes = schain_config["skaleConfig"]["sChain"]
     public_node_info = get_current_node_from_nodes(
         node_info['nodeID'], schain_nodes)
@@ -165,6 +168,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         nodes_count=len(schain_nodes['nodes']),
         sgx_url=SGX_SERVER_URL,
         ecdsa_key_name=node_info['ecdsaKeyName'],
+        bls_key_name=bls_key_name,
         sgx_ssl_key_path=SGX_SSL_KEY_FILEPATH,
         sgx_ssl_cert_path=SGX_SSL_CERT_FILEPATH,
         node_address=node_address,
@@ -264,3 +268,11 @@ def get_ima_log_checks():
                                                    'last_ima_errors': errors,
                                                    'error_categories': categories}})
     return all_ima_healthchecks
+
+
+def get_migration_schedule() -> dict:
+    return safe_load_yml(IMA_MIGRATION_PATH)[ENV_TYPE]
+
+
+def get_migration_ts(name: str) -> int:
+    return get_migration_schedule().get(name, 0)

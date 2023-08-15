@@ -206,3 +206,7 @@ class ConfigFileManager:
 
     def upstream_exist_for_rotation_id(self, rotation_id: int) -> bool:
         return len(self.upstreams_by_rotation_id(rotation_id)) > 0
+
+    def remove_skaled_config(self) -> None:
+        with ConfigFileManager.CFM_LOCK:
+            os.remove(self.skaled_config_path)

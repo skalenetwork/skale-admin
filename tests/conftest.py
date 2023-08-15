@@ -261,7 +261,24 @@ def generate_schain_config(schain_name):
                 "infoHttpRpcPort": 10008,
                 "bindIP": "0.0.0.0",
                 "ecdsaKeyName": "NEK:518",
-                "imaMonitoringPort": 10006
+                "imaMonitoringPort": 10006,
+                "wallets": {
+                    "ima": {
+                        "keyShareName": "bls_key:schain_id:33333333333333333333333333333333333333333333333333333333333333333333333333333:node_id:0:dkg_id:0",  # noqa
+                        "t": 11,
+                        "n": 16,
+                        "certfile": "sgx.crt",
+                        "keyfile": "sgx.key",
+                        "commonBlsPublicKey0": "11111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
+                        "commonBlsPublicKey1": "1111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
+                        "commonBlsPublicKey2": "1111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
+                        "commonBlsPublicKey3": "11111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
+                        "blsPublicKey0": "1111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
+                        "blsPublicKey1": "1111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
+                        "blsPublicKey2": "1111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
+                        "blsPublicKey3": "11111111111111111111111111111111111111111111111111111111111111111111111111111"  # noqa
+                    }
+                },
             },
             "sChain": {
                 "schainID": 1,
@@ -592,6 +609,11 @@ def cleanup_schain_dirs_before():
 
 
 @pytest.fixture
+def clean_docker(dutils, cleanup_schain_containers, cleanup_ima_containers):
+    pass
+
+
+@pytest.fixture
 def cleanup_schain_containers(dutils):
     try:
         yield
@@ -600,6 +622,16 @@ def cleanup_schain_containers(dutils):
         for container in containers:
             dutils.safe_rm(container.name, force=True)
             dutils.safe_rm(container.name.replace('schain', 'ima'), force=True)
+
+
+@pytest.fixture
+def cleanup_ima_containers(dutils):
+    try:
+        yield
+    finally:
+        containers = dutils.get_all_ima_containers(all=True)
+        for container in containers:
+            dutils.safe_rm(container.name, force=True)
 
 
 @pytest.fixture
