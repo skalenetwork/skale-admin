@@ -337,6 +337,11 @@ class SkaledActionManager(BaseActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
+    def reset_restart_counter(self) -> bool:
+        self.schain_record.set_restart_count(0)
+        return True
+
+    @BaseActionManager.monitor_block
     def reloaded_skaled_container(self) -> bool:
         logger.info('Starting skaled from scratch')
         initial_status = True

@@ -65,6 +65,8 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if not self.checks.skaled_container:
             self.am.skaled_container()
+        else:
+            self.am.reset_restart_counter()
         if not self.checks.rpc:
             self.am.skaled_rpc()
         if not self.checks.ima_container:
@@ -86,6 +88,8 @@ class RepairSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if not self.checks.skaled_container:
             self.am.skaled_container(download_snapshot=True)
+        else:
+            self.am.reset_restart_count()
         self.am.disable_repair_mode()
 
 
@@ -97,6 +101,8 @@ class BackupSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.checks.skaled_container:
             self.am.skaled_container(download_snapshot=True)
+        else:
+            self.am.reset_restart_counter()
         if not self.checks.ima_container:
             self.am.ima_container()
         self.am.disable_backup_run()
@@ -131,6 +137,8 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if not self.checks.skaled_container:
             self.am.skaled_container()
+        else:
+            self.am.reset_restart_counter()
         if not self.checks.rpc:
             self.am.skaled_rpc()
         if not self.checks.ima_container:
@@ -158,6 +166,8 @@ class NewNodeSkaledMonitor(BaseSkaledMonitor):
                 download_snapshot=True,
                 start_ts=self.am.finish_ts
             )
+        else:
+            self.am.reset_restart_counter()
 
 
 def is_backup_mode(schain_record: SChainRecord) -> bool:
