@@ -211,6 +211,7 @@ class ConfigActionManager(BaseActionManager):
         result = False
         if not self.cfm.upstream_config_exists() or new_config != self.cfm.latest_upstream_config:
             rotation_id = self.rotation_data['rotation_id']
+            logger.info('Saving new upstream config rotation_id: %d', rotation_id)
             self.cfm.save_new_upstream(rotation_id, new_config)
             result = True
         else:
@@ -404,6 +405,7 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def update_config(self) -> bool:
+        logger.info('Syncing skaled config with upstream')
         return self.cfm.sync_skaled_config_with_upstream()
 
     @BaseActionManager.monitor_block
