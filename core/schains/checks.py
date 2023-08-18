@@ -23,22 +23,18 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
-from core.schains.config.directory import (
-    config_synced_with_upstream,
-    get_schain_check_filepath,
-    get_schain_config,
-    get_upstream_config_filepath,
-    schain_config_dir,
-    schain_config_filepath,
-    upstreams_for_rotation_id_version,
-)
+from core.schains.config.directory import get_schain_check_filepath
+from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
-    get_local_schain_http_endpoint
+    get_local_schain_http_endpoint_from_config
 )
-from core.schains.config.main import get_config_rotations_ids, get_upstream_rotation_ids
+from core.schains.config.main import (
+    get_skaled_config_rotations_ids,
+    get_upstream_config_rotation_ids
+)
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
 from core.schains.ima import get_migration_ts as get_ima_migration_ts
@@ -101,7 +97,8 @@ class IChecks(ABC):
     @classmethod
     def get_check_names(cls):
         return list(filter(
-            lambda c: not c.startswith('_') and isinstance(getattr(cls, c), property),
+            lambda c: not c.startswith('_') and isinstance(
+                getattr(cls, c), property),
             dir(cls)
         ))
 
@@ -124,6 +121,9 @@ class ConfigChecks(IChecks):
         self.stream_version = stream_version
         self.estate = estate
         self.econfig = econfig or ExternalConfig(schain_name)
+        self.cfm: ConfigFileManager = ConfigFileManager(
+            schain_name=schain_name
+        )
 
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
         if checks_filter:
@@ -144,7 +144,7 @@ class ConfigChecks(IChecks):
     @property
     def config_dir(self) -> CheckRes:
         """Checks that sChain config directory exists"""
-        dir_path = schain_config_dir(self.name)
+        dir_path = self.cfm.dirname
         return CheckRes(os.path.isdir(dir_path))
 
     @property
@@ -159,14 +159,11 @@ class ConfigChecks(IChecks):
     @property
     def upstream_config(self) -> CheckRes:
         """Checks that config exists for rotation id and stream"""
-        upstreams = upstreams_for_rotation_id_version(
-            self.name,
-            self.rotation_id,
-            self.stream_version
-        )
-        logger.debug('Upstream configs for %s: %s', self.name, upstreams)
+        exists = self.cfm.upstream_exist_for_rotation_id(self.rotation_id)
+
+        logger.debug('Upstream configs status for %s: %s', self.name, exists)
         return CheckRes(
-            len(upstreams) > 0 and self.schain_record.config_version == self.stream_version
+            exists and self.schain_record.config_version == self.stream_version
         )
 
     @property
@@ -195,6 +192,9 @@ class SkaledChecks(IChecks):
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.econfig = econfig or ExternalConfig(name=schain_name)
         self.rc = rule_controller
+        self.cfm: ConfigFileManager = ConfigFileManager(
+            schain_name=schain_name
+        )
 
     def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
         if checks_filter:
@@ -214,15 +214,14 @@ class SkaledChecks(IChecks):
 
     @property
     def upstream_exists(self) -> CheckRes:
-        upstream_path = get_upstream_config_filepath(self.name)
-        return CheckRes(upstream_path is not None)
+        return CheckRes(self.cfm.upstream_config_exists())
 
     @property
-    def rotation_id_updated(self) -> int:
+    def rotation_id_updated(self) -> CheckRes:
         if not self.config:
             return CheckRes(False)
-        upstream_rotations = get_upstream_rotation_ids(self.name)
-        config_rotations = get_config_rotations_ids(self.name)
+        upstream_rotations = get_upstream_config_rotation_ids(self.cfm)
+        config_rotations = get_skaled_config_rotations_ids(self.cfm)
         logger.debug(
             'Comparing rotation_ids. Upstream: %s. Config: %s',
             upstream_rotations,
@@ -234,13 +233,12 @@ class SkaledChecks(IChecks):
     def config_updated(self) -> CheckRes:
         if not self.config:
             return CheckRes(False)
-        return CheckRes(config_synced_with_upstream(self.name))
+        return CheckRes(self.cfm.skaled_config_synced_with_upstream())
 
     @property
     def config(self) -> CheckRes:
         """ Checks that sChain config file exists """
-        config_path = schain_config_filepath(self.name)
-        return CheckRes(os.path.isfile(config_path))
+        return CheckRes(self.cfm.skaled_config_exists())
 
     @property
     def volume(self) -> CheckRes:
@@ -251,7 +249,7 @@ class SkaledChecks(IChecks):
     def firewall_rules(self) -> CheckRes:
         """Checks that firewall rules are set correctly"""
         if self.config:
-            conf = get_schain_config(self.name)
+            conf = self.cfm.skaled_config
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
@@ -316,7 +314,8 @@ class SkaledChecks(IChecks):
         """Checks that local skaled RPC is accessible"""
         res = False
         if self.config:
-            http_endpoint = get_local_schain_http_endpoint(self.name)
+            config = self.cfm.skaled_config
+            http_endpoint = get_local_schain_http_endpoint_from_config(config)
             timeout = get_endpoint_alive_check_timeout(
                 self.schain_record.failed_rpc_count
             )
@@ -327,7 +326,8 @@ class SkaledChecks(IChecks):
     def blocks(self) -> CheckRes:
         """Checks that local skaled is mining blocks"""
         if self.config:
-            http_endpoint = get_local_schain_http_endpoint(self.name)
+            config = self.cfm.skaled_config
+            http_endpoint = get_local_schain_http_endpoint_from_config(config)
             return CheckRes(check_endpoint_blocks(http_endpoint))
         return CheckRes(False)
 
@@ -401,7 +401,8 @@ class SChainChecks(IChecks):
 
 def save_checks_dict(schain_name, checks_dict):
     schain_check_path = get_schain_check_filepath(schain_name)
-    logger.info(f'Saving checks for the chain {schain_name}: {schain_check_path}')
+    logger.info(
+        f'Saving checks for the chain {schain_name}: {schain_check_path}')
     try:
         write_json(schain_check_path, {
             'time': time.time(),

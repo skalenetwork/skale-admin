@@ -9,14 +9,13 @@ import mock
 
 from core.schains.checks import SkaledChecks
 from core.schains.cleaner import remove_ima_container
-from core.schains.config.directory import new_config_filename, schain_config_dir
+from core.schains.config.directory import schain_config_dir
+from core.schains.config.file_manager import UpstreamConfigFilename
 from core.schains.firewall.types import SChainRule
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord
-
-from tests.utils import CONFIG_STREAM
 
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
@@ -216,7 +215,7 @@ def test_ima_container_action_new_chain(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-develop.3'
+        assert image == 'skalenetwork/ima:2.0.0-develop.12'
 
 
 @mock.patch('core.schains.monitor.containers.run_ima_container', run_ima_container_mock)
@@ -239,8 +238,8 @@ def test_ima_container_action_old_chain(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:1.3.4-beta.5'
-        assert dutils.pulled('skalenetwork/ima:2.0.0-develop.3')
+        assert image == 'skalenetwork/ima:2.0.0-develop.3'
+        assert dutils.pulled('skalenetwork/ima:2.0.0-develop.12')
 
     mts = ts - 5
     with mock.patch('core.schains.monitor.action.get_ima_migration_ts', return_value=mts):
@@ -250,7 +249,7 @@ def test_ima_container_action_old_chain(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-develop.3'
+        assert image == 'skalenetwork/ima:2.0.0-develop.12'
 
 
 def test_ima_container_action_not_linked(
@@ -316,17 +315,12 @@ def test_update_config(skaled_am, skaled_checks):
     folder = schain_config_dir(skaled_am.name)
     config_path = os.path.join(folder, f'schain_{skaled_am.name}.json')
     os.remove(config_path)
-
     assert not skaled_checks.config
+
     assert not skaled_checks.config_updated
-    upstream_path = os.path.join(
-        folder,
-        new_config_filename(
-            skaled_am.name,
-            rotation_id=5,
-            stream_version=CONFIG_STREAM
-        )
-    )
+    upstream_path = UpstreamConfigFilename(
+        skaled_am.name, rotation_id=5, ts=int(time.time())).abspath(folder)
+
     config_content = {'config': 'mock_v5'}
     with open(upstream_path, 'w') as upstream_file:
         json.dump(config_content, upstream_file)
@@ -337,14 +331,9 @@ def test_update_config(skaled_am, skaled_checks):
     assert skaled_checks.config_updated
 
     time.sleep(1)
-    upstream_path = os.path.join(
-        folder,
-        new_config_filename(
-            skaled_am.name,
-            rotation_id=6,
-            stream_version=CONFIG_STREAM
-        )
-    )
+    upstream_path = UpstreamConfigFilename(
+        skaled_am.name, rotation_id=6, ts=int(time.time())).abspath(folder)
+
     config_content = {'config': 'mock_v6'}
     with open(upstream_path, 'w') as upstream_file:
         json.dump(config_content, upstream_file)

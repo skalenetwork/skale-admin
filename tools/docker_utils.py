@@ -17,15 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import io
 import itertools
 import logging
 import multiprocessing
+import os
 import re
 import time
+from datetime import datetime
 from functools import wraps
-from typing import Optional
+from typing import Dict, Optional
 
 import docker
 from docker import APIClient
@@ -327,6 +328,29 @@ class DockerUtils:
             return res
         except docker.errors.APIError:
             logger.error(f'No such container: {container_name}')
+
+    def get_cmd(self, container_id: str) -> Dict:
+        info = self.get_info(container_id)
+        if info:
+            return info['stats']['Config']['Cmd']
+        return {}
+
+    def get_container_created_ts(self, container_id: str) -> int:
+        info = self.get_info(container_id)
+        if info:
+            print(info)
+            iso_time = info['stats']['Created'].split('.')[0]
+            return int(datetime.fromisoformat(iso_time).timestamp())
+        else:
+            return 0
+
+    def get_vol_created_ts(self, name: str) -> int:
+        vol = self.get_vol(name)
+        if vol:
+            iso_time = vol.attrs['CreatedAt'][:-1]
+            return int(datetime.fromisoformat(iso_time).timestamp())
+        else:
+            return 0
 
     def restart_all_schains(
         self,

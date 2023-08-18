@@ -71,24 +71,26 @@ def monitor_schain_container(
             snapshot_from=schain_record.snapshot_from,
             dutils=dutils
         )
-        schain_record.reset_failed_conunters()
+        schain_record.reset_failed_counters()
         return
 
     if skaled_status.exit_time_reached:
-        logger.info(f'{schain_name} - Skipping container monitor: exit time reached')
+        logger.info(
+            f'{schain_name} - Skipping container monitor: exit time reached')
         skaled_status.log()
-        schain_record.reset_failed_conunters()
+        schain_record.reset_failed_counters()
         return
 
     if skaled_status.clear_data_dir and skaled_status.start_from_snapshot:
-        logger.info(f'{schain_name} - Skipping container monitor: sChain should be repaired')
+        logger.info(
+            f'{schain_name} - Skipping container monitor: sChain should be repaired')
         skaled_status.log()
-        schain_record.reset_failed_conunters()
+        schain_record.reset_failed_counters()
         return
 
     if is_schain_container_failed(schain_name, dutils=dutils):
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
-            logger.info(f'SChain {schain_name}: restarting container')
+            logger.info('sChain %s: restarting container', schain_name)
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
             schain_record.set_restart_count(schain_record.restart_count + 1)
             schain_record.set_failed_rpc_count(0)
@@ -98,6 +100,8 @@ def monitor_schain_container(
                 schain_name,
                 MAX_SCHAIN_RESTART_COUNT
             )
+    else:
+        schain_record.set_restart_count(0)
 
 
 def monitor_ima_container(

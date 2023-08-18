@@ -9,7 +9,7 @@ from flask import Flask, appcontext_pushed, g
 from Crypto.Hash import keccak
 
 from core.node_config import NodeConfig
-from core.schains.config.directory import schain_config_filepath
+from core.schains.config.file_manager import ConfigFileManager
 from tests.utils import get_bp_data, get_test_rule_controller, post_bp_data
 from web.models.schain import SChainRecord, upsert_schain_record
 from web.routes.schains import schains_bp
@@ -44,18 +44,21 @@ def test_schain_statuses(skale_bp, skaled_status, _schain_name):
 
 def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):
     name = schain_on_contracts
-    filename = schain_config_filepath(name)
-    dirname = os.path.dirname(filename)
+    filepath = ConfigFileManager(name).skaled_config_path
+    dirname = os.path.dirname(filepath)
     if not os.path.isdir(dirname):
-        os.makedirs(os.path.dirname(filename))
-    with open(filename, 'w') as f:
-        text = {'skaleConfig': {'nodeInfo': {'nodeID': 1}}}
-        f.write(json.dumps(text))
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'config'), {'schain_name': name})
-    assert data == {'payload': {'nodeInfo': {'nodeID': 1}},
-                    'status': 'ok'}
-    os.remove(filename)
-    shutil.rmtree(os.path.dirname(filename))
+        os.makedirs(os.path.dirname(filepath))
+    try:
+        with open(filepath, 'w') as f:
+            text = {'skaleConfig': {'nodeInfo': {'nodeID': 1}}}
+            f.write(json.dumps(text))
+        data = get_bp_data(skale_bp, get_api_url(
+            BLUEPRINT_NAME, 'config'), {'schain_name': name})
+        assert data == {'payload': {'nodeInfo': {'nodeID': 1}},
+                        'status': 'ok'}
+    finally:
+        os.remove(filepath)
+        shutil.rmtree(os.path.dirname(filepath))
 
 
 def test_schains_list(skale_bp, skale):
@@ -67,7 +70,6 @@ def schain_config_exists_mock(schain):
     return True
 
 
-@mock.patch('web.routes.schains.schain_config_exists', schain_config_exists_mock)
 @mock.patch(
     'web.routes.schains.get_default_rule_controller',
     partial(get_test_rule_controller, synced=True)
@@ -177,7 +179,8 @@ def test_schain_containers_versions(skale_bp):
         return_value=skaled_version
     ), mock.patch('web.routes.schains.get_ima_version',
                   return_value=ima_version):
-        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'container-versions'))
+        data = get_bp_data(skale_bp, get_api_url(
+            BLUEPRINT_NAME, 'container-versions'))
         assert data == {
             'status': 'ok',
             'payload': {

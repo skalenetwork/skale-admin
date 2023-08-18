@@ -1,6 +1,4 @@
 import os
-import shutil
-from pathlib import Path
 
 import pytest
 
@@ -10,7 +8,8 @@ from core.schains.config.helper import (
     get_own_ip_from_config,
     get_schain_env
 )
-from core.schains.config.directory import get_upstream_config_filepath, schain_config_dir
+from core.schains.config.directory import schain_config_dir
+from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.main import get_latest_finish_ts, get_rotation_ids_from_config
 from core.schains.volume import get_schain_volume_config
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
@@ -41,43 +40,31 @@ def test_get_schain_volume_config():
     volume_config = get_schain_volume_config('test_name', '/mnt/mount_path/')
     assert volume_config == {
         'test_name': {'bind': '/mnt/mount_path/', 'mode': 'rw'},
-        SHARED_SPACE_VOLUME_NAME: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'rw'}
+        SHARED_SPACE_VOLUME_NAME: {
+            'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'rw'}
     }
     volume_config = get_schain_volume_config('test_name',
                                              '/mnt/mount_path/', mode='Z')
     assert volume_config == {
         'test_name': {'bind': '/mnt/mount_path/', 'mode': 'Z'},
-        SHARED_SPACE_VOLUME_NAME: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'Z'}
+        SHARED_SPACE_VOLUME_NAME: {
+            'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'Z'}
     }
-
-
-@pytest.fixture
-def upstreams(schain_db, schain_config):
-    name = schain_db
-    config_folder = schain_config_dir(name)
-    files = [
-        f'schain_{name}_1_1687183338_2_1_16.json',
-        f'schain_{name}_0_1687183335_2_1_16.json',
-        f'schain_{name}_1_1687183336_2_1_17.json'
-    ]
-    try:
-        for fname in files:
-            Path(os.path.join(config_folder, fname)).touch()
-        yield files
-    finally:
-        shutil.rmtree(config_folder)
 
 
 def test_get_schain_upstream_config(schain_db, upstreams):
     name = schain_db
+    cfm = ConfigFileManager(schain_name=name)
+    upstream_config = cfm.latest_upstream_path
     config_folder = schain_config_dir(name)
-    upstream_config = get_upstream_config_filepath(name)
-    expected = os.path.join(config_folder, f'schain_{name}_1_1687183338_2_1_16.json')
+    expected = os.path.join(
+        config_folder, f'schain_{name}_11_1687183339.json')
     assert upstream_config == expected
 
     not_existing_chain = 'not-exist'
-    upstream_config = get_upstream_config_filepath(not_existing_chain)
-    assert upstream_config is None
+    cfm = ConfigFileManager(not_existing_chain)
+    assert not cfm.upstream_config_exists()
+    assert cfm.latest_upstream_config is None
 
 
 def test_get_latest_finish_ts(schain_config):

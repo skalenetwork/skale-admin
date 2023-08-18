@@ -65,6 +65,8 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if not self.checks.skaled_container:
             self.am.skaled_container()
+        else:
+            self.am.reset_restart_counter()
         if not self.checks.rpc:
             self.am.skaled_rpc()
         if not self.checks.ima_container:
@@ -86,6 +88,8 @@ class RepairSkaledMonitor(BaseSkaledMonitor):
             self.am.volume()
         if not self.checks.skaled_container:
             self.am.skaled_container(download_snapshot=True)
+        else:
+            self.am.reset_restart_count()
         self.am.disable_repair_mode()
 
 
@@ -97,6 +101,8 @@ class BackupSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.checks.skaled_container:
             self.am.skaled_container(download_snapshot=True)
+        else:
+            self.am.reset_restart_counter()
         if not self.checks.ima_container:
             self.am.ima_container()
         self.am.disable_backup_run()
@@ -105,7 +111,7 @@ class BackupSkaledMonitor(BaseSkaledMonitor):
 class RecreateSkaledMonitor(BaseSkaledMonitor):
     def execute(self) -> None:
         logger.info('Reload requested. Recreating sChain container')
-        if self.checks.volume:
+        if not self.checks.volume:
             self.am.volume()
         self.am.reloaded_skaled_container()
 
@@ -114,9 +120,9 @@ class UpdateConfigSkaledMonitor(BaseSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.config_updated:
             self.am.update_config()
-        if self.checks.firewall_rules:
+        if not self.checks.firewall_rules:
             self.am.firewall_rules()
-        if self.checks.volume:
+        if not self.checks.volume:
             self.am.volume()
         self.am.reloaded_skaled_container()
         if not self.checks.ima_container:
@@ -127,8 +133,12 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
     def execute(self):
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
+        if not self.checks.volume:
+            self.am.volume()
         if not self.checks.skaled_container:
             self.am.skaled_container()
+        else:
+            self.am.reset_restart_counter()
         if not self.checks.rpc:
             self.am.skaled_rpc()
         if not self.checks.ima_container:
@@ -156,6 +166,8 @@ class NewNodeSkaledMonitor(BaseSkaledMonitor):
                 download_snapshot=True,
                 start_ts=self.am.finish_ts
             )
+        else:
+            self.am.reset_restart_counter()
 
 
 def is_backup_mode(schain_record: SChainRecord) -> bool:
@@ -227,12 +239,12 @@ def get_skaled_monitor(
         mon_type = NoConfigSkaledMonitor
     elif is_backup_mode(schain_record):
         mon_type = BackupSkaledMonitor
+    elif is_repair_mode(schain_record, status, skaled_status):
+        mon_type = RepairSkaledMonitor
     elif is_reload_mode(schain_record):
         mon_type = RecreateSkaledMonitor
     elif is_new_node_mode(schain_record, action_manager.finish_ts):
         mon_type = NewNodeSkaledMonitor
-    elif is_repair_mode(schain_record, status, skaled_status):
-        mon_type = RepairSkaledMonitor
     elif is_config_update_time(status, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
     elif is_new_config_mode(status):

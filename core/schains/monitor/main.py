@@ -151,7 +151,8 @@ def post_monitor_sleep():
         MIN_SCHAIN_MONITOR_SLEEP_INTERVAL,
         MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
     )
-    logger.info('Monitor iteration completed, sleeping for %d', schain_monitor_sleep)
+    logger.info('Monitor iteration completed, sleeping for %d',
+                schain_monitor_sleep)
     time.sleep(schain_monitor_sleep)
 
 
@@ -177,7 +178,8 @@ def create_and_execute_tasks(
         return True
 
     tasks = []
-    logger.info('Config versions %s %s', schain_record.config_version, stream_version)
+    logger.info('Config versions %s %s',
+                schain_record.config_version, stream_version)
     if schain_record.config_version == stream_version:
         logger.info('Adding skaled task to the pool')
         tasks.append(
@@ -220,7 +222,6 @@ def run_monitor_for_schain(
     once=False
 ):
     stream_version = get_skale_node_version()
-
     tasks_number = 2
     with ThreadPoolExecutor(max_workers=tasks_number, thread_name_prefix='T') as executor:
         futures: List[Optional[Future]] = [None for i in range(tasks_number)]

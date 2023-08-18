@@ -503,7 +503,8 @@ def skaled_status_exit_time_reached(_schain_name):
 
 @pytest.fixture
 def skaled_status_repair(_schain_name):
-    generate_schain_skaled_status_file(_schain_name, clear_data_dir=True, start_from_snapshot=True)
+    generate_schain_skaled_status_file(
+        _schain_name, clear_data_dir=True, start_from_snapshot=True)
     try:
         yield init_skaled_status(_schain_name)
     finally:
@@ -564,7 +565,7 @@ def meta_file():
 
 
 @pytest.fixture
-def schain_on_contracts(skale, nodes, _schain_name) -> str:
+def schain_on_contracts(skale, nodes, _schain_name):
     try:
         yield create_schain(
             skale,
@@ -620,6 +621,7 @@ def cleanup_schain_containers(dutils):
         containers = dutils.get_all_schain_containers(all=True)
         for container in containers:
             dutils.safe_rm(container.name, force=True)
+            dutils.safe_rm(container.name.replace('schain', 'ima'), force=True)
 
 
 @pytest.fixture
@@ -743,3 +745,24 @@ def econfig(schain_db, estate):
     ec = ExternalConfig(name)
     ec.update(estate)
     return ec
+
+
+@pytest.fixture
+def upstreams(schain_db, schain_config):
+    name = schain_db
+    config_folder = schain_config_dir(name)
+    files = [
+        f'schain_{name}_10_1687183338.json',
+        f'schain_{name}_9_1687183335.json',
+        f'schain_{name}_11_1687183336.json',
+        f'schain_{name}_11_1687183337.json',
+        f'schain_{name}_11_1687183339.json'
+    ]
+    try:
+        for fname in files:
+            fpath = os.path.join(config_folder, fname)
+            with open(fpath, 'w') as f:
+                json.dump(schain_config, f)
+        yield files
+    finally:
+        shutil.rmtree(config_folder)
