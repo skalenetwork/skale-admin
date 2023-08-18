@@ -284,7 +284,8 @@ class SkaledChecks(IChecks):
         if not self.econfig.ima_linked:
             return CheckRes(True)
         container_name = get_container_name(IMA_CONTAINER, self.name)
-        new_image_pulled = is_new_image_pulled(type=IMA_CONTAINER, dutils=self.dutils)
+        new_image_pulled = is_new_image_pulled(
+            type=IMA_CONTAINER, dutils=self.dutils)
 
         migration_ts = get_ima_migration_ts(self.name)
         new = time.time() > migration_ts
@@ -335,6 +336,14 @@ class SkaledChecks(IChecks):
     def process(self) -> CheckRes:
         """Checks that sChain monitor process is running"""
         return CheckRes(is_monitor_process_alive(self.schain_record.monitor_id))
+
+    @property
+    def exit_zero(self) -> CheckRes:
+        """Check that sChain container exited with zero code"""
+        if self.dutils.is_container_running(self.container_name):
+            return CheckRes(False)
+        exit_code = self.dutils.container_exit_code(self.container_name)
+        return CheckRes(exit_code == SkaledExitCodes.EC_SUCCESS)
 
 
 class SChainChecks(IChecks):

@@ -192,11 +192,7 @@ def is_config_update_time(
 ) -> bool:
     if not skaled_status:
         return False
-    logger.info('Rotation id updated status %s', status['rotation_id_updated'])
-    if not status['config_updated']:
-        if skaled_status.exit_time_reached or status['rotation_id_updated']:
-            return True
-    return False
+    return not status['config_updated'] and status['exit_zero'] and skaled_status.exit_time_reached
 
 
 def is_reload_mode(schain_record: SChainRecord) -> bool:
@@ -231,6 +227,7 @@ def get_skaled_monitor(
 ) -> BaseSkaledMonitor:
     logger.info('Choosing skaled monitor')
     logger.info('Upstream config %s', action_manager.upstream_config_path)
+    logger.info('Status dict %s', status)
     if skaled_status:
         skaled_status.log()
 
