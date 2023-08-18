@@ -61,3 +61,4 @@ class RegularConfigMonitor(BaseConfigMonitor):
             self.am.external_state()
         if not self.checks.upstream_config:
             self.am.upstream_config()
+        self.am.reset_config_record()

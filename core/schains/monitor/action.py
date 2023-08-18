@@ -222,6 +222,13 @@ class ConfigActionManager(BaseActionManager):
         return result
 
     @BaseActionManager.monitor_block
+    def reset_config_record(self) -> bool:
+        update_schain_config_version(
+            self.name, schain_record=self.schain_record)
+        self.schain_record.set_sync_config_run(False)
+        return True
+
+    @BaseActionManager.monitor_block
     def external_state(self) -> bool:
         logger.info('Updating external state config')
         logger.debug('New state %s', self.estate)

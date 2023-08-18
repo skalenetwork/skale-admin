@@ -32,6 +32,7 @@ from web3._utils import request as web3_request
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.checks import ConfigChecks, SkaledChecks
+from core.schains.config.file_manager import ConfigFileManager
 from core.schains.firewall import get_default_rule_controller
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.monitor import (
@@ -177,10 +178,17 @@ def create_and_execute_tasks(
         logger.info('Not on node (%d), finishing process', node_config.id)
         return True
 
+    if schain_record.sync_config_run and schain_record.config_version != stream_version:
+        logger.info(
+            'Removing skaled config sync_config_run %s, config_version %s, stream_version %',
+            schain_record.sync_config_run, schain_record.config_version, stream_version
+        )
+        return ConfigFileManager(name).remove_skaled_config()
+
     tasks = []
     logger.info('Config versions %s %s',
                 schain_record.config_version, stream_version)
-    if schain_record.config_version == stream_version:
+    if schain_record.sync_config_run or schain_record.config_version == stream_version:
         logger.info('Adding skaled task to the pool')
         tasks.append(
             Task(
