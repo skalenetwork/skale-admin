@@ -211,7 +211,8 @@ class ConfigActionManager(BaseActionManager):
         result = False
         if not self.cfm.upstream_config_exists() or new_config != self.cfm.latest_upstream_config:
             rotation_id = self.rotation_data['rotation_id']
-            logger.info('Saving new upstream config rotation_id: %d', rotation_id)
+            logger.info(
+                'Saving new upstream config rotation_id: %d', rotation_id)
             self.cfm.save_new_upstream(rotation_id, new_config)
             result = True
         else:
@@ -417,6 +418,9 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def send_exit_request(self) -> None:
+        if self.skaled_status.exit_time_reached:
+            logger.info('Exit time has been already set')
+            return
         finish_ts = self.upstream_finish_ts
         logger.info('Trying to set skaled exit time %s', finish_ts)
         if finish_ts is not None:
