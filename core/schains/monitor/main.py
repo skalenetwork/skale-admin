@@ -138,6 +138,8 @@ def run_skaled_pipeline(
     logger.info('Skaled checks: %s', status)
     notify_checks(name, node_config.all(), status)
 
+    logger.info('Upstream config %s', skaled_am.upstream_config_path)
+    logger.info('Status dict %s', status)
     mon = get_skaled_monitor(
         action_manager=skaled_am,
         status=status,
@@ -178,7 +180,7 @@ def create_and_execute_tasks(
         logger.info('Not on node (%d), finishing process', node_config.id)
         return True
 
-    if schain_record.sync_config_run and schain_record.config_version != stream_version:
+    if schain_record.sync_config_run or schain_record.config_version != stream_version:
         logger.info(
             'Removing skaled config sync_config_run %s, config_version %s, stream_version %',
             schain_record.sync_config_run, schain_record.config_version, stream_version
