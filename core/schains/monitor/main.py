@@ -180,12 +180,12 @@ def create_and_execute_tasks(
         logger.info('Not on node (%d), finishing process', node_config.id)
         return True
 
+    logger.info(
+        'sync_config_run %s, config_version %s, stream_version %s',
+        schain_record.sync_config_run, schain_record.config_version, stream_version
+    )
     if schain_record.sync_config_run or schain_record.config_version != stream_version:
-        logger.info(
-            'Removing skaled config sync_config_run %s, config_version %s, stream_version %',
-            schain_record.sync_config_run, schain_record.config_version, stream_version
-        )
-        return ConfigFileManager(name).remove_skaled_config()
+        ConfigFileManager(name).remove_skaled_config()
 
     tasks = []
     logger.info('Config versions %s %s',

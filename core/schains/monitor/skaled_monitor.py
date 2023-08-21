@@ -20,7 +20,7 @@
 import logging
 import time
 from abc import abstractmethod
-from typing import Dict, Optional
+from typing import Dict, Optional, Type
 
 from core.schains.monitor.base_monitor import IMonitor
 from core.schains.checks import SkaledChecks
@@ -182,7 +182,7 @@ def is_repair_mode(
     return schain_record.repair_mode or is_skaled_repair_status(status, skaled_status)
 
 
-def is_new_config_mode(status: Dict) -> bool:
+def is_new_config_mode(status: Dict, skaled_status: SkaledStatus) -> bool:
     return status['config'] and not status['config_updated']
 
 
@@ -192,7 +192,9 @@ def is_config_update_time(
 ) -> bool:
     if not skaled_status:
         return False
-    return not status['config_updated'] and status['exit_zero'] and skaled_status.exit_time_reached
+    return not status['config_updated'] and \
+        not status['skaled_container'] and \
+        skaled_status.exit_time_reached
 
 
 def is_reload_mode(schain_record: SChainRecord) -> bool:
@@ -223,15 +225,13 @@ def get_skaled_monitor(
     action_manager: SkaledActionManager,
     status: Dict,
     schain_record: SChainRecord,
-    skaled_status: Optional[SkaledStatus]
-) -> BaseSkaledMonitor:
+    skaled_status: SkaledStatus
+) -> Type[BaseSkaledMonitor]:
     logger.info('Choosing skaled monitor')
-    logger.info('Upstream config %s', action_manager.upstream_config_path)
-    logger.info('Status dict %s', status)
     if skaled_status:
         skaled_status.log()
 
-    mon_type = RegularSkaledMonitor
+    mon_type: Type[BaseSkaledMonitor] = RegularSkaledMonitor
     if no_config(status):
         mon_type = NoConfigSkaledMonitor
     elif is_backup_mode(schain_record):
@@ -244,7 +244,7 @@ def get_skaled_monitor(
         mon_type = NewNodeSkaledMonitor
     elif is_config_update_time(status, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
-    elif is_new_config_mode(status):
+    elif is_new_config_mode(status, skaled_status):
         mon_type = NewConfigSkaledMonitor
 
     return mon_type

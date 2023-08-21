@@ -198,4 +198,6 @@ class ConfigFileManager:
 
     def remove_skaled_config(self) -> None:
         with ConfigFileManager.CFM_LOCK:
-            os.remove(self.skaled_config_path)
+            if self.skaled_config_exists():
+                logger.info('Removing skaled config')
+                os.remove(self.skaled_config_path)
