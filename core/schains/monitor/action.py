@@ -119,7 +119,7 @@ class BaseActionManager:
         if self.schain_record.first_run:
             self.schain_record.set_restart_count(0)
             self.schain_record.set_failed_rpc_count(0)
-        set_first_run(self.name, False)
+        self.schain_record.set_first_run(False)
         self.schain_record.set_new_schain(False)
         logger.info(
             'restart_count - %s, failed_rpc_count - %s',
@@ -463,4 +463,4 @@ class SkaledActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def disable_repair_mode(self) -> None:
         logger.info('Switching off repair mode')
-        switch_off_repair_mode(self.name)
+        self.schain_record.set_repair_mode(False)

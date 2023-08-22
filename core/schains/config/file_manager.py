@@ -19,6 +19,7 @@
 
 import logging
 import os
+import re
 import shutil
 import time
 import threading
@@ -107,12 +108,18 @@ class ConfigFileManager:
         self.upstream_prefix = f'schain_{schain_name}_'
 
     def get_upstream_configs(self) -> List[UpstreamConfigFilename]:
+        pattern = re.compile(rf'{self.upstream_prefix}\d+_\d+.json')
         with ConfigFileManager.CFM_LOCK:
             filenames = get_files_with_prefix(
                 self.dirname,
                 self.upstream_prefix
             )
-        return sorted(list(map(UpstreamConfigFilename.from_filename, filenames)))
+            return sorted(
+                map(
+                    UpstreamConfigFilename.from_filename,
+                    filter(pattern.search, filenames)
+                )
+            )
 
     @property
     def latest_upstream_path(self) -> Optional[str]:

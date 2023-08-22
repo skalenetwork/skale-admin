@@ -184,13 +184,10 @@ def create_and_execute_tasks(
         'sync_config_run %s, config_version %s, stream_version %s',
         schain_record.sync_config_run, schain_record.config_version, stream_version
     )
+    tasks = []
     if schain_record.sync_config_run or schain_record.config_version != stream_version:
         ConfigFileManager(name).remove_skaled_config()
-
-    tasks = []
-    logger.info('Config versions %s %s',
-                schain_record.config_version, stream_version)
-    if schain_record.sync_config_run or schain_record.config_version == stream_version:
+    else:
         logger.info('Adding skaled task to the pool')
         tasks.append(
             Task(
@@ -220,6 +217,8 @@ def create_and_execute_tasks(
                 sleep=CONFIG_PIPELINE_SLEEP
             ))
 
+    if len(tasks) == 0:
+        logger.warning('No tasks to run')
     keep_tasks_running(executor, tasks, futures)
 
 

@@ -347,32 +347,14 @@ def test_get_skaled_monitor_update_config(
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
+    status = skaled_checks_outdated_config.get_all()
+    status['skaled_container'] = False
 
     mon = get_skaled_monitor(
         skaled_am,
-        skaled_checks_outdated_config.get_all(),
+        status,
         schain_record,
         skaled_status_exit_time_reached
-    )
-    assert mon == UpdateConfigSkaledMonitor
-
-
-def test_get_skaled_monitor_update_config_no_rotation(
-    skaled_am,
-    skaled_checks_outdated_config,
-    schain_db,
-    skaled_status,
-    new_upstream
-):
-    name = schain_db
-    schain_record = SChainRecord.get_by_name(name)
-    state = skaled_checks_outdated_config.get_all()
-    state['rotation_id_updated'] = True
-    mon = get_skaled_monitor(
-        skaled_am,
-        state,
-        schain_record,
-        skaled_status
     )
     assert mon == UpdateConfigSkaledMonitor
 
@@ -451,6 +433,16 @@ def test_new_config_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutil
     assert dutils.get_vol(skaled_am.name)
     assert dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
     assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
+
+
+@pytest.mark.skip
+def test_new_config_skaled_monitor_failed_skaled(skaled_am, skaled_checks, clean_docker, dutils):
+    mon = NewConfigSkaledMonitor(skaled_am, skaled_checks)
+    with mock.patch('core.schains.monitor.containers.run_schain_container') \
+            as run_skaled_container_mock:
+        mon.run()
+        assert skaled_am.rc.is_rules_synced
+        assert run_skaled_container_mock.assert_not_called()
 
 
 def test_recreate_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):

@@ -193,7 +193,8 @@ def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
     assert not schain_checks.ima_container.status
 
     with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
-        run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
+        run_ima_container(schain, mainnet_chain_id=1,
+                          image=image, dutils=dutils)
 
         assert not schain_checks.ima_container.status
 
@@ -207,7 +208,8 @@ def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
     with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
         assert not schain_checks.ima_container.status
         image = get_image_name(type=IMA_CONTAINER, new=True)
-        run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
+        run_ima_container(schain, mainnet_chain_id=1,
+                          image=image, dutils=dutils)
         assert schain_checks.ima_container.status
 
 

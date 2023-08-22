@@ -71,10 +71,9 @@ def read_base_config():
 def get_files_with_prefix(config_dir: str, prefix: str) -> List[str]:
     prefix_files = []
     if os.path.isdir(config_dir):
-        configs = [
+        prefix_files = [
             os.path.join(config_dir, fname)
             for fname in os.listdir(config_dir)
             if fname.startswith(prefix)
         ]
-        prefix_files = sorted(configs)
-    return prefix_files
+    return sorted(prefix_files)
