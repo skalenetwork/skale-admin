@@ -161,7 +161,7 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
         if not self.checks.volume:
             self.am.volume()
         if not self.checks.skaled_container:
-            self.am.skaled_container()
+            self.am.skaled_container(restart_on_exit=False)
         else:
             self.am.reset_restart_counter()
         if not self.checks.rpc:

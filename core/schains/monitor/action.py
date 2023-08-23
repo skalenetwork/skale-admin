@@ -73,12 +73,7 @@ from tools.str_formatters import arguments_list_string
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 
 from tools.notifications.messages import notify_repair_mode
-from web.models.schain import (
-    SChainRecord,
-    set_first_run,
-    switch_off_repair_mode,
-    upsert_schain_record
-)
+from web.models.schain import SChainRecord, upsert_schain_record
 
 
 logger = logging.getLogger(__name__)
@@ -302,7 +297,8 @@ class SkaledActionManager(BaseActionManager):
     def skaled_container(
         self,
         download_snapshot: bool = False,
-        start_ts: Optional[int] = None
+        start_ts: Optional[int] = None,
+        restart_on_exit: bool = True
     ) -> bool:
         logger.info(
             'Starting skaled container watchman snapshot: %s, start_ts: %s',
@@ -315,6 +311,7 @@ class SkaledActionManager(BaseActionManager):
             skaled_status=self.skaled_status,
             download_snapshot=download_snapshot,
             start_ts=start_ts,
+            restart_on_exit=restart_on_exit,
             dutils=self.dutils
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)
