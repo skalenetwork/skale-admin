@@ -188,7 +188,7 @@ class SChainRecord(BaseModel):
 
     def set_sync_config_run(self, value):
         logger.info(f'Changing sync_config_run for {self.name} to {value}')
-        self.repair_mode = value
+        self.sync_config_run = value
         self.upload()
 
     def is_dkg_unsuccessful(self) -> bool:
@@ -219,12 +219,12 @@ def set_schains_backup_run():
 
 
 def set_schains_sync_config_run(chain: str):
-    logger.info('Setting backup_run=True for all sChain records')
+    logger.info('Setting sync_config_run=True for sChain: %s', chain)
     if chain == 'all':
-        query = SChainRecord.update(backup_run=True).where(
+        query = SChainRecord.update(sync_config_run=True).where(
             SChainRecord.sync_config_run == False)  # noqa
     else:
-        query = SChainRecord.update(backup_run=True).where(
+        query = SChainRecord.update(sync_config_run=True).where(
             SChainRecord.sync_config_run == False and SChainRecord.name == chain)  # noqa
     query.execute()
 
