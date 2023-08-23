@@ -185,22 +185,6 @@ def create_and_execute_tasks(
         schain_record.sync_config_run, schain_record.config_version, stream_version
     )
     tasks = []
-    if schain_record.sync_config_run or schain_record.config_version != stream_version:
-        ConfigFileManager(name).remove_skaled_config()
-    else:
-        logger.info('Adding skaled task to the pool')
-        tasks.append(
-            Task(
-                f'{name}-skaled',
-                functools.partial(
-                    run_skaled_pipeline,
-                    skale=skale,
-                    schain=schain,
-                    node_config=node_config,
-                    dutils=dutils
-                ),
-                sleep=SKALED_PIPELINE_SLEEP
-            ))
     if not leaving_chain:
         logger.info('Adding config task to the pool')
         tasks.append(
@@ -215,6 +199,23 @@ def create_and_execute_tasks(
                     stream_version=stream_version
                 ),
                 sleep=CONFIG_PIPELINE_SLEEP
+            ))
+    if schain_record.config_version != stream_version or \
+       (schain_record.sync_config_run and schain_record.first_run):
+        ConfigFileManager(name).remove_skaled_config()
+    else:
+        logger.info('Adding skaled task to the pool')
+        tasks.append(
+            Task(
+                f'{name}-skaled',
+                functools.partial(
+                    run_skaled_pipeline,
+                    skale=skale,
+                    schain=schain,
+                    node_config=node_config,
+                    dutils=dutils
+                ),
+                sleep=SKALED_PIPELINE_SLEEP
             ))
 
     if len(tasks) == 0:
