@@ -190,9 +190,9 @@ class SChainRuleController(IRuleController):
         expected = set(self.expected_rules())
         logger.debug('Rules status: actual %s, expected %s', actual, expected)
         logger.info(
-            'Rules status: missing rules %s, redundant rules: %s',
-            expected - actual,
-            actual - expected
+            'Rules status: missing rules %d, redundant rules: %d',
+            len(expected - actual),
+            len(actual - expected)
         )
         return actual == expected
 
