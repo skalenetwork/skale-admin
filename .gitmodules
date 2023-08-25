@@ -4,4 +4,4 @@
     branch = develop
 [submodule "hardhat-node"]
 	path = hardhat-node
-	url = git@github.com:skalenetwork/hardhat-node.git
+	url = https://github.com/skalenetwork/hardhat-node.git
