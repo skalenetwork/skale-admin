@@ -219,8 +219,14 @@ def is_repair_mode(
     return schain_record.repair_mode or is_skaled_repair_status(status, skaled_status)
 
 
-def is_new_config_mode(status: Dict, skaled_status: SkaledStatus) -> bool:
-    return status['config'] and not status['config_updated']
+def is_new_config_mode(
+    status: Dict,
+    finish_ts: Optional[int]
+) -> bool:
+    ts = int(time.time())
+    if finish_ts is None:
+        return False
+    return finish_ts > ts and status['config'] and not status['config_updated']
 
 
 def is_config_update_time(
@@ -281,7 +287,7 @@ def get_skaled_monitor(
         mon_type = NewNodeSkaledMonitor
     elif is_config_update_time(status, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
-    elif is_new_config_mode(status, skaled_status):
+    elif is_new_config_mode(status, action_manager.finish_ts):
         mon_type = NewConfigSkaledMonitor
 
     return mon_type

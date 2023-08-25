@@ -218,7 +218,7 @@ def test_ima_container_action_new_chain(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-develop.12'
+        assert image == 'skalenetwork/ima:2.0.0-beta.9'
 
 
 @mock.patch('core.schains.monitor.containers.run_ima_container', run_ima_container_mock)
@@ -242,7 +242,7 @@ def test_ima_container_action_old_chain(
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
         assert image == 'skalenetwork/ima:2.0.0-develop.3'
-        assert dutils.pulled('skalenetwork/ima:2.0.0-develop.12')
+        assert dutils.pulled('skalenetwork/ima:2.0.0-beta.9')
 
     mts = ts - 5
     with mock.patch('core.schains.monitor.action.get_ima_migration_ts', return_value=mts):
@@ -252,7 +252,7 @@ def test_ima_container_action_old_chain(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-develop.12'
+        assert image == 'skalenetwork/ima:2.0.0-beta.9'
 
 
 def test_ima_container_action_not_linked(
