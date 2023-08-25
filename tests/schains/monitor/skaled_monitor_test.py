@@ -277,24 +277,65 @@ def skaled_checks_new_config(
     )
 
 
+@freezegun.freeze_time(CURRENT_DATETIME)
 def test_get_skaled_monitor_new_config(
+    skale,
     skaled_am,
     skaled_checks_new_config,
     schain_db,
-    skaled_status
+    skaled_status,
+    node_config,
+    rule_controller,
+    schain_on_contracts,
+    predeployed_ima,
+    rotation_data,
+    secret_keys,
+    ssl_folder,
+    skaled_checks,
+    dutils
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
 
     state = skaled_checks_new_config.get_all()
     state['rotation_id_updated'] = False
-    mon = get_skaled_monitor(
-        skaled_am,
-        state,
-        schain_record,
-        skaled_status
-    )
-    assert mon == NewConfigSkaledMonitor
+
+    schain = skale.schains.get_by_name(name)
+
+    with mock.patch(
+        f'{__name__}.SkaledActionManager.finish_ts',
+        new_callable=mock.PropertyMock
+    ) as finish_ts_mock:
+        finish_ts_mock.return_value = CURRENT_TIMESTAMP - 10
+        skaled_am = SkaledActionManager(
+            schain=schain,
+            rule_controller=rule_controller,
+            node_config=node_config,
+            checks=skaled_checks,
+            dutils=dutils
+        )
+        mon = get_skaled_monitor(
+            skaled_am,
+            state,
+            schain_record,
+            skaled_status
+        )
+        assert mon == RegularSkaledMonitor
+        finish_ts_mock.return_value = CURRENT_TIMESTAMP + 10
+        skaled_am = SkaledActionManager(
+            schain=schain,
+            rule_controller=rule_controller,
+            node_config=node_config,
+            checks=skaled_checks,
+            dutils=dutils
+        )
+        mon = get_skaled_monitor(
+            skaled_am,
+            state,
+            schain_record,
+            skaled_status
+        )
+        assert mon == NewConfigSkaledMonitor
 
 
 @freezegun.freeze_time(CURRENT_DATETIME)
