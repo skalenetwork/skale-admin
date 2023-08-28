@@ -163,7 +163,9 @@ class ConfigChecks(IChecks):
 
         logger.debug('Upstream configs status for %s: %s', self.name, exists)
         return CheckRes(
-            exists and self.schain_record.config_version == self.stream_version
+            exists and
+            self.schain_record.config_version == self.stream_version and
+            not self.schain_record.sync_config_run
         )
 
     @property

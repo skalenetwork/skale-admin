@@ -415,3 +415,27 @@ def test_config_updated(skale, rule_controller, schain_db, estate, dutils):
     with open(upstream_path, 'w') as upstream_file:
         json.dump(config_content, upstream_file)
     assert not checks.config_updated
+
+    schain_record.set_sync_config_run(True)
+    checks = SChainChecks(
+        name,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
+        estate=estate,
+        dutils=dutils
+    )
+    assert not checks.config_updated
+
+    schain_record.set_config_version('new-version')
+    checks = SChainChecks(
+        name,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
+        estate=estate,
+        dutils=dutils
+    )
+    assert not checks.config_updated
