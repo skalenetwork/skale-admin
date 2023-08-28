@@ -1,5 +1,5 @@
 name: Test
-on: [push, pull_reqeust]
+on: [push, pull_request]
 env:
   ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
