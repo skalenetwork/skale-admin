@@ -303,7 +303,7 @@ def test_get_skaled_monitor_new_config(
     schain = skale.schains.get_by_name(name)
 
     with mock.patch(
-        f'{__name__}.SkaledActionManager.finish_ts',
+        f'{__name__}.SkaledActionManager.upstream_finish_ts',
         new_callable=mock.PropertyMock
     ) as finish_ts_mock:
         finish_ts_mock.return_value = CURRENT_TIMESTAMP - 10
