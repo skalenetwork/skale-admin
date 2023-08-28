@@ -287,7 +287,7 @@ def get_skaled_monitor(
         mon_type = NewNodeSkaledMonitor
     elif is_config_update_time(status, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
-    elif is_new_config_mode(status, action_manager.finish_ts):
+    elif is_new_config_mode(status, action_manager.upstream_finish_ts):
         mon_type = NewConfigSkaledMonitor
 
     return mon_type
