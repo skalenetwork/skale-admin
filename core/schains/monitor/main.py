@@ -32,6 +32,7 @@ from web3._utils import request as web3_request
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.checks import ConfigChecks, SkaledChecks
+from core.schains.config.file_manager import ConfigFileManager
 from core.schains.firewall import get_default_rule_controller
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.monitor import (
@@ -137,6 +138,8 @@ def run_skaled_pipeline(
     logger.info('Skaled checks: %s', status)
     notify_checks(name, node_config.all(), status)
 
+    logger.info('Upstream config %s', skaled_am.upstream_config_path)
+    logger.info('Status dict %s', status)
     mon = get_skaled_monitor(
         action_manager=skaled_am,
         status=status,
@@ -177,23 +180,11 @@ def create_and_execute_tasks(
         logger.info('Not on node (%d), finishing process', node_config.id)
         return True
 
+    logger.info(
+        'sync_config_run %s, config_version %s, stream_version %s',
+        schain_record.sync_config_run, schain_record.config_version, stream_version
+    )
     tasks = []
-    logger.info('Config versions %s %s',
-                schain_record.config_version, stream_version)
-    if schain_record.config_version == stream_version:
-        logger.info('Adding skaled task to the pool')
-        tasks.append(
-            Task(
-                f'{name}-skaled',
-                functools.partial(
-                    run_skaled_pipeline,
-                    skale=skale,
-                    schain=schain,
-                    node_config=node_config,
-                    dutils=dutils
-                ),
-                sleep=SKALED_PIPELINE_SLEEP
-            ))
     if not leaving_chain:
         logger.info('Adding config task to the pool')
         tasks.append(
@@ -209,7 +200,26 @@ def create_and_execute_tasks(
                 ),
                 sleep=CONFIG_PIPELINE_SLEEP
             ))
+    if schain_record.config_version != stream_version or \
+       (schain_record.sync_config_run and schain_record.first_run):
+        ConfigFileManager(name).remove_skaled_config()
+    else:
+        logger.info('Adding skaled task to the pool')
+        tasks.append(
+            Task(
+                f'{name}-skaled',
+                functools.partial(
+                    run_skaled_pipeline,
+                    skale=skale,
+                    schain=schain,
+                    node_config=node_config,
+                    dutils=dutils
+                ),
+                sleep=SKALED_PIPELINE_SLEEP
+            ))
 
+    if len(tasks) == 0:
+        logger.warning('No tasks to run')
     keep_tasks_running(executor, tasks, futures)
 
 

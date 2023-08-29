@@ -73,12 +73,7 @@ from tools.str_formatters import arguments_list_string
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 
 from tools.notifications.messages import notify_repair_mode
-from web.models.schain import (
-    SChainRecord,
-    set_first_run,
-    switch_off_repair_mode,
-    upsert_schain_record
-)
+from web.models.schain import SChainRecord, upsert_schain_record
 
 
 logger = logging.getLogger(__name__)
@@ -119,7 +114,7 @@ class BaseActionManager:
         if self.schain_record.first_run:
             self.schain_record.set_restart_count(0)
             self.schain_record.set_failed_rpc_count(0)
-        set_first_run(self.name, False)
+        self.schain_record.set_first_run(False)
         self.schain_record.set_new_schain(False)
         logger.info(
             'restart_count - %s, failed_rpc_count - %s',
@@ -211,6 +206,8 @@ class ConfigActionManager(BaseActionManager):
         result = False
         if not self.cfm.upstream_config_exists() or new_config != self.cfm.latest_upstream_config:
             rotation_id = self.rotation_data['rotation_id']
+            logger.info(
+                'Saving new upstream config rotation_id: %d', rotation_id)
             self.cfm.save_new_upstream(rotation_id, new_config)
             result = True
         else:
@@ -219,6 +216,13 @@ class ConfigActionManager(BaseActionManager):
         update_schain_config_version(
             self.name, schain_record=self.schain_record)
         return result
+
+    @BaseActionManager.monitor_block
+    def reset_config_record(self) -> bool:
+        update_schain_config_version(
+            self.name, schain_record=self.schain_record)
+        self.schain_record.set_sync_config_run(False)
+        return True
 
     @BaseActionManager.monitor_block
     def external_state(self) -> bool:
@@ -293,7 +297,8 @@ class SkaledActionManager(BaseActionManager):
     def skaled_container(
         self,
         download_snapshot: bool = False,
-        start_ts: Optional[int] = None
+        start_ts: Optional[int] = None,
+        restart_on_exit: bool = True
     ) -> bool:
         logger.info(
             'Starting skaled container watchman snapshot: %s, start_ts: %s',
@@ -306,6 +311,7 @@ class SkaledActionManager(BaseActionManager):
             skaled_status=self.skaled_status,
             download_snapshot=download_snapshot,
             start_ts=start_ts,
+            restart_on_exit=restart_on_exit,
             dutils=self.dutils
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)
@@ -404,10 +410,14 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def update_config(self) -> bool:
+        logger.info('Syncing skaled config with upstream')
         return self.cfm.sync_skaled_config_with_upstream()
 
     @BaseActionManager.monitor_block
     def send_exit_request(self) -> None:
+        if self.skaled_status.exit_time_reached:
+            logger.info('Exit time has been already set')
+            return
         finish_ts = self.upstream_finish_ts
         logger.info('Trying to set skaled exit time %s', finish_ts)
         if finish_ts is not None:
@@ -450,4 +460,4 @@ class SkaledActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def disable_repair_mode(self) -> None:
         logger.info('Switching off repair mode')
-        switch_off_repair_mode(self.name)
+        self.schain_record.set_repair_mode(False)

@@ -60,6 +60,7 @@ def run_migrations(db, migrator):
 
     # 2.4 -> 2.5 update fields
     add_backup_run_field(db, migrator)
+    add_sync_config_run_field(db, migrator)
 
 
 def add_new_schain_field(db, migrator):
@@ -128,6 +129,13 @@ def add_failed_snapshot_from(db, migrator):
 def add_backup_run_field(db, migrator):
     add_column(
         db, migrator, 'SChainRecord', 'backup_run',
+        BooleanField(default=False)
+    )
+
+
+def add_sync_config_run_field(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'sync_config_run',
         BooleanField(default=False)
     )
 

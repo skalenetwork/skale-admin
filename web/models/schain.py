@@ -43,7 +43,7 @@ class SChainRecord(BaseModel):
     repair_mode = BooleanField(default=False)
     needs_reload = BooleanField(default=False)
     backup_run = BooleanField(default=False)
-
+    sync_config_run = BooleanField(default=False)
     monitor_last_seen = DateTimeField()
     monitor_id = IntegerField(default=0)
 
@@ -186,6 +186,11 @@ class SChainRecord(BaseModel):
     def is_dkg_done(self) -> bool:
         return self.dkg_status == DKGStatus.DONE.value
 
+    def set_sync_config_run(self, value):
+        logger.info(f'Changing sync_config_run for {self.name} to {value}')
+        self.sync_config_run = value
+        self.upload()
+
     def is_dkg_unsuccessful(self) -> bool:
         return self.dkg_status in [
             DKGStatus.KEY_GENERATION_ERROR.value,
@@ -210,6 +215,17 @@ def set_schains_backup_run():
     logger.info('Setting backup_run=True for all sChain records')
     query = SChainRecord.update(backup_run=True).where(
         SChainRecord.backup_run == False)  # noqa
+    query.execute()
+
+
+def set_schains_sync_config_run(chain: str):
+    logger.info('Setting sync_config_run=True for sChain: %s', chain)
+    if chain == 'all':
+        query = SChainRecord.update(sync_config_run=True).where(
+            SChainRecord.sync_config_run == False)  # noqa
+    else:
+        query = SChainRecord.update(sync_config_run=True).where(
+            SChainRecord.sync_config_run == False and SChainRecord.name == chain)  # noqa
     query.execute()
 
 
@@ -257,6 +273,12 @@ def set_backup_run(name, value):
     if SChainRecord.added(name):
         schain_record = SChainRecord.get_by_name(name)
         schain_record.set_backup_run(value)
+
+
+def set_sync_config_run(name, value):
+    if SChainRecord.added(name):
+        schain_record = SChainRecord.get_by_name(name)
+        schain_record.set_sync_config_run(value)
 
 
 def get_schains_names(include_deleted=False):

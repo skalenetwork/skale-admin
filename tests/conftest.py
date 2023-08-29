@@ -447,6 +447,22 @@ def secret_key(_schain_name):
 
 
 @pytest.fixture
+def secret_keys(_schain_name):
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
+    secret_key_path_0 = os.path.join(schain_dir_path, 'secret_key_0.json')
+    secret_key_path_1 = os.path.join(schain_dir_path, 'secret_key_1.json')
+    try:
+        pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+        with open(secret_key_path_0, 'w') as key_file:
+            json.dump(SECRET_KEY, key_file)
+        with open(secret_key_path_1, 'w') as key_file:
+            json.dump(SECRET_KEY, key_file)
+        yield SECRET_KEY
+    finally:
+        rm_schain_dir(_schain_name)
+
+
+@pytest.fixture
 def schain_config(_schain_name, secret_key, predeployed_ima):
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
     config_path = os.path.join(schain_dir_path,

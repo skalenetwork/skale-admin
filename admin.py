@@ -29,7 +29,7 @@ from core.schains.cleaner import run_cleaner
 from core.updates import soft_updates
 from core.filebeat import update_filebeat_service
 
-from tools.configs import BACKUP_RUN, INIT_LOCK_PATH
+from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
 from tools.configs.web3 import (
     ENDPOINT, ABI_FILEPATH, STATE_FILEPATH)
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
@@ -42,7 +42,8 @@ from web.models.schain import (
     create_tables,
     set_schains_backup_run,
     set_schains_first_run,
-    set_schains_monitor_id
+    set_schains_monitor_id,
+    set_schains_sync_config_run
 )
 from web.migrations import migrate
 
@@ -98,6 +99,8 @@ def init():
         set_schains_monitor_id()
         if BACKUP_RUN:
             set_schains_backup_run()
+        if PULL_CONFIG_FOR_SCHAIN:
+            set_schains_sync_config_run(PULL_CONFIG_FOR_SCHAIN)
         cleanup_notification_state()
 
 

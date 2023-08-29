@@ -20,7 +20,7 @@
 import logging
 import time
 from abc import abstractmethod
-from typing import Dict, Optional
+from typing import Dict, Optional, Type
 
 from core.schains.monitor.base_monitor import IMonitor
 from core.schains.checks import SkaledChecks
@@ -58,6 +58,7 @@ class BaseSkaledMonitor(IMonitor):
 
 
 class RegularSkaledMonitor(BaseSkaledMonitor):
+
     def execute(self) -> None:
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
@@ -74,6 +75,11 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
 
 
 class RepairSkaledMonitor(BaseSkaledMonitor):
+    """
+    When node-cli or skaled requested repair mode -
+    remove volume and download snapshot
+    """
+
     def execute(self) -> None:
         logger.warning(
             'Repair mode execution, record: %s, exit_code_ok: %s',
@@ -94,6 +100,11 @@ class RepairSkaledMonitor(BaseSkaledMonitor):
 
 
 class BackupSkaledMonitor(BaseSkaledMonitor):
+    """
+    When skaled monitor run after backup for the first time -
+    download snapshot
+    """
+
     def execute(self) -> None:
         if not self.checks.volume:
             self.am.volume()
@@ -109,6 +120,11 @@ class BackupSkaledMonitor(BaseSkaledMonitor):
 
 
 class RecreateSkaledMonitor(BaseSkaledMonitor):
+    """
+    When recreate requested from node-cli (currently only for new SSL certs) -
+    safely remove skaled container and start again
+    """
+
     def execute(self) -> None:
         logger.info('Reload requested. Recreating sChain container')
         if not self.checks.volume:
@@ -117,6 +133,11 @@ class RecreateSkaledMonitor(BaseSkaledMonitor):
 
 
 class UpdateConfigSkaledMonitor(BaseSkaledMonitor):
+    """
+    If config is outdated, skaled container exited and ExitTimeReached true -
+    sync config with upstream and restart skaled container
+    """
+
     def execute(self) -> None:
         if not self.checks.config_updated:
             self.am.update_config()
@@ -130,13 +151,17 @@ class UpdateConfigSkaledMonitor(BaseSkaledMonitor):
 
 
 class NewConfigSkaledMonitor(BaseSkaledMonitor):
+    """
+    When config is outdated request setExitTime with latest finish_ts from config
+    """
+
     def execute(self):
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
         if not self.checks.volume:
             self.am.volume()
         if not self.checks.skaled_container:
-            self.am.skaled_container()
+            self.am.skaled_container(restart_on_exit=False)
         else:
             self.am.reset_restart_counter()
         if not self.checks.rpc:
@@ -147,6 +172,11 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
 
 
 class NoConfigSkaledMonitor(BaseSkaledMonitor):
+    """
+    When there is no skaled config - sync with upstream
+    assuming it's exists
+    """
+
     def execute(self):
         if self.checks.upstream_exists:
             logger.info('Creating skaled config')
@@ -156,6 +186,11 @@ class NoConfigSkaledMonitor(BaseSkaledMonitor):
 
 
 class NewNodeSkaledMonitor(BaseSkaledMonitor):
+    """
+    When finish_ts is in the future and there is only one secret key share -
+    download snapshot and shedule start after finish_ts
+    """
+
     def execute(self):
         if not self.checks.volume:
             self.am.volume()
@@ -168,6 +203,8 @@ class NewNodeSkaledMonitor(BaseSkaledMonitor):
             )
         else:
             self.am.reset_restart_counter()
+        if not self.checks.ima_container:
+            self.am.ima_container()
 
 
 def is_backup_mode(schain_record: SChainRecord) -> bool:
@@ -182,8 +219,14 @@ def is_repair_mode(
     return schain_record.repair_mode or is_skaled_repair_status(status, skaled_status)
 
 
-def is_new_config_mode(status: Dict) -> bool:
-    return status['config'] and not status['config_updated']
+def is_new_config_mode(
+    status: Dict,
+    finish_ts: Optional[int]
+) -> bool:
+    ts = int(time.time())
+    if finish_ts is None:
+        return False
+    return finish_ts > ts and status['config'] and not status['config_updated']
 
 
 def is_config_update_time(
@@ -192,14 +235,12 @@ def is_config_update_time(
 ) -> bool:
     if not skaled_status:
         return False
-    logger.info('Rotation id updated status %s', status['rotation_id_updated'])
-    if not status['config_updated']:
-        if skaled_status.exit_time_reached or status['rotation_id_updated']:
-            return True
-    return False
+    return not status['config_updated'] and \
+        not status['skaled_container'] and \
+        skaled_status.exit_time_reached
 
 
-def is_reload_mode(schain_record: SChainRecord) -> bool:
+def is_recreate_mode(schain_record: SChainRecord) -> bool:
     return schain_record.needs_reload
 
 
@@ -227,27 +268,26 @@ def get_skaled_monitor(
     action_manager: SkaledActionManager,
     status: Dict,
     schain_record: SChainRecord,
-    skaled_status: Optional[SkaledStatus]
-) -> BaseSkaledMonitor:
+    skaled_status: SkaledStatus
+) -> Type[BaseSkaledMonitor]:
     logger.info('Choosing skaled monitor')
-    logger.info('Upstream config %s', action_manager.upstream_config_path)
     if skaled_status:
         skaled_status.log()
 
-    mon_type = RegularSkaledMonitor
+    mon_type: Type[BaseSkaledMonitor] = RegularSkaledMonitor
     if no_config(status):
         mon_type = NoConfigSkaledMonitor
     elif is_backup_mode(schain_record):
         mon_type = BackupSkaledMonitor
     elif is_repair_mode(schain_record, status, skaled_status):
         mon_type = RepairSkaledMonitor
-    elif is_reload_mode(schain_record):
+    elif is_recreate_mode(schain_record):
         mon_type = RecreateSkaledMonitor
     elif is_new_node_mode(schain_record, action_manager.finish_ts):
         mon_type = NewNodeSkaledMonitor
     elif is_config_update_time(status, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
-    elif is_new_config_mode(status):
+    elif is_new_config_mode(status, action_manager.upstream_finish_ts):
         mon_type = NewConfigSkaledMonitor
 
     return mon_type

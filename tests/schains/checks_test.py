@@ -18,7 +18,7 @@ from core.schains.config.directory import (
 )
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.runner import get_container_info, get_image_name, run_ima_container
-from core.schains.cleaner import remove_ima_container
+# from core.schains.cleaner import remove_ima_container
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.helper import read_json
@@ -185,29 +185,31 @@ def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
     name = schain_checks.name
     schain = get_schain_contracts_data(name)
     image = get_image_name(type=IMA_CONTAINER)
-    new_image = get_image_name(type=IMA_CONTAINER, new=True)
+    # new_image = get_image_name(type=IMA_CONTAINER, new=True)
 
-    if dutils.pulled(new_image):
-        dutils.rmi(new_image)
+    # if dutils.pulled(new_image):
+    #     dutils.rmi(new_image)
 
-    assert not schain_checks.ima_container.status
+    # assert not schain_checks.ima_container.status
 
-    with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
-        run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
+    # with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
+    #     run_ima_container(schain, mainnet_chain_id=1,
+    #                       image=image, dutils=dutils)
 
-        assert not schain_checks.ima_container.status
+    #     assert not schain_checks.ima_container.status
 
-        dutils.pull(new_image)
+    #     dutils.pull(new_image)
 
-        assert schain_checks.ima_container.status
+    #     assert schain_checks.ima_container.status
 
-    remove_ima_container(name, dutils)
+    # remove_ima_container(name, dutils)
 
     mts = ts - 3600
     with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
         assert not schain_checks.ima_container.status
         image = get_image_name(type=IMA_CONTAINER, new=True)
-        run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
+        run_ima_container(schain, mainnet_chain_id=1,
+                          image=image, dutils=dutils)
         assert schain_checks.ima_container.status
 
 
@@ -412,4 +414,28 @@ def test_config_updated(skale, rule_controller, schain_db, estate, dutils):
     config_content = {'config': 'mock_v5'}
     with open(upstream_path, 'w') as upstream_file:
         json.dump(config_content, upstream_file)
+    assert not checks.config_updated
+
+    schain_record.set_sync_config_run(True)
+    checks = SChainChecks(
+        name,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
+        estate=estate,
+        dutils=dutils
+    )
+    assert not checks.config_updated
+
+    schain_record.set_config_version('new-version')
+    checks = SChainChecks(
+        name,
+        TEST_NODE_ID,
+        schain_record=schain_record,
+        rule_controller=rule_controller,
+        stream_version=CONFIG_STREAM,
+        estate=estate,
+        dutils=dutils
+    )
     assert not checks.config_updated

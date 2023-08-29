@@ -39,6 +39,7 @@ def monitor_schain_container_mock(
     skaled_status,
     download_snapshot=False,
     start_ts=None,
+    restart_on_exit=True,
     dutils=None
 ):
     image_name, container_name, _, _ = get_container_info(
@@ -132,6 +133,7 @@ def test_skaled_container_with_snapshot_action(skaled_am):
             skaled_status=skaled_am.skaled_status,
             download_snapshot=True,
             start_ts=None,
+            restart_on_exit=True,
             dutils=skaled_am.dutils
         )
         assert monitor_schain_mock.call_count == 1
@@ -155,6 +157,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
             skaled_status=skaled_am.skaled_status,
             download_snapshot=True,
             start_ts=ts,
+            restart_on_exit=True,
             dutils=skaled_am.dutils
         )
         assert monitor_schain_mock.call_count == 1
@@ -215,9 +218,10 @@ def test_ima_container_action_new_chain(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-develop.12'
+        assert image == 'skalenetwork/ima:2.0.0-beta.9'
 
 
+@pytest.mark.skip('Docker API GA issues need to be resolved')
 @mock.patch('core.schains.monitor.containers.run_ima_container', run_ima_container_mock)
 def test_ima_container_action_old_chain(
     skaled_am,
@@ -239,7 +243,7 @@ def test_ima_container_action_old_chain(
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
         assert image == 'skalenetwork/ima:2.0.0-develop.3'
-        assert dutils.pulled('skalenetwork/ima:2.0.0-develop.12')
+        assert dutils.pulled('skalenetwork/ima:2.0.0-beta.9')
 
     mts = ts - 5
     with mock.patch('core.schains.monitor.action.get_ima_migration_ts', return_value=mts):
@@ -249,7 +253,7 @@ def test_ima_container_action_old_chain(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-develop.12'
+        assert image == 'skalenetwork/ima:2.0.0-beta.9'
 
 
 def test_ima_container_action_not_linked(
