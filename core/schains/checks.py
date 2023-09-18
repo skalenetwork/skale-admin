@@ -48,7 +48,7 @@ from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.runner import get_container_name, get_image_name, is_new_image_pulled
 from core.schains.skaled_exit_codes import SkaledExitCodes
 
-from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
+from tools.configs.containers import IMA_CONTAINER, NO_CONTAINERS, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import write_json
 from tools.str_formatters import arguments_list_string
@@ -270,7 +270,7 @@ class SkaledChecks(IChecks):
     def skaled_container(self) -> CheckRes:
         """Checks that skaled container is running"""
         # todo: modify check!
-        return CheckRes(self.dutils.is_container_running(self.container_name))
+        return NO_CONTAINERS or self.dutils.is_container_running(self.container_name)
 
     @property
     def exit_code_ok(self) -> CheckRes:

@@ -88,3 +88,5 @@ CHECK_REPORT_PATH = os.path.join(SKALE_VOLUME_PATH, 'reports', 'checks.json')
 NODE_OPTIONS_FILEPATH = os.path.join(NODE_DATA_PATH, 'node_options.json')
 
 PULL_CONFIG_FOR_SCHAIN = os.getenv('PULL_CONFIG_FOR_SCHAIN')
+
+NO_CONTAINERS = os.getenv('NO_CONTAINERS') == 'True'
