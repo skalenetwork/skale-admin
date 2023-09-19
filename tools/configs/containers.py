@@ -55,3 +55,5 @@ DEFAULT_DOCKER_HOST = 'unix:///var/run/skale/docker.sock'
 MAX_SCHAIN_RESTART_COUNT = int(os.getenv('MAX_SCHAIN_RESTART_COUNT', 5))
 
 CONTAINER_LOGS_SEPARATOR = b'=' * 80 + b'\n'
+
+NO_CONTAINERS = os.getenv('NO_CONTAINERS') == 'True'

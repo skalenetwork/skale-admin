@@ -226,7 +226,7 @@ def is_new_config_mode(
     ts = int(time.time())
     if finish_ts is None:
         return False
-    return finish_ts > ts and status['config'] and not status['config_updated']
+    return finish_ts > ts and status['config'] and not status['config_updated'] and not skaled_status.exit_time_reached
 
 
 def is_config_update_time(

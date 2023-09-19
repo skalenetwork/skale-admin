@@ -41,10 +41,13 @@ from core.schains.external_config import ExternalConfig
 from core.schains.types import ContainerType
 from core.schains.firewall.utils import get_sync_agent_ranges
 
-from tools.configs import NO_CONTAINERS, SGX_CERTIFICATES_FOLDER
+from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
-    SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
+    IMA_CONTAINER,
+    NO_CONTAINERS,
+    SCHAIN_CONTAINER,
+    SCHAIN_STOP_TIMEOUT
 )
 from tools.docker_utils import DockerUtils
 from tools.helper import merged_unique, read_json, is_node_part_of_chain

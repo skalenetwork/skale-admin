@@ -270,7 +270,9 @@ class SkaledChecks(IChecks):
     def skaled_container(self) -> CheckRes:
         """Checks that skaled container is running"""
         # todo: modify check!
-        return NO_CONTAINERS or self.dutils.is_container_running(self.container_name)
+        result = NO_CONTAINERS or self.dutils.is_container_running(
+            self.container_name)
+        return CheckRes(result)
 
     @property
     def exit_code_ok(self) -> CheckRes:
