@@ -297,8 +297,7 @@ class SkaledActionManager(BaseActionManager):
     def skaled_container(
         self,
         download_snapshot: bool = False,
-        start_ts: Optional[int] = None,
-        restart_on_exit: bool = True
+        start_ts: Optional[int] = None
     ) -> bool:
         logger.info(
             'Starting skaled container watchman snapshot: %s, start_ts: %s',
@@ -311,7 +310,6 @@ class SkaledActionManager(BaseActionManager):
             skaled_status=self.skaled_status,
             download_snapshot=download_snapshot,
             start_ts=start_ts,
-            restart_on_exit=restart_on_exit,
             dutils=self.dutils
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)
