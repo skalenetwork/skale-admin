@@ -33,6 +33,7 @@ LOGS_TEST_LINES = [
     '================================================================================\n',   # noqa
     f'{HELLO_MSG}\n'
 ]
+TEST_IMAGE = 'alpine'
 
 
 @pytest.fixture
@@ -55,7 +56,6 @@ def check_schain_container(schain_name: str, client: DockerUtils):
 
     info = client.get_info(containers[0].id)
     assert 'stats' in info
-    print('DEBUG', containers[0].logs())
     assert info['status'] == 'running'
     assert client.is_container_running(containers[0].id)
     assert containers[0].name
@@ -63,12 +63,14 @@ def check_schain_container(schain_name: str, client: DockerUtils):
 
 @pytest.fixture
 def cleanup_container(schain_config, dutils):
-    yield
-    schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    dutils.safe_rm(
-        get_container_name(SCHAIN_CONTAINER, schain_name),
-        force=True
-    )
+    try:
+        yield
+    finally:
+        schain_name = schain_config['skaleConfig']['sChain']['schainName']
+        dutils.safe_rm(
+            get_container_name(SCHAIN_CONTAINER, schain_name),
+            force=True
+        )
 
 
 def remove_schain_container(schain_name, client):
@@ -235,3 +237,44 @@ def test_remove_volume_error(dutils):
     dutils.get_vol = Mock(return_value=volume_mock)
     with pytest.raises(docker.errors.APIError):
         dutils.rm_vol(name, retry_lvmpy_error=False)
+
+
+def test_images(dutils):
+    if dutils.pulled(f'{TEST_IMAGE}:3.17'):
+        dutils.rmi(f'{TEST_IMAGE}:3.17')
+    if dutils.pulled(f'{TEST_IMAGE}:3.18'):
+        dutils.rmi(f'{TEST_IMAGE}:3.18')
+    try:
+        assert not dutils.pulled(f'{TEST_IMAGE}:3.17')
+        assert not dutils.pulled(f'{TEST_IMAGE}:3.18')
+        dutils.pull(f'{TEST_IMAGE}:3.17')
+        assert dutils.pulled(f'{TEST_IMAGE}:3.17')
+        assert not dutils.pulled(f'{TEST_IMAGE}:3.18')
+        dutils.pull(f'{TEST_IMAGE}:3.18')
+        assert dutils.pulled(f'{TEST_IMAGE}:3.18')
+    finally:
+        dutils.client.images.remove(f'{TEST_IMAGE}:3.18')
+        dutils.client.images.remove(f'{TEST_IMAGE}:3.17')
+
+
+@mock.patch(
+    'core.schains.runner.get_image_name',
+    return_value='skaled-mock'
+)
+def test_get_container_image_name(
+    get_image,
+    dutils,
+    schain_config,
+    cleanup_container,
+    cert_key_pair,
+    skaled_mock_image
+):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain_data = get_schain_contracts_data(schain_name)
+    # Run schain container
+    run_simple_schain_container(schain_data, dutils)
+
+    # Get container image
+    container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    image = dutils.get_container_image_name(container_name)
+    assert image == 'skaled-mock'

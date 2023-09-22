@@ -17,17 +17,20 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
+import logging
+import os
 from dataclasses import dataclass
+
+from flask import g
+from skale.dataclasses.skaled_ports import SkaledPorts
+from websocket import create_connection
 
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.helper import get_schain_ports, get_schain_config, get_chain_id
 from core.ima.schain import get_schain_ima_abi_filepath
-
-import json
-import logging
-import os
-from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
-from tools.configs.containers import CONTAINERS_INFO
+from tools.configs import ENV_TYPE, SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
+from tools.configs.containers import CONTAINERS_INFO, IMA_MIGRATION_PATH
 from tools.configs.db import REDIS_URI
 from tools.configs.ima import (
     IMA_ENDPOINT,
@@ -37,8 +40,7 @@ from tools.configs.ima import (
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ABI_FILEPATH
-from flask import g
-from websocket import create_connection
+from tools.helper import safe_load_yml
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +69,7 @@ class ImaEnv:
 
     sgx_url: str
     ecdsa_key_name: str
+    bls_key_name: str
     sgx_ssl_key_path: str
     sgx_ssl_cert_path: str
     node_address: str
@@ -79,6 +82,8 @@ class ImaEnv:
     monitoring_port: int
 
     time_framing: int
+
+    rpc_port: int
 
     def to_dict(self):
         """Returns upper-case representation of the ImaEnv object"""
@@ -95,6 +100,7 @@ class ImaEnv:
             'NODES_COUNT': self.nodes_count,
             'SGX_URL': self.sgx_url,
             'ECDSA_KEY_NAME': self.ecdsa_key_name,
+            'BLS_KEY_NAME': self.bls_key_name,
             'SGX_SSL_KEY_PATH': self.sgx_ssl_key_path,
             'SGX_SSL_CERT_PATH': self.sgx_ssl_cert_path,
             'NODE_ADDRESS': self.node_address,
@@ -102,6 +108,7 @@ class ImaEnv:
             'CID_MAIN_NET': self.cid_main_net,
             'CID_SCHAIN': self.cid_schain,
             'MONITORING_PORT': self.monitoring_port,
+            'RPC_PORT': self.rpc_port,
             'TIME_FRAMING': self.time_framing
         }
 
@@ -134,6 +141,7 @@ def schain_index_to_node_number(node):
 def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
     schain_config = get_schain_config(schain_name)
     node_info = schain_config["skaleConfig"]["nodeInfo"]
+    bls_key_name = node_info['wallets']['ima']['keyShareName']
     schain_nodes = schain_config["skaleConfig"]["sChain"]
     public_node_info = get_current_node_from_nodes(node_info['nodeID'], schain_nodes)
 
@@ -155,6 +163,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         nodes_count=len(schain_nodes['nodes']),
         sgx_url=SGX_SERVER_URL,
         ecdsa_key_name=node_info['ecdsaKeyName'],
+        bls_key_name=bls_key_name,
         sgx_ssl_key_path=SGX_SSL_KEY_FILEPATH,
         sgx_ssl_cert_path=SGX_SSL_CERT_FILEPATH,
         node_address=node_address,
@@ -162,6 +171,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         cid_main_net=mainnet_chain_id,
         cid_schain=schain_chain_id,
         monitoring_port=node_info['imaMonitoringPort'],
+        rpc_port=get_ima_rpc_port(schain_name),
         time_framing=IMA_TIME_FRAMING
     )
 
@@ -177,6 +187,12 @@ def get_ima_monitoring_port(schain_name):
         return int(node_info["imaMonitoringPort"])
     else:
         return None
+
+
+def get_ima_rpc_port(schain_name):
+    config = get_schain_config(schain_name)
+    base_port = config['skaleConfig']['nodeInfo']['basePort']
+    return base_port + SkaledPorts.IMA_RPC.value
 
 
 def get_ima_container_statuses():
@@ -244,3 +260,11 @@ def get_ima_log_checks():
                                                    'last_ima_errors': errors,
                                                    'error_categories': categories}})
     return all_ima_healthchecks
+
+
+def get_migration_schedule() -> dict:
+    return safe_load_yml(IMA_MIGRATION_PATH)[ENV_TYPE]
+
+
+def get_migration_ts(name: str) -> int:
+    return get_migration_schedule().get(name, 0)

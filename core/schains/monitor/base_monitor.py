@@ -43,7 +43,10 @@ from core.schains.limits import get_schain_type
 from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
 from core.schains.monitor.rpc import handle_failed_schain_rpc
 from core.schains.runner import (
-    restart_container, is_container_exists, get_container_name
+    pull_new_image,
+    restart_container,
+    is_container_exists,
+    get_container_name
 )
 from core.schains.config import init_schain_config, init_schain_config_dir
 from core.schains.config.directory import get_schain_config
@@ -52,13 +55,13 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config
 )
-from core.schains.ima import ImaData
+from core.schains.ima import get_migration_ts as get_ima_migration_ts, ImaData
 from core.schains.skaled_status import init_skaled_status
 
 from tools.docker_utils import DockerUtils
 from tools.notifications.messages import notify_checks, is_checks_passed
 from tools.str_formatters import arguments_list_string
-from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 
 from web.models.schain import upsert_schain_record, set_first_run, SChainRecord
 
@@ -310,10 +313,14 @@ class BaseMonitor(ABC):
     @monitor_block
     def ima_container(self) -> bool:
         initial_status = self.checks.ima_container.status
+        migration_ts = get_ima_migration_ts(self.name)
+        logger.debug('Migration time for %s IMA - %d', self.name, migration_ts)
         if not initial_status:
+            pull_new_image(type=IMA_CONTAINER, dutils=self.dutils)
             monitor_ima_container(
                 self.schain,
                 self.ima_data,
+                migration_ts=migration_ts,
                 dutils=self.dutils
             )
         else:
