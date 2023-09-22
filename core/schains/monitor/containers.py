@@ -18,14 +18,18 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 
 from core.schains.volume import is_volume_exists
 from core.schains.runner import (
-    is_schain_container_failed,
-    restart_container,
-    run_schain_container,
+    get_container_image,
+    get_image_name,
     is_container_exists,
-    run_ima_container
+    is_schain_container_failed,
+    remove_container,
+    restart_container,
+    run_ima_container,
+    run_schain_container
 )
 from core.ima.schain import copy_schain_ima_abi
 from core.schains.ima import ImaData
@@ -99,6 +103,7 @@ def monitor_schain_container(
 def monitor_ima_container(
     schain: dict,
     ima_data: ImaData,
+    migration_ts: int = 0,
     dutils: DockerUtils = None
 ) -> None:
     schain_name = schain["name"]
@@ -113,12 +118,28 @@ def monitor_ima_container(
 
     copy_schain_ima_abi(schain_name)
 
-    if not is_container_exists(schain_name, container_type=IMA_CONTAINER, dutils=dutils):
-        logger.info(f'sChain {schain_name}: IMA container doesn\'t exits, creating...')
+    container_exists = is_container_exists(schain_name, container_type=IMA_CONTAINER, dutils=dutils)
+    container_image = get_container_image(schain_name, IMA_CONTAINER, dutils)
+    new_image = get_image_name(type=IMA_CONTAINER, new=True)
+
+    expected_image = get_image_name(type=IMA_CONTAINER)
+    logger.debug('%s IMA image %s, expected %s', schain_name, container_image, expected_image)
+
+    if time.time() > migration_ts:
+        logger.debug('%s IMA migration time passed', schain_name)
+        expected_image = new_image
+        if container_exists and expected_image != container_image:
+            logger.info('%s Removing old container as part of IMA migration', schain_name)
+            remove_container(schain_name, IMA_CONTAINER, dutils)
+            container_exists = False
+
+    if not container_exists:
+        logger.info('%s No IMA container, creating, image %s', schain_name, expected_image)
         run_ima_container(
             schain,
             ima_data.chain_id,
+            image=expected_image,
             dutils=dutils
         )
     else:
-        logger.warning(f'sChain {schain_name}: IMA container exists, but not running, skipping')
+        logger.debug('sChain %s: IMA container exists, but not running, skipping', schain_name)

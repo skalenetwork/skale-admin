@@ -153,9 +153,9 @@ def test_remove_ima_container(dutils, schain_container):
     )):
         run_simple_ima_container(schain_data, dutils)
     container_name = IMA_CONTAINER_NAME_TEMPLATE.format(schain_name)
-    assert is_container_running(dutils, container_name)
+    assert dutils.is_container_exists(container_name)
     remove_ima_container(schain_name, dutils=dutils)
-    assert not is_container_running(dutils, container_name)
+    assert not dutils.is_container_exists(container_name)
 
 
 def test_remove_schain_record():
