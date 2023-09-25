@@ -297,7 +297,8 @@ class SkaledActionManager(BaseActionManager):
     def skaled_container(
         self,
         download_snapshot: bool = False,
-        start_ts: Optional[int] = None
+        start_ts: Optional[int] = None,
+        ignore_when_exit_reached: bool = True,
     ) -> bool:
         logger.info(
             'Starting skaled container watchman snapshot: %s, start_ts: %s',
@@ -346,7 +347,7 @@ class SkaledActionManager(BaseActionManager):
         return True
 
     @BaseActionManager.monitor_block
-    def reloaded_skaled_container(self) -> bool:
+    def reloaded_skaled_container(self, ignore_when_exit_reached: bool = True) -> bool:
         logger.info('Starting skaled from scratch')
         initial_status = True
         if is_container_exists(self.name, dutils=self.dutils):
@@ -357,7 +358,8 @@ class SkaledActionManager(BaseActionManager):
         self.schain_record.set_restart_count(0)
         self.schain_record.set_failed_rpc_count(0)
         self.schain_record.set_needs_reload(False)
-        initial_status = self.skaled_container()
+        initial_status = self.skaled_container(
+            ignore_when_exit_reached=ignore_when_exit_reached)
         return initial_status
 
     @BaseActionManager.monitor_block
