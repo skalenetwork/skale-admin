@@ -26,6 +26,7 @@ from typing import Dict, List, Optional
 
 from redis import BlockingConnectionPool, Redis
 
+from core.schains.checks import API_ALLOWED_CHECKS
 from tools.configs.tg import CHECKS_STATE_EXPIRATION, TG_API_KEY, TG_CHAT_ID
 from tools.notifications.tasks import send_message_to_telegram
 
@@ -52,7 +53,8 @@ def notifications_enabled(func):
             try:
                 return func(*args, **kwargs)
             except Exception:
-                logger.exception('Notification %s sending failed', func.__name__)
+                logger.exception(
+                    'Notification %s sending failed', func.__name__)
 
     return wrapper
 
@@ -111,6 +113,7 @@ def notify_checks(
     client: Optional[Redis] = None
 ) -> None:
     client = client or redis_client
+    checks = dict(filter(lambda r: r[0] in API_ALLOWED_CHECKS, checks.items()))
     count_key = f'messages.checks.{schain_name}.count'
     state_key = f'messages.checks.{schain_name}.state'
     saved_state_bytes = client.get(state_key) or b''
