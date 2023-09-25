@@ -21,7 +21,7 @@ import os
 import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from core.schains.config.directory import get_schain_check_filepath
 from core.schains.config.file_manager import ConfigFileManager
@@ -87,8 +87,27 @@ class CheckRes:
 
 class IChecks(ABC):
     @abstractmethod
-    def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
+    def get_name(self) -> str:
         pass
+
+    def get_all(self,
+                log: bool = True,
+                save: bool = False,
+                needed: Optional[List[str]] = None) -> Dict:
+        if needed:
+            names = needed
+        else:
+            names = self.get_check_names()
+
+        checks_status = {}
+        for name in names:
+            if hasattr(self, name):
+                checks_status[name] = getattr(self, name).status
+        if log:
+            log_checks_dict(self.get_name(), checks_status)
+        if save:
+            save_checks_dict(self.get_name(), checks_status)
+        return checks_status
 
     def is_healthy(self) -> bool:
         checks = self.get_all()
@@ -104,16 +123,15 @@ class IChecks(ABC):
 
 
 class ConfigChecks(IChecks):
-    def __init__(
-        self,
-        schain_name: str,
-        node_id: int,
-        schain_record: SChainRecord,
-        rotation_id: int,
-        stream_version: str,
-        estate: ExternalState,
-        econfig: Optional[ExternalConfig] = None
-    ):
+    def __init__(self,
+                 schain_name: str,
+                 node_id: int,
+                 schain_record: SChainRecord,
+                 rotation_id: int,
+                 stream_version: str,
+                 estate: ExternalState,
+                 econfig: Optional[ExternalConfig] = None
+                 ) -> None:
         self.name = schain_name
         self.node_id = node_id
         self.schain_record = schain_record
@@ -125,21 +143,8 @@ class ConfigChecks(IChecks):
             schain_name=schain_name
         )
 
-    def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
-        if checks_filter:
-            names = checks_filter
-        else:
-            names = self.get_check_names()
-
-        checks_dict = {}
-        for name in names:
-            if hasattr(self, name):
-                checks_dict[name] = getattr(self, name).status
-        if log:
-            log_checks_dict(self.name, checks_dict)
-        if save:
-            save_checks_dict(self.name, checks_dict)
-        return checks_dict
+    def get_name(self) -> str:
+        return self.name
 
     @property
     def config_dir(self) -> CheckRes:
@@ -198,21 +203,8 @@ class SkaledChecks(IChecks):
             schain_name=schain_name
         )
 
-    def get_all(self, log=True, save=False, checks_filter=None) -> Dict:
-        if checks_filter:
-            names = checks_filter
-        else:
-            names = self.get_check_names()
-
-        checks_dict = {}
-        for name in names:
-            if hasattr(self, name):
-                checks_dict[name] = getattr(self, name).status
-        if log:
-            log_checks_dict(self.name, checks_dict)
-        if save:
-            save_checks_dict(self.name, checks_dict)
-        return checks_dict
+    def get_name(self) -> str:
+        return self.name
 
     @property
     def upstream_exists(self) -> CheckRes:
@@ -387,16 +379,18 @@ class SChainChecks(IChecks):
                 return getattr(subj, attr)
         raise AttributeError(f'No such attribute {attr}')
 
-    def get_all(self, log=True, save=False, checks_filter=None):
-        if not checks_filter:
-            checks_filter = API_ALLOWED_CHECKS
+    def get_name(self) -> str:
+        return self.name
+
+    def get_all(self, log: bool = True, save: bool = False, needed: Optional[List[str]] = None):
+        needed = needed or API_ALLOWED_CHECKS
 
         plain_checks = {}
         for subj in self._subjects:
             subj_checks = subj.get_all(
                 log=False,
                 save=False,
-                checks_filter=checks_filter
+                needed=needed
             )
             plain_checks.update(subj_checks)
         if not self.estate.ima_linked:
@@ -404,10 +398,14 @@ class SChainChecks(IChecks):
                 del plain_checks['ima_container']
 
         if log:
-            log_checks_dict(self.name, plain_checks)
+            log_checks_dict(self.get_name(), plain_checks)
         if save:
-            save_checks_dict(self.name, plain_checks)
+            save_checks_dict(self.get_name(), plain_checks)
         return plain_checks
+
+
+def get_api_checks_status(status: Dict) -> Dict:
+    return dict(filter(lambda r: r[0] in API_ALLOWED_CHECKS, status.items()))
 
 
 def save_checks_dict(schain_name, checks_dict):
