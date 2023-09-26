@@ -110,7 +110,7 @@ def schains_checks():
                     rotation_id=rotation_id,
                     stream_version=stream_version,
                     estate=estate
-                ).get_all(checks_filter=checks_filter)
+                ).get_all(needed=checks_filter)
                 checks.append({
                     'name': schain['name'],
                     'healthchecks': schain_checks

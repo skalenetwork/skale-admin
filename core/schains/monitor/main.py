@@ -31,7 +31,12 @@ from web3._utils import request as web3_request
 
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
-from core.schains.checks import ConfigChecks, SkaledChecks
+from core.schains.checks import (
+    ConfigChecks,
+    get_api_checks_status,
+    TG_ALLOWED_CHECKS,
+    SkaledChecks
+)
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.firewall import get_default_rule_controller
 from core.schains.firewall.utils import get_sync_agent_ranges
@@ -135,11 +140,13 @@ def run_skaled_pipeline(
         dutils=dutils
     )
     status = skaled_checks.get_all(log=False)
-    logger.info('Skaled checks: %s', status)
-    notify_checks(name, node_config.all(), status)
+    api_status = get_api_checks_status(
+        status=status, allowed=TG_ALLOWED_CHECKS)
+    notify_checks(name, node_config.all(), api_status)
+
+    logger.info('Skaled status: %s', status)
 
     logger.info('Upstream config %s', skaled_am.upstream_config_path)
-    logger.info('Status dict %s', status)
     mon = get_skaled_monitor(
         action_manager=skaled_am,
         status=status,

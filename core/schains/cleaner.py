@@ -242,15 +242,16 @@ def cleanup_schain(
         rotation_id=rotation_id,
         estate=estate
     )
-    if checks.skaled_container.status or is_exited(
+    status = checks.get_all()
+    if status['skaled_container'] or is_exited(
         schain_name,
         container_type=ContainerType.schain,
         dutils=dutils
     ):
         remove_schain_container(schain_name, dutils=dutils)
-    if checks.volume.status:
+    if status['volume']:
         remove_schain_volume(schain_name, dutils=dutils)
-    if checks.firewall_rules.status:
+    if status['firewall_rules']:
         conf = ConfigFileManager(schain_name).skaled_config
         base_port = get_base_port_from_config(conf)
         own_ip = get_own_ip_from_config(conf)
@@ -266,13 +267,13 @@ def cleanup_schain(
         )
         rc.cleanup()
     if estate is not None and estate.ima_linked:
-        if checks.ima_container.status or is_exited(
+        if status.get('ima_container', False) or is_exited(
             schain_name,
             container_type=ContainerType.ima,
             dutils=dutils
         ):
             remove_ima_container(schain_name, dutils=dutils)
-    if checks.config_dir.status:
+    if status['config_dir']:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
 
