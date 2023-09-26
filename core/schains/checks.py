@@ -72,6 +72,17 @@ API_ALLOWED_CHECKS = [
     'ima_container'
 ]
 
+TG_ALLOWED_CHECKS = [
+    'volume',
+    'firewall_rules',
+    'skaled_container',
+    'exit_code_ok',
+    'rpc',
+    'blocks',
+    'process',
+    'ima_container'
+]
+
 
 class CheckRes:
     def __init__(self, status: bool, data: dict = None):
@@ -404,8 +415,8 @@ class SChainChecks(IChecks):
         return plain_checks
 
 
-def get_api_checks_status(status: Dict) -> Dict:
-    return dict(filter(lambda r: r[0] in API_ALLOWED_CHECKS, status.items()))
+def get_api_checks_status(status: Dict, allowed: List = API_ALLOWED_CHECKS) -> Dict:
+    return dict(filter(lambda r: r[0] in allowed, status.items()))
 
 
 def save_checks_dict(schain_name, checks_dict):
