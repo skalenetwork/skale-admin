@@ -39,16 +39,18 @@ def monitor_schain_container_mock(
     skaled_status,
     download_snapshot=False,
     start_ts=None,
+    ignore_reached_exit=True,
     dutils=None
 ):
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain['name'])
     dutils.safe_rm(container_name)
-    dutils.run_container(
-        image_name=image_name,
-        name=container_name,
-        entrypoint='bash -c "while true; do foo; sleep 2; done"'
-    )
+    if not skaled_status.exit_time_reached or not ignore_reached_exit:
+        dutils.run_container(
+            image_name=image_name,
+            name=container_name,
+            entrypoint='bash -c "while true; do foo; sleep 2; done"'
+        )
 
 
 @pytest.fixture
@@ -163,7 +165,6 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
 
 
 def test_restart_skaled_container_action(skaled_am, skaled_checks):
-    skaled_am.reloaded_skaled_container()
     try:
         skaled_am.volume()
         with mock.patch(
@@ -176,6 +177,28 @@ def test_restart_skaled_container_action(skaled_am, skaled_checks):
             skaled_am.restart_skaled_container()
             assert skaled_checks.skaled_container
             skaled_am.reloaded_skaled_container()
+            assert skaled_checks.skaled_container
+            skaled_am.reloaded_skaled_container()
+            assert skaled_checks.skaled_container
+    finally:
+        skaled_am.cleanup_schain_docker_entity()
+
+
+def test_restart_skaled_container_action_exit_reached(
+    skaled_am,
+    skaled_checks,
+    skaled_status_exit_time_reached
+):
+    try:
+        skaled_am.volume()
+        with mock.patch(
+            'core.schains.monitor.action.monitor_schain_container',
+            monitor_schain_container_mock
+        ):
+            assert not skaled_checks.skaled_container
+            skaled_am.reloaded_skaled_container()
+            assert not skaled_checks.skaled_container
+            skaled_am.reloaded_skaled_container(ignore_reached_exit=False)
             assert skaled_checks.skaled_container
     finally:
         skaled_am.cleanup_schain_docker_entity()

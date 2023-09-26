@@ -145,7 +145,7 @@ class UpdateConfigSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.checks.volume:
             self.am.volume()
-        self.am.reloaded_skaled_container(ignore_when_exit_reached=False)
+        self.am.reloaded_skaled_container(ignore_reached_exit=False)
         if not self.checks.ima_container:
             self.am.restart_ima_container()
 

@@ -52,7 +52,7 @@ def monitor_schain_container(
     skaled_status,
     download_snapshot=False,
     start_ts=None,
-    ignore_when_exit_reached: bool = True,
+    ignore_reached_exit: bool = True,
     dutils=None
 ) -> None:
     dutils = dutils or DockerUtils()
@@ -63,7 +63,7 @@ def monitor_schain_container(
         logger.error(f'Data volume for sChain {schain_name} does not exist')
         return
 
-    if ignore_when_exit_reached and skaled_status.exit_time_reached:
+    if skaled_status.exit_time_reached and ignore_reached_exit:
         logger.info(
             f'{schain_name} - Skipping container monitor: exit time reached')
         skaled_status.log()

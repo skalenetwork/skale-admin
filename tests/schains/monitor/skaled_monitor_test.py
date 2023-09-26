@@ -497,7 +497,14 @@ def test_recreate_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils)
     assert dutils.get_container_created_ts(schain_container.id) > ts_before
 
 
-def test_update_config_skaled_monitor(skaled_am, skaled_checks, dutils, clean_docker, upstreams):
+def test_update_config_skaled_monitor(
+    skaled_am,
+    skaled_checks,
+    dutils,
+    clean_docker,
+    upstreams,
+    skaled_status_exit_time_reached
+):
     name = skaled_checks.name
     ts_before = time.time()
     time.sleep(1)
