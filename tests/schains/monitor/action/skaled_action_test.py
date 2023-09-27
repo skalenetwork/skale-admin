@@ -134,6 +134,7 @@ def test_skaled_container_with_snapshot_action(skaled_am):
             skaled_status=skaled_am.skaled_status,
             download_snapshot=True,
             start_ts=None,
+            ignore_reached_exit=True,
             dutils=skaled_am.dutils
         )
         assert monitor_schain_mock.call_count == 1
@@ -157,6 +158,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
             skaled_status=skaled_am.skaled_status,
             download_snapshot=True,
             start_ts=ts,
+            ignore_reached_exit=True,
             dutils=skaled_am.dutils
         )
         assert monitor_schain_mock.call_count == 1

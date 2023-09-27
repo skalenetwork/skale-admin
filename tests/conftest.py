@@ -619,7 +619,7 @@ def skaled_mock_image(scope='module'):
 
 @pytest.fixture
 def cleanup_schain_dirs_before():
-    shutil.rmtree(SCHAINS_DIR_PATH)
+    shutil.rmtree(SCHAINS_DIR_PATH, ignore_errors=True)
     pathlib.Path(SCHAINS_DIR_PATH).mkdir(parents=True, exist_ok=True)
     return
 
@@ -743,7 +743,7 @@ def new_upstream(schain_db):
         Path(upath).touch()
         yield upath
     finally:
-        shutil.rmtree(config_dir)
+        shutil.rmtree(config_dir, ignore_errors=True)
 
 
 @pytest.fixture
@@ -781,4 +781,4 @@ def upstreams(schain_db, schain_config):
                 json.dump(schain_config, f)
         yield files
     finally:
-        shutil.rmtree(config_folder)
+        shutil.rmtree(config_folder, ignore_errors=True)

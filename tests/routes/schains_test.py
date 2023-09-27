@@ -58,7 +58,7 @@ def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):
                         'status': 'ok'}
     finally:
         os.remove(filepath)
-        shutil.rmtree(os.path.dirname(filepath))
+        shutil.rmtree(os.path.dirname(filepath), ignore_errors=True)
 
 
 def test_schains_list(skale_bp, skale):
