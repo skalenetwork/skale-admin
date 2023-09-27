@@ -361,14 +361,14 @@ def test_get_all(schain_config, rule_controller, dutils, schain_db, estate):
     assert 'ima_container' not in checks_dict_without_ima
 
     filtered_checks = checks_without_ima.get_all(
-        checks_filter=['config', 'volume'])
+        needed=['config', 'volume'])
     assert len(filtered_checks) == 2
 
     filtered_checks = checks_without_ima.get_all(
-        checks_filter=['ima_container'])
+        needed=['ima_container'])
     assert len(filtered_checks) == 0
 
-    filtered_checks = checks_without_ima.get_all(checks_filter=['<0_0>'])
+    filtered_checks = checks_without_ima.get_all(needed=['<0_0>'])
     assert len(filtered_checks) == 0
 
 

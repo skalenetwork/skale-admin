@@ -52,7 +52,8 @@ def notifications_enabled(func):
             try:
                 return func(*args, **kwargs)
             except Exception:
-                logger.exception('Notification %s sending failed', func.__name__)
+                logger.exception(
+                    'Notification %s sending failed', func.__name__)
 
     return wrapper
 
