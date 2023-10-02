@@ -351,7 +351,7 @@ class DKGClient:
                     wait_for=True
                 )
             if tx_res is None:
-               raise TransactionFailedError
+                raise TransactionFailedError
             if self.check_complaint_logs(tx_res.receipt['logs'][0]):
                 logger.info(f'sChain: {self.schain_name}. '
                             f'{self.node_id_dkg} node sent a complaint on {to_node} node')
