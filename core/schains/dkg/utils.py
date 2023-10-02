@@ -101,6 +101,11 @@ def broadcast_and_check_data(dkg_client):
         time_gone = get_latest_block_timestamp(dkg_client.skale) - start_time
         if time_gone > dkg_client.dkg_timeout:
             break
+
+        if not check_no_complaints(dkg_client):
+            logger.info(f'sChain {schain_name}: ComplaintBadData was sent. Will wait for response')
+            return True
+
         logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
                     f'{dkg_client.dkg_timeout - time_gone} seconds left')
 
@@ -124,7 +129,8 @@ def broadcast_and_check_data(dkg_client):
                 broadcasts_found.append(event.nodeIndex)
             except DkgVerificationError as e:
                 logger.error(e)
-                continue
+                report_bad_data(dkg_client, from_node)
+                return True
             except SgxUnreachableError as e:
                 logger.error(e)
                 wait_for_fail(dkg_client.skale, schain_name, start_time)
@@ -134,11 +140,13 @@ def broadcast_and_check_data(dkg_client):
                 f'{from_node}'
             )
 
-        logger.info(f'sChain {schain_name}: total received {len(broadcasts_found)} broadcasts'
-                    f' from nodes {broadcasts_found}')
+        logger.info(f'sChain {schain_name}: total received {is_received.count(True)} broadcasts')
+        logger.info(f'sChain {schain_name}: total received and verified {len(broadcasts_found)}'
+                    f' broadcasts from nodes {broadcasts_found}')
         sleep(30)
 
     check_broadcasted_data(dkg_client, is_correct, is_received)
+    return False
 
 
 def generate_bls_keys(dkg_client):

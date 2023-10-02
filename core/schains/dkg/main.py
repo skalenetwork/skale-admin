@@ -52,18 +52,28 @@ def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
 
 def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
     skale, schain_name = dkg_client.skale, dkg_client.schain_name
-    n = dkg_client.n
-
     channel_started_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
 
-    broadcast_and_check_data(dkg_client)
+    early_complaint = broadcast_and_check_data(dkg_client)
 
-    if not dkg_client.is_everyone_broadcasted():
+    if early_complaint:
+        check_response(dkg_client)
+        wait_for_fail(skale, schain_name, channel_started_time, "correct data")
+        complaint_data = skale.dkg.get_complaint_data(dkg_client.group_index)
+        complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
+        complaint_itself = complainted_node_index == dkg_client.node_id_dkg
+        if check_failed_dkg(skale, schain_name) and not complaint_itself:
+            logger.info(f'sChain: {schain_name}. '
+                        'Accused node has not sent response. Sending complaint...')
+            send_complaint(dkg_client, complainted_node_index, "response")
+        wait_for_fail(skale, schain_name, channel_started_time, "response")
+
+    if not dkg_client.is_everyone_broadcasted() and not early_complaint:
         wait_for_fail(skale, schain_name, channel_started_time, "broadcast")
 
     check_failed_dkg(skale, schain_name)
 
-    is_alright_sent_list = [False for _ in range(n)]
+    is_alright_sent_list = [False for _ in range(dkg_client.n)]
     if check_no_complaints(dkg_client):
         logger.info(f'sChain {schain_name}: No complaints sent in schain - sending alright ...')
         send_alright(dkg_client)
