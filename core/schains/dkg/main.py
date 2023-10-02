@@ -56,6 +56,13 @@ def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
 
     channel_started_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
 
+    rotaion_mainnet = dkg_client.skale.node_rotation.get_rotation_obj(schain_name).rotation_counter
+    if rotation_id != rotaion_mainnet:
+        logger.info(f'sChain {schain_name}: Rotaion id on SKALE MANAGER {rotaion_mainnet} is '
+                    f'different from the one passed by SKALE ADMIN {rotation_id}.'
+                    f' Need to restart')
+        raise DkgError(f'sChain {schain_name}: restarting DKG')
+
     broadcast_and_check_data(dkg_client)
 
     if not dkg_client.is_everyone_broadcasted():
