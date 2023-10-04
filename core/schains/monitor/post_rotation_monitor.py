@@ -35,4 +35,4 @@ class PostRotationMonitor(BaseMonitor):
         logger.info(f'{self.p} was stopped after rotation. Going to restart')
         self.config(overwrite=True)
         self.firewall_rules()
-        self.reloaded_skaled_container()
+        self.reloaded_schain_containers()

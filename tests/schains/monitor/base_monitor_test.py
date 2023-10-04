@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 import mock
 import pytest
@@ -56,7 +57,21 @@ def monitor_schain_container_mock(
 ):
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain['name'])
-    dutils.safe_rm(container_name)
+    dutils.run_container(
+        image_name=image_name,
+        name=container_name,
+        entrypoint='bash -c "while true; do foo; sleep 2; done"'
+    )
+
+
+def monitor_ima_container(
+    schain,
+    public_key=None,
+    start_ts=None,
+    dutils=None
+):
+    image_name, container_name, _, _ = get_container_info(
+        IMA_CONTAINER, schain['name'])
     dutils.run_container(
         image_name=image_name,
         name=container_name,
@@ -358,3 +373,46 @@ def test_display_skaled_logs(skale, test_monitor, _schain_name):
     ):
         test_monitor.skaled_container()
     test_monitor.display_skaled_logs()
+
+
+def test_reloaded_schain_containers(
+    skale,
+    test_monitor,
+    schain_db,
+    cleanup_schain_containers,
+    cleanup_ima_containers,
+    cert_key_pair,
+    schain_config,
+    dutils
+):
+    name = schain_db
+
+    test_monitor.volume()
+    test_monitor.reloaded_schain_containers()
+    schain_container = f'skale_schain_{name}'
+    ima_container = f'skale_ima_{name}'
+    dutils.wait_for_container_creation(schain_container)
+    dutils.wait_for_container_creation(ima_container)
+    info = dutils.get_info(schain_container)
+    print(info)
+    skaled_iso_created_time = info['stats']['Created'].split('.')[0]
+    skaled_created_ts = int(datetime.fromisoformat(skaled_iso_created_time).timestamp())
+
+    info = dutils.get_info(ima_container)
+    ima_iso_created_time = info['stats']['Created'].split('.')[0]
+    ima_created_ts = int(datetime.fromisoformat(ima_iso_created_time).timestamp())
+
+    test_monitor.reloaded_schain_containers()
+    dutils.wait_for_container_creation(schain_container)
+    dutils.wait_for_container_creation(ima_container)
+
+    info = dutils.get_info(schain_container)
+    skaled_iso_time = info['stats']['Created'].split('.')[0]
+    skaled_ts = int(datetime.fromisoformat(skaled_iso_time).timestamp())
+
+    info = dutils.get_info(ima_container)
+    ima_iso_time = info['stats']['Created'].split('.')[0]
+    ima_ts = int(datetime.fromisoformat(ima_iso_time).timestamp())
+
+    assert skaled_ts > skaled_created_ts
+    assert ima_ts > ima_created_ts
