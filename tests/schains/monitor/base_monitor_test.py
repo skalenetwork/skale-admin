@@ -388,7 +388,7 @@ def test_reloaded_schain_containers(
     name = schain_db
 
     test_monitor.volume()
-    test_monitor.reloaded_schain_containers()
+    test_monitor.recreated_schain_containers()
     schain_container = f'skale_schain_{name}'
     ima_container = f'skale_ima_{name}'
     dutils.wait_for_container_creation(schain_container)
@@ -402,7 +402,7 @@ def test_reloaded_schain_containers(
     ima_iso_created_time = info['stats']['Created'].split('.')[0]
     ima_created_ts = int(datetime.fromisoformat(ima_iso_created_time).timestamp())
 
-    test_monitor.reloaded_schain_containers()
+    test_monitor.recreated_schain_containers()
     dutils.wait_for_container_creation(schain_container)
     dutils.wait_for_container_creation(ima_container)
 
