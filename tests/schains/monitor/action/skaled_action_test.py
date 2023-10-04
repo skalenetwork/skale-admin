@@ -221,6 +221,35 @@ def ima_linked(econfig):
     econfig.update(state)
 
 
+def test_recreated_schain_containers(
+    skaled_am,
+    skaled_checks,
+    ima_linked,
+    cleanup_ima,
+    schain_db,
+    dutils
+):
+    name = schain_db
+
+    skaled_am.volume()
+    skaled_am.recreated_schain_containers()
+    schain_container = f'skale_schain_{name}'
+    ima_container = f'skale_ima_{name}'
+    dutils.wait_for_container_creation(schain_container)
+    dutils.wait_for_container_creation(ima_container)
+    skaled_created_ts = dutils.get_container_created_ts(schain_container)
+    ima_created_ts = dutils.get_container_created_ts(ima_container)
+
+    skaled_am.recreated_schain_containers()
+    dutils.wait_for_container_creation(schain_container)
+    dutils.wait_for_container_creation(ima_container)
+
+    skaled_ts = dutils.get_container_created_ts(schain_container)
+    ima_ts = dutils.get_container_created_ts(ima_container)
+    assert skaled_ts > skaled_created_ts
+    assert ima_ts > ima_created_ts
+
+
 def test_ima_container_action_new_chain(
     skaled_am,
     skaled_checks,
