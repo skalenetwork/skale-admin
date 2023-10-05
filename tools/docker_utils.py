@@ -46,6 +46,7 @@ from tools.configs.containers import (
     CONTAINER_LOGS_SEPARATOR
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
+from tools.helper import run_cmd
 
 logger = logging.getLogger(__name__)
 
@@ -366,8 +367,8 @@ class DockerUtils:
 
     def pull(self, name: str) -> None:
         with DockerUtils.docker_lock:
-            repo, tag = name.split(':')
-            self.client.images.pull(repository=repo, tag=tag)
+            # repo, tag = name.split(':')
+            run_cmd(['docker', 'pull', name])
 
     def pulled(self, name: str) -> bool:
         with DockerUtils.docker_lock:
