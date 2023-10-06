@@ -165,8 +165,8 @@ def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
     image = get_image_name(type=IMA_CONTAINER)
     new_image = get_image_name(type=IMA_CONTAINER, new=True)
 
-    if dutils.pulled(new_image):
-        dutils.rmi(new_image)
+    # if dutils.pulled(new_image):
+    #     dutils.rmi(new_image)
 
     assert not schain_checks.ima_container.status
 

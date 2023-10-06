@@ -30,6 +30,7 @@ from core.schains.checks import SChainChecks
 from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.cleaner import (
+    remove_ima_container,
     remove_schain_container,
     remove_schain_volume
 )
@@ -292,6 +293,22 @@ class BaseMonitor(ABC):
         else:
             logger.warning(f'sChain {self.name}: container doesn\'t exists')
         initial_status = self.skaled_container()
+        return initial_status
+
+    @monitor_block
+    def recreated_schain_containers(self) -> bool:
+        """ Recreates both schain and IMA containers """
+        logger.info('Restart skaled and IMA from scratch')
+        initial_status = True
+        # Remove IMA -> skaled, start skaled -> IMA
+        if is_container_exists(self.name, container_type=IMA_CONTAINER, dutils=self.dutils):
+            initial_status = False
+            remove_ima_container(self.name, dutils=self.dutils)
+        if is_container_exists(self.name, container_type=SCHAIN_CONTAINER, dutils=self.dutils):
+            initial_status = False
+            remove_schain_container(self.name, dutils=self.dutils)
+        self.skaled_container()
+        self.ima_container()
         return initial_status
 
     @monitor_block
