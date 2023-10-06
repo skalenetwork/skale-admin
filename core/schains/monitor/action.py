@@ -32,6 +32,7 @@ from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.ima import get_migration_ts as get_ima_migration_ts
 
 from core.schains.cleaner import (
+    remove_ima_container,
     remove_schain_container,
     remove_schain_volume
 )
@@ -361,6 +362,25 @@ class SkaledActionManager(BaseActionManager):
         self.schain_record.set_needs_reload(False)
         initial_status = self.skaled_container(
             ignore_reached_exit=ignore_reached_exit)
+        return initial_status
+
+    @BaseActionManager.monitor_block
+    def recreated_schain_containers(self, ignore_reached_exit: bool = True) -> bool:
+        logger.info('Restart skaled and IMA from scratch')
+        initial_status = True
+        # Remove IMA -> skaled, start skaled -> IMA
+        if is_container_exists(self.name, container_type=IMA_CONTAINER, dutils=self.dutils):
+            initial_status = False
+            remove_ima_container(self.name, dutils=self.dutils)
+        if is_container_exists(self.name, container_type=SCHAIN_CONTAINER, dutils=self.dutils):
+            initial_status = False
+            remove_schain_container(self.name, dutils=self.dutils)
+        # Reseting restart counters
+        self.schain_record.set_restart_count(0)
+        self.schain_record.set_failed_rpc_count(0)
+        self.schain_record.set_needs_reload(False)
+        self.skaled_container()
+        self.ima_container()
         return initial_status
 
     @BaseActionManager.monitor_block
