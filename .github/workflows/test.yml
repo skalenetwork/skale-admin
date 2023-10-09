@@ -10,7 +10,7 @@ env:
   PYTHON_VERSION: 3.8
 jobs:
   test_core:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
       ENDPOINT: http://127.0.0.1:8545
