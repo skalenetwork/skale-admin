@@ -25,6 +25,13 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+      - name: Show stats before tests
+        run: 
+          lsblk -f
+          free -h
+          du -h /var/lib/docker
+          du -h /tmp
+          df -h / 
       - name: Install python dependencies
         run: bash ./scripts/install_python_dependencies.sh
       - name: Lint with flake8
@@ -39,6 +46,13 @@ jobs:
       - name: Run core tests
         run: |
           bash ./scripts/run_core_tests.sh
-      - name: Run codecov
-        run: |
-          codecov -t $CODECOV_TOKEN
+          # - name: Run codecov
+          #   run: |
+          #     codecov -t $CODECOV_TOKEN
+      - name: Show stats after tests
+        run: 
+          lsblk -f
+          free -h
+          du -h /var/lib/docker
+          du -h /tmp
+          df -h / 
