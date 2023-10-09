@@ -27,11 +27,11 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Show stats before tests
         run: |
-          lsblk -f
-          free -h
-          du -h /var/lib/docker
-          du -h /tmp
-          df -h / 
+          sudo lsblk -f
+          sudo free -h
+          sudo du -h /var/lib/docker
+          sudo du -h /tmp
+          sudo df -h / 
       - name: Install python dependencies
         run: bash ./scripts/install_python_dependencies.sh
       - name: Lint with flake8
@@ -51,8 +51,8 @@ jobs:
           #     codecov -t $CODECOV_TOKEN
       - name: Show stats after tests
         run: | 
-          lsblk -f
-          free -h
-          du -h /var/lib/docker
-          du -h /tmp
-          df -h / 
+          sudo lsblk -f
+          sudo free -h
+          sudo du -h /var/lib/docker
+          sudo du -h /tmp
+          sudo df -h / 
