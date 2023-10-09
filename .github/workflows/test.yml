@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
-      ENDPOINT: ${{ secrets.ENDPOINT }}
+      ENDPOINT: http://127.0.0.1:8545
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       IMA_ENDPOINT: ${{ secrets.IMA_ENDPOINT }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
@@ -29,12 +29,27 @@ jobs:
         run: bash ./scripts/install_python_dependencies.sh
       - name: Lint with flake8
         run: flake8 .
+      - name: Launch hardhat node
+        working-directory: hardhat-node
+        run: |
+          docker-compose up -d 
       - name: Deploy manager & ima contracts
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
+          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
+      - name: Show stats before tests
+        if: always()
+        run: | 
+          sudo lsblk -f
+          sudo free -h
       - name: Run core tests
         run: |
           bash ./scripts/run_core_tests.sh
+      - name: Show stats after tests
+        if: always()
+        run: | 
+          sudo lsblk -f
+          sudo free -h
       - name: Run codecov
         run: |
           codecov -t $CODECOV_TOKEN
