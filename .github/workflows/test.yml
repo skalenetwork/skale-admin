@@ -36,9 +36,26 @@ jobs:
       - name: Deploy manager & ima contracts
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
+          docker rmi -f skalenetwork/skale-manager:${{ MANAGER_TAG }}
+      - name: Show stats before tests
+        if: always()
+        run: | 
+          sudo lsblk -f
+          sudo free -h
+          sudo du -h /var/lib/docker
+          sudo du -h /tmp
+          sudo df -h / 
       - name: Run core tests
         run: |
           bash ./scripts/run_core_tests.sh
       - name: Run codecov
         run: |
           codecov -t $CODECOV_TOKEN
+      - name: Show stats after tests
+        if: always()
+        run: | 
+          sudo lsblk -f
+          sudo free -h
+          sudo du -h /var/lib/docker
+          sudo du -h /tmp
+          sudo df -h / 
