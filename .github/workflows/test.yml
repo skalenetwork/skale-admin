@@ -26,7 +26,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Show stats before tests
-        run: 
+        run: |
           lsblk -f
           free -h
           du -h /var/lib/docker
@@ -50,7 +50,7 @@ jobs:
           #   run: |
           #     codecov -t $CODECOV_TOKEN
       - name: Show stats after tests
-        run: 
+        run: | 
           lsblk -f
           free -h
           du -h /var/lib/docker
