@@ -50,6 +50,7 @@ jobs:
           #   run: |
           #     codecov -t $CODECOV_TOKEN
       - name: Show stats after tests
+        if: always()
         run: | 
           sudo lsblk -f
           sudo free -h
