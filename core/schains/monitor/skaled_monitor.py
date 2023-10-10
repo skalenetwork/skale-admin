@@ -145,7 +145,7 @@ class UpdateConfigSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.checks.volume:
             self.am.volume()
-        self.am.recreated_schain_containers(ignore_reached_exit=False)
+        self.am.recreated_schain_containers(abort_on_exit=False)
 
 
 class NewConfigSkaledMonitor(BaseSkaledMonitor):
