@@ -39,13 +39,13 @@ def monitor_schain_container_mock(
     skaled_status,
     download_snapshot=False,
     start_ts=None,
-    ignore_reached_exit=True,
+    abort_on_exit=True,
     dutils=None
 ):
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain['name'])
     dutils.safe_rm(container_name)
-    if not skaled_status.exit_time_reached or not ignore_reached_exit:
+    if not skaled_status.exit_time_reached or not abort_on_exit:
         dutils.run_container(
             image_name=image_name,
             name=container_name,
@@ -134,7 +134,7 @@ def test_skaled_container_with_snapshot_action(skaled_am):
             skaled_status=skaled_am.skaled_status,
             download_snapshot=True,
             start_ts=None,
-            ignore_reached_exit=True,
+            abort_on_exit=True,
             dutils=skaled_am.dutils
         )
         assert monitor_schain_mock.call_count == 1
@@ -158,7 +158,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
             skaled_status=skaled_am.skaled_status,
             download_snapshot=True,
             start_ts=ts,
-            ignore_reached_exit=True,
+            abort_on_exit=True,
             dutils=skaled_am.dutils
         )
         assert monitor_schain_mock.call_count == 1
@@ -200,7 +200,7 @@ def test_restart_skaled_container_action_exit_reached(
             assert not skaled_checks.skaled_container
             skaled_am.reloaded_skaled_container()
             assert not skaled_checks.skaled_container
-            skaled_am.reloaded_skaled_container(ignore_reached_exit=False)
+            skaled_am.reloaded_skaled_container(abort_on_exit=False)
             assert skaled_checks.skaled_container
     finally:
         skaled_am.cleanup_schain_docker_entity()
@@ -219,6 +219,35 @@ def ima_linked(econfig):
     state = econfig.get()
     state.ima_linked = True
     econfig.update(state)
+
+
+def test_recreated_schain_containers(
+    skaled_am,
+    skaled_checks,
+    ima_linked,
+    cleanup_ima,
+    schain_db,
+    dutils
+):
+    name = schain_db
+
+    skaled_am.volume()
+    skaled_am.recreated_schain_containers()
+    schain_container = f'skale_schain_{name}'
+    ima_container = f'skale_ima_{name}'
+    dutils.wait_for_container_creation(schain_container)
+    dutils.wait_for_container_creation(ima_container)
+    skaled_created_ts = dutils.get_container_created_ts(schain_container)
+    ima_created_ts = dutils.get_container_created_ts(ima_container)
+
+    skaled_am.recreated_schain_containers()
+    dutils.wait_for_container_creation(schain_container)
+    dutils.wait_for_container_creation(ima_container)
+
+    skaled_ts = dutils.get_container_created_ts(schain_container)
+    ima_ts = dutils.get_container_created_ts(ima_container)
+    assert skaled_ts > skaled_created_ts
+    assert ima_ts > ima_created_ts
 
 
 def test_ima_container_action_new_chain(

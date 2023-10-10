@@ -46,10 +46,16 @@ from tools.configs.containers import (
     CONTAINER_LOGS_SEPARATOR
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
+from tools.helper import run_cmd
 
 logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 12
+CONTAINER_CREATION_TIMEOUT = 10
+
+
+class ContainerCreationTimeoutError(Exception):
+    pass
 
 
 def format_containers(f):
@@ -338,7 +344,6 @@ class DockerUtils:
     def get_container_created_ts(self, container_id: str) -> int:
         info = self.get_info(container_id)
         if info:
-            print(info)
             iso_time = info['stats']['Created'].split('.')[0]
             return int(datetime.fromisoformat(iso_time).timestamp())
         else:
@@ -362,8 +367,8 @@ class DockerUtils:
 
     def pull(self, name: str) -> None:
         with DockerUtils.docker_lock:
-            repo, tag = name.split(':')
-            self.client.images.pull(repository=repo, tag=tag)
+            # repo, tag = name.split(':')
+            run_cmd(['docker', 'pull', name])
 
     def pulled(self, name: str) -> bool:
         with DockerUtils.docker_lock:
@@ -382,3 +387,10 @@ class DockerUtils:
         if info.get('status') == CONTAINER_NOT_FOUND:
             return None
         return info['stats']['Config']['Image']
+
+    def wait_for_container_creation(self, name: str, timeout=CONTAINER_CREATION_TIMEOUT):
+        start_ts = time.time()
+        while time.time() - start_ts < timeout and not self.is_container_exists(name):
+            time.sleep(0.2)
+        if not self.is_container_exists(name):
+            raise ContainerCreationTimeoutError(f'{name} has not been created within {timeout}s')

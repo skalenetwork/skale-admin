@@ -54,7 +54,7 @@ def test_monitor_schain_container_exit_time_reached(
             schain,
             schain_record,
             skaled_status_exit_time_reached,
-            ignore_reached_exit=False,
+            abort_on_exit=False,
             dutils=dutils
         )
         assert len(dutils.get_all_schain_containers()) == 1
