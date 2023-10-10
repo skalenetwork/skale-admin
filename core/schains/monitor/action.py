@@ -299,7 +299,7 @@ class SkaledActionManager(BaseActionManager):
         self,
         download_snapshot: bool = False,
         start_ts: Optional[int] = None,
-        ignore_reached_exit: bool = True,
+        abort_on_exit: bool = True,
     ) -> bool:
         logger.info(
             'Starting skaled container watchman snapshot: %s, start_ts: %s',
@@ -312,7 +312,7 @@ class SkaledActionManager(BaseActionManager):
             skaled_status=self.skaled_status,
             download_snapshot=download_snapshot,
             start_ts=start_ts,
-            ignore_reached_exit=ignore_reached_exit,
+            abort_on_exit=abort_on_exit,
             dutils=self.dutils
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)
@@ -349,7 +349,7 @@ class SkaledActionManager(BaseActionManager):
         return True
 
     @BaseActionManager.monitor_block
-    def reloaded_skaled_container(self, ignore_reached_exit: bool = True) -> bool:
+    def reloaded_skaled_container(self, abort_on_exit: bool = True) -> bool:
         logger.info('Starting skaled from scratch')
         initial_status = True
         if is_container_exists(self.name, dutils=self.dutils):
@@ -361,11 +361,11 @@ class SkaledActionManager(BaseActionManager):
         self.schain_record.set_failed_rpc_count(0)
         self.schain_record.set_needs_reload(False)
         initial_status = self.skaled_container(
-            ignore_reached_exit=ignore_reached_exit)
+            abort_on_exit=abort_on_exit)
         return initial_status
 
     @BaseActionManager.monitor_block
-    def recreated_schain_containers(self, ignore_reached_exit: bool = True) -> bool:
+    def recreated_schain_containers(self, abort_on_exit: bool = True) -> bool:
         logger.info('Restart skaled and IMA from scratch')
         initial_status = True
         # Remove IMA -> skaled, start skaled -> IMA
@@ -379,7 +379,7 @@ class SkaledActionManager(BaseActionManager):
         self.schain_record.set_restart_count(0)
         self.schain_record.set_failed_rpc_count(0)
         self.schain_record.set_needs_reload(False)
-        self.skaled_container()
+        self.skaled_container(abort_on_exit=abort_on_exit)
         self.ima_container()
         return initial_status
 
