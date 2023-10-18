@@ -67,7 +67,7 @@ def tmp_dir():
     try:
         yield path
     finally:
-        shutil.rmtree(path)
+        shutil.rmtree(path, ignore_errors=True)
 
 
 @pytest.fixture
@@ -91,7 +91,7 @@ def ssl_dir():
     try:
         yield path
     finally:
-        shutil.rmtree(path)
+        shutil.rmtree(path, ignore_errors=True)
 
 
 @pytest.fixture

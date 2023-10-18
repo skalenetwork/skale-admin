@@ -43,7 +43,9 @@ class ImaEnv:
     schain_dir: str
 
     def to_dict(self):
-        return {}
+        return {
+            'SCHAIN_DIR': self.schain_dir,
+        }
 
 
 def is_container_running(dutils, container_name):
@@ -121,13 +123,19 @@ def schain_container(schain_config, ssl_folder, dutils):
     """ Creates and removes schain container """
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_contracts_data(schain_name)
-    run_simple_schain_container(schain_data, dutils)
-    yield schain_name
-    schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    dutils.safe_rm(get_container_name(SCHAIN_CONTAINER, schain_name),
-                   force=True)
-    dutils.safe_rm(get_container_name(IMA_CONTAINER, schain_name),
-                   force=True)
+    try:
+        run_simple_schain_container(schain_data, dutils)
+        yield schain_name
+    finally:
+        schain_name = schain_config['skaleConfig']['sChain']['schainName']
+        dutils.safe_rm(
+            get_container_name(SCHAIN_CONTAINER, schain_name),
+            force=True
+        )
+        dutils.safe_rm(
+            get_container_name(IMA_CONTAINER, schain_name),
+            force=True
+        )
 
 
 def test_remove_schain_container(
@@ -145,6 +153,7 @@ def test_remove_schain_container(
     assert not is_container_running(dutils, container_name)
 
 
+@pytest.mark.skip('Docker API GA issues need to be resolved')
 def test_remove_ima_container(dutils, schain_container):
     schain_name = schain_container
     schain_data = get_schain_contracts_data(schain_name)
@@ -153,9 +162,9 @@ def test_remove_ima_container(dutils, schain_container):
     )):
         run_simple_ima_container(schain_data, dutils)
     container_name = IMA_CONTAINER_NAME_TEMPLATE.format(schain_name)
-    assert dutils.is_container_exists(container_name)
+    assert dutils.is_container_found(container_name)
     remove_ima_container(schain_name, dutils=dutils)
-    assert not dutils.is_container_exists(container_name)
+    assert not dutils.is_container_found(container_name)
 
 
 def test_remove_schain_record():
