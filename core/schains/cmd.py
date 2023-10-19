@@ -17,19 +17,21 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from core.schains.config.helper import get_schain_ports
+from core.schains.config.file_manager import ConfigFileManager
+from core.schains.config.helper import get_schain_ports_from_config
+from core.schains.config.main import get_skaled_container_config_path
 from core.schains.config.static_params import get_static_schain_cmd
 from core.schains.ssl import get_ssl_filepath
-from core.schains.config.directory import schain_config_filepath
-from tools.configs.containers import DATA_DIR_CONTAINER_PATH, SHARED_SPACE_CONTAINER_PATH
+
 from tools.configs import SGX_SERVER_URL
+from tools.configs.containers import DATA_DIR_CONTAINER_PATH, SHARED_SPACE_CONTAINER_PATH
 from tools.configs.ima import IMA_ENDPOINT
 
 
 def get_schain_container_cmd(
     schain_name: str,
-    public_key: str = None,
     start_ts: int = None,
+    download_snapshot: bool = False,
     enable_ssl: bool = True,
     snapshot_from: str = ''
 ) -> str:
@@ -37,7 +39,7 @@ def get_schain_container_cmd(
     opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl)
     if snapshot_from:
         opts.extend(['--no-snapshot-majority', snapshot_from])
-    if public_key:
+    if download_snapshot:
         sync_opts = get_schain_container_sync_opts(start_ts)
         opts.extend(sync_opts)
     return ' '.join(opts)
@@ -54,9 +56,10 @@ def get_schain_container_sync_opts(start_ts: int = None) -> list:
 
 def get_schain_container_base_opts(schain_name: str,
                                    enable_ssl: bool = True) -> list:
-    config_filepath = schain_config_filepath(schain_name, in_schain_container=True)
+    config_filepath = get_skaled_container_config_path(schain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
-    ports = get_schain_ports(schain_name)
+    config = ConfigFileManager(schain_name=schain_name).skaled_config
+    ports = get_schain_ports_from_config(config)
     static_schain_cmd = get_static_schain_cmd()
     cmd = [
         f'--config {config_filepath}',

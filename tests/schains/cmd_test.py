@@ -2,7 +2,7 @@ from core.schains.cmd import (
     get_schain_container_cmd,
     get_schain_container_sync_opts
 )
-from core.schains.config.directory import schain_config_filepath
+from core.schains.config.main import get_skaled_container_config_path
 from core.schains.ssl import get_ssl_filepath
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH
 
@@ -13,7 +13,7 @@ from tools.configs.ima import IMA_ENDPOINT
 def test_get_schain_container_cmd(schain_config, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     container_opts = get_schain_container_cmd(schain_name)
-    config_filepath = schain_config_filepath(schain_name, in_schain_container=True)
+    config_filepath = get_skaled_container_config_path(schain_name)
     ssl_key_path, ssl_cert_path = get_ssl_filepath()
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
@@ -35,7 +35,8 @@ def test_get_schain_container_cmd(schain_config, cert_key_pair):
     )
     assert container_opts == expected_opts
 
-    container_opts = get_schain_container_cmd(schain_name, snapshot_from='1.1.1.1')
+    container_opts = get_schain_container_cmd(
+        schain_name, snapshot_from='1.1.1.1')
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '
         f'--https-port 10008 --ws-port 10002 --wss-port 10007 --sgx-url {SGX_SERVER_URL} '

@@ -27,7 +27,8 @@ from skale.dataclasses.skaled_ports import SkaledPorts
 from websocket import create_connection
 
 from core.schains.config.directory import schain_config_dir
-from core.schains.config.helper import get_schain_ports, get_schain_config, get_chain_id
+from core.schains.config.file_manager import ConfigFileManager
+from core.schains.config.helper import get_schain_ports_from_config, get_chain_id
 from core.ima.schain import get_schain_ima_abi_filepath
 from tools.configs import ENV_TYPE, SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import CONTAINERS_INFO, IMA_MIGRATION_PATH
@@ -48,7 +49,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ImaData:
     linked: bool
-    chain_id: str
+    chain_id: int
 
 
 @dataclass
@@ -120,17 +121,20 @@ def get_current_node_from_nodes(node_id, schain_nodes):
 
 
 def get_localhost_http_endpoint(schain_name):
-    ports = get_schain_ports(schain_name)
+    config = ConfigFileManager(schain_name).skaled_config
+    ports = get_schain_ports_from_config(config)
     return f'http://127.0.0.1:{ports["http"]}'
 
 
 def get_public_http_endpoint(public_node_info, schain_name):
-    ports = get_schain_ports(schain_name)
+    config = ConfigFileManager(schain_name).skaled_config
+    ports = get_schain_ports_from_config(config)
     return f'http://{public_node_info["ip"]}:{ports["http"]}'
 
 
 def get_local_http_endpoint(node_info, schain_name):
-    ports = get_schain_ports(schain_name)
+    config = ConfigFileManager(schain_name).skaled_config
+    ports = get_schain_ports_from_config(config)
     return f'http://{node_info["bindIP"]}:{ports["http"]}'
 
 
@@ -139,11 +143,12 @@ def schain_index_to_node_number(node):
 
 
 def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
-    schain_config = get_schain_config(schain_name)
+    schain_config = ConfigFileManager(schain_name).skaled_config
     node_info = schain_config["skaleConfig"]["nodeInfo"]
     bls_key_name = node_info['wallets']['ima']['keyShareName']
     schain_nodes = schain_config["skaleConfig"]["sChain"]
-    public_node_info = get_current_node_from_nodes(node_info['nodeID'], schain_nodes)
+    public_node_info = get_current_node_from_nodes(
+        node_info['nodeID'], schain_nodes)
 
     schain_index = schain_index_to_node_number(public_node_info)
     node_address = public_node_info['owner']
@@ -181,7 +186,7 @@ def get_ima_version() -> str:
 
 
 def get_ima_monitoring_port(schain_name):
-    schain_config = get_schain_config(schain_name)
+    schain_config = ConfigFileManager(schain_name).skaled_config
     if schain_config:
         node_info = schain_config["skaleConfig"]["nodeInfo"]
         return int(node_info["imaMonitoringPort"])
@@ -190,13 +195,14 @@ def get_ima_monitoring_port(schain_name):
 
 
 def get_ima_rpc_port(schain_name):
-    config = get_schain_config(schain_name)
+    config = ConfigFileManager(schain_name).skaled_config
     base_port = config['skaleConfig']['nodeInfo']['basePort']
     return base_port + SkaledPorts.IMA_RPC.value
 
 
 def get_ima_container_statuses():
-    containers_list = g.docker_utils.get_all_ima_containers(all=True, format=True)
+    containers_list = g.docker_utils.get_all_ima_containers(
+        all=True, format=True)
     ima_containers = [{'name': container['name'], 'state': container['state']['Status']}
                       for container in containers_list]
     return ima_containers
@@ -229,7 +235,8 @@ def get_ima_log_checks():
         errors = []
         categories = []
         container_name = f'skale_ima_{schain_name}'
-        cont_data = next((item for item in ima_containers if item["name"] == container_name), None)
+        cont_data = next(
+            (item for item in ima_containers if item["name"] == container_name), None)
         if cont_data is None:
             continue
         elif cont_data['state'] != 'running':
@@ -247,7 +254,8 @@ def get_ima_log_checks():
                 try:
                     ima_healthcheck = request_ima_healthcheck(endpoint)
                 except Exception as err:
-                    logger.info(f'Error occurred while checking IMA state on {endpoint}')
+                    logger.info(
+                        f'Error occurred while checking IMA state on {endpoint}')
                     logger.exception(err)
                     error_text = repr(err)
                 else:

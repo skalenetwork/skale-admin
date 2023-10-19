@@ -17,21 +17,15 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import json
 import logging
-import os
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 from Crypto.Hash import keccak
 from web3 import Web3
 
-from skale.dataclasses.skaled_ports import SkaledPorts
-
-from core.schains.config.directory import schain_config_filepath
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json
 from tools.configs import STATIC_PARAMS_FILEPATH, ENV_TYPE
-from tools.configs.containers import LOCAL_IP
 from tools.helper import safe_load_yml
 
 
@@ -44,7 +38,7 @@ def get_static_params(env_type=ENV_TYPE, path=STATIC_PARAMS_FILEPATH):
 
 
 def fix_address(address):
-    return Web3.toChecksumAddress(address)
+    return Web3.to_checksum_address(address)
 
 
 def get_chain_id(schain_name: str) -> str:
@@ -73,7 +67,7 @@ def get_base_port_from_config(config: Dict) -> int:
     return config['skaleConfig']['nodeInfo']['basePort']
 
 
-def get_own_ip_from_config(config: Dict) -> str:
+def get_own_ip_from_config(config: Dict) -> Optional[str]:
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
     own_id = config['skaleConfig']['nodeInfo']['nodeID']
     for node_data in schain_nodes_config:
@@ -82,12 +76,7 @@ def get_own_ip_from_config(config: Dict) -> str:
     return None
 
 
-def get_schain_ports(schain_name):
-    config = get_schain_config(schain_name)
-    return get_schain_ports_from_config(config)
-
-
-def get_schain_ports_from_config(config):
+def get_schain_ports_from_config(config: Dict):
     if config is None:
         return {}
     node_info = config["skaleConfig"]["nodeInfo"]
@@ -100,28 +89,6 @@ def get_schain_ports_from_config(config):
     }
 
 
-def get_skaled_http_address(schain_name: str) -> str:
-    config = get_schain_config(schain_name)
-    return get_skaled_http_address_from_config(config)
-
-
-def get_skaled_http_address_from_config(config: Dict) -> str:
-    node = config['skaleConfig']['nodeInfo']
-    return 'http://{}:{}'.format(
-        LOCAL_IP,
-        node['basePort'] + SkaledPorts.HTTP_JSON.value
-    )
-
-
-def get_schain_config(schain_name):
-    config_filepath = schain_config_filepath(schain_name)
-    if not os.path.isfile(config_filepath):
-        return None
-    with open(config_filepath) as f:
-        schain_config = json.load(f)
-    return schain_config
-
-
 def get_schain_env(ulimit_check=True):
     env = {'SEGFAULT_SIGNALS': 'all'}
     if not ulimit_check:
@@ -131,20 +98,18 @@ def get_schain_env(ulimit_check=True):
     return env
 
 
-def get_schain_rpc_ports(schain_id):
-    schain_config = get_schain_config(schain_id)
-    node_info = schain_config["skaleConfig"]["nodeInfo"]
+def get_schain_rpc_ports_from_config(config: Dict) -> Tuple[int, int]:
+    node_info = config["skaleConfig"]["nodeInfo"]
     return int(node_info["httpRpcPort"]), int(node_info["wsRpcPort"])
 
 
-def get_local_schain_http_endpoint(name):
-    http_port, _ = get_schain_rpc_ports(name)
-    return f'http://0.0.0.0:{http_port}'
+def get_local_schain_http_endpoint_from_config(config: Dict) -> str:
+    http_port, _ = get_schain_rpc_ports_from_config(config)
+    return f'http://127.0.0.1:{http_port}'
 
 
-def get_schain_ssl_rpc_ports(schain_id):
-    schain_config = get_schain_config(schain_id)
-    node_info = schain_config["skaleConfig"]["nodeInfo"]
+def get_schain_ssl_rpc_ports_from_config(config: Dict) -> Tuple[int, int]:
+    node_info = config["skaleConfig"]["nodeInfo"]
     return int(node_info["httpsRpcPort"]), int(node_info["wssRpcPort"])
 
 

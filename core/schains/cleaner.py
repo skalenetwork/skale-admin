@@ -24,18 +24,20 @@ from multiprocessing import Process
 
 from sgx import SgxClient
 
+from core.node import get_skale_node_version
 from core.schains.checks import SChainChecks
+from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.directory import schain_config_dir
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.utils import get_default_rule_controller
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
-    get_own_ip_from_config,
-    get_schain_config
+    get_own_ip_from_config
 )
 from core.schains.process_manager_helper import terminate_schain_process
 from core.schains.runner import get_container_name, is_exited
+from core.schains.external_config import ExternalConfig
 from core.schains.types import ContainerType
 from core.schains.firewall.utils import get_sync_agent_ranges
 
@@ -44,7 +46,6 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
     SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
 )
-from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 from tools.helper import merged_unique, read_json, is_node_part_of_chain
 from tools.sgx_utils import SGX_SERVER_URL
@@ -58,7 +59,8 @@ JOIN_TIMEOUT = 1800
 
 
 def run_cleaner(skale, node_config):
-    process = Process(target=monitor, args=(skale, node_config))
+    process = Process(name='cleaner', target=monitor,
+                      args=(skale, node_config))
     process.start()
     logger.info('Cleaner process started')
     process.join(JOIN_TIMEOUT)
@@ -202,10 +204,27 @@ def remove_schain(skale, node_id, schain_name, msg, dutils=None) -> None:
     terminate_schain_process(schain_record)
     delete_bls_keys(skale, schain_name)
     sync_agent_ranges = get_sync_agent_ranges(skale)
-    cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=dutils)
+    rotation_data = skale.node_rotation.get_rotation(schain_name)
+    rotation_id = rotation_data['rotation_id']
+    estate = ExternalConfig(name=schain_name).get()
+    cleanup_schain(
+        node_id,
+        schain_name,
+        sync_agent_ranges,
+        rotation_id=rotation_id,
+        estate=estate,
+        dutils=dutils
+    )
 
 
-def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None) -> None:
+def cleanup_schain(
+    node_id,
+    schain_name,
+    sync_agent_ranges,
+    rotation_id,
+    estate,
+    dutils=None
+) -> None:
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
 
@@ -213,35 +232,48 @@ def cleanup_schain(node_id, schain_name, sync_agent_ranges, dutils=None) -> None
         name=schain_name,
         sync_agent_ranges=sync_agent_ranges
     )
+    stream_version = get_skale_node_version()
     checks = SChainChecks(
         schain_name,
         node_id,
         rule_controller=rc,
-        schain_record=schain_record
+        stream_version=stream_version,
+        schain_record=schain_record,
+        rotation_id=rotation_id,
+        estate=estate
     )
-    if checks.skaled_container.status or is_exited(
+    status = checks.get_all()
+    if status['skaled_container'] or is_exited(
         schain_name,
         container_type=ContainerType.schain,
         dutils=dutils
     ):
         remove_schain_container(schain_name, dutils=dutils)
-    if checks.volume.status:
+    if status['volume']:
         remove_schain_volume(schain_name, dutils=dutils)
-        if checks.firewall_rules.status:
-            conf = get_schain_config(schain_name)
-            base_port = get_base_port_from_config(conf)
-            own_ip = get_own_ip_from_config(conf)
-            node_ips = get_node_ips_from_config(conf)
-            rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
-            rc.cleanup()
-    if not DISABLE_IMA:
-        if checks.ima_container.status or is_exited(
+    if status['firewall_rules']:
+        conf = ConfigFileManager(schain_name).skaled_config
+        base_port = get_base_port_from_config(conf)
+        own_ip = get_own_ip_from_config(conf)
+        node_ips = get_node_ips_from_config(conf)
+        ranges = []
+        if estate is not None:
+            ranges = estate.ranges
+        rc.configure(
+            base_port=base_port,
+            own_ip=own_ip,
+            node_ips=node_ips,
+            sync_ip_ranges=ranges
+        )
+        rc.cleanup()
+    if estate is not None and estate.ima_linked:
+        if status.get('ima_container', False) or is_exited(
             schain_name,
             container_type=ContainerType.ima,
             dutils=dutils
         ):
             remove_ima_container(schain_name, dutils=dutils)
-    if checks.config_dir.status:
+    if status['config_dir']:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
 
