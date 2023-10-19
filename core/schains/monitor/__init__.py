@@ -17,10 +17,5 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .base_monitor import BaseMonitor  # noqa
-from .regular_monitor import RegularMonitor  # noqa
-from .repair_monitor import RepairMonitor  # noqa
-from .backup_monitor import BackupMonitor  # noqa
-from .rotation_monitor import RotationMonitor  # noqa
-from .post_rotation_monitor import PostRotationMonitor  # noqa
-from .reload_monitor import ReloadMonitor  # noqa
+from .config_monitor import RegularConfigMonitor  # noqa
+from .skaled_monitor import get_skaled_monitor  # noqa

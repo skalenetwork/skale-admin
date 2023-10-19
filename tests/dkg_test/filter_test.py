@@ -10,7 +10,7 @@ N = 16
 @pytest.fixture
 def filter_mock(skale):
     filter = Filter(skale, SCHAIN_NAME, N)
-    filter.first_unseen_block = skale.web3.eth.getBlock("latest")['number'] - 100
+    filter.first_unseen_block = skale.web3.eth.get_block("latest")['number'] - 100
     return filter
 
 
@@ -24,9 +24,9 @@ def test_get_events(skale, filter_mock):
 
     mock.Mock.assert_not_called_with = assert_not_called_with
     first = filter_mock.first_unseen_block
-    latest = skale.web3.eth.getBlock("latest")['number']
-    with mock.patch.object(skale.web3.eth, 'getBlock',
-                           wraps=skale.web3.eth.getBlock) as block_mock:
+    latest = skale.web3.eth.get_block("latest")['number']
+    with mock.patch.object(skale.web3.eth, 'get_block',
+                           wraps=skale.web3.eth.get_block) as block_mock:
         result = filter_mock.get_events()
         block_mock.assert_not_called_with(first - 1)
         block_mock.assert_any_call(first, full_transactions=True)
@@ -36,10 +36,10 @@ def test_get_events(skale, filter_mock):
 
 
 def test_get_events_from_start(skale, filter_mock):
-    latest = skale.web3.eth.getBlock("latest")['number']
-    mock_start_block = skale.web3.eth.getBlock("latest")['number'] - 100
-    with mock.patch.object(skale.web3.eth, 'getBlock',
-                           wraps=skale.web3.eth.getBlock) as block_mock, \
+    latest = skale.web3.eth.get_block("latest")['number']
+    mock_start_block = skale.web3.eth.get_block("latest")['number'] - 100
+    with mock.patch.object(skale.web3.eth, 'get_block',
+                           wraps=skale.web3.eth.get_block) as block_mock, \
             mock.patch.object(skale.dkg.contract.functions.getChannelStartedBlock, 'call',
                               new=mock.Mock(return_value=mock_start_block)):
         result = filter_mock.get_events(from_channel_started_block=True)

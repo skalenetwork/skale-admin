@@ -1,4 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor as pexec
+from concurrent.futures import as_completed, ProcessPoolExecutor as pexec
 
 import pytest
 
@@ -32,7 +32,7 @@ def test_upsert_schain_record(db):
             executor.submit(upsert_schain_record, f'schain-{i}')
             for i in range(RECORDS_NUMBER)
         ]
-        for f in futures:
+        for f in as_completed(futures):
             f.result()
 
     assert SChainRecord.select().count() == RECORDS_NUMBER

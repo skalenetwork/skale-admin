@@ -17,15 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import io
 import itertools
 import logging
 import multiprocessing
+import os
 import re
 import time
+from datetime import datetime
 from functools import wraps
-from typing import Optional
+from typing import Dict, Optional
 
 import docker
 from docker import APIClient
@@ -45,6 +46,7 @@ from tools.configs.containers import (
     CONTAINER_LOGS_SEPARATOR
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
+from tools.helper import run_cmd
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +93,7 @@ class DockerUtils:
         self,
         host: str = DEFAULT_DOCKER_HOST
     ) -> DockerClient:
-        logger.info(f'Initing docker client with host {host}')
+        logger.debug('Initing docker client with host %s', host)
         return docker.DockerClient(base_url=host)
 
     def init_docker_cli(
@@ -156,7 +158,7 @@ class DockerUtils:
             container_info['stats'] = self.cli.inspect_container(container.id)
             container_info['status'] = container.status
         except docker.errors.NotFound:
-            logger.warning(
+            logger.debug(
                 f'Can not get info - no such container: {container_id}')
             container_info['status'] = CONTAINER_NOT_FOUND
         return container_info
@@ -188,7 +190,7 @@ class DockerUtils:
         try:
             return self.client.volumes.get(name)
         except docker.errors.NotFound:
-            logger.warning(f'Volume {name} is not exist')
+            logger.debug(f'Volume {name} is not exist')
             return None
 
     def rm_vol(self, name: str, retry_lvmpy_error: bool = True) -> None:
@@ -223,8 +225,8 @@ class DockerUtils:
         try:
             return self.client.containers.get(container_name)
         except docker.errors.APIError as e:
-            logger.warning(e)
-            logger.warning(f'No such container: {container_name}')
+            logger.debug(e)
+            logger.debug(f'No such container: {container_name}')
 
     def safe_rm(self, container_name: str, timeout=DOCKER_DEFAULT_STOP_TIMEOUT, **kwargs):
         """
@@ -333,6 +335,28 @@ class DockerUtils:
         except docker.errors.APIError:
             logger.error(f'No such container: {container_name}')
 
+    def get_cmd(self, container_id: str) -> Dict:
+        info = self.get_info(container_id)
+        if info:
+            return info['stats']['Config']['Cmd']
+        return {}
+
+    def get_container_created_ts(self, container_id: str) -> int:
+        info = self.get_info(container_id)
+        if info:
+            iso_time = info['stats']['Created'].split('.')[0]
+            return int(datetime.fromisoformat(iso_time).timestamp())
+        else:
+            return 0
+
+    def get_vol_created_ts(self, name: str) -> int:
+        vol = self.get_vol(name)
+        if vol:
+            iso_time = vol.attrs['CreatedAt'][:-1]
+            return int(datetime.fromisoformat(iso_time).timestamp())
+        else:
+            return 0
+
     def restart_all_schains(
         self,
         timeout: int = DOCKER_DEFAULT_STOP_TIMEOUT
@@ -343,8 +367,8 @@ class DockerUtils:
 
     def pull(self, name: str) -> None:
         with DockerUtils.docker_lock:
-            repo, tag = name.split(':')
-            self.client.images.pull(repository=repo, tag=tag)
+            # repo, tag = name.split(':')
+            run_cmd(['docker', 'pull', name])
 
     def pulled(self, name: str) -> bool:
         with DockerUtils.docker_lock:

@@ -18,7 +18,9 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import threading
 from datetime import datetime
+
 from peewee import (CharField, DateTimeField,
                     IntegrityError, IntegerField, BooleanField)
 
@@ -31,6 +33,7 @@ DEFAULT_CONFIG_VERSION = '0.0.0'
 
 
 class SChainRecord(BaseModel):
+    _lock = threading.Lock()
     name = CharField(unique=True)
     added_at = DateTimeField()
     dkg_status = IntegerField()
@@ -39,7 +42,8 @@ class SChainRecord(BaseModel):
     new_schain = BooleanField(default=True)
     repair_mode = BooleanField(default=False)
     needs_reload = BooleanField(default=False)
-
+    backup_run = BooleanField(default=False)
+    sync_config_run = BooleanField(default=False)
     monitor_last_seen = DateTimeField()
     monitor_id = IntegerField(default=0)
 
@@ -94,6 +98,10 @@ class SChainRecord(BaseModel):
             'config_version': record.config_version
         }
 
+    def upload(self, *args, **kwargs) -> None:
+        with SChainRecord._lock:
+            self.save(*args, **kwargs)
+
     def dkg_started(self):
         self.set_dkg_status(DKGStatus.IN_PROGRESS)
 
@@ -109,69 +117,79 @@ class SChainRecord(BaseModel):
     def set_dkg_status(self, val: DKGStatus) -> None:
         logger.info(f'Changing DKG status for {self.name} to {val.name}')
         self.dkg_status = val.value
-        self.save()
+        self.upload()
 
     def set_deleted(self):
         self.is_deleted = True
-        self.save()
+        self.upload()
 
     def set_first_run(self, val):
         logger.info(f'Changing first_run for {self.name} to {val}')
         self.first_run = val
-        self.save(only=[SChainRecord.first_run])
+        self.upload(only=[SChainRecord.first_run])
+
+    def set_backup_run(self, val):
+        logger.info(f'Changing backup_run for {self.name} to {val}')
+        self.backup_run = val
+        self.upload(only=[SChainRecord.backup_run])
 
     def set_repair_mode(self, value):
         logger.info(f'Changing repair_mode for {self.name} to {value}')
         self.repair_mode = value
-        self.save()
+        self.upload()
 
     def set_new_schain(self, value):
         logger.info(f'Changing new_schain for {self.name} to {value}')
         self.new_schain = value
-        self.save()
+        self.upload()
 
     def set_needs_reload(self, value):
         logger.info(f'Changing needs_reload for {self.name} to {value}')
         self.needs_reload = value
-        self.save()
+        self.upload()
 
     def set_monitor_last_seen(self, value):
         logger.info(f'Changing monitor_last_seen for {self.name} to {value}')
         self.monitor_last_seen = value
-        self.save()
+        self.upload()
 
     def set_monitor_id(self, value):
         logger.info(f'Changing monitor_id for {self.name} to {value}')
         self.monitor_id = value
-        self.save()
+        self.upload()
 
     def set_config_version(self, value):
         logger.info(f'Changing config_version for {self.name} to {value}')
         self.config_version = value
-        self.save()
+        self.upload()
 
     def set_restart_count(self, value: int) -> None:
         logger.info(f'Changing restart count for {self.name} to {value}')
         self.restart_count = value
-        self.save()
+        self.upload()
 
     def set_failed_rpc_count(self, value: int) -> None:
         logger.info(f'Changing failed rpc count for {self.name} to {value}')
         self.failed_rpc_count = value
-        self.save()
+        self.upload()
 
     def set_snapshot_from(self, value: str) -> None:
         logger.info(f'Changing snapshot from for {self.name} to {value}')
         self.snapshot_from = value
-        self.save()
+        self.upload()
 
-    def reset_failed_conunters(self) -> None:
+    def reset_failed_counters(self) -> None:
         logger.info(f'Resetting failed counters for {self.name}')
         self.set_restart_count(0)
         self.set_failed_rpc_count(0)
 
     def is_dkg_done(self) -> bool:
         return self.dkg_status == DKGStatus.DONE.value
+
+    def set_sync_config_run(self, value):
+        logger.info(f'Changing sync_config_run for {self.name} to {value}')
+        self.sync_config_run = value
+        self.upload()
 
     def is_dkg_unsuccessful(self) -> bool:
         return self.dkg_status in [
@@ -190,6 +208,24 @@ def set_schains_first_run():
     logger.info('Setting first_run=True for all sChain records')
     query = SChainRecord.update(first_run=True).where(
         SChainRecord.first_run == False)  # noqa
+    query.execute()
+
+
+def set_schains_backup_run():
+    logger.info('Setting backup_run=True for all sChain records')
+    query = SChainRecord.update(backup_run=True).where(
+        SChainRecord.backup_run == False)  # noqa
+    query.execute()
+
+
+def set_schains_sync_config_run(chain: str):
+    logger.info('Setting sync_config_run=True for sChain: %s', chain)
+    if chain == 'all':
+        query = SChainRecord.update(sync_config_run=True).where(
+            SChainRecord.sync_config_run == False)  # noqa
+    else:
+        query = SChainRecord.update(sync_config_run=True).where(
+            SChainRecord.sync_config_run == False and SChainRecord.name == chain)  # noqa
     query.execute()
 
 
@@ -231,6 +267,18 @@ def set_first_run(name, value):
     if SChainRecord.added(name):
         schain_record = SChainRecord.get_by_name(name)
         schain_record.set_first_run(value)
+
+
+def set_backup_run(name, value):
+    if SChainRecord.added(name):
+        schain_record = SChainRecord.get_by_name(name)
+        schain_record.set_backup_run(value)
+
+
+def set_sync_config_run(name, value):
+    if SChainRecord.added(name):
+        schain_record = SChainRecord.get_by_name(name)
+        schain_record.set_sync_config_run(value)
 
 
 def get_schains_names(include_deleted=False):
