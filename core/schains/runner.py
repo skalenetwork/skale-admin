@@ -172,7 +172,7 @@ def restart_container(
 
 def run_schain_container(
     schain,
-    public_key=None,
+    download_snapshot=False,
     start_ts=None,
     dutils=None,
     volume_mode=None,
@@ -194,8 +194,8 @@ def run_schain_container(
 
     cmd = get_schain_container_cmd(
         schain_name,
-        public_key,
         start_ts,
+        download_snapshot=download_snapshot,
         enable_ssl=enable_ssl,
         snapshot_from=snapshot_from
     )

@@ -21,12 +21,11 @@ import logging
 
 from flask import Blueprint, g, request
 
-from core.schains.config.directory import schain_config_exists
+from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
-    get_own_ip_from_config,
-    get_schain_config
+    get_own_ip_from_config
 )
 from core.schains.firewall.utils import (
     get_default_rule_controller,
@@ -74,13 +73,13 @@ def schain_config():
     schain_name = request.args.get(key)
     if not schain_name:
         return construct_key_error_response([key])
-    schain_config = get_schain_config(schain_name)
-    if schain_config is None:
+    config = ConfigFileManager(schain_name).skaled_config
+    if config is None:
         return construct_err_response(
             msg=f'sChain config not found: {schain_name}'
         )
-    skale_schain_config = schain_config['skaleConfig']
-    return construct_ok_response(skale_schain_config)
+    skale_config = config['skaleConfig']
+    return construct_ok_response(skale_config)
 
 
 @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'list'), methods=['GET'])
@@ -112,11 +111,12 @@ def firewall_rules():
     logger.debug(request)
     schain_name = request.args.get('schain_name')
     sync_agent_ranges = get_sync_agent_ranges(g.skale)
-    if not schain_config_exists(schain_name):
+    cfm = ConfigFileManager(schain_name)
+    if not cfm.skaled_config_exists:
         return construct_err_response(
             msg=f'No schain with name {schain_name}'
         )
-    conf = get_schain_config(schain_name)
+    conf = cfm.skaled_config
     base_port = get_base_port_from_config(conf)
     node_ips = get_node_ips_from_config(conf)
     own_ip = get_own_ip_from_config(conf)
@@ -137,7 +137,8 @@ def repair():
     logger.debug(request)
     schain_name = request.json.get('schain_name')
     snapshot_from = request.json.get('snapshot_from', '')
-    result = toggle_schain_repair_mode(schain_name, snapshot_from=snapshot_from)
+    result = toggle_schain_repair_mode(
+        schain_name, snapshot_from=snapshot_from)
     if result:
         return construct_ok_response()
     else:

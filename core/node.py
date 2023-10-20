@@ -44,7 +44,6 @@ from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 from core.filebeat import update_filebeat_service
 
 from tools.configs import CHECK_REPORT_PATH, META_FILEPATH, WATCHDOG_PORT
-from tools.configs.web3 import NODE_REGISTER_CONFIRMATION_BLOCKS
 from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
@@ -151,8 +150,7 @@ class Node:
                 gas_limit=gas_limit,
                 gas_price=gas_price,
                 skip_dry_run=skip_dry_run,
-                wait_for=True,
-                confirmation_blocks=NODE_REGISTER_CONFIRMATION_BLOCKS
+                wait_for=True
             )
         except TransactionFailedError:
             logger.exception('Node creation failed')

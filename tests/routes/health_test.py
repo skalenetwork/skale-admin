@@ -6,7 +6,7 @@ from flask import Flask, appcontext_pushed, g
 from sgx import SgxClient
 
 from core.node_config import NodeConfig
-from core.schains.checks import SChainChecks, CheckRes
+from core.schains.checks import SChainChecks
 
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 
@@ -92,11 +92,7 @@ def test_schains_checks(skale_bp, skale, schain_db, dutils):
 
     class SChainChecksMock(SChainChecks):
         def __init__(self, *args, **kwargs):
-            super(SChainChecksMock, self).__init__(*args, dutils=dutils, **kwargs)
-
-        @property
-        def firewall_rules(self) -> CheckRes:
-            return CheckRes(True)
+            super().__init__(*args, dutils=dutils, **kwargs)
 
     def get_schains_for_node_mock(self, node_id):
         return [
@@ -105,8 +101,7 @@ def test_schains_checks(skale_bp, skale, schain_db, dutils):
             {'name': ''}
         ]
 
-    with mock.patch('web.routes.health.SChainChecks', SChainChecksMock), \
-            mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
+    with mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
         with mock.patch(
             'skale.contracts.manager.schains.SChains.get_schains_for_node',
             get_schains_for_node_mock
@@ -121,7 +116,7 @@ def test_schains_checks(skale_bp, skale, schain_db, dutils):
                 'dkg': False,
                 'config': False,
                 'volume': False,
-                'firewall_rules': True,
+                'firewall_rules': False,
                 'skaled_container': False,
                 'exit_code_ok': True,
                 'rpc': False,
