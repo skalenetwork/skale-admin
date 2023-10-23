@@ -367,8 +367,8 @@ class DockerUtils:
 
     def pull(self, name: str) -> None:
         with DockerUtils.docker_lock:
-            # repo, tag = name.split(':')
-            run_cmd(['docker', 'pull', name])
+            repo, tag = name.split(':')
+            self.client.images.pull(repository=repo, tag=tag)
 
     def pulled(self, name: str) -> bool:
         with DockerUtils.docker_lock:
