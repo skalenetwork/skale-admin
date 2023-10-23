@@ -46,7 +46,6 @@ from tools.configs.containers import (
     CONTAINER_LOGS_SEPARATOR
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
-from tools.helper import run_cmd
 
 logger = logging.getLogger(__name__)
 
