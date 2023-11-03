@@ -233,9 +233,7 @@ def is_config_update_time(
 ) -> bool:
     if not skaled_status:
         return False
-    return not status['config_updated'] and \
-        not status['skaled_container'] and \
-        skaled_status.exit_time_reached
+    return not status['skaled_container'] and skaled_status.exit_time_reached
 
 
 def is_recreate_mode(schain_record: SChainRecord) -> bool:
