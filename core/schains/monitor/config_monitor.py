@@ -43,12 +43,14 @@ class BaseConfigMonitor(IMonitor):
 
     def run(self):
         typename = type(self).__name__
-        logger.info('Config monitor type %s starting', typename)
-        self.am._upd_last_seen()
-        self.execute()
-        self.am.log_executed_blocks()
-        self.am._upd_last_seen()
-        logger.info('Config monitor type %s finished', typename)
+        logger.info('Config monitor type starting %s', typename)
+        try:
+            self.am._upd_last_seen()
+            self.execute()
+            self.am.log_executed_blocks()
+            self.am._upd_last_seen()
+        finally:
+            logger.info('Config monitor type finished %s', typename)
 
 
 class RegularConfigMonitor(BaseConfigMonitor):
