@@ -48,13 +48,15 @@ class BaseSkaledMonitor(IMonitor):
 
     def run(self):
         typename = type(self).__name__
-        logger.info('Skaled monitor type %s starting', typename)
-        self.am._upd_last_seen()
-        self.execute()
-        self.am._upd_schain_record()
-        self.am.log_executed_blocks()
-        self.am._upd_last_seen()
-        logger.info('Skaled monitor type %s finished', typename)
+        logger.info('Skaled monitor type starting %s', typename)
+        try:
+            self.am._upd_last_seen()
+            self.execute()
+            self.am._upd_schain_record()
+            self.am.log_executed_blocks()
+            self.am._upd_last_seen()
+        finally:
+            logger.info('Skaled monitor type finished %s', typename)
 
 
 class RegularSkaledMonitor(BaseSkaledMonitor):
