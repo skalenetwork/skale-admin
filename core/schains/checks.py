@@ -404,7 +404,7 @@ class SChainChecks(IChecks):
                 needed=needed
             )
             plain_checks.update(subj_checks)
-        if not self.estate.ima_linked:
+        if not self.estate or not self.estate.ima_linked:
             if 'ima_container' in plain_checks:
                 del plain_checks['ima_container']
 

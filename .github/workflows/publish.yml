@@ -33,6 +33,8 @@ jobs:
         echo "VERSION=$VERSION" >> $GITHUB_ENV
         echo "Version $VERSION"
         export RELEASE=true
+        ( test $BRANCH = "stable" && export PRERELEASE=false ) || export PRERELEASE=true
+        echo "PRERELEASE=$PRERELEASE" >> $GITHUB_ENV
         echo "RELEASE=$RELEASE" >> $GITHUB_ENV
         export CONTAINER_NAME="admin"
         bash ./helper-scripts/build_and_publish.sh
@@ -47,4 +49,4 @@ jobs:
         tag_name: ${{ env.VERSION }}
         release_name: ${{ env.VERSION }}
         draft: false
-        prerelease: true
+        prerelease: ${{ env.PRERELEASE }}
