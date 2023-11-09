@@ -173,10 +173,7 @@ def generate_bls_keys(dkg_client):
 
 
 def broadcast(dkg_client):
-    try:
-        dkg_client.broadcast()
-    except DkgTransactionError:
-        pass
+    dkg_client.broadcast()
 
 
 def send_complaint(dkg_client, index, reason=""):
@@ -214,10 +211,7 @@ def response(dkg_client, to_node_index):
 
 
 def send_alright(dkg_client):
-    try:
-        dkg_client.alright()
-    except DkgTransactionError as e:
-        logger.error(f'sChain {dkg_client.schain_name}:' + str(e))
+    dkg_client.alright()
 
 
 def check_broadcasted_data(dkg_client, is_correct, is_recieved):

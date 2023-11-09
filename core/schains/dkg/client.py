@@ -217,16 +217,13 @@ class DKGClient:
         verification_vector = self.verification_vector()
         secret_key_contribution = self.secret_key_contribution()
 
-        try:
+        if self.skale.dkg.is_node_broadcasted(self.group_index, self.node_id_contract):
             self.skale.dkg.broadcast(
                 self.group_index,
                 self.node_id_contract,
                 verification_vector,
                 secret_key_contribution,
             )
-        except TransactionFailedError as e:
-            logger.error(f'DKG broadcast failed: sChain {self.schain_name}')
-            raise DkgTransactionError(e)
         logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
 
     def receive_from_node(self, from_node, broadcasted_data):
@@ -307,16 +304,13 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent an alright note')
             return
-        try:
+        if not self.skale.is_all_data_received(self.group_index, self.node_id_contract):
             self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,
                 gas_limit=ALRIGHT_GAS_LIMIT,
                 multiplier=2
             )
-        except TransactionFailedError as e:
-            logger.error(f'DKG alright failed: sChain {self.schain_name}')
-            raise DkgTransactionError(e)
         logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
 
     def send_complaint(self, to_node, report_bad_data=False):
