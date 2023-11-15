@@ -217,14 +217,20 @@ class DKGClient:
         verification_vector = self.verification_vector()
         secret_key_contribution = self.secret_key_contribution()
 
-        if self.skale.dkg.is_node_broadcasted(self.group_index, self.node_id_contract):
+        if not self.skale.dkg.is_node_broadcasted(self.group_index, self.node_id_contract):
             self.skale.dkg.broadcast(
                 self.group_index,
                 self.node_id_contract,
                 verification_vector,
                 secret_key_contribution,
             )
-        logger.info(f'sChain: {self.schain_name}. Everything is sent from {self.node_id_dkg} node')
+        else:
+            logger.info(
+                'Node %d - (index in group %d) has already sent broadcast',
+                self.node_id_contract,
+                self.node_id_dkg
+            )
+        logger.info('Everything is sent from %d node', self.node_id_dkg)
 
     def receive_from_node(self, from_node, broadcasted_data):
         self.store_broadcasted_data(broadcasted_data, from_node)
@@ -304,7 +310,7 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent an alright note')
             return
-        if not self.skale.is_all_data_received(self.group_index, self.node_id_contract):
+        if not self.skale.dkg.is_all_data_received(self.group_index, self.node_id_contract):
             self.skale.dkg.alright(
                 self.group_index,
                 self.node_id_contract,

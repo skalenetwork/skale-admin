@@ -22,8 +22,7 @@ from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
     generate_random_node_data,
     generate_random_schain_data,
-    init_skale_from_wallet,
-    init_web3_skale
+    init_skale_from_wallet
 )
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -34,6 +33,7 @@ warnings.filterwarnings("ignore")
 
 MAX_WORKERS = 5
 TEST_SRW_FUND_VALUE = 3000000000000000000
+COMPLAINT_TIMELIMIT_FOR_TESTS = 100000  # mainnet test client may have current time in the future
 
 log_format = '[%(asctime)s][%(levelname)s] - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
 
@@ -181,10 +181,6 @@ def remove_nodes(skale, nodes):
 
 class TestDKG:
     @pytest.fixture(scope='class')
-    def skale(self):
-        return init_web3_skale()
-
-    @pytest.fixture(scope='class')
     def schain_creation_data(self):
         _, lifetime_seconds, name = generate_random_schain_data()
         return name, lifetime_seconds
@@ -213,7 +209,7 @@ class TestDKG:
             skale.nodes.remove_node_from_in_maintenance(nid)
 
     @pytest.fixture(scope='class')
-    def nodes(self, skale, skale_sgx_instances, other_maintenance):
+    def nodes(self, skale, validator, skale_sgx_instances, other_maintenance):
         nodes = register_nodes(skale_sgx_instances)
         try:
             yield nodes
@@ -223,6 +219,7 @@ class TestDKG:
 
     @pytest.fixture(scope='class')
     def schain(self, schain_creation_data, skale, nodes):
+        skale.constants_holder.set_complaint_timelimit(COMPLAINT_TIMELIMIT_FOR_TESTS)
         schain_name, lifetime = schain_creation_data
         create_schain(skale, schain_name, lifetime)
         try:
@@ -260,7 +257,7 @@ class TestDKG:
         regular_dkg_keys_data = sorted(
             [r.keys_data for r in results], key=lambda d: d['n']
         )
-
+        time.sleep(3)
         # Rerun dkg to emulate restoring keys
         results = run_dkg_all(
             skale,

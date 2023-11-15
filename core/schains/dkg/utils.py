@@ -38,7 +38,7 @@ class DkgFailedError(DkgError):
     pass
 
 
-class DKGKeyGenerationError(Exception):
+class DKGKeyGenerationError(DkgError):
     pass
 
 

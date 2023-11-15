@@ -160,13 +160,13 @@ def safe_run_dkg(
             skale.schains.name_to_group_id(schain_name)
         ):
             logger.info(f'Starting dkg procedure for {schain_name}')
-            if not skale.dkg.is_channel_opened(
+            if skale.dkg.is_channel_opened(
                 skale.schains.name_to_group_id(schain_name)
             ):
-                status = DKGStatus.FAILED
-            else:
                 status = DKGStatus.IN_PROGRESS
                 init_bls(dkg_client, node_id, sgx_key_name, rotation_id)
+            else:
+                status = DKGStatus.FAILED
     except DkgError as e:
         logger.info(f'sChain {schain_name} DKG procedure failed with {e}')
         status = DKGStatus.FAILED
