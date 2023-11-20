@@ -23,7 +23,7 @@ from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
 
-from core.schains.dkg.status import DKGStatus
+from core.schains.dkg.status import DKGStatus, DKGStep
 from core.schains.dkg.utils import (
     init_dkg_client, send_complaint, send_alright, get_latest_block_timestamp, DkgError,
     DKGKeyGenerationError, generate_bls_keys, check_response, check_no_complaints,
@@ -50,7 +50,7 @@ def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
     return dkg_client
 
 
-def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
+def init_bls(dkg_client, node_id, sgx_key_name, step, rotation_id=0):
     skale, schain_name = dkg_client.skale, dkg_client.schain_name
     n = dkg_client.n
 
@@ -133,6 +133,7 @@ def save_dkg_results(dkg_results, filepath):
 @dataclass
 class DKGResult:
     status: DKGStatus
+    last_step: DKGStep
     keys_data: dict
 
 
@@ -187,4 +188,8 @@ def safe_run_dkg(
     else:
         if status != DKGStatus.KEY_GENERATION_ERROR:
             status = DKGStatus.FAILED
-    return DKGResult(keys_data=keys_data, status=status)
+    return DKGResult(
+        keys_data=keys_data,
+        step=DKGStep.COMPLETED,
+        status=status
+    )

@@ -20,7 +20,7 @@
 from enum import Enum
 
 
-class DKGStatus(Enum):
+class DKGStatus(int, Enum):
     NOT_STARTED = 1
     IN_PROGRESS = 2
     DONE = 3
@@ -29,3 +29,12 @@ class DKGStatus(Enum):
 
     def is_done(self) -> bool:
         return self == DKGStatus.DONE
+
+
+class DKGStep(int, Enum):
+    NOT_STARTED = 0
+    CLIENT_INITED = 1
+    BROADCAST_SENT = 2
+    ALRIGHT_SENT = 3
+    KEY_GENERATION_ERROR = 4
+    COMPLETED = 5
