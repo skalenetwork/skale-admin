@@ -50,7 +50,7 @@ def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
     return dkg_client
 
 
-def init_bls(dkg_client, node_id, sgx_key_name, step, rotation_id=0):
+def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
     skale, schain_name = dkg_client.skale, dkg_client.schain_name
     n = dkg_client.n
 
@@ -133,27 +133,20 @@ def save_dkg_results(dkg_results, filepath):
 @dataclass
 class DKGResult:
     status: DKGStatus
-    last_step: DKGStep
+    step: DKGStep
     keys_data: dict
 
 
 def safe_run_dkg(
     skale,
+    dkg_client,
     schain_name,
     node_id,
     sgx_key_name,
     rotation_id
 ):
     keys_data, status = None, None
-    dkg_client = None
     try:
-        dkg_client = get_dkg_client(
-            node_id,
-            schain_name,
-            skale,
-            sgx_key_name,
-            rotation_id
-        )
         if is_last_dkg_finished(skale, schain_name):
             logger.info(f'Dkg for {schain_name} is completed. Fetching data')
             dkg_client.fetch_all_broadcasted_data()
@@ -190,6 +183,6 @@ def safe_run_dkg(
             status = DKGStatus.FAILED
     return DKGResult(
         keys_data=keys_data,
-        step=DKGStep.COMPLETED,
+        step=dkg_client.step,
         status=status
     )

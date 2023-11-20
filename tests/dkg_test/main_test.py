@@ -1,11 +1,13 @@
 """
 Test for dkg procedure using SGX keys
 """
+import functools
 import logging
 import os
 import subprocess
 import time
-from concurrent.futures import ThreadPoolExecutor as Executor
+from concurrent.futures import Future, ThreadPoolExecutor as Executor
+from enum import Enum
 
 import mock
 import pytest
@@ -16,6 +18,7 @@ from skale.wallets import SgxWallet
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
 from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, safe_run_dkg
+from core.schains.dkg.status import DKGStatus, DKGStep
 from core.schains.config import init_schain_config_dir
 
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
@@ -42,6 +45,12 @@ logger = logging.getLogger(__name__)
 
 class DkgTestError(Exception):
     pass
+
+
+class DKGRunType(int, Enum):
+    NORMAL = 0
+    BROADCAST_FAILED = 1
+    ALRIGHT_FAILED = 2
 
 
 def generate_sgx_wallets(skale, n_of_keys):
@@ -114,30 +123,71 @@ def register_nodes(skale_instances):
     return nodes
 
 
-def run_dkg_all(skale, skale_sgx_instances, schain_name, nodes):
-    futures = []
-    nodes.sort(key=lambda x: x['node_id'])
+def exec_dkg_runners(runners: list[Future]):
     with Executor(max_workers=MAX_WORKERS) as executor:
-        for i, (node_skale, node_data) in \
-                enumerate(zip(skale_sgx_instances, nodes)):
-            futures.append(executor.submit(
-                run_node_dkg,
-                node_skale, schain_name, i, node_data['node_id']
-            ))
-
-    return [f.result() for f in futures]
+        futures = [
+            executor.submit(runner)
+            for runner in runners
+        ]
+        return [f.result() for f in futures]
 
 
-def run_node_dkg(skale, schain_name, index, node_id):
+def get_dkg_runners(skale, skale_sgx_instances, schain_name, nodes):
+    runners = []
+    for i, (node_skale, node_data) in \
+            enumerate(zip(skale_sgx_instances, nodes)):
+        runners.append(functools.partial(
+            run_node_dkg,
+            node_skale,
+            schain_name,
+            i,
+            node_data['node_id']
+        ))
+
+    return runners
+
+
+def get_test_dkg_client(
+    skale: Skale,
+    node_id: int,
+    schain_name: str,
+    sgx_key_name: str,
+    rotation_id: int,
+    run_type: DKGRunType = DKGRunType.NORMAL
+):
+    dkg_client = get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
+    if run_type == DKGRunType.BROADCAST_FAILED:
+        dkg_client.broadcast = mock.Mock(side_effect=DkgError('Broadcast failed on purpose'))
+    elif run_type == DKGRunType.ALRIGHT_FAILED:
+        dkg_client.alright = mock.Mock(side_effect=DkgError('Alright failed on purpose'))
+
+    return dkg_client
+
+
+def run_node_dkg(
+    skale: Skale,
+    schain_name: str,
+    index: int,
+    node_id: int,
+    run_type: DKGRunType = DKGRunType.NORMAL
+):
     timeout = index * 5  # diversify start time for all nodes
     logger.info(f'Node {node_id} going to sleep {timeout} seconds')
     time.sleep(timeout)
     sgx_key_name = skale.wallet._key_name
-
     init_schain_config_dir(schain_name)
     rotation_id = skale.schains.get_last_rotation_id(schain_name)
+    dkg_client = get_test_dkg_client(
+        skale,
+        node_id,
+        schain_name,
+        sgx_key_name,
+        rotation_id,
+        run_type
+    )
     dkg_result = safe_run_dkg(
         skale,
+        dkg_client,
         schain_name,
         node_id,
         sgx_key_name,
@@ -228,7 +278,7 @@ class TestDKG:
             remove_schain(skale, schain_name)
             cleanup_schain_config(schain_name)
 
-    def test_dkg_procedure(
+    def test_dkg_procedure_normal(
         self,
         skale,
         schain_creation_data,
@@ -238,17 +288,20 @@ class TestDKG:
     ):
         schain_name, _ = schain_creation_data
         assert not is_last_dkg_finished(skale, schain_name)
-        results = run_dkg_all(
+        nodes.sort(key=lambda x: x['node_id'])
+        runners = get_dkg_runners(
             skale,
             skale_sgx_instances,
             schain_name,
             nodes
         )
+        results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
         assert is_last_dkg_finished(skale, schain_name)
 
         for node_data, result in zip(nodes, results):
             assert result.status.is_done()
+            assert result.step == DKGStep.COMPLETED
             keys_data = result.keys_data
             assert keys_data is not None
         gid = skale.schains.name_to_id(schain_name)
@@ -259,12 +312,15 @@ class TestDKG:
         )
         time.sleep(3)
         # Rerun dkg to emulate restoring keys
-        results = run_dkg_all(
+
+        nodes.sort(key=lambda x: x['node_id'])
+        runners = get_dkg_runners(
             skale,
             skale_sgx_instances,
             schain_name,
             nodes
         )
+        results = exec_dkg_runners(runners)
         assert all([r.status.is_done() for r in results])
         assert is_last_dkg_finished(skale, schain_name)
 
@@ -272,6 +328,86 @@ class TestDKG:
             [r.keys_data for r in results], key=lambda d: d['n']
         )
         assert regular_dkg_keys_data == restore_dkg_keys_data
+
+    def test_dkg_procedure_broadcast_failed(
+        self,
+        skale,
+        schain_creation_data,
+        skale_sgx_instances,
+        nodes,
+        schain
+    ):
+        schain_name, _ = schain_creation_data
+        assert not is_last_dkg_finished(skale, schain_name)
+        nodes.sort(key=lambda x: x['node_id'])
+        runners = get_dkg_runners(
+            skale,
+            skale_sgx_instances,
+            schain_name,
+            nodes
+        )
+
+        runners[0] = functools.partial(
+            run_node_dkg,
+            skale_sgx_instances[0],
+            schain_name,
+            0,
+            nodes[0]['node_id'],
+            run_type=DKGRunType.BROADCAST_FAILED
+        )
+        results = exec_dkg_runners(runners)
+        assert len(results) == N_OF_NODES
+        gid = skale.schains.name_to_id(schain_name)
+
+        for i, (node_data, result) in enumerate(zip(nodes, results)):
+            assert result.status == DKGStatus.FAILED
+            if i == 0:
+                assert result.step == DKGStep.CLIENT_INITED
+            else:
+                assert result.step == DKGStep.BROADCAST
+            assert result.keys_data is None
+        assert not skale.dkg.is_last_dkg_successful(gid)
+        assert not is_last_dkg_finished(skale, schain_name)
+
+    def test_dkg_procedure_alright_failed(
+        self,
+        skale,
+        schain_creation_data,
+        skale_sgx_instances,
+        nodes,
+        schain
+    ):
+        schain_name, _ = schain_creation_data
+        assert not is_last_dkg_finished(skale, schain_name)
+        nodes.sort(key=lambda x: x['node_id'])
+        runners = get_dkg_runners(
+            skale,
+            skale_sgx_instances,
+            schain_name,
+            nodes
+        )
+
+        runners[0] = functools.partial(
+            run_node_dkg,
+            skale_sgx_instances[0],
+            schain_name,
+            0,
+            nodes[0]['node_id'],
+            run_type=DKGRunType.ALRIGHT_FAILED
+        )
+        results = exec_dkg_runners(runners)
+        assert len(results) == N_OF_NODES
+        gid = skale.schains.name_to_id(schain_name)
+
+        for i, (node_data, result) in enumerate(zip(nodes, results)):
+            assert result.status == DKGStatus.FAILED
+            if i == 0:
+                assert result.step == DKGStep.BROADCAST_SENT
+            else:
+                assert result.step == DKGStep.ALRIGHT_SENT
+            assert result.keys_data is None
+        assert not skale.dkg.is_last_dkg_successful(gid)
+        assert not is_last_dkg_finished(skale, schain_name)
 
     @pytest.fixture
     def no_ids_for_schain_skale(self, skale):

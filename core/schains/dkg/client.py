@@ -28,6 +28,7 @@ from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.transactions.result import TransactionFailedError
 
 from core.schains.dkg.broadcast_filter import Filter
+from core.schains.dkg.status import DKGStep
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from tools.sgx_utils import sgx_unreachable_retry
 
@@ -131,8 +132,21 @@ def generate_bls_key_name(group_index_str, node_id, dkg_id):
 
 
 class DKGClient:
-    def __init__(self, node_id_dkg, node_id_contract, skale, t, n, schain_name, public_keys,
-                 node_ids_dkg, node_ids_contract, eth_key_name, rotation_id):
+    def __init__(
+        self,
+        node_id_dkg,
+        node_id_contract,
+        skale,
+        t,
+        n,
+        schain_name,
+        public_keys,
+        node_ids_dkg,
+        node_ids_contract,
+        eth_key_name,
+        rotation_id,
+        step: DKGStep = DKGStep.NOT_STARTED
+    ):
         self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t,
                              path_to_cert=SGX_CERTIFICATES_FOLDER)
         self.schain_name = schain_name
@@ -156,6 +170,7 @@ class DKGClient:
         self.complaint_error_event_hash = self.skale.web3.to_hex(self.skale.web3.keccak(
             text="ComplaintError(string)"
         ))
+        self.step = DKGStep.NOT_STARTED
         logger.info(
             f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
             f'Node id on contract is {self.node_id_contract}')
