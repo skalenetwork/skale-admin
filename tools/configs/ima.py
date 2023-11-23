@@ -30,7 +30,7 @@ MAINNET_IMA_ABI_FILEPATH = os.getenv('MAINNET_IMA_ABI_FILEPATH') or \
 
 DISABLE_IMA = os.getenv('DISABLE_IMA') == 'True'
 
-IMA_NETWORK_BROWSER_FILENAME = 'schains_data.json'
+IMA_NETWORK_BROWSER_FILENAME = 'ima_network_browser_data.json'
 
 SCHAIN_IMA_ABI_FILENAME = 'schain_ima_abi.json'
 SCHAIN_IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, SCHAIN_IMA_ABI_FILENAME)
