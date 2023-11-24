@@ -7,6 +7,7 @@ import os
 import subprocess
 import time
 from concurrent.futures import Future, ThreadPoolExecutor as Executor
+from contextlib import contextmanager
 from enum import Enum
 
 import mock
@@ -36,7 +37,8 @@ warnings.filterwarnings("ignore")
 
 MAX_WORKERS = 5
 TEST_SRW_FUND_VALUE = 3000000000000000000
-COMPLAINT_TIMELIMIT_FOR_TESTS = 100000  # mainnet test client may have current time in the future
+DKG_TIMEOUT = 200000  # mainnet test client may have current time in the future
+DKG_TIMEOUT_FOR_FAILURE = 100000  # to speed up failed broadcast/alright test
 
 log_format = '[%(asctime)s][%(levelname)s] - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
 
@@ -51,6 +53,7 @@ class DKGRunType(int, Enum):
     NORMAL = 0
     BROADCAST_FAILED = 1
     ALRIGHT_FAILED = 2
+    COMPLAINT_FAILED = 3
 
 
 def generate_sgx_wallets(skale, n_of_keys):
@@ -76,8 +79,7 @@ def link_node_address(skale, wallet):
     skale.wallet = main_wallet
     skale.validator_service.link_node_address(
         node_address=wallet.address,
-        signature=signature,
-        wait_for=True
+        signature=signature
     )
 
 
@@ -103,8 +105,7 @@ def register_node(skale):
         port=port,
         name=name,
         public_ip=public_ip,
-        domain_name=DEFAULT_DOMAIN_NAME,
-        wait_for=True
+        domain_name=DEFAULT_DOMAIN_NAME
     )
     node_id = skale.nodes.node_name_to_index(name)
     logger.info(f'Registered node {name}, ID: {node_id}')
@@ -147,7 +148,8 @@ def get_dkg_runners(skale, skale_sgx_instances, schain_name, nodes):
     return runners
 
 
-def get_test_dkg_client(
+@contextmanager
+def test_dkg_client(
     skale: Skale,
     node_id: int,
     schain_name: str,
@@ -156,12 +158,25 @@ def get_test_dkg_client(
     run_type: DKGRunType = DKGRunType.NORMAL
 ):
     dkg_client = get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
+    method, original = None, None
     if run_type == DKGRunType.BROADCAST_FAILED:
-        dkg_client.broadcast = mock.Mock(side_effect=DkgError('Broadcast failed on purpose'))
+        effect = DkgError('Broadcast failed on purpose')
+        method, original = 'broadcast', dkg_client.skale.dkg.broadcast
+        dkg_client.skale.dkg.broadcast = mock.Mock(side_effect=effect)
     elif run_type == DKGRunType.ALRIGHT_FAILED:
-        dkg_client.alright = mock.Mock(side_effect=DkgError('Alright failed on purpose'))
+        effect = DkgError('Alright failed on purpose')
+        method, original = 'alright', dkg_client.skale.dkg.alright
+        dkg_client.skale.dkg.alright = mock.Mock(side_effect=effect)
+    elif run_type == DKGRunType.COMPLAINT_FAILED:
+        effect = DkgError('Complaint failed on purpose')
+        method, original = 'complaint', dkg_client.skale.dkg.complaint
+        dkg_client.skale.dkg.complaint = mock.Mock(side_effect=effect)
 
-    return dkg_client
+    try:
+        yield dkg_client
+    finally:
+        if method:
+            setattr(dkg_client.skale.dkg, method, original)
 
 
 def run_node_dkg(
@@ -169,30 +184,46 @@ def run_node_dkg(
     schain_name: str,
     index: int,
     node_id: int,
-    run_type: DKGRunType = DKGRunType.NORMAL
+    runs: tuple[DKGRunType] = (DKGRunType.NORMAL,)
 ):
-    timeout = index * 5  # diversify start time for all nodes
-    logger.info(f'Node {node_id} going to sleep {timeout} seconds')
-    time.sleep(timeout)
-    sgx_key_name = skale.wallet._key_name
     init_schain_config_dir(schain_name)
+    sgx_key_name = skale.wallet._key_name
     rotation_id = skale.schains.get_last_rotation_id(schain_name)
-    dkg_client = get_test_dkg_client(
-        skale,
-        node_id,
-        schain_name,
-        sgx_key_name,
-        rotation_id,
-        run_type
-    )
-    dkg_result = safe_run_dkg(
-        skale,
-        dkg_client,
-        schain_name,
-        node_id,
-        sgx_key_name,
-        rotation_id
-    )
+
+    timeout = index * 5  # diversify start time for all nodes
+    logger.info('Node %d going to sleep %d seconds %s', node_id, timeout, type(runs))
+    time.sleep(timeout)
+    logger.info('Starting runs %s, %d', runs, len(runs))
+    dkg_result = None
+    for run_type in runs:
+        logger.info('Running %s dkg', run_type)
+        with test_dkg_client(
+            skale,
+            node_id,
+            schain_name,
+            sgx_key_name,
+            rotation_id,
+            run_type
+        ) as dkg_client:
+            logger.info('ID skale %d', id(dkg_client.skale))
+            try:
+                dkg_result = safe_run_dkg(
+                    skale,
+                    dkg_client,
+                    schain_name,
+                    node_id,
+                    sgx_key_name,
+                    rotation_id
+                )
+            except Exception:
+                logger.exception('DKG run failed')
+            else:
+                if dkg_result.status == DKGStatus.DONE:
+                    logger.info('DKG completed')
+                    break
+        logger.info('Finished run %s', run_type)
+
+    logger.info('Completed runs %s', runs)
     return dkg_result
 
 
@@ -207,7 +238,6 @@ def create_schain(skale: Skale, name: str, lifetime_seconds: int) -> None:
         TYPE_OF_NODES,
         0,
         name,
-        wait_for=True,
         value=TEST_SRW_FUND_VALUE
     )
 
@@ -220,13 +250,13 @@ def cleanup_schain_config(schain_name: str) -> None:
 def remove_schain(skale, schain_name):
     print('Cleanup nodes and schains')
     if schain_name is not None:
-        skale.manager.delete_schain(schain_name, wait_for=True)
+        skale.manager.delete_schain(schain_name)
 
 
 def remove_nodes(skale, nodes):
     for node_id in nodes:
         skale.nodes.init_exit(node_id)
-        skale.manager.node_exit(node_id, wait_for=True)
+        skale.manager.node_exit(node_id)
 
 
 class TestDKG:
@@ -267,9 +297,16 @@ class TestDKG:
             nids = [node['node_id'] for node in nodes]
             remove_nodes(skale, nids)
 
-    @pytest.fixture(scope='class')
+    @pytest.fixture
+    def dkg_timeout(self, skale):
+        skale.constants_holder.set_complaint_timelimit(DKG_TIMEOUT)
+
+    @pytest.fixture
+    def dkg_timeout_small(self, skale):
+        skale.constants_holder.set_complaint_timelimit(DKG_TIMEOUT_FOR_FAILURE)
+
+    @pytest.fixture
     def schain(self, schain_creation_data, skale, nodes):
-        skale.constants_holder.set_complaint_timelimit(COMPLAINT_TIMELIMIT_FOR_TESTS)
         schain_name, lifetime = schain_creation_data
         create_schain(skale, schain_name, lifetime)
         try:
@@ -284,6 +321,7 @@ class TestDKG:
         schain_creation_data,
         skale_sgx_instances,
         nodes,
+        dkg_timeout,
         schain
     ):
         schain_name, _ = schain_creation_data
@@ -301,7 +339,7 @@ class TestDKG:
 
         for node_data, result in zip(nodes, results):
             assert result.status.is_done()
-            assert result.step == DKGStep.COMPLETED
+            assert result.step == DKGStep.KEY_GENERATION
             keys_data = result.keys_data
             assert keys_data is not None
         gid = skale.schains.name_to_id(schain_name)
@@ -329,12 +367,13 @@ class TestDKG:
         )
         assert regular_dkg_keys_data == restore_dkg_keys_data
 
-    def test_dkg_procedure_broadcast_failed(
+    def test_dkg_procedure_broadcast_failed_completely(
         self,
         skale,
         schain_creation_data,
         skale_sgx_instances,
         nodes,
+        dkg_timeout_small,
         schain
     ):
         schain_name, _ = schain_creation_data
@@ -353,7 +392,7 @@ class TestDKG:
             schain_name,
             0,
             nodes[0]['node_id'],
-            run_type=DKGRunType.BROADCAST_FAILED
+            runs=(DKGRunType.BROADCAST_FAILED,)
         )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
@@ -362,19 +401,20 @@ class TestDKG:
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
             if i == 0:
-                assert result.step == DKGStep.CLIENT_INITED
-            else:
                 assert result.step == DKGStep.BROADCAST
+            else:
+                assert result.step == DKGStep.COMPLAINT_NO_BROADCAST
             assert result.keys_data is None
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)
 
-    def test_dkg_procedure_alright_failed(
+    def test_dkg_procedure_broadcast_failed_once(
         self,
         skale,
         schain_creation_data,
         skale_sgx_instances,
         nodes,
+        dkg_timeout_small,
         schain
     ):
         schain_name, _ = schain_creation_data
@@ -393,7 +433,45 @@ class TestDKG:
             schain_name,
             0,
             nodes[0]['node_id'],
-            run_type=DKGRunType.ALRIGHT_FAILED
+            runs=(DKGRunType.BROADCAST_FAILED, DKGRunType.NORMAL)
+        )
+        results = exec_dkg_runners(runners)
+        assert len(results) == N_OF_NODES
+        gid = skale.schains.name_to_id(schain_name)
+
+        for i, (node_data, result) in enumerate(zip(nodes, results)):
+            assert result.status == DKGStatus.DONE
+            assert result.step == DKGStep.KEY_GENERATION
+            assert result.keys_data is not None
+        assert skale.dkg.is_last_dkg_successful(gid)
+        assert is_last_dkg_finished(skale, schain_name)
+
+    def test_dkg_procedure_alright_failed_completely(
+        self,
+        skale,
+        schain_creation_data,
+        skale_sgx_instances,
+        nodes,
+        dkg_timeout_small,
+        schain
+    ):
+        schain_name, _ = schain_creation_data
+        assert not is_last_dkg_finished(skale, schain_name)
+        nodes.sort(key=lambda x: x['node_id'])
+        runners = get_dkg_runners(
+            skale,
+            skale_sgx_instances,
+            schain_name,
+            nodes
+        )
+
+        runners[0] = functools.partial(
+            run_node_dkg,
+            skale_sgx_instances[0],
+            schain_name,
+            0,
+            nodes[0]['node_id'],
+            runs=(DKGRunType.ALRIGHT_FAILED,)
         )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
@@ -402,9 +480,98 @@ class TestDKG:
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
             if i == 0:
-                assert result.step == DKGStep.BROADCAST_SENT
+                assert result.step == DKGStep.BROADCAST_VERIFICATION
             else:
-                assert result.step == DKGStep.ALRIGHT_SENT
+                assert result.step == DKGStep.COMPLAINT_NO_ALRIGHT
+            assert result.keys_data is None
+        assert not skale.dkg.is_last_dkg_successful(gid)
+        assert not is_last_dkg_finished(skale, schain_name)
+
+    def test_dkg_procedure_alright_failed_once(
+        self,
+        skale,
+        schain_creation_data,
+        skale_sgx_instances,
+        nodes,
+        dkg_timeout_small,
+        schain
+    ):
+        schain_name, _ = schain_creation_data
+        assert not is_last_dkg_finished(skale, schain_name)
+        nodes.sort(key=lambda x: x['node_id'])
+        runners = get_dkg_runners(
+            skale,
+            skale_sgx_instances,
+            schain_name,
+            nodes
+        )
+
+        runners[0] = functools.partial(
+            run_node_dkg,
+            skale_sgx_instances[0],
+            schain_name,
+            0,
+            nodes[0]['node_id'],
+            runs=(DKGRunType.ALRIGHT_FAILED, DKGRunType.NORMAL)
+        )
+        results = exec_dkg_runners(runners)
+        assert len(results) == N_OF_NODES
+        gid = skale.schains.name_to_id(schain_name)
+
+        for i, (node_data, result) in enumerate(zip(nodes, results)):
+            assert result.status == DKGStatus.DONE
+            assert result.step == DKGStep.KEY_GENERATION
+            assert result.keys_data is not None
+        assert skale.dkg.is_last_dkg_successful(gid)
+        assert is_last_dkg_finished(skale, schain_name)
+
+    def test_dkg_procedure_complaint_failed(
+        self,
+        skale,
+        schain_creation_data,
+        skale_sgx_instances,
+        nodes,
+        dkg_timeout_small,
+        schain
+    ):
+        # TODO: Same as broadcast failed. Fix this test'
+        schain_name, _ = schain_creation_data
+        assert not is_last_dkg_finished(skale, schain_name)
+        nodes.sort(key=lambda x: x['node_id'])
+        runners = get_dkg_runners(
+            skale,
+            skale_sgx_instances,
+            schain_name,
+            nodes
+        )
+
+        runners[0] = functools.partial(
+            run_node_dkg,
+            skale_sgx_instances[0],
+            schain_name,
+            0,
+            nodes[0]['node_id'],
+            runs=(DKGRunType.BROADCAST_FAILED,)
+        )
+        for i in range(1, N_OF_NODES):
+            runners[i] = functools.partial(
+                run_node_dkg,
+                skale_sgx_instances[i],
+                schain_name,
+                i,
+                nodes[i]['node_id'],
+                runs=(DKGRunType.COMPLAINT_FAILED,)
+            )
+        results = exec_dkg_runners(runners)
+        assert len(results) == N_OF_NODES
+        gid = skale.schains.name_to_id(schain_name)
+
+        for i, (node_data, result) in enumerate(zip(nodes, results)):
+            assert result.status == DKGStatus.FAILED
+            if i == 0:
+                assert result.step == DKGStep.BROADCAST
+            else:
+                assert result.step == DKGStep.COMPLAINT_NO_BROADCAST
             assert result.keys_data is None
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)
@@ -423,7 +590,7 @@ class TestDKG:
         finally:
             skale.schains_internal.get_node_ids_for_schain = get_node_ids_f
 
-    def test_failed_get_dkg_client(self, no_ids_for_schain_skale):
+    def test_failed_get_dkg_client(self, no_ids_for_schain_skale, schain):
         skale = no_ids_for_schain_skale
         with pytest.raises(DkgError):
             get_dkg_client(
