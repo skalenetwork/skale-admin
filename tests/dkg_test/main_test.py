@@ -149,7 +149,7 @@ def get_dkg_runners(skale, skale_sgx_instances, schain_name, nodes):
 
 
 @contextmanager
-def test_dkg_client(
+def dkg_test_client(
     skale: Skale,
     node_id: int,
     schain_name: str,
@@ -197,7 +197,7 @@ def run_node_dkg(
     dkg_result = None
     for run_type in runs:
         logger.info('Running %s dkg', run_type)
-        with test_dkg_client(
+        with dkg_test_client(
             skale,
             node_id,
             schain_name,
@@ -260,7 +260,7 @@ def remove_nodes(skale, nodes):
 
 
 class TestDKG:
-    @pytest.fixture(scope='class')
+    @pytest.fixture
     def schain_creation_data(self):
         _, lifetime_seconds, name = generate_random_schain_data()
         return name, lifetime_seconds
