@@ -28,7 +28,7 @@ from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.transactions.result import TransactionFailedError
 
 from core.schains.dkg.broadcast_filter import Filter
-from core.schains.dkg.status import DKGStep
+from core.schains.dkg.status import ComplaintReason, DKGStep
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from tools.sgx_utils import sgx_unreachable_retry
 
@@ -145,7 +145,7 @@ class DKGClient:
         node_ids_contract,
         eth_key_name,
         rotation_id,
-        step: DKGStep = DKGStep.NOT_STARTED
+        step: DKGStep = DKGStep.NONE
     ):
         self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t,
                              path_to_cert=SGX_CERTIFICATES_FOLDER)
@@ -170,7 +170,7 @@ class DKGClient:
         self.complaint_error_event_hash = self.skale.web3.to_hex(self.skale.web3.keccak(
             text="ComplaintError(string)"
         ))
-        self.step = DKGStep.NOT_STARTED
+        self.step = step  # last step
         logger.info(
             f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
             f'Node id on contract is {self.node_id_contract}')
@@ -213,6 +213,9 @@ class DKGClient:
         ]
         return convert_str_to_key_share(self.sent_secret_key_contribution, self.n)
 
+    def is_node_broadcasted(self) -> bool:
+        return self.skale.dkg.is_node_broadcasted(self.group_index, self.node_id_contract)
+
     def broadcast(self):
         poly_success = self.generate_polynomial(self.poly_name)
         if poly_success == DkgPolyStatus.FAIL:
@@ -232,19 +235,13 @@ class DKGClient:
         verification_vector = self.verification_vector()
         secret_key_contribution = self.secret_key_contribution()
 
-        if not self.skale.dkg.is_node_broadcasted(self.group_index, self.node_id_contract):
-            self.skale.dkg.broadcast(
-                self.group_index,
-                self.node_id_contract,
-                verification_vector,
-                secret_key_contribution,
-            )
-        else:
-            logger.info(
-                'Node %d - (index in group %d) has already sent broadcast',
-                self.node_id_contract,
-                self.node_id_dkg
-            )
+        self.step = DKGStep.BROADCAST
+        self.skale.dkg.broadcast(
+            self.group_index,
+            self.node_id_contract,
+            verification_vector,
+            secret_key_contribution,
+        )
         logger.info('Everything is sent from %d node', self.node_id_dkg)
 
     def receive_from_node(self, from_node, broadcasted_data):
@@ -334,10 +331,7 @@ class DKGClient:
             )
         logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
 
-    def send_complaint(self, to_node, report_bad_data=False):
-        reason = "complaint"
-        if report_bad_data:
-            reason = "complaint_bad_data"
+    def send_complaint(self, to_node: int, reason: ComplaintReason = None):
         logger.info(f'sChain: {self.schain_name}. '
                     f'{self.node_id_dkg} node is trying to sent a {reason} on {to_node} node')
 
@@ -345,25 +339,38 @@ class DKGClient:
             self.group_index, self.node_id_contract, self.node_ids_dkg[to_node],
             self.skale.wallet.address
         )
+        channel_opened = self.is_channel_opened()
 
-        if not is_complaint_possible or not self.is_channel_opened():
-            logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_dkg} node could not sent a complaint on {to_node} node')
+        if not is_complaint_possible or not channel_opened:
+            logger.info(
+                '%d node could not sent a complaint on %d node. %s %s',
+                self.node_id_dkg,
+                to_node,
+                is_complaint_possible,
+                channel_opened
+            )
             return False
+
+        reason_to_step = {
+            ComplaintReason.NO_BROADCAST: DKGStep.COMPLAINT_NO_BROADCAST,
+            ComplaintReason.BAD_DATA: DKGStep.COMPLAINT_BAD_DATA,
+            ComplaintReason.NO_ALRIGHT: DKGStep.COMPLAINT_NO_ALRIGHT,
+            ComplaintReason.NO_RESPONSE: DKGStep.COMPLAINT_NO_RESPONSE
+        }
+        self.step = reason_to_step[reason]
+
         try:
-            if not report_bad_data:
-                tx_res = self.skale.dkg.complaint(
-                    self.group_index,
-                    self.node_id_contract,
-                    self.node_ids_dkg[to_node],
-                    wait_for=True
-                )
-            else:
+            if reason == ComplaintReason.BAD_DATA:
                 tx_res = self.skale.dkg.complaint_bad_data(
                     self.group_index,
                     self.node_id_contract,
-                    self.node_ids_dkg[to_node],
-                    wait_for=True
+                    self.node_ids_dkg[to_node]
+                )
+            else:
+                tx_res = self.skale.dkg.complaint(
+                    self.group_index,
+                    self.node_id_contract,
+                    self.node_ids_dkg[to_node]
                 )
             if self.check_complaint_logs(tx_res.receipt['logs'][0]):
                 logger.info(f'sChain: {self.schain_name}. '
@@ -403,13 +410,13 @@ class DKGClient:
         share, dh_key, verification_vector_mult = self.get_complaint_response(to_node_index)
 
         try:
+            self.step = DKGStep.PRE_RESPONSE
             self.skale.dkg.pre_response(
                 self.group_index,
                 self.node_id_contract,
                 convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
                 convert_g2_points_to_array(verification_vector_mult),
-                convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
-                wait_for=True
+                convert_str_to_key_share(self.sent_secret_key_contribution, self.n)
             )
 
             is_response_possible = self.skale.dkg.is_response_possible(
@@ -420,12 +427,12 @@ class DKGClient:
                             f'{self.node_id_dkg} node could not sent a response')
                 return
 
+            self.step = DKGStep.RESPONSE
             self.skale.dkg.response(
                 self.group_index,
                 self.node_id_contract,
                 int(dh_key, 16),
-                share,
-                wait_for=True
+                share
             )
             logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent a response')
         except TransactionFailedError as e:

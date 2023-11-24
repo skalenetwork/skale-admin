@@ -20,10 +20,12 @@
 import logging
 import os
 from time import sleep
+from typing import NamedTuple
 
 from skale.schain_config.generator import get_nodes_for_schain
 
 from tools.configs import NODE_DATA_PATH
+from core.schains.dkg.status import ComplaintReason, DKGStep
 from core.schains.dkg.client import DKGClient, DkgError, DkgVerificationError, DkgTransactionError
 from core.schains.dkg.broadcast_filter import Filter
 
@@ -40,6 +42,11 @@ class DkgFailedError(DkgError):
 
 class DKGKeyGenerationError(DkgError):
     pass
+
+
+class BroadcastResult(NamedTuple):
+    received: list[bool]
+    correct: list[bool]
 
 
 def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
@@ -73,9 +80,7 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
     return dkg_client
 
 
-def broadcast_and_check_data(dkg_client):
-    logger.info(f'sChain {dkg_client.schain_name}: Sending broadcast')
-
+def receive_broadcast_data(dkg_client: DKGClient) -> BroadcastResult:
     n = dkg_client.n
     schain_name = dkg_client.schain_name
     skale = dkg_client.skale
@@ -88,14 +93,10 @@ def broadcast_and_check_data(dkg_client):
 
     start_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
 
-    try:
-        broadcast(dkg_client)
-    except SgxUnreachableError as e:
-        logger.error(e)
-        wait_for_fail(dkg_client.skale, schain_name, start_time)
-
     dkg_filter = Filter(skale, schain_name, n)
     broadcasts_found = []
+
+    logger.info('Fetching broadcasted data')
 
     while False in is_received:
         time_gone = get_latest_block_timestamp(dkg_client.skale) - start_time
@@ -136,12 +137,28 @@ def broadcast_and_check_data(dkg_client):
 
         logger.info(f'sChain {schain_name}: total received {len(broadcasts_found)} broadcasts'
                     f' from nodes {broadcasts_found}')
-        sleep(30)
+    return BroadcastResult(correct=is_correct, received=is_received)
 
-    check_broadcasted_data(dkg_client, is_correct, is_received)
+
+def broadcast_and_check_data(dkg_client):
+    # schain_name = dkg_client.schain_name
+    # skale = dkg_client.skale
+    # start_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
+
+    if not dkg_client.is_node_broadcasted():
+        logger.info('Sending broadcast')
+        dkg_client.broadcast()
+        # wait_for_fail(dkg_client.skale, schain_name, start_time)
+    else:
+        logger.info('Broadcast has been already sent')
+
+    dkg_client.step = DKGStep.BROADCAST_VERIFICATION
+    broadcast_result = receive_broadcast_data(dkg_client)
+    check_broadcast_result(dkg_client, broadcast_result)
 
 
 def generate_bls_keys(dkg_client):
+    dkg_client.step = DKGStep.KEY_GENERATION
     skale = dkg_client.skale
     schain_name = dkg_client.schain_name
     try:
@@ -176,11 +193,22 @@ def broadcast(dkg_client):
     dkg_client.broadcast()
 
 
-def send_complaint(dkg_client, index, reason=""):
+def send_complaint(dkg_client: DKGClient, index: int, reason: ComplaintReason):
+    channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
+    reason_to_missing = {
+        ComplaintReason.NO_ALRIGHT: 'alright',
+        ComplaintReason.NO_BROADCAST: 'broadcast',
+        ComplaintReason.NO_RESPONSE: 'response'
+    }
+    missing = reason_to_missing.get(reason, '')
     try:
-        channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
-        if dkg_client.send_complaint(index):
-            wait_for_fail(dkg_client.skale, dkg_client.schain_name, channel_started_time, reason)
+        if dkg_client.send_complaint(index, reason=reason):
+            wait_for_fail(
+                dkg_client.skale,
+                dkg_client.schain_name,
+                channel_started_time,
+                missing
+            )
     except DkgTransactionError:
         pass
 
@@ -188,13 +216,13 @@ def send_complaint(dkg_client, index, reason=""):
 def report_bad_data(dkg_client, index):
     try:
         channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
-        if dkg_client.send_complaint(index, True):
+        if dkg_client.send_complaint(index, reason=ComplaintReason.BAD_DATA):
             wait_for_fail(dkg_client.skale, dkg_client.schain_name,
                           channel_started_time, "correct data")
             logger.info(f'sChain {dkg_client.schain_name}:'
                         'Complainted node did not send a response.'
                         f'Sending complaint once again')
-            dkg_client.send_complaint(index)
+            dkg_client.send_complaint(index, reason=ComplaintReason.NO_RESPONSE)
             wait_for_fail(dkg_client.skale, dkg_client.schain_name,
                           channel_started_time, "response")
     except DkgTransactionError:
@@ -214,12 +242,12 @@ def send_alright(dkg_client):
     dkg_client.alright()
 
 
-def check_broadcasted_data(dkg_client, is_correct, is_recieved):
+def check_broadcast_result(dkg_client, broadcast_result):
     for i in range(dkg_client.n):
-        if not is_recieved[i]:
-            send_complaint(dkg_client, i, "broadcast")
+        if not broadcast_result.received[i]:
+            send_complaint(dkg_client, i, reason=ComplaintReason.NO_BROADCAST)
             break
-        if not is_correct[i]:
+        if not broadcast_result.correct[i]:
             report_bad_data(dkg_client, i)
             break
 
@@ -238,6 +266,7 @@ def check_response(dkg_client):
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
         logger.info(f'sChain: {dkg_client.schain_name}: Complaint received. Sending response ...')
         channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
+        dkg_client.step = DKGStep.RESPONSE
         response(dkg_client, complaint_data[0])
         logger.info(f'sChain: {dkg_client.schain_name}: Response sent.'
                     ' Waiting for FailedDkg event ...')

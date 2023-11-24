@@ -173,7 +173,7 @@ class ConfigActionManager(BaseActionManager):
         initial_status = self.checks.dkg.status
         if not initial_status:
             logger.info('Running safe_run_dkg')
-            step = DKGStep.NOT_STARTED
+            step = DKGStep.NONE
             dkg_client = get_dkg_client(
                 skale=self.skale,
                 node_id=self.node_config.id,

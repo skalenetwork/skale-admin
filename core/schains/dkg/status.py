@@ -32,9 +32,23 @@ class DKGStatus(int, Enum):
 
 
 class DKGStep(int, Enum):
-    NOT_STARTED = 0
-    CLIENT_INITED = 1
-    BROADCAST_SENT = 2
-    ALRIGHT_SENT = 3
-    KEY_GENERATION_ERROR = 4
-    COMPLETED = 5
+    """ Index of DKG step """
+    NONE = 0
+    BROADCAST = 1
+    BROADCAST_VERIFICATION = 2
+    ALRIGHT = 3
+    ALRIGHT_RECEIVING = 4
+    COMPLAINT_NO_BROADCAST = 5
+    COMPLAINT_BAD_DATA = 6
+    COMPLAINT_NO_ALRIGHT = 7
+    COMPLAINT_NO_RESPONSE = 8
+    RESPONSE = 9
+    KEY_GENERATION = 10
+
+
+class ComplaintReason(int, Enum):
+    """ Index of complaint reason """
+    NO_BROADCAST = 0
+    BAD_DATA = 1
+    NO_ALRIGHT = 2
+    NO_RESPONSE = 3
