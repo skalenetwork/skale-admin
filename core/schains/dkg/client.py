@@ -338,15 +338,18 @@ class DKGClient:
             self.group_index, self.node_id_contract, self.node_ids_dkg[to_node],
             self.skale.wallet.address
         )
-        channel_opened = self.is_channel_opened()
+        is_channel_opened = self.is_channel_opened()
+        logger.info(
+            'Complaint possible %s, channel opened %s',
+            is_complaint_possible,
+            is_channel_opened
+        )
 
-        if not is_complaint_possible or not channel_opened:
+        if not is_complaint_possible or not is_channel_opened:
             logger.info(
-                '%d node could not sent a complaint on %d node. %s %s',
+                '%d node could not sent a complaint on %d node',
                 self.node_id_dkg,
-                to_node,
-                is_complaint_possible,
-                channel_opened
+                to_node
             )
             return False
 

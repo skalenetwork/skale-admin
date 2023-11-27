@@ -51,7 +51,6 @@ class SChainRecord(BaseModel):
     snapshot_from = CharField(default='')
     restart_count = IntegerField(default=0)
     failed_rpc_count = IntegerField(default=0)
-    # dkg_step = IntegerField()
 
     @classmethod
     def add(cls, name):

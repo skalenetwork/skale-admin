@@ -541,7 +541,6 @@ class TestDKG:
         assert skale.dkg.is_last_dkg_successful(gid)
         assert is_last_dkg_finished(skale, schain_name)
 
-    @pytest.mark.skip
     def test_dkg_procedure_complaint_failed(
         self,
         skale,
@@ -550,10 +549,9 @@ class TestDKG:
         nodes,
         dkg_timeout_small,
         no_automine,
-        set_interval_mining,
+        interval_mining,
         schain
     ):
-        # TODO: Same as broadcast failed. Fix this test'
         schain_name, _ = schain_creation_data
         assert not is_last_dkg_finished(skale, schain_name)
         nodes.sort(key=lambda x: x['node_id'])
@@ -588,9 +586,9 @@ class TestDKG:
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
             if i == 0:
-                assert result.step == DKGStep.BROADCAST
+                assert result.step == DKGStep.NONE
             else:
-                assert result.step == DKGStep.COMPLAINT_NO_BROADCAST
+                assert result.step == DKGStep.BROADCAST
             assert result.keys_data is None
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)

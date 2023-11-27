@@ -184,10 +184,6 @@ def generate_bls_keys(dkg_client):
     }
 
 
-def broadcast(dkg_client):
-    dkg_client.broadcast()
-
-
 def send_complaint(dkg_client: DKGClient, index: int, reason: ComplaintReason):
     channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
     reason_to_missing = {
@@ -231,10 +227,6 @@ def response(dkg_client, to_node_index):
         logger.error(f'sChain {dkg_client.schain_name}:' + str(e))
     except SgxUnreachableError as e:
         logger.error(f'sChain {dkg_client.schain_name}:' + str(e))
-
-
-def send_alright(dkg_client):
-    dkg_client.alright()
 
 
 def check_broadcast_result(dkg_client, broadcast_result):
