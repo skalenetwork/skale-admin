@@ -62,8 +62,8 @@ def run_migrations(db, migrator):
     add_backup_run_field(db, migrator)
     add_sync_config_run_field(db, migrator)
 
-    # 2.5 -> 2.6 update fields
-    add_dkg_step_field(db, migrator)
+    # # 2.5 -> 2.6 update fields
+    # add_dkg_step_field(db, migrator)
 
 
 def add_new_schain_field(db, migrator):
