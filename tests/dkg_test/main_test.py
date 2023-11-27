@@ -18,8 +18,8 @@ from skale.utils.account_tools import send_eth
 from skale.wallets import SgxWallet
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
-from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, safe_run_dkg
-from core.schains.dkg.status import DKGStatus, DKGStep
+from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, run_dkg
+from core.schains.dkg.structures import DKGStatus, DKGStep
 from core.schains.config import init_schain_config_dir
 
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
@@ -209,7 +209,7 @@ def run_node_dkg(
         ) as dkg_client:
             logger.info('ID skale %d', id(dkg_client.skale))
             try:
-                dkg_result = safe_run_dkg(
+                dkg_result = run_dkg(
                     skale,
                     dkg_client,
                     schain_name,

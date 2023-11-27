@@ -28,7 +28,7 @@ from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.transactions.result import TransactionFailedError
 
 from core.schains.dkg.broadcast_filter import Filter
-from core.schains.dkg.status import ComplaintReason, DKGStep
+from core.schains.dkg.structures import ComplaintReason, DKGStep
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from tools.sgx_utils import sgx_unreachable_retry
 
@@ -330,7 +330,7 @@ class DKGClient:
         )
         logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
 
-    def send_complaint(self, to_node: int, reason: ComplaintReason = None):
+    def send_complaint(self, to_node: int, reason: ComplaintReason):
         logger.info(f'sChain: {self.schain_name}. '
                     f'{self.node_id_dkg} node is trying to sent a {reason} on {to_node} node')
 

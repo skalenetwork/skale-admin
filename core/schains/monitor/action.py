@@ -31,7 +31,7 @@ from core.schains.dkg import (
     DkgError,
     get_dkg_client,
     get_secret_key_share_filepath,
-    safe_run_dkg,
+    run_dkg,
     save_dkg_results
 )
 from core.schains.ima import get_migration_ts as get_ima_migration_ts
@@ -171,7 +171,7 @@ class ConfigActionManager(BaseActionManager):
     def dkg(self) -> bool:
         initial_status = self.checks.dkg.status
         if not initial_status:
-            logger.info('Running safe_run_dkg')
+            logger.info('Running run_dkg')
             dkg_client = get_dkg_client(
                 skale=self.skale,
                 node_id=self.node_config.id,
@@ -179,7 +179,7 @@ class ConfigActionManager(BaseActionManager):
                 sgx_key_name=self.node_config.sgx_key_name,
                 rotation_id=self.rotation_id
             )
-            dkg_result = safe_run_dkg(
+            dkg_result = run_dkg(
                 dkg_client=dkg_client,
                 skale=self.skale,
                 schain_name=self.name,

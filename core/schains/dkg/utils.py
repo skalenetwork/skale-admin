@@ -25,7 +25,7 @@ from typing import NamedTuple
 from skale.schain_config.generator import get_nodes_for_schain
 
 from tools.configs import NODE_DATA_PATH
-from core.schains.dkg.status import ComplaintReason, DKGStep
+from core.schains.dkg.structures import ComplaintReason, DKGStep
 from core.schains.dkg.client import DKGClient, DkgError, DkgVerificationError, DkgTransactionError
 from core.schains.dkg.broadcast_filter import Filter
 

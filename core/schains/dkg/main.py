@@ -23,7 +23,7 @@ from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
 
-from core.schains.dkg.status import ComplaintReason, DKGStatus, DKGStep
+from core.schains.dkg.structures import ComplaintReason, DKGStatus, DKGStep
 from core.schains.dkg.utils import (
     init_dkg_client, send_complaint, get_latest_block_timestamp, DkgError,
     DKGKeyGenerationError, generate_bls_keys, check_response, check_no_complaints,
@@ -138,7 +138,7 @@ class DKGResult:
     keys_data: dict
 
 
-def safe_run_dkg(
+def run_dkg(
     skale,
     dkg_client,
     schain_name,
