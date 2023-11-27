@@ -29,10 +29,9 @@ jobs:
         run: bash ./scripts/install_python_dependencies.sh
       - name: Lint with flake8
         run: flake8 .
-      - name: Launch hardhat node
-        working-directory: hardhat-node
+      - name: Launch anvil node
         run: |
-          docker-compose up -d 
+          docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil
       - name: Deploy manager & ima contracts
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
