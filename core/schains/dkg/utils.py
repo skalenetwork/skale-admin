@@ -34,6 +34,7 @@ from sgx.http import SgxUnreachableError
 logger = logging.getLogger(__name__)
 
 UINT_CONSTANT = 2**256 - 1
+BROADCAST_DATA_SEARCH_SLEEP = 30
 
 
 class DkgFailedError(DkgError):
@@ -126,17 +127,13 @@ def receive_broadcast_data(dkg_client: DKGClient) -> BroadcastResult:
             except DkgVerificationError as e:
                 logger.error(e)
                 continue
-            except SgxUnreachableError as e:
-                logger.error(e)
-                wait_for_fail(dkg_client.skale, schain_name, start_time)
-
             logger.info(
                 f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
                 f'{from_node}'
             )
-
         logger.info(f'sChain {schain_name}: total received {len(broadcasts_found)} broadcasts'
                     f' from nodes {broadcasts_found}')
+        sleep(BROADCAST_DATA_SEARCH_SLEEP)
     return BroadcastResult(correct=is_correct, received=is_received)
 
 
