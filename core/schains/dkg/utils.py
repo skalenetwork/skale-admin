@@ -141,24 +141,18 @@ def receive_broadcast_data(dkg_client: DKGClient) -> BroadcastResult:
 
 
 def broadcast_and_check_data(dkg_client):
-    # schain_name = dkg_client.schain_name
-    # skale = dkg_client.skale
-    # start_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
-
     if not dkg_client.is_node_broadcasted():
         logger.info('Sending broadcast')
         dkg_client.broadcast()
-        # wait_for_fail(dkg_client.skale, schain_name, start_time)
     else:
         logger.info('Broadcast has been already sent')
 
-    dkg_client.step = DKGStep.BROADCAST_VERIFICATION
     broadcast_result = receive_broadcast_data(dkg_client)
     check_broadcast_result(dkg_client, broadcast_result)
+    dkg_client.last_completed_step = DKGStep.BROADCAST_VERIFICATION
 
 
 def generate_bls_keys(dkg_client):
-    dkg_client.step = DKGStep.KEY_GENERATION
     skale = dkg_client.skale
     schain_name = dkg_client.schain_name
     try:
@@ -179,6 +173,7 @@ def generate_bls_keys(dkg_client):
         ]
     except Exception as err:
         raise DKGKeyGenerationError(err)
+    dkg_client.last_completed_step = DKGStep.KEY_GENERATION
     return {
         'common_public_key': formated_common_public_key,
         'public_key': dkg_client.public_key,
@@ -266,7 +261,6 @@ def check_response(dkg_client):
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
         logger.info(f'sChain: {dkg_client.schain_name}: Complaint received. Sending response ...')
         channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
-        dkg_client.step = DKGStep.RESPONSE
         response(dkg_client, complaint_data[0])
         logger.info(f'sChain: {dkg_client.schain_name}: Response sent.'
                     ' Waiting for FailedDkg event ...')

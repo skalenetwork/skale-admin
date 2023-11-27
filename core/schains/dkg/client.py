@@ -170,7 +170,7 @@ class DKGClient:
         self.complaint_error_event_hash = self.skale.web3.to_hex(self.skale.web3.keccak(
             text="ComplaintError(string)"
         ))
-        self.step = step  # last step
+        self.last_completed_step = step  # last step
         logger.info(
             f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
             f'Node id on contract is {self.node_id_contract}')
@@ -235,13 +235,13 @@ class DKGClient:
         verification_vector = self.verification_vector()
         secret_key_contribution = self.secret_key_contribution()
 
-        self.step = DKGStep.BROADCAST
         self.skale.dkg.broadcast(
             self.group_index,
             self.node_id_contract,
             verification_vector,
             secret_key_contribution,
         )
+        self.last_completed_step = DKGStep.BROADCAST
         logger.info('Everything is sent from %d node', self.node_id_dkg)
 
     def receive_from_node(self, from_node, broadcasted_data):
@@ -322,13 +322,12 @@ class DKGClient:
             logger.info(f'sChain: {self.schain_name}. '
                         f'{self.node_id_dkg} node could not sent an alright note')
             return
-        if not self.skale.dkg.is_all_data_received(self.group_index, self.node_id_contract):
-            self.skale.dkg.alright(
-                self.group_index,
-                self.node_id_contract,
-                gas_limit=ALRIGHT_GAS_LIMIT,
-                multiplier=2
-            )
+        self.skale.dkg.alright(
+            self.group_index,
+            self.node_id_contract,
+            gas_limit=ALRIGHT_GAS_LIMIT,
+            multiplier=2
+        )
         logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
 
     def send_complaint(self, to_node: int, reason: ComplaintReason = None):
@@ -357,7 +356,6 @@ class DKGClient:
             ComplaintReason.NO_ALRIGHT: DKGStep.COMPLAINT_NO_ALRIGHT,
             ComplaintReason.NO_RESPONSE: DKGStep.COMPLAINT_NO_RESPONSE
         }
-        self.step = reason_to_step[reason]
 
         try:
             if reason == ComplaintReason.BAD_DATA:
@@ -375,6 +373,7 @@ class DKGClient:
             if self.check_complaint_logs(tx_res.receipt['logs'][0]):
                 logger.info(f'sChain: {self.schain_name}. '
                             f'{self.node_id_dkg} node sent a complaint on {to_node} node')
+                self.last_completed_step = reason_to_step[reason]
                 return True
             else:
                 logger.info(f'sChain: {self.schain_name}. Complaint from {self.node_id_dkg} on '
@@ -410,7 +409,6 @@ class DKGClient:
         share, dh_key, verification_vector_mult = self.get_complaint_response(to_node_index)
 
         try:
-            self.step = DKGStep.PRE_RESPONSE
             self.skale.dkg.pre_response(
                 self.group_index,
                 self.node_id_contract,
@@ -418,6 +416,7 @@ class DKGClient:
                 convert_g2_points_to_array(verification_vector_mult),
                 convert_str_to_key_share(self.sent_secret_key_contribution, self.n)
             )
+            self.last_completed_step = DKGStep.PRE_RESPONSE
 
             is_response_possible = self.skale.dkg.is_response_possible(
                 self.group_index, self.node_id_contract, self.skale.wallet.address)
@@ -427,13 +426,13 @@ class DKGClient:
                             f'{self.node_id_dkg} node could not sent a response')
                 return
 
-            self.step = DKGStep.RESPONSE
             self.skale.dkg.response(
                 self.group_index,
                 self.node_id_contract,
                 int(dh_key, 16),
                 share
             )
+            self.last_completed_step = DKGStep.RESPONSE
             logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent a response')
         except TransactionFailedError as e:
             logger.error(f'DKG response failed: sChain {self.schain_name}')

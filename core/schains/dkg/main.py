@@ -66,7 +66,8 @@ def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
     is_alright_sent_list = [False for _ in range(n)]
     if check_no_complaints(dkg_client):
         logger.info(f'sChain {schain_name}: No complaints sent in schain - sending alright ...')
-        dkg_client.alright()
+        if not dkg_client.is_all_data_received(dkg_client.node_id_dkg):
+            dkg_client.alright()
         is_alright_sent_list[dkg_client.node_id_dkg] = True
 
     check_failed_dkg(skale, schain_name)
@@ -183,6 +184,6 @@ def safe_run_dkg(
             status = DKGStatus.FAILED
     return DKGResult(
         keys_data=keys_data,
-        step=dkg_client.step,
+        step=dkg_client.last_completed_step,
         status=status
     )
