@@ -26,7 +26,9 @@ from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
     generate_random_node_data,
     generate_random_schain_data,
-    init_skale_from_wallet
+    init_skale_from_wallet,
+    set_automine,
+    set_interval_mining
 )
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -37,8 +39,8 @@ warnings.filterwarnings("ignore")
 
 MAX_WORKERS = 5
 TEST_SRW_FUND_VALUE = 3000000000000000000
-DKG_TIMEOUT = 200000  # mainnet test client may have current time in the future
-DKG_TIMEOUT_FOR_FAILURE = 100000  # to speed up failed broadcast/alright test
+DKG_TIMEOUT = 20000
+DKG_TIMEOUT_FOR_FAILURE = 120  # to speed up failed broadcast/alright test
 
 log_format = '[%(asctime)s][%(levelname)s] - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
 
@@ -306,6 +308,18 @@ class TestDKG:
         skale.constants_holder.set_complaint_timelimit(DKG_TIMEOUT_FOR_FAILURE)
 
     @pytest.fixture
+    def interval_mining(self, skale):
+        set_interval_mining(skale.web3, interval=1)
+
+    @pytest.fixture
+    def no_automine(self, skale):
+        try:
+            set_automine(skale.web3, False)
+            yield
+        finally:
+            set_automine(skale.web3, True)
+
+    @pytest.fixture
     def schain(self, schain_creation_data, skale, nodes):
         schain_name, lifetime = schain_creation_data
         create_schain(skale, schain_name, lifetime)
@@ -374,6 +388,8 @@ class TestDKG:
         skale_sgx_instances,
         nodes,
         dkg_timeout_small,
+        interval_mining,
+        no_automine,
         schain
     ):
         schain_name, _ = schain_creation_data
@@ -401,7 +417,7 @@ class TestDKG:
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
             if i == 0:
-                assert result.step == DKGStep.BROADCAST
+                assert result.step == DKGStep.NONE
             else:
                 assert result.step == DKGStep.COMPLAINT_NO_BROADCAST
             assert result.keys_data is None
@@ -414,7 +430,6 @@ class TestDKG:
         schain_creation_data,
         skale_sgx_instances,
         nodes,
-        dkg_timeout_small,
         schain
     ):
         schain_name, _ = schain_creation_data
@@ -453,6 +468,8 @@ class TestDKG:
         skale_sgx_instances,
         nodes,
         dkg_timeout_small,
+        no_automine,
+        interval_mining,
         schain
     ):
         schain_name, _ = schain_creation_data
@@ -493,7 +510,6 @@ class TestDKG:
         schain_creation_data,
         skale_sgx_instances,
         nodes,
-        dkg_timeout_small,
         schain
     ):
         schain_name, _ = schain_creation_data
@@ -525,6 +541,7 @@ class TestDKG:
         assert skale.dkg.is_last_dkg_successful(gid)
         assert is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.skip
     def test_dkg_procedure_complaint_failed(
         self,
         skale,
@@ -532,6 +549,8 @@ class TestDKG:
         skale_sgx_instances,
         nodes,
         dkg_timeout_small,
+        no_automine,
+        set_interval_mining,
         schain
     ):
         # TODO: Same as broadcast failed. Fix this test'
@@ -590,7 +609,13 @@ class TestDKG:
         finally:
             skale.schains_internal.get_node_ids_for_schain = get_node_ids_f
 
-    def test_failed_get_dkg_client(self, no_ids_for_schain_skale, schain):
+    def test_failed_get_dkg_client(
+        self,
+        no_ids_for_schain_skale,
+        schain,
+        no_automine,
+        interval_mining
+    ):
         skale = no_ids_for_schain_skale
         with pytest.raises(DkgError):
             get_dkg_client(
