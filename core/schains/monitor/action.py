@@ -39,7 +39,7 @@ from core.schains.cleaner import (
 from core.schains.firewall.types import IRuleController
 
 from core.schains.volume import init_data_volume
-from core.schains.rotation import set_rotation_for_schain
+from core.schains.rotation import ExitScheduleFileManager
 
 from core.schains.limits import get_schain_type
 
@@ -62,7 +62,6 @@ from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
-    get_local_schain_http_endpoint_from_config,
     get_own_ip_from_config
 )
 from core.schains.ima import ImaData
@@ -154,6 +153,7 @@ class ConfigActionManager(BaseActionManager):
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=self.schain['name']
         )
+        self.esfm = ExitScheduleFileManager(schain['name'])
         super().__init__(name=schain['name'])
 
     @BaseActionManager.monitor_block
@@ -435,16 +435,20 @@ class SkaledActionManager(BaseActionManager):
         return self.cfm.sync_skaled_config_with_upstream()
 
     @BaseActionManager.monitor_block
-    def send_exit_request(self) -> None:
-        if self.skaled_status.exit_time_reached:
+    def schedule_skaled_exit(self) -> None:
+        if self.skaled_status.exit_time_reached or not self.esfm.exists():
             logger.info('Exit time has been already set')
             return
         finish_ts = self.upstream_finish_ts
-        logger.info('Trying to set skaled exit time %s', finish_ts)
         if finish_ts is not None:
-            url = get_local_schain_http_endpoint_from_config(
-                self.cfm.skaled_config)
-            set_rotation_for_schain(url, finish_ts)
+            logger.info('Scheduling skaled exit time %d', finish_ts)
+            self.esfm.set_exit_ts(finish_ts)
+
+    @BaseActionManager.monitor_block
+    def reset_exit_schedule(self) -> None:
+        logger.info('Reseting exit schedule')
+        if self.esfm.exists():
+            self.esfm.rm()
 
     @BaseActionManager.monitor_block
     def disable_backup_run(self) -> None:

@@ -147,6 +147,7 @@ class UpdateConfigSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.checks.volume:
             self.am.volume()
+        self.am.reset_exit_schedule()
         self.am.recreated_schain_containers(abort_on_exit=False)
 
 
@@ -168,7 +169,7 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
             self.am.skaled_rpc()
         if not self.checks.ima_container:
             self.am.ima_container()
-        self.am.send_exit_request()
+        self.am.schedule_skaled_exit()
 
 
 class NoConfigSkaledMonitor(BaseSkaledMonitor):
