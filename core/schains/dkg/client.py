@@ -328,6 +328,7 @@ class DKGClient:
             gas_limit=ALRIGHT_GAS_LIMIT,
             multiplier=2
         )
+        self.last_completed_step = DKGStep.ALRIGHT
         logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
 
     def send_complaint(self, to_node: int, reason: ComplaintReason):
