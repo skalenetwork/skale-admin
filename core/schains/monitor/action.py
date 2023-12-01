@@ -153,7 +153,6 @@ class ConfigActionManager(BaseActionManager):
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=self.schain['name']
         )
-        self.esfm = ExitScheduleFileManager(schain['name'])
         super().__init__(name=schain['name'])
 
     @BaseActionManager.monitor_block
@@ -256,6 +255,7 @@ class SkaledActionManager(BaseActionManager):
             schain_name=self.schain['name']
         )
 
+        self.esfm = ExitScheduleFileManager(schain['name'])
         self.dutils = dutils or DockerUtils()
 
         super().__init__(name=schain['name'])
@@ -436,13 +436,13 @@ class SkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def schedule_skaled_exit(self) -> None:
-        if self.skaled_status.exit_time_reached or not self.esfm.exists():
+        if self.skaled_status.exit_time_reached or self.esfm.exists():
             logger.info('Exit time has been already set')
             return
         finish_ts = self.upstream_finish_ts
         if finish_ts is not None:
             logger.info('Scheduling skaled exit time %d', finish_ts)
-            self.esfm.set_exit_ts(finish_ts)
+            self.esfm.exit_ts = finish_ts
 
     @BaseActionManager.monitor_block
     def reset_exit_schedule(self) -> None:

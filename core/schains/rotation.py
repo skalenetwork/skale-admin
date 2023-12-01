@@ -20,17 +20,12 @@
 import os
 import json
 import logging
-import requests
 import shutil
 
 from tools.configs import NODE_DATA_PATH
 
 
 logger = logging.getLogger(__name__)
-
-
-class ExitRequestError(Exception):
-    pass
 
 
 class ExitScheduleFileManager:
@@ -55,31 +50,6 @@ class ExitScheduleFileManager:
         with open(tmp_path, 'w') as filepath:
             json.dump({'timestamp': ts}, filepath)
         shutil.move(tmp_path, self.path)
-
-
-def set_rotation_for_schain(url: str, timestamp: int) -> None:
-    _send_rotation_request(url, timestamp)
-
-
-def _send_rotation_request(url, timestamp):
-    logger.info(f'Sending rotation request: {timestamp}')
-    headers = {'content-type': 'application/json'}
-    data = {
-        'finishTime': timestamp
-    }
-    call_data = {
-        "id": 0,
-        "jsonrpc": "2.0",
-        "method": "setSchainExitTime",
-        "params": data,
-    }
-    response = requests.post(
-        url=url,
-        data=json.dumps(call_data),
-        headers=headers,
-    ).json()
-    if response.get('error'):
-        raise ExitRequestError(response['error']['message'])
 
 
 def get_schain_public_key(skale, schain_name):
