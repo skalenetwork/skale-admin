@@ -1,5 +1,5 @@
 import time
-from core.schains.rotation import ExitScheduleFileManager
+from core.schains.exit_scheduler import ExitScheduleFileManager
 
 import pytest
 

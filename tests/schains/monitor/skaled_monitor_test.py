@@ -20,7 +20,7 @@ from core.schains.monitor.skaled_monitor import (
     RepairSkaledMonitor,
     UpdateConfigSkaledMonitor
 )
-from core.schains.rotation import ExitScheduleFileManager
+from core.schains.exit_scheduler import ExitScheduleFileManager
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord

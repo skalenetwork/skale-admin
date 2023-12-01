@@ -39,7 +39,7 @@ from core.schains.cleaner import (
 from core.schains.firewall.types import IRuleController
 
 from core.schains.volume import init_data_volume
-from core.schains.rotation import ExitScheduleFileManager
+from core.schains.exit_scheduler import ExitScheduleFileManager
 
 from core.schains.limits import get_schain_type
 
