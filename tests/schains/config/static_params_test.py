@@ -1,6 +1,9 @@
 from core.schains.types import SchainType
 from core.schains.config.static_params import (
-    get_static_schain_cmd, get_static_schain_info, get_static_node_info
+    get_automatic_repair_option,
+    get_static_schain_cmd,
+    get_static_schain_info,
+    get_static_node_info
 )
 
 
@@ -30,3 +33,8 @@ def test_get_static_node_info():
     assert node_info_small.get('maxOpenLeveldbFiles')
 
     assert node_info_small != node_info_medium
+
+
+def test_get_automatic_repair_option():
+    assert get_automatic_repair_option()
+    assert not get_automatic_repair_option(env_type='qanet')
