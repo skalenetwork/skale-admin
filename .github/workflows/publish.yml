@@ -7,7 +7,7 @@ on:
       - develop
       - beta
       - stable
-      - v2.6.x
+      - 'v*.*.*'
 
 jobs:
   build:
