@@ -181,8 +181,8 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
     )
 
 
-def get_ima_version() -> str:
-    return CONTAINERS_INFO['ima']['version']
+def get_ima_version_after_migration() -> str:
+    return CONTAINERS_INFO['ima'].get('new_version') or CONTAINERS_INFO['ima']['version']
 
 
 def get_ima_monitoring_port(schain_name):
