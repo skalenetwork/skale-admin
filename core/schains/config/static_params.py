@@ -39,4 +39,4 @@ def get_static_node_info(schain_type: SchainType, env_type: str = ENV_TYPE) -> d
 
 def get_automatic_repair_option(env_type: str = ENV_TYPE) -> bool:
     static_params = get_static_params(env_type)
-    return static_params['node']['common'].get('automatic-repair', True)
+    return static_params['node']['common'].get('automatic_repair', True)
