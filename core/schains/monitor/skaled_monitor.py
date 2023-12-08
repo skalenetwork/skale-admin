@@ -214,9 +214,13 @@ def is_backup_mode(schain_record: SChainRecord) -> bool:
 def is_repair_mode(
     schain_record: SChainRecord,
     status: Dict,
-    skaled_status: Optional[SkaledStatus]
+    skaled_status: Optional[SkaledStatus],
+    automatic_repair: bool
 ) -> bool:
-    return schain_record.repair_mode or is_skaled_repair_status(status, skaled_status)
+    if schain_record.repair_mode:
+        return True
+    else:
+        return automatic_repair and is_skaled_repair_status(status, skaled_status)
 
 
 def is_new_config_mode(
@@ -266,7 +270,8 @@ def get_skaled_monitor(
     action_manager: SkaledActionManager,
     status: Dict,
     schain_record: SChainRecord,
-    skaled_status: SkaledStatus
+    skaled_status: SkaledStatus,
+    automatic_repair: bool = True
 ) -> Type[BaseSkaledMonitor]:
     logger.info('Choosing skaled monitor')
     if skaled_status:
@@ -277,7 +282,7 @@ def get_skaled_monitor(
         mon_type = NoConfigSkaledMonitor
     elif is_backup_mode(schain_record):
         mon_type = BackupSkaledMonitor
-    elif is_repair_mode(schain_record, status, skaled_status):
+    elif is_repair_mode(schain_record, status, skaled_status, automatic_repair):
         mon_type = RepairSkaledMonitor
     elif is_recreate_mode(schain_record):
         mon_type = RecreateSkaledMonitor

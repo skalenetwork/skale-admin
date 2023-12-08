@@ -196,6 +196,7 @@ envs:
         bindIP: "0.0.0.0"
         logLevel: "info"
         logLevelConfig: "info"
+        automatic_repair: false
       small:
         minCacheSize: 1000000
         maxCacheSize: 2000000
