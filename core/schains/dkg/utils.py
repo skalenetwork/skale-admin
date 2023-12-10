@@ -143,7 +143,7 @@ def broadcast_and_check_data(dkg_client):
         dkg_client.broadcast()
     else:
         logger.info('Broadcast has been already sent')
-
+        dkg_client.last_completed_step = DKGStep.BROADCAST
     broadcast_result = receive_broadcast_data(dkg_client)
     check_broadcast_result(dkg_client, broadcast_result)
     dkg_client.last_completed_step = DKGStep.BROADCAST_VERIFICATION

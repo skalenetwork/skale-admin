@@ -68,6 +68,8 @@ def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
         logger.info(f'sChain {schain_name}: No complaints sent in schain - sending alright ...')
         if not dkg_client.is_all_data_received(dkg_client.node_id_dkg):
             dkg_client.alright()
+        else:
+            dkg_client.last_completed_step = DKGStep.ALRIGHT
         is_alright_sent_list[dkg_client.node_id_dkg] = True
 
     check_failed_dkg(skale, schain_name)
