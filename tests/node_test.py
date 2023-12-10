@@ -4,7 +4,6 @@ import mock
 import pytest
 
 from skale import SkaleManager
-from skale.transactions.result import RevertError
 from skale.utils.account_tools import generate_account, send_eth
 from skale.utils.contracts_provision.main import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
@@ -250,8 +249,8 @@ def test_node_maintenance_error(node, skale):
     try:
         res = node.set_maintenance_on()
         assert res == {'data': None, 'status': 'ok'}
-        with pytest.raises(RevertError):
-            res = node.set_maintenance_on()
+        res = node.set_maintenance_on()
+        assert res == {'status': 'error', 'errors': ['Node should be active']}
     finally:
         node.set_maintenance_off()
 
