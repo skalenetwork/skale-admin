@@ -37,4 +37,7 @@ def test_get_static_node_info():
 
 def test_get_automatic_repair_option():
     assert get_automatic_repair_option()
+    assert get_automatic_repair_option(env_type='mainnet')
+    assert get_automatic_repair_option(env_type='testnet')
+    assert get_automatic_repair_option(env_type='devnet')
     assert not get_automatic_repair_option(env_type='qanet')
