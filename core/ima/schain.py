@@ -24,9 +24,7 @@ import logging
 from ima_predeployed.generator import generate_abi
 from core.schains.config.directory import schain_config_dir
 
-from tools.configs.ima import (
-    SCHAIN_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILENAME, IMA_NETWORK_BROWSER_FILENAME
-)
+from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILENAME
 
 
 logger = logging.getLogger(__name__)
@@ -52,8 +50,3 @@ def copy_schain_ima_abi(name):
 def get_schain_ima_abi_filepath(schain_name):
     schain_dir_path = schain_config_dir(schain_name)
     return os.path.join(schain_dir_path, SCHAIN_IMA_ABI_FILENAME)
-
-
-def get_ima_network_browser_filepath(schain_name):
-    schain_dir_path = schain_config_dir(schain_name)
-    return os.path.join(schain_dir_path, IMA_NETWORK_BROWSER_FILENAME)

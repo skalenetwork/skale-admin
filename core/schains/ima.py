@@ -29,7 +29,7 @@ from websocket import create_connection
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import get_schain_ports_from_config, get_chain_id
-from core.ima.schain import get_schain_ima_abi_filepath, get_ima_network_browser_filepath
+from core.ima.schain import get_schain_ima_abi_filepath
 from tools.configs import ENV_TYPE, SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import CONTAINERS_INFO, IMA_MIGRATION_PATH
 from tools.configs.db import REDIS_URI
@@ -37,7 +37,8 @@ from tools.configs.ima import (
     IMA_ENDPOINT,
     MAINNET_IMA_ABI_FILEPATH,
     IMA_STATE_CONTAINER_PATH,
-    IMA_TIME_FRAMING
+    IMA_TIME_FRAMING,
+    IMA_NETWORK_BROWSER_FILEPATH
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ABI_FILEPATH
@@ -180,7 +181,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         monitoring_port=node_info['imaMonitoringPort'],
         rpc_port=get_ima_rpc_port(schain_name),
         time_framing=IMA_TIME_FRAMING,
-        network_browser_data_path=get_ima_network_browser_filepath(schain_name)
+        network_browser_data_path=IMA_NETWORK_BROWSER_FILEPATH
     )
 
 
