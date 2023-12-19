@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2021 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,15 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import Enum
+import logging
+
+from core.schains.monitor.base_monitor import BaseMonitor
 
 
-class DKGStatus(Enum):
-    NOT_STARTED = 1
-    IN_PROGRESS = 2
-    DONE = 3
-    FAILED = 4
-    KEY_GENERATION_ERROR = 5
+logger = logging.getLogger(__name__)
 
-    def is_done(self) -> bool:
-        return self == DKGStatus.DONE
+
+class PostRotationMonitor(BaseMonitor):
+    """
+    PostRotationMonitor be executed for the sChain on the staying node when rotation is complete.
+    This type of monitor reloads skaled container.
+    """
+    @BaseMonitor.monitor_runner
+    def run(self):
+        logger.info(f'{self.p} was stopped after rotation. Going to restart')
+        self.config(overwrite=True)
+        self.firewall_rules()
+        self.recreated_schain_containers()
