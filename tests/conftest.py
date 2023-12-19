@@ -20,6 +20,7 @@ from skale.utils.contracts_provision.fake_multisig_contract import (
 from skale.utils.contracts_provision.main import (
     add_test_permissions,
     add_test2_schain_type,
+    add_test4_schain_type,
     cleanup_nodes,
     cleanup_nodes_schains,
     create_nodes,
@@ -111,6 +112,7 @@ def skale(web3):
     skale_obj = init_skale_from_wallet(wallet)
     add_test_permissions(skale_obj)
     add_test2_schain_type(skale_obj)
+    add_test4_schain_type(skale_obj)
     if skale_obj.constants_holder.get_launch_timestamp() != 0:
         skale_obj.constants_holder.set_launch_timestamp(0)
     deploy_fake_multisig_contract(skale_obj.web3, skale_obj.wallet)

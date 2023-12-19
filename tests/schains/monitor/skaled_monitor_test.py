@@ -383,6 +383,7 @@ def test_get_skaled_monitor_new_node(
 def test_get_skaled_monitor_update_config(
     skaled_am,
     skaled_checks_outdated_config,
+    skaled_checks_new_config,
     schain_db,
     skaled_status_exit_time_reached,
 ):
@@ -391,6 +392,16 @@ def test_get_skaled_monitor_update_config(
     status = skaled_checks_outdated_config.get_all()
     status['skaled_container'] = False
 
+    mon = get_skaled_monitor(
+        skaled_am,
+        status,
+        schain_record,
+        skaled_status_exit_time_reached
+    )
+    assert mon == UpdateConfigSkaledMonitor
+
+    status = skaled_checks_new_config.get_all()
+    status['skaled_container'] = False
     mon = get_skaled_monitor(
         skaled_am,
         status,
