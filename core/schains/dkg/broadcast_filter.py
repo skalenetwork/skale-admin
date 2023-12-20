@@ -84,37 +84,41 @@ class Filter:
             })
 
     def get_events(self, from_channel_started_block=False):
-        if self.first_unseen_block == -1 or from_channel_started_block:
-            start_block = self.dkg_contract.functions.getChannelStartedBlock(
-                self.group_index
-            ).call()
-        else:
-            start_block = self.first_unseen_block
-        current_block = self.skale.web3.eth.get_block("latest")["number"]
-        logger.info(f'sChain {self.group_index_str}: Parsing broadcast events from {start_block}'
-                    f' block to {current_block} block')
-        events = []
-        for block_number in range(start_block, current_block + 1):
-            block = self.skale.web3.eth.get_block(block_number, full_transactions=True)
-            txns = block["transactions"]
-            for tx in txns:
-                try:
-                    if tx.get("to") != self.dkg_contract_address:
-                        continue
+        try:
+            if self.first_unseen_block == -1 or from_channel_started_block:
+                start_block = self.dkg_contract.functions.getChannelStartedBlock(
+                    self.group_index
+                ).call()
+            else:
+                start_block = self.first_unseen_block
+            current_block = self.skale.web3.eth.get_block("latest")["number"]
+            logger.info(f'sChain {self.group_index_str}: Parsing broadcast events '
+                        f'from {start_block} block to {current_block} block')
+            events = []
+            for block_number in range(start_block, current_block + 1):
+                block = self.skale.web3.eth.get_block(block_number, full_transactions=True)
+                txns = block["transactions"]
+                for tx in txns:
+                    try:
+                        if tx.get("to") != self.dkg_contract_address:
+                            continue
 
-                    hash = tx.get("hash")
-                    if hash:
-                        receipt = self.skale.web3.eth.get_transaction_receipt(hash)
-                    else:
-                        logger.info(f'sChain {self.group_index_str}: tx {tx}'
-                                    f' does not have field "hash"')
-                        continue
+                        hash = tx.get("hash")
+                        if hash:
+                            receipt = self.skale.web3.eth.get_transaction_receipt(hash)
+                        else:
+                            logger.info(f'sChain {self.group_index_str}: tx {tx}'
+                                        f' does not have field "hash"')
+                            continue
 
-                    if not self.check_event(receipt):
-                        continue
-                    else:
-                        events.append(self.parse_event(receipt))
-                except TransactionNotFound:
-                    pass
-            self.first_unseen_block = block_number + 1
-        return events
+                        if not self.check_event(receipt):
+                            continue
+                        else:
+                            events.append(self.parse_event(receipt))
+                    except TransactionNotFound:
+                        pass
+                self.first_unseen_block = block_number + 1
+            return events
+        except Exception as e:
+            logger.info(f'sChain {self.group_index_str}: error during collecting broadcast '
+                        f'events: {e}')
