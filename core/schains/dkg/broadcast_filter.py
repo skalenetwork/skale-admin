@@ -20,7 +20,7 @@
 from dataclasses import dataclass
 import logging
 
-from web3.exceptions import TransactionNotFound
+from web3.exceptions import Web3Exception, TransactionNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +119,7 @@ class Filter:
                         pass
                 self.first_unseen_block = block_number + 1
             return events
-        except Exception as e:
+        except (ValueError, Web3Exception) as e:
             logger.info(f'sChain {self.group_index_str}: error during collecting broadcast '
                         f'events: {e}')
             return events
