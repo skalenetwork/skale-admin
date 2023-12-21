@@ -122,3 +122,4 @@ class Filter:
         except Exception as e:
             logger.info(f'sChain {self.group_index_str}: error during collecting broadcast '
                         f'events: {e}')
+            return []
