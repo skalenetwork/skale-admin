@@ -84,6 +84,7 @@ class Filter:
             })
 
     def get_events(self, from_channel_started_block=False):
+        events = []
         try:
             if self.first_unseen_block == -1 or from_channel_started_block:
                 start_block = self.dkg_contract.functions.getChannelStartedBlock(
@@ -94,7 +95,6 @@ class Filter:
             current_block = self.skale.web3.eth.get_block("latest")["number"]
             logger.info(f'sChain {self.group_index_str}: Parsing broadcast events '
                         f'from {start_block} block to {current_block} block')
-            events = []
             for block_number in range(start_block, current_block + 1):
                 block = self.skale.web3.eth.get_block(block_number, full_transactions=True)
                 txns = block["transactions"]
@@ -122,4 +122,4 @@ class Filter:
         except Exception as e:
             logger.info(f'sChain {self.group_index_str}: error during collecting broadcast '
                         f'events: {e}')
-            return []
+            return events
