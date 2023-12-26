@@ -160,6 +160,7 @@ class DKGClient:
         group_index_str = str(int(skale.web3.to_hex(self.group_index)[2:], 16))
         self.poly_name = generate_poly_name(group_index_str, self.node_id_dkg, rotation_id)
         self.bls_name = generate_bls_key_name(group_index_str, self.node_id_dkg, rotation_id)
+        self.rotation_id = rotation_id
         self.incoming_verification_vector = ['0' for _ in range(n)]
         self.incoming_secret_key_contribution = ['0' for _ in range(n)]
         self.public_keys = public_keys
@@ -240,6 +241,7 @@ class DKGClient:
             self.node_id_contract,
             verification_vector,
             secret_key_contribution,
+            self.rotation_id
         )
         self.last_completed_step = DKGStep.BROADCAST
         logger.info('Everything is sent from %d node', self.node_id_dkg)
