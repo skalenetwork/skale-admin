@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class ExitScheduleFileManager:
     def __init__(self, schain_name: str) -> None:
         self.schain_name = schain_name
-        self.path = os.path.join(NODE_DATA_PATH, 'schains', schain_name, 'rotation.txt')
+        self.path = os.path.join(NODE_DATA_PATH, 'schains', schain_name, 'rotation.json')
 
     def exists(self) -> bool:
         return os.path.isfile(self.path)
@@ -46,7 +46,7 @@ class ExitScheduleFileManager:
 
     @exit_ts.setter
     def exit_ts(self, ts: int) -> None:
-        tmp_path = os.path.join(os.path.dirname(self.path), '.rotation.txt.tmp')
+        tmp_path = os.path.join(os.path.dirname(self.path), '.rotation.json.tmp')
         with open(tmp_path, 'w') as filepath:
             json.dump({'timestamp': ts}, filepath)
         shutil.move(tmp_path, self.path)
