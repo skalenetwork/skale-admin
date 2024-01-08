@@ -24,7 +24,7 @@ from datetime import datetime
 from peewee import (CharField, DateTimeField,
                     IntegrityError, IntegerField, BooleanField)
 
-from core.schains.dkg.status import DKGStatus
+from core.schains.dkg.structures import DKGStatus
 from web.models.base import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class SChainRecord(BaseModel):
                 schain = cls.create(
                     name=name,
                     added_at=datetime.now(),
-                    dkg_status=DKGStatus.NOT_STARTED.value,
+                    dkg_status=DKGStatus.NOT_STARTED,
                     new_schain=True,
                     monitor_last_seen=datetime.now()
                 )
@@ -116,7 +116,7 @@ class SChainRecord(BaseModel):
 
     def set_dkg_status(self, val: DKGStatus) -> None:
         logger.info(f'Changing DKG status for {self.name} to {val.name}')
-        self.dkg_status = val.value
+        self.dkg_status = val
         self.upload()
 
     def set_deleted(self):
@@ -184,7 +184,7 @@ class SChainRecord(BaseModel):
         self.set_failed_rpc_count(0)
 
     def is_dkg_done(self) -> bool:
-        return self.dkg_status == DKGStatus.DONE.value
+        return self.dkg_status == DKGStatus.DONE
 
     def set_sync_config_run(self, value):
         logger.info(f'Changing sync_config_run for {self.name} to {value}')
@@ -193,8 +193,8 @@ class SChainRecord(BaseModel):
 
     def is_dkg_unsuccessful(self) -> bool:
         return self.dkg_status in [
-            DKGStatus.KEY_GENERATION_ERROR.value,
-            DKGStatus.FAILED.value
+            DKGStatus.KEY_GENERATION_ERROR,
+            DKGStatus.FAILED
         ]
 
 

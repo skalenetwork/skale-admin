@@ -3,9 +3,6 @@
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
 
-from core.schains.dkg.main import DKGResult
-from core.schains.dkg.status import DKGStatus
-
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 
 
@@ -46,11 +43,6 @@ def get_bls_public_keys():
         'blsPublicKey2': SECRET_KEY_INFO["common_public_key"][2],
         'blsPublicKey3': SECRET_KEY_INFO["common_public_key"][3]
     }
-
-
-def safe_run_dkg_mock(skale, schain_name, node_id, sgx_key_name, rotation_id):
-    import_bls_key()
-    return DKGResult(status=DKGStatus.DONE, keys_data=SECRET_KEY_INFO)
 
 
 def import_bls_key():

@@ -36,7 +36,7 @@ try:
 except ImportError:
     logging.warning('Could not import lsmod from sh package')
 
-from skale.transactions.result import TransactionFailedError
+from skale.transactions.exceptions import TransactionLogicError
 from skale.utils.exceptions import InvalidNodeIdError
 from skale.utils.helper import ip_from_bytes
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
@@ -152,7 +152,7 @@ class Node:
                 skip_dry_run=skip_dry_run,
                 wait_for=True
             )
-        except TransactionFailedError:
+        except TransactionLogicError:
             logger.exception('Node creation failed')
             return -1
         self._log_node_info('Node successfully registered', ip,
@@ -183,7 +183,7 @@ class Node:
         for _ in range(exit_count):
             try:
                 self.skale.manager.node_exit(self.config.id, wait_for=True)
-            except TransactionFailedError:
+            except TransactionLogicError:
                 logger.exception('Node rotation failed')
 
     def get_exit_status(self):
@@ -225,11 +225,11 @@ class Node:
 
     def set_maintenance_on(self):
         if NodeStatus(self.info['status']) != NodeStatus.ACTIVE:
-            self._error('Node should be active')
+            return self._error('Node should be active')
         try:
             self.skale.nodes.set_node_in_maintenance(self.config.id)
-        except TransactionFailedError:
-            self._error('Moving node to maintenance mode failed')
+        except TransactionLogicError:
+            return self._error('Moving node to maintenance mode failed')
         return self._ok()
 
     def set_maintenance_off(self):
@@ -241,7 +241,7 @@ class Node:
             return {'status': 1, 'errors': [err_msg]}
         try:
             self.skale.nodes.remove_node_from_in_maintenance(self.config.id)
-        except TransactionFailedError:
+        except TransactionLogicError:
             return self._error('Removing node from maintenance mode failed')
         return self._ok()
 
@@ -251,7 +251,7 @@ class Node:
                 self.config.id,
                 domain_name
             )
-        except TransactionFailedError as err:
+        except TransactionLogicError as err:
             return self._error(str(err))
         return self._ok()
 

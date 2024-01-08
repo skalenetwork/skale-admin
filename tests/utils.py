@@ -3,6 +3,7 @@
 import os
 import json
 import random
+import requests
 import string
 import time
 from contextlib import contextmanager
@@ -12,6 +13,7 @@ from mock import Mock, MagicMock
 from skale import Skale, SkaleIma
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
+from web3 import Web3
 
 from core.schains.cleaner import (
     remove_config_dir,
@@ -267,3 +269,17 @@ def upsert_schain_record_with_config(name, version=None):
     r = upsert_schain_record(name)
     r.set_config_version(version)
     return r
+
+
+def set_interval_mining(w3: Web3, interval: int) -> None:
+    endpoint = w3.provider.endpoint_uri
+    data = {'jsonrpc': '2.0', 'method': 'evm_setIntervalMining', 'params': [interval], "id": 101}
+    r = requests.post(endpoint, json=data)
+    assert r.status_code == 200 and 'error' not in r.json()
+
+
+def set_automine(w3: Web3, value: bool) -> None:
+    endpoint = w3.provider.endpoint_uri
+    data = {'jsonrpc': '2.0', 'method': 'evm_setAutomine', 'params': [value], "id": 102}
+    r = requests.post(endpoint, json=data)
+    assert r.status_code == 200 and 'error' not in r.json()
