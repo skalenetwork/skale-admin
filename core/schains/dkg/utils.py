@@ -51,14 +51,15 @@ class BroadcastResult(NamedTuple):
 
 
 def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
+    logger.info('Initializing dkg client')
     schain_nodes = get_nodes_for_schain(skale, schain_name)
     n = len(schain_nodes)
     t = (2 * n + 1) // 3
 
     node_id_dkg = -1
     public_keys = [0] * n
-    node_ids_contract = dict()
-    node_ids_dkg = dict()
+    node_ids_contract = {}
+    node_ids_dkg = {}
     for i, node in enumerate(schain_nodes):
         if not len(node):
             raise DkgError(f'sChain: {schain_name}: '
@@ -70,9 +71,15 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
         node_ids_dkg[i] = node["id"]
         public_keys[i] = node["publicKey"]
 
+    logger.info('Nodes in chain: %s', node_ids_dkg)
+
     if node_id_dkg == -1:
         raise DkgError(f'sChain: {schain_name}: {node_id} '
                        'Initialization failed, nodeID not found for schain.')
+
+    logger.info('Node index in group is %d. Node id on contracts - %d', node_id_dkg, node_id)
+
+    logger.info('Creating DKGClient')
     dkg_client = DKGClient(
         node_id_dkg, node_id, skale, t, n, schain_name,
         public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name, rotation_id

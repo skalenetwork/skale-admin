@@ -113,6 +113,7 @@ class IChecks(ABC):
         checks_status = {}
         for name in names:
             if hasattr(self, name):
+                logger.debug('Running check %s', name)
                 checks_status[name] = getattr(self, name).status
         if log:
             log_checks_dict(self.get_name(), checks_status)
@@ -398,6 +399,7 @@ class SChainChecks(IChecks):
 
         plain_checks = {}
         for subj in self._subjects:
+            logger.debug('Running checks for %s', subj)
             subj_checks = subj.get_all(
                 log=False,
                 save=False,

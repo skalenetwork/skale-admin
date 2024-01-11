@@ -172,9 +172,6 @@ class DKGClient:
             text="ComplaintError(string)"
         ))
         self.last_completed_step = step  # last step
-        logger.info(
-            f'sChain: {self.schain_name}. Node id on chain is {self.node_id_dkg}; '
-            f'Node id on contract is {self.node_id_contract}')
         logger.info(f'sChain: {self.schain_name}. DKG timeout is {self.dkg_timeout}')
 
     def is_channel_opened(self):
