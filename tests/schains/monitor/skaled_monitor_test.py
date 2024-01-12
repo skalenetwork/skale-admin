@@ -238,6 +238,15 @@ def test_get_skaled_monitor_repair_skaled_status(
     )
     assert mon == RepairSkaledMonitor
 
+    mon = get_skaled_monitor(
+        skaled_am,
+        skaled_checks.get_all(),
+        schain_record,
+        skaled_status_repair,
+        automatic_repair=False
+    )
+    assert mon == RegularSkaledMonitor
+
 
 class SkaledChecksWithConfig(SkaledChecks):
     @property

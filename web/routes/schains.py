@@ -32,7 +32,7 @@ from core.schains.firewall.utils import (
     get_sync_agent_ranges
 )
 from core.schains.skaled_status import init_skaled_status
-from core.schains.ima import get_ima_version
+from core.schains.ima import get_ima_version_after_migration
 from core.schains.info import get_schain_info_by_name, get_skaled_version
 from core.schains.cleaner import get_schains_on_node
 from web.models.schain import get_schains_statuses, toggle_schain_repair_mode
@@ -166,6 +166,6 @@ def schain_containers_versions():
     logger.debug(request)
     version_data = {
         'skaled_version': get_skaled_version(),
-        'ima_version': get_ima_version()
+        'ima_version': get_ima_version_after_migration()
     }
     return construct_ok_response(version_data)
