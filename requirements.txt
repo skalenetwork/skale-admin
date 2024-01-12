@@ -10,7 +10,7 @@ python-iptables==1.0.1
 
 skale.py==6.2b0
 
-ima-predeployed==2.0.0b0
+ima-predeployed==2.1.0a1
 etherbase-predeployed==1.1.0b3
 marionette-predeployed==2.0.0b2
 config-controller-predeployed==1.0.1.dev2
