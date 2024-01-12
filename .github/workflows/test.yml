@@ -31,7 +31,7 @@ jobs:
         run: flake8 .
       - name: Launch anvil node
         run: |
-          docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil
+          docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil && sleep 5 && docker logs anvil --tail 1000
       - name: Deploy manager & ima contracts
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
