@@ -22,6 +22,7 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
+from core.nodes import get_current_ips
 
 from core.schains.config.directory import get_schain_check_filepath
 from core.schains.config.file_manager import ConfigFileManager
@@ -141,6 +142,7 @@ class ConfigChecks(IChecks):
                  schain_record: SChainRecord,
                  rotation_id: int,
                  stream_version: str,
+                 current_nodes,
                  estate: ExternalState,
                  econfig: Optional[ExternalConfig] = None
                  ) -> None:
@@ -149,6 +151,7 @@ class ConfigChecks(IChecks):
         self.schain_record = schain_record
         self.rotation_id = rotation_id
         self.stream_version = stream_version
+        self.current_nodes = current_nodes
         self.estate = estate
         self.econfig = econfig or ExternalConfig(schain_name)
         self.cfm: ConfigFileManager = ConfigFileManager(
@@ -174,10 +177,20 @@ class ConfigChecks(IChecks):
         return CheckRes(os.path.isfile(secret_key_share_filepath))
 
     @property
+    def node_ips(self) -> CheckRes:
+        """Checks that IP list on the skale-manager is the same as in the config"""
+        res = False
+        if self.cfm.upstream_exist_for_rotation_id(self.rotation_id):
+            conf = self.cfm.skaled_config
+            node_ips = get_node_ips_from_config(conf)
+            current_ips = get_current_ips(self.current_nodes)
+            res = set(node_ips) == set(current_ips)
+        return CheckRes(res)
+
+    @property
     def upstream_config(self) -> CheckRes:
         """Checks that config exists for rotation id and stream"""
         exists = self.cfm.upstream_exist_for_rotation_id(self.rotation_id)
-
         logger.debug('Upstream configs status for %s: %s', self.name, exists)
         return CheckRes(
             exists and
@@ -203,7 +216,7 @@ class SkaledChecks(IChecks):
         rule_controller: IRuleController,
         *,
         econfig: Optional[ExternalConfig] = None,
-        dutils: DockerUtils = None
+        dutils: DockerUtils | None = None
     ):
         self.name = schain_name
         self.schain_record = schain_record

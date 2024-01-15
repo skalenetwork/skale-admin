@@ -20,7 +20,6 @@
 import json
 import time
 import os
-import socket
 import psutil
 import logging
 import platform
@@ -43,7 +42,7 @@ from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.filebeat import update_filebeat_service
 
-from tools.configs import CHECK_REPORT_PATH, META_FILEPATH, WATCHDOG_PORT
+from tools.configs import CHECK_REPORT_PATH, META_FILEPATH
 from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
@@ -345,45 +344,10 @@ def get_btrfs_info() -> dict:
     }
 
 
-def is_port_open(ip, port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(1)
-    try:
-        s.connect((ip, int(port)))
-        s.shutdown(1)
-        return True
-    except Exception:
-        return False
-
-
-def check_validator_nodes(skale, node_id):
-    try:
-        node = skale.nodes.get(node_id)
-        node_ids = skale.nodes.get_validator_node_indices(node['validator_id'])
-
-        try:
-            node_ids.remove(node_id)
-        except ValueError:
-            logger.warning(
-                f'node_id: {node_id} was not found in validator nodes: {node_ids}')
-
-        res = []
-        for node_id in node_ids:
-            if str(skale.nodes.get_node_status(node_id)) == str(NodeStatus.ACTIVE.value):
-                ip_bytes = skale.nodes.contract.functions.getNodeIP(
-                    node_id).call()
-                ip = ip_from_bytes(ip_bytes)
-                res.append([node_id, ip, is_port_open(ip, WATCHDOG_PORT)])
-        logger.info(f'validator_nodes check - node_id: {node_id}, res: {res}')
-    except Exception as err:
-        return {'status': 1, 'errors': [err]}
-    return {'status': 0, 'data': res}
-
-
 def get_check_report(report_path: str = CHECK_REPORT_PATH) -> Dict:
-    if not os.path.isfile(CHECK_REPORT_PATH):
+    if not os.path.isfile(report_path):
         return {}
-    with open(CHECK_REPORT_PATH) as report_file:
+    with open(report_path) as report_file:
         return json.load(report_file)
 
 

@@ -151,6 +151,7 @@ def node_skales(skale, node_wallets):
 
 @pytest.fixture
 def nodes(skale, node_skales, validator):
+    cleanup_nodes(skale, skale.nodes.get_active_node_ids())
     link_nodes_to_validator(skale, validator, node_skales)
     ids = create_nodes(node_skales)
     try:

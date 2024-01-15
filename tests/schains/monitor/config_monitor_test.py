@@ -2,16 +2,20 @@ import glob
 import os
 
 import pytest
+from skale.utils.helper import ip_to_bytes
+
+from core.nodes import get_current_nodes
 
 from core.schains.checks import ConfigChecks
 from core.schains.config.directory import schain_config_dir
 
 from core.schains.monitor.action import ConfigActionManager
 from core.schains.monitor.config_monitor import RegularConfigMonitor
+from core.schains.external_config import ExternalConfig
 
 from web.models.schain import SChainRecord
 
-from tests.utils import CONFIG_STREAM
+from tests.utils import CONFIG_STREAM, generate_random_ip
 
 
 @pytest.fixture
@@ -30,12 +34,14 @@ def config_checks(
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
+    current_nodes = get_current_nodes(skale, name)
     return ConfigChecks(
         schain_name=name,
         node_id=node_config.id,
         schain_record=schain_record,
         rotation_id=rotation_data['rotation_id'],
         stream_version=CONFIG_STREAM,
+        current_nodes=current_nodes,
         estate=estate
     )
 
@@ -54,6 +60,7 @@ def config_am(
     name = schain_db
     rotation_data = skale.node_rotation.get_rotation(name)
     schain = skale.schains.get_by_name(name)
+    current_nodes = get_current_nodes(skale, name)
 
     am = ConfigActionManager(
         skale=skale,
@@ -62,6 +69,7 @@ def config_am(
         rotation_data=rotation_data,
         stream_version=CONFIG_STREAM,
         checks=config_checks,
+        current_nodes=current_nodes,
         estate=estate
     )
     am.dkg = lambda s: True
@@ -88,3 +96,37 @@ def test_regular_config_monitor(schain_db, regular_config_monitor, rotation_data
     )
     filenames = glob.glob(pattern)
     assert os.path.isfile(filenames[0])
+
+
+def test_regular_config_monitor_change_ip(
+    skale,
+    schain_db,
+    regular_config_monitor,
+    rotation_data
+):
+    name = schain_db
+    econfig = ExternalConfig(name=name)
+    assert econfig.reload_ts is None
+
+    regular_config_monitor.run()
+    assert econfig.reload_ts is None
+
+    current_nodes = get_current_nodes(skale, name)
+    new_ip = generate_random_ip()
+    skale.nodes.change_ip(current_nodes[0]['id'], ip_to_bytes(new_ip), ip_to_bytes(new_ip))
+
+    current_nodes = get_current_nodes(skale, name)
+    regular_config_monitor.am.current_nodes = current_nodes
+    regular_config_monitor.checks.current_nodes = current_nodes
+
+    regular_config_monitor.run()
+    assert econfig.reload_ts is not None
+    assert econfig.reload_ts > 0
+
+    current_nodes = get_current_nodes(skale, name)
+    regular_config_monitor.am.current_nodes = current_nodes
+    regular_config_monitor.checks.current_nodes = current_nodes
+
+    regular_config_monitor.am.cfm.sync_skaled_config_with_upstream()
+    regular_config_monitor.run()
+    assert econfig.reload_ts is None

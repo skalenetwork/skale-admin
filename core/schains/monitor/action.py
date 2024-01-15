@@ -21,11 +21,12 @@ import logging
 import time
 from datetime import datetime
 from functools import wraps
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from skale import Skale
 
 from core.node_config import NodeConfig
+from core.nodes import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
 from core.schains.checks import ConfigChecks, SkaledChecks
 from core.schains.dkg import (
     DkgError,
@@ -142,6 +143,7 @@ class ConfigActionManager(BaseActionManager):
         stream_version: str,
         checks: ConfigChecks,
         estate: ExternalState,
+        current_nodes: List[ExtendedManagerNodeInfo],
         econfig: Optional[ExternalConfig] = None
     ):
         self.skale = skale
@@ -150,6 +152,7 @@ class ConfigActionManager(BaseActionManager):
         self.node_config = node_config
         self.checks = checks
         self.stream_version = stream_version
+        self.current_nodes = current_nodes
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
@@ -245,6 +248,25 @@ class ConfigActionManager(BaseActionManager):
         self.econfig.update(self.estate)
         return True
 
+    @BaseActionManager.monitor_block
+    def set_reload_ts(self) -> bool:
+        logger.info('Setting reload_ts')
+        node_index_in_group = get_node_index_in_group(self.skale, self.name, self.node_config.id)
+        if node_index_in_group is None:
+            logger.warning(f'node {self.node_config.id} is not in chain {self.name}')
+            return False
+        self.estate.reload_ts = calc_reload_ts(self.current_nodes, node_index_in_group)
+        logger.info(f'Setting reload_ts to {self.estate.reload_ts}')
+        self.econfig.update(self.estate)
+        return True
+
+    @BaseActionManager.monitor_block
+    def reset_reload_ts(self) -> bool:
+        logger.info('Resetting reload_ts')
+        self.estate.reload_ts = None
+        self.econfig.update(self.estate)
+        return True
+
 
 class SkaledActionManager(BaseActionManager):
     def __init__(
@@ -285,12 +307,12 @@ class SkaledActionManager(BaseActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def firewall_rules(self) -> bool:
+    def firewall_rules(self, upstream: bool = False) -> bool:
         initial_status = self.checks.firewall_rules.status
         if not initial_status:
             logger.info('Configuring firewall rules')
 
-            conf = self.cfm.skaled_config
+            conf = self.cfm.latest_upstream_config if upstream else self.cfm.skaled_config
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
@@ -449,14 +471,13 @@ class SkaledActionManager(BaseActionManager):
         return self.cfm.sync_skaled_config_with_upstream()
 
     @BaseActionManager.monitor_block
-    def schedule_skaled_exit(self) -> None:
+    def schedule_skaled_exit(self, exit_ts: int) -> None:
         if self.skaled_status.exit_time_reached or self.esfm.exists():
             logger.info('Exit time has been already set')
             return
-        finish_ts = self.upstream_finish_ts
-        if finish_ts is not None:
-            logger.info('Scheduling skaled exit time %d', finish_ts)
-            self.esfm.exit_ts = finish_ts
+        if exit_ts is not None:
+            logger.info('Scheduling skaled exit time %d', exit_ts)
+            self.esfm.exit_ts = exit_ts
 
     @BaseActionManager.monitor_block
     def reset_exit_schedule(self) -> None:
