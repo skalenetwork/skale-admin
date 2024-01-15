@@ -27,9 +27,9 @@ from flask import Blueprint, abort, g, request
 from core.node import Node, NodeStatus
 from tools.helper import get_endpoint_call_speed
 
-from core.node import (
-    get_meta_info, get_node_hardware_info, get_btrfs_info, check_validator_nodes, get_abi_hash
-)
+from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info, get_abi_hash
+from core.nodes import check_validator_nodes
+
 
 from tools.configs.web3 import ABI_FILEPATH, ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
