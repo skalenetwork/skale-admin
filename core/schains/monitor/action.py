@@ -249,21 +249,19 @@ class ConfigActionManager(BaseActionManager):
         return True
 
     @BaseActionManager.monitor_block
-    def set_reload_ts(self) -> bool:
+    def set_reload_ts(self, ip_changed: bool) -> bool:
         logger.info('Setting reload_ts')
+        if not ip_changed:
+            logger.info('Resetting reload_ts')
+            self.estate.reload_ts = None
+            self.econfig.update(self.estate)
+            return True
         node_index_in_group = get_node_index_in_group(self.skale, self.name, self.node_config.id)
         if node_index_in_group is None:
             logger.warning(f'node {self.node_config.id} is not in chain {self.name}')
             return False
         self.estate.reload_ts = calc_reload_ts(self.current_nodes, node_index_in_group)
         logger.info(f'Setting reload_ts to {self.estate.reload_ts}')
-        self.econfig.update(self.estate)
-        return True
-
-    @BaseActionManager.monitor_block
-    def reset_reload_ts(self) -> bool:
-        logger.info('Resetting reload_ts')
-        self.estate.reload_ts = None
         self.econfig.update(self.estate)
         return True
 

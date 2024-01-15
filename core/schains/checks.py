@@ -181,7 +181,7 @@ class ConfigChecks(IChecks):
         """Checks that IP list on the skale-manager is the same as in the config"""
         res = False
         if self.cfm.upstream_exist_for_rotation_id(self.rotation_id):
-            conf = self.cfm.skaled_config
+            conf = self.cfm.latest_upstream_config
             node_ips = get_node_ips_from_config(conf)
             current_ips = get_current_ips(self.current_nodes)
             res = set(node_ips) == set(current_ips)
