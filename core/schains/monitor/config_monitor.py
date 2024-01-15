@@ -55,14 +55,13 @@ class BaseConfigMonitor(IMonitor):
 
 class RegularConfigMonitor(BaseConfigMonitor):
     def execute(self) -> None:
-        ip_changed = not self.checks.node_ips
         if not self.checks.config_dir:
             self.am.config_dir()
         if not self.checks.dkg:
             self.am.dkg()
         if not self.checks.external_state:
             self.am.external_state()
-        if not self.checks.upstream_config or ip_changed:
+        if not self.checks.upstream_config or not self.checks.upstream_node_ips:
             self.am.upstream_config()
-        self.am.set_reload_ts(ip_changed)
+        self.am.set_reload_ts(self.checks.skaled_node_ips)
         self.am.reset_config_record()

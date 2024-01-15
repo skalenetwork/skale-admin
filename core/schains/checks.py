@@ -177,11 +177,22 @@ class ConfigChecks(IChecks):
         return CheckRes(os.path.isfile(secret_key_share_filepath))
 
     @property
-    def node_ips(self) -> CheckRes:
-        """Checks that IP list on the skale-manager is the same as in the config"""
+    def upstream_node_ips(self) -> CheckRes:
+        """Checks that IP list on the skale-manager is the same as in the upstream config"""
         res = False
         if self.cfm.upstream_exist_for_rotation_id(self.rotation_id):
             conf = self.cfm.latest_upstream_config
+            node_ips = get_node_ips_from_config(conf)
+            current_ips = get_current_ips(self.current_nodes)
+            res = set(node_ips) == set(current_ips)
+        return CheckRes(res)
+
+    @property
+    def skaled_node_ips(self) -> CheckRes:
+        """Checks that IP list on the skale-manager is the same as in the skaled config"""
+        res = False
+        if self.cfm.skaled_config_exists():
+            conf = self.cfm.skaled_config
             node_ips = get_node_ips_from_config(conf)
             current_ips = get_current_ips(self.current_nodes)
             res = set(node_ips) == set(current_ips)
