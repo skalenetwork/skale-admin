@@ -31,7 +31,7 @@ from skale.utils.contracts_provision.main import (
 from skale.utils.web3_utils import init_web3
 
 from core.ima.schain import update_predeployed_ima
-from core.nodes import get_current_nodes
+from core.node import get_current_nodes
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
 from core.schains.config.helper import (

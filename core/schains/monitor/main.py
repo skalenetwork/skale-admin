@@ -49,7 +49,7 @@ from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.task import keep_tasks_running, Task
 from core.schains.config.static_params import get_automatic_repair_option
 from core.schains.skaled_status import get_skaled_status
-from core.nodes import get_current_nodes
+from core.node import get_current_nodes
 from tools.docker_utils import DockerUtils
 from tools.configs.ima import DISABLE_IMA
 from tools.notifications.messages import notify_checks

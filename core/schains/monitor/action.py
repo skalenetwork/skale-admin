@@ -26,7 +26,7 @@ from typing import Dict, Optional, List
 from skale import Skale
 
 from core.node_config import NodeConfig
-from core.nodes import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
+from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
 from core.schains.checks import ConfigChecks, SkaledChecks
 from core.schains.dkg import (
     DkgError,
@@ -224,7 +224,10 @@ class ConfigActionManager(BaseActionManager):
         if not self.cfm.upstream_config_exists() or new_config != self.cfm.latest_upstream_config:
             rotation_id = self.rotation_data['rotation_id']
             logger.info(
-                'Saving new upstream config rotation_id: %d', rotation_id)
+                'Saving new upstream config rotation_id: %d, ips: %s',
+                rotation_id,
+                self.current_nodes
+            )
             self.cfm.save_new_upstream(rotation_id, new_config)
             result = True
         else:

@@ -29,7 +29,7 @@ from sgx import SgxClient
 
 from urllib.parse import urlparse
 from core.node import get_check_report, get_skale_node_version
-from core.nodes import get_current_nodes
+from core.node import get_current_nodes
 from core.schains.checks import SChainChecks
 from core.schains.firewall.utils import (
     get_default_rule_controller,

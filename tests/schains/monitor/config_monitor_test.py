@@ -4,7 +4,7 @@ import os
 import pytest
 from skale.utils.helper import ip_to_bytes
 
-from core.nodes import get_current_nodes
+from core.node import get_current_nodes
 
 from core.schains.checks import ConfigChecks
 from core.schains.config.directory import schain_config_dir

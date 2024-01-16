@@ -1,5 +1,5 @@
 from skale.utils.helper import ip_to_bytes
-from core.nodes import (
+from core.node import (
     get_current_nodes,
     get_current_ips,
     get_max_ip_change_ts,

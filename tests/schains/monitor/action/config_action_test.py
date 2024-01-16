@@ -1,7 +1,7 @@
 import shutil
 
 import pytest
-from core.nodes import get_current_nodes
+from core.node import get_current_nodes
 
 from core.schains.checks import ConfigChecks
 from core.schains.config.directory import schain_config_dir

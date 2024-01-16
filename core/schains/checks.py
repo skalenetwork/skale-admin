@@ -22,7 +22,7 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-from core.nodes import ExtendedManagerNodeInfo, get_current_ips
+from core.node import ExtendedManagerNodeInfo, get_current_ips
 
 from core.schains.config.directory import get_schain_check_filepath
 from core.schains.config.file_manager import ConfigFileManager
