@@ -109,6 +109,7 @@ def test_external_state_config_actions(config_am, config_checks, empty_econfig):
     assert econfig_data == {
         'ima_linked': True,
         'chain_id': config_am.skale.web3.eth.chain_id,
-        'ranges': [['1.1.1.1', '2.2.2.2'], ['3.3.3.3', '4.4.4.4']]
+        'ranges': [['1.1.1.1', '2.2.2.2'], ['3.3.3.3', '4.4.4.4']],
+        'reload_ts': None
     }
     assert config_checks.external_state

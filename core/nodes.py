@@ -19,7 +19,7 @@
 
 import socket
 import logging
-from typing import List, TypedDict
+from typing import List, Optional, TypedDict
 
 from skale import Skale
 from skale.utils.helper import ip_from_bytes
@@ -58,11 +58,11 @@ def get_current_nodes(skale: Skale, name: str) -> List[ExtendedManagerNodeInfo]:
     return current_nodes
 
 
-def get_current_ips(current_nodes: List[ExtendedManagerNodeInfo]) -> List[str]:
+def get_current_ips(current_nodes: List[ExtendedManagerNodeInfo]) -> list[str]:
     return [node['ip'] for node in current_nodes]
 
 
-def get_max_ip_change_ts(current_nodes: List[ExtendedManagerNodeInfo]) -> int | None:
+def get_max_ip_change_ts(current_nodes: List[ExtendedManagerNodeInfo]) -> Optional[int]:
     max_ip_change_ts = max(current_nodes, key=lambda node: node['ip_change_ts'])['ip_change_ts']
     return None if max_ip_change_ts == 0 else max_ip_change_ts
 
@@ -82,7 +82,7 @@ def get_node_delay(node_index: int) -> int:
     return CHANGE_IP_DELAY * (node_index + 1)
 
 
-def get_node_index_in_group(skale: Skale, schain_name: str, node_id: int) -> int | None:
+def get_node_index_in_group(skale: Skale, schain_name: str, node_id: int) -> Optional[int]:
     """Returns node index in group or None if node is not in group"""
     try:
         node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)

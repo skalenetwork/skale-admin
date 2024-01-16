@@ -31,6 +31,7 @@ from skale.utils.contracts_provision.main import (
 from skale.utils.web3_utils import init_web3
 
 from core.ima.schain import update_predeployed_ima
+from core.nodes import get_current_nodes
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
 from core.schains.config.helper import (
@@ -675,7 +676,7 @@ def node_config(skale, nodes):
 
 
 @pytest.fixture
-def schain_checks(schain_config, schain_db, rule_controller, estate, dutils):
+def schain_checks(schain_config, schain_db, current_nodes, rule_controller, estate, dutils):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_record = SChainRecord.get_by_name(schain_name)
     node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
@@ -685,6 +686,7 @@ def schain_checks(schain_config, schain_db, rule_controller, estate, dutils):
         schain_record=schain_record,
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
+        current_nodes=current_nodes,
         estate=estate,
         dutils=dutils
     )
@@ -764,6 +766,12 @@ def econfig(schain_db, estate):
     ec = ExternalConfig(name)
     ec.update(estate)
     return ec
+
+
+@pytest.fixture
+def current_nodes(skale, schain_db, schain_on_contracts):
+    name = schain_db
+    return get_current_nodes(skale, name)
 
 
 @pytest.fixture

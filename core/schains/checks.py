@@ -22,7 +22,7 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-from core.nodes import get_current_ips
+from core.nodes import ExtendedManagerNodeInfo, get_current_ips
 
 from core.schains.config.directory import get_schain_check_filepath
 from core.schains.config.file_manager import ConfigFileManager
@@ -142,7 +142,7 @@ class ConfigChecks(IChecks):
                  schain_record: SChainRecord,
                  rotation_id: int,
                  stream_version: str,
-                 current_nodes,
+                 current_nodes: list[ExtendedManagerNodeInfo],
                  estate: ExternalState,
                  econfig: Optional[ExternalConfig] = None
                  ) -> None:
@@ -227,7 +227,7 @@ class SkaledChecks(IChecks):
         rule_controller: IRuleController,
         *,
         econfig: Optional[ExternalConfig] = None,
-        dutils: DockerUtils | None = None
+        dutils: Optional[DockerUtils] = None
     ):
         self.name = schain_name
         self.schain_record = schain_record
@@ -385,6 +385,7 @@ class SChainChecks(IChecks):
         rule_controller: IRuleController,
         stream_version: str,
         estate: ExternalState,
+        current_nodes: list[ExtendedManagerNodeInfo],
         rotation_id: int = 0,
         *,
         econfig: Optional[ExternalConfig] = None,
@@ -397,6 +398,7 @@ class SChainChecks(IChecks):
                 schain_record=schain_record,
                 rotation_id=rotation_id,
                 stream_version=stream_version,
+                current_nodes=current_nodes,
                 estate=estate,
                 econfig=econfig
             ),
