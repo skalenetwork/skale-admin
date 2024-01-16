@@ -380,6 +380,8 @@ class ExtendedManagerNodeInfo(ManagerNodeInfo):
 
 
 def get_current_nodes(skale: Skale, name: str) -> List[ExtendedManagerNodeInfo]:
+    if not skale.schains_internal.is_schain_exist(name):
+        return []
     current_nodes: ManagerNodeInfo = get_nodes_for_schain(skale, name)
     for node in current_nodes:
         node['ip_change_ts'] = skale.nodes.get_last_change_ip_time(node['id'])
