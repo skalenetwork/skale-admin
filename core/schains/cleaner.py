@@ -228,7 +228,6 @@ def cleanup_schain(
     estate,
     dutils=None
 ) -> None:
-    breakpoint()
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
 
