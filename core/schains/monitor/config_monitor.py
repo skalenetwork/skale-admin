@@ -61,7 +61,7 @@ class RegularConfigMonitor(BaseConfigMonitor):
             self.am.dkg()
         if not self.checks.external_state:
             self.am.external_state()
-        if not self.checks.upstream_config or not self.checks.upstream_node_ips:
+        if not self.checks.upstream_config:
             self.am.upstream_config()
-        self.am.set_reload_ts(self.checks.skaled_node_ips)
+        self.am.update_reload_ts(self.checks.skaled_node_ips)
         self.am.reset_config_record()

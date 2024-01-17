@@ -1,8 +1,9 @@
 import shutil
+from copy import deepcopy
 
 import pytest
-from core.node import get_current_nodes
 
+from core.node import get_current_nodes
 from core.schains.checks import ConfigChecks
 from core.schains.config.directory import schain_config_dir
 from core.schains.monitor.action import ConfigActionManager
@@ -93,6 +94,16 @@ def test_upstream_config_actions(config_am, config_checks):
     # Try to recreate config with no changes
     config_am.upstream_config()
     assert config_checks.upstream_config
+
+    # Modify node ips to and test that check fails
+    nodes = config_checks.current_nodes
+    new_nodes = deepcopy(config_checks.current_nodes)
+    try:
+        new_nodes[0]['ip'] = new_nodes[1]['ip']
+        config_checks.current_nodes = new_nodes
+        assert not config_checks.upstream_config
+    finally:
+        config_checks.current_nodes = nodes
 
 
 @pytest.fixture

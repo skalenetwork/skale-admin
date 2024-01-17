@@ -177,17 +177,6 @@ class ConfigChecks(IChecks):
         return CheckRes(os.path.isfile(secret_key_share_filepath))
 
     @property
-    def upstream_node_ips(self) -> CheckRes:
-        """Checks that IP list on the skale-manager is the same as in the upstream config"""
-        res = False
-        if self.cfm.upstream_exist_for_rotation_id(self.rotation_id):
-            conf = self.cfm.latest_upstream_config
-            node_ips = get_node_ips_from_config(conf)
-            current_ips = get_current_ips(self.current_nodes)
-            res = set(node_ips) == set(current_ips)
-        return CheckRes(res)
-
-    @property
     def skaled_node_ips(self) -> CheckRes:
         """Checks that IP list on the skale-manager is the same as in the skaled config"""
         res = False
@@ -200,14 +189,32 @@ class ConfigChecks(IChecks):
 
     @property
     def upstream_config(self) -> CheckRes:
-        """Checks that config exists for rotation id and stream"""
+        """
+        Returns True if config exists for current rotation id,
+        node ip addresses and stream version are up to date
+        and config regeneration was not triggered manually.
+        Returns False otherwise.
+        """
         exists = self.cfm.upstream_exist_for_rotation_id(self.rotation_id)
         logger.debug('Upstream configs status for %s: %s', self.name, exists)
-        return CheckRes(
-            exists and
-            self.schain_record.config_version == self.stream_version and
-            not self.schain_record.sync_config_run
+        stream_updated = self.schain_record.config_version == self.stream_version
+        node_ips_updated = True
+        triggered = self.schain_record.sync_config_run
+        if exists:
+            conf = self.cfm.latest_upstream_config
+            upstream_node_ips = get_node_ips_from_config(conf)
+            current_ips = get_current_ips(self.current_nodes)
+            node_ips_updated = set(upstream_node_ips) == set(current_ips)
+
+        logger.info(
+            'Upstream config status, rotation_id %s: exist: %s, ips: %s, stream: %s, triggered: %s',
+            self.rotation_id,
+            exists,
+            node_ips_updated,
+            stream_updated,
+            triggered
         )
+        return CheckRes(exists and node_ips_updated and stream_updated and not triggered)
 
     @property
     def external_state(self) -> CheckRes:

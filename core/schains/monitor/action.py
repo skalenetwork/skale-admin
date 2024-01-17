@@ -252,7 +252,7 @@ class ConfigActionManager(BaseActionManager):
         return True
 
     @BaseActionManager.monitor_block
-    def set_reload_ts(self, ip_matched: bool) -> bool:
+    def update_reload_ts(self, ip_matched: bool) -> bool:
         logger.info('Setting reload_ts')
         if ip_matched:
             logger.info('Resetting reload_ts')
