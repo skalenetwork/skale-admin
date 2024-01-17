@@ -228,6 +228,7 @@ def cleanup_schain(
     estate,
     dutils=None
 ) -> None:
+    breakpoint()
     dutils = dutils or DockerUtils()
     schain_record = upsert_schain_record(schain_name)
 
@@ -244,7 +245,8 @@ def cleanup_schain(
         schain_record=schain_record,
         current_nodes=current_nodes,
         rotation_id=rotation_id,
-        estate=estate
+        estate=estate,
+        dutils=dutils
     )
     status = checks.get_all()
     if status['skaled_container'] or is_exited(
