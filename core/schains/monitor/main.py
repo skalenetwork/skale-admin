@@ -49,6 +49,7 @@ from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.task import keep_tasks_running, Task
 from core.schains.config.static_params import get_automatic_repair_option
 from core.schains.skaled_status import get_skaled_status
+from core.node import get_current_nodes
 from tools.docker_utils import DockerUtils
 from tools.configs.ima import DISABLE_IMA
 from tools.notifications.messages import notify_checks
@@ -77,6 +78,7 @@ def run_config_pipeline(
     rotation_data = skale.node_rotation.get_rotation(name)
     allowed_ranges = get_sync_agent_ranges(skale)
     ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
+    current_nodes = get_current_nodes(skale, name)
 
     estate = ExternalState(
         ima_linked=ima_linked,
@@ -90,6 +92,7 @@ def run_config_pipeline(
         schain_record=schain_record,
         stream_version=stream_version,
         rotation_id=rotation_data['rotation_id'],
+        current_nodes=current_nodes,
         econfig=econfig,
         estate=estate
     )
@@ -101,6 +104,7 @@ def run_config_pipeline(
         rotation_data=rotation_data,
         stream_version=stream_version,
         checks=config_checks,
+        current_nodes=current_nodes,
         estate=estate,
         econfig=econfig
     )

@@ -18,35 +18,38 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-import time
-import os
-import socket
-import psutil
-import logging
-import platform
 import hashlib
+import logging
+import os
+import platform
+import psutil
+import socket
+import time
+from enum import Enum
+from typing import Dict, List, Optional, TypedDict
 
 import requests
 
-from enum import Enum
-from typing import Dict
-
-try:
-    from sh import lsmod
-except ImportError:
-    logging.warning('Could not import lsmod from sh package')
-
+from skale import Skale
+from skale.schain_config.generator import get_nodes_for_schain
 from skale.transactions.exceptions import TransactionLogicError
 from skale.utils.exceptions import InvalidNodeIdError
 from skale.utils.helper import ip_from_bytes
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.filebeat import update_filebeat_service
-
-from tools.configs import CHECK_REPORT_PATH, META_FILEPATH, WATCHDOG_PORT
+from tools.configs import WATCHDOG_PORT, CHANGE_IP_DELAY, CHECK_REPORT_PATH, META_FILEPATH
 from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
+
+logger = logging.getLogger(__name__)
+
+try:
+    from sh import lsmod
+except ImportError:
+    logging.warning('Could not import lsmod from sh package')
+
 
 logger = logging.getLogger(__name__)
 
@@ -345,6 +348,81 @@ def get_btrfs_info() -> dict:
     }
 
 
+def get_check_report(report_path: str = CHECK_REPORT_PATH) -> Dict:
+    if not os.path.isfile(report_path):
+        return {}
+    with open(report_path) as report_file:
+        return json.load(report_file)
+
+
+def get_abi_hash(file_path):
+    with open(file_path, 'rb') as file:
+        abi_hash = hashlib.sha256(file.read()).hexdigest()
+    return abi_hash
+
+
+class ManagerNodeInfo(TypedDict):
+    name: str
+    ip: str
+    publicIP: str
+    port: int
+    start_block: int
+    last_reward_date: int
+    finish_time: int
+    status: int
+    validator_id: int
+    publicKey: str
+    domain_name: str
+
+
+class ExtendedManagerNodeInfo(ManagerNodeInfo):
+    ip_change_ts: int
+
+
+def get_current_nodes(skale: Skale, name: str) -> List[ExtendedManagerNodeInfo]:
+    if not skale.schains_internal.is_schain_exist(name):
+        return []
+    current_nodes: ManagerNodeInfo = get_nodes_for_schain(skale, name)
+    for node in current_nodes:
+        node['ip_change_ts'] = skale.nodes.get_last_change_ip_time(node['id'])
+        node['ip'] = ip_from_bytes(node['ip'])
+        node['publicIP'] = ip_from_bytes(node['publicIP'])
+    return current_nodes
+
+
+def get_current_ips(current_nodes: List[ExtendedManagerNodeInfo]) -> list[str]:
+    return [node['ip'] for node in current_nodes]
+
+
+def get_max_ip_change_ts(current_nodes: List[ExtendedManagerNodeInfo]) -> Optional[int]:
+    max_ip_change_ts = max(current_nodes, key=lambda node: node['ip_change_ts'])['ip_change_ts']
+    return None if max_ip_change_ts == 0 else max_ip_change_ts
+
+
+def calc_reload_ts(current_nodes: List[ExtendedManagerNodeInfo], node_index: int) -> int:
+    max_ip_change_ts = get_max_ip_change_ts(current_nodes)
+    if max_ip_change_ts is None:
+        return
+    return max_ip_change_ts + get_node_delay(node_index)
+
+
+def get_node_delay(node_index: int) -> int:
+    """
+    Returns delay for node in seconds.
+    Example: for node with index 3 and delay 300 it will be 1200 seconds
+    """
+    return CHANGE_IP_DELAY * (node_index + 1)
+
+
+def get_node_index_in_group(skale: Skale, schain_name: str, node_id: int) -> Optional[int]:
+    """Returns node index in group or None if node is not in group"""
+    try:
+        node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+        return node_ids.index(node_id)
+    except ValueError:
+        return None
+
+
 def is_port_open(ip, port):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(1)
@@ -378,16 +456,3 @@ def check_validator_nodes(skale, node_id):
     except Exception as err:
         return {'status': 1, 'errors': [err]}
     return {'status': 0, 'data': res}
-
-
-def get_check_report(report_path: str = CHECK_REPORT_PATH) -> Dict:
-    if not os.path.isfile(CHECK_REPORT_PATH):
-        return {}
-    with open(CHECK_REPORT_PATH) as report_file:
-        return json.load(report_file)
-
-
-def get_abi_hash(file_path):
-    with open(file_path, 'rb') as file:
-        abi_hash = hashlib.sha256(file.read()).hexdigest()
-    return abi_hash

@@ -12,7 +12,8 @@ from core.schains.monitor.action import SkaledActionManager
 from core.schains.monitor.skaled_monitor import (
     BackupSkaledMonitor,
     get_skaled_monitor,
-    NewConfigSkaledMonitor,
+    ReloadGroupSkaledMonitor,
+    ReloadIpSkaledMonitor,
     NewNodeSkaledMonitor,
     NoConfigSkaledMonitor,
     RecreateSkaledMonitor,
@@ -20,6 +21,7 @@ from core.schains.monitor.skaled_monitor import (
     RepairSkaledMonitor,
     UpdateConfigSkaledMonitor
 )
+from core.schains.external_config import ExternalConfig
 from core.schains.exit_scheduler import ExitScheduleFileManager
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
@@ -288,7 +290,7 @@ def skaled_checks_new_config(
 
 
 @freezegun.freeze_time(CURRENT_DATETIME)
-def test_get_skaled_monitor_new_config(
+def test_get_skaled_monitor_reload_group(
     skale,
     skaled_am,
     skaled_checks_new_config,
@@ -345,7 +347,62 @@ def test_get_skaled_monitor_new_config(
             schain_record,
             skaled_status
         )
-        assert mon == NewConfigSkaledMonitor
+        assert mon == ReloadGroupSkaledMonitor
+
+
+@freezegun.freeze_time(CURRENT_DATETIME)
+def test_get_skaled_monitor_reload_ip(
+    skale,
+    skaled_am,
+    skaled_checks_new_config,
+    schain_db,
+    skaled_status,
+    node_config,
+    rule_controller,
+    schain_on_contracts,
+    predeployed_ima,
+    rotation_data,
+    secret_keys,
+    ssl_folder,
+    skaled_checks,
+    dutils
+):
+    name = schain_db
+    schain_record = SChainRecord.get_by_name(name)
+
+    state = skaled_checks_new_config.get_all()
+    state['rotation_id_updated'] = False
+
+    schain = skale.schains.get_by_name(name)
+
+    econfig = ExternalConfig(name)
+
+    skaled_am = SkaledActionManager(
+        schain=schain,
+        rule_controller=rule_controller,
+        node_config=node_config,
+        checks=skaled_checks,
+        dutils=dutils
+    )
+    mon = get_skaled_monitor(
+        skaled_am,
+        state,
+        schain_record,
+        skaled_status
+    )
+    assert mon == RegularSkaledMonitor
+
+    estate = econfig.read()
+    estate['reload_ts'] = CURRENT_TIMESTAMP + 10
+    econfig.write(estate)
+
+    mon = get_skaled_monitor(
+        skaled_am,
+        state,
+        schain_record,
+        skaled_status
+    )
+    assert mon == ReloadIpSkaledMonitor
 
 
 @freezegun.freeze_time(CURRENT_DATETIME)
@@ -483,8 +540,8 @@ def test_repair_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     assert not dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
 
 
-def test_new_config_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
-    mon = NewConfigSkaledMonitor(skaled_am, skaled_checks)
+def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
+    mon = ReloadGroupSkaledMonitor(skaled_am, skaled_checks)
     ts = time.time()
     esfm = ExitScheduleFileManager(mon.am.name)
     with mock.patch('core.schains.monitor.action.get_finish_ts_from_latest_upstream',
@@ -498,8 +555,8 @@ def test_new_config_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutil
 
 
 @pytest.mark.skip
-def test_new_config_skaled_monitor_failed_skaled(skaled_am, skaled_checks, clean_docker, dutils):
-    mon = NewConfigSkaledMonitor(skaled_am, skaled_checks)
+def test_group_reload_skaled_monitor_failed_skaled(skaled_am, skaled_checks, clean_docker, dutils):
+    mon = ReloadGroupSkaledMonitor(skaled_am, skaled_checks)
     with mock.patch('core.schains.monitor.containers.run_schain_container') \
             as run_skaled_container_mock:
         mon.run()
