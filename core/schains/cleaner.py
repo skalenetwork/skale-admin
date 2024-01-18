@@ -24,7 +24,7 @@ from multiprocessing import Process
 
 from sgx import SgxClient
 
-from core.node import get_skale_node_version
+from core.node import get_current_nodes, get_skale_node_version
 from core.schains.checks import SChainChecks
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.directory import schain_config_dir
@@ -207,11 +207,13 @@ def remove_schain(skale, node_id, schain_name, msg, dutils=None) -> None:
     rotation_data = skale.node_rotation.get_rotation(schain_name)
     rotation_id = rotation_data['rotation_id']
     estate = ExternalConfig(name=schain_name).get()
+    current_nodes = get_current_nodes(skale, schain_name)
     cleanup_schain(
         node_id,
         schain_name,
         sync_agent_ranges,
         rotation_id=rotation_id,
+        current_nodes=current_nodes,
         estate=estate,
         dutils=dutils
     )
@@ -222,6 +224,7 @@ def cleanup_schain(
     schain_name,
     sync_agent_ranges,
     rotation_id,
+    current_nodes,
     estate,
     dutils=None
 ) -> None:
@@ -239,8 +242,10 @@ def cleanup_schain(
         rule_controller=rc,
         stream_version=stream_version,
         schain_record=schain_record,
+        current_nodes=current_nodes,
         rotation_id=rotation_id,
-        estate=estate
+        estate=estate,
+        dutils=dutils
     )
     status = checks.get_all()
     if status['skaled_container'] or is_exited(

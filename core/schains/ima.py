@@ -37,7 +37,8 @@ from tools.configs.ima import (
     IMA_ENDPOINT,
     MAINNET_IMA_ABI_FILEPATH,
     IMA_STATE_CONTAINER_PATH,
-    IMA_TIME_FRAMING
+    IMA_TIME_FRAMING,
+    IMA_NETWORK_BROWSER_FILEPATH
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ABI_FILEPATH
@@ -61,6 +62,7 @@ class ImaEnv:
     schain_proxy_path: str
 
     state_file: str
+    network_browser_data_path: str
 
     schain_name: str
     schain_rpc_url: str
@@ -110,7 +112,8 @@ class ImaEnv:
             'CID_SCHAIN': self.cid_schain,
             'MONITORING_PORT': self.monitoring_port,
             'RPC_PORT': self.rpc_port,
-            'TIME_FRAMING': self.time_framing
+            'TIME_FRAMING': self.time_framing,
+            'IMA_NETWORK_BROWSER_DATA_PATH': self.network_browser_data_path
         }
 
 
@@ -177,12 +180,13 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         cid_schain=schain_chain_id,
         monitoring_port=node_info['imaMonitoringPort'],
         rpc_port=get_ima_rpc_port(schain_name),
-        time_framing=IMA_TIME_FRAMING
+        time_framing=IMA_TIME_FRAMING,
+        network_browser_data_path=IMA_NETWORK_BROWSER_FILEPATH
     )
 
 
-def get_ima_version() -> str:
-    return CONTAINERS_INFO['ima']['version']
+def get_ima_version_after_migration() -> str:
+    return CONTAINERS_INFO['ima'].get('new_version') or CONTAINERS_INFO['ima']['version']
 
 
 def get_ima_monitoring_port(schain_name):

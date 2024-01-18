@@ -172,19 +172,14 @@ def test_get_schain(
 
 
 def test_schain_containers_versions(skale_bp):
-    skaled_version = '3.7.3-develop.4'
-    ima_version = '1.1.0-beta.0'
-    with mock.patch(
-        'web.routes.schains.get_skaled_version',
-        return_value=skaled_version
-    ), mock.patch('web.routes.schains.get_ima_version',
-                  return_value=ima_version):
-        data = get_bp_data(skale_bp, get_api_url(
-            BLUEPRINT_NAME, 'container-versions'))
-        assert data == {
-            'status': 'ok',
-            'payload': {
-                'skaled_version': skaled_version,
-                'ima_version': ima_version
-            }
+    expected_skaled_version = '3.16.1'
+    expected_ima_version = '2.0.0-beta.9'
+    data = get_bp_data(skale_bp, get_api_url(
+        BLUEPRINT_NAME, 'container-versions'))
+    assert data == {
+        'status': 'ok',
+        'payload': {
+            'skaled_version': expected_skaled_version,
+            'ima_version': expected_ima_version
         }
+    }

@@ -192,6 +192,8 @@ envs:
       ["-v 3", "--web3-trace", "--enable-debug-behavior-apis", "--aa no"]
 
     node:
+      admin:
+        automatic_repair: false
       common:
         bindIP: "0.0.0.0"
         logLevel: "info"
@@ -265,6 +267,8 @@ envs:
       ["-v 3", "--web3-trace", "--enable-debug-behavior-apis", "--aa no"]
 
     node:
+      admin:
+        automatic_repair: true
       common:
         bindIP: "0.0.0.0"
         logLevel: "info"
