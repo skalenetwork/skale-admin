@@ -24,9 +24,7 @@ import logging
 from ima_predeployed.generator import generate_abi
 from core.schains.config.directory import schain_config_dir
 
-from tools.configs.ima import (
-    SCHAIN_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILENAME
-)
+from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH, SCHAIN_IMA_ABI_FILENAME
 
 
 logger = logging.getLogger(__name__)

@@ -140,6 +140,13 @@ def add_sync_config_run_field(db, migrator):
     )
 
 
+def add_dkg_step_field(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'dkg_step',
+        IntegerField(default=0)
+    )
+
+
 def find_column(db, table_name, column_name):
     columns = db.get_columns(table_name)
     return next((x for x in columns if x.name == column_name), None)

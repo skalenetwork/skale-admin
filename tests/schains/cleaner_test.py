@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from skale.skale_manager import spawn_skale_manager_lib
 
 from core.schains.cleaner import (
+    cleanup_schain,
     delete_bls_keys,
     monitor,
     get_schains_on_node,
@@ -235,3 +236,33 @@ def test_get_schains_on_node(schain_dirs_for_monitor,
         TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
         PHANTOM_SCHAIN_NAME, schain_name
     ]).issubset(set(result))
+
+
+def test_cleanup_schain(
+    schain_db,
+    node_config,
+    schain_on_contracts,
+    current_nodes,
+    estate,
+    dutils,
+    secret_key
+):
+    schain_name = schain_db
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
+    assert os.path.isdir(schain_dir_path)
+    cleanup_schain(
+        node_config.id,
+        schain_name,
+        current_nodes=current_nodes,
+        sync_agent_ranges=[],
+        rotation_id=0,
+        estate=estate,
+        dutils=dutils
+    )
+
+    container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
+    assert not is_container_running(dutils, container_name)
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
+    assert not os.path.isdir(schain_dir_path)
+    record = SChainRecord.get_by_name(schain_name)
+    assert record.is_deleted is True

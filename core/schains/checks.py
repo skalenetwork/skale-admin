@@ -22,6 +22,7 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
+from core.node import ExtendedManagerNodeInfo, get_current_ips
 
 from core.schains.config.directory import get_schain_check_filepath
 from core.schains.config.file_manager import ConfigFileManager
@@ -113,6 +114,7 @@ class IChecks(ABC):
         checks_status = {}
         for name in names:
             if hasattr(self, name):
+                logger.debug('Running check %s', name)
                 checks_status[name] = getattr(self, name).status
         if log:
             log_checks_dict(self.get_name(), checks_status)
@@ -140,6 +142,7 @@ class ConfigChecks(IChecks):
                  schain_record: SChainRecord,
                  rotation_id: int,
                  stream_version: str,
+                 current_nodes: list[ExtendedManagerNodeInfo],
                  estate: ExternalState,
                  econfig: Optional[ExternalConfig] = None
                  ) -> None:
@@ -148,6 +151,7 @@ class ConfigChecks(IChecks):
         self.schain_record = schain_record
         self.rotation_id = rotation_id
         self.stream_version = stream_version
+        self.current_nodes = current_nodes
         self.estate = estate
         self.econfig = econfig or ExternalConfig(schain_name)
         self.cfm: ConfigFileManager = ConfigFileManager(
@@ -173,16 +177,44 @@ class ConfigChecks(IChecks):
         return CheckRes(os.path.isfile(secret_key_share_filepath))
 
     @property
-    def upstream_config(self) -> CheckRes:
-        """Checks that config exists for rotation id and stream"""
-        exists = self.cfm.upstream_exist_for_rotation_id(self.rotation_id)
+    def skaled_node_ips(self) -> CheckRes:
+        """Checks that IP list on the skale-manager is the same as in the skaled config"""
+        res = False
+        if self.cfm.skaled_config_exists():
+            conf = self.cfm.skaled_config
+            node_ips = get_node_ips_from_config(conf)
+            current_ips = get_current_ips(self.current_nodes)
+            res = set(node_ips) == set(current_ips)
+        return CheckRes(res)
 
+    @property
+    def upstream_config(self) -> CheckRes:
+        """
+        Returns True if config exists for current rotation id,
+        node ip addresses and stream version are up to date
+        and config regeneration was not triggered manually.
+        Returns False otherwise.
+        """
+        exists = self.cfm.upstream_exist_for_rotation_id(self.rotation_id)
         logger.debug('Upstream configs status for %s: %s', self.name, exists)
-        return CheckRes(
-            exists and
-            self.schain_record.config_version == self.stream_version and
-            not self.schain_record.sync_config_run
+        stream_updated = self.schain_record.config_version == self.stream_version
+        node_ips_updated = True
+        triggered = self.schain_record.sync_config_run
+        if exists:
+            conf = self.cfm.latest_upstream_config
+            upstream_node_ips = get_node_ips_from_config(conf)
+            current_ips = get_current_ips(self.current_nodes)
+            node_ips_updated = set(upstream_node_ips) == set(current_ips)
+
+        logger.info(
+            'Upstream config status, rotation_id %s: exist: %s, ips: %s, stream: %s, triggered: %s',
+            self.rotation_id,
+            exists,
+            node_ips_updated,
+            stream_updated,
+            triggered
         )
+        return CheckRes(exists and node_ips_updated and stream_updated and not triggered)
 
     @property
     def external_state(self) -> CheckRes:
@@ -202,7 +234,7 @@ class SkaledChecks(IChecks):
         rule_controller: IRuleController,
         *,
         econfig: Optional[ExternalConfig] = None,
-        dutils: DockerUtils = None
+        dutils: Optional[DockerUtils] = None
     ):
         self.name = schain_name
         self.schain_record = schain_record
@@ -360,6 +392,7 @@ class SChainChecks(IChecks):
         rule_controller: IRuleController,
         stream_version: str,
         estate: ExternalState,
+        current_nodes: list[ExtendedManagerNodeInfo],
         rotation_id: int = 0,
         *,
         econfig: Optional[ExternalConfig] = None,
@@ -372,6 +405,7 @@ class SChainChecks(IChecks):
                 schain_record=schain_record,
                 rotation_id=rotation_id,
                 stream_version=stream_version,
+                current_nodes=current_nodes,
                 estate=estate,
                 econfig=econfig
             ),
@@ -398,6 +432,7 @@ class SChainChecks(IChecks):
 
         plain_checks = {}
         for subj in self._subjects:
+            logger.debug('Running checks for %s', subj)
             subj_checks = subj.get_all(
                 log=False,
                 save=False,

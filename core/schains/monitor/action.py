@@ -21,14 +21,20 @@ import logging
 import time
 from datetime import datetime
 from functools import wraps
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 from skale import Skale
 
 from core.node_config import NodeConfig
+from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
 from core.schains.checks import ConfigChecks, SkaledChecks
-from core.schains.dkg import safe_run_dkg, save_dkg_results, DkgError
-from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.schains.dkg import (
+    DkgError,
+    get_dkg_client,
+    get_secret_key_share_filepath,
+    run_dkg,
+    save_dkg_results
+)
 from core.schains.ima import get_migration_ts as get_ima_migration_ts
 
 from core.schains.cleaner import (
@@ -39,7 +45,7 @@ from core.schains.cleaner import (
 from core.schains.firewall.types import IRuleController
 
 from core.schains.volume import init_data_volume
-from core.schains.rotation import set_rotation_for_schain
+from core.schains.exit_scheduler import ExitScheduleFileManager
 
 from core.schains.limits import get_schain_type
 
@@ -62,7 +68,6 @@ from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
-    get_local_schain_http_endpoint_from_config,
     get_own_ip_from_config
 )
 from core.schains.ima import ImaData
@@ -138,6 +143,7 @@ class ConfigActionManager(BaseActionManager):
         stream_version: str,
         checks: ConfigChecks,
         estate: ExternalState,
+        current_nodes: List[ExtendedManagerNodeInfo],
         econfig: Optional[ExternalConfig] = None
     ):
         self.skale = skale
@@ -146,6 +152,7 @@ class ConfigActionManager(BaseActionManager):
         self.node_config = node_config
         self.checks = checks
         self.stream_version = stream_version
+        self.current_nodes = current_nodes
 
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
@@ -166,14 +173,23 @@ class ConfigActionManager(BaseActionManager):
     def dkg(self) -> bool:
         initial_status = self.checks.dkg.status
         if not initial_status:
-            logger.info('Running safe_run_dkg')
-            dkg_result = safe_run_dkg(
+            logger.info('Running run_dkg')
+            dkg_client = get_dkg_client(
+                skale=self.skale,
+                node_id=self.node_config.id,
+                schain_name=self.name,
+                sgx_key_name=self.node_config.sgx_key_name,
+                rotation_id=self.rotation_id
+            )
+            dkg_result = run_dkg(
+                dkg_client=dkg_client,
                 skale=self.skale,
                 schain_name=self.name,
                 node_id=self.node_config.id,
                 sgx_key_name=self.node_config.sgx_key_name,
                 rotation_id=self.rotation_id
             )
+            logger.info('DKG finished with %s', dkg_result)
             if dkg_result.status.is_done():
                 save_dkg_results(
                     dkg_result.keys_data,
@@ -208,7 +224,10 @@ class ConfigActionManager(BaseActionManager):
         if not self.cfm.upstream_config_exists() or new_config != self.cfm.latest_upstream_config:
             rotation_id = self.rotation_data['rotation_id']
             logger.info(
-                'Saving new upstream config rotation_id: %d', rotation_id)
+                'Saving new upstream config rotation_id: %d, ips: %s',
+                rotation_id,
+                self.current_nodes
+            )
             self.cfm.save_new_upstream(rotation_id, new_config)
             result = True
         else:
@@ -229,6 +248,23 @@ class ConfigActionManager(BaseActionManager):
     def external_state(self) -> bool:
         logger.info('Updating external state config')
         logger.debug('New state %s', self.estate)
+        self.econfig.update(self.estate)
+        return True
+
+    @BaseActionManager.monitor_block
+    def update_reload_ts(self, ip_matched: bool) -> bool:
+        logger.info('Setting reload_ts')
+        if ip_matched:
+            logger.info('Resetting reload_ts')
+            self.estate.reload_ts = None
+            self.econfig.update(self.estate)
+            return True
+        node_index_in_group = get_node_index_in_group(self.skale, self.name, self.node_config.id)
+        if node_index_in_group is None:
+            logger.warning(f'node {self.node_config.id} is not in chain {self.name}')
+            return False
+        self.estate.reload_ts = calc_reload_ts(self.current_nodes, node_index_in_group)
+        logger.info(f'Setting reload_ts to {self.estate.reload_ts}')
         self.econfig.update(self.estate)
         return True
 
@@ -256,6 +292,7 @@ class SkaledActionManager(BaseActionManager):
             schain_name=self.schain['name']
         )
 
+        self.esfm = ExitScheduleFileManager(schain['name'])
         self.dutils = dutils or DockerUtils()
 
         super().__init__(name=schain['name'])
@@ -271,12 +308,12 @@ class SkaledActionManager(BaseActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def firewall_rules(self) -> bool:
+    def firewall_rules(self, upstream: bool = False) -> bool:
         initial_status = self.checks.firewall_rules.status
         if not initial_status:
             logger.info('Configuring firewall rules')
 
-            conf = self.cfm.skaled_config
+            conf = self.cfm.latest_upstream_config if upstream else self.cfm.skaled_config
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
@@ -435,16 +472,19 @@ class SkaledActionManager(BaseActionManager):
         return self.cfm.sync_skaled_config_with_upstream()
 
     @BaseActionManager.monitor_block
-    def send_exit_request(self) -> None:
-        if self.skaled_status.exit_time_reached:
+    def schedule_skaled_exit(self, exit_ts: int) -> None:
+        if self.skaled_status.exit_time_reached or self.esfm.exists():
             logger.info('Exit time has been already set')
             return
-        finish_ts = self.upstream_finish_ts
-        logger.info('Trying to set skaled exit time %s', finish_ts)
-        if finish_ts is not None:
-            url = get_local_schain_http_endpoint_from_config(
-                self.cfm.skaled_config)
-            set_rotation_for_schain(url, finish_ts)
+        if exit_ts is not None:
+            logger.info('Scheduling skaled exit time %d', exit_ts)
+            self.esfm.exit_ts = exit_ts
+
+    @BaseActionManager.monitor_block
+    def reset_exit_schedule(self) -> None:
+        logger.info('Reseting exit schedule')
+        if self.esfm.exists():
+            self.esfm.rm()
 
     @BaseActionManager.monitor_block
     def disable_backup_run(self) -> None:

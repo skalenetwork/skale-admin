@@ -147,12 +147,13 @@ class UpdateConfigSkaledMonitor(BaseSkaledMonitor):
             self.am.firewall_rules()
         if not self.checks.volume:
             self.am.volume()
+        self.am.reset_exit_schedule()
         self.am.recreated_schain_containers(abort_on_exit=False)
 
 
-class NewConfigSkaledMonitor(BaseSkaledMonitor):
+class ReloadGroupSkaledMonitor(BaseSkaledMonitor):
     """
-    When config is outdated request setExitTime with latest finish_ts from config
+    When config is outdated set exit time to the latest finish_ts from schain config
     """
 
     def execute(self):
@@ -168,7 +169,28 @@ class NewConfigSkaledMonitor(BaseSkaledMonitor):
             self.am.skaled_rpc()
         if not self.checks.ima_container:
             self.am.ima_container()
-        self.am.send_exit_request()
+        self.am.schedule_skaled_exit(self.am.upstream_finish_ts)
+
+
+class ReloadIpSkaledMonitor(BaseSkaledMonitor):
+    """
+    When config is outdated set exit time to reload_ts from external config
+    """
+
+    def execute(self):
+        if not self.checks.firewall_rules:
+            self.am.firewall_rules(upstream=True)
+        if not self.checks.volume:
+            self.am.volume()
+        if not self.checks.skaled_container:
+            self.am.skaled_container()
+        else:
+            self.am.reset_restart_counter()
+        if not self.checks.rpc:
+            self.am.skaled_rpc()
+        if not self.checks.ima_container:
+            self.am.ima_container()
+        self.am.schedule_skaled_exit(self.am.econfig.reload_ts)
 
 
 class NoConfigSkaledMonitor(BaseSkaledMonitor):
@@ -223,14 +245,17 @@ def is_repair_mode(
         return automatic_repair and is_skaled_repair_status(status, skaled_status)
 
 
-def is_new_config_mode(
-    status: Dict,
-    finish_ts: Optional[int]
-) -> bool:
+def is_reload_group_mode(status: Dict, finish_ts: Optional[int]) -> bool:
     ts = int(time.time())
     if finish_ts is None:
         return False
     return finish_ts > ts and status['config'] and not status['config_updated']
+
+
+def is_reload_ip_mode(status: Dict, reload_ts: Optional[int]) -> bool:
+    if reload_ts is None:
+        return False
+    return status['config'] and not status['config_updated']
 
 
 def is_config_update_time(
@@ -290,7 +315,8 @@ def get_skaled_monitor(
         mon_type = NewNodeSkaledMonitor
     elif is_config_update_time(status, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
-    elif is_new_config_mode(status, action_manager.upstream_finish_ts):
-        mon_type = NewConfigSkaledMonitor
-
+    elif is_reload_group_mode(status, action_manager.upstream_finish_ts):
+        mon_type = ReloadGroupSkaledMonitor
+    elif is_reload_ip_mode(status, action_manager.econfig.reload_ts):
+        mon_type = ReloadIpSkaledMonitor
     return mon_type
