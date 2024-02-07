@@ -31,18 +31,20 @@ from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import get_schain_ports_from_config, get_chain_id
 from core.ima.schain import get_schain_ima_abi_filepath
 from tools.configs import ENV_TYPE, SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
-from tools.configs.containers import CONTAINERS_INFO, IMA_MIGRATION_PATH
+from tools.configs.containers import IMA_MIGRATION_PATH
 from tools.configs.db import REDIS_URI
 from tools.configs.ima import (
-    IMA_ENDPOINT,
     MAINNET_IMA_ABI_FILEPATH,
     IMA_STATE_CONTAINER_PATH,
     IMA_TIME_FRAMING,
     IMA_NETWORK_BROWSER_FILEPATH
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.web3 import ABI_FILEPATH
 from tools.helper import safe_load_yml
+from tools.configs.web3 import ABI_FILEPATH, ENDPOINT
+
+from tools.helper import get_containers_data
+
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +168,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         state_file=IMA_STATE_CONTAINER_PATH,
         schain_name=schain_name,
         schain_rpc_url=get_localhost_http_endpoint(schain_name),
-        mainnet_rpc_url=IMA_ENDPOINT,
+        mainnet_rpc_url=ENDPOINT,
         node_number=schain_index,
         nodes_count=len(schain_nodes['nodes']),
         sgx_url=SGX_SERVER_URL,
@@ -186,7 +188,8 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
 
 
 def get_ima_version_after_migration() -> str:
-    return CONTAINERS_INFO['ima'].get('new_version') or CONTAINERS_INFO['ima']['version']
+    containers_info = get_containers_data()
+    return containers_info['ima'].get('new_version') or containers_info['ima']['version']
 
 
 def get_ima_monitoring_port(schain_name):

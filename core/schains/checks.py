@@ -48,6 +48,7 @@ from core.schains.rpc import (
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.runner import get_container_name, get_image_name, is_new_image_pulled
 from core.schains.skaled_exit_codes import SkaledExitCodes
+from core.schains.volume import is_volume_exists
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
@@ -144,6 +145,7 @@ class ConfigChecks(IChecks):
                  stream_version: str,
                  current_nodes: list[ExtendedManagerNodeInfo],
                  estate: ExternalState,
+                 sync_node: bool = False,
                  econfig: Optional[ExternalConfig] = None
                  ) -> None:
         self.name = schain_name
@@ -153,6 +155,7 @@ class ConfigChecks(IChecks):
         self.stream_version = stream_version
         self.current_nodes = current_nodes
         self.estate = estate
+        self.sync_node = sync_node
         self.econfig = econfig or ExternalConfig(schain_name)
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=schain_name
@@ -280,7 +283,13 @@ class SkaledChecks(IChecks):
     @property
     def volume(self) -> CheckRes:
         """Checks that sChain volume exists"""
-        return CheckRes(self.dutils.is_data_volume_exists(self.name))
+
+        return CheckRes(
+            is_volume_exists(
+                self.name,
+                sync_node=self.sync_node,
+                dutils=self.dutils)
+            )
 
     @property
     def firewall_rules(self) -> CheckRes:

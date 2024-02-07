@@ -75,6 +75,10 @@ def test_generate_current_node_info(
         )
     current_node_info_dict = current_node_info.to_dict()
     assert current_node_info_dict['maxCacheSize'] == 16000000
+    assert current_node_info_dict['skale-manager'] == {
+        'SchainsInternal': '0x1656',
+        'Nodes': '0x7742'
+    }
 
 
 def test_skale_manager_opts(

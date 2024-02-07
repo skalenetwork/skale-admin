@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from skale import Skale
 
-from tools.configs.containers import CONTAINERS_INFO
+from tools.helper import get_containers_data
 from web.models.schain import SChainRecord
 
 
@@ -57,4 +57,4 @@ def get_schain_info_by_name(skale: Skale, schain_name: str) -> SchainData:
 
 
 def get_skaled_version() -> str:
-    return CONTAINERS_INFO['schain']['version']
+    return get_containers_data()['schain']['version']

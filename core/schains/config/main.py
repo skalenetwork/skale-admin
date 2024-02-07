@@ -28,8 +28,10 @@ from core.schains.config.file_manager import ConfigFileManager, SkaledConfigFile
 from core.schains.config.generator import generate_schain_config_with_skale
 
 from tools.configs import SCHAIN_CONFIG_DIR_SKALED
+from tools.str_formatters import arguments_list_string
+from tools.node_options import NodeOptions
 
-from web.models.schain import upsert_schain_record, SChainRecord
+from web.models.schain import upsert_schain_record
 
 
 logger = logging.getLogger(__name__)
@@ -42,11 +44,14 @@ def create_new_upstream_config(
     generation: int,
     ecdsa_sgx_key_name: str,
     rotation_data: dict,
-    stream_version: str,
-    schain_record: SChainRecord,
-    file_manager: ConfigFileManager
+    sync_node: bool,
+    node_options: NodeOptions
 ) -> Dict:
-    logger.info('Generating sChain config for %s', schain_name)
+    logger.warning(arguments_list_string({
+        'sChain name': schain_name,
+        'generation': generation,
+        'sync_node': sync_node
+        }, 'Generating sChain config'))
 
     schain_config = generate_schain_config_with_skale(
         skale=skale,
@@ -54,7 +59,9 @@ def create_new_upstream_config(
         generation=generation,
         node_id=node_id,
         rotation_data=rotation_data,
-        ecdsa_key_name=ecdsa_sgx_key_name
+        ecdsa_key_name=ecdsa_sgx_key_name,
+        sync_node=sync_node,
+        node_options=node_options
     )
     return schain_config.to_dict()
 

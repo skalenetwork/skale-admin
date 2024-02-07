@@ -33,15 +33,16 @@ from core.schains.config.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (
-    CONTAINERS_INFO,
     CONTAINER_NAME_PREFIX,
     DATA_DIR_CONTAINER_PATH,
     IMA_CONTAINER,
+    HISTORIC_STATE_IMAGE_POSTFIX,
     SCHAIN_CONTAINER,
     SCHAIN_STOP_TIMEOUT
 )
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
                            SKALE_VOLUME_PATH, SCHAIN_CONFIG_DIR_SKALED)
+from tools.helper import get_containers_data
 
 logger = logging.getLogger(__name__)
 
@@ -76,14 +77,15 @@ def is_container_running(
     return dutils.is_container_running(container_name)
 
 
-def get_image_name(type: str, new: bool = False) -> str:
+def get_image_name(type: str, new: bool = False, historic_state: bool = False) -> str:
     tag_field = 'version'
     if type == IMA_CONTAINER and new:
         tag_field = 'new_version'
-    container_info = CONTAINERS_INFO[type]
-    image_base_name = container_info['name']
-    tag = container_info[tag_field]
-    return f'{image_base_name}:{tag}'
+    container_info = get_containers_data()[type]
+    image_name = f'{container_info["name"]}:{container_info[tag_field]}'
+    if historic_state and type == SCHAIN_CONTAINER:
+        image_name += HISTORIC_STATE_IMAGE_POSTFIX
+    return image_name
 
 
 def get_container_name(type, schain_name):
@@ -91,15 +93,15 @@ def get_container_name(type, schain_name):
 
 
 def get_container_args(type):
-    return copy.deepcopy(CONTAINERS_INFO[type]['args'])
+    return copy.deepcopy(get_containers_data()[type]['args'])
 
 
 def get_container_custom_args(type):
-    return copy.deepcopy(CONTAINERS_INFO[type]['custom_args'])
+    return copy.deepcopy(get_containers_data()[type]['custom_args'])
 
 
-def get_container_info(type, schain_name):
-    return (get_image_name(type), get_container_name(type, schain_name),
+def get_container_info(type, schain_name: str, historic_state: bool = False):
+    return (get_image_name(type, historic_state), get_container_name(type, schain_name),
             get_container_args(type), get_container_custom_args(type))
 
 
@@ -122,11 +124,12 @@ def run_container(
     mem_limit=None,
     image=None,
     dutils=None,
-    volume_mode=None
+    volume_mode=None,
+    historic_state=False
 ):
     dutils = dutils or DockerUtils()
     default_image, container_name, run_args, custom_args = get_container_info(
-        type, schain_name)
+        type, schain_name, historic_state=historic_state)
 
     image_name = image or default_image
 
@@ -177,18 +180,22 @@ def run_schain_container(
     dutils=None,
     volume_mode=None,
     ulimit_check=True,
+    enable_ssl=True,
     snapshot_from: str = '',
-    enable_ssl=True
+    sync_node=False,
+    historic_state=False
 ):
     schain_name = schain['name']
     schain_type = get_schain_type(schain['partOfNode'])
-    cpu_limit = get_schain_limit(schain_type, MetricType.cpu_shares)
-    mem_limit = get_schain_limit(schain_type, MetricType.mem)
+
+    cpu_limit = None if sync_node else get_schain_limit(schain_type, MetricType.cpu_shares)
+    mem_limit = None if sync_node else get_schain_limit(schain_type, MetricType.mem)
 
     volume_config = get_schain_volume_config(
         schain_name,
         DATA_DIR_CONTAINER_PATH,
-        mode=volume_mode
+        mode=volume_mode,
+        sync_node=sync_node
     )
     env = get_schain_env(ulimit_check=ulimit_check)
 
@@ -197,11 +204,21 @@ def run_schain_container(
         start_ts,
         download_snapshot=download_snapshot,
         enable_ssl=enable_ssl,
+        sync_node=sync_node,
         snapshot_from=snapshot_from
     )
-    run_container(SCHAIN_CONTAINER, schain_name, env, cmd,
-                  volume_config, cpu_limit,
-                  mem_limit, dutils=dutils, volume_mode=volume_mode)
+    run_container(
+        SCHAIN_CONTAINER,
+        schain_name,
+        env,
+        cmd,
+        volume_config,
+        cpu_limit,
+        mem_limit,
+        volume_mode=volume_mode,
+        historic_state=historic_state,
+        dutils=dutils
+    )
 
 
 def run_ima_container(

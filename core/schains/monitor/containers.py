@@ -34,12 +34,12 @@ from core.schains.runner import (
 from core.ima.schain import copy_schain_ima_abi
 from core.schains.ima import ImaData
 
+from tools.configs import SYNC_NODE
 from tools.configs.containers import (
     MAX_SCHAIN_RESTART_COUNT,
     SCHAIN_CONTAINER,
     IMA_CONTAINER
 )
-from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 
 
@@ -53,13 +53,15 @@ def monitor_schain_container(
     download_snapshot=False,
     start_ts=None,
     abort_on_exit: bool = True,
-    dutils=None
+    dutils=None,
+    sync_node: bool = False,
+    historic_state: bool = False
 ) -> None:
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
     logger.info(f'Monitoring container for sChain {schain_name}')
 
-    if not is_volume_exists(schain_name, dutils=dutils):
+    if not is_volume_exists(schain_name, sync_node=sync_node, dutils=dutils):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
         return
 
@@ -76,8 +78,10 @@ def monitor_schain_container(
             schain=schain,
             download_snapshot=download_snapshot,
             start_ts=start_ts,
+            dutils=dutils,
             snapshot_from=schain_record.snapshot_from,
-            dutils=dutils
+            sync_node=sync_node,
+            historic_state=historic_state,
         )
         schain_record.reset_failed_counters()
         return
@@ -113,8 +117,8 @@ def monitor_ima_container(
 ) -> None:
     schain_name = schain["name"]
 
-    if DISABLE_IMA:
-        logger.info(f'{schain_name} - IMA is disabled, skipping')
+    if SYNC_NODE:
+        logger.info(f'{schain_name} - sync node, skipping IMA container monitor')
         return
 
     if not ima_data.linked:

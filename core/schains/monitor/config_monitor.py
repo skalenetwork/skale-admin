@@ -65,3 +65,15 @@ class RegularConfigMonitor(BaseConfigMonitor):
             self.am.upstream_config()
         self.am.update_reload_ts(self.checks.skaled_node_ips)
         self.am.reset_config_record()
+
+
+class SyncConfigMonitor(BaseConfigMonitor):
+    def execute(self) -> None:
+        if not self.checks.config_dir:
+            self.am.config_dir()
+        if not self.checks.external_state:
+            self.am.external_state()
+        if not self.checks.upstream_config:
+            self.am.upstream_config()
+        self.am.update_reload_ts(self.checks.skaled_node_ips, sync_node=True)
+        self.am.reset_config_record()

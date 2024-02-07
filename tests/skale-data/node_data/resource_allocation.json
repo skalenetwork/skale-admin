@@ -1,95 +1,110 @@
 {
     "schain": {
         "cpu_shares": {
-            "test4": 22,
-            "test": 22,
-            "small": 5,
-            "medium": 22,
-            "large": 716
+            "test4": 102,
+            "test": 102,
+            "small": 6,
+            "medium": 102,
+            "large": 819,
+            "sync_node": 819
         },
         "mem": {
-            "test4": 300647710,
-            "test": 300647710,
-            "small": 75161927,
-            "medium": 300647710,
-            "large": 9620726743
+            "test4": 1374389534,
+            "test": 1374389534,
+            "small": 85899345,
+            "medium": 1374389534,
+            "large": 10995116277,
+            "sync_node": 10995116277
         },
         "disk": {
-            "large": 75999936512,
-            "medium": 2374998016,
-            "small": 593749504,
-            "test": 2374998016,
-            "test4": 2374998016
+            "large": 177599938560,
+            "medium": 22199992320,
+            "small": 1387499520,
+            "sync_node": 177599938560,
+            "test": 22199992320,
+            "test4": 22199992320
         },
         "volume_limits": {
             "large": {
-                "max_consensus_storage_bytes": 22799980953,
-                "max_file_storage_bytes": 22799980953,
-                "max_reserved_storage_bytes": 7599993651,
-                "max_skaled_leveldb_storage_bytes": 22799980953
+                "max_consensus_storage_bytes": 53279981568,
+                "max_file_storage_bytes": 53279981568,
+                "max_reserved_storage_bytes": 17759993856,
+                "max_skaled_leveldb_storage_bytes": 53279981568
             },
             "medium": {
-                "max_consensus_storage_bytes": 712499404,
-                "max_file_storage_bytes": 712499404,
-                "max_reserved_storage_bytes": 237499801,
-                "max_skaled_leveldb_storage_bytes": 712499404
+                "max_consensus_storage_bytes": 6659997696,
+                "max_file_storage_bytes": 6659997696,
+                "max_reserved_storage_bytes": 2219999232,
+                "max_skaled_leveldb_storage_bytes": 6659997696
             },
             "small": {
-                "max_consensus_storage_bytes": 178124851,
-                "max_file_storage_bytes": 178124851,
-                "max_reserved_storage_bytes": 59374950,
-                "max_skaled_leveldb_storage_bytes": 178124851
+                "max_consensus_storage_bytes": 416249856,
+                "max_file_storage_bytes": 416249856,
+                "max_reserved_storage_bytes": 138749952,
+                "max_skaled_leveldb_storage_bytes": 416249856
+            },
+            "sync_node": {
+                "max_consensus_storage_bytes": 53279981568,
+                "max_file_storage_bytes": 53279981568,
+                "max_reserved_storage_bytes": 17759993856,
+                "max_skaled_leveldb_storage_bytes": 53279981568
             },
             "test": {
-                "max_consensus_storage_bytes": 712499404,
-                "max_file_storage_bytes": 712499404,
-                "max_reserved_storage_bytes": 237499801,
-                "max_skaled_leveldb_storage_bytes": 712499404
+                "max_consensus_storage_bytes": 6659997696,
+                "max_file_storage_bytes": 6659997696,
+                "max_reserved_storage_bytes": 2219999232,
+                "max_skaled_leveldb_storage_bytes": 6659997696
             },
             "test4": {
-                "max_consensus_storage_bytes": 712499404,
-                "max_file_storage_bytes": 712499404,
-                "max_reserved_storage_bytes": 237499801,
-                "max_skaled_leveldb_storage_bytes": 712499404
+                "max_consensus_storage_bytes": 6659997696,
+                "max_file_storage_bytes": 6659997696,
+                "max_reserved_storage_bytes": 2219999232,
+                "max_skaled_leveldb_storage_bytes": 6659997696
             }
         },
         "leveldb_limits": {
             "large": {
-                "contract_storage": 13679988571,
-                "db_storage": 9119992381
+                "contract_storage": 31967988940,
+                "db_storage": 10655996313
             },
             "medium": {
-                "contract_storage": 427499642,
-                "db_storage": 284999761
+                "contract_storage": 3995998617,
+                "db_storage": 1331999539
             },
             "small": {
-                "contract_storage": 106874910,
-                "db_storage": 71249940
+                "contract_storage": 249749913,
+                "db_storage": 83249971
+            },
+            "sync_node": {
+                "contract_storage": 31967988940,
+                "db_storage": -1
             },
             "test": {
-                "contract_storage": 427499642,
-                "db_storage": 284999761
+                "contract_storage": 3995998617,
+                "db_storage": 1331999539
             },
             "test4": {
-                "contract_storage": 427499642,
-                "db_storage": 284999761
+                "contract_storage": 3995998617,
+                "db_storage": 1331999539
             }
         }
     },
     "ima": {
         "cpu_shares": {
-            "test4": 9,
-            "test": 9,
-            "small": 2,
-            "medium": 9,
-            "large": 307
+            "test4": 25,
+            "test": 25,
+            "small": 1,
+            "medium": 25,
+            "large": 204,
+            "sync_node": 204
         },
         "mem": {
-            "test4": 128849018,
-            "test": 128849018,
-            "small": 32212254,
-            "medium": 128849018,
-            "large": 4123168604
+            "test4": 343597383,
+            "test": 343597383,
+            "small": 21474836,
+            "medium": 343597383,
+            "large": 2748779069,
+            "sync_node": 2748779069
         }
     }
 }

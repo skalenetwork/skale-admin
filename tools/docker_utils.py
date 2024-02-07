@@ -261,7 +261,8 @@ class DockerUtils:
         self,
         container_name: Container,
         head: int = 100,
-        tail: int = 200
+        tail: int = 200,
+        to_logger: bool = True
     ) -> str:
         container = self.safe_get_container(container_name)
         if not container:
@@ -273,7 +274,10 @@ class DockerUtils:
         )
         pretext = f'container {container_name} logs: \n'
         logs = (head_lines + CONTAINER_LOGS_SEPARATOR + tail_lines).decode("utf-8")
-        logger.info(pretext + logs)
+        if to_logger:
+            logger.info(pretext + logs)
+        else:
+            print(pretext + logs)
         return logs
 
     @classmethod
