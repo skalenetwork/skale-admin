@@ -38,11 +38,12 @@ from tools.configs.containers import (
     IMA_CONTAINER,
     HISTORIC_STATE_IMAGE_POSTFIX,
     SCHAIN_CONTAINER,
-    SCHAIN_STOP_TIMEOUT
+    SCHAIN_STOP_TIMEOUT,
+    CONTAINERS_INFO
 )
 from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
                            SKALE_VOLUME_PATH, SCHAIN_CONFIG_DIR_SKALED)
-from tools.helper import get_containers_data
+
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ def get_image_name(type: str, new: bool = False, historic_state: bool = False) -
     tag_field = 'version'
     if type == IMA_CONTAINER and new:
         tag_field = 'new_version'
-    container_info = get_containers_data()[type]
+    container_info = CONTAINERS_INFO[type]
     image_name = f'{container_info["name"]}:{container_info[tag_field]}'
     if historic_state and type == SCHAIN_CONTAINER:
         image_name += HISTORIC_STATE_IMAGE_POSTFIX
@@ -93,11 +94,11 @@ def get_container_name(type, schain_name):
 
 
 def get_container_args(type):
-    return copy.deepcopy(get_containers_data()[type]['args'])
+    return copy.deepcopy(CONTAINERS_INFO[type]['args'])
 
 
 def get_container_custom_args(type):
-    return copy.deepcopy(get_containers_data()[type]['custom_args'])
+    return copy.deepcopy(CONTAINERS_INFO[type]['custom_args'])
 
 
 def get_container_info(type, schain_name: str, historic_state: bool = False):
