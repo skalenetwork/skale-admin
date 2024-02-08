@@ -53,7 +53,7 @@ from core.schains.skaled_status import get_skaled_status
 from core.node import get_current_nodes
 
 from tools.docker_utils import DockerUtils
-from tools.configs.ima import SYNC_NODE
+from tools.configs import SYNC_NODE
 from tools.notifications.messages import notify_checks
 from tools.helper import is_node_part_of_chain
 from web.models.schain import SChainRecord
