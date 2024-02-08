@@ -102,7 +102,8 @@ def get_container_custom_args(type):
 
 
 def get_container_info(type, schain_name: str, historic_state: bool = False):
-    return (get_image_name(type, historic_state), get_container_name(type, schain_name),
+    return (get_image_name(type, historic_state=historic_state),
+            get_container_name(type, schain_name),
             get_container_args(type), get_container_custom_args(type))
 
 

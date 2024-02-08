@@ -60,6 +60,8 @@ def update_ssl_change_date(schain_record: SChainRecord) -> bool:
 def ssl_reload_needed(schain_record: SChainRecord) -> bool:
     ssl_files_change_date = get_ssl_files_change_date()
     if not ssl_files_change_date:
+        logger.warning(
+            f'Tried to get SSL change date for {schain_record.name}, but no SSL files found')
         return False
     logger.info(f'ssl_files_change_date: {ssl_files_change_date}, \
 ssl_change_date for chain {schain_record.name}: {schain_record.ssl_change_date}')

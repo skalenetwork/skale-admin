@@ -41,7 +41,7 @@ from core.schains.external_config import ExternalConfig
 from core.schains.types import ContainerType
 from core.schains.firewall.utils import get_sync_agent_ranges
 
-from tools.configs import SGX_CERTIFICATES_FOLDER
+from tools.configs import SGX_CERTIFICATES_FOLDER, SYNC_NODE
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import (
     SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
@@ -245,7 +245,8 @@ def cleanup_schain(
         current_nodes=current_nodes,
         rotation_id=rotation_id,
         estate=estate,
-        dutils=dutils
+        dutils=dutils,
+        sync_node=SYNC_NODE
     )
     status = checks.get_all()
     if status['skaled_container'] or is_exited(

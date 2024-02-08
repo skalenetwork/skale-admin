@@ -29,7 +29,6 @@ from core.schains.runner import (
     run_ima_container,
     get_container_info
 )
-from tools.configs.schains import SCHAINS_DIR_PATH
 
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd
@@ -461,11 +460,3 @@ def generate_schain_config(schain_name):
             }
         }
     }
-
-
-def schain_config_path(name: string) -> string:
-    return os.path.join(
-        SCHAINS_DIR_PATH,
-        name,
-        f'schain_{name}.json'
-    )

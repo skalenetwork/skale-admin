@@ -4,7 +4,6 @@ from core.schains.cmd import (
 )
 from core.schains.config.main import get_skaled_container_config_path
 from core.schains.ssl import get_ssl_filepath
-from tests.utils import schain_config_path
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH
 
 from tools.configs import SGX_SERVER_URL
@@ -76,7 +75,7 @@ def test_get_schain_container_sync_opts():
 def test_get_schain_container_cmd_sync_node(schain_config, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     container_opts = get_schain_container_cmd(schain_name, enable_ssl=False, sync_node=True)
-    config_filepath = schain_config_path(schain_name)
+    config_filepath = get_skaled_container_config_path(schain_name)
 
     expected_opts = (
         f'--config {config_filepath} -d /data_dir --ipcpath /data_dir --http-port 10003 '

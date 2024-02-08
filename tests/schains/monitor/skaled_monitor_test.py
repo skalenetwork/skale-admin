@@ -49,7 +49,8 @@ def monitor_schain_container_mock(
     skaled_status,
     download_snapshot=False,
     start_ts=None,
-    dutils=None
+    dutils=None,
+    sync_node=False
 ):
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain['name'])
@@ -79,7 +80,8 @@ def skaled_checks(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        dutils=dutils
+        dutils=dutils,
+        sync_node=False
     )
 
 
@@ -486,15 +488,16 @@ def test_get_skaled_monitor_recreate(
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
-
-    schain_record.set_needs_reload(True)
-    mon = get_skaled_monitor(
-        skaled_am,
-        skaled_checks.get_all(),
-        schain_record,
-        skaled_status
-    )
-    assert mon == RecreateSkaledMonitor
+    schain_record.set_ssl_change_date(datetime.datetime.now())
+    with mock.patch('core.schains.ssl.get_ssl_files_change_date',
+                    return_value=datetime.datetime.now()):
+        mon = get_skaled_monitor(
+            skaled_am,
+            skaled_checks.get_all(),
+            schain_record,
+            skaled_status
+        )
+        assert mon == RecreateSkaledMonitor
 
 
 def test_regular_skaled_monitor(

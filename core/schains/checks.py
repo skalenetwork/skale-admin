@@ -237,13 +237,15 @@ class SkaledChecks(IChecks):
         rule_controller: IRuleController,
         *,
         econfig: Optional[ExternalConfig] = None,
-        dutils: Optional[DockerUtils] = None
+        dutils: Optional[DockerUtils] = None,
+        sync_node: bool = False
     ):
         self.name = schain_name
         self.schain_record = schain_record
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.econfig = econfig or ExternalConfig(name=schain_name)
+        self.sync_node = sync_node
         self.rc = rule_controller
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=schain_name
@@ -405,7 +407,8 @@ class SChainChecks(IChecks):
         rotation_id: int = 0,
         *,
         econfig: Optional[ExternalConfig] = None,
-        dutils: DockerUtils = None
+        dutils: DockerUtils = None,
+        sync_node: bool = False
     ):
         self._subjects = [
             ConfigChecks(
@@ -416,14 +419,16 @@ class SChainChecks(IChecks):
                 stream_version=stream_version,
                 current_nodes=current_nodes,
                 estate=estate,
-                econfig=econfig
+                econfig=econfig,
+                sync_node=sync_node
             ),
             SkaledChecks(
                 schain_name=schain_name,
                 schain_record=schain_record,
                 rule_controller=rule_controller,
                 econfig=econfig,
-                dutils=dutils
+                dutils=dutils,
+                sync_node=sync_node
             )
         ]
 

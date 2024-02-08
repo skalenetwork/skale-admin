@@ -139,7 +139,8 @@ def run_skaled_pipeline(
         schain_name=schain['name'],
         schain_record=schain_record,
         rule_controller=rc,
-        dutils=dutils
+        dutils=dutils,
+        sync_node=SYNC_NODE
     )
 
     skaled_status = get_skaled_status(name)
