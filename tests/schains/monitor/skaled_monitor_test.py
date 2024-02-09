@@ -50,7 +50,8 @@ def monitor_schain_container_mock(
     download_snapshot=False,
     start_ts=None,
     dutils=None,
-    sync_node=False
+    sync_node=False,
+    historic_state=False
 ):
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain['name'])

@@ -41,7 +41,8 @@ def monitor_schain_container_mock(
     start_ts=None,
     abort_on_exit=True,
     dutils=None,
-    sync_node=False
+    sync_node=False,
+    historic_state=False
 ):
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain['name'])
@@ -163,7 +164,9 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
             download_snapshot=True,
             start_ts=ts,
             abort_on_exit=True,
-            dutils=skaled_am.dutils
+            dutils=skaled_am.dutils,
+            sync_node=False,
+            historic_state=False
         )
         assert monitor_schain_mock.call_count == 1
     finally:
