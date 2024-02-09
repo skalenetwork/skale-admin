@@ -308,6 +308,8 @@ def get_skaled_monitor(
     mon_type: Type[BaseSkaledMonitor] = RegularSkaledMonitor
 
     if SYNC_NODE:
+        if no_config(status):
+            mon_type = NoConfigSkaledMonitor
         if is_recreate_mode(schain_record):
             mon_type = RecreateSkaledMonitor
         elif is_config_update_time(status, skaled_status):
