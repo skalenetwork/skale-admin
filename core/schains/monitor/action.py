@@ -322,7 +322,7 @@ class SkaledActionManager(BaseActionManager):
         initial_status = self.checks.volume.status
         if not initial_status:
             logger.info('Creating volume')
-            init_data_volume(self.schain, dutils=self.dutils)
+            init_data_volume(self.schain, sync_node=SYNC_NODE, dutils=self.dutils)
         else:
             logger.info('Volume - ok')
         return initial_status
