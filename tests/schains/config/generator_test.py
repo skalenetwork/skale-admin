@@ -431,7 +431,7 @@ def test_generate_sync_node_config(
     config = schain_config.to_dict()
 
     assert config['skaleConfig']['nodeInfo']['syncNode']
-    assert config['skaleConfig']['sChain']['dbStorageLimit'] == 1331999539
+    assert config['skaleConfig']['sChain']['dbStorageLimit'] == 284999761
 
 
 def test_generate_sync_node_config_archive_catchup(
