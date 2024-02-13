@@ -117,7 +117,7 @@ def monitor_sync_node(
 
     ima_data = ImaData(
         linked=False,
-        chain_id=skale_ima.web3.eth.chainId
+        chain_id=skale_ima.web3.eth.chain_id
     )
 
     skaled_status = init_skaled_status(schain_name)

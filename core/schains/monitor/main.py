@@ -164,7 +164,7 @@ def run_monitor_for_schain(skale, skale_ima, node_config: NodeConfig, schain, du
 
             ima_data = ImaData(
                 linked=ima_linked,
-                chain_id=skale_ima.web3.eth.chainId
+                chain_id=skale_ima.web3.eth.chain_id
             )
             skaled_status = init_skaled_status(name)
 

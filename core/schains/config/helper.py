@@ -45,7 +45,7 @@ def get_static_params(env_type=ENV_TYPE, path=STATIC_PARAMS_FILEPATH):
 
 
 def fix_address(address):
-    return Web3.toChecksumAddress(address)
+    return Web3.to_checksum_address(address)
 
 
 def get_chain_id(schain_name: str) -> str:

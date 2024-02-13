@@ -562,7 +562,7 @@ def schain_struct(schain_config):
 
 @pytest.fixture
 def ima_data(skale):
-    return ImaData(linked=True, chain_id=skale.web3.eth.chainId)
+    return ImaData(linked=True, chain_id=skale.web3.eth.chain_id)
 
 
 @pytest.fixture
