@@ -28,12 +28,26 @@ jobs:
         run: bash ./scripts/install_python_dependencies.sh
       - name: Lint with flake8
         run: flake8 .
+      - name: Launch anvil node
+        run: |
+          docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil && sleep 5 && docker logs anvil --tail 1000
       - name: Deploy manager & ima contracts
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
+          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
+      - name: Show stats before tests
+        if: always()
+        run: | 
+          sudo lsblk -f
+          sudo free -h
       - name: Run core tests
         run: |
           bash ./scripts/run_core_tests.sh
+      - name: Show stats after tests
+        if: always()
+        run: | 
+          sudo lsblk -f
+          sudo free -h
       - name: Run codecov
         run: |
           codecov -t $CODECOV_TOKEN
