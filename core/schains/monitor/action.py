@@ -465,7 +465,7 @@ class SkaledActionManager(BaseActionManager):
         migration_ts = get_ima_migration_ts(self.name)
         logger.debug('Migration time for %s IMA - %d', self.name, migration_ts)
         if not initial_status:
-            pull_new_image(type=IMA_CONTAINER, dutils=self.dutils)
+            pull_new_image(image_type=IMA_CONTAINER, dutils=self.dutils)
             ima_data = ImaData(
                 linked=self.econfig.ima_linked,
                 chain_id=self.econfig.chain_id

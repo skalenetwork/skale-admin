@@ -316,6 +316,8 @@ def get_skaled_monitor(
             mon_type = UpdateConfigSkaledMonitor
         elif is_reload_group_mode(status, action_manager.upstream_finish_ts):
             mon_type = ReloadGroupSkaledMonitor
+        elif is_reload_ip_mode(status, action_manager.econfig.reload_ts):
+            mon_type = ReloadIpSkaledMonitor
         return mon_type
 
     if no_config(status):

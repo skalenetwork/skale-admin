@@ -22,7 +22,6 @@ def test_get_schain_container_cmd(schain_config, cert_key_pair):
         '-v 3 --web3-trace --enable-debug-behavior-apis '
         f'--aa no --ssl-key {ssl_key_path} --ssl-cert {ssl_cert_path}'
     )
-    print(container_opts, 'IVD')
     assert container_opts == expected_opts
 
     container_opts = get_schain_container_cmd(schain_name, enable_ssl=False)

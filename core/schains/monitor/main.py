@@ -115,10 +115,10 @@ def run_config_pipeline(
     logger.info('Config checks: %s', status)
 
     if SYNC_NODE:
-        logger.info('Sync node mode, running config checks')
+        logger.info('Sync node mode, running config monitor')
         mon = SyncConfigMonitor(config_am, config_checks)
     else:
-        logger.info('Regular node mode, running config checks')
+        logger.info('Regular node mode, running config monitor')
         mon = RegularConfigMonitor(config_am, config_checks)
     mon.run()
 

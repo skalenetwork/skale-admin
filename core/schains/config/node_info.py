@@ -66,9 +66,8 @@ class CurrentNodeInfo(NodeInfo):
                 **self.static_node_info
             }
         }
-        if self.archive is not None and self.sync_node:
+        if self.sync_node:
             node_info['archiveMode'] = self.archive
-        if self.catchup is not None and self.sync_node:
             node_info['syncFromCatchup'] = self.catchup
         return node_info
 
@@ -87,8 +86,7 @@ def generate_current_node_info(
     wallets = {} if sync_node else generate_wallets_config(schain['name'], rotation_id)
 
     if ecdsa_key_name is None:
-        logger.warning(f'Generating CurrentNodeInfo for {schain["name"]}, ecdsa_key_name is None')
-        ecdsa_key_name = ""
+        ecdsa_key_name = ''
 
     return CurrentNodeInfo(
         node_id=node_id,

@@ -144,10 +144,10 @@ def test_run_schain_container_sync(
 
 
 def test_get_image_name_sync():
-    image_name = get_image_name(SCHAIN_CONTAINER)
+    image_name = get_image_name(image_type=SCHAIN_CONTAINER)
     assert '-historic' not in image_name
 
-    image_name = get_image_name(SCHAIN_CONTAINER, historic_state=True)
+    image_name = get_image_name(image_type=SCHAIN_CONTAINER, historic_state=True)
     assert '-historic' in image_name
 
 
@@ -187,9 +187,9 @@ def test_not_existed_docker_objects(dutils):
 
 def test_restart_all_schains(mocked_dutils):
     schain_names = ['test1', 'test2', 'test3']
-    schain_image = get_image_name(SCHAIN_CONTAINER)
+    schain_image = get_image_name(image_type=SCHAIN_CONTAINER)
     cont_names = [
-        get_container_name(SCHAIN_CONTAINER, name)
+        get_container_name(image_type=SCHAIN_CONTAINER, schain_name=name)
         for name in schain_names
     ]
     start_time = {}

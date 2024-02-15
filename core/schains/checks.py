@@ -332,8 +332,7 @@ class SkaledChecks(IChecks):
         if not self.econfig.ima_linked:
             return CheckRes(True)
         container_name = get_container_name(IMA_CONTAINER, self.name)
-        new_image_pulled = is_new_image_pulled(
-            type=IMA_CONTAINER, dutils=self.dutils)
+        new_image_pulled = is_new_image_pulled(image_type=IMA_CONTAINER, dutils=self.dutils)
 
         migration_ts = get_ima_migration_ts(self.name)
         new = time.time() > migration_ts
@@ -342,7 +341,7 @@ class SkaledChecks(IChecks):
 
         updated_image = False
         if container_running:
-            expected_image = get_image_name(type=IMA_CONTAINER, new=new)
+            expected_image = get_image_name(image_type=IMA_CONTAINER, new=new)
             image = self.dutils.get_container_image_name(container_name)
             updated_image = image == expected_image
 

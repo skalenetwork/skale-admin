@@ -136,10 +136,12 @@ def generate_schain_config(
     """Main function that is used to generate sChain config"""
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
-        f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}, '
-        f'ecdsa keyname: {ecdsa_key_name}, archive: {archive}, '
-        f'catchup: {catchup}'
+        f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}'
     )
+    if sync_node:
+        logger.info(f'Sync node config options: archive: {archive}, catchup: {catchup}')
+    else:
+        logger.info(f'Regular node config options: ecdsa keyname: {ecdsa_key_name}')
 
     on_chain_etherbase = get_on_chain_etherbase(schain, generation)
     on_chain_owner = get_on_chain_owner(schain, generation, is_owner_contract)

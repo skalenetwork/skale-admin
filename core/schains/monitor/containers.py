@@ -118,7 +118,6 @@ def monitor_ima_container(
     schain_name = schain["name"]
 
     if SYNC_NODE:
-        logger.info(f'{schain_name} - sync node, skipping IMA container monitor')
         return
 
     if not ima_data.linked:
@@ -130,9 +129,9 @@ def monitor_ima_container(
     container_exists = is_container_exists(
         schain_name, container_type=IMA_CONTAINER, dutils=dutils)
     container_image = get_container_image(schain_name, IMA_CONTAINER, dutils)
-    new_image = get_image_name(type=IMA_CONTAINER, new=True)
+    new_image = get_image_name(image_type=IMA_CONTAINER, new=True)
 
-    expected_image = get_image_name(type=IMA_CONTAINER)
+    expected_image = get_image_name(image_type=IMA_CONTAINER)
     logger.debug('%s IMA image %s, expected %s', schain_name,
                  container_image, expected_image)
 

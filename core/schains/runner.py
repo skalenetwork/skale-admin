@@ -78,33 +78,33 @@ def is_container_running(
     return dutils.is_container_running(container_name)
 
 
-def get_image_name(type: str, new: bool = False, historic_state: bool = False) -> str:
+def get_image_name(image_type: str, new: bool = False, historic_state: bool = False) -> str:
     tag_field = 'version'
-    if type == IMA_CONTAINER and new:
+    if image_type == IMA_CONTAINER and new:
         tag_field = 'new_version'
-    container_info = CONTAINERS_INFO[type]
+    container_info = CONTAINERS_INFO[image_type]
     image_name = f'{container_info["name"]}:{container_info[tag_field]}'
-    if historic_state and type == SCHAIN_CONTAINER:
+    if historic_state and image_type == SCHAIN_CONTAINER:
         image_name += HISTORIC_STATE_IMAGE_POSTFIX
     return image_name
 
 
-def get_container_name(type, schain_name):
-    return f"{CONTAINER_NAME_PREFIX}_{type}_{schain_name}"
+def get_container_name(image_type: str, schain_name: str) -> str:
+    return f"{CONTAINER_NAME_PREFIX}_{image_type}_{schain_name}"
 
 
-def get_container_args(type):
-    return copy.deepcopy(CONTAINERS_INFO[type]['args'])
+def get_container_args(image_type: str) -> str:
+    return copy.deepcopy(CONTAINERS_INFO[image_type]['args'])
 
 
-def get_container_custom_args(type):
-    return copy.deepcopy(CONTAINERS_INFO[type]['custom_args'])
+def get_container_custom_args(image_type):
+    return copy.deepcopy(CONTAINERS_INFO[image_type]['custom_args'])
 
 
-def get_container_info(type, schain_name: str, historic_state: bool = False):
-    return (get_image_name(type, historic_state=historic_state),
-            get_container_name(type, schain_name),
-            get_container_args(type), get_container_custom_args(type))
+def get_container_info(image_type: str, schain_name: str, historic_state: bool = False):
+    return (get_image_name(image_type=image_type, historic_state=historic_state),
+            get_container_name(image_type=image_type, schain_name=schain_name),
+            get_container_args(image_type=image_type), get_container_custom_args(image_type))
 
 
 def get_logs_config(config):
@@ -117,7 +117,7 @@ def get_ulimits_config(config):
 
 
 def run_container(
-    type,
+    image_type,
     schain_name,
     env,
     cmd=None,
@@ -131,7 +131,7 @@ def run_container(
 ):
     dutils = dutils or DockerUtils()
     default_image, container_name, run_args, custom_args = get_container_info(
-        type, schain_name, historic_state=historic_state)
+        image_type, schain_name, historic_state=historic_state)
 
     image_name = image or default_image
 
@@ -237,7 +237,7 @@ def run_ima_container(
     mem_limit = get_ima_limit(schain_type, MetricType.mem)
 
     run_container(
-        type=IMA_CONTAINER,
+        image_type=IMA_CONTAINER,
         schain_name=schain['name'],
         env=env.to_dict(),
         cpu_shares_limit=cpu_limit,
@@ -294,8 +294,8 @@ def is_schain_container_failed(
     return bad_state
 
 
-def is_new_image_pulled(type: str, dutils: DockerUtils) -> bool:
-    image = get_image_name(type, new=True)
+def is_new_image_pulled(image_type: str, dutils: DockerUtils) -> bool:
+    image = get_image_name(image_type, new=True)
     return dutils.pulled(image)
 
 
@@ -304,8 +304,8 @@ def remove_container(schain_name: str, type: str, dutils: DockerUtils):
     dutils.safe_rm(container)
 
 
-def pull_new_image(type: str, dutils: DockerUtils) -> None:
-    image = get_image_name(type, new=True)
+def pull_new_image(image_type: str, dutils: DockerUtils) -> None:
+    image = get_image_name(image_type, new=True)
     if not dutils.pulled(image):
         logger.info('Pulling new image %s', image)
         dutils.pull(image)
