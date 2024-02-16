@@ -29,6 +29,7 @@ from sgx import SgxClient
 
 from urllib.parse import urlparse
 from core.node import get_check_report, get_skale_node_version
+from core.node import get_current_nodes
 from core.schains.checks import SChainChecks
 from core.schains.firewall.utils import (
     get_default_rule_controller,
@@ -101,6 +102,7 @@ def schains_checks():
                     name=schain['name'],
                     sync_agent_ranges=sync_agent_ranges
                 )
+                current_nodes = get_current_nodes(g.skale, schain['name'])
                 schain_record = SChainRecord.get_by_name(schain['name'])
                 schain_checks = SChainChecks(
                     schain['name'],
@@ -109,6 +111,7 @@ def schains_checks():
                     rule_controller=rc,
                     rotation_id=rotation_id,
                     stream_version=stream_version,
+                    current_nodes=current_nodes,
                     estate=estate
                 ).get_all(needed=checks_filter)
                 checks.append({

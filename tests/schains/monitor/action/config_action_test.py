@@ -1,7 +1,9 @@
 import shutil
+from copy import deepcopy
 
 import pytest
 
+from core.node import get_current_nodes
 from core.schains.checks import ConfigChecks
 from core.schains.config.directory import schain_config_dir
 from core.schains.monitor.action import ConfigActionManager
@@ -28,12 +30,14 @@ def config_checks(
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
+    current_nodes = get_current_nodes(skale, name)
     return ConfigChecks(
         schain_name=name,
         node_id=node_config.id,
         schain_record=schain_record,
         rotation_id=rotation_data['rotation_id'],
         stream_version=CONFIG_STREAM,
+        current_nodes=current_nodes,
         estate=estate
     )
 
@@ -52,6 +56,7 @@ def config_am(
     name = schain_db
     rotation_data = skale.node_rotation.get_rotation(name)
     schain = skale.schains.get_by_name(name)
+    current_nodes = get_current_nodes(skale, name)
     return ConfigActionManager(
         skale=skale,
         schain=schain,
@@ -59,6 +64,7 @@ def config_am(
         rotation_data=rotation_data,
         checks=config_checks,
         stream_version=CONFIG_STREAM,
+        current_nodes=current_nodes,
         estate=estate
     )
 
@@ -89,6 +95,16 @@ def test_upstream_config_actions(config_am, config_checks):
     config_am.upstream_config()
     assert config_checks.upstream_config
 
+    # Modify node ips to and test that check fails
+    nodes = config_checks.current_nodes
+    new_nodes = deepcopy(config_checks.current_nodes)
+    try:
+        new_nodes[0]['ip'] = new_nodes[1]['ip']
+        config_checks.current_nodes = new_nodes
+        assert not config_checks.upstream_config
+    finally:
+        config_checks.current_nodes = nodes
+
 
 @pytest.fixture
 def empty_econfig(schain_db):
@@ -104,6 +120,7 @@ def test_external_state_config_actions(config_am, config_checks, empty_econfig):
     assert econfig_data == {
         'ima_linked': True,
         'chain_id': config_am.skale.web3.eth.chain_id,
-        'ranges': [['1.1.1.1', '2.2.2.2'], ['3.3.3.3', '4.4.4.4']]
+        'ranges': [['1.1.1.1', '2.2.2.2'], ['3.3.3.3', '4.4.4.4']],
+        'reload_ts': None
     }
     assert config_checks.external_state

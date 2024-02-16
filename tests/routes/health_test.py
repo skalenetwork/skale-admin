@@ -87,7 +87,7 @@ def test_containers_all(skale_bp, dutils, schain_db, cleanup_schain_containers):
     assert data == expected
 
 
-def test_schains_checks(skale_bp, skale, schain_db, dutils):
+def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils):
     schain_name = schain_db
 
     class SChainChecksMock(SChainChecks):

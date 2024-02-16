@@ -13,12 +13,14 @@ class ExternalState:
     chain_id: int
     ranges: field(default_factory=list)
     ima_linked: bool = False
+    reload_ts: Optional[int] = None
 
     def to_dict(self):
         return {
             'chain_id': self.chain_id,
             'ima_linked': self.ima_linked,
-            'ranges': list(map(list, self.ranges))
+            'ranges': list(map(list, self.ranges)),
+            'reload_ts': self.reload_ts
         }
 
 
@@ -39,6 +41,10 @@ class ExternalConfig:
         return self.read().get('chain_id', None)
 
     @property
+    def reload_ts(self) -> Optional[int]:
+        return self.read().get('reload_ts', None)
+
+    @property
     def ranges(self) -> List[IpRange]:
         plain_ranges = self.read().get('ranges', [])
         return list(sorted(map(lambda r: IpRange(*r), plain_ranges)))
@@ -49,8 +55,8 @@ class ExternalConfig:
             return ExternalState(
                 chain_id=plain['chain_id'],
                 ima_linked=plain['ima_linked'],
-                ranges=list(sorted(map(lambda r: IpRange(*r), plain['ranges'])))
-
+                ranges=list(sorted(map(lambda r: IpRange(*r), plain['ranges']))),
+                reload_ts=plain.get('reload_ts')
             )
         return None
 
