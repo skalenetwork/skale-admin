@@ -88,6 +88,39 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
     return dkg_client
 
 
+def sync_broadcast_data(dkg_client, dkg_filter, is_received, is_correct, broadcasts_found):
+    logger.info(f'sChain {dkg_client.schain_name}: Syncing broadcast data before finishing '
+                f'broadcast phase')
+    if dkg_client.is_everyone_broadcasted():
+        events = dkg_filter.get_events(from_channel_started_block=True)
+    else:
+        events = dkg_filter.get_events()
+    for event in events:
+        from_node = dkg_client.node_ids_contract[event.nodeIndex]
+        if is_received[from_node] and from_node != dkg_client.node_id_dkg:
+            continue
+        else:
+            is_received[from_node] = True
+        broadcasted_data = [event.verificationVector, event.secretKeyContribution]
+        is_received[from_node] = True
+        if from_node != dkg_client.node_id_dkg:
+            logger.info(f'sChain {dkg_client.schain_name}: receiving from node {from_node}')
+        try:
+            dkg_client.receive_from_node(from_node, broadcasted_data)
+            is_correct[from_node] = True
+            broadcasts_found.append(event.nodeIndex)
+        except DkgVerificationError as e:
+            logger.error(e)
+            continue
+        logger.info(
+            f'sChain: {dkg_client.schain_name}. Received by {dkg_client.node_id_dkg} from '
+            f'{from_node}'
+        )
+    logger.info(f'sChain {dkg_client.schain_name}: total received {len(broadcasts_found)} '
+                f'broadcasts from nodes {broadcasts_found}')
+    return (is_received, is_correct, broadcasts_found)
+
+
 def receive_broadcast_data(dkg_client: DKGClient) -> BroadcastResult:
     n = dkg_client.n
     schain_name = dkg_client.schain_name
@@ -108,38 +141,15 @@ def receive_broadcast_data(dkg_client: DKGClient) -> BroadcastResult:
 
     while False in is_received:
         time_gone = get_latest_block_timestamp(dkg_client.skale) - start_time
+        time_left = max(dkg_client.dkg_timeout - time_gone, 0)
+        logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
+                    f'{time_left} seconds left')
+        is_received, is_correct, broadcasts_found = sync_broadcast_data(dkg_client, dkg_filter,
+                                                                        is_received, is_correct,
+                                                                        broadcasts_found)
         if time_gone > dkg_client.dkg_timeout:
             break
-        logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
-                    f'{dkg_client.dkg_timeout - time_gone} seconds left')
 
-        if dkg_client.is_everyone_broadcasted():
-            events = dkg_filter.get_events(from_channel_started_block=True)
-        else:
-            events = dkg_filter.get_events()
-        for event in events:
-            from_node = dkg_client.node_ids_contract[event.nodeIndex]
-            if is_received[from_node] and from_node != dkg_client.node_id_dkg:
-                continue
-            else:
-                is_received[from_node] = True
-            broadcasted_data = [event.verificationVector, event.secretKeyContribution]
-            is_received[from_node] = True
-            if from_node != dkg_client.node_id_dkg:
-                logger.info(f'sChain {schain_name}: receiving from node {from_node}')
-            try:
-                dkg_client.receive_from_node(from_node, broadcasted_data)
-                is_correct[from_node] = True
-                broadcasts_found.append(event.nodeIndex)
-            except DkgVerificationError as e:
-                logger.error(e)
-                continue
-            logger.info(
-                f'sChain: {schain_name}. Received by {dkg_client.node_id_dkg} from '
-                f'{from_node}'
-            )
-        logger.info(f'sChain {schain_name}: total received {len(broadcasts_found)} broadcasts'
-                    f' from nodes {broadcasts_found}')
         sleep(BROADCAST_DATA_SEARCH_SLEEP)
     return BroadcastResult(correct=is_correct, received=is_received)
 
