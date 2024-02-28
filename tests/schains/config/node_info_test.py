@@ -18,11 +18,12 @@ SCHAIN_NAME = 'test_schain'
 
 def test_generate_wallets_config():
     with mock.patch('core.schains.config.node_info.read_json', return_value=SECRET_KEY_MOCK):
-        wallets = generate_wallets_config('test_schain', 0)
+        wallets = generate_wallets_config('test_schain', 0, 4)
 
     assert wallets['ima']['keyShareName'] == SECRET_KEY_MOCK['key_share_name']
     assert wallets['ima']['certFile'] == SGX_SSL_CERT_FILEPATH
     assert wallets['ima']['keyFile'] == SGX_SSL_KEY_FILEPATH
+    assert wallets['ima']['n'] == 4
     assert wallets['ima']['commonBLSPublicKey0'] == '1'
     assert wallets['ima']['commonBLSPublicKey1'] == '1'
     assert wallets['ima']['commonBLSPublicKey2'] == '1'
