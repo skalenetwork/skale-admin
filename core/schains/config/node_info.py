@@ -84,7 +84,12 @@ def generate_current_node_info(
         node['port']
     )
 
-    wallets = {} if sync_node else generate_wallets_config(schain['name'], rotation_id)
+    wallets = generate_wallets_config(
+        schain['name'],
+        rotation_id,
+        schain_nodes_number=len(schains_on_node),
+        sync_node=sync_node
+    )
 
     if ecdsa_key_name is None:
         logger.warning(f'Generating CurrentNodeInfo for {schain["name"]}, ecdsa_key_name is None')
@@ -105,7 +110,16 @@ def generate_current_node_info(
     )
 
 
-def generate_wallets_config(schain_name: str, rotation_id: int) -> dict:
+def generate_wallets_config(
+    schain_name: str,
+    rotation_id: int,
+    schain_nodes_number: int,
+    sync_node: bool = False
+) -> dict:
+    if sync_node:
+        return {
+            'ima': {'n': schain_nodes_number}
+        }
     secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
     secret_key_share_config = read_json(secret_key_share_filepath)
 
@@ -113,7 +127,7 @@ def generate_wallets_config(schain_name: str, rotation_id: int) -> dict:
         'ima': {
             'keyShareName': secret_key_share_config['key_share_name'],
             't': secret_key_share_config['t'],
-            'n': secret_key_share_config['n'],
+            'n': schain_nodes_number,
             'certFile': SGX_SSL_CERT_FILEPATH,
             'keyFile': SGX_SSL_KEY_FILEPATH
         }

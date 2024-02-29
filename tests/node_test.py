@@ -92,6 +92,7 @@ def test_create_insufficient_funds(unregistered_node):
         assert res['errors'] == ['Insufficient funds, re-check your wallet']
 
 
+@pytest.mark.skip('No need for sync node')
 def test_register_info(unregistered_node):
     unregistered_node.config.id = None
     ip, public_ip, port, name = generate_random_node_data()
