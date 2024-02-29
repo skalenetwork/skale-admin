@@ -231,6 +231,7 @@ class TestDKG:
             remove_schain(skale, schain_name)
             cleanup_schain_config(schain_name)
 
+    @pytest.mark.skip('Not used in sync node')
     def test_dkg_procedure(
         self,
         skale,
@@ -290,6 +291,7 @@ class TestDKG:
         finally:
             skale.schains_internal.get_node_ids_for_schain = get_node_ids_f
 
+    @pytest.mark.skip('Not used in sync node')
     def test_failed_get_dkg_client(self, no_ids_for_schain_skale):
         skale = no_ids_for_schain_skale
         with pytest.raises(DkgError):

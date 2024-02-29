@@ -127,7 +127,7 @@ def generate_wallets_config(
         'ima': {
             'keyShareName': secret_key_share_config['key_share_name'],
             't': secret_key_share_config['t'],
-            'n': secret_key_share_config['n'],
+            'n': schain_nodes_number,
             'certFile': SGX_SSL_CERT_FILEPATH,
             'keyFile': SGX_SSL_KEY_FILEPATH
         }
