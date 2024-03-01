@@ -89,8 +89,6 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
 
 
 def sync_broadcast_data(dkg_client, dkg_filter, is_received, is_correct, broadcasts_found):
-    logger.info(f'sChain {dkg_client.schain_name}: Syncing broadcast data before finishing '
-                f'broadcast phase')
     if dkg_client.is_everyone_broadcasted():
         events = dkg_filter.get_events(from_channel_started_block=True)
     else:
