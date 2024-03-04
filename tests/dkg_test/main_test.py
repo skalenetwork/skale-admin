@@ -708,6 +708,9 @@ class TestDKG:
             nodes
         )
 
+        # Sending bad brodcast without runner
+        send_fake_broadcast(skale_sgx_instances[0], schain_name, nodes[0]['node_id'])
+        # Modifing runner to skip broadcast
         runners[0] = functools.partial(
             run_node_dkg,
             skale_sgx_instances[0],
@@ -716,8 +719,6 @@ class TestDKG:
             nodes[0]['node_id'],
             runs=(DKGRunType.NO_BROADCAST,)
         )
-        # Sending bad brodcast without runner
-        send_fake_broadcast(skale_sgx_instances[0], schain_name, nodes[0]['node_id'])
         for i in range(1, N_OF_NODES):
             runners[i] = functools.partial(
                 run_node_dkg,

@@ -173,7 +173,7 @@ class ConfigActionManager(BaseActionManager):
     def dkg(self) -> bool:
         initial_status = self.checks.dkg.status
         if not initial_status:
-            logger.info('Initiing dkg client')
+            logger.info('Initing dkg client')
             dkg_client = get_dkg_client(
                 skale=self.skale,
                 node_id=self.node_config.id,
