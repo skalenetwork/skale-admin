@@ -14,13 +14,20 @@ import mock
 import pytest
 import warnings
 from skale import Skale
-from skale.utils.account_tools import send_eth
+from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.wallets import SgxWallet
+from skale.utils.account_tools import send_eth
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 
+from core.schains.dkg.client import DkgError
 from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, run_dkg
 from core.schains.dkg.structures import DKGStatus, DKGStep
+from core.schains.dkg.utils import DKGKeyGenerationError, generate_bls_keys
 from core.schains.config import init_schain_config_dir
+from core.schains.config.generator import get_schain_nodes_with_schains
+
+from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
+from tools.configs.schains import SCHAINS_DIR_PATH
 
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
@@ -30,10 +37,6 @@ from tests.utils import (
     set_automine,
     set_interval_mining
 )
-from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
-from tools.configs.schains import SCHAINS_DIR_PATH
-from core.schains.dkg.utils import DKGKeyGenerationError, generate_bls_keys
-from core.schains.dkg.client import DkgError
 
 warnings.filterwarnings("ignore")
 
@@ -54,8 +57,9 @@ class DkgTestError(Exception):
 class DKGRunType(int, Enum):
     NORMAL = 0
     BROADCAST_FAILED = 1
-    ALRIGHT_FAILED = 2
-    COMPLAINT_FAILED = 3
+    NO_BROADCAST = 2
+    ALRIGHT_FAILED = 3
+    COMPLAINT_FAILED = 4
 
 
 def generate_sgx_wallets(skale, n_of_keys):
@@ -150,6 +154,93 @@ def get_dkg_runners(skale, skale_sgx_instances, schain_name, nodes):
     return runners
 
 
+def generate_poly_name(group_index_str, node_id, dkg_id):
+    return (
+        "POLY:SCHAIN_ID:"
+        f"{group_index_str}"
+        ":NODE_ID:"
+        f"{str(node_id)}"
+        ":DKG_ID:"
+        f"{str(dkg_id)}"
+    )
+
+
+def get_node_id_dkg_and_public_keys(schain_nodes, node_id):
+    node_id_dkg = -1
+    public_keys = [0] * len(schain_nodes)
+    for i, node in enumerate(schain_nodes):
+        if node['id'] == node_id:
+            node_id_dkg = i
+
+        public_keys[i] = node["publicKey"]
+    return node_id_dkg, public_keys
+
+
+def convert_g2_points_to_array(data):
+    g2_array = []
+    for point in data:
+        new_point = []
+        for coord in point:
+            new_coord = int(coord)
+            new_point.append(new_coord)
+        g2_array.append(G2Point(*new_point).tuple)
+    return g2_array
+
+
+def convert_str_to_key_share(sent_secret_key_contribution, n):
+    return_value = []
+    for i in range(n):
+        public_key = sent_secret_key_contribution[i * 192: i * 192 + 128]
+        key_share = bytes.fromhex(sent_secret_key_contribution[i * 192 + 128: (i + 1) * 192])
+        return_value.append(KeyShare(public_key, key_share).tuple)
+    return return_value
+
+
+def generate_broadcast_data(skale, schain_name, node_id):
+    schain_nodes = get_schain_nodes_with_schains(skale, schain_name)
+    node_id_dkg, public_keys = get_node_id_dkg_and_public_keys(schain_nodes, node_id)
+    client = skale.wallet.sgx_client
+
+    n = len(schain_nodes)
+    t = (2 * n + 1) // 3
+    client.n, client.t = n, t
+
+    group_index = skale.schains.name_to_group_id(schain_name)
+    group_index_str = str(int(skale.web3.to_hex(group_index)[2:], 16))
+    rotation = skale.node_rotation.get_rotation(schain_name)
+
+    rotation_id = rotation['rotation_id']
+    poly_name = generate_poly_name(group_index_str, node_id_dkg, rotation_id)
+
+    client.generate_dkg_poly(poly_name)
+
+    verification_vector = client.get_verification_vector(poly_name)
+    secret_key_contribution = client.get_secret_key_contribution_v2(poly_name, public_keys)
+
+    return [
+        convert_g2_points_to_array(verification_vector),
+        convert_str_to_key_share(secret_key_contribution, n)
+    ]
+
+
+def send_fake_broadcast(
+    skale,
+    schain_name,
+    node_id,
+    rotation_id=0
+):
+    group_index = skale.schains.name_to_group_id(schain_name).hex()
+    verification_vector, _ = generate_broadcast_data(skale, schain_name, node_id)
+    secret_key_contribution = [([b'\x18\x80\xba1\xce\x8a\x1e[B\xc3\xb5\xeb]\x84\xfc\xc7\xefwp_\xaf\xbdL\xe3\xc2\xd8\xd2\xb9\nu\xb3]', b'^D\xbcF4q\xc3\\oa"\x16\x8c\xe9\xc4\xf6\x03\xf4\xcf\xac\xd0\x9b\xb2\x1f\x8c:\xa4\x18\x9e\x03q\x82'], b'\xf6\xa3\xe3\x87[\x97m\x07\xd2\x0e2C8\x88\x1e\x8c\xa6i:\xc9$/YsdY \x14\xb6\xa6g\x03'), ([b'3"\xb4_:LN(\x8f\xdcu\xb9.\x1a\x98n\x7f\x8f\x89\xc2\xe1\\\x83\x15\x8e\xff\xca\xe5\xf7\xf7\x82\xff', b'\x9d\x12C \x8dw}\xa3_\xb3\xcd\x8d\xe7\x17I?S\x81\xbe\xca\xf9u2\xd3]\xe8p N\xf0\xc5\x07'], b'\xc3\xb1\xff\xff"\xa4.1_\xd7\xaa\xad!9\xd6\xd2\xbc\xb5(\x04\x9f5\x1d\xc3\xc1{\xdato(\x92\x82')]  # noqa
+    return skale.dkg.broadcast(
+        group_index,
+        node_id,
+        verification_vector,
+        secret_key_contribution,
+        rotation_id
+    )
+
+
 @contextmanager
 def dkg_test_client(
     skale: Skale,
@@ -165,6 +256,9 @@ def dkg_test_client(
         effect = DkgError('Broadcast failed on purpose')
         method, original = 'broadcast', dkg_client.skale.dkg.broadcast
         dkg_client.skale.dkg.broadcast = mock.Mock(side_effect=effect)
+    if run_type == DKGRunType.NO_BROADCAST:
+        method, original = 'broadcast', dkg_client.skale.dkg.broadcast
+        dkg_client.skale.dkg.broadcast = mock.Mock()
     elif run_type == DKGRunType.ALRIGHT_FAILED:
         effect = DkgError('Alright failed on purpose')
         method, original = 'alright', dkg_client.skale.dkg.alright
@@ -589,6 +683,60 @@ class TestDKG:
                 assert result.step == DKGStep.NONE
             else:
                 assert result.step == DKGStep.BROADCAST
+            assert result.keys_data is None
+        assert not skale.dkg.is_last_dkg_successful(gid)
+        assert not is_last_dkg_finished(skale, schain_name)
+
+    def test_dkg_procedure_boradcast_bad_data(
+        self,
+        skale,
+        schain_creation_data,
+        skale_sgx_instances,
+        nodes,
+        dkg_timeout_small,
+        no_automine,
+        interval_mining,
+        schain
+    ):
+        schain_name, _ = schain_creation_data
+        assert not is_last_dkg_finished(skale, schain_name)
+        nodes.sort(key=lambda x: x['node_id'])
+        runners = get_dkg_runners(
+            skale,
+            skale_sgx_instances,
+            schain_name,
+            nodes
+        )
+
+        runners[0] = functools.partial(
+            run_node_dkg,
+            skale_sgx_instances[0],
+            schain_name,
+            0,
+            nodes[0]['node_id'],
+            runs=(DKGRunType.NO_BROADCAST,)
+        )
+        # Sending bad brodcast without runner
+        send_fake_broadcast(skale_sgx_instances[0], schain_name, nodes[0]['node_id'])
+        for i in range(1, N_OF_NODES):
+            runners[i] = functools.partial(
+                run_node_dkg,
+                skale_sgx_instances[i],
+                schain_name,
+                i,
+                nodes[i]['node_id'],
+                runs=(DKGRunType.NORMAL,)
+            )
+        results = exec_dkg_runners(runners)
+        assert len(results) == N_OF_NODES
+        gid = skale.schains.name_to_id(schain_name)
+
+        for i, (node_data, result) in enumerate(zip(nodes, results)):
+            assert result.status == DKGStatus.FAILED
+            if i == 0:
+                assert result.step == DKGStep.RESPONSE
+            else:
+                assert result.step == DKGStep.COMPLAINT_BAD_DATA
             assert result.keys_data is None
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)
