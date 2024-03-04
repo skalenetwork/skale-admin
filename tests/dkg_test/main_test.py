@@ -687,7 +687,7 @@ class TestDKG:
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)
 
-    def test_dkg_procedure_boradcast_bad_data(
+    def test_dkg_procedure_broadcast_bad_data(
         self,
         skale,
         schain_creation_data,
