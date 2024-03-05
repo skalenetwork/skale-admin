@@ -173,7 +173,7 @@ class ConfigActionManager(BaseActionManager):
     def dkg(self) -> bool:
         initial_status = self.checks.dkg.status
         if not initial_status:
-            logger.info('Running run_dkg')
+            logger.info('Initing dkg client')
             dkg_client = get_dkg_client(
                 skale=self.skale,
                 node_id=self.node_config.id,
@@ -181,6 +181,7 @@ class ConfigActionManager(BaseActionManager):
                 sgx_key_name=self.node_config.sgx_key_name,
                 rotation_id=self.rotation_id
             )
+            logger.info('Running run_dkg')
             dkg_result = run_dkg(
                 dkg_client=dkg_client,
                 skale=self.skale,
