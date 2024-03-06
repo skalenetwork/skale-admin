@@ -18,4 +18,5 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .config_monitor import RegularConfigMonitor  # noqa
+from .config_monitor import SyncConfigMonitor  # noqa
 from .skaled_monitor import get_skaled_monitor  # noqa

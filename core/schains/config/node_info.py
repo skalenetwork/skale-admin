@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 from dataclasses import dataclass
 
 from skale.dataclasses.node_info import NodeInfo
@@ -31,6 +32,9 @@ from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json
 
 
+logger = logging.getLogger(__name__)
+
+
 @dataclass
 class CurrentNodeInfo(NodeInfo):
     """Dataclass that represents nodeInfo key of the skaleConfig section"""
@@ -42,9 +46,13 @@ class CurrentNodeInfo(NodeInfo):
     skale_manager_opts: SkaleManagerOpts
     static_node_info: dict
 
+    sync_node: bool
+    archive: bool
+    catchup: bool
+
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
-        return {
+        node_info = {
             **super().to_dict(),
             **{
                 'imaMessageProxySChain': self.ima_message_proxy_schain,
@@ -53,28 +61,43 @@ class CurrentNodeInfo(NodeInfo):
                 'wallets': self.wallets,
                 'imaMonitoringPort': self.base_port + SkaledPorts.IMA_MONITORING.value,
                 'skale-manager': self.skale_manager_opts.to_dict(),
+                'syncNode': self.sync_node,
                 'info-acceptors': 1,
                 **self.static_node_info
             }
         }
+        if self.sync_node:
+            node_info['archiveMode'] = self.archive
+            node_info['syncFromCatchup'] = self.catchup
+        return node_info
 
 
 def generate_current_node_info(
     node: dict, node_id: int, ecdsa_key_name: str, static_node_info: dict,
-    schain: dict, schains_on_node: list, rotation_id: int, skale_manager_opts: SkaleManagerOpts
+    schain: dict, schains_on_node: list, rotation_id: int, skale_manager_opts: SkaleManagerOpts,
+    sync_node: bool = False, archive: bool = False, catchup: bool = False
 ) -> CurrentNodeInfo:
     schain_base_port_on_node = get_schain_base_port_on_node(
         schains_on_node,
         schain['name'],
         node['port']
     )
+
+    wallets = {} if sync_node else generate_wallets_config(schain['name'], rotation_id)
+
+    if ecdsa_key_name is None:
+        ecdsa_key_name = ''
+
     return CurrentNodeInfo(
         node_id=node_id,
         name=node['name'],
         base_port=schain_base_port_on_node,
         ecdsa_key_name=ecdsa_key_name,
-        wallets=generate_wallets_config(schain['name'], rotation_id),
+        wallets=wallets,
         skale_manager_opts=skale_manager_opts,
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup,
         static_node_info=static_node_info,
         **get_message_proxy_addresses()
     )

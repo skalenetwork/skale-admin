@@ -27,6 +27,9 @@ from core.schains.checks import SkaledChecks
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.config.main import get_number_of_secret_shares
 from core.schains.skaled_status import SkaledStatus
+from core.schains.ssl import ssl_reload_needed
+
+from tools.configs import SYNC_NODE
 from web.models.schain import SChainRecord
 
 
@@ -72,7 +75,7 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
             self.am.reset_restart_counter()
         if not self.checks.rpc:
             self.am.skaled_rpc()
-        if not self.checks.ima_container:
+        if not self.checks.ima_container and not SYNC_NODE:
             self.am.ima_container()
 
 
@@ -268,7 +271,7 @@ def is_config_update_time(
 
 
 def is_recreate_mode(schain_record: SChainRecord) -> bool:
-    return schain_record.needs_reload
+    return ssl_reload_needed(schain_record)
 
 
 def is_new_node_mode(schain_record: SChainRecord, finish_ts: Optional[int]) -> bool:
@@ -303,6 +306,20 @@ def get_skaled_monitor(
         skaled_status.log()
 
     mon_type: Type[BaseSkaledMonitor] = RegularSkaledMonitor
+
+    if SYNC_NODE:
+        if no_config(status):
+            mon_type = NoConfigSkaledMonitor
+        if is_recreate_mode(schain_record):
+            mon_type = RecreateSkaledMonitor
+        elif is_config_update_time(status, skaled_status):
+            mon_type = UpdateConfigSkaledMonitor
+        elif is_reload_group_mode(status, action_manager.upstream_finish_ts):
+            mon_type = ReloadGroupSkaledMonitor
+        elif is_reload_ip_mode(status, action_manager.econfig.reload_ts):
+            mon_type = ReloadIpSkaledMonitor
+        return mon_type
+
     if no_config(status):
         mon_type = NoConfigSkaledMonitor
     elif is_backup_mode(schain_record):

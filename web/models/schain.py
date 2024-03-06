@@ -52,6 +52,8 @@ class SChainRecord(BaseModel):
     restart_count = IntegerField(default=0)
     failed_rpc_count = IntegerField(default=0)
 
+    ssl_change_date = DateTimeField(default=datetime.now())
+
     @classmethod
     def add(cls, name):
         try:
@@ -95,7 +97,8 @@ class SChainRecord(BaseModel):
             'needs_reload': record.needs_reload,
             'monitor_last_seen': record.monitor_last_seen.timestamp(),
             'monitor_id': record.monitor_id,
-            'config_version': record.config_version
+            'config_version': record.config_version,
+            'ssl_change_date': record.ssl_change_date.timestamp()
         }
 
     def upload(self, *args, **kwargs) -> None:
@@ -182,6 +185,11 @@ class SChainRecord(BaseModel):
         logger.info(f'Resetting failed counters for {self.name}')
         self.set_restart_count(0)
         self.set_failed_rpc_count(0)
+
+    def set_ssl_change_date(self, value: datetime) -> None:
+        logger.info(f'Changing ssl_change_date for {self.name} to {value}')
+        self.ssl_change_date = value
+        self.save()
 
     def is_dkg_done(self) -> bool:
         return self.dkg_status == DKGStatus.DONE

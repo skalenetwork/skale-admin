@@ -31,6 +31,7 @@ from tools.configs.logs import (
     ADMIN_LOG_FORMAT,
     ADMIN_LOG_PATH,
     API_LOG_FORMAT, API_LOG_PATH,
+    SYNC_LOG_PATH,
     DEBUG_LOG_PATH,
     LOG_FILE_SIZE_BYTES,
     LOG_BACKUP_COUNT
@@ -124,3 +125,7 @@ def init_admin_logger():
 
 def init_api_logger():
     init_logger(API_LOG_FORMAT, API_LOG_PATH)
+
+
+def init_sync_logger():
+    init_logger(ADMIN_LOG_FORMAT, SYNC_LOG_PATH)
