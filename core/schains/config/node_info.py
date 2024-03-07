@@ -75,7 +75,9 @@ class CurrentNodeInfo(NodeInfo):
 
 def generate_current_node_info(
     node: dict, node_id: int, ecdsa_key_name: str, static_node_info: dict,
-    schain: dict, schains_on_node: list, rotation_id: int, skale_manager_opts: SkaleManagerOpts,
+    schain: dict, schains_on_node: list, rotation_id: int,
+    nodes_in_schain: int,
+    skale_manager_opts: SkaleManagerOpts,
     sync_node: bool = False, archive: bool = False, catchup: bool = False
 ) -> CurrentNodeInfo:
     schain_base_port_on_node = get_schain_base_port_on_node(
@@ -87,7 +89,7 @@ def generate_current_node_info(
     wallets = generate_wallets_config(
         schain['name'],
         rotation_id,
-        schain_nodes_number=len(schains_on_node),
+        schain_nodes_number=nodes_in_schain,
         sync_node=sync_node
     )
 

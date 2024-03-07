@@ -52,9 +52,11 @@ def test_generate_current_node_info(
             schain={'name': _schain_name, 'partOfNode': 0},
             schains_on_node=[{'name': _schain_name, 'port': 10000}],
             rotation_id=0,
+            nodes_in_schain=5,
             skale_manager_opts=skale_manager_opts
         )
     current_node_info_dict = current_node_info.to_dict()
+    assert current_node_info_dict['wallets']['ima']['n'] == 5
     assert current_node_info_dict['nodeID'] == 1
     assert current_node_info_dict['nodeName'] == 'test'
     assert current_node_info_dict['basePort'] == 10000
@@ -76,6 +78,7 @@ def test_generate_current_node_info(
             schain={'name': _schain_name, 'partOfNode': 0},
             schains_on_node=[{'name': _schain_name, 'port': 10000}],
             rotation_id=0,
+            nodes_in_schain=4,
             skale_manager_opts=skale_manager_opts
         )
     current_node_info_dict = current_node_info.to_dict()
@@ -102,6 +105,7 @@ def test_skale_manager_opts(
             schain={'name': _schain_name, 'partOfNode': 0},
             schains_on_node=[{'name': _schain_name, 'port': 10000}],
             rotation_id=0,
+            nodes_in_schain=4,
             skale_manager_opts=skale_manager_opts
         )
         current_node_info_dict = current_node_info.to_dict()

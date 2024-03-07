@@ -69,6 +69,7 @@ def generate_skale_section(
         schain=schain,
         schains_on_node=schains_on_node,
         rotation_id=rotation_id,
+        nodes_in_schain=len(schain_nodes_with_schains),
         skale_manager_opts=skale_manager_opts,
         sync_node=sync_node,
         archive=archive,
