@@ -178,7 +178,7 @@ def generate_bls_keys(dkg_client):
 
         bls_public_keys = dkg_client.get_bls_public_keys()
         common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
-        formated_common_public_key = [
+        formatted_common_public_key = [
             elem
             for coord in common_public_key
             for elem in coord
@@ -187,7 +187,7 @@ def generate_bls_keys(dkg_client):
         raise DKGKeyGenerationError(err)
     dkg_client.last_completed_step = DKGStep.KEY_GENERATION
     return {
-        'common_public_key': formated_common_public_key,
+        'common_public_key': formatted_common_public_key,
         'public_key': dkg_client.public_key,
         'bls_public_keys': bls_public_keys,
         't': dkg_client.t,
