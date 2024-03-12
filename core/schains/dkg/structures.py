@@ -42,8 +42,9 @@ class DKGStep(int, Enum):
     COMPLAINT_BAD_DATA = 6
     COMPLAINT_NO_ALRIGHT = 7
     COMPLAINT_NO_RESPONSE = 8
-    RESPONSE = 9
-    KEY_GENERATION = 10
+    PRE_RESPONSE = 9
+    RESPONSE = 10
+    KEY_GENERATION = 11
 
 
 class ComplaintReason(int, Enum):
