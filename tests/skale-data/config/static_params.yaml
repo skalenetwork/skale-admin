@@ -52,6 +52,8 @@ envs:
         bindIP: "0.0.0.0"
         logLevel: "info"
         logLevelConfig: "info"
+        pg-threads: 10
+        pg-threads-limit: 10
       small:
         minCacheSize: 1000000
         maxCacheSize: 2000000
@@ -124,6 +126,8 @@ envs:
         bindIP: "0.0.0.0"
         logLevel: "info"
         logLevelConfig: "info"
+        pg-threads: 10
+        pg-threads-limit: 10
       small:
         minCacheSize: 1000000
         maxCacheSize: 2000000
@@ -198,6 +202,8 @@ envs:
         bindIP: "0.0.0.0"
         logLevel: "info"
         logLevelConfig: "info"
+        pg-threads: 10
+        pg-threads-limit: 10
       small:
         minCacheSize: 1000000
         maxCacheSize: 2000000
@@ -273,6 +279,8 @@ envs:
         bindIP: "0.0.0.0"
         logLevel: "info"
         logLevelConfig: "info"
+        pg-threads: 10
+        pg-threads-limit: 10
       small:
         minCacheSize: 1000000
         maxCacheSize: 2000000

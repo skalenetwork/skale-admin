@@ -48,6 +48,7 @@ from core.schains.rpc import (
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.runner import get_container_name, get_image_name, is_new_image_pulled
 from core.schains.skaled_exit_codes import SkaledExitCodes
+from core.schains.volume import is_volume_exists
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
@@ -144,6 +145,7 @@ class ConfigChecks(IChecks):
                  stream_version: str,
                  current_nodes: list[ExtendedManagerNodeInfo],
                  estate: ExternalState,
+                 sync_node: bool = False,
                  econfig: Optional[ExternalConfig] = None
                  ) -> None:
         self.name = schain_name
@@ -153,6 +155,7 @@ class ConfigChecks(IChecks):
         self.stream_version = stream_version
         self.current_nodes = current_nodes
         self.estate = estate
+        self.sync_node = sync_node
         self.econfig = econfig or ExternalConfig(schain_name)
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=schain_name
@@ -234,13 +237,15 @@ class SkaledChecks(IChecks):
         rule_controller: IRuleController,
         *,
         econfig: Optional[ExternalConfig] = None,
-        dutils: Optional[DockerUtils] = None
+        dutils: Optional[DockerUtils] = None,
+        sync_node: bool = False
     ):
         self.name = schain_name
         self.schain_record = schain_record
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.econfig = econfig or ExternalConfig(name=schain_name)
+        self.sync_node = sync_node
         self.rc = rule_controller
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=schain_name
@@ -280,7 +285,13 @@ class SkaledChecks(IChecks):
     @property
     def volume(self) -> CheckRes:
         """Checks that sChain volume exists"""
-        return CheckRes(self.dutils.is_data_volume_exists(self.name))
+
+        return CheckRes(
+            is_volume_exists(
+                self.name,
+                sync_node=self.sync_node,
+                dutils=self.dutils)
+            )
 
     @property
     def firewall_rules(self) -> CheckRes:
@@ -321,8 +332,7 @@ class SkaledChecks(IChecks):
         if not self.econfig.ima_linked:
             return CheckRes(True)
         container_name = get_container_name(IMA_CONTAINER, self.name)
-        new_image_pulled = is_new_image_pulled(
-            type=IMA_CONTAINER, dutils=self.dutils)
+        new_image_pulled = is_new_image_pulled(image_type=IMA_CONTAINER, dutils=self.dutils)
 
         migration_ts = get_ima_migration_ts(self.name)
         new = time.time() > migration_ts
@@ -331,7 +341,7 @@ class SkaledChecks(IChecks):
 
         updated_image = False
         if container_running:
-            expected_image = get_image_name(type=IMA_CONTAINER, new=new)
+            expected_image = get_image_name(image_type=IMA_CONTAINER, new=new)
             image = self.dutils.get_container_image_name(container_name)
             updated_image = image == expected_image
 
@@ -396,7 +406,8 @@ class SChainChecks(IChecks):
         rotation_id: int = 0,
         *,
         econfig: Optional[ExternalConfig] = None,
-        dutils: DockerUtils = None
+        dutils: DockerUtils = None,
+        sync_node: bool = False
     ):
         self._subjects = [
             ConfigChecks(
@@ -407,14 +418,16 @@ class SChainChecks(IChecks):
                 stream_version=stream_version,
                 current_nodes=current_nodes,
                 estate=estate,
-                econfig=econfig
+                econfig=econfig,
+                sync_node=sync_node
             ),
             SkaledChecks(
                 schain_name=schain_name,
                 schain_record=schain_record,
                 rule_controller=rule_controller,
                 econfig=econfig,
-                dutils=dutils
+                dutils=dutils,
+                sync_node=sync_node
             )
         ]
 

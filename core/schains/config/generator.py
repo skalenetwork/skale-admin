@@ -32,12 +32,15 @@ from core.schains.config.skale_section import SkaleConfig, generate_skale_sectio
 from core.schains.config.predeployed import generate_predeployed_accounts
 from core.schains.config.precompiled import generate_precompiled_accounts
 from core.schains.config.generation import Gen
+from core.schains.config.static_accounts import is_static_accounts, static_accounts
 from core.schains.config.helper import get_chain_id, get_schain_id
 from core.schains.limits import get_schain_type
 
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
 from tools.helper import is_zero_address, is_address_contract
+from tools.node_options import NodeOptions
+
 
 logger = logging.getLogger(__name__)
 
@@ -127,14 +130,18 @@ def generate_schain_config(
     schain: dict, node_id: int, node: dict, ecdsa_key_name: str,
     schains_on_node: list, rotation_id: int, schain_nodes_with_schains: list,
     node_groups: list, generation: int, is_owner_contract: bool,
-    skale_manager_opts: SkaleManagerOpts
+    skale_manager_opts: SkaleManagerOpts, sync_node: bool = False,
+    archive=None, catchup=None
 ) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
         f'Going to generate sChain config for {schain["name"]}, '
-        f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}, '
-        f'ecdsa keyname: {ecdsa_key_name}'
+        f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}'
     )
+    if sync_node:
+        logger.info(f'Sync node config options: archive: {archive}, catchup: {catchup}')
+    else:
+        logger.info(f'Regular node config options: ecdsa keyname: {ecdsa_key_name}')
 
     on_chain_etherbase = get_on_chain_etherbase(schain, generation)
     on_chain_owner = get_on_chain_owner(schain, generation, is_owner_contract)
@@ -151,20 +158,6 @@ def generate_schain_config(
 
     originator_address = get_schain_originator(schain)
 
-    predeployed_accounts = generate_predeployed_accounts(
-        schain_name=schain['name'],
-        schain_type=schain_type,
-        schain_nodes=schain_nodes_with_schains,
-        on_chain_owner=on_chain_owner,
-        mainnet_owner=mainnet_owner,
-        originator_address=originator_address,
-        generation=generation
-    )
-
-    precompiled_accounts = generate_precompiled_accounts(
-        on_chain_owner=on_chain_owner
-    )
-
     skale_config = generate_skale_section(
         schain=schain,
         on_chain_etherbase=on_chain_etherbase,
@@ -177,8 +170,35 @@ def generate_schain_config(
         schain_nodes_with_schains=schain_nodes_with_schains,
         rotation_id=rotation_id,
         node_groups=node_groups,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup
     )
+
+    accounts = {}
+    if is_static_accounts(schain['name']):
+        logger.info(f'Found static account for {schain["name"]}, going to use in config')
+        accounts = static_accounts(schain['name'])['accounts']
+    else:
+        logger.info('Static accounts not found, generating regular accounts section')
+        predeployed_accounts = generate_predeployed_accounts(
+            schain_name=schain['name'],
+            schain_type=schain_type,
+            schain_nodes=schain_nodes_with_schains,
+            on_chain_owner=on_chain_owner,
+            mainnet_owner=mainnet_owner,
+            originator_address=originator_address,
+            generation=generation
+        )
+        precompiled_accounts = generate_precompiled_accounts(
+            on_chain_owner=on_chain_owner
+        )
+        accounts = {
+            **base_config.config['accounts'],
+            **predeployed_accounts,
+            **precompiled_accounts,
+        }
 
     schain_config = SChainConfig(
         seal_engine=base_config.config['sealEngine'],
@@ -188,11 +208,7 @@ def generate_schain_config(
         },
         unddos=base_config.config['unddos'],
         genesis=base_config.config['genesis'],
-        accounts={
-            **base_config.config['accounts'],
-            **predeployed_accounts,
-            **precompiled_accounts,
-        },
+        accounts=accounts,
         skale_config=skale_config
     )
     return schain_config
@@ -204,7 +220,9 @@ def generate_schain_config_with_skale(
     generation: int,
     node_id: int,
     rotation_data: dict,
-    ecdsa_key_name: str
+    ecdsa_key_name: str,
+    sync_node: bool = False,
+    node_options: NodeOptions = NodeOptions()
 ) -> SChainConfig:
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
     schains_on_node = skale.schains.get_schains_for_node(node_id)
@@ -227,5 +245,8 @@ def generate_schain_config_with_skale(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=is_owner_contract,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        sync_node=sync_node,
+        archive=node_options.archive,
+        catchup=node_options.catchup
     )

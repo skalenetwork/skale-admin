@@ -5,16 +5,19 @@
             "test": 22,
             "small": 5,
             "medium": 22,
-            "large": 716
+            "large": 716,
+            "sync_node": 716
         },
         "mem": {
             "test4": 300647710,
             "test": 300647710,
             "small": 75161927,
             "medium": 300647710,
-            "large": 9620726743
+            "large": 9620726743,
+            "sync_node": 9620726743
         },
         "disk": {
+            "sync_node": 75999936512,
             "large": 75999936512,
             "medium": 2374998016,
             "small": 593749504,
@@ -22,6 +25,12 @@
             "test4": 2374998016
         },
         "volume_limits": {
+            "sync_node": {
+                "max_consensus_storage_bytes": 22799980953,
+                "max_file_storage_bytes": 22799980953,
+                "max_reserved_storage_bytes": 7599993651,
+                "max_skaled_leveldb_storage_bytes": 22799980953
+            },
             "large": {
                 "max_consensus_storage_bytes": 22799980953,
                 "max_file_storage_bytes": 22799980953,
@@ -54,6 +63,10 @@
             }
         },
         "leveldb_limits": {
+            "sync_node": {
+                "contract_storage": 13679988571,
+                "db_storage": 9119992381
+            },
             "large": {
                 "contract_storage": 13679988571,
                 "db_storage": 9119992381
@@ -82,14 +95,16 @@
             "test": 9,
             "small": 2,
             "medium": 9,
-            "large": 307
+            "large": 307,
+            "sync_node": 307
         },
         "mem": {
             "test4": 128849018,
             "test": 128849018,
             "small": 32212254,
             "medium": 128849018,
-            "large": 4123168604
+            "large": 4123168604,
+            "sync_node": 4123168604
         }
     }
 }
