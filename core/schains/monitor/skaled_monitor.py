@@ -27,6 +27,7 @@ from core.schains.checks import SkaledChecks
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.config.main import get_number_of_secret_shares
 from core.schains.skaled_status import SkaledStatus
+from tools.helper import get_statsd_client
 from web.models.schain import SChainRecord
 
 
@@ -41,6 +42,7 @@ class BaseSkaledMonitor(IMonitor):
     ) -> None:
         self.am = action_manager
         self.checks = checks
+        self.stdc = get_statsd_client()
 
     @abstractmethod
     def execute(self) -> None:

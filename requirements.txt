@@ -18,6 +18,7 @@ filestorage-predeployed==1.1.0.dev8
 multisigwallet-predeployed==1.1.0a8
 
 context-predeployed==1.0.0.dev3
+statsd==4.0.1
 
 psutil==5.9.3
 

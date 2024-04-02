@@ -18,24 +18,23 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import json
-import time
-import psutil
-
-import yaml
-import logging
 import itertools
+import json
+import logging
+import psutil
 import subprocess
+import time
 from subprocess import PIPE
 
 import requests
-
+import statsd
+import yaml
 from filelock import FileLock
 from jinja2 import Environment
 from skale import Skale
 from skale.wallets import BaseWallet
 
-from tools.configs import INIT_LOCK_PATH
+from tools.configs import INIT_LOCK_PATH, STATSD_HOST, STATSD_PORT
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
@@ -185,3 +184,7 @@ def is_zero_address(address: str) -> bool:
 def is_address_contract(web3, address) -> bool:
     """Returns true if contract is deployed at the requested address"""
     return web3.eth.get_code(address) != b''
+
+
+def get_statsd_client(host: str = STATSD_HOST, port: int = STATSD_PORT) -> statsd.StatsClient:
+    return statsd.StatsClient(STATSD_HOST, STATSD_PORT)

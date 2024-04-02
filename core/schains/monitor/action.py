@@ -74,11 +74,11 @@ from core.schains.ima import ImaData
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.skaled_status import init_skaled_status
 
-from tools.docker_utils import DockerUtils
-from tools.str_formatters import arguments_list_string
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
-
+from tools.docker_utils import DockerUtils
+from tools.helper import get_statsd_client
 from tools.notifications.messages import notify_repair_mode
+from tools.str_formatters import arguments_list_string
 from web.models.schain import SChainRecord, upsert_schain_record
 
 
@@ -161,6 +161,7 @@ class ConfigActionManager(BaseActionManager):
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=self.schain['name']
         )
+        self.stdc = get_statsd_client()
         super().__init__(name=schain['name'])
 
     @BaseActionManager.monitor_block
@@ -172,71 +173,74 @@ class ConfigActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def dkg(self) -> bool:
         initial_status = self.checks.dkg.status
-        if not initial_status:
-            logger.info('Initing dkg client')
-            dkg_client = get_dkg_client(
-                skale=self.skale,
-                node_id=self.node_config.id,
-                schain_name=self.name,
-                sgx_key_name=self.node_config.sgx_key_name,
-                rotation_id=self.rotation_id
-            )
-            logger.info('Running run_dkg')
-            dkg_result = run_dkg(
-                dkg_client=dkg_client,
-                skale=self.skale,
-                schain_name=self.name,
-                node_id=self.node_config.id,
-                sgx_key_name=self.node_config.sgx_key_name,
-                rotation_id=self.rotation_id
-            )
-            logger.info('DKG finished with %s', dkg_result)
-            if dkg_result.status.is_done():
-                save_dkg_results(
-                    dkg_result.keys_data,
-                    get_secret_key_share_filepath(self.name, self.rotation_id)
+        with self.stdc.timer(f'admin.dkg.{self.name}'):
+            if not initial_status:
+                logger.info('Initing dkg client')
+                dkg_client = get_dkg_client(
+                    skale=self.skale,
+                    node_id=self.node_config.id,
+                    schain_name=self.name,
+                    sgx_key_name=self.node_config.sgx_key_name,
+                    rotation_id=self.rotation_id
                 )
-            self.schain_record.set_dkg_status(dkg_result.status)
-            if not dkg_result.status.is_done():
-                raise DkgError('DKG failed')
-        else:
-            logger.info('Dkg - ok')
+                logger.info('Running run_dkg')
+                dkg_result = run_dkg(
+                    dkg_client=dkg_client,
+                    skale=self.skale,
+                    schain_name=self.name,
+                    node_id=self.node_config.id,
+                    sgx_key_name=self.node_config.sgx_key_name,
+                    rotation_id=self.rotation_id
+                )
+                logger.info('DKG finished with %s', dkg_result)
+                if dkg_result.status.is_done():
+                    save_dkg_results(
+                        dkg_result.keys_data,
+                        get_secret_key_share_filepath(self.name, self.rotation_id)
+                    )
+                self.schain_record.set_dkg_status(dkg_result.status)
+                if not dkg_result.status.is_done():
+                    raise DkgError('DKG failed')
+            else:
+                logger.info('Dkg - ok')
         return initial_status
 
     @BaseActionManager.monitor_block
     def upstream_config(self) -> bool:
-        logger.info(
-            'Creating new upstream_config rotation_id: %s, stream: %s',
-            self.rotation_data.get('rotation_id'), self.stream_version
-        )
-        new_config = create_new_upstream_config(
-            skale=self.skale,
-            node_id=self.node_config.id,
-            schain_name=self.name,
-            generation=self.generation,
-            ecdsa_sgx_key_name=self.node_config.sgx_key_name,
-            rotation_data=self.rotation_data,
-            stream_version=self.stream_version,
-            schain_record=self.schain_record,
-            file_manager=self.cfm
-        )
-
-        result = False
-        if not self.cfm.upstream_config_exists() or new_config != self.cfm.latest_upstream_config:
-            rotation_id = self.rotation_data['rotation_id']
+        with self.stdc.timer(f'admin.upstream_config.{self.name}'):
             logger.info(
-                'Saving new upstream config rotation_id: %d, ips: %s',
-                rotation_id,
-                self.current_nodes
+                'Creating new upstream_config rotation_id: %s, stream: %s',
+                self.rotation_data.get('rotation_id'), self.stream_version
             )
-            self.cfm.save_new_upstream(rotation_id, new_config)
-            result = True
-        else:
-            logger.info('Generated config is the same as latest upstream')
+            new_config = create_new_upstream_config(
+                skale=self.skale,
+                node_id=self.node_config.id,
+                schain_name=self.name,
+                generation=self.generation,
+                ecdsa_sgx_key_name=self.node_config.sgx_key_name,
+                rotation_data=self.rotation_data,
+                stream_version=self.stream_version,
+                schain_record=self.schain_record,
+                file_manager=self.cfm
+            )
 
-        update_schain_config_version(
-            self.name, schain_record=self.schain_record)
-        return result
+            result = False
+            if not self.cfm.upstream_config_exists() or \
+                    new_config != self.cfm.latest_upstream_config:
+                rotation_id = self.rotation_data['rotation_id']
+                logger.info(
+                    'Saving new upstream config rotation_id: %d, ips: %s',
+                    rotation_id,
+                    self.current_nodes
+                )
+                self.cfm.save_new_upstream(rotation_id, new_config)
+                result = True
+            else:
+                logger.info('Generated config is the same as latest upstream')
+
+            update_schain_config_version(
+                self.name, schain_record=self.schain_record)
+            return result
 
     @BaseActionManager.monitor_block
     def reset_config_record(self) -> bool:
@@ -295,6 +299,7 @@ class SkaledActionManager(BaseActionManager):
 
         self.esfm = ExitScheduleFileManager(schain['name'])
         self.dutils = dutils or DockerUtils()
+        self.stdc = get_statsd_client()
 
         super().__init__(name=schain['name'])
 
@@ -323,13 +328,15 @@ class SkaledActionManager(BaseActionManager):
 
             ranges = self.econfig.ranges
             logger.info('Adding ranges %s', ranges)
-            self.rc.configure(
-                base_port=base_port,
-                own_ip=own_ip,
-                node_ips=node_ips,
-                sync_ip_ranges=ranges
-            )
-            self.rc.sync()
+            with self.stdc.timer(f'admin.firewall.{self.name}'):
+                self.rc.configure(
+                    base_port=base_port,
+                    own_ip=own_ip,
+                    node_ips=node_ips,
+                    sync_ip_ranges=ranges
+                )
+                self.stdc.gauge(f'admin.expected_rules.{self.name}', len(self.rc.expected_rules()))
+                self.rc.sync()
         return initial_status
 
     @BaseActionManager.monitor_block

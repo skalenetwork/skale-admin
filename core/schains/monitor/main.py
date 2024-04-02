@@ -26,6 +26,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from importlib import reload
 from typing import List, Optional
 
+import statsd
 from skale import Skale, SkaleIma
 from web3._utils import request as web3_request
 
@@ -109,9 +110,13 @@ def run_config_pipeline(
         econfig=econfig
     )
 
-    status = config_checks.get_all(log=False)
+    status = config_checks.get_all(log=False, expose=True)
     logger.info('Config checks: %s', status)
     mon = RegularConfigMonitor(config_am, config_checks)
+    stdc = statsd.StatsClient('localhost', 8125)
+
+    stdc.incr(f'admin.config.pipeline.{name}.{mon.__class__.__name__}')
+    stdc.gauge(f'admin.schain.rotation_id.{name}', rotation_data['rotation_id'])
     mon.run()
 
 
@@ -144,7 +149,7 @@ def run_skaled_pipeline(
         econfig=ExternalConfig(name),
         dutils=dutils
     )
-    status = skaled_checks.get_all(log=False)
+    status = skaled_checks.get_all(log=False, expose=True)
     automatic_repair = get_automatic_repair_option()
     api_status = get_api_checks_status(
         status=status, allowed=TG_ALLOWED_CHECKS)
@@ -153,6 +158,7 @@ def run_skaled_pipeline(
     logger.info('Skaled status: %s', status)
 
     logger.info('Upstream config %s', skaled_am.upstream_config_path)
+
     mon = get_skaled_monitor(
         action_manager=skaled_am,
         status=status,
@@ -160,6 +166,8 @@ def run_skaled_pipeline(
         skaled_status=skaled_status,
         automatic_repair=automatic_repair
     )
+    stdc = statsd.StatsClient('localhost', 8125)
+    stdc.incr(f'schain.skaled.pipeline.{name}.{mon.__name__}')
     mon(skaled_am, skaled_checks).run()
 
 
@@ -198,6 +206,11 @@ def create_and_execute_tasks(
         'sync_config_run %s, config_version %s, stream_version %s',
         schain_record.sync_config_run, schain_record.config_version, stream_version
     )
+
+    stdc = statsd.StatsClient('localhost', 8125)
+    stdc.incr(f'schain.monitor.{name}')
+    stdc.gauge(f'schain.monitor_last_seen.{name}', schain_record.monitor_last_seen.timestamp())
+
     tasks = []
     if not leaving_chain:
         logger.info('Adding config task to the pool')
