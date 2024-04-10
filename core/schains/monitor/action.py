@@ -78,9 +78,9 @@ from core.schains.skaled_status import init_skaled_status
 from tools.configs import SYNC_NODE
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import get_statsd_client
 from tools.node_options import NodeOptions
 from tools.notifications.messages import notify_repair_mode
+from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 from web.models.schain import SChainRecord, upsert_schain_record
 

@@ -54,7 +54,8 @@ from core.schains.volume import is_volume_exists
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import get_statsd_client, write_json
+from tools.helper import write_json
+from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 
 from web.models.schain import SChainRecord

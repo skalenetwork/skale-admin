@@ -30,7 +30,7 @@ from skale.transactions.result import TransactionFailedError
 from core.schains.dkg.broadcast_filter import Filter
 from core.schains.dkg.structures import ComplaintReason, DKGStep
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
-from tools.helper import get_statsd_client
+from tools.resources import get_statsd_client
 from tools.sgx_utils import sgx_unreachable_retry
 
 sys.path.insert(0, NODE_DATA_PATH)

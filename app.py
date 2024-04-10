@@ -35,10 +35,10 @@ from tools.configs.flask import (
     FLASK_DEBUG_MODE
 )
 from tools.configs.web3 import ENDPOINT
-from tools.db import get_database, REDIS_URI
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
+from tools.resources import get_database, REDIS_URI
 from tools.str_formatters import arguments_list_string
 
 from web.routes.node import node_bp
