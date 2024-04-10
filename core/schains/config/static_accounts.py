@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2023-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,27 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import Enum
+import os
+
+from tools.helper import read_json
+from tools.configs import STATIC_ACCOUNTS_FOLDER, ENV_TYPE
 
 
-class SchainType(Enum):
-    test = 0
-    test4 = 32
-    large = 128
-    medium = 16
-    small = 1
-    sync_node = 314
+def static_accounts(schain_name: str) -> dict:
+    return read_json(static_accounts_filepath(schain_name))
 
 
-class ContainerType(Enum):
-    base = 0
-    schain = 1
-    ima = 2
+def is_static_accounts(schain_name: str) -> bool:
+    return os.path.isfile(static_accounts_filepath(schain_name))
 
 
-class MetricType(Enum):
-    cpu_shares = 0
-    mem = 1
-    disk = 2
-    volume_limits = 3
-    leveldb_limits = 4
+def static_accounts_filepath(schain_name: str) -> str:
+    static_accounts_env_path = os.path.join(STATIC_ACCOUNTS_FOLDER, ENV_TYPE)
+    if not os.path.isdir(static_accounts_env_path):
+        return ''
+    return os.path.join(static_accounts_env_path, f'schain-{schain_name}.json')

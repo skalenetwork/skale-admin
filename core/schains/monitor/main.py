@@ -43,7 +43,8 @@ from core.schains.firewall import get_default_rule_controller
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.monitor import (
     get_skaled_monitor,
-    RegularConfigMonitor
+    RegularConfigMonitor,
+    SyncConfigMonitor
 )
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.external_config import ExternalConfig, ExternalState
@@ -51,8 +52,9 @@ from core.schains.task import keep_tasks_running, Task
 from core.schains.config.static_params import get_automatic_repair_option
 from core.schains.skaled_status import get_skaled_status
 from core.node import get_current_nodes
+
 from tools.docker_utils import DockerUtils
-from tools.configs.ima import DISABLE_IMA
+from tools.configs import SYNC_NODE
 from tools.notifications.messages import notify_checks
 from tools.helper import is_node_part_of_chain
 from web.models.schain import SChainRecord
@@ -78,7 +80,7 @@ def run_config_pipeline(
     schain_record = SChainRecord.get_by_name(name)
     rotation_data = skale.node_rotation.get_rotation(name)
     allowed_ranges = get_sync_agent_ranges(skale)
-    ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
+    ima_linked = not SYNC_NODE and skale_ima.linker.has_schain(name)
     current_nodes = get_current_nodes(skale, name)
 
     estate = ExternalState(
@@ -112,7 +114,13 @@ def run_config_pipeline(
 
     status = config_checks.get_all(log=False, expose=True)
     logger.info('Config checks: %s', status)
-    mon = RegularConfigMonitor(config_am, config_checks)
+
+    if SYNC_NODE:
+        logger.info('Sync node mode, running config monitor')
+        mon = SyncConfigMonitor(config_am, config_checks)
+    else:
+        logger.info('Regular node mode, running config monitor')
+        mon = RegularConfigMonitor(config_am, config_checks)
     stdc = statsd.StatsClient('localhost', 8125)
 
     stdc.incr(f'admin.config.pipeline.{name}.{mon.__class__.__name__}')
@@ -136,7 +144,8 @@ def run_skaled_pipeline(
         schain_name=schain['name'],
         schain_record=schain_record,
         rule_controller=rc,
-        dutils=dutils
+        dutils=dutils,
+        sync_node=SYNC_NODE
     )
 
     skaled_status = get_skaled_status(name)

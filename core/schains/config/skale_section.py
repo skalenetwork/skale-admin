@@ -49,7 +49,8 @@ class SkaleConfig:
 def generate_skale_section(
     schain: dict, on_chain_etherbase: str, on_chain_owner: str, schain_id: int, node_id: int,
     node: dict, ecdsa_key_name: str, schains_on_node: list, schain_nodes_with_schains: list,
-    rotation_id: int, node_groups: dict, skale_manager_opts: SkaleManagerOpts
+    rotation_id: int, node_groups: dict, skale_manager_opts: SkaleManagerOpts,
+    sync_node: bool = False, archive=None, catchup=None
 ) -> SkaleConfig:
     contract_settings = generate_contract_settings(
         on_chain_owner=on_chain_owner,
@@ -68,13 +69,17 @@ def generate_skale_section(
         schain=schain,
         schains_on_node=schains_on_node,
         rotation_id=rotation_id,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup
     )
 
     schain_nodes = generate_schain_nodes(
         schain_nodes_with_schains=schain_nodes_with_schains,
         schain_name=schain['name'],
-        rotation_id=rotation_id
+        rotation_id=rotation_id,
+        sync_node=sync_node
     )
 
     schain_info = generate_schain_info(

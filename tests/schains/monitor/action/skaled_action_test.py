@@ -40,7 +40,9 @@ def monitor_schain_container_mock(
     download_snapshot=False,
     start_ts=None,
     abort_on_exit=True,
-    dutils=None
+    dutils=None,
+    sync_node=False,
+    historic_state=False
 ):
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain['name'])
@@ -66,7 +68,8 @@ def skaled_checks(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        dutils=dutils
+        dutils=dutils,
+        sync_node=False
     )
 
 
@@ -135,7 +138,9 @@ def test_skaled_container_with_snapshot_action(skaled_am):
             download_snapshot=True,
             start_ts=None,
             abort_on_exit=True,
-            dutils=skaled_am.dutils
+            dutils=skaled_am.dutils,
+            sync_node=False,
+            historic_state=False
         )
         assert monitor_schain_mock.call_count == 1
     finally:
@@ -159,7 +164,9 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
             download_snapshot=True,
             start_ts=ts,
             abort_on_exit=True,
-            dutils=skaled_am.dutils
+            dutils=skaled_am.dutils,
+            sync_node=False,
+            historic_state=False
         )
         assert monitor_schain_mock.call_count == 1
     finally:

@@ -37,6 +37,7 @@ from skale.wallets import BaseWallet
 from tools.configs import INIT_LOCK_PATH, STATSD_HOST, STATSD_PORT
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, ZERO_ADDRESS
 
+
 logger = logging.getLogger(__name__)
 
 POST_REQUEST_TIMEOUT = 30
