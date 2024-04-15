@@ -172,7 +172,7 @@ class DKGClient:
         self.complaint_error_event_hash = self.skale.web3.to_hex(self.skale.web3.keccak(
             text="ComplaintError(string)"
         ))
-        self.stdc = get_statsd_client()
+        self.stcd = get_statsd_client()
         self._last_completed_step = step  # last step
         logger.info(f'sChain: {self.schain_name}. DKG timeout is {self.dkg_timeout}')
 
@@ -182,7 +182,7 @@ class DKGClient:
 
     @last_completed_step.setter
     def last_completed_step(self, value: DKGStep):
-        self.stdc.gauge(f'admin.dkg.last_completed_step.{self.schain_name}', value)
+        self.stcd.gauge(f'admin.dkg.last_completed_step.{self.schain_name}', value)
         self._last_completed_step = value
 
     def is_channel_opened(self):

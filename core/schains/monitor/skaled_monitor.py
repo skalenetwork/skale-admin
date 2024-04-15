@@ -44,7 +44,7 @@ class BaseSkaledMonitor(IMonitor):
     ) -> None:
         self.am = action_manager
         self.checks = checks
-        self.stdc = get_statsd_client()
+        self.stcd = get_statsd_client()
 
     @abstractmethod
     def execute(self) -> None:

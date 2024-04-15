@@ -26,7 +26,6 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from importlib import reload
 from typing import List, Optional
 
-import statsd
 from skale import Skale, SkaleIma
 from web3._utils import request as web3_request
 
@@ -57,6 +56,7 @@ from tools.docker_utils import DockerUtils
 from tools.configs import SYNC_NODE
 from tools.notifications.messages import notify_checks
 from tools.helper import is_node_part_of_chain
+from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord
 
 
@@ -121,10 +121,10 @@ def run_config_pipeline(
     else:
         logger.info('Regular node mode, running config monitor')
         mon = RegularConfigMonitor(config_am, config_checks)
-    stdc = statsd.StatsClient('localhost', 8125)
+    stcd = get_statsd_client()
 
-    stdc.incr(f'admin.config.pipeline.{name}.{mon.__class__.__name__}')
-    stdc.gauge(f'admin.schain.rotation_id.{name}', rotation_data['rotation_id'])
+    stcd.incr(f'admin.config.pipeline.{name}.{mon.__class__.__name__}')
+    stcd.gauge(f'admin.schain.rotation_id.{name}', rotation_data['rotation_id'])
     mon.run()
 
 
@@ -175,8 +175,9 @@ def run_skaled_pipeline(
         skaled_status=skaled_status,
         automatic_repair=automatic_repair
     )
-    stdc = statsd.StatsClient('localhost', 8125)
-    stdc.incr(f'schain.skaled.pipeline.{name}.{mon.__name__}')
+
+    stcd = get_statsd_client()
+    stcd.incr(f'schain.skaled.pipeline.{name}.{mon.__name__}')
     mon(skaled_am, skaled_checks).run()
 
 
@@ -216,9 +217,9 @@ def create_and_execute_tasks(
         schain_record.sync_config_run, schain_record.config_version, stream_version
     )
 
-    stdc = statsd.StatsClient('localhost', 8125)
-    stdc.incr(f'schain.monitor.{name}')
-    stdc.gauge(f'schain.monitor_last_seen.{name}', schain_record.monitor_last_seen.timestamp())
+    stcd = get_statsd_client()
+    stcd.incr(f'schain.monitor.{name}')
+    stcd.gauge(f'schain.monitor_last_seen.{name}', schain_record.monitor_last_seen.timestamp())
 
     tasks = []
     if not leaving_chain:

@@ -166,7 +166,7 @@ class ConfigActionManager(BaseActionManager):
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=self.schain['name']
         )
-        self.stdc = get_statsd_client()
+        self.stcd = get_statsd_client()
         super().__init__(name=schain['name'])
 
     @BaseActionManager.monitor_block
@@ -178,7 +178,7 @@ class ConfigActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def dkg(self) -> bool:
         initial_status = self.checks.dkg.status
-        with self.stdc.timer(f'admin.dkg.{self.name}'):
+        with self.stcd.timer(f'admin.dkg.{self.name}'):
             if not initial_status:
                 logger.info('Initing dkg client')
                 dkg_client = get_dkg_client(
@@ -212,7 +212,7 @@ class ConfigActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def upstream_config(self) -> bool:
-        with self.stdc.timer(f'admin.upstream_config.{self.name}'):
+        with self.stcd.timer(f'admin.upstream_config.{self.name}'):
             logger.info(
                 'Creating new upstream_config rotation_id: %s, stream: %s',
                 self.rotation_data.get('rotation_id'), self.stream_version
@@ -317,7 +317,7 @@ class SkaledActionManager(BaseActionManager):
 
         self.esfm = ExitScheduleFileManager(schain['name'])
         self.dutils = dutils or DockerUtils()
-        self.stdc = get_statsd_client()
+        self.stcd = get_statsd_client()
 
         self.node_options = node_options or NodeOptions()
 
@@ -348,14 +348,14 @@ class SkaledActionManager(BaseActionManager):
 
             ranges = self.econfig.ranges
             logger.info('Adding ranges %s', ranges)
-            with self.stdc.timer(f'admin.firewall.{self.name}'):
+            with self.stcd.timer(f'admin.firewall.{self.name}'):
                 self.rc.configure(
                     base_port=base_port,
                     own_ip=own_ip,
                     node_ips=node_ips,
                     sync_ip_ranges=ranges
                 )
-                self.stdc.gauge(f'admin.expected_rules.{self.name}', len(self.rc.expected_rules()))
+                self.stcd.gauge(f'admin.expected_rules.{self.name}', len(self.rc.expected_rules()))
                 self.rc.sync()
         return initial_status
 

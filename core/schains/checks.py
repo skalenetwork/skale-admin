@@ -122,7 +122,7 @@ class IChecks(ABC):
                 logger.debug('Running check %s', name)
                 checks_status[name] = getattr(self, name).status
         if expose:
-            send_to_statsd(self.stdc, self.get_name(), checks_status)
+            send_to_statsd(self.stcd, self.get_name(), checks_status)
         if log:
             log_checks_dict(self.get_name(), checks_status)
         if save:
@@ -166,7 +166,7 @@ class ConfigChecks(IChecks):
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=schain_name
         )
-        self.stdc = get_statsd_client()
+        self.stcd = get_statsd_client()
 
     def get_name(self) -> str:
         return self.name
@@ -257,7 +257,7 @@ class SkaledChecks(IChecks):
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=schain_name
         )
-        self.stdc = get_statsd_client()
+        self.stcd = get_statsd_client()
 
     def get_name(self) -> str:
         return self.name
@@ -507,7 +507,7 @@ def log_checks_dict(schain_name, checks_dict):
         )
 
 
-def send_to_statsd(stdc: statsd.StatsClient, schain_name: str, checks_dict: dict) -> None:
+def send_to_statsd(stcd: statsd.StatsClient, schain_name: str, checks_dict: dict) -> None:
     for check, result in checks_dict.items():
         mname = f'admin.checks.{schain_name}.{check}'
-        stdc.gauge(mname, int(result))
+        stcd.gauge(mname, int(result))
