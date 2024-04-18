@@ -125,7 +125,8 @@ def run_config_pipeline(
 
     stcd.incr(f'admin.config.pipeline.{name}.{mon.__class__.__name__}')
     stcd.gauge(f'admin.schain.rotation_id.{name}', rotation_data['rotation_id'])
-    mon.run()
+    with stcd.timer(f'admin.config.pipeline.{name}.duration'):
+        mon.run()
 
 
 def run_skaled_pipeline(
@@ -178,7 +179,8 @@ def run_skaled_pipeline(
 
     stcd = get_statsd_client()
     stcd.incr(f'schain.skaled.pipeline.{name}.{mon.__name__}')
-    mon(skaled_am, skaled_checks).run()
+    with stcd.timer(f'admin.skaled.pipeline.{name}.duration'):
+        mon(skaled_am, skaled_checks).run()
 
 
 def post_monitor_sleep():
