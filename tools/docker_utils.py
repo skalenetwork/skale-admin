@@ -47,6 +47,7 @@ from tools.configs.containers import (
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
 
+
 logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 12

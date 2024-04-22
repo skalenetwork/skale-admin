@@ -1,7 +1,7 @@
 import os
 import mock
-from core.filebeat import filebeat_config_processed
-from tools.configs.filebeat import NODE_DATA_PATH
+from core.monitoring import filebeat_config_processed
+from tools.configs.monitoring import NODE_DATA_PATH
 
 
 PROCESSED_FILEBEAT_CONFIG_PATH = os.path.join(NODE_DATA_PATH, 'filebeat_processed.yml')
