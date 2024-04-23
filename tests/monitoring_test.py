@@ -3,7 +3,6 @@ import os
 import pytest
 
 from core.monitoring import TelegrafNotConfiguredError, update_telegraf_service
-#    TELEGRAF_CONTAINER_NAME,
 from tools.configs.monitoring import (
     TELEGRAF_TEMPLATE_PATH,
     TELEGRAF_CONFIG_PATH

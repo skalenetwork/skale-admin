@@ -9,5 +9,5 @@ PROCESSED_FILEBEAT_CONFIG_PATH = os.path.join(NODE_DATA_PATH, 'filebeat_processe
 
 def test_filebeat_config_processed():
     assert not filebeat_config_processed()
-    with mock.patch('core.filebeat.FILEBEAT_CONFIG_PATH', PROCESSED_FILEBEAT_CONFIG_PATH):
+    with mock.patch('core.monitoring.FILEBEAT_CONFIG_PATH', PROCESSED_FILEBEAT_CONFIG_PATH):
         assert filebeat_config_processed()
