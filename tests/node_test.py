@@ -96,7 +96,7 @@ def test_register_info(unregistered_node):
     ip, public_ip, port, name = generate_random_node_data()
 
     # Register new node and check that it successfully created on contracts
-    with mock.patch('core.node.update_filebeat_service'):
+    with mock.patch('core.node.update_monitoring_services'):
         res = unregistered_node.register(
             ip,
             public_ip,
