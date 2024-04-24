@@ -220,8 +220,9 @@ def create_and_execute_tasks(
     )
 
     stcd = get_statsd_client()
-    stcd.incr(f'schain.monitor.{name}')
-    stcd.gauge(f'schain.monitor_last_seen.{name}', schain_record.monitor_last_seen.timestamp())
+    monitor_last_seen_ts = schain_record.monitor_last_seen.timestamp()
+    stcd.incr(f'admin.schain.monitor.{name}')
+    stcd.gauge(f'admin.schain.monitor_last_seen.{name}', monitor_last_seen_ts)
 
     tasks = []
     if not leaving_chain:
