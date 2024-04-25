@@ -23,11 +23,13 @@ import logging
 from typing import Dict
 
 from skale import Skale, SkaleIma
+from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
 from core.schains.process_manager import run_pm_schain
 from core.node_config import NodeConfig
 from core.ima.schain import update_predeployed_ima
 
+from tools.node_options import NodeOptions
 from tools.logger import init_sync_logger
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
@@ -66,9 +68,20 @@ def worker(schain_name: str):
         exit(1)
 
     schain = skale.schains.get_by_name(schain_name)
-    schain_nodes = skale.schains_internal.get_node_ids_for_schain(schain_name)
     node_config = NodeConfig()
-    node_config.id = schain_nodes[0]
+    node_options = NodeOptions()
+
+    schain_nodes = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    if not node_config.id:
+        node_config.id = schain_nodes[0]
+
+    node = skale.nodes.get(node_config.id)
+    if node_options.schain_base_port == -1:
+        node_options.schain_base_port = get_schain_base_port_on_node(
+            schain_nodes,
+            schain_name,
+            node['port']
+        )
 
     logger.info(f'Node {node_config.id} will be used as a current node')
     monitor(skale, skale_ima, node_config, schain)

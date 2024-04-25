@@ -41,3 +41,7 @@ class NodeOptions(JsonObject):
     @property
     def historic_state(self) -> bool:
         return self._get('historic_state')
+
+    @property
+    def schain_base_port(self) -> int:
+        return self._get('schain_base_port') or -1
