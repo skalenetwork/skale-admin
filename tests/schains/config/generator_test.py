@@ -24,12 +24,13 @@ from tools.node_options import NodeOptions
 
 NODE_ID = 1
 ECDSA_KEY_NAME = 'TEST:KEY:NAME'
+COMMON_BLS_PUBLIC_KEY = [123, 456, 789, 123],
 
 SECRET_KEY = {
     "key_share_name": "BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0",
     "t": 3,
     "n": 4,
-    "common_public_key": [123, 456, 789, 123],
+    "common_public_key": COMMON_BLS_PUBLIC_KEY,
     "public_key": [
         "123",
         "456",
@@ -195,16 +196,18 @@ def check_config(node_id, all_node_ids, config):
 
 def test_generate_schain_config_with_skale(
     skale,
+    node_config,
     schain_on_contracts,
     schain_secret_key_file
 ):
     schain_name = schain_on_contracts
     node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
     current_node_id = node_ids[0]
+    node_config.id = current_node_id
     schain_config = generate_schain_config_with_skale(
         skale=skale,
         schain_name=schain_name,
-        node_id=current_node_id,
+        node_config=node_config,
         rotation_data={'rotation_id': 0, 'leaving_node': 1},
         ecdsa_key_name=ECDSA_KEY_NAME,
         generation=0,
@@ -225,7 +228,6 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
 
     node_id, generation, rotation_id = 1, 0, 0
     ecdsa_key_name = 'test'
-    schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
@@ -233,13 +235,14 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
-        schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000
     )
     config = schain_config.to_dict()
 
@@ -250,7 +253,6 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
 def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale_manager_opts):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
-    schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
@@ -258,13 +260,14 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
-        schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=True,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000
     )
     config = schain_config.to_dict()
 
@@ -296,7 +299,6 @@ def test_generate_schain_config_gen1_pk_owner(
 ):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
-    schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
@@ -304,13 +306,14 @@ def test_generate_schain_config_gen1_pk_owner(
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
-        schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000
     )
     config = schain_config.to_dict()
 
@@ -324,7 +327,6 @@ def test_generate_schain_config_gen2_schain_id(
 ):
     node_id, generation, rotation_id = 1, 2, 0
     ecdsa_key_name = 'test'
-    schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
@@ -332,13 +334,14 @@ def test_generate_schain_config_gen2_schain_id(
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
-        schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['schainID'] == 2755779573749746
@@ -354,13 +357,14 @@ def test_generate_schain_config_gen1_schain_id(
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name='test',
-        schains_on_node=[{'name': 'test_schain'}],
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups={},
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['schainID'] == 1
@@ -376,13 +380,14 @@ def test_generate_schain_config_gen0_schain_id(
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name='test',
-        schains_on_node=[{'name': 'test_schain'}],
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups={},
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['schainID'] == 1
@@ -391,15 +396,17 @@ def test_generate_schain_config_gen0_schain_id(
 def test_generate_schain_config_with_skale_gen2(
     skale,
     schain_on_contracts,
-    schain_secret_key_file
+    schain_secret_key_file,
+    node_config
 ):
     schain_name = schain_on_contracts
     node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
     current_node_id = node_ids[0]
+    node_config.id = current_node_id
     schain_config = generate_schain_config_with_skale(
         skale=skale,
         schain_name=schain_name,
-        node_id=current_node_id,
+        node_config=node_config,
         rotation_data={'rotation_id': 0, 'leaving_node': 1},
         ecdsa_key_name=ECDSA_KEY_NAME,
         generation=2
@@ -423,7 +430,6 @@ def test_generate_sync_node_config(
 ):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
-    schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
@@ -431,13 +437,14 @@ def test_generate_sync_node_config(
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
-        schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
         skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000,
         sync_node=True
     )
     config = schain_config.to_dict()
@@ -452,7 +459,6 @@ def test_generate_sync_node_config_archive_catchup(
 ):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
-    schains_on_node = [{'name': 'test_schain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
@@ -460,13 +466,14 @@ def test_generate_sync_node_config_archive_catchup(
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
-        schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
         skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000,
         sync_node=True
     )
     config = schain_config.to_dict()
@@ -479,13 +486,14 @@ def test_generate_sync_node_config_archive_catchup(
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
-        schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
         skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000,
         sync_node=True,
         archive=False,
         catchup=True
@@ -500,13 +508,14 @@ def test_generate_sync_node_config_archive_catchup(
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
-        schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
         skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000,
         sync_node=False,
         archive=False,
         catchup=True
@@ -523,7 +532,6 @@ def test_generate_sync_node_config_static_accounts(
 ):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
-    schains_on_node = [{'name': 'static_chain'}]
     node_groups = {}
 
     schain_config = generate_schain_config(
@@ -531,13 +539,14 @@ def test_generate_sync_node_config_static_accounts(
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
-        schains_on_node=schains_on_node,
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('static_chain'),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
         skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000,
         sync_node=True
     )
     config = schain_config.to_dict()
@@ -549,13 +558,14 @@ def test_generate_sync_node_config_static_accounts(
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
-        schains_on_node=[{'name': 'test_schain'}],
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
         skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000,
         sync_node=True
     )
     config = schain_config.to_dict()

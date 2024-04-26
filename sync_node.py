@@ -29,7 +29,6 @@ from core.schains.process_manager import run_pm_schain
 from core.node_config import NodeConfig
 from core.ima.schain import update_predeployed_ima
 
-from tools.node_options import NodeOptions
 from tools.logger import init_sync_logger
 from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
@@ -69,16 +68,18 @@ def worker(schain_name: str):
 
     schain = skale.schains.get_by_name(schain_name)
     node_config = NodeConfig()
-    node_options = NodeOptions()
 
     schain_nodes = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    logger.info('HERE sn %s', schain_nodes)
     if not node_config.id:
         node_config.id = schain_nodes[0]
 
     node = skale.nodes.get(node_config.id)
-    if node_options.schain_base_port == -1:
-        node_options.schain_base_port = get_schain_base_port_on_node(
-            schain_nodes,
+    if node_config.schain_base_port == -1:
+        schains_on_node = skale.schains.get_schains_for_node(node_config.id)
+        logger.info('HERE sonn %s', schains_on_node)
+        node_config.schain_base_port = get_schain_base_port_on_node(
+            schains_on_node,
             schain_name,
             node['port']
         )
