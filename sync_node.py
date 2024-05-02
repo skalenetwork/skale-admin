@@ -70,14 +70,12 @@ def worker(schain_name: str):
     node_config = NodeConfig()
 
     schain_nodes = skale.schains_internal.get_node_ids_for_schain(schain_name)
-    logger.info('HERE sn %s', schain_nodes)
     if not node_config.id:
         node_config.id = schain_nodes[0]
 
     node = skale.nodes.get(node_config.id)
     if node_config.schain_base_port == -1:
         schains_on_node = skale.schains.get_schains_for_node(node_config.id)
-        logger.info('HERE sonn %s', schains_on_node)
         node_config.schain_base_port = get_schain_base_port_on_node(
             schains_on_node,
             schain_name,
