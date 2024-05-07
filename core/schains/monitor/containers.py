@@ -32,7 +32,7 @@ from core.schains.runner import (
     run_schain_container
 )
 from core.ima.schain import copy_schain_ima_abi
-from core.schains.ima import ImaData
+from core.schains.ima import get_ima_time_frame_interval, ImaData
 
 from tools.configs import SYNC_NODE
 from tools.configs.containers import (
@@ -134,6 +134,7 @@ def monitor_ima_container(
     expected_image = get_image_name(image_type=IMA_CONTAINER)
     logger.debug('%s IMA image %s, expected %s', schain_name,
                  container_image, expected_image)
+    time_frame_interval = get_ima_time_frame_interval(schain_name, after=False)
 
     if time.time() > migration_ts:
         logger.debug('%s IMA migration time passed', schain_name)
@@ -143,6 +144,8 @@ def monitor_ima_container(
                 '%s Removing old container as part of IMA migration', schain_name)
             remove_container(schain_name, IMA_CONTAINER, dutils)
             container_exists = False
+        time_frame_interval = get_ima_time_frame_interval(schain_name, after=True)
+    logger.debug('IMA time frame interval %d', time_frame_interval)
 
     if not container_exists:
         logger.info('%s No IMA container, creating, image %s',
@@ -151,6 +154,7 @@ def monitor_ima_container(
             schain,
             ima_data.chain_id,
             image=expected_image,
+            time_frame_interval=time_frame_interval,
             dutils=dutils
         )
     else:

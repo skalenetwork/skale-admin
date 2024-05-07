@@ -21,7 +21,13 @@ CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 
 
-def run_ima_container_mock(schain: dict, mainnet_chain_id: int, image: str, dutils=None):
+def run_ima_container_mock(
+    schain: dict,
+    mainnet_chain_id: int,
+    image: str,
+    time_frame_interval: int,
+    dutils=None
+):
     image_name, container_name, _, _ = get_container_info(
         IMA_CONTAINER, schain['name'])
     image = image or image_name
@@ -279,7 +285,7 @@ def test_ima_container_action_new_chain(
         assert image == 'skalenetwork/ima:2.0.0-beta.9'
 
 
-@pytest.mark.skip('Docker API GA issues need to be resolved')
+# @pytest.mark.skip('Docker API GA issues need to be resolved')
 @mock.patch('core.schains.monitor.containers.run_ima_container', run_ima_container_mock)
 def test_ima_container_action_old_chain(
     skaled_am,

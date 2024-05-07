@@ -226,11 +226,12 @@ def run_schain_container(
 def run_ima_container(
     schain: dict,
     mainnet_chain_id: int,
+    time_frame_interval: int,
     image: str,
     dutils: DockerUtils = None
 ) -> None:
     dutils = dutils or DockerUtils()
-    env = get_ima_env(schain['name'], mainnet_chain_id)
+    env = get_ima_env(schain['name'], mainnet_chain_id, time_frame_interval)
 
     schain_type = get_schain_type(schain['partOfNode'])
     cpu_limit = get_ima_limit(schain_type, MetricType.cpu_shares)
@@ -299,8 +300,8 @@ def is_new_image_pulled(image_type: str, dutils: DockerUtils) -> bool:
     return dutils.pulled(image)
 
 
-def remove_container(schain_name: str, type: str, dutils: DockerUtils):
-    container = get_container_name(type=type, schain_name=schain_name)
+def remove_container(schain_name: str, image_type: str, dutils: DockerUtils):
+    container = get_container_name(image_type=type, schain_name=schain_name)
     dutils.safe_rm(container)
 
 

@@ -28,7 +28,7 @@ from websocket import create_connection
 
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.file_manager import ConfigFileManager
-from core.schains.config.helper import get_schain_ports_from_config, get_chain_id
+from core.schains.config.helper import get_chain_id, get_schain_ports_from_config, get_static_params
 from core.ima.schain import get_schain_ima_abi_filepath
 from tools.configs import ENV_TYPE, SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import IMA_MIGRATION_PATH, CONTAINERS_INFO
@@ -36,8 +36,8 @@ from tools.configs.db import REDIS_URI
 from tools.configs.ima import (
     MAINNET_IMA_ABI_FILEPATH,
     IMA_STATE_CONTAINER_PATH,
-    IMA_TIME_FRAMING,
-    IMA_NETWORK_BROWSER_FILEPATH
+    IMA_NETWORK_BROWSER_FILEPATH,
+    DEFAULT_TIME_FRAME_INTERVAL
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import safe_load_yml
@@ -145,7 +145,7 @@ def schain_index_to_node_number(node):
     return int(node['schainIndex']) - 1
 
 
-def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
+def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame_interval: int) -> ImaEnv:
     schain_config = ConfigFileManager(schain_name).skaled_config
     node_info = schain_config["skaleConfig"]["nodeInfo"]
     bls_key_name = node_info['wallets']['ima']['keyShareName']
@@ -180,7 +180,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int) -> ImaEnv:
         cid_schain=schain_chain_id,
         monitoring_port=node_info['imaMonitoringPort'],
         rpc_port=get_ima_rpc_port(schain_name),
-        time_framing=IMA_TIME_FRAMING,
+        time_framing=time_frame_interval,
         network_browser_data_path=IMA_NETWORK_BROWSER_FILEPATH
     )
 
@@ -280,3 +280,17 @@ def get_migration_schedule() -> dict:
 
 def get_migration_ts(name: str) -> int:
     return get_migration_schedule().get(name, 0)
+
+
+def get_ima_time_frame_interval(name: str, after: bool = False) -> int:
+    params = get_static_params()
+    if 'ima' not in params or 'time_frame_interval' not in params['ima']:
+        logger.debug(
+            'IMA time frame intrerval is not set. Using default value %d',
+            DEFAULT_TIME_FRAME_INTERVAL
+        )
+        return DEFAULT_TIME_FRAME_INTERVAL
+    if after:
+        return params['ima']['time_frame_interval']['after']
+    else:
+        return params['ima']['time_frame_interval']['before']
