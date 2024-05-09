@@ -38,7 +38,7 @@ from core.schains.config.main import (
 )
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
-from core.schains.ima import get_migration_ts as get_ima_migration_ts
+from core.schains.ima import get_ima_time_frame, get_migration_ts as get_ima_migration_ts
 from core.schains.process_manager_helper import is_monitor_process_alive
 from core.schains.rpc import (
     check_endpoint_alive,
@@ -46,7 +46,12 @@ from core.schains.rpc import (
     get_endpoint_alive_check_timeout
 )
 from core.schains.external_config import ExternalConfig, ExternalState
-from core.schains.runner import get_container_name, get_image_name, is_new_image_pulled
+from core.schains.runner import (
+    get_container_name,
+    get_ima_container_time_frame,
+    get_image_name,
+    is_new_image_pulled
+)
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.volume import is_volume_exists
 
@@ -335,26 +340,36 @@ class SkaledChecks(IChecks):
         new_image_pulled = is_new_image_pulled(image_type=IMA_CONTAINER, dutils=self.dutils)
 
         migration_ts = get_ima_migration_ts(self.name)
-        new = time.time() > migration_ts
+        after = time.time() > migration_ts
 
         container_running = self.dutils.is_container_running(container_name)
 
-        updated_image = False
+        updated_image, updated_time_frame = False, False
         if container_running:
-            expected_image = get_image_name(image_type=IMA_CONTAINER, new=new)
+            expected_image = get_image_name(image_type=IMA_CONTAINER, new=after)
             image = self.dutils.get_container_image_name(container_name)
             updated_image = image == expected_image
+
+            time_frame = get_ima_time_frame(self.name, after=after)
+            container_time_frame = get_ima_container_time_frame(self.name, self.dutils)
+
+            updated_time_frame = time_frame == container_time_frame
+            logger.debug(
+                'IMA image %s, container image %s, time frame %d, container_time_frame %d',
+                expected_image, image, time_frame, container_time_frame
+            )
 
         data = {
             'container_running': container_running,
             'updated_image': updated_image,
-            'new_image_pulled': new_image_pulled
+            'new_image_pulled': new_image_pulled,
+            'updated_time_frame': updated_time_frame
         }
         logger.debug(
             '%s, IMA check - %s',
             self.name, data
         )
-        result: bool = container_running and updated_image and new_image_pulled
+        result: bool = all(data.values())
         return CheckRes(result, data=data)
 
     @property

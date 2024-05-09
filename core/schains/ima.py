@@ -37,7 +37,7 @@ from tools.configs.ima import (
     MAINNET_IMA_ABI_FILEPATH,
     IMA_STATE_CONTAINER_PATH,
     IMA_NETWORK_BROWSER_FILEPATH,
-    DEFAULT_TIME_FRAME_INTERVAL
+    DEFAULT_TIME_FRAME
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import safe_load_yml
@@ -145,7 +145,7 @@ def schain_index_to_node_number(node):
     return int(node['schainIndex']) - 1
 
 
-def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame_interval: int) -> ImaEnv:
+def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> ImaEnv:
     schain_config = ConfigFileManager(schain_name).skaled_config
     node_info = schain_config["skaleConfig"]["nodeInfo"]
     bls_key_name = node_info['wallets']['ima']['keyShareName']
@@ -180,7 +180,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame_interval: in
         cid_schain=schain_chain_id,
         monitoring_port=node_info['imaMonitoringPort'],
         rpc_port=get_ima_rpc_port(schain_name),
-        time_framing=time_frame_interval,
+        time_framing=time_frame,
         network_browser_data_path=IMA_NETWORK_BROWSER_FILEPATH
     )
 
@@ -282,15 +282,15 @@ def get_migration_ts(name: str) -> int:
     return get_migration_schedule().get(name, 0)
 
 
-def get_ima_time_frame_interval(name: str, after: bool = False) -> int:
+def get_ima_time_frame(name: str, after: bool = False) -> int:
     params = get_static_params()
-    if 'ima' not in params or 'time_frame_interval' not in params['ima']:
+    if 'ima' not in params or 'time_frame' not in params['ima']:
         logger.debug(
             'IMA time frame intrerval is not set. Using default value %d',
-            DEFAULT_TIME_FRAME_INTERVAL
+            DEFAULT_TIME_FRAME
         )
-        return DEFAULT_TIME_FRAME_INTERVAL
+        return DEFAULT_TIME_FRAME
     if after:
-        return params['ima']['time_frame_interval']['after']
+        return params['ima']['time_frame']['after']
     else:
-        return params['ima']['time_frame_interval']['before']
+        return params['ima']['time_frame']['before']

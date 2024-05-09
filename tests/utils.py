@@ -54,6 +54,8 @@ ALLOWED_RANGES = [
     IpRange('3.3.3.3', '4.4.4.4')
 ]
 
+IMA_MIGRATION_TS = 1688388551
+
 
 class FailedAPICall(Exception):
     pass

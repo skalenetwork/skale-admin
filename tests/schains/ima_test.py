@@ -5,7 +5,7 @@ def test_get_ima_env(_schain_name, schain_config):
     ima_env = get_ima_env(
         schain_name=_schain_name,
         mainnet_chain_id=123,
-        time_frame_interval=100
+        time_frame=100
     )
     ima_env_dict = ima_env.to_dict()
     assert len(ima_env_dict) == 23
