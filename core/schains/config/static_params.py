@@ -27,7 +27,7 @@ def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:
     return static_params['schain_cmd']
 
 
-def get_static_schain_info(schain_name: str, env_type: str = ENV_TYPE) -> dict:
+def get_static_schain_info(schain_name: str, env_type: str = ENV_TYPE) -> dict | None:
     static_params = get_static_params(env_type)
     static_params_schain = static_params['schain']
     processed_params = {}
