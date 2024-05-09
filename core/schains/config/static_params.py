@@ -27,9 +27,22 @@ def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:
     return static_params['schain_cmd']
 
 
-def get_static_schain_info(env_type: str = ENV_TYPE) -> dict:
+def get_static_schain_info(schain_name: str, env_type: str = ENV_TYPE) -> dict:
     static_params = get_static_params(env_type)
-    return static_params['schain']
+    static_params_schain = static_params['schain']
+    processed_params = {}
+    for param_name, param in static_params_schain.items():
+        processed_params[param_name] = get_schain_static_param(param, schain_name)
+    return processed_params
+
+
+def get_schain_static_param(static_param_schain: dict | int, schain_name: str) -> int:
+    if isinstance(static_param_schain, int):
+        return static_param_schain
+    elif isinstance(static_param_schain, dict) and schain_name in static_param_schain:
+        return static_param_schain[schain_name]
+    else:
+        return static_param_schain.get('default', None)
 
 
 def get_static_node_info(schain_type: SchainType, env_type: str = ENV_TYPE) -> dict:
