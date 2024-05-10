@@ -202,7 +202,6 @@ def test_exit_code_ok_check(schain_checks, sample_false_checks):
 
 
 def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
-    dutils.is_container_running = lambda *args: True
     ts = int(time.time())
     mts = ts + 3600
     name = schain_checks.name
