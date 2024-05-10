@@ -91,6 +91,7 @@ def skaled_am(
     predeployed_ima,
     secret_key,
     ssl_folder,
+    ima_migration_schedule,
     dutils,
     skaled_checks
 ):
@@ -292,7 +293,6 @@ def test_ima_container_action_image_pulling(
     predeployed_ima,
     ima_linked,
     cleanup_ima,
-    ima_migration_schedule,
     dutils
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
@@ -315,7 +315,6 @@ def test_ima_container_action_image_migration(
     predeployed_ima,
     ima_linked,
     cleanup_ima,
-    ima_migration_schedule,
     dutils
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS + 5)
@@ -338,7 +337,6 @@ def test_ima_container_action_time_frame_migration(
     predeployed_ima,
     ima_linked,
     cleanup_ima,
-    ima_migration_schedule,
     dutils
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)

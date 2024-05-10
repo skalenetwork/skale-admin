@@ -274,12 +274,12 @@ def get_ima_log_checks():
     return all_ima_healthchecks
 
 
-def get_migration_schedule() -> dict:
-    return safe_load_yml(IMA_MIGRATION_PATH)[ENV_TYPE]
-
-
-def get_migration_ts(name: str) -> int:
-    return get_migration_schedule().get(name, 0)
+def get_migration_ts(name: str, path: str = IMA_MIGRATION_PATH, env_type: str = ENV_TYPE) -> int:
+    if os.path.isfile(path):
+        schedule = safe_load_yml(IMA_MIGRATION_PATH)[env_type]
+        return schedule.get(name, 0)
+    else:
+        return 0
 
 
 def get_ima_time_frame(name: str, after: bool = False) -> int:

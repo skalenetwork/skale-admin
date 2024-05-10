@@ -97,6 +97,7 @@ def skaled_am(
     rotation_data,
     secret_key,
     ssl_folder,
+    ima_migration_schedule,
     dutils,
     skaled_checks
 ):
@@ -421,6 +422,7 @@ def test_get_skaled_monitor_new_node(
     ssl_folder,
     skaled_status,
     skaled_checks,
+    ima_migration_schedule,
     dutils
 ):
     name = schain_db
