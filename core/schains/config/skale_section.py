@@ -59,7 +59,7 @@ def generate_skale_section(
 
     schain_type = get_schain_type(schain['partOfNode'])
     static_node_info = get_static_node_info(schain_type)
-    static_schain_info = get_static_schain_info()
+    static_schain_info = get_static_schain_info(schain['name'])
 
     node_info = generate_current_node_info(
         node_id=node_id,
