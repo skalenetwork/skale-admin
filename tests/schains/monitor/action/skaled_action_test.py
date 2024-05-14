@@ -328,8 +328,6 @@ def test_ima_container_action_image_migration(
         assert image == 'skalenetwork/ima:2.0.0-beta.9'
 
 
-# @mock.patch('core.schains.monitor.containers.run_ima_container', run_ima_container_mock)
-# @mock.patch('core.schains.monitor.containers.get_image_name', return_value="skalenetwork/ima:2)
 def test_ima_container_action_time_frame_migration(
     skaled_am,
     skaled_checks,
