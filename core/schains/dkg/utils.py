@@ -177,23 +177,27 @@ def generate_bls_keys(dkg_client):
             dkg_client.fetch_bls_public_key()
 
         bls_public_keys = dkg_client.get_bls_public_keys()
-        common_public_key = skale.key_storage.get_common_public_key(dkg_client.group_index)
-        formatted_common_public_key = [
-            elem
-            for coord in common_public_key
-            for elem in coord
-        ]
+        common_public_key = get_common_bls_public_key(skale, dkg_client.group_index)
     except Exception as err:
         raise DKGKeyGenerationError(err)
     dkg_client.last_completed_step = DKGStep.KEY_GENERATION
     return {
-        'common_public_key': formatted_common_public_key,
+        'common_public_key': common_public_key,
         'public_key': dkg_client.public_key,
         'bls_public_keys': bls_public_keys,
         't': dkg_client.t,
         'n': dkg_client.n,
         'key_share_name': dkg_client.bls_name
     }
+
+
+def get_common_bls_public_key(skale, group_index: str) -> list[str]:
+    raw_common_public_key = skale.key_storage.get_common_public_key(group_index)
+    return [
+        elem
+        for coord in raw_common_public_key
+        for elem in coord
+    ]
 
 
 def send_complaint(dkg_client: DKGClient, index: int, reason: ComplaintReason):
