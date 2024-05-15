@@ -281,6 +281,11 @@ envs:
       snapshotDownloadTimeout: 18000
       snapshotDownloadInactiveTimeout: 120
 
+    ima:
+      time_frame:
+        before: 1800
+        after: 900
+
     schain_cmd:
       ["-v 3", "--web3-trace", "--enable-debug-behavior-apis", "--aa no"]
 
