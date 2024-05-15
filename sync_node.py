@@ -23,6 +23,7 @@ import logging
 from typing import Dict
 
 from skale import Skale, SkaleIma
+from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
 from core.schains.process_manager import run_pm_schain
 from core.node_config import NodeConfig
@@ -66,9 +67,20 @@ def worker(schain_name: str):
         exit(1)
 
     schain = skale.schains.get_by_name(schain_name)
-    schain_nodes = skale.schains_internal.get_node_ids_for_schain(schain_name)
     node_config = NodeConfig()
-    node_config.id = schain_nodes[0]
+
+    schain_nodes = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    if not node_config.id:
+        node_config.id = schain_nodes[0]
+
+    node = skale.nodes.get(node_config.id)
+    if node_config.schain_base_port == -1:
+        schains_on_node = skale.schains.get_schains_for_node(node_config.id)
+        node_config.schain_base_port = get_schain_base_port_on_node(
+            schains_on_node,
+            schain_name,
+            node['port']
+        )
 
     logger.info(f'Node {node_config.id} will be used as a current node')
     monitor(skale, skale_ima, node_config, schain)

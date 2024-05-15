@@ -60,3 +60,11 @@ class NodeConfig(JsonObject):
     @sgx_key_name.setter
     def sgx_key_name(self, sgx_key_name: int) -> None:
         return self._set('sgx_key_name', sgx_key_name)
+
+    @property
+    def schain_base_port(self) -> int:
+        return self._get('schain_base_port') or -1
+
+    @schain_base_port.setter
+    def schain_base_port(self, schain_port: int) -> None:
+        return self._set('schain_base_port', schain_port)

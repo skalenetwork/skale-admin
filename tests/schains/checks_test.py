@@ -202,7 +202,6 @@ def test_exit_code_ok_check(schain_checks, sample_false_checks):
 
 
 def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
-    dutils.is_container_running = lambda *args: True
     ts = int(time.time())
     mts = ts + 3600
     name = schain_checks.name
@@ -231,7 +230,7 @@ def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
     with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
         assert not schain_checks.ima_container.status
         image = get_image_name(image_type=IMA_CONTAINER, new=True)
-        run_ima_container(schain, mainnet_chain_id=1,
+        run_ima_container(schain, mainnet_chain_id=1, time_frame=900,
                           image=image, dutils=dutils)
         assert schain_checks.ima_container.status
 

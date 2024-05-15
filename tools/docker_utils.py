@@ -149,7 +149,7 @@ class DockerUtils:
     def get_all_ima_containers(self, all=False, format=False) -> list:
         return self.client.containers.list(all=all, filters={'name': 'skale_ima_*'})
 
-    def get_info(self, container_id: str) -> dict:
+    def get_info(self, container_id: str, raise_not_found: bool = False) -> dict:
         container_info = {}
         try:
             container = self.client.containers.get(container_id)
@@ -158,6 +158,8 @@ class DockerUtils:
             container_info['stats'] = self.cli.inspect_container(container.id)
             container_info['status'] = container.status
         except docker.errors.NotFound:
+            if raise_not_found:
+                raise
             logger.debug(
                 f'Can not get info - no such container: {container_id}')
             container_info['status'] = CONTAINER_NOT_FOUND
@@ -391,6 +393,15 @@ class DockerUtils:
         if info.get('status') == CONTAINER_NOT_FOUND:
             return None
         return info['stats']['Config']['Image']
+
+    def get_container_env_value(self, container_name: str, env_option: str) -> Optional[str]:
+        info = self.get_info(container_name, raise_not_found=True)
+        env = info['stats']['Config']['Env']
+        try:
+            value = next(filter(lambda v: v.startswith(env_option), env))
+        except StopIteration:
+            return None
+        return value.split('=')[1]
 
     def wait_for_container_creation(self, name: str, timeout=CONTAINER_CREATION_TIMEOUT):
         start_ts = time.time()

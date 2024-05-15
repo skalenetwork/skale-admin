@@ -209,7 +209,7 @@ def create_and_execute_tasks(
 
     is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
-    leaving_chain = not is_node_part_of_chain(skale, name, node_config.id)
+    leaving_chain = not SYNC_NODE and not is_node_part_of_chain(skale, name, node_config.id)
     if leaving_chain and not is_rotation_active:
         logger.info('Not on node (%d), finishing process', node_config.id)
         return True

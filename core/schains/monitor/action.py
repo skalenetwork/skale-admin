@@ -219,7 +219,7 @@ class ConfigActionManager(BaseActionManager):
             )
             new_config = create_new_upstream_config(
                 skale=self.skale,
-                node_id=self.node_config.id,
+                node_config=self.node_config,
                 schain_name=self.name,
                 generation=self.generation,
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
