@@ -70,7 +70,11 @@ def format_containers(f):
             res.append({
                 'image': container.attrs['Config']['Image'],
                 'name': re.sub('/', '', container.attrs['Name']),
-                'state': container.attrs['State']
+                'state': container.attrs['State'],
+                'cpu_shares': container.attrs['HostConfig']['CpuShares'],
+                'mem_limit': container.attrs['HostConfig']['Memory'],
+                'swap_limit': container.attrs['HostConfig']['MemorySwap'],
+                'swappiness': container.attrs['HostConfig']['MemorySwappiness']
             })
         return res
 
