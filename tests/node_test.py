@@ -35,7 +35,7 @@ def node(node_skales, skale, nodes):
     node_data = skale.nodes.get(config.id)
     config.name = node_data['name']
     config.ip = ip_from_bytes(node_data['ip'])
-    yield Node(node_skales[0], config)
+    return Node(node_skales[0], config)
 
 
 @pytest.fixture
@@ -94,6 +94,7 @@ def test_create_insufficient_funds(unregistered_node):
 def test_register_info(unregistered_node):
     unregistered_node.config.id = None
     ip, public_ip, port, name = generate_random_node_data()
+    assert unregistered_node.config.schain_base_port == -1
 
     # Register new node and check that it successfully created on contracts
     with mock.patch('core.node.update_filebeat_service'):
@@ -104,6 +105,7 @@ def test_register_info(unregistered_node):
             name,
             domain_name=DEFAULT_DOMAIN_NAME
         )
+        assert unregistered_node.config.schain_base_port == -1
     assert res['status'] == 'ok'
     res_data = res.get('data')
 

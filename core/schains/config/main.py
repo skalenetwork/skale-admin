@@ -23,6 +23,7 @@ from typing import Dict, List, Optional
 from skale import Skale
 
 from core.node import get_skale_node_version
+from core.node_config import NodeConfig
 from core.schains.config.directory import get_files_with_prefix, schain_config_dir
 from core.schains.config.file_manager import ConfigFileManager, SkaledConfigFilename
 from core.schains.config.generator import generate_schain_config_with_skale
@@ -39,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 def create_new_upstream_config(
     skale: Skale,
-    node_id: int,
+    node_config: NodeConfig,
     schain_name: str,
     generation: int,
     ecdsa_sgx_key_name: str,
@@ -57,7 +58,7 @@ def create_new_upstream_config(
         skale=skale,
         schain_name=schain_name,
         generation=generation,
-        node_id=node_id,
+        node_config=node_config,
         rotation_data=rotation_data,
         ecdsa_key_name=ecdsa_sgx_key_name,
         sync_node=sync_node,
