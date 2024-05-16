@@ -196,7 +196,7 @@ class DockerUtils:
         try:
             return self.client.volumes.get(name)
         except docker.errors.NotFound:
-            logger.debug(f'Volume {name} is not exist')
+            logger.debug(f'Volume {name} does not exist')
             return None
 
     def rm_vol(self, name: str, retry_lvmpy_error: bool = True) -> None:
