@@ -31,7 +31,8 @@ from tools.configs.monitoring import (
     TELEGRAF,
     TELEGRAF_CONTAINER_NAME, TELEGRAF_IMAGE,
     TELEGRAF_TEMPLATE_PATH,
-    TELEGRAF_CONFIG_PATH
+    TELEGRAF_CONFIG_PATH,
+    TELEGRAF_MEM_LIMIT
 )
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
                 f'{SKALE_DIR_HOST}/node_data/telegraf': {'bind': '/var/lib/telegraf', 'mode': 'rw'},
                 '/var/run/skale/': {'bind': '/var/run/skale', 'mode': 'rw'}
             },
-            mem_limit='1GB'
+            mem_limit=TELEGRAF_MEM_LIMIT
         )
 
 

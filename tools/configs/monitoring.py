@@ -19,3 +19,4 @@ TELEGRAF_CONFIG_PATH = os.path.join(CONFIG_FOLDER, 'telegraf.conf')
 TELEGRAF_CONTAINER_NAME = 'skale_telegraf'
 TELEGRAF_SERVICE_NAME = 'telegraf'
 TELEGRAF_IMAGE = 'telegraf:1.27.4'
+TELEGRAF_MEM_LIMIT = os.getenv('TELEGRAF_MEM_LIMIT', '1GB')

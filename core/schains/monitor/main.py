@@ -121,11 +121,11 @@ def run_config_pipeline(
     else:
         logger.info('Regular node mode, running config monitor')
         mon = RegularConfigMonitor(config_am, config_checks)
-    stcd = get_statsd_client()
+    statsd_client = get_statsd_client()
 
-    stcd.incr(f'admin.config.pipeline.{name}.{mon.__class__.__name__}')
-    stcd.gauge(f'admin.schain.rotation_id.{name}', rotation_data['rotation_id'])
-    with stcd.timer(f'admin.config.pipeline.{name}.duration'):
+    statsd_client.incr(f'admin.config.pipeline.{name}.{mon.__class__.__name__}')
+    statsd_client.gauge(f'admin.schain.rotation_id.{name}', rotation_data['rotation_id'])
+    with statsd_client.timer(f'admin.config.pipeline.{name}.duration'):
         mon.run()
 
 
@@ -177,9 +177,9 @@ def run_skaled_pipeline(
         automatic_repair=automatic_repair
     )
 
-    stcd = get_statsd_client()
-    stcd.incr(f'schain.skaled.pipeline.{name}.{mon.__name__}')
-    with stcd.timer(f'admin.skaled.pipeline.{name}.duration'):
+    statsd_client = get_statsd_client()
+    statsd_client.incr(f'schain.skaled.pipeline.{name}.{mon.__name__}')
+    with statsd_client.timer(f'admin.skaled.pipeline.{name}.duration'):
         mon(skaled_am, skaled_checks).run()
 
 
@@ -219,10 +219,10 @@ def create_and_execute_tasks(
         schain_record.sync_config_run, schain_record.config_version, stream_version
     )
 
-    stcd = get_statsd_client()
+    statsd_client = get_statsd_client()
     monitor_last_seen_ts = schain_record.monitor_last_seen.timestamp()
-    stcd.incr(f'admin.schain.monitor.{name}')
-    stcd.gauge(f'admin.schain.monitor_last_seen.{name}', monitor_last_seen_ts)
+    statsd_client.incr(f'admin.schain.monitor.{name}')
+    statsd_client.gauge(f'admin.schain.monitor_last_seen.{name}', monitor_last_seen_ts)
 
     tasks = []
     if not leaving_chain:
