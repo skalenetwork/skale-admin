@@ -24,6 +24,7 @@ from Crypto.Hash import keccak
 from web3 import Web3
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
+
 from tools.helper import read_json
 from tools.configs import STATIC_PARAMS_FILEPATH, ENV_TYPE
 from tools.helper import safe_load_yml

@@ -42,7 +42,8 @@ from core.schains.firewall import get_default_rule_controller
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.monitor import (
     get_skaled_monitor,
-    RegularConfigMonitor
+    RegularConfigMonitor,
+    SyncConfigMonitor
 )
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.external_config import ExternalConfig, ExternalState
@@ -50,10 +51,12 @@ from core.schains.task import keep_tasks_running, Task
 from core.schains.config.static_params import get_automatic_repair_option
 from core.schains.skaled_status import get_skaled_status
 from core.node import get_current_nodes
+
 from tools.docker_utils import DockerUtils
-from tools.configs.ima import DISABLE_IMA
+from tools.configs import SYNC_NODE
 from tools.notifications.messages import notify_checks
 from tools.helper import is_node_part_of_chain
+from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord
 
 
@@ -77,7 +80,7 @@ def run_config_pipeline(
     schain_record = SChainRecord.get_by_name(name)
     rotation_data = skale.node_rotation.get_rotation(name)
     allowed_ranges = get_sync_agent_ranges(skale)
-    ima_linked = not DISABLE_IMA and skale_ima.linker.has_schain(name)
+    ima_linked = not SYNC_NODE and skale_ima.linker.has_schain(name)
     current_nodes = get_current_nodes(skale, name)
 
     estate = ExternalState(
@@ -109,10 +112,21 @@ def run_config_pipeline(
         econfig=econfig
     )
 
-    status = config_checks.get_all(log=False)
+    status = config_checks.get_all(log=False, expose=True)
     logger.info('Config checks: %s', status)
-    mon = RegularConfigMonitor(config_am, config_checks)
-    mon.run()
+
+    if SYNC_NODE:
+        logger.info('Sync node mode, running config monitor')
+        mon = SyncConfigMonitor(config_am, config_checks)
+    else:
+        logger.info('Regular node mode, running config monitor')
+        mon = RegularConfigMonitor(config_am, config_checks)
+    statsd_client = get_statsd_client()
+
+    statsd_client.incr(f'admin.config.pipeline.{name}.{mon.__class__.__name__}')
+    statsd_client.gauge(f'admin.schain.rotation_id.{name}', rotation_data['rotation_id'])
+    with statsd_client.timer(f'admin.config.pipeline.{name}.duration'):
+        mon.run()
 
 
 def run_skaled_pipeline(
@@ -131,7 +145,8 @@ def run_skaled_pipeline(
         schain_name=schain['name'],
         schain_record=schain_record,
         rule_controller=rc,
-        dutils=dutils
+        dutils=dutils,
+        sync_node=SYNC_NODE
     )
 
     skaled_status = get_skaled_status(name)
@@ -144,7 +159,7 @@ def run_skaled_pipeline(
         econfig=ExternalConfig(name),
         dutils=dutils
     )
-    status = skaled_checks.get_all(log=False)
+    status = skaled_checks.get_all(log=False, expose=True)
     automatic_repair = get_automatic_repair_option()
     api_status = get_api_checks_status(
         status=status, allowed=TG_ALLOWED_CHECKS)
@@ -153,6 +168,7 @@ def run_skaled_pipeline(
     logger.info('Skaled status: %s', status)
 
     logger.info('Upstream config %s', skaled_am.upstream_config_path)
+
     mon = get_skaled_monitor(
         action_manager=skaled_am,
         status=status,
@@ -160,7 +176,11 @@ def run_skaled_pipeline(
         skaled_status=skaled_status,
         automatic_repair=automatic_repair
     )
-    mon(skaled_am, skaled_checks).run()
+
+    statsd_client = get_statsd_client()
+    statsd_client.incr(f'schain.skaled.pipeline.{name}.{mon.__name__}')
+    with statsd_client.timer(f'admin.skaled.pipeline.{name}.duration'):
+        mon(skaled_am, skaled_checks).run()
 
 
 def post_monitor_sleep():
@@ -189,7 +209,7 @@ def create_and_execute_tasks(
 
     is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
-    leaving_chain = not is_node_part_of_chain(skale, name, node_config.id)
+    leaving_chain = not SYNC_NODE and not is_node_part_of_chain(skale, name, node_config.id)
     if leaving_chain and not is_rotation_active:
         logger.info('Not on node (%d), finishing process', node_config.id)
         return True
@@ -198,6 +218,12 @@ def create_and_execute_tasks(
         'sync_config_run %s, config_version %s, stream_version %s',
         schain_record.sync_config_run, schain_record.config_version, stream_version
     )
+
+    statsd_client = get_statsd_client()
+    monitor_last_seen_ts = schain_record.monitor_last_seen.timestamp()
+    statsd_client.incr(f'admin.schain.monitor.{name}')
+    statsd_client.gauge(f'admin.schain.monitor_last_seen.{name}', monitor_last_seen_ts)
+
     tasks = []
     if not leaving_chain:
         logger.info('Adding config task to the pool')

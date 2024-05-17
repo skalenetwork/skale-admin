@@ -3,10 +3,12 @@ from functools import partial
 
 import docker
 import pytest
-from mock import Mock
+from mock import Mock, MagicMock
+
 from types import SimpleNamespace
 
 from core.schains.runner import (
+    run_schain_container,
     get_container_name,
     get_image_name,
     get_container_info
@@ -42,6 +44,14 @@ def mocked_dutils(dutils):
         dutils.get_all_schain_containers,
         all=True
     )
+    return dutils
+
+
+@pytest.fixture
+def mocked_dutils_run_container(dutils):
+    class ContainerMock:
+        id = 123  # noqa
+    dutils.run_container = lambda *args, **kwargs: MagicMock(return_value=ContainerMock())
     return dutils
 
 
@@ -103,6 +113,46 @@ def test_run_schain_container(
 
 
 @mock.patch(
+    'core.schains.runner.get_container_name',
+    return_value='skaled-mock'
+)
+def test_run_schain_container_sync(
+    mocked_dutils_run_container,
+    schain_config,
+    cleanup_container,
+    cert_key_pair
+):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    schain_data = get_schain_contracts_data(schain_name)
+
+    run_schain_container(
+        schain_data,
+        dutils=mocked_dutils_run_container,
+    )
+    assert '-historic' not in mocked_dutils_run_container.run_container.call_args[0][0]
+    assert mocked_dutils_run_container.run_container.call_args[1].get('cpu_shares')
+    assert mocked_dutils_run_container.run_container.call_args[1].get('mem_limit')
+
+    run_schain_container(
+        schain_data,
+        dutils=mocked_dutils_run_container,
+        sync_node=True,
+        historic_state=True
+    )
+    assert '-historic' in mocked_dutils_run_container.run_container.call_args[0][0]
+    assert not mocked_dutils_run_container.run_container.call_args[1].get('cpu_shares')
+    assert not mocked_dutils_run_container.run_container.call_args[1].get('mem_limit')
+
+
+def test_get_image_name_sync():
+    image_name = get_image_name(image_type=SCHAIN_CONTAINER)
+    assert '-historic' not in image_name
+
+    image_name = get_image_name(image_type=SCHAIN_CONTAINER, historic_state=True)
+    assert '-historic' in image_name
+
+
+@mock.patch(
     'core.schains.runner.get_image_name',
     return_value='skaled-mock'
 )
@@ -138,9 +188,9 @@ def test_not_existed_docker_objects(dutils):
 
 def test_restart_all_schains(mocked_dutils):
     schain_names = ['test1', 'test2', 'test3']
-    schain_image = get_image_name(SCHAIN_CONTAINER)
+    schain_image = get_image_name(image_type=SCHAIN_CONTAINER)
     cont_names = [
-        get_container_name(SCHAIN_CONTAINER, name)
+        get_container_name(image_type=SCHAIN_CONTAINER, schain_name=name)
         for name in schain_names
     ]
     start_time = {}

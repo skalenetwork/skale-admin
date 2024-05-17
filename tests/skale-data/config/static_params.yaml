@@ -37,6 +37,9 @@ envs:
       docker-compose: 1.27.4
 
     schain:
+      contractStorageZeroValuePatchTimestamp:
+        default: 800000
+        test-schain: 1500000
       revertableFSPatchTimestamp: 1000000
       contractStoragePatchTimestamp: 1000000
       snapshotIntervalSec: 0
@@ -52,6 +55,8 @@ envs:
         bindIP: "0.0.0.0"
         logLevel: "info"
         logLevelConfig: "info"
+        pg-threads: 10
+        pg-threads-limit: 10
       small:
         minCacheSize: 1000000
         maxCacheSize: 2000000
@@ -109,6 +114,9 @@ envs:
       docker-compose: 1.27.4
 
     schain:
+      contractStorageZeroValuePatchTimestamp:
+        default: 800000
+        test-schain: 1500000
       revertableFSPatchTimestamp: 1000000
       contractStoragePatchTimestamp: 1000000
       snapshotIntervalSec: 0
@@ -124,6 +132,8 @@ envs:
         bindIP: "0.0.0.0"
         logLevel: "info"
         logLevelConfig: "info"
+        pg-threads: 10
+        pg-threads-limit: 10
       small:
         minCacheSize: 1000000
         maxCacheSize: 2000000
@@ -181,6 +191,9 @@ envs:
       docker-compose: 1.27.4
 
     schain:
+      contractStorageZeroValuePatchTimestamp:
+        default: 800000
+        test-schain: 1500000
       revertableFSPatchTimestamp: 1000000
       contractStoragePatchTimestamp: 1000000
       snapshotIntervalSec: 0
@@ -198,6 +211,8 @@ envs:
         bindIP: "0.0.0.0"
         logLevel: "info"
         logLevelConfig: "info"
+        pg-threads: 10
+        pg-threads-limit: 10
       small:
         minCacheSize: 1000000
         maxCacheSize: 2000000
@@ -256,12 +271,20 @@ envs:
       docker-compose: 1.27.4
 
     schain:
+      contractStorageZeroValuePatchTimestamp:
+        default: 800000
+        test-schain: 1500000
       revertableFSPatchTimestamp: 1000000
       contractStoragePatchTimestamp: 1000000
       snapshotIntervalSec: 0
       emptyBlockIntervalMs: 10000
       snapshotDownloadTimeout: 18000
       snapshotDownloadInactiveTimeout: 120
+
+    ima:
+      time_frame:
+        before: 1800
+        after: 900
 
     schain_cmd:
       ["-v 3", "--web3-trace", "--enable-debug-behavior-apis", "--aa no"]
@@ -273,6 +296,8 @@ envs:
         bindIP: "0.0.0.0"
         logLevel: "info"
         logLevelConfig: "info"
+        pg-threads: 10
+        pg-threads-limit: 10
       small:
         minCacheSize: 1000000
         maxCacheSize: 2000000

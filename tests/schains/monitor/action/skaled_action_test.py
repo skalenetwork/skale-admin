@@ -17,11 +17,19 @@ from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord
 
+from tests.utils import IMA_MIGRATION_TS
+
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 
 
-def run_ima_container_mock(schain: dict, mainnet_chain_id: int, image: str, dutils=None):
+def run_ima_container_mock(
+    schain: dict,
+    mainnet_chain_id: int,
+    image: str,
+    time_frame: int,
+    dutils=None
+):
     image_name, container_name, _, _ = get_container_info(
         IMA_CONTAINER, schain['name'])
     image = image or image_name
@@ -40,7 +48,9 @@ def monitor_schain_container_mock(
     download_snapshot=False,
     start_ts=None,
     abort_on_exit=True,
-    dutils=None
+    dutils=None,
+    sync_node=False,
+    historic_state=False
 ):
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain['name'])
@@ -66,7 +76,8 @@ def skaled_checks(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        dutils=dutils
+        dutils=dutils,
+        sync_node=False
     )
 
 
@@ -80,6 +91,7 @@ def skaled_am(
     predeployed_ima,
     secret_key,
     ssl_folder,
+    ima_migration_schedule,
     dutils,
     skaled_checks
 ):
@@ -135,7 +147,9 @@ def test_skaled_container_with_snapshot_action(skaled_am):
             download_snapshot=True,
             start_ts=None,
             abort_on_exit=True,
-            dutils=skaled_am.dutils
+            dutils=skaled_am.dutils,
+            sync_node=False,
+            historic_state=False
         )
         assert monitor_schain_mock.call_count == 1
     finally:
@@ -159,7 +173,9 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
             download_snapshot=True,
             start_ts=ts,
             abort_on_exit=True,
-            dutils=skaled_am.dutils
+            dutils=skaled_am.dutils,
+            sync_node=False,
+            historic_state=False
         )
         assert monitor_schain_mock.call_count == 1
     finally:
@@ -250,7 +266,27 @@ def test_recreated_schain_containers(
     assert ima_ts > ima_created_ts
 
 
-def test_ima_container_action_new_chain(
+def test_ima_container_action_from_scratch(
+    skaled_am,
+    skaled_checks,
+    schain_config,
+    predeployed_ima,
+    ima_linked,
+    cleanup_ima,
+    ima_migration_schedule,
+    dutils
+):
+    skaled_am.ima_container()
+    containers = dutils.get_all_ima_containers(all=True)
+    assert len(containers) == 1
+    container_name = containers[0].name
+    assert container_name == f'skale_ima_{skaled_am.name}'
+    image = dutils.get_container_image_name(container_name)
+    assert image == 'skalenetwork/ima:2.0.0-beta.9'
+
+
+# @pytest.mark.skip('Docker API GA issues need to be resolved')
+def test_ima_container_action_image_pulling(
     skaled_am,
     skaled_checks,
     schain_config,
@@ -259,33 +295,8 @@ def test_ima_container_action_new_chain(
     cleanup_ima,
     dutils
 ):
-    with mock.patch(
-        'core.schains.monitor.containers.run_ima_container',
-        run_ima_container_mock
-    ):
-        skaled_am.ima_container()
-        containers = dutils.get_all_ima_containers(all=True)
-        assert len(containers) == 1
-        container_name = containers[0].name
-        assert container_name == f'skale_ima_{skaled_am.name}'
-        image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-beta.9'
-
-
-@pytest.mark.skip('Docker API GA issues need to be resolved')
-@mock.patch('core.schains.monitor.containers.run_ima_container', run_ima_container_mock)
-def test_ima_container_action_old_chain(
-    skaled_am,
-    skaled_checks,
-    schain_config,
-    predeployed_ima,
-    ima_linked,
-    cleanup_ima,
-    dutils
-):
-    ts = int(time.time())
-    mts = ts + 3600
-    with mock.patch('core.schains.monitor.action.get_ima_migration_ts', return_value=mts):
+    dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
+    with freezegun.freeze_time(dt):
         skaled_am.ima_container()
         containers = dutils.get_all_ima_containers(all=True)
         assert len(containers) == 1
@@ -296,8 +307,18 @@ def test_ima_container_action_old_chain(
         assert image == 'skalenetwork/ima:2.0.0-develop.3'
         assert dutils.pulled('skalenetwork/ima:2.0.0-beta.9')
 
-    mts = ts - 5
-    with mock.patch('core.schains.monitor.action.get_ima_migration_ts', return_value=mts):
+
+def test_ima_container_action_image_migration(
+    skaled_am,
+    skaled_checks,
+    schain_config,
+    predeployed_ima,
+    ima_linked,
+    cleanup_ima,
+    dutils
+):
+    dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS + 5)
+    with freezegun.freeze_time(dt):
         skaled_am.ima_container()
         containers = dutils.get_all_ima_containers(all=True)
         assert len(containers) == 1
@@ -307,12 +328,51 @@ def test_ima_container_action_old_chain(
         assert image == 'skalenetwork/ima:2.0.0-beta.9'
 
 
+def test_ima_container_action_time_frame_migration(
+    skaled_am,
+    skaled_checks,
+    schain_config,
+    predeployed_ima,
+    ima_linked,
+    cleanup_ima,
+    dutils
+):
+    dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
+    with freezegun.freeze_time(dt):
+        with mock.patch('core.schains.monitor.containers.get_image_name',
+                        return_value='skalenetwork/ima:2.0.0-beta.9'):
+            skaled_am.ima_container()
+            containers = dutils.get_all_ima_containers(all=True)
+            assert len(containers) == 1
+            container_name = containers[0].name
+            assert container_name == f'skale_ima_{skaled_am.name}'
+            image = dutils.get_container_image_name(container_name)
+            assert image == 'skalenetwork/ima:2.0.0-beta.9'
+            actual_time_frame = int(dutils.get_container_env_value(container_name, 'TIME_FRAMING'))
+            assert actual_time_frame == 1800
+
+    dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS + 5)
+    with freezegun.freeze_time(dt):
+        with mock.patch('core.schains.monitor.containers.get_image_name',
+                        return_value='skalenetwork/ima:2.0.0-beta.9'):
+            skaled_am.ima_container()
+            containers = dutils.get_all_ima_containers(all=True)
+            assert len(containers) == 1
+            container_name = containers[0].name
+            assert container_name == f'skale_ima_{skaled_am.name}'
+            image = dutils.get_container_image_name(container_name)
+            assert image == 'skalenetwork/ima:2.0.0-beta.9'
+            actual_time_frame = int(dutils.get_container_env_value(container_name, 'TIME_FRAMING'))
+            assert actual_time_frame == 900
+
+
 def test_ima_container_action_not_linked(
     skaled_am,
     skaled_checks,
     schain_db,
     _schain_name,
     cleanup_ima_containers,
+    ima_migration_schedule,
     dutils
 ):
     skaled_am.ima_container()

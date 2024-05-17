@@ -48,8 +48,10 @@ class SkaleConfig:
 
 def generate_skale_section(
     schain: dict, on_chain_etherbase: str, on_chain_owner: str, schain_id: int, node_id: int,
-    node: dict, ecdsa_key_name: str, schains_on_node: list, schain_nodes_with_schains: list,
-    rotation_id: int, node_groups: dict, skale_manager_opts: SkaleManagerOpts
+    node: dict, ecdsa_key_name: str, schain_nodes_with_schains: list,
+    rotation_id: int, node_groups: dict, skale_manager_opts: SkaleManagerOpts,
+    schain_base_port: int,
+    common_bls_public_keys: list[str], sync_node: bool = False, archive=None, catchup=None
 ) -> SkaleConfig:
     contract_settings = generate_contract_settings(
         on_chain_owner=on_chain_owner,
@@ -58,7 +60,8 @@ def generate_skale_section(
 
     schain_type = get_schain_type(schain['partOfNode'])
     static_node_info = get_static_node_info(schain_type)
-    static_schain_info = get_static_schain_info()
+    static_schain_info = get_static_schain_info(schain['name'])
+    nodes_in_schain = len(schain_nodes_with_schains)
 
     node_info = generate_current_node_info(
         node_id=node_id,
@@ -66,15 +69,21 @@ def generate_skale_section(
         ecdsa_key_name=ecdsa_key_name,
         static_node_info=static_node_info,
         schain=schain,
-        schains_on_node=schains_on_node,
         rotation_id=rotation_id,
-        skale_manager_opts=skale_manager_opts
+        skale_manager_opts=skale_manager_opts,
+        schain_base_port=schain_base_port,
+        nodes_in_schain=nodes_in_schain,
+        common_bls_public_keys=common_bls_public_keys,
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup
     )
 
     schain_nodes = generate_schain_nodes(
         schain_nodes_with_schains=schain_nodes_with_schains,
         schain_name=schain['name'],
-        rotation_id=rotation_id
+        rotation_id=rotation_id,
+        sync_node=sync_node
     )
 
     schain_info = generate_schain_info(

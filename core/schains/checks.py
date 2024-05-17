@@ -22,8 +22,10 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-from core.node import ExtendedManagerNodeInfo, get_current_ips
 
+import statsd
+
+from core.node import ExtendedManagerNodeInfo, get_current_ips
 from core.schains.config.directory import get_schain_check_filepath
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import (
@@ -38,7 +40,7 @@ from core.schains.config.main import (
 )
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
-from core.schains.ima import get_migration_ts as get_ima_migration_ts
+from core.schains.ima import get_ima_time_frame, get_migration_ts as get_ima_migration_ts
 from core.schains.process_manager_helper import is_monitor_process_alive
 from core.schains.rpc import (
     check_endpoint_alive,
@@ -46,12 +48,19 @@ from core.schains.rpc import (
     get_endpoint_alive_check_timeout
 )
 from core.schains.external_config import ExternalConfig, ExternalState
-from core.schains.runner import get_container_name, get_image_name, is_new_image_pulled
+from core.schains.runner import (
+    get_container_name,
+    get_ima_container_time_frame,
+    get_image_name,
+    is_new_image_pulled
+)
 from core.schains.skaled_exit_codes import SkaledExitCodes
+from core.schains.volume import is_volume_exists
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import write_json
+from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 
 from web.models.schain import SChainRecord
@@ -105,6 +114,7 @@ class IChecks(ABC):
     def get_all(self,
                 log: bool = True,
                 save: bool = False,
+                expose: bool = False,
                 needed: Optional[List[str]] = None) -> Dict:
         if needed:
             names = needed
@@ -116,6 +126,8 @@ class IChecks(ABC):
             if hasattr(self, name):
                 logger.debug('Running check %s', name)
                 checks_status[name] = getattr(self, name).status
+        if expose:
+            send_to_statsd(self.statsd_client, self.get_name(), checks_status)
         if log:
             log_checks_dict(self.get_name(), checks_status)
         if save:
@@ -144,6 +156,7 @@ class ConfigChecks(IChecks):
                  stream_version: str,
                  current_nodes: list[ExtendedManagerNodeInfo],
                  estate: ExternalState,
+                 sync_node: bool = False,
                  econfig: Optional[ExternalConfig] = None
                  ) -> None:
         self.name = schain_name
@@ -153,10 +166,12 @@ class ConfigChecks(IChecks):
         self.stream_version = stream_version
         self.current_nodes = current_nodes
         self.estate = estate
+        self.sync_node = sync_node
         self.econfig = econfig or ExternalConfig(schain_name)
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=schain_name
         )
+        self.statsd_client = get_statsd_client()
 
     def get_name(self) -> str:
         return self.name
@@ -234,17 +249,20 @@ class SkaledChecks(IChecks):
         rule_controller: IRuleController,
         *,
         econfig: Optional[ExternalConfig] = None,
-        dutils: Optional[DockerUtils] = None
+        dutils: Optional[DockerUtils] = None,
+        sync_node: bool = False
     ):
         self.name = schain_name
         self.schain_record = schain_record
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SCHAIN_CONTAINER, self.name)
         self.econfig = econfig or ExternalConfig(name=schain_name)
+        self.sync_node = sync_node
         self.rc = rule_controller
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=schain_name
         )
+        self.statsd_client = get_statsd_client()
 
     def get_name(self) -> str:
         return self.name
@@ -280,7 +298,13 @@ class SkaledChecks(IChecks):
     @property
     def volume(self) -> CheckRes:
         """Checks that sChain volume exists"""
-        return CheckRes(self.dutils.is_data_volume_exists(self.name))
+
+        return CheckRes(
+            is_volume_exists(
+                self.name,
+                sync_node=self.sync_node,
+                dutils=self.dutils)
+            )
 
     @property
     def firewall_rules(self) -> CheckRes:
@@ -321,30 +345,39 @@ class SkaledChecks(IChecks):
         if not self.econfig.ima_linked:
             return CheckRes(True)
         container_name = get_container_name(IMA_CONTAINER, self.name)
-        new_image_pulled = is_new_image_pulled(
-            type=IMA_CONTAINER, dutils=self.dutils)
+        new_image_pulled = is_new_image_pulled(image_type=IMA_CONTAINER, dutils=self.dutils)
 
         migration_ts = get_ima_migration_ts(self.name)
-        new = time.time() > migration_ts
+        after = time.time() > migration_ts
 
         container_running = self.dutils.is_container_running(container_name)
 
-        updated_image = False
+        updated_image, updated_time_frame = False, False
         if container_running:
-            expected_image = get_image_name(type=IMA_CONTAINER, new=new)
+            expected_image = get_image_name(image_type=IMA_CONTAINER, new=after)
             image = self.dutils.get_container_image_name(container_name)
             updated_image = image == expected_image
+
+            time_frame = get_ima_time_frame(self.name, after=after)
+            container_time_frame = get_ima_container_time_frame(self.name, self.dutils)
+
+            updated_time_frame = time_frame == container_time_frame
+            logger.debug(
+                'IMA image %s, container image %s, time frame %d, container_time_frame %d',
+                expected_image, image, time_frame, container_time_frame
+            )
 
         data = {
             'container_running': container_running,
             'updated_image': updated_image,
-            'new_image_pulled': new_image_pulled
+            'new_image_pulled': new_image_pulled,
+            'updated_time_frame': updated_time_frame
         }
         logger.debug(
             '%s, IMA check - %s',
             self.name, data
         )
-        result: bool = container_running and updated_image and new_image_pulled
+        result: bool = all(data.values())
         return CheckRes(result, data=data)
 
     @property
@@ -396,7 +429,8 @@ class SChainChecks(IChecks):
         rotation_id: int = 0,
         *,
         econfig: Optional[ExternalConfig] = None,
-        dutils: DockerUtils = None
+        dutils: DockerUtils = None,
+        sync_node: bool = False
     ):
         self._subjects = [
             ConfigChecks(
@@ -407,14 +441,16 @@ class SChainChecks(IChecks):
                 stream_version=stream_version,
                 current_nodes=current_nodes,
                 estate=estate,
-                econfig=econfig
+                econfig=econfig,
+                sync_node=sync_node
             ),
             SkaledChecks(
                 schain_name=schain_name,
                 schain_record=schain_record,
                 rule_controller=rule_controller,
                 econfig=econfig,
-                dutils=dutils
+                dutils=dutils,
+                sync_node=sync_node
             )
         ]
 
@@ -484,3 +520,9 @@ def log_checks_dict(schain_name, checks_dict):
                 'Failed sChain checks', 'error'
             )
         )
+
+
+def send_to_statsd(statsd_client: statsd.StatsClient, schain_name: str, checks_dict: dict) -> None:
+    for check, result in checks_dict.items():
+        mname = f'admin.checks.{schain_name}.{check}'
+        statsd_client.gauge(mname, int(result))
