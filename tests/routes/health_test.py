@@ -70,6 +70,10 @@ def test_containers(skale_bp, dutils):
         )
     }
     assert data == expected
+    for container_info in data['payload']:
+        field_map = {'cpu_shares': 0, 'mem_limit': 0, 'swap_limit': 0, 'swappiness': None}
+        for field, value in field_map.items():
+            assert container_info[field] == value
 
 
 def test_containers_all(skale_bp, dutils, schain_db, cleanup_schain_containers):
@@ -85,6 +89,10 @@ def test_containers_all(skale_bp, dutils, schain_db, cleanup_schain_containers):
         )
     }
     assert data == expected
+    for container_info in data['payload']:
+        field_map = {'cpu_shares': 0, 'mem_limit': 0, 'swap_limit': 0, 'swappiness': None}
+        for field, value in field_map.items():
+            assert container_info[field] == value
 
 
 def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils):

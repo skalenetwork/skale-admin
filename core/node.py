@@ -37,7 +37,7 @@ from skale.utils.exceptions import InvalidNodeIdError
 from skale.utils.helper import ip_from_bytes
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
-from core.filebeat import update_filebeat_service
+from core.monitoring import update_monitoring_services
 from tools.configs import WATCHDOG_PORT, CHANGE_IP_DELAY, CHECK_REPORT_PATH, META_FILEPATH
 from tools.helper import read_json
 from tools.str_formatters import arguments_list_string
@@ -135,7 +135,7 @@ class Node:
         self.config.name = name
         self.config.ip = ip
 
-        update_filebeat_service(public_ip, self.config.id, self.skale)
+        update_monitoring_services(public_ip, self.config.id, self.skale)
         return self._ok(data=self.config.all())
 
     def create_node_on_contracts(self, ip, public_ip, port, name, domain_name,

@@ -19,10 +19,12 @@
 
 import logging
 import time
+from typing import Optional
 
 from core.schains.volume import is_volume_exists
 from core.schains.runner import (
     get_container_image,
+    get_ima_container_time_frame,
     get_image_name,
     is_container_exists,
     is_schain_container_failed,
@@ -32,14 +34,14 @@ from core.schains.runner import (
     run_schain_container
 )
 from core.ima.schain import copy_schain_ima_abi
-from core.schains.ima import ImaData
+from core.schains.ima import get_ima_time_frame, ImaData
 
+from tools.configs import SYNC_NODE
 from tools.configs.containers import (
     MAX_SCHAIN_RESTART_COUNT,
     SCHAIN_CONTAINER,
     IMA_CONTAINER
 )
-from tools.configs.ima import DISABLE_IMA
 from tools.docker_utils import DockerUtils
 
 
@@ -53,13 +55,15 @@ def monitor_schain_container(
     download_snapshot=False,
     start_ts=None,
     abort_on_exit: bool = True,
-    dutils=None
+    dutils: Optional[DockerUtils] = None,
+    sync_node: bool = False,
+    historic_state: bool = False
 ) -> None:
     dutils = dutils or DockerUtils()
     schain_name = schain['name']
     logger.info(f'Monitoring container for sChain {schain_name}')
 
-    if not is_volume_exists(schain_name, dutils=dutils):
+    if not is_volume_exists(schain_name, sync_node=sync_node, dutils=dutils):
         logger.error(f'Data volume for sChain {schain_name} does not exist')
         return
 
@@ -76,8 +80,10 @@ def monitor_schain_container(
             schain=schain,
             download_snapshot=download_snapshot,
             start_ts=start_ts,
+            dutils=dutils,
             snapshot_from=schain_record.snapshot_from,
-            dutils=dutils
+            sync_node=sync_node,
+            historic_state=historic_state,
         )
         schain_record.reset_failed_counters()
         return
@@ -113,8 +119,7 @@ def monitor_ima_container(
 ) -> None:
     schain_name = schain["name"]
 
-    if DISABLE_IMA:
-        logger.info(f'{schain_name} - IMA is disabled, skipping')
+    if SYNC_NODE:
         return
 
     if not ima_data.linked:
@@ -125,29 +130,35 @@ def monitor_ima_container(
 
     container_exists = is_container_exists(
         schain_name, container_type=IMA_CONTAINER, dutils=dutils)
-    container_image = get_container_image(schain_name, IMA_CONTAINER, dutils)
-    new_image = get_image_name(type=IMA_CONTAINER, new=True)
-
-    expected_image = get_image_name(type=IMA_CONTAINER)
-    logger.debug('%s IMA image %s, expected %s', schain_name,
-                 container_image, expected_image)
 
     if time.time() > migration_ts:
-        logger.debug('%s IMA migration time passed', schain_name)
-        expected_image = new_image
-        if container_exists and expected_image != container_image:
-            logger.info(
-                '%s Removing old container as part of IMA migration', schain_name)
-            remove_container(schain_name, IMA_CONTAINER, dutils)
-            container_exists = False
+        logger.debug('IMA migration time passed')
+
+        image = get_image_name(image_type=IMA_CONTAINER, new=True)
+        time_frame = get_ima_time_frame(schain_name, after=True)
+        if container_exists:
+            container_image = get_container_image(schain_name, IMA_CONTAINER, dutils)
+            container_time_frame = get_ima_container_time_frame(schain_name, dutils)
+
+            if image != container_image or time_frame != container_time_frame:
+                logger.info('Removing old container as part of IMA migration')
+                remove_container(schain_name, IMA_CONTAINER, dutils)
+                container_exists = False
+    else:
+        time_frame = get_ima_time_frame(schain_name, after=False)
+        image = get_image_name(image_type=IMA_CONTAINER, new=False)
+    logger.debug('IMA time frame %d', time_frame)
 
     if not container_exists:
-        logger.info('%s No IMA container, creating, image %s',
-                    schain_name, expected_image)
+        logger.info(
+            '%s No IMA container, creating, image %s, time frame %d',
+            schain_name, image, time_frame
+        )
         run_ima_container(
             schain,
             ima_data.chain_id,
-            image=expected_image,
+            image=image,
+            time_frame=time_frame,
             dutils=dutils
         )
     else:

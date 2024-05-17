@@ -30,6 +30,7 @@ from skale.transactions.result import TransactionFailedError
 from core.schains.dkg.broadcast_filter import Filter
 from core.schains.dkg.structures import ComplaintReason, DKGStep
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
+from tools.resources import get_statsd_client
 from tools.sgx_utils import sgx_unreachable_retry
 
 sys.path.insert(0, NODE_DATA_PATH)
@@ -171,8 +172,18 @@ class DKGClient:
         self.complaint_error_event_hash = self.skale.web3.to_hex(self.skale.web3.keccak(
             text="ComplaintError(string)"
         ))
-        self.last_completed_step = step  # last step
+        self.statsd_client = get_statsd_client()
+        self._last_completed_step = step  # last step
         logger.info(f'sChain: {self.schain_name}. DKG timeout is {self.dkg_timeout}')
+
+    @property
+    def last_completed_step(self) -> DKGStep:
+        return self._last_completed_step
+
+    @last_completed_step.setter
+    def last_completed_step(self, value: DKGStep):
+        self.statsd_client.gauge(f'admin.dkg.last_completed_step.{self.schain_name}', value)
+        self._last_completed_step = value
 
     def is_channel_opened(self):
         return self.skale.dkg.is_channel_opened(self.group_index)
