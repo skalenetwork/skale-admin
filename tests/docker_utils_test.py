@@ -49,7 +49,8 @@ def mocked_dutils(dutils):
 
 @pytest.fixture
 def mocked_dutils_run_container(dutils):
-    class ContainerMock: id = 123 # noqa
+    class ContainerMock:
+        id = 123  # noqa
     dutils.run_container = lambda *args, **kwargs: MagicMock(return_value=ContainerMock())
     return dutils
 

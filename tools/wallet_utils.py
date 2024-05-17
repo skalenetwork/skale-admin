@@ -31,7 +31,7 @@ from tools.configs import (
     SGX_SERVER_URL
 )
 from tools.configs.web3 import ENDPOINT
-from tools.db import rs as grs
+from tools.resources import rs as grs
 
 logger = logging.getLogger(__name__)
 

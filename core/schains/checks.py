@@ -22,8 +22,10 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-from core.node import ExtendedManagerNodeInfo, get_current_ips
 
+import statsd
+
+from core.node import ExtendedManagerNodeInfo, get_current_ips
 from core.schains.config.directory import get_schain_check_filepath
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import (
@@ -58,6 +60,7 @@ from core.schains.volume import is_volume_exists
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import write_json
+from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 
 from web.models.schain import SChainRecord
@@ -111,6 +114,7 @@ class IChecks(ABC):
     def get_all(self,
                 log: bool = True,
                 save: bool = False,
+                expose: bool = False,
                 needed: Optional[List[str]] = None) -> Dict:
         if needed:
             names = needed
@@ -122,6 +126,8 @@ class IChecks(ABC):
             if hasattr(self, name):
                 logger.debug('Running check %s', name)
                 checks_status[name] = getattr(self, name).status
+        if expose:
+            send_to_statsd(self.statsd_client, self.get_name(), checks_status)
         if log:
             log_checks_dict(self.get_name(), checks_status)
         if save:
@@ -165,6 +171,7 @@ class ConfigChecks(IChecks):
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=schain_name
         )
+        self.statsd_client = get_statsd_client()
 
     def get_name(self) -> str:
         return self.name
@@ -255,6 +262,7 @@ class SkaledChecks(IChecks):
         self.cfm: ConfigFileManager = ConfigFileManager(
             schain_name=schain_name
         )
+        self.statsd_client = get_statsd_client()
 
     def get_name(self) -> str:
         return self.name
@@ -512,3 +520,9 @@ def log_checks_dict(schain_name, checks_dict):
                 'Failed sChain checks', 'error'
             )
         )
+
+
+def send_to_statsd(statsd_client: statsd.StatsClient, schain_name: str, checks_dict: dict) -> None:
+    for check, result in checks_dict.items():
+        mname = f'admin.checks.{schain_name}.{check}'
+        statsd_client.gauge(mname, int(result))

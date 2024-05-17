@@ -97,7 +97,7 @@ def test_register_info(unregistered_node):
     assert unregistered_node.config.schain_base_port == -1
 
     # Register new node and check that it successfully created on contracts
-    with mock.patch('core.node.update_filebeat_service'):
+    with mock.patch('core.node.update_monitoring_services'):
         res = unregistered_node.register(
             ip,
             public_ip,

@@ -18,18 +18,16 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-import json
-import time
-import psutil
-
-import yaml
-import logging
 import itertools
+import json
+import logging
+import psutil
 import subprocess
+import time
 from subprocess import PIPE
 
 import requests
-
+import yaml
 from filelock import FileLock
 from jinja2 import Environment
 from skale import Skale

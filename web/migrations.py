@@ -24,7 +24,7 @@ from playhouse.migrate import SqliteMigrator, migrate as playhouse_migrate
 from peewee import DateTimeField, IntegerField, BooleanField, CharField
 
 from web.models.schain import DEFAULT_CONFIG_VERSION
-from tools.db import get_database
+from tools.resources import get_database
 
 
 logger = logging.getLogger(__name__)
