@@ -21,7 +21,7 @@ CONFIG_TEMPLATE = """
 [[outputs.db]]
   alias = "db"
   urls = ["{{ url }}"]
-  header = {"Token" = "{{ token }}"}
+
 """
 
 
@@ -49,9 +49,8 @@ def test_update_telegraf_service(telegraf_template, cleanup_container, dutils):
     node_ip = '1.1.1.1'
     with pytest.raises(TelegrafNotConfiguredError):
         update_telegraf_service(
-            node_id,
-            node_ip,
-            token='',
+            node_id=node_id,
+            node_ip='',
             url='http://127.0.0.1:1231',
             dutils=dutils
         )
@@ -59,11 +58,10 @@ def test_update_telegraf_service(telegraf_template, cleanup_container, dutils):
     update_telegraf_service(
         node_ip,
         node_id,
-        token='token',
         url='http://127.0.0.1:1231',
         dutils=dutils
     )
     with open(TELEGRAF_CONFIG_PATH) as config:
         config = config.read()
-        assert config == '\n[agent]\n  interval = "60s"\n  hostname = "1.1.1.1"\n  omit_hostname = false\n\n[global_tags]\n  node_id = "1"\n\n[[outputs.db]]\n  alias = "db"\n  urls = ["http://127.0.0.1:1231"]\n  header = {"Token" = "token"}'  # noqa
+        assert config == '\n[agent]\n  interval = "60s"\n  hostname = "1.1.1.1"\n  omit_hostname = false\n\n[global_tags]\n  node_id = "1"\n\n[[outputs.db]]\n  alias = "db"\n  urls = ["http://127.0.0.1:1231"]\n'  # noqa
     assert dutils.is_container_running('skale_telegraf')
