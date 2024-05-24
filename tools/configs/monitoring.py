@@ -8,7 +8,6 @@ FILEBEAT_CONTAINER_NAME = 'skale_filebeat'
 
 MONITORING_CONTAINERS = os.getenv('MONITORING_CONTAINERS') == 'True'
 
-INFLUX_TOKEN = os.getenv('INFLUX_TOKEN')
 INFLUX_URL = os.getenv('INFLUX_URL')
 
 TELEGRAF = os.getenv('TELEGRAF') == 'True'
