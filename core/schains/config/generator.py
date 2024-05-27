@@ -34,7 +34,7 @@ from core.schains.config.skale_section import SkaleConfig, generate_skale_sectio
 from core.schains.config.predeployed import generate_predeployed_accounts
 from core.schains.config.precompiled import generate_precompiled_accounts
 from core.schains.config.generation import Gen
-from core.schains.config.static_accounts import is_static_accounts, static_accounts
+from core.schains.config.legacy_data import is_static_accounts, static_accounts, static_groups
 from core.schains.config.helper import get_chain_id, get_schain_id
 from core.schains.dkg.utils import get_common_bls_public_key
 from core.schains.limits import get_schain_type
@@ -234,6 +234,8 @@ def generate_schain_config_with_skale(
     schain = skale.schains.get_by_name(schain_name)
     node = skale.nodes.get(node_config.id)
     node_groups = get_previous_schain_groups(skale, schain_name)
+    legacy_groups = static_groups(schain_name)
+    node_groups.update(legacy_groups)
 
     is_owner_contract = is_address_contract(skale.web3, schain['mainnetOwner'])
 
