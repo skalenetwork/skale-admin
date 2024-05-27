@@ -20,7 +20,7 @@
 import os
 
 from tools.helper import read_json
-from tools.configs import STATIC_ACCOUNTS_FOLDER, ENV_TYPE
+from tools.configs import STATIC_ACCOUNTS_FOLDER, STATIC_GROUPS_FOLDER, ENV_TYPE
 
 
 def static_accounts(schain_name: str) -> dict:
@@ -36,3 +36,15 @@ def static_accounts_filepath(schain_name: str) -> str:
     if not os.path.isdir(static_accounts_env_path):
         return ''
     return os.path.join(static_accounts_env_path, f'schain-{schain_name}.json')
+
+
+def static_groups(schain_name: str) -> dict:
+    static_groups_env_path = static_groups_filepath(schain_name)
+    return read_json(static_groups_env_path(schain_name))
+
+
+def static_groups_filepath(schain_name: str) -> str:
+    static_groups_env_path = os.path.join(STATIC_GROUPS_FOLDER, ENV_TYPE)
+    if not os.path.isdir(static_groups_env_path):
+        return ''
+    return os.path.join(static_groups_env_path, f'schain-{schain_name}.json')
