@@ -43,6 +43,79 @@ SECRET_KEY = {
     ],
 }
 
+NODE_GROUPS = {
+    '2': {
+        "rotation": {
+            "leaving_node_id": 0,
+            "new_node_id": 5,
+        },
+        "nodes": {
+            "4": [
+                4,
+                31,
+                "0x5d"
+            ],
+            "5": [
+                8,
+                179,
+                "0xon"
+            ],
+        },
+        "finish_ts": 1681498775,
+        "bls_public_key": {
+            "blsPublicKey0": "9",
+            "blsPublicKey1": "1",
+            "blsPublicKey2": "3",
+            "blsPublicKey3": "2"
+        }
+    },
+    '1': {
+        "rotation": {
+            "leaving_node_id": 3,
+            "new_node_id": 4,
+        },
+        "nodes": {
+            "0": [
+                0,
+                159,
+                "0xgd"
+            ],
+            "4": [
+                4,
+                31,
+                "0x5d"
+            ],
+        },
+        "finish_ts": 1681390775,
+        "bls_public_key": {
+            "blsPublicKey0": "3",
+            "blsPublicKey1": "4",
+            "blsPublicKey2": "7",
+            "blsPublicKey3": "9"
+        }
+    },
+    '0': {
+        "rotation": {
+            "leaving_node_id": 2,
+            "new_node_id": 3,
+        },
+        "nodes": {
+            "0": [
+                0,
+                159,
+                "0xgd"
+            ],
+            "3": [
+                7,
+                61,
+                "0xbh"
+            ],
+        },
+        "finish_ts": None,
+        "bls_public_key": None
+    }
+}
+
 TEST_ORIGINATOR_ADDRESS = '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34'
 TEST_MAINNET_OWNER_ADDRESS = '0x30E1C96277735B03E59B3098204fd04FD0e78a46'
 
@@ -580,7 +653,6 @@ def test_generate_config_static_groups(
 ):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
-    node_groups = {}
 
     schain_data = {
         'name': _schain_name,
@@ -598,7 +670,7 @@ def test_generate_config_static_groups(
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
         schain_nodes_with_schains=get_schain_node_with_schains(_schain_name),
-        node_groups=node_groups,
+        node_groups=NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         skale_manager_opts=skale_manager_opts,
@@ -608,6 +680,7 @@ def test_generate_config_static_groups(
     )
     config = schain_config.to_dict()
 
+    config_group = config['skaleConfig']['sChain']['nodeGroups']
+    assert len(config_group.keys()) == 3
     for rotation_id in static_groups_for_schain:
-        config_group = config['skaleConfig']['sChain']['nodeGroups'][rotation_id]
-        assert config_group == static_groups_for_schain[rotation_id]
+        assert config_group[rotation_id] == static_groups_for_schain[rotation_id]

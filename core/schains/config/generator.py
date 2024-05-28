@@ -161,7 +161,9 @@ def generate_schain_config(
     }
 
     legacy_groups = static_groups(schain['name'])
+    print(node_groups)
     node_groups.update(legacy_groups)
+    print(node_groups)
 
     originator_address = get_schain_originator(schain)
 
