@@ -40,7 +40,9 @@ def static_accounts_filepath(schain_name: str) -> str:
 
 def static_groups(schain_name: str) -> dict:
     static_groups_env_path = static_groups_filepath(schain_name)
-    return read_json(static_groups_env_path(schain_name))
+    if not os.path.isfile(static_groups_env_path):
+        return {}
+    return read_json(static_groups_env_path)
 
 
 def static_groups_filepath(schain_name: str) -> str:
