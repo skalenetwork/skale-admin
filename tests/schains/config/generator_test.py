@@ -570,3 +570,44 @@ def test_generate_sync_node_config_static_accounts(
     )
     config = schain_config.to_dict()
     assert not config['accounts'].get('0x1111111')
+
+
+def test_generate_config_static_groups(
+    _schain_name,
+    schain_secret_key_file_default_chain,
+    static_groups_for_schain,
+    skale_manager_opts
+):
+    node_id, generation, rotation_id = 1, 1, 0
+    ecdsa_key_name = 'test'
+    node_groups = {}
+
+    schain_data = {
+        'name': _schain_name,
+        'partOfNode': 0,
+        'generation': 1,
+        'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
+        'originator': TEST_ORIGINATOR_ADDRESS,
+        'multitransactionMode': True
+    }
+
+    schain_config = generate_schain_config(
+        schain=schain_data,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=get_schain_node_with_schains(_schain_name),
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000,
+        sync_node=True
+    )
+    config = schain_config.to_dict()
+
+    for rotation_id in static_groups_for_schain:
+        config_group = config['skaleConfig']['sChain']['nodeGroups'][rotation_id]
+        assert config_group == static_groups_for_schain[rotation_id]

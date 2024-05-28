@@ -160,6 +160,9 @@ def generate_schain_config(
         'chainID': get_chain_id(schain['name'])
     }
 
+    legacy_groups = static_groups(schain['name'])
+    node_groups.update(legacy_groups)
+
     originator_address = get_schain_originator(schain)
 
     skale_config = generate_skale_section(
@@ -234,8 +237,6 @@ def generate_schain_config_with_skale(
     schain = skale.schains.get_by_name(schain_name)
     node = skale.nodes.get(node_config.id)
     node_groups = get_previous_schain_groups(skale, schain_name)
-    legacy_groups = static_groups(schain_name)
-    node_groups.update(legacy_groups)
 
     is_owner_contract = is_address_contract(skale.web3, schain['mainnetOwner'])
 

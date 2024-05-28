@@ -462,3 +462,52 @@ def generate_schain_config(schain_name):
             }
         }
     }
+
+
+STATIC_NODE_GROUPS = {
+    '1': {
+        "rotation": {
+            "leaving_node_id": 3,
+            "new_node_id": 4,
+        },
+        "nodes": {
+            "0": [
+                0,
+                159,
+                "0xgd"
+            ],
+            "4": [
+                4,
+                31,
+                "0x5d"
+            ],
+        },
+        "finish_ts": None,
+        "bls_public_key": None
+    },
+    '0': {
+        "rotation": {
+            "leaving_node_id": 2,
+            "new_node_id": 3,
+        },
+        "nodes": {
+            "0": [
+                0,
+                159,
+                "0xgd"
+            ],
+            "3": [
+                7,
+                61,
+                "0xbh"
+            ],
+        },
+        "finish_ts": 1681390775,
+        "bls_public_key": {
+            "blsPublicKey0": "3",
+            "blsPublicKey1": "4",
+            "blsPublicKey2": "7",
+            "blsPublicKey3": "9"
+        }
+    }
+}
