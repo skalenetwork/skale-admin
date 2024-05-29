@@ -44,7 +44,7 @@ SECRET_KEY = {
 }
 
 NODE_GROUPS = {
-    '2': {
+    2: {
         "rotation": {
             "leaving_node_id": 0,
             "new_node_id": 5,
@@ -69,7 +69,7 @@ NODE_GROUPS = {
             "blsPublicKey3": "2"
         }
     },
-    '1': {
+    1: {
         "rotation": {
             "leaving_node_id": 3,
             "new_node_id": 4,
@@ -94,7 +94,7 @@ NODE_GROUPS = {
             "blsPublicKey3": "9"
         }
     },
-    '0': {
+    0: {
         "rotation": {
             "leaving_node_id": 2,
             "new_node_id": 3,
@@ -683,4 +683,4 @@ def test_generate_config_static_groups(
     config_group = config['skaleConfig']['sChain']['nodeGroups']
     assert len(config_group.keys()) == 3
     for rotation_id in static_groups_for_schain:
-        assert config_group[rotation_id] == static_groups_for_schain[rotation_id]
+        assert config_group[int(rotation_id)] == static_groups_for_schain[rotation_id]

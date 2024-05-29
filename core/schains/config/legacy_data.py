@@ -42,7 +42,12 @@ def static_groups(schain_name: str) -> dict:
     static_groups_env_path = static_groups_filepath(schain_name)
     if not os.path.isfile(static_groups_env_path):
         return {}
-    return read_json(static_groups_env_path)
+    groups = read_json(static_groups_env_path)
+    prepared_groups = {}
+    for plain_rotation_id, data in groups.items():
+        rotation_id = int(plain_rotation_id)
+        prepared_groups[rotation_id] = data
+    return prepared_groups
 
 
 def static_groups_filepath(schain_name: str) -> str:
