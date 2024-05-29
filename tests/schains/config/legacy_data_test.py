@@ -17,5 +17,7 @@ def test_static_accounts():
 
 
 def test_static_groups(_schain_name, static_groups_for_schain):
-    assert static_groups(_schain_name) == STATIC_NODE_GROUPS
+    groups = static_groups(_schain_name)
+    for key, value in STATIC_NODE_GROUPS.items():
+        assert groups[int(key)] == value
     assert static_groups('not-exists') == {}

@@ -52,6 +52,4 @@ def static_groups(schain_name: str) -> dict:
 
 def static_groups_filepath(schain_name: str) -> str:
     static_groups_env_path = os.path.join(STATIC_GROUPS_FOLDER, ENV_TYPE)
-    if not os.path.isdir(static_groups_env_path):
-        return ''
     return os.path.join(static_groups_env_path, f'schain-{schain_name}.json')
