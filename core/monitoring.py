@@ -27,7 +27,7 @@ from tools.configs import SKALE_DIR_HOST
 from tools.configs.monitoring import (
     FILEBEAT_TEMPLATE_PATH, FILEBEAT_CONTAINER_NAME,
     FILEBEAT_CONFIG_PATH,
-    INFLUX_TOKEN, INFLUX_URL,
+    INFLUX_URL,
     TELEGRAF,
     TELEGRAF_CONTAINER_NAME, TELEGRAF_IMAGE,
     TELEGRAF_TEMPLATE_PATH,
@@ -64,6 +64,7 @@ def filebeat_config_processed() -> bool:
 
 
 def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
+    dutils = dutils or DockerUtils()
     if dutils.is_container_exists(TELEGRAF_CONTAINER_NAME):
         dutils.restart(TELEGRAF_CONTAINER_NAME)
     else:
@@ -87,7 +88,6 @@ def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
 def update_telegraf_service(
     node_ip: str,
     node_id: int,
-    token: str = INFLUX_TOKEN,
     url: str = INFLUX_URL,
     dutils: Optional[DockerUtils] = None
 ) -> None:
@@ -95,7 +95,6 @@ def update_telegraf_service(
     template_data = {
         'ip': node_ip,
         'node_id': str(node_id),
-        'token': token,
         'url': url
     }
     missing = list(filter(lambda k: not template_data[k], template_data))
@@ -117,6 +116,6 @@ def telegraf_config_processed() -> bool:
 
 
 def update_monitoring_services(node_ip, node_id, skale, dutils: Optional[DockerUtils] = None):
-    update_filebeat_service(node_ip, node_id, skale)
+    update_filebeat_service(node_ip, node_id, skale, dutils=dutils)
     if TELEGRAF:
-        update_telegraf_service(node_ip, node_id)
+        update_telegraf_service(node_ip, node_id, dutils=dutils)
