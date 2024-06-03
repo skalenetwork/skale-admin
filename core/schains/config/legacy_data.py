@@ -19,6 +19,8 @@
 
 import os
 
+from skale.schain_config.rotation_history import RotationNodeData
+
 from tools.helper import read_json
 from tools.configs import STATIC_ACCOUNTS_FOLDER, STATIC_GROUPS_FOLDER, ENV_TYPE
 
@@ -47,6 +49,11 @@ def static_groups(schain_name: str) -> dict:
     for plain_rotation_id, data in groups.items():
         rotation_id = int(plain_rotation_id)
         prepared_groups[rotation_id] = data
+        prepared_nodes = prepared_groups[rotation_id]['nodes']
+        node_ids_string = list(data['nodes'].keys())
+        for node_id_string in node_ids_string:
+            node_info = prepared_nodes.pop(node_id_string)
+            prepared_nodes[int(node_id_string)] = RotationNodeData(*node_info)
     return prepared_groups
 
 
