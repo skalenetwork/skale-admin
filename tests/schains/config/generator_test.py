@@ -682,5 +682,7 @@ def test_generate_config_static_groups(
 
     config_group = config['skaleConfig']['sChain']['nodeGroups']
     assert len(config_group.keys()) == 3
-    for rotation_id in static_groups_for_schain:
-        assert config_group[int(rotation_id)] == static_groups_for_schain[rotation_id]
+    for rotation_id_string in static_groups_for_schain:
+        rotation_id = int(rotation_id_string)
+        assert json.dumps(config_group[rotation_id]) == \
+            json.dumps(static_groups_for_schain[rotation_id_string])

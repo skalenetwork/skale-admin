@@ -1,3 +1,5 @@
+import json
+
 from core.schains.config.legacy_data import is_static_accounts, static_accounts, static_groups
 from tests.utils import STATIC_NODE_GROUPS
 
@@ -19,5 +21,5 @@ def test_static_accounts():
 def test_static_groups(_schain_name, static_groups_for_schain):
     groups = static_groups(_schain_name)
     for key, value in STATIC_NODE_GROUPS.items():
-        assert groups[int(key)] == value
+        assert json.dumps(groups[int(key)]) == json.dumps(value)
     assert static_groups('not-exists') == {}
