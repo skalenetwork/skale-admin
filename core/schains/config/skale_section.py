@@ -92,7 +92,9 @@ def generate_skale_section(
         on_chain_etherbase=on_chain_etherbase,
         static_schain_info=static_schain_info,
         nodes=schain_nodes,
-        node_groups=node_groups
+        node_groups=node_groups,
+        sync_node=sync_node,
+        archive=archive
     )
 
     return SkaleConfig(
