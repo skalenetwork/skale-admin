@@ -54,6 +54,8 @@ class SChainRecord(BaseModel):
 
     ssl_change_date = DateTimeField(default=datetime.now())
 
+    repair_date = DateTimeField(default=datetime.now())
+
     @classmethod
     def add(cls, name):
         try:
@@ -204,6 +206,11 @@ class SChainRecord(BaseModel):
             DKGStatus.KEY_GENERATION_ERROR,
             DKGStatus.FAILED
         ]
+
+    def set_repair_date(self, value: datetime) -> None:
+        logger.info(f'Changing repair_date for {self.name} to {value}')
+        self.repair_date = value
+        self.save()
 
 
 def create_tables():

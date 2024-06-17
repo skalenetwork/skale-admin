@@ -555,4 +555,11 @@ class SkaledActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def disable_repair_mode(self) -> None:
         logger.info('Switching off repair mode')
-        self.schain_record.set_repair_mode(False)
+        if self.schain_record.repair_mode:
+            self.schain_record.set_repair_mode(False)
+
+    @BaseActionManager.monitor_block
+    def update_repair_ts(self, new_ts: int) -> None:
+        logger.info('Setting repair_ts to %d', new_ts)
+        new_dt = datetime.utcfromtimestamp(new_ts)
+        self.schain_record.set_repair_date(new_dt)

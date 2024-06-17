@@ -26,7 +26,7 @@ from core.schains.monitor.base_monitor import IMonitor
 from core.schains.checks import SkaledChecks
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.config.main import get_number_of_secret_shares
-from core.schains.skaled_status import SkaledStatus
+from core.schains.skaled_status import NodeCliStatus, SkaledStatus
 from core.schains.ssl import ssl_reload_needed
 from tools.configs import SYNC_NODE
 from tools.resources import get_statsd_client
@@ -37,11 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseSkaledMonitor(IMonitor):
-    def __init__(
-        self,
-        action_manager: SkaledActionManager,
-        checks: SkaledChecks
-    ) -> None:
+    def __init__(self, action_manager: SkaledActionManager, checks: SkaledChecks) -> None:
         self.am = action_manager
         self.checks = checks
         self.statsd_client = get_statsd_client()
@@ -64,7 +60,6 @@ class BaseSkaledMonitor(IMonitor):
 
 
 class RegularSkaledMonitor(BaseSkaledMonitor):
-
     def execute(self) -> None:
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
@@ -90,7 +85,7 @@ class RepairSkaledMonitor(BaseSkaledMonitor):
         logger.warning(
             'Repair mode execution, record: %s, exit_code_ok: %s',
             self.checks.schain_record.repair_mode,
-            self.checks.exit_code_ok.status
+            self.checks.exit_code_ok.status,
         )
         self.am.notify_repair_mode()
         self.am.cleanup_schain_docker_entity()
@@ -102,7 +97,7 @@ class RepairSkaledMonitor(BaseSkaledMonitor):
             self.am.skaled_container(download_snapshot=True)
         else:
             self.am.reset_restart_count()
-        self.am.disable_repair_mode()
+        self.am.update_repair_ts(new_ts=int(time.time()))
 
 
 class BackupSkaledMonitor(BaseSkaledMonitor):
@@ -223,10 +218,7 @@ class NewNodeSkaledMonitor(BaseSkaledMonitor):
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
         if not self.checks.skaled_container:
-            self.am.skaled_container(
-                download_snapshot=True,
-                start_ts=self.am.finish_ts
-            )
+            self.am.skaled_container(download_snapshot=True, start_ts=self.am.finish_ts)
         else:
             self.am.reset_restart_counter()
         if not self.checks.ima_container:
@@ -241,12 +233,13 @@ def is_repair_mode(
     schain_record: SChainRecord,
     status: Dict,
     skaled_status: Optional[SkaledStatus],
-    automatic_repair: bool
+    ncli_status: Optional[NodeCliStatus],
+    automatic_repair: bool,
 ) -> bool:
-    if schain_record.repair_mode:
+    repair_ts = int(schain_record.repair_date.timestamp())
+    if ncli_status is not None and ncli_status.repair_ts > repair_ts:
         return True
-    else:
-        return automatic_repair and is_skaled_repair_status(status, skaled_status)
+    return automatic_repair and is_skaled_repair_status(status, skaled_status)
 
 
 def is_reload_group_mode(status: Dict, finish_ts: Optional[int]) -> bool:
@@ -262,10 +255,7 @@ def is_reload_ip_mode(status: Dict, reload_ts: Optional[int]) -> bool:
     return status['config'] and not status['config_updated']
 
 
-def is_config_update_time(
-    status: Dict,
-    skaled_status: Optional[SkaledStatus]
-) -> bool:
+def is_config_update_time(status: Dict, skaled_status: Optional[SkaledStatus]) -> bool:
     if not skaled_status:
         return False
     return not status['skaled_container'] and skaled_status.exit_time_reached
@@ -300,7 +290,8 @@ def get_skaled_monitor(
     status: Dict,
     schain_record: SChainRecord,
     skaled_status: SkaledStatus,
-    automatic_repair: bool = True
+    ncli_status: NodeCliStatus,
+    automatic_repair: bool = True,
 ) -> Type[BaseSkaledMonitor]:
     logger.info('Choosing skaled monitor')
     if skaled_status:
@@ -325,7 +316,7 @@ def get_skaled_monitor(
         mon_type = NoConfigSkaledMonitor
     elif is_backup_mode(schain_record):
         mon_type = BackupSkaledMonitor
-    elif is_repair_mode(schain_record, status, skaled_status, automatic_repair):
+    elif is_repair_mode(schain_record, status, skaled_status, ncli_status, automatic_repair):
         mon_type = RepairSkaledMonitor
     elif is_recreate_mode(schain_record):
         mon_type = RecreateSkaledMonitor
