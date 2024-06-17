@@ -303,23 +303,3 @@ def get_schains_names(include_deleted=False):
 def get_schains_statuses(include_deleted=False):
     return [SChainRecord.to_dict(r)
             for r in SChainRecord.get_all_records(include_deleted)]
-
-
-def toggle_schain_repair_mode(name, snapshot_from: str = ''):
-    logger.info(f'Toggling repair mode for schain {name}')
-    query = SChainRecord.update(
-        repair_mode=True,
-        snapshot_from=snapshot_from
-    ).where(SChainRecord.name == name)
-    count = query.execute()
-    return count > 0
-
-
-def switch_off_repair_mode(name):
-    logger.info(f'Disabling repair mode for schain {name}')
-    query = SChainRecord.update(
-        repair_mode=False,
-        snapshot_from=''
-    ).where(SChainRecord.name == name)
-    count = query.execute()
-    return count > 0
