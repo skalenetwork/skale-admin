@@ -1,4 +1,4 @@
-from core.schains.skaled_status import (
+from core.schains.status import (
     node_cli_status_filepath,
     NodeCliStatus,
     SkaledStatus,

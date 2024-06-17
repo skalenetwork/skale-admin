@@ -73,7 +73,7 @@ from core.schains.config.helper import (
 )
 from core.schains.ima import ImaData
 from core.schains.external_config import ExternalConfig, ExternalState
-from core.schains.skaled_status import init_skaled_status
+from core.schains.status import init_skaled_status
 
 from tools.configs import SYNC_NODE
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER

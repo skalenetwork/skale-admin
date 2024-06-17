@@ -49,7 +49,7 @@ from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.task import keep_tasks_running, Task
 from core.schains.config.static_params import get_automatic_repair_option
-from core.schains.skaled_status import get_node_cli_status, get_skaled_status
+from core.schains.status import get_node_cli_status, get_skaled_status
 from core.node import get_current_nodes
 
 from tools.docker_utils import DockerUtils

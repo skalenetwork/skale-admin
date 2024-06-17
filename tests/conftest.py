@@ -42,7 +42,7 @@ from core.schains.config.directory import schain_config_dir, skaled_status_filep
 from core.schains.cleaner import remove_schain_container, remove_schain_volume
 from core.schains.ima import ImaData
 from core.schains.external_config import ExternalConfig, ExternalState
-from core.schains.skaled_status import (
+from core.schains.status import (
     init_node_cli_status,
     init_skaled_status,
     node_cli_status_filepath,
