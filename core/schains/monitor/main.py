@@ -160,19 +160,19 @@ def run_skaled_pipeline(
         econfig=ExternalConfig(name),
         dutils=dutils
     )
-    status = skaled_checks.get_all(log=False, expose=True)
+    check_status = skaled_checks.get_all(log=False, expose=True)
     automatic_repair = get_automatic_repair_option()
     api_status = get_api_checks_status(
-        status=status, allowed=TG_ALLOWED_CHECKS)
+        status=check_status, allowed=TG_ALLOWED_CHECKS)
     notify_checks(name, node_config.all(), api_status)
 
-    logger.info('Skaled status: %s', status)
+    logger.info('Skaled check status: %s', check_status)
 
     logger.info('Upstream config %s', skaled_am.upstream_config_path)
 
     mon = get_skaled_monitor(
         action_manager=skaled_am,
-        status=status,
+        check_status=check_status,
         schain_record=schain_record,
         skaled_status=skaled_status,
         ncli_status=ncli_status,
