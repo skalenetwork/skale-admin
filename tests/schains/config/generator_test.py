@@ -480,6 +480,8 @@ def test_generate_sync_node_config_archive_catchup(
 
     assert not config['skaleConfig']['nodeInfo'].get('syncFromCatchup')
     assert not config['skaleConfig']['nodeInfo'].get('archiveMode')
+    assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') < \
+        1000000000000000000
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITHOUT_ORIGINATOR,
@@ -502,6 +504,8 @@ def test_generate_sync_node_config_archive_catchup(
 
     assert config['skaleConfig']['nodeInfo'].get('syncFromCatchup')
     assert config['skaleConfig']['nodeInfo'].get('archiveMode') is False
+    assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') < \
+        1000000000000000000
 
     schain_config = generate_schain_config(
         schain=SCHAIN_WITHOUT_ORIGINATOR,
@@ -524,6 +528,32 @@ def test_generate_sync_node_config_archive_catchup(
 
     assert config['skaleConfig']['nodeInfo'].get('syncFromCatchup') is None
     assert config['skaleConfig']['nodeInfo'].get('archiveMode') is None
+    assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') < \
+        1000000000000000000
+
+    schain_config = generate_schain_config(
+        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000,
+        sync_node=True,
+        archive=True,
+        catchup=True
+    )
+    config = schain_config.to_dict()
+
+    assert config['skaleConfig']['nodeInfo'].get('syncFromCatchup')
+    assert config['skaleConfig']['nodeInfo'].get('archiveMode')
+    assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') == \
+        1000000000000000000
 
 
 def test_generate_sync_node_config_static_accounts(
