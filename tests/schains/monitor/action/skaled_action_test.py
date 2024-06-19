@@ -46,6 +46,7 @@ def monitor_schain_container_mock(
     schain_record,
     skaled_status,
     download_snapshot=False,
+    snapshot_from='',
     start_ts=None,
     abort_on_exit=True,
     dutils=None,
@@ -92,6 +93,7 @@ def skaled_am(
     secret_key,
     ssl_folder,
     ima_migration_schedule,
+    ncli_status,
     dutils,
     skaled_checks
 ):
@@ -102,6 +104,7 @@ def skaled_am(
         rule_controller=rule_controller,
         checks=skaled_checks,
         node_config=node_config,
+        ncli_status=ncli_status,
         dutils=dutils
     )
 
@@ -145,6 +148,7 @@ def test_skaled_container_with_snapshot_action(skaled_am):
             schain_record=skaled_am.schain_record,
             skaled_status=skaled_am.skaled_status,
             download_snapshot=True,
+            snapshot_from='127.0.0.1',
             start_ts=None,
             abort_on_exit=True,
             dutils=skaled_am.dutils,

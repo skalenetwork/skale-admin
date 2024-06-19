@@ -35,21 +35,18 @@ from core.schains.dkg import (
     run_dkg,
     save_dkg_results
 )
-from core.schains.ima import get_migration_ts as get_ima_migration_ts
-from core.schains.ssl import update_ssl_change_date
-
 from core.schains.cleaner import (
     remove_ima_container,
     remove_schain_container,
     remove_schain_volume
 )
+from core.schains.ima import get_migration_ts as get_ima_migration_ts, ImaData
+from core.schains.ssl import update_ssl_change_date
+from core.schains.status import NodeCliStatus
 from core.schains.firewall.types import IRuleController
-
 from core.schains.volume import init_data_volume
 from core.schains.exit_scheduler import ExitScheduleFileManager
-
 from core.schains.limits import get_schain_type
-
 from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
 from core.schains.monitor.rpc import handle_failed_schain_rpc
 from core.schains.runner import (
@@ -71,7 +68,6 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config
 )
-from core.schains.ima import ImaData
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.status import init_skaled_status
 
@@ -298,6 +294,7 @@ class SkaledActionManager(BaseActionManager):
         rule_controller: IRuleController,
         checks: SkaledChecks,
         node_config: NodeConfig,
+        ncli_status: NodeCliStatus,
         econfig: Optional[ExternalConfig] = None,
         dutils: DockerUtils = None,
         node_options: NodeOptions = None
@@ -320,6 +317,7 @@ class SkaledActionManager(BaseActionManager):
         self.statsd_client = get_statsd_client()
 
         self.node_options = node_options or NodeOptions()
+        self.ncli_status = ncli_status
 
         super().__init__(name=schain['name'])
 
@@ -374,11 +372,13 @@ class SkaledActionManager(BaseActionManager):
             download_snapshot,
             start_ts
         )
+        snapshot_from = self.ncli_status.snapshot_from if self.ncli_status else None
         monitor_schain_container(
             self.schain,
             schain_record=self.schain_record,
             skaled_status=self.skaled_status,
             download_snapshot=download_snapshot,
+            snapshot_from=snapshot_from,
             start_ts=start_ts,
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,

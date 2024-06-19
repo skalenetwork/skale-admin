@@ -17,6 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Optional
+
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import get_schain_ports_from_config
 from core.schains.config.main import get_skaled_container_config_path
@@ -34,7 +36,7 @@ def get_schain_container_cmd(
     download_snapshot: bool = False,
     enable_ssl: bool = True,
     sync_node: bool = False,
-    snapshot_from: str = ''
+    snapshot_from: Optional[str] = None
 ) -> str:
     """Returns parameters that will be passed to skaled binary in the sChain container"""
     opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl, sync_node=sync_node)

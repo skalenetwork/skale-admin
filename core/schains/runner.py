@@ -19,6 +19,7 @@
 
 import copy
 import logging
+from typing import Optional
 
 from docker.types import LogConfig, Ulimit
 
@@ -183,7 +184,7 @@ def run_schain_container(
     volume_mode=None,
     ulimit_check=True,
     enable_ssl=True,
-    snapshot_from: str = '',
+    snapshot_from: Optional[str] = None,
     sync_node=False,
     historic_state=False
 ):

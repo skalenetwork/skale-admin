@@ -607,4 +607,4 @@ def ncli_status(_schain_name):
     try:
         yield init_node_cli_status(_schain_name)
     finally:
-        shutil.rmtree(schain_dir_path)
+        shutil.rmtree(schain_dir_path, ignore_errors=True)

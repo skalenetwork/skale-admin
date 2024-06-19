@@ -157,6 +157,7 @@ def run_skaled_pipeline(
         rule_controller=rc,
         checks=skaled_checks,
         node_config=node_config,
+        ncli_status=ncli_status,
         econfig=ExternalConfig(name),
         dutils=dutils
     )

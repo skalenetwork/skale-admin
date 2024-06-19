@@ -93,6 +93,7 @@ def skaled_am(
     secret_key,
     ssl_folder,
     ima_migration_schedule,
+    ncli_status,
     dutils,
     skaled_checks,
 ):
@@ -102,6 +103,7 @@ def skaled_am(
         schain=schain,
         rule_controller=rule_controller,
         node_config=node_config,
+        ncli_status=ncli_status,
         checks=skaled_checks,
         dutils=dutils,
     )
@@ -289,6 +291,7 @@ def test_get_skaled_monitor_reload_group(
             rule_controller=rule_controller,
             node_config=node_config,
             checks=skaled_checks,
+            ncli_status=ncli_status,
             dutils=dutils,
         )
         mon = get_skaled_monitor(skaled_am, state, schain_record, skaled_status, ncli_status)
@@ -299,6 +302,7 @@ def test_get_skaled_monitor_reload_group(
             rule_controller=rule_controller,
             node_config=node_config,
             checks=skaled_checks,
+            ncli_status=ncli_status,
             dutils=dutils,
         )
         mon = get_skaled_monitor(skaled_am, state, schain_record, skaled_status, ncli_status)
@@ -338,6 +342,7 @@ def test_get_skaled_monitor_reload_ip(
         rule_controller=rule_controller,
         node_config=node_config,
         checks=skaled_checks,
+        ncli_status=ncli_status,
         dutils=dutils,
     )
     mon = get_skaled_monitor(skaled_am, state, schain_record, skaled_status, ncli_status)
@@ -380,6 +385,7 @@ def test_get_skaled_monitor_new_node(
             schain=schain,
             rule_controller=rule_controller,
             node_config=node_config,
+            ncli_status=ncli_status,
             checks=skaled_checks,
             dutils=dutils,
         )

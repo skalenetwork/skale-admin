@@ -54,6 +54,7 @@ def monitor_schain_container(
     skaled_status,
     download_snapshot=False,
     start_ts=None,
+    snapshot_from: Optional[str] = None,
     abort_on_exit: bool = True,
     dutils: Optional[DockerUtils] = None,
     sync_node: bool = False,
@@ -81,7 +82,7 @@ def monitor_schain_container(
             download_snapshot=download_snapshot,
             start_ts=start_ts,
             dutils=dutils,
-            snapshot_from=schain_record.snapshot_from,
+            snapshot_from=snapshot_from,
             sync_node=sync_node,
             historic_state=historic_state,
         )
