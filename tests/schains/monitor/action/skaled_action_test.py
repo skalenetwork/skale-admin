@@ -178,6 +178,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
             start_ts=ts,
             abort_on_exit=True,
             dutils=skaled_am.dutils,
+            snapshot_from='127.0.0.1',
             sync_node=False,
             historic_state=False
         )
