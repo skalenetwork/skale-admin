@@ -385,6 +385,7 @@ class SkaledActionManager(BaseActionManager):
             sync_node=SYNC_NODE,
             historic_state=self.node_options.historic_state
         )
+        update_ssl_change_date(self.schain_record)
         time.sleep(CONTAINER_POST_RUN_DELAY)
         return True
 
@@ -395,9 +396,10 @@ class SkaledActionManager(BaseActionManager):
             logger.info('Skaled container exists, restarting')
             restart_container(SCHAIN_CONTAINER, self.schain,
                               dutils=self.dutils)
+            update_ssl_change_date(self.schain_record)
         else:
             logger.info(
-                'Skaled container doesn\'t exists, running skaled watchman')
+                'Skaled container does not exists, running skaled watchman')
             initial_status = self.skaled_container()
         return initial_status
 
@@ -426,10 +428,9 @@ class SkaledActionManager(BaseActionManager):
             logger.info('Removing skaled container')
             remove_schain_container(self.name, dutils=self.dutils)
         else:
-            logger.warning('Container doesn\'t exists')
+            logger.warning('Container does not exists')
         self.schain_record.set_restart_count(0)
         self.schain_record.set_failed_rpc_count(0)
-        update_ssl_change_date(self.schain_record)
         self.schain_record.set_needs_reload(False)
         initial_status = self.skaled_container(
             abort_on_exit=abort_on_exit)
