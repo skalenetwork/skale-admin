@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-set -e
+set -ea
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+source $DIR/helper.sh
+source $DIR/../helper-scripts/helper.sh
+
+export_test_env
 
 docker rm -f test-firewall || true
-DIR=$PWD
 docker build -t admin:base .
 docker build -f tests.Dockerfile -t test-firewall .
 docker run -v "$DIR/tests/skale-data/node_data":"/skale_node_data" \
@@ -16,3 +21,5 @@ docker run -v "$DIR/tests/skale-data/node_data":"/skale_node_data" \
     -e SKALE_DIR_HOST=/skale_dir_host \
     --cap-add=NET_ADMIN --cap-add=NET_RAW \
     --name test-firewall test-firewall pytest --cov core.schains.firewall tests/firewall/ $@
+
+tests_cleanup
