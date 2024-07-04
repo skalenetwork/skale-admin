@@ -8,6 +8,7 @@ env:
   SGX_WALLET_TAG: "1.83.0-beta.5"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   PYTHON_VERSION: 3.11
+
 jobs:
   test_core:
     runs-on: ubuntu-latest
@@ -20,21 +21,27 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
+
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v1
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+
       - name: Install python dependencies
         run: bash ./scripts/install_python_dependencies.sh
+
       - name: Lint with flake8
         run: flake8 .
+
       - name: Launch anvil node
         run: |
           docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil && sleep 5 && docker logs anvil --tail 1000
+
       - name: Deploy manager & ima contracts
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
           docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
+
       - name: Show stats before tests
         if: always()
         run: | 
@@ -44,6 +51,7 @@ jobs:
       - name: Run core tests
         run: |
           bash ./scripts/run_core_tests.sh
+          docker rmi -f $(docker ps -aq)
 
       - name: Show stats after core tests
         if: always()
