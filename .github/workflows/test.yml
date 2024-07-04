@@ -53,7 +53,7 @@ jobs:
 
       - name: Run firewall tests
         run: |
-          bash ./scripts/run_firewall_tests.sh
+          bash ./scripts/run_firewall_test.sh
 
       - name: Show stats after firewall tests
         if: always()
