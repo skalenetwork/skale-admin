@@ -40,6 +40,9 @@ jobs:
       - name: Deploy manager & ima contracts
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
+
+      - name: Cleanup skale-manager image
+        run: |
           docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
 
       - name: Show stats before tests
@@ -51,7 +54,11 @@ jobs:
       - name: Run core tests
         run: |
           bash ./scripts/run_core_tests.sh
-          docker rmi -f $(docker ps -aq)
+
+      - name: Cleanup docker artifacts
+        run: |
+          docker rm -f $(docker ps -aq)
+          docker rmi -f $(docker images -q)
 
       - name: Show stats after core tests
         if: always()
