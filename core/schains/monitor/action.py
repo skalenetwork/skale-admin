@@ -36,7 +36,6 @@ from core.schains.dkg import (
     save_dkg_results
 )
 from core.schains.ima import get_migration_ts as get_ima_migration_ts
-from core.schains.ssl import update_ssl_change_date
 
 from core.schains.cleaner import (
     remove_ima_container,
@@ -74,6 +73,7 @@ from core.schains.config.helper import (
 from core.schains.ima import ImaData
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.skaled_status import init_skaled_status
+from core.schains.ssl import update_ssl_change_date
 
 from tools.configs import SYNC_NODE
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
@@ -385,7 +385,6 @@ class SkaledActionManager(BaseActionManager):
             sync_node=SYNC_NODE,
             historic_state=self.node_options.historic_state
         )
-        update_ssl_change_date(self.schain_record)
         time.sleep(CONTAINER_POST_RUN_DELAY)
         return True
 
