@@ -137,6 +137,7 @@ def run_skaled_pipeline(
 ) -> None:
     name = schain['name']
     schain_record = SChainRecord.get_by_name(name)
+    logger.info('Record: %s', SChainRecord.to_dict(schain_record))
 
     dutils = dutils or DockerUtils()
 
