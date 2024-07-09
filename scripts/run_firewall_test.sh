@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-set -e
+set -ea
+
+export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 docker rm -f test-firewall || true
-DIR=$PWD
 docker build -t admin:base .
 docker build -f tests.Dockerfile -t test-firewall .
-docker run -v "$DIR/tests/skale-data/node_data":"/skale_node_data" \
-    -v "$DIR/tests/skale-data":"/skale_vol" \
+docker run -v "$DIR/../tests/skale-data/node_data":"/skale_node_data" \
+    -v "$DIR/../tests/skale-data":"/skale_vol" \
     -e SGX_SERVER_URL="https://127.0.0.1:1026" \
     -e ENDPOINT="http://127.0.0.1:8545" \
     -e DB_USER="test" \
