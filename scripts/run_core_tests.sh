@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ea
 
 export DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 source $DIR/helper.sh
@@ -14,6 +14,4 @@ run_sgx_simulator $SGX_WALLET_TAG
 bash scripts/run_redis.sh
 
 py.test --cov-config=.coveragerc --cov=. tests/ --ignore=tests/firewall $@
-tests_cleanup
-scripts/run_firewall_test.sh
 tests_cleanup

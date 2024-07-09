@@ -271,8 +271,8 @@ def is_config_update_time(
     return not status['skaled_container'] and skaled_status.exit_time_reached
 
 
-def is_recreate_mode(schain_record: SChainRecord) -> bool:
-    return ssl_reload_needed(schain_record)
+def is_recreate_mode(status: Dict, schain_record: SChainRecord) -> bool:
+    return status['skaled_container'] and ssl_reload_needed(schain_record)
 
 
 def is_new_node_mode(schain_record: SChainRecord, finish_ts: Optional[int]) -> bool:
@@ -311,7 +311,7 @@ def get_skaled_monitor(
     if SYNC_NODE:
         if no_config(status):
             mon_type = NoConfigSkaledMonitor
-        if is_recreate_mode(schain_record):
+        if is_recreate_mode(status, schain_record):
             mon_type = RecreateSkaledMonitor
         elif is_config_update_time(status, skaled_status):
             mon_type = UpdateConfigSkaledMonitor
@@ -327,7 +327,7 @@ def get_skaled_monitor(
         mon_type = BackupSkaledMonitor
     elif is_repair_mode(schain_record, status, skaled_status, automatic_repair):
         mon_type = RepairSkaledMonitor
-    elif is_recreate_mode(schain_record):
+    elif is_recreate_mode(status, schain_record):
         mon_type = RecreateSkaledMonitor
     elif is_new_node_mode(schain_record, action_manager.finish_ts):
         mon_type = NewNodeSkaledMonitor
