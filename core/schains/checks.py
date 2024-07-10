@@ -185,6 +185,7 @@ class ConfigChecks(IChecks):
         dir_path = self.cfm.dirname
         return CheckRes(os.path.isdir(dir_path))
 
+    @property
     def last_dkg_successful(self) -> CheckRes:
         """Checks that last dkg was successfuly completed"""
         return CheckRes(self._last_dkg_successful)

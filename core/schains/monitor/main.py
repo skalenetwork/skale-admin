@@ -31,20 +31,11 @@ from web3._utils import request as web3_request
 
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
-from core.schains.checks import (
-    ConfigChecks,
-    get_api_checks_status,
-    TG_ALLOWED_CHECKS,
-    SkaledChecks
-)
+from core.schains.checks import ConfigChecks, get_api_checks_status, TG_ALLOWED_CHECKS, SkaledChecks
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.firewall import get_default_rule_controller
 from core.schains.firewall.utils import get_sync_agent_ranges
-from core.schains.monitor import (
-    get_skaled_monitor,
-    RegularConfigMonitor,
-    SyncConfigMonitor
-)
+from core.schains.monitor import get_skaled_monitor, RegularConfigMonitor, SyncConfigMonitor
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.task import keep_tasks_running, Task
@@ -70,24 +61,19 @@ logger = logging.getLogger(__name__)
 
 
 def run_config_pipeline(
-    skale: Skale,
-    skale_ima: SkaleIma,
-    schain: Dict,
-    node_config: NodeConfig,
-    stream_version: str
+    skale: Skale, skale_ima: SkaleIma, schain: Dict, node_config: NodeConfig, stream_version: str
 ) -> None:
     name = schain['name']
     schain_record = SChainRecord.get_by_name(name)
     rotation_data = skale.node_rotation.get_rotation(name)
     allowed_ranges = get_sync_agent_ranges(skale)
     ima_linked = not SYNC_NODE and skale_ima.linker.has_schain(name)
-    last_dkg_successful = skale.dkg.is_last_dkg_successfull(name)
+    group_index = skale.schains.name_to_group_id(name)
+    last_dkg_successful = skale.dkg.is_last_dkg_successful(group_index)
     current_nodes = get_current_nodes(skale, name)
 
     estate = ExternalState(
-        ima_linked=ima_linked,
-        chain_id=skale_ima.web3.eth.chain_id,
-        ranges=allowed_ranges
+        ima_linked=ima_linked, chain_id=skale_ima.web3.eth.chain_id, ranges=allowed_ranges
     )
     econfig = ExternalConfig(name)
     config_checks = ConfigChecks(
@@ -99,7 +85,7 @@ def run_config_pipeline(
         current_nodes=current_nodes,
         last_dkg_successful=last_dkg_successful,
         econfig=econfig,
-        estate=estate
+        estate=estate,
     )
 
     config_am = ConfigActionManager(
@@ -111,14 +97,18 @@ def run_config_pipeline(
         checks=config_checks,
         current_nodes=current_nodes,
         estate=estate,
-        econfig=econfig
+        econfig=econfig,
     )
 
     status = config_checks.get_all(log=False, expose=True)
     logger.info('Config checks: %s', status)
 
     if SYNC_NODE:
-        logger.info('Sync node last_dkg_successful %s, rotation_data %s', last_dkg_successful, rotation_data)
+        logger.info(
+            'Sync node last_dkg_successful %s, rotation_data %s',
+            last_dkg_successful,
+            rotation_data
+        )
         mon = SyncConfigMonitor(config_am, config_checks)
     else:
         logger.info('Regular node mode, running config monitor')
@@ -132,10 +122,7 @@ def run_config_pipeline(
 
 
 def run_skaled_pipeline(
-    skale: Skale,
-    schain: Dict,
-    node_config: NodeConfig,
-    dutils: DockerUtils
+    skale: Skale, schain: Dict, node_config: NodeConfig, dutils: DockerUtils
 ) -> None:
     name = schain['name']
     schain_record = SChainRecord.get_by_name(name)
@@ -149,7 +136,7 @@ def run_skaled_pipeline(
         schain_record=schain_record,
         rule_controller=rc,
         dutils=dutils,
-        sync_node=SYNC_NODE
+        sync_node=SYNC_NODE,
     )
 
     skaled_status = get_skaled_status(name)
@@ -160,12 +147,11 @@ def run_skaled_pipeline(
         checks=skaled_checks,
         node_config=node_config,
         econfig=ExternalConfig(name),
-        dutils=dutils
+        dutils=dutils,
     )
     status = skaled_checks.get_all(log=False, expose=True)
     automatic_repair = get_automatic_repair_option()
-    api_status = get_api_checks_status(
-        status=status, allowed=TG_ALLOWED_CHECKS)
+    api_status = get_api_checks_status(status=status, allowed=TG_ALLOWED_CHECKS)
     notify_checks(name, node_config.all(), api_status)
 
     logger.info('Skaled status: %s', status)
@@ -177,7 +163,7 @@ def run_skaled_pipeline(
         status=status,
         schain_record=schain_record,
         skaled_status=skaled_status,
-        automatic_repair=automatic_repair
+        automatic_repair=automatic_repair,
     )
 
     statsd_client = get_statsd_client()
@@ -188,11 +174,9 @@ def run_skaled_pipeline(
 
 def post_monitor_sleep():
     schain_monitor_sleep = random.randint(
-        MIN_SCHAIN_MONITOR_SLEEP_INTERVAL,
-        MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
+        MIN_SCHAIN_MONITOR_SLEEP_INTERVAL, MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
     )
-    logger.info('Monitor iteration completed, sleeping for %d',
-                schain_monitor_sleep)
+    logger.info('Monitor iteration completed, sleeping for %d', schain_monitor_sleep)
     time.sleep(schain_monitor_sleep)
 
 
@@ -205,7 +189,7 @@ def create_and_execute_tasks(
     schain_record,
     executor,
     futures,
-    dutils
+    dutils,
 ):
     reload(web3_request)
     name = schain['name']
@@ -219,7 +203,9 @@ def create_and_execute_tasks(
 
     logger.info(
         'sync_config_run %s, config_version %s, stream_version %s',
-        schain_record.sync_config_run, schain_record.config_version, stream_version
+        schain_record.sync_config_run,
+        schain_record.config_version,
+        stream_version,
     )
 
     statsd_client = get_statsd_client()
@@ -239,12 +225,14 @@ def create_and_execute_tasks(
                     skale_ima=skale_ima,
                     schain=schain,
                     node_config=node_config,
-                    stream_version=stream_version
+                    stream_version=stream_version,
                 ),
-                sleep=CONFIG_PIPELINE_SLEEP
-            ))
-    if schain_record.config_version != stream_version or \
-       (schain_record.sync_config_run and schain_record.first_run):
+                sleep=CONFIG_PIPELINE_SLEEP,
+            )
+        )
+    if schain_record.config_version != stream_version or (
+        schain_record.sync_config_run and schain_record.first_run
+    ):
         ConfigFileManager(name).remove_skaled_config()
     else:
         logger.info('Adding skaled task to the pool')
@@ -256,10 +244,11 @@ def create_and_execute_tasks(
                     skale=skale,
                     schain=schain,
                     node_config=node_config,
-                    dutils=dutils
+                    dutils=dutils,
                 ),
-                sleep=SKALED_PIPELINE_SLEEP
-            ))
+                sleep=SKALED_PIPELINE_SLEEP,
+            )
+        )
 
     if len(tasks) == 0:
         logger.warning('No tasks to run')
@@ -267,12 +256,7 @@ def create_and_execute_tasks(
 
 
 def run_monitor_for_schain(
-    skale,
-    skale_ima,
-    node_config: NodeConfig,
-    schain,
-    dutils=None,
-    once=False
+    skale, skale_ima, node_config: NodeConfig, schain, dutils=None, once=False
 ):
     stream_version = get_skale_node_version()
     tasks_number = 2
@@ -290,7 +274,7 @@ def run_monitor_for_schain(
                     schain_record,
                     executor,
                     futures,
-                    dutils
+                    dutils,
                 )
                 if once:
                     return True
