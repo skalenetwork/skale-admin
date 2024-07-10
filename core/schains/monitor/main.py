@@ -118,9 +118,7 @@ def run_config_pipeline(
     logger.info('Config checks: %s', status)
 
     if SYNC_NODE:
-        logger.info('Sync node mode, running config monitor')
-        if not last_dkg_successful:
-            logger.info('Latest DKG has not been completed for rotation_id %s', rotation_data)
+        logger.info('Sync node last_dkg_successful %s, rotation_data %s', last_dkg_successful, rotation_data)
         mon = SyncConfigMonitor(config_am, config_checks)
     else:
         logger.info('Regular node mode, running config monitor')
