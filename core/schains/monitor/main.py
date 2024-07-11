@@ -161,7 +161,7 @@ def run_skaled_pipeline(
     )
 
     statsd_client = get_statsd_client()
-    statsd_client.incr(f'schain.skaled_pipeline.{mon.__name__}.{no_hyphens(name)}')
+    statsd_client.incr(f'admin.skaled_pipeline.{mon.__name__}.{no_hyphens(name)}')
     with statsd_client.timer(f'admin.skaled_pipeline.duration.{no_hyphens(name)}'):
         mon(skaled_am, skaled_checks).run()
 
