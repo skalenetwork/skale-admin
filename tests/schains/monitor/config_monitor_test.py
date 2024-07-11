@@ -202,7 +202,7 @@ def test_sync_config_monitor_dkg_not_completed(
     estate.chain_id = 1
     config_checks.estate = estate
     config_am.estate = estate
-    config_checks.last_dkg_successful = False
+    config_checks._last_dkg_successful = False
     assert not econfig.synced(estate)
 
     sync_config_monitor = SyncConfigMonitor(
