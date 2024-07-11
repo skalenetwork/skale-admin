@@ -440,11 +440,11 @@ def test_config_updated(skale, rule_controller, schain_db, current_nodes, estate
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
-        last_dkg_successful=True,
+        last_dkg_successful=False,
         estate=estate,
         dutils=dutils
     )
-    assert checks.last_dkg_successful is False
+    assert checks.last_dkg_successful.status is False
     assert checks.config_updated
 
     upstream_path = UpstreamConfigFilename(
@@ -481,5 +481,5 @@ def test_config_updated(skale, rule_controller, schain_db, current_nodes, estate
         estate=estate,
         dutils=dutils
     )
-    assert checks.last_dkg_successful is True
+    assert checks.last_dkg_successful.status is True
     assert not checks.config_updated
