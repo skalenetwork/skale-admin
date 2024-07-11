@@ -68,6 +68,8 @@ def run_config_pipeline(
     rotation_data = skale.node_rotation.get_rotation(name)
     allowed_ranges = get_sync_agent_ranges(skale)
     ima_linked = not SYNC_NODE and skale_ima.linker.has_schain(name)
+    group_index = skale.schains.name_to_group_id(name)
+    last_dkg_successful = skale.dkg.is_last_dkg_successful(group_index)
     current_nodes = get_current_nodes(skale, name)
 
     estate = ExternalState(
@@ -81,6 +83,7 @@ def run_config_pipeline(
         stream_version=stream_version,
         rotation_id=rotation_data['rotation_id'],
         current_nodes=current_nodes,
+        last_dkg_successful=last_dkg_successful,
         econfig=econfig,
         estate=estate,
     )
@@ -101,7 +104,11 @@ def run_config_pipeline(
     logger.info('Config checks: %s', status)
 
     if SYNC_NODE:
-        logger.info('Sync node mode, running config monitor')
+        logger.info(
+            'Sync node last_dkg_successful %s, rotation_data %s',
+            last_dkg_successful,
+            rotation_data
+        )
         mon = SyncConfigMonitor(config_am, config_checks)
     else:
         logger.info('Regular node mode, running config monitor')
@@ -121,6 +128,7 @@ def run_skaled_pipeline(
 ) -> None:
     name = schain['name']
     schain_record = SChainRecord.get_by_name(name)
+    logger.info('Record: %s', SChainRecord.to_dict(schain_record))
 
     dutils = dutils or DockerUtils()
 
