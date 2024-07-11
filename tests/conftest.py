@@ -513,6 +513,7 @@ def schain_checks(schain_config, schain_db, current_nodes, rule_controller, esta
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )

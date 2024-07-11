@@ -96,6 +96,7 @@ def sample_false_checks(schain_config, schain_db, rule_controller, current_nodes
         schain_record=schain_record,
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
+        last_dkg_successful=True,
         current_nodes=current_nodes,
         estate=estate,
         dutils=dutils
@@ -120,6 +121,7 @@ def rules_unsynced_checks(
         rule_controller=uninited_rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -288,6 +290,7 @@ def test_init_checks(skale, schain_db, current_nodes, uninited_rule_controller, 
         rule_controller=uninited_rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -316,6 +319,7 @@ def test_exit_code(skale, rule_controller, schain_db, current_nodes, estate, dut
             rule_controller=rule_controller,
             stream_version=CONFIG_STREAM,
             current_nodes=current_nodes,
+            last_dkg_successful=True,
             estate=estate,
             dutils=dutils
         )
@@ -335,6 +339,7 @@ def test_process(skale, rule_controller, schain_db, current_nodes, estate, dutil
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -359,6 +364,7 @@ def test_get_all(schain_config, rule_controller, dutils, current_nodes, schain_d
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -381,6 +387,7 @@ def test_get_all(schain_config, rule_controller, dutils, current_nodes, schain_d
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -408,6 +415,7 @@ def test_get_all_with_save(node_config, rule_controller, current_nodes, dutils, 
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -432,9 +440,11 @@ def test_config_updated(skale, rule_controller, schain_db, current_nodes, estate
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
+    assert checks.last_dkg_successful is False
     assert checks.config_updated
 
     upstream_path = UpstreamConfigFilename(
@@ -453,6 +463,7 @@ def test_config_updated(skale, rule_controller, schain_db, current_nodes, estate
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -466,7 +477,9 @@ def test_config_updated(skale, rule_controller, schain_db, current_nodes, estate
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
+    assert checks.last_dkg_successful is True
     assert not checks.config_updated
