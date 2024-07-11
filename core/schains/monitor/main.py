@@ -108,11 +108,11 @@ def run_config_pipeline(
         mon = RegularConfigMonitor(config_am, config_checks)
     statsd_client = get_statsd_client()
 
-    statsd_client.incr(f'admin.config.pipeline.{mon.__class__.__name__}.{no_hyphens(name)}')
+    statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(name)}')
     statsd_client.gauge(
-        f'admin.schain.rotation_id.{no_hyphens(name)}', rotation_data['rotation_id']
+        f'admin.config_pipeline.rotation_id.{no_hyphens(name)}', rotation_data['rotation_id']
     )
-    with statsd_client.timer(f'admin.config.pipeline.duration.{no_hyphens(name)}'):
+    with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(name)}'):
         mon.run()
 
 
@@ -161,8 +161,8 @@ def run_skaled_pipeline(
     )
 
     statsd_client = get_statsd_client()
-    statsd_client.incr(f'schain.skaled.pipeline.{mon.__name__}.{no_hyphens(name)}')
-    with statsd_client.timer(f'admin.skaled.pipeline.duration.{no_hyphens(name)}'):
+    statsd_client.incr(f'schain.skaled_pipeline.{mon.__name__}.{no_hyphens(name)}')
+    with statsd_client.timer(f'admin.skaled_pipeline.duration.{no_hyphens(name)}'):
         mon(skaled_am, skaled_checks).run()
 
 

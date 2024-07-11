@@ -179,7 +179,7 @@ class ConfigActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def dkg(self) -> bool:
         initial_status = self.checks.dkg.status
-        with self.statsd_client.timer(f'admin.dkg.{no_hyphens(self.name)}'):
+        with self.statsd_client.timer(f'admin.action.dkg.{no_hyphens(self.name)}'):
             if not initial_status:
                 logger.info('Initing dkg client')
                 dkg_client = get_dkg_client(
@@ -213,7 +213,7 @@ class ConfigActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def upstream_config(self) -> bool:
-        with self.statsd_client.timer(f'admin.upstream_config.{no_hyphens(self.name)}'):
+        with self.statsd_client.timer(f'admin.action.upstream_config.{no_hyphens(self.name)}'):
             logger.info(
                 'Creating new upstream_config rotation_id: %s, stream: %s',
                 self.rotation_data.get('rotation_id'), self.stream_version
@@ -349,7 +349,7 @@ class SkaledActionManager(BaseActionManager):
 
             ranges = self.econfig.ranges
             logger.info('Adding ranges %s', ranges)
-            with self.statsd_client.timer(f'admin.firewall.{no_hyphens(self.name)}'):
+            with self.statsd_client.timer(f'admin.action.firewall.{no_hyphens(self.name)}'):
                 self.rc.configure(
                     base_port=base_port,
                     own_ip=own_ip,
@@ -357,7 +357,7 @@ class SkaledActionManager(BaseActionManager):
                     sync_ip_ranges=ranges
                 )
                 self.statsd_client.gauge(
-                    f'admin.expected_rules.{no_hyphens(self.name)}',
+                    f'admin.action.expected_rules.{no_hyphens(self.name)}',
                     len(self.rc.expected_rules())
                 )
                 self.rc.sync()

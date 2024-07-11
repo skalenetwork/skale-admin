@@ -524,5 +524,5 @@ def log_checks_dict(schain_name, checks_dict):
 
 def send_to_statsd(statsd_client: statsd.StatsClient, schain_name: str, checks_dict: dict) -> None:
     for check, result in checks_dict.items():
-        mname = f'admin.checks.{check}.{no_hyphens(schain_name)}'
+        mname = f'admin.schain_checks.{check}.{no_hyphens(schain_name)}'
         statsd_client.gauge(mname, int(result))
