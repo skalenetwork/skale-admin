@@ -112,6 +112,7 @@ def schains_checks():
                     rotation_id=rotation_id,
                     stream_version=stream_version,
                     current_nodes=current_nodes,
+                    last_dkg_successful=True,
                     estate=estate,
                     sync_node=False
                 ).get_all(needed=checks_filter)
