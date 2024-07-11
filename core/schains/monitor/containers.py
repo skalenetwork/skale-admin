@@ -35,6 +35,7 @@ from core.schains.runner import (
 )
 from core.ima.schain import copy_schain_ima_abi
 from core.schains.ima import get_ima_time_frame, ImaData
+from core.schains.ssl import update_ssl_change_date
 
 from tools.configs import SYNC_NODE
 from tools.configs.containers import (
@@ -85,6 +86,7 @@ def monitor_schain_container(
             sync_node=sync_node,
             historic_state=historic_state,
         )
+        update_ssl_change_date(schain_record)
         schain_record.reset_failed_counters()
         return
 
@@ -99,6 +101,7 @@ def monitor_schain_container(
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
             logger.info('sChain %s: restarting container', schain_name)
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
+            update_ssl_change_date(schain_record)
             schain_record.set_restart_count(schain_record.restart_count + 1)
             schain_record.set_failed_rpc_count(0)
         else:
