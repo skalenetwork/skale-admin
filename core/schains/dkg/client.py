@@ -89,7 +89,7 @@ def convert_hex_to_g2_array(data):
     g2_array = []
     while len(data) > 0:
         cur = data[:256]
-        g2_array.append([str(x) for x in [int(cur[64 * i : 64 * i + 64], 16) for i in range(4)]])
+        g2_array.append([str(x) for x in [int(cur[64 * i: 64 * i + 64], 16) for i in range(4)]])
         data = data[256:]
     return g2_array
 
@@ -97,14 +97,14 @@ def convert_hex_to_g2_array(data):
 def convert_str_to_key_share(sent_secret_key_contribution, n):
     return_value = []
     for i in range(n):
-        public_key = sent_secret_key_contribution[i * 192 + 64 : (i + 1) * 192]
-        key_share = bytes.fromhex(sent_secret_key_contribution[i * 192 : i * 192 + 64])
+        public_key = sent_secret_key_contribution[i * 192 + 64: (i + 1) * 192]
+        key_share = bytes.fromhex(sent_secret_key_contribution[i * 192: i * 192 + 64])
         return_value.append(KeyShare(public_key, key_share).tuple)
     return return_value
 
 
 def convert_key_share_to_str(data, n):
-    return ''.join(to_verify(s) for s in [data[i * 192 : (i + 1) * 192] for i in range(n)])
+    return ''.join(to_verify(s) for s in [data[i * 192: (i + 1) * 192] for i in range(n)])
 
 
 def to_verify(share):
@@ -197,7 +197,7 @@ class DKGClient:
 
     def store_broadcasted_data(self, data, from_node):
         self.incoming_secret_key_contribution[from_node] = data[1][
-            192 * self.node_id_dkg : 192 * (self.node_id_dkg + 1)
+            192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
         ]
         if from_node == self.node_id_dkg:
             self.incoming_verification_vector[from_node] = convert_hex_to_g2_array(data[0])
@@ -222,7 +222,7 @@ class DKGClient:
             self.poly_name, self.public_keys
         )
         self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
-            self.node_id_dkg * 192 : (self.node_id_dkg + 1) * 192
+            self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
         ]
         return convert_str_to_key_share(self.sent_secret_key_contribution, self.n)
 

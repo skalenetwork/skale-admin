@@ -9,7 +9,7 @@ def test_is_address_contract(skale):
 
 
 def test_no_hyphen():
-    no_hyphens('too') == 'too'
-    no_hyphens('too-boo') == 'too_boo'
-    no_hyphens('too-boo_goo') == 'too_boo_goo'
-    no_hyphens('too_goo') == 'too_goo'
+    assert no_hyphens('too') == 'too'
+    assert no_hyphens('too-boo') == 'too_boo'
+    assert no_hyphens('too-boo_goo') == 'too_boo_goo'
+    assert no_hyphens('too_goo') == 'too_goo'
