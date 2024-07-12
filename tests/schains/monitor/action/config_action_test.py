@@ -37,6 +37,7 @@ def config_checks(
         schain_record=schain_record,
         rotation_id=rotation_data['rotation_id'],
         stream_version=CONFIG_STREAM,
+        last_dkg_successful=True,
         current_nodes=current_nodes,
         estate=estate
     )
