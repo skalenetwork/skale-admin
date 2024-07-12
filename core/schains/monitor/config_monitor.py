@@ -29,11 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseConfigMonitor(IMonitor):
-    def __init__(
-        self,
-        action_manager: ConfigActionManager,
-        checks: ConfigChecks
-    ) -> None:
+    def __init__(self, action_manager: ConfigActionManager, checks: ConfigChecks) -> None:
         self.am = action_manager
         self.checks = checks
 
@@ -64,4 +60,16 @@ class RegularConfigMonitor(BaseConfigMonitor):
         if not self.checks.upstream_config:
             self.am.upstream_config()
         self.am.update_reload_ts(self.checks.skaled_node_ips)
+        self.am.reset_config_record()
+
+
+class SyncConfigMonitor(BaseConfigMonitor):
+    def execute(self) -> None:
+        if not self.checks.config_dir:
+            self.am.config_dir()
+        if not self.checks.external_state:
+            self.am.external_state()
+        if self.checks.last_dkg_successful and not self.checks.upstream_config:
+            self.am.upstream_config()
+            self.am.update_reload_ts(self.checks.skaled_node_ips, sync_node=True)
         self.am.reset_config_record()

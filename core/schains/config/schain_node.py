@@ -54,9 +54,19 @@ class SChainNodeInfo(NodeInfo):
         }
 
 
-def generate_schain_nodes(schain_nodes_with_schains: list, schain_name, rotation_id: int):
+def generate_schain_nodes(
+    schain_nodes_with_schains: list,
+    schain_name: str,
+    rotation_id: int,
+    sync_node: bool = False
+):
     schain_nodes = []
-    bls_public_keys = get_bls_public_keys(schain_name, rotation_id)
+
+    if sync_node:
+        bls_public_keys = ["0:0:1:0"] * len(schain_nodes_with_schains)
+    else:
+        bls_public_keys = get_bls_public_keys(schain_name, rotation_id)
+
     for i, node in enumerate(schain_nodes_with_schains, 1):
         base_port = get_schain_base_port_on_node(node['schains'], schain_name, node['port'])
         node_info = SChainNodeInfo(

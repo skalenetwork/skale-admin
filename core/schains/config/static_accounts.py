@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2021 SKALE Labs
+#   Copyright (C) 2023-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,22 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
+import os
 
-from core.schains.monitor.base_monitor import BaseMonitor
-
-
-logger = logging.getLogger(__name__)
+from tools.helper import read_json
+from tools.configs import STATIC_ACCOUNTS_FOLDER, ENV_TYPE
 
 
-class PostRotationMonitor(BaseMonitor):
-    """
-    PostRotationMonitor be executed for the sChain on the staying node when rotation is complete.
-    This type of monitor reloads skaled container.
-    """
-    @BaseMonitor.monitor_runner
-    def run(self):
-        logger.info(f'{self.p} was stopped after rotation. Going to restart')
-        self.config(overwrite=True)
-        self.firewall_rules()
-        self.recreated_schain_containers()
+def static_accounts(schain_name: str) -> dict:
+    return read_json(static_accounts_filepath(schain_name))
+
+
+def is_static_accounts(schain_name: str) -> bool:
+    return os.path.isfile(static_accounts_filepath(schain_name))
+
+
+def static_accounts_filepath(schain_name: str) -> str:
+    static_accounts_env_path = os.path.join(STATIC_ACCOUNTS_FOLDER, ENV_TYPE)
+    if not os.path.isdir(static_accounts_env_path):
+        return ''
+    return os.path.join(static_accounts_env_path, f'schain-{schain_name}.json')
