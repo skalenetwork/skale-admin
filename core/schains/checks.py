@@ -59,7 +59,7 @@ from core.schains.volume import is_volume_exists
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import write_json
+from tools.helper import no_hyphens, write_json
 from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 
@@ -504,5 +504,5 @@ def log_checks_dict(schain_name, checks_dict):
 
 def send_to_statsd(statsd_client: statsd.StatsClient, schain_name: str, checks_dict: dict) -> None:
     for check, result in checks_dict.items():
-        mname = f'admin.checks.{schain_name}.{check}'
+        mname = f'admin.schain_checks.{check}.{no_hyphens(schain_name)}'
         statsd_client.gauge(mname, int(result))

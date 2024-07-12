@@ -184,3 +184,7 @@ def is_zero_address(address: str) -> bool:
 def is_address_contract(web3, address) -> bool:
     """Returns true if contract is deployed at the requested address"""
     return web3.eth.get_code(address) != b''
+
+
+def no_hyphens(name: str) -> str:
+    return name.replace('-', '_')
