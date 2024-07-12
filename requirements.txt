@@ -14,7 +14,7 @@ requests==2.31
 ima-predeployed==2.1.0b0
 etherbase-predeployed==1.1.0b3
 marionette-predeployed==2.0.0b2
-config-controller-predeployed==1.1.0b0
+config-controller-predeployed==1.1.0
 filestorage-predeployed==1.1.0.dev8
 multisigwallet-predeployed==1.1.0a8
 
