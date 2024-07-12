@@ -29,6 +29,7 @@ from skale.transactions.result import TransactionFailedError
 
 from core.schains.dkg.broadcast_filter import Filter
 from core.schains.dkg.structures import ComplaintReason, DKGStep
+from tools.helper import no_hyphens
 from tools.configs import NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER
 from tools.resources import get_statsd_client
 from tools.sgx_utils import sgx_unreachable_retry
@@ -78,7 +79,7 @@ def convert_g2_point_to_hex(data):
     data_hexed = ''
     for coord in data:
         temp = hex(int(coord))[2:]
-        while (len(temp) < 64):
+        while len(temp) < 64:
             temp = '0' + temp
         data_hexed += temp
     return data_hexed
@@ -88,7 +89,7 @@ def convert_hex_to_g2_array(data):
     g2_array = []
     while len(data) > 0:
         cur = data[:256]
-        g2_array.append([str(x) for x in [int(cur[64 * i:64 * i + 64], 16) for i in range(4)]])
+        g2_array.append([str(x) for x in [int(cur[64 * i: 64 * i + 64], 16) for i in range(4)]])
         data = data[256:]
     return g2_array
 
@@ -103,7 +104,7 @@ def convert_str_to_key_share(sent_secret_key_contribution, n):
 
 
 def convert_key_share_to_str(data, n):
-    return "".join(to_verify(s) for s in [data[i * 192:(i + 1) * 192] for i in range(n)])
+    return ''.join(to_verify(s) for s in [data[i * 192: (i + 1) * 192] for i in range(n)])
 
 
 def to_verify(share):
@@ -112,24 +113,24 @@ def to_verify(share):
 
 def generate_poly_name(group_index_str, node_id, dkg_id):
     return (
-            "POLY:SCHAIN_ID:"
-            f"{group_index_str}"
-            ":NODE_ID:"
-            f"{str(node_id)}"
-            ":DKG_ID:"
-            f"{str(dkg_id)}"
-        )
+        'POLY:SCHAIN_ID:'
+        f'{group_index_str}'
+        ':NODE_ID:'
+        f'{str(node_id)}'
+        ':DKG_ID:'
+        f'{str(dkg_id)}'
+    )
 
 
 def generate_bls_key_name(group_index_str, node_id, dkg_id):
     return (
-            "BLS_KEY:SCHAIN_ID:"
-            f"{group_index_str}"
-            ":NODE_ID:"
-            f"{str(node_id)}"
-            ":DKG_ID:"
-            f"{str(dkg_id)}"
-        )
+        'BLS_KEY:SCHAIN_ID:'
+        f'{group_index_str}'
+        ':NODE_ID:'
+        f'{str(node_id)}'
+        ':DKG_ID:'
+        f'{str(dkg_id)}'
+    )
 
 
 class DKGClient:
@@ -146,10 +147,11 @@ class DKGClient:
         node_ids_contract,
         eth_key_name,
         rotation_id,
-        step: DKGStep = DKGStep.NONE
+        step: DKGStep = DKGStep.NONE,
     ):
-        self.sgx = SgxClient(os.environ['SGX_SERVER_URL'], n=n, t=t,
-                             path_to_cert=SGX_CERTIFICATES_FOLDER)
+        self.sgx = SgxClient(
+            os.environ['SGX_SERVER_URL'], n=n, t=t, path_to_cert=SGX_CERTIFICATES_FOLDER
+        )
         self.schain_name = schain_name
         self.group_index = skale.schains.name_to_group_id(schain_name)
         self.node_id_contract = node_id_contract
@@ -169,9 +171,9 @@ class DKGClient:
         self.node_ids_contract = node_ids_contract
         self.dkg_contract_functions = self.skale.dkg.contract.functions
         self.dkg_timeout = self.skale.constants_holder.get_dkg_timeout()
-        self.complaint_error_event_hash = self.skale.web3.to_hex(self.skale.web3.keccak(
-            text="ComplaintError(string)"
-        ))
+        self.complaint_error_event_hash = self.skale.web3.to_hex(
+            self.skale.web3.keccak(text='ComplaintError(string)')
+        )
         self.statsd_client = get_statsd_client()
         self._last_completed_step = step  # last step
         logger.info(f'sChain: {self.schain_name}. DKG timeout is {self.dkg_timeout}')
@@ -181,9 +183,11 @@ class DKGClient:
         return self._last_completed_step
 
     @last_completed_step.setter
-    def last_completed_step(self, value: DKGStep):
-        self.statsd_client.gauge(f'admin.dkg.last_completed_step.{self.schain_name}', value)
-        self._last_completed_step = value
+    def last_completed_step(self, step: DKGStep):
+        self.statsd_client.gauge(
+            f'admin.schains.dkg.last_completed_step.{no_hyphens(self.schain_name)}', step.value
+        )
+        self._last_completed_step = step
 
     def is_channel_opened(self):
         return self.skale.dkg.is_channel_opened(self.group_index)
@@ -214,9 +218,9 @@ class DKGClient:
 
     @sgx_unreachable_retry
     def secret_key_contribution(self):
-        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution_v2(self.poly_name,
-                                                                                    self.public_keys
-                                                                                    )
+        self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution_v2(
+            self.poly_name, self.public_keys
+        )
         self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
             self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
         ]
@@ -233,12 +237,14 @@ class DKGClient:
             )
 
         is_broadcast_possible = self.skale.dkg.contract.functions.isBroadcastPossible(
-            self.group_index, self.node_id_contract).call({'from': self.skale.wallet.address})
+            self.group_index, self.node_id_contract
+        ).call({'from': self.skale.wallet.address})
 
         channel_opened = self.is_channel_opened()
         if not is_broadcast_possible or not channel_opened:
-            logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_dkg} node could not sent broadcast')
+            logger.info(
+                f'sChain: {self.schain_name}. ' f'{self.node_id_dkg} node could not sent broadcast'
+            )
             return
 
         verification_vector = self.verification_vector()
@@ -249,7 +255,7 @@ class DKGClient:
             self.node_id_contract,
             verification_vector,
             secret_key_contribution,
-            self.rotation_id
+            self.rotation_id,
         )
         self.last_completed_step = DKGStep.BROADCAST
         logger.info('Everything is sent from %d node', self.node_id_dkg)
@@ -262,28 +268,31 @@ class DKGClient:
         try:
             if not self.verification(from_node):
                 raise DkgVerificationError(
-                    f"sChain: {self.schain_name}. "
-                    f"Fatal error : user {str(from_node + 1)} "
+                    f'sChain: {self.schain_name}. '
+                    f'Fatal error : user {str(from_node + 1)} '
                     f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
                 )
-            logger.info(f'sChain: {self.schain_name}. '
-                        f'All data from {from_node} was received and verified')
+            logger.info(
+                f'sChain: {self.schain_name}. '
+                f'All data from {from_node} was received and verified'
+            )
         except SgxUnreachableError as e:
             raise SgxUnreachableError(
-                    f"sChain: {self.schain_name}. "
-                    f"Fatal error : user {str(from_node + 1)} "
-                    f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
-                    f"with SgxUnreachableError: ", e
-                )
+                f'sChain: {self.schain_name}. '
+                f'Fatal error : user {str(from_node + 1)} '
+                f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
+                f'with SgxUnreachableError: ',
+                e,
+            )
 
     @sgx_unreachable_retry
     def verification(self, from_node):
-        return self.sgx.verify_secret_share_v2(self.incoming_verification_vector[from_node],
-                                               self.eth_key_name,
-                                               to_verify(
-                                                self.incoming_secret_key_contribution[from_node]
-                                               ),
-                                               self.node_id_dkg)
+        return self.sgx.verify_secret_share_v2(
+            self.incoming_verification_vector[from_node],
+            self.eth_key_name,
+            to_verify(self.incoming_secret_key_contribution[from_node]),
+            self.node_id_dkg,
+        )
 
     @sgx_unreachable_retry
     def is_bls_key_generated(self):
@@ -298,17 +307,20 @@ class DKGClient:
 
     @sgx_unreachable_retry
     def generate_bls_key(self):
-        received_secret_key_contribution = "".join(to_verify(
-                                                    self.incoming_secret_key_contribution[j]
-                                                    )
-                                                   for j in range(self.sgx.n))
-        logger.info(f'sChain: {self.schain_name}. '
-                    f'DKGClient is going to create BLS private key with name {self.bls_name}')
-        bls_private_key = self.sgx.create_bls_private_key_v2(self.poly_name, self.bls_name,
-                                                             self.eth_key_name,
-                                                             received_secret_key_contribution)
-        logger.info(f'sChain: {self.schain_name}. '
-                    'DKGClient is going to fetch BLS public key with name {self.bls_name}')
+        received_secret_key_contribution = ''.join(
+            to_verify(self.incoming_secret_key_contribution[j]) for j in range(self.sgx.n)
+        )
+        logger.info(
+            f'sChain: {self.schain_name}. '
+            f'DKGClient is going to create BLS private key with name {self.bls_name}'
+        )
+        bls_private_key = self.sgx.create_bls_private_key_v2(
+            self.poly_name, self.bls_name, self.eth_key_name, received_secret_key_contribution
+        )
+        logger.info(
+            f'sChain: {self.schain_name}. '
+            'DKGClient is going to fetch BLS public key with name {self.bls_name}'
+        )
         self.public_key = self.sgx.get_bls_public_key(self.bls_name)
         return bls_private_key
 
@@ -326,72 +338,70 @@ class DKGClient:
     def alright(self):
         logger.info(f'sChain {self.schain_name} sending alright transaction')
         is_alright_possible = self.skale.dkg.is_alright_possible(
-            self.group_index, self.node_id_contract, self.skale.wallet.address)
+            self.group_index, self.node_id_contract, self.skale.wallet.address
+        )
 
         if not is_alright_possible or not self.is_channel_opened():
-            logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_dkg} node could not sent an alright note')
+            logger.info(
+                f'sChain: {self.schain_name}. '
+                f'{self.node_id_dkg} node could not sent an alright note'
+            )
             return
         self.skale.dkg.alright(
-            self.group_index,
-            self.node_id_contract,
-            gas_limit=ALRIGHT_GAS_LIMIT,
-            multiplier=2
+            self.group_index, self.node_id_contract, gas_limit=ALRIGHT_GAS_LIMIT, multiplier=2
         )
         self.last_completed_step = DKGStep.ALRIGHT
         logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
 
     def send_complaint(self, to_node: int, reason: ComplaintReason):
-        logger.info(f'sChain: {self.schain_name}. '
-                    f'{self.node_id_dkg} node is trying to sent a {reason} on {to_node} node')
+        logger.info(
+            f'sChain: {self.schain_name}. '
+            f'{self.node_id_dkg} node is trying to sent a {reason} on {to_node} node'
+        )
 
         is_complaint_possible = self.skale.dkg.is_complaint_possible(
-            self.group_index, self.node_id_contract, self.node_ids_dkg[to_node],
-            self.skale.wallet.address
+            self.group_index,
+            self.node_id_contract,
+            self.node_ids_dkg[to_node],
+            self.skale.wallet.address,
         )
         is_channel_opened = self.is_channel_opened()
         logger.info(
-            'Complaint possible %s, channel opened %s',
-            is_complaint_possible,
-            is_channel_opened
+            'Complaint possible %s, channel opened %s', is_complaint_possible, is_channel_opened
         )
 
         if not is_complaint_possible or not is_channel_opened:
-            logger.info(
-                '%d node could not sent a complaint on %d node',
-                self.node_id_dkg,
-                to_node
-            )
+            logger.info('%d node could not sent a complaint on %d node', self.node_id_dkg, to_node)
             return False
 
         reason_to_step = {
             ComplaintReason.NO_BROADCAST: DKGStep.COMPLAINT_NO_BROADCAST,
             ComplaintReason.BAD_DATA: DKGStep.COMPLAINT_BAD_DATA,
             ComplaintReason.NO_ALRIGHT: DKGStep.COMPLAINT_NO_ALRIGHT,
-            ComplaintReason.NO_RESPONSE: DKGStep.COMPLAINT_NO_RESPONSE
+            ComplaintReason.NO_RESPONSE: DKGStep.COMPLAINT_NO_RESPONSE,
         }
 
         try:
             if reason == ComplaintReason.BAD_DATA:
                 tx_res = self.skale.dkg.complaint_bad_data(
-                    self.group_index,
-                    self.node_id_contract,
-                    self.node_ids_dkg[to_node]
+                    self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]
                 )
             else:
                 tx_res = self.skale.dkg.complaint(
-                    self.group_index,
-                    self.node_id_contract,
-                    self.node_ids_dkg[to_node]
+                    self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]
                 )
             if self.check_complaint_logs(tx_res.receipt['logs'][0]):
-                logger.info(f'sChain: {self.schain_name}. '
-                            f'{self.node_id_dkg} node sent a complaint on {to_node} node')
+                logger.info(
+                    f'sChain: {self.schain_name}. '
+                    f'{self.node_id_dkg} node sent a complaint on {to_node} node'
+                )
                 self.last_completed_step = reason_to_step[reason]
                 return True
             else:
-                logger.info(f'sChain: {self.schain_name}. Complaint from {self.node_id_dkg} on '
-                            f'{to_node} node was rejected')
+                logger.info(
+                    f'sChain: {self.schain_name}. Complaint from {self.node_id_dkg} on '
+                    f'{to_node} node was rejected'
+                )
                 return False
         except TransactionFailedError as e:
             logger.error(f'DKG complaint failed: sChain {self.schain_name}')
@@ -400,8 +410,7 @@ class DKGClient:
     @sgx_unreachable_retry
     def get_complaint_response(self, to_node_index):
         response = self.sgx.complaint_response(
-            self.poly_name,
-            self.node_ids_contract[to_node_index]
+            self.poly_name, self.node_ids_contract[to_node_index]
         )
         share, dh_key = response.share, response.dh_key
         verification_vector_mult = response.verification_vector_mult
@@ -413,11 +422,13 @@ class DKGClient:
 
     def response(self, to_node_index):
         is_pre_response_possible = self.skale.dkg.is_pre_response_possible(
-            self.group_index, self.node_id_contract, self.skale.wallet.address)
+            self.group_index, self.node_id_contract, self.skale.wallet.address
+        )
 
         if not is_pre_response_possible or not self.is_channel_opened():
-            logger.info(f'sChain: {self.schain_name}. '
-                        f'{self.node_id_dkg} node could not sent a response')
+            logger.info(
+                f'sChain: {self.schain_name}. ' f'{self.node_id_dkg} node could not sent a response'
+            )
             return
 
         share, dh_key, verification_vector_mult = self.get_complaint_response(to_node_index)
@@ -428,24 +439,22 @@ class DKGClient:
                 self.node_id_contract,
                 convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
                 convert_g2_points_to_array(verification_vector_mult),
-                convert_str_to_key_share(self.sent_secret_key_contribution, self.n)
+                convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
             )
             self.last_completed_step = DKGStep.PRE_RESPONSE
 
             is_response_possible = self.skale.dkg.is_response_possible(
-                self.group_index, self.node_id_contract, self.skale.wallet.address)
+                self.group_index, self.node_id_contract, self.skale.wallet.address
+            )
 
             if not is_response_possible or not self.is_channel_opened():
-                logger.info(f'sChain: {self.schain_name}. '
-                            f'{self.node_id_dkg} node could not sent a response')
+                logger.info(
+                    f'sChain: {self.schain_name}. '
+                    f'{self.node_id_dkg} node could not sent a response'
+                )
                 return
 
-            self.skale.dkg.response(
-                self.group_index,
-                self.node_id_contract,
-                int(dh_key, 16),
-                share
-            )
+            self.skale.dkg.response(self.group_index, self.node_id_contract, int(dh_key, 16), share)
             self.last_completed_step = DKGStep.RESPONSE
             logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent a response')
         except TransactionFailedError as e:
@@ -461,8 +470,7 @@ class DKGClient:
             broadcasted_data = [event.verificationVector, event.secretKeyContribution]
             self.store_broadcasted_data(broadcasted_data, from_node)
             logger.info(
-                f'sChain: {self.schain_name}. Received by {self.node_id_dkg} from '
-                f'{from_node}'
+                f'sChain: {self.schain_name}. Received by {self.node_id_dkg} from ' f'{from_node}'
             )
 
     def is_all_data_received(self, from_node):

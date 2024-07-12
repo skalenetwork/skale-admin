@@ -46,7 +46,7 @@ from core.node import get_current_nodes
 from tools.docker_utils import DockerUtils
 from tools.configs import SYNC_NODE
 from tools.notifications.messages import notify_checks
-from tools.helper import is_node_part_of_chain
+from tools.helper import is_node_part_of_chain, no_hyphens
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord
 
@@ -115,9 +115,11 @@ def run_config_pipeline(
         mon = RegularConfigMonitor(config_am, config_checks)
     statsd_client = get_statsd_client()
 
-    statsd_client.incr(f'admin.config.pipeline.{name}.{mon.__class__.__name__}')
-    statsd_client.gauge(f'admin.schain.rotation_id.{name}', rotation_data['rotation_id'])
-    with statsd_client.timer(f'admin.config.pipeline.{name}.duration'):
+    statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(name)}')
+    statsd_client.gauge(
+        f'admin.config_pipeline.rotation_id.{no_hyphens(name)}', rotation_data['rotation_id']
+    )
+    with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(name)}'):
         mon.run()
 
 
@@ -167,8 +169,8 @@ def run_skaled_pipeline(
     )
 
     statsd_client = get_statsd_client()
-    statsd_client.incr(f'schain.skaled.pipeline.{name}.{mon.__name__}')
-    with statsd_client.timer(f'admin.skaled.pipeline.{name}.duration'):
+    statsd_client.incr(f'admin.skaled_pipeline.{mon.__name__}.{no_hyphens(name)}')
+    with statsd_client.timer(f'admin.skaled_pipeline.duration.{no_hyphens(name)}'):
         mon(skaled_am, skaled_checks).run()
 
 
@@ -210,8 +212,8 @@ def create_and_execute_tasks(
 
     statsd_client = get_statsd_client()
     monitor_last_seen_ts = schain_record.monitor_last_seen.timestamp()
-    statsd_client.incr(f'admin.schain.monitor.{name}')
-    statsd_client.gauge(f'admin.schain.monitor_last_seen.{name}', monitor_last_seen_ts)
+    statsd_client.incr(f'admin.schain.monitor.{no_hyphens(name)}')
+    statsd_client.gauge(f'admin.schain.monitor_last_seen.{no_hyphens(name)}', monitor_last_seen_ts)
 
     tasks = []
     if not leaving_chain:
