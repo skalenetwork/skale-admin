@@ -96,6 +96,7 @@ def sample_false_checks(schain_config, schain_db, rule_controller, current_nodes
         schain_record=schain_record,
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
+        last_dkg_successful=True,
         current_nodes=current_nodes,
         estate=estate,
         dutils=dutils
@@ -120,6 +121,7 @@ def rules_unsynced_checks(
         rule_controller=uninited_rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -202,12 +204,11 @@ def test_exit_code_ok_check(schain_checks, sample_false_checks):
 
 
 def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
-    dutils.is_container_running = lambda *args: True
     ts = int(time.time())
     mts = ts + 3600
     name = schain_checks.name
     schain = get_schain_contracts_data(name)
-    image = get_image_name(type=IMA_CONTAINER)
+    image = get_image_name(image_type=IMA_CONTAINER)
     # new_image = get_image_name(type=IMA_CONTAINER, new=True)
 
     # if dutils.pulled(new_image):
@@ -230,8 +231,8 @@ def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
     mts = ts - 3600
     with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
         assert not schain_checks.ima_container.status
-        image = get_image_name(type=IMA_CONTAINER, new=True)
-        run_ima_container(schain, mainnet_chain_id=1,
+        image = get_image_name(image_type=IMA_CONTAINER, new=True)
+        run_ima_container(schain, mainnet_chain_id=1, time_frame=900,
                           image=image, dutils=dutils)
         assert schain_checks.ima_container.status
 
@@ -289,6 +290,7 @@ def test_init_checks(skale, schain_db, current_nodes, uninited_rule_controller, 
         rule_controller=uninited_rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -317,6 +319,7 @@ def test_exit_code(skale, rule_controller, schain_db, current_nodes, estate, dut
             rule_controller=rule_controller,
             stream_version=CONFIG_STREAM,
             current_nodes=current_nodes,
+            last_dkg_successful=True,
             estate=estate,
             dutils=dutils
         )
@@ -336,6 +339,7 @@ def test_process(skale, rule_controller, schain_db, current_nodes, estate, dutil
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -360,6 +364,7 @@ def test_get_all(schain_config, rule_controller, dutils, current_nodes, schain_d
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -382,6 +387,7 @@ def test_get_all(schain_config, rule_controller, dutils, current_nodes, schain_d
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -409,6 +415,7 @@ def test_get_all_with_save(node_config, rule_controller, current_nodes, dutils, 
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -433,9 +440,11 @@ def test_config_updated(skale, rule_controller, schain_db, current_nodes, estate
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=False,
         estate=estate,
         dutils=dutils
     )
+    assert checks.last_dkg_successful.status is False
     assert checks.config_updated
 
     upstream_path = UpstreamConfigFilename(
@@ -454,6 +463,7 @@ def test_config_updated(skale, rule_controller, schain_db, current_nodes, estate
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -467,7 +477,9 @@ def test_config_updated(skale, rule_controller, schain_db, current_nodes, estate
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
+    assert checks.last_dkg_successful.status is True
     assert not checks.config_updated

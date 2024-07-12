@@ -9,6 +9,7 @@ from pathlib import Path
 
 import docker
 import pytest
+import yaml
 
 
 from skale import SkaleManager
@@ -46,7 +47,7 @@ from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.skaled_status import init_skaled_status, SkaledStatus
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
-from tools.configs import META_FILEPATH, SSL_CERTIFICATES_FILEPATH
+from tools.configs import CONFIG_FOLDER, ENV_TYPE, META_FILEPATH, SSL_CERTIFICATES_FILEPATH
 from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -65,6 +66,7 @@ from tests.utils import (
     generate_cert,
     generate_schain_config,
     get_test_rule_controller,
+    IMA_MIGRATION_TS,
     init_skale_from_wallet,
     init_skale_ima,
     upsert_schain_record_with_config
@@ -511,6 +513,7 @@ def schain_checks(schain_config, schain_db, current_nodes, rule_controller, esta
         rule_controller=rule_controller,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
+        last_dkg_successful=True,
         estate=estate,
         dutils=dutils
     )
@@ -617,3 +620,15 @@ def upstreams(schain_db, schain_config):
         yield files
     finally:
         shutil.rmtree(config_folder, ignore_errors=True)
+
+
+@pytest.fixture
+def ima_migration_schedule(schain_db):
+    name = schain_db
+    try:
+        migration_schedule_path = os.path.join(CONFIG_FOLDER, 'ima_migration_schedule.yaml')
+        with open(migration_schedule_path, 'w') as migration_schedule_file:
+            yaml.dump({ENV_TYPE: {name: IMA_MIGRATION_TS}}, migration_schedule_file)
+        yield migration_schedule_path
+    finally:
+        os.remove(migration_schedule_path)

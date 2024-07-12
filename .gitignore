@@ -63,6 +63,8 @@ schain_status_sample.json
 *.lock
 
 skale-manager-*
+manager.json
+meta.json
 
 tests/skale-data/contracts_info/ima.json
 tests/skale-data/contracts_info/schain_ima_abi.json

@@ -17,11 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
+import logging
 import time
 
 from tools.configs import ALLOWED_TIMESTAMP_DIFF
 from tools.configs.schains import DEFAULT_RPC_CHECK_TIMEOUT, RPC_CHECK_TIMEOUT_STEP
 from tools.helper import post_request
+
+
+logger = logging.getLogger(__name__)
 
 
 def make_rpc_call(http_endpoint, method, params=None, timeout=None) -> bool:
@@ -47,10 +52,16 @@ def check_endpoint_alive(http_endpoint, timeout=None):
 
 def check_endpoint_blocks(http_endpoint):
     res = make_rpc_call(http_endpoint, 'eth_getBlockByNumber', ['latest', False])
-    if res and res.json():
-        res_data = res.json()
-        latest_schain_timestamp_hex = res_data['result']['timestamp']
-        latest_schain_timestamp = int(latest_schain_timestamp_hex, 16)
-        admin_timestamp = int(time.time())
-        return abs(latest_schain_timestamp - admin_timestamp) < ALLOWED_TIMESTAMP_DIFF
-    return False
+    healthy = False
+    if res:
+        try:
+            res_data = res.json()
+            latest_schain_timestamp_hex = res_data['result']['timestamp']
+            latest_schain_timestamp = int(latest_schain_timestamp_hex, 16)
+            admin_timestamp = int(time.time())
+            healthy = abs(latest_schain_timestamp - admin_timestamp) < ALLOWED_TIMESTAMP_DIFF
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            logger.warning('Failed to parse response, error: %s', e)
+    else:
+        logger.warning('Empty response from skaled')
+    return healthy

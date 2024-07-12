@@ -49,7 +49,9 @@ def monitor_schain_container_mock(
     skaled_status,
     download_snapshot=False,
     start_ts=None,
-    dutils=None
+    dutils=None,
+    sync_node=False,
+    historic_state=False
 ):
     image_name, container_name, _, _ = get_container_info(
         SCHAIN_CONTAINER, schain['name'])
@@ -79,7 +81,8 @@ def skaled_checks(
         schain_name=name,
         schain_record=schain_record,
         rule_controller=rule_controller,
-        dutils=dutils
+        dutils=dutils,
+        sync_node=False
     )
 
 
@@ -94,6 +97,7 @@ def skaled_am(
     rotation_data,
     secret_key,
     ssl_folder,
+    ima_migration_schedule,
     dutils,
     skaled_checks
 ):
@@ -418,6 +422,7 @@ def test_get_skaled_monitor_new_node(
     ssl_folder,
     skaled_status,
     skaled_checks,
+    ima_migration_schedule,
     dutils
 ):
     name = schain_db
@@ -486,15 +491,27 @@ def test_get_skaled_monitor_recreate(
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
+    schain_record.set_ssl_change_date(datetime.datetime.now())
+    status = skaled_checks.get_all()
 
-    schain_record.set_needs_reload(True)
-    mon = get_skaled_monitor(
-        skaled_am,
-        skaled_checks.get_all(),
-        schain_record,
-        skaled_status
-    )
-    assert mon == RecreateSkaledMonitor
+    with mock.patch('core.schains.ssl.get_ssl_files_change_date',
+                    return_value=datetime.datetime.now()):
+        status['skaled_container'] = False
+        mon = get_skaled_monitor(
+            skaled_am,
+            status,
+            schain_record,
+            skaled_status
+        )
+        assert mon == RegularSkaledMonitor
+        status['skaled_container'] = True
+        mon = get_skaled_monitor(
+            skaled_am,
+            status,
+            schain_record,
+            skaled_status
+        )
+        assert mon == RecreateSkaledMonitor
 
 
 def test_regular_skaled_monitor(

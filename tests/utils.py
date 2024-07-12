@@ -54,6 +54,8 @@ ALLOWED_RANGES = [
     IpRange('3.3.3.3', '4.4.4.4')
 ]
 
+IMA_MIGRATION_TS = 1688388551
+
 
 class FailedAPICall(Exception):
     pass
@@ -138,7 +140,7 @@ def run_simple_schain_container_in_sync_mode(schain_data: dict,
 
 
 def run_simple_ima_container(schain: dict, dutils: DockerUtils):
-    image = get_image_name(type=IMA_CONTAINER)
+    image = get_image_name(image_type=IMA_CONTAINER)
     run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
 
 

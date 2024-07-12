@@ -18,12 +18,13 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from datetime import datetime
 
 from playhouse.migrate import SqliteMigrator, migrate as playhouse_migrate
 from peewee import DateTimeField, IntegerField, BooleanField, CharField
 
 from web.models.schain import DEFAULT_CONFIG_VERSION
-from tools.db import get_database
+from tools.resources import get_database
 
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,8 @@ def run_migrations(db, migrator):
     add_restart_count_field(db, migrator)
     add_failed_rpc_count_field(db, migrator)
 
+    # 2.1/2.2 -> 2.3/sync update fields
+    add_ssl_change_date_field(db, migrator)
     # 2.3 -> 2.4 update fields
     add_failed_snapshot_from(db, migrator)
 
@@ -116,6 +119,13 @@ def add_failed_rpc_count_field(db, migrator):
     add_column(
         db, migrator, 'SChainRecord', 'failed_rpc_count',
         IntegerField(default=0)
+    )
+
+
+def add_ssl_change_date_field(db, migrator):
+    add_column(
+        db, migrator, 'SChainRecord', 'ssl_change_date',
+        DateTimeField(default=datetime.now())
     )
 
 
