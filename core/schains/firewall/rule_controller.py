@@ -87,7 +87,7 @@ class SChainRuleController(IRuleController):
         return missing
 
     def is_configured(self) -> bool:
-        return all((self.base_port, self.own_ip, self.node_ips))
+        return all((self.base_port, self.node_ips))
 
     def configure(
         self,
