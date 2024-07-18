@@ -429,11 +429,24 @@ def test_get_skaled_monitor_recreate(
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
     schain_record.set_ssl_change_date(datetime.datetime.now())
-    with mock.patch(
-        'core.schains.ssl.get_ssl_files_change_date', return_value=datetime.datetime.now()
-    ):
+    status = skaled_checks.get_all()
+
+    with mock.patch('core.schains.ssl.get_ssl_files_change_date',
+                    return_value=datetime.datetime.now()):
+        status['skaled_container'] = False
         mon = get_skaled_monitor(
-            skaled_am, skaled_checks.get_all(), schain_record, skaled_status, ncli_status
+            skaled_am,
+            status,
+            schain_record,
+            skaled_status
+        )
+        assert mon == RegularSkaledMonitor
+        status['skaled_container'] = True
+        mon = get_skaled_monitor(
+            skaled_am,
+            status,
+            schain_record,
+            skaled_status
         )
         assert mon == RecreateSkaledMonitor
 

@@ -224,6 +224,7 @@ def cleanup_schain(
     schain_name,
     sync_agent_ranges,
     rotation_id,
+    last_dkg_successful,
     current_nodes,
     estate,
     dutils=None
@@ -245,6 +246,7 @@ def cleanup_schain(
         current_nodes=current_nodes,
         rotation_id=rotation_id,
         estate=estate,
+        last_dkg_successful=last_dkg_successful,
         dutils=dutils,
         sync_node=SYNC_NODE
     )

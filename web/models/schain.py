@@ -100,7 +100,13 @@ class SChainRecord(BaseModel):
             'monitor_last_seen': record.monitor_last_seen.timestamp(),
             'monitor_id': record.monitor_id,
             'config_version': record.config_version,
-            'ssl_change_date': record.ssl_change_date.timestamp()
+            'ssl_change_date': record.ssl_change_date.timestamp(),
+            'repair_mode': record.repair_mode,
+            'backup_run': record.backup_run,
+            'sync_config_run': record.sync_config_run,
+            'snapshot_from': record.snapshot_from,
+            'restart_count': record.restart_count,
+            'failed_rpc_count': record.failed_rpc_count
         }
 
     def upload(self, *args, **kwargs) -> None:

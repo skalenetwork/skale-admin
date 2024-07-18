@@ -59,7 +59,7 @@ from core.schains.volume import is_volume_exists
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import write_json
+from tools.helper import no_hyphens, write_json
 from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 
@@ -159,6 +159,7 @@ class ConfigChecks(IChecks):
         stream_version: str,
         current_nodes: list[ExtendedManagerNodeInfo],
         estate: ExternalState,
+        last_dkg_successful: bool,
         sync_node: bool = False,
         econfig: Optional[ExternalConfig] = None,
     ) -> None:
@@ -169,6 +170,7 @@ class ConfigChecks(IChecks):
         self.stream_version = stream_version
         self.current_nodes = current_nodes
         self.estate = estate
+        self._last_dkg_successful = last_dkg_successful
         self.sync_node = sync_node
         self.econfig = econfig or ExternalConfig(schain_name)
         self.cfm: ConfigFileManager = ConfigFileManager(schain_name=schain_name)
@@ -182,6 +184,11 @@ class ConfigChecks(IChecks):
         """Checks that sChain config directory exists"""
         dir_path = self.cfm.dirname
         return CheckRes(os.path.isdir(dir_path))
+
+    @property
+    def last_dkg_successful(self) -> CheckRes:
+        """Checks that last dkg was successfuly completed"""
+        return CheckRes(self._last_dkg_successful)
 
     @property
     def dkg(self) -> CheckRes:
@@ -407,6 +414,7 @@ class SChainChecks(IChecks):
         stream_version: str,
         estate: ExternalState,
         current_nodes: list[ExtendedManagerNodeInfo],
+        last_dkg_successful: bool,
         rotation_id: int = 0,
         *,
         econfig: Optional[ExternalConfig] = None,
@@ -421,6 +429,7 @@ class SChainChecks(IChecks):
                 rotation_id=rotation_id,
                 stream_version=stream_version,
                 current_nodes=current_nodes,
+                last_dkg_successful=last_dkg_successful,
                 estate=estate,
                 econfig=econfig,
                 sync_node=sync_node,
@@ -495,5 +504,5 @@ def log_checks_dict(schain_name, checks_dict):
 
 def send_to_statsd(statsd_client: statsd.StatsClient, schain_name: str, checks_dict: dict) -> None:
     for check, result in checks_dict.items():
-        mname = f'admin.checks.{schain_name}.{check}'
+        mname = f'admin.schain_checks.{check}.{no_hyphens(schain_name)}'
         statsd_client.gauge(mname, int(result))
