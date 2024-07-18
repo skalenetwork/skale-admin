@@ -302,7 +302,7 @@ def get_skaled_monitor(
     if SYNC_NODE:
         if no_config(check_status):
             mon_type = NoConfigSkaledMonitor
-        if is_recreate_mode(status, schain_record):
+        if is_recreate_mode(check_status, schain_record):
             mon_type = RecreateSkaledMonitor
         elif is_config_update_time(check_status, skaled_status):
             mon_type = UpdateConfigSkaledMonitor
@@ -318,7 +318,7 @@ def get_skaled_monitor(
         mon_type = BackupSkaledMonitor
     elif is_repair_mode(schain_record, check_status, skaled_status, ncli_status, automatic_repair):
         mon_type = RepairSkaledMonitor
-    elif is_recreate_mode(status, schain_record):
+    elif is_recreate_mode(check_status, schain_record):
         mon_type = RecreateSkaledMonitor
     elif is_new_node_mode(schain_record, action_manager.finish_ts):
         mon_type = NewNodeSkaledMonitor
