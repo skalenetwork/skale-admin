@@ -36,7 +36,6 @@ from core.schains.dkg import (
     save_dkg_results
 )
 from core.schains.ima import get_migration_ts as get_ima_migration_ts
-from core.schains.ssl import update_ssl_change_date
 
 from core.schains.cleaner import (
     remove_ima_container,
@@ -74,10 +73,12 @@ from core.schains.config.helper import (
 from core.schains.ima import ImaData
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.skaled_status import init_skaled_status
+from core.schains.ssl import update_ssl_change_date
 
 from tools.configs import SYNC_NODE
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.docker_utils import DockerUtils
+from tools.helper import no_hyphens
 from tools.node_options import NodeOptions
 from tools.notifications.messages import notify_repair_mode
 from tools.resources import get_statsd_client
@@ -178,7 +179,7 @@ class ConfigActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def dkg(self) -> bool:
         initial_status = self.checks.dkg.status
-        with self.statsd_client.timer(f'admin.dkg.{self.name}'):
+        with self.statsd_client.timer(f'admin.action.dkg.{no_hyphens(self.name)}'):
             if not initial_status:
                 logger.info('Initing dkg client')
                 dkg_client = get_dkg_client(
@@ -212,7 +213,7 @@ class ConfigActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def upstream_config(self) -> bool:
-        with self.statsd_client.timer(f'admin.upstream_config.{self.name}'):
+        with self.statsd_client.timer(f'admin.action.upstream_config.{no_hyphens(self.name)}'):
             logger.info(
                 'Creating new upstream_config rotation_id: %s, stream: %s',
                 self.rotation_data.get('rotation_id'), self.stream_version
@@ -348,7 +349,7 @@ class SkaledActionManager(BaseActionManager):
 
             ranges = self.econfig.ranges
             logger.info('Adding ranges %s', ranges)
-            with self.statsd_client.timer(f'admin.firewall.{self.name}'):
+            with self.statsd_client.timer(f'admin.action.firewall.{no_hyphens(self.name)}'):
                 self.rc.configure(
                     base_port=base_port,
                     own_ip=own_ip,
@@ -356,7 +357,7 @@ class SkaledActionManager(BaseActionManager):
                     sync_ip_ranges=ranges
                 )
                 self.statsd_client.gauge(
-                    f'admin.expected_rules.{self.name}',
+                    f'admin.action.expected_rules.{no_hyphens(self.name)}',
                     len(self.rc.expected_rules())
                 )
                 self.rc.sync()
@@ -395,9 +396,10 @@ class SkaledActionManager(BaseActionManager):
             logger.info('Skaled container exists, restarting')
             restart_container(SCHAIN_CONTAINER, self.schain,
                               dutils=self.dutils)
+            update_ssl_change_date(self.schain_record)
         else:
             logger.info(
-                'Skaled container doesn\'t exists, running skaled watchman')
+                'Skaled container does not exists, running skaled watchman')
             initial_status = self.skaled_container()
         return initial_status
 
@@ -426,10 +428,9 @@ class SkaledActionManager(BaseActionManager):
             logger.info('Removing skaled container')
             remove_schain_container(self.name, dutils=self.dutils)
         else:
-            logger.warning('Container doesn\'t exists')
+            logger.warning('Container does not exists')
         self.schain_record.set_restart_count(0)
         self.schain_record.set_failed_rpc_count(0)
-        update_ssl_change_date(self.schain_record)
         self.schain_record.set_needs_reload(False)
         initial_status = self.skaled_container(
             abort_on_exit=abort_on_exit)

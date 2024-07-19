@@ -255,6 +255,7 @@ def test_cleanup_schain(
         schain_name,
         current_nodes=current_nodes,
         sync_agent_ranges=[],
+        last_dkg_successful=True,
         rotation_id=0,
         estate=estate,
         dutils=dutils
