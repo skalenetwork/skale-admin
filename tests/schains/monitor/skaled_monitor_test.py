@@ -438,7 +438,8 @@ def test_get_skaled_monitor_recreate(
             skaled_am,
             status,
             schain_record,
-            skaled_status
+            skaled_status,
+            ncli_status
         )
         assert mon == RegularSkaledMonitor
         status['skaled_container'] = True
@@ -446,7 +447,8 @@ def test_get_skaled_monitor_recreate(
             skaled_am,
             status,
             schain_record,
-            skaled_status
+            skaled_status,
+            ncli_status
         )
         assert mon == RecreateSkaledMonitor
 
