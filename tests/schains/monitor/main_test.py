@@ -1,11 +1,14 @@
+import functools
 import mock
+import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
 from core.schains.firewall.types import IpRange
 from core.schains.firewall.utils import get_sync_agent_ranges
-from core.schains.monitor.main import run_monitor_for_schain
+from core.schains.monitor.main import Pipeline, run_monitor_for_schain, run_pipelines
 from core.schains.task import Task
 
 from tools.helper import is_node_part_of_chain
@@ -91,3 +94,27 @@ def test_run_monitor_for_schain_left(
             once=True
         )
         keep_tasks_running_mock.assert_not_called()
+
+
+def test_run_pipelines():
+    def simple_pipeline(index: int):
+        logging.info('Running simple pipeline %d', index)
+        time.sleep(1)
+        logging.info('Finishing simple pipeline %d', index)
+
+    def stuck_pipeline(index: int):
+        logging.info('Running stuck pipeline %d', index)
+        while True:
+            logging.info('Stuck pipeline %d beat', index)
+            time.sleep(2)
+
+    run_pipelines([
+        Pipeline(name='healthy0', job=functools.partial(simple_pipeline, index=0)),
+        Pipeline(name='healthy1', job=functools.partial(simple_pipeline, index=1)),
+    ], once=True, stuck_timeout=5, shutdown_interval=10)
+
+    with pytest.raises(SystemExit):
+        run_pipelines([
+            Pipeline(name='healthy', job=functools.partial(simple_pipeline, index=0)),
+            Pipeline(name='stuck', job=functools.partial(stuck_pipeline, index=1))
+        ], stuck_timeout=5, shutdown_interval=10)

@@ -18,13 +18,15 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import functools
-import time
-import random
 import logging
-from typing import Dict
+import queue
+import random
+import sys
+import threading
+import time
+from typing import Callable, Dict, List, NamedTuple, Optional
 from concurrent.futures import Future, ThreadPoolExecutor
 from importlib import reload
-from typing import List, Optional
 
 from skale import Skale, SkaleIma
 from web3._utils import request as web3_request
@@ -56,8 +58,15 @@ MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 40
 
 SKALED_PIPELINE_SLEEP = 2
 CONFIG_PIPELINE_SLEEP = 3
+STUCK_TIMEOUT = 60 * 60 * 3
+SHUTDOWN_INTERVAL = 60 * 10
 
 logger = logging.getLogger(__name__)
+
+
+class Pipeline(NamedTuple):
+    name: str
+    job: Callable
 
 
 def run_config_pipeline(
@@ -105,9 +114,7 @@ def run_config_pipeline(
 
     if SYNC_NODE:
         logger.info(
-            'Sync node last_dkg_successful %s, rotation_data %s',
-            last_dkg_successful,
-            rotation_data
+            'Sync node last_dkg_successful %s, rotation_data %s', last_dkg_successful, rotation_data
         )
         mon = SyncConfigMonitor(config_am, config_checks)
     else:
@@ -151,18 +158,18 @@ def run_skaled_pipeline(
         econfig=ExternalConfig(name),
         dutils=dutils,
     )
-    status = skaled_checks.get_all(log=False, expose=True)
+    check_status = skaled_checks.get_all(log=False, expose=True)
     automatic_repair = get_automatic_repair_option()
-    api_status = get_api_checks_status(status=status, allowed=TG_ALLOWED_CHECKS)
+    api_status = get_api_checks_status(status=check_status, allowed=TG_ALLOWED_CHECKS)
     notify_checks(name, node_config.all(), api_status)
 
-    logger.info('Skaled status: %s', status)
+    logger.info('Skaled check status: %s', check_status)
 
     logger.info('Upstream config %s', skaled_am.upstream_config_path)
 
     mon = get_skaled_monitor(
         action_manager=skaled_am,
-        status=status,
+        check_status=check_status,
         schain_record=schain_record,
         skaled_status=skaled_status,
         automatic_repair=automatic_repair,
@@ -286,3 +293,62 @@ def run_monitor_for_schain(
                 if once:
                     return False
                 post_monitor_sleep()
+
+
+def run_pipelines(
+    pipelines: list[Pipeline],
+    once: bool = False,
+    stuck_timeout: int = STUCK_TIMEOUT,
+    shutdown_interval: int = SHUTDOWN_INTERVAL,
+) -> None:
+    init_ts = time.time()
+
+    heartbeat_queues = [queue.Queue() for _ in range(len(pipelines))]
+    terminating_events = [threading.Event() for _ in range(len(pipelines))]
+    heartbeat_ts = [init_ts for _ in range(len(pipelines))]
+
+    threads = [
+        threading.Thread(
+            name=pipeline.name,
+            target=keep_pipeline, args=[heartbeat_queue, terminating_event, pipeline.job],
+            daemon=True
+        )
+        for heartbeat_queue, terminating_event, pipeline in zip(
+            heartbeat_queues, terminating_events, pipelines
+        )
+    ]
+
+    for th in threads:
+        th.start()
+
+    stuck = False
+    while not stuck:
+        for pindex, heartbeat_queue in enumerate(heartbeat_queues):
+            if not heartbeat_queue.empty():
+                heartbeat_ts[pindex] = heartbeat_queue.get()
+            if time.time() - heartbeat_ts[pindex] > stuck_timeout:
+                logger.info('Pipeline with number %d/%d stuck', pindex, len(pipelines))
+                stuck = True
+                break
+        if once and all((lambda ts: ts > init_ts, heartbeat_ts)):
+            logger.info('Successfully completed required one run. Shutting down the process')
+            break
+
+    logger.info('Terminating all pipelines')
+    for event in terminating_events:
+        event.set()
+    if stuck:
+        logger.info('Waiting for graceful completion interval')
+        time.sleep(shutdown_interval)
+        logger.info('Stuck was detected')
+        sys.exit(1)
+
+
+def keep_pipeline(
+    heartbeat_queue: queue.Queue, terminating_event: threading.Event, pipeline: Callable
+) -> None:
+    while not terminating_event.is_set():
+        logger.info('Running pipeline')
+        pipeline()
+        heartbeat_queue.put(time.time())
+        post_monitor_sleep()
