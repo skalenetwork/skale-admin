@@ -297,7 +297,7 @@ def no_config(status: Dict) -> bool:
 
 def get_skaled_monitor(
     action_manager: SkaledActionManager,
-    status: Dict,
+    check_status: Dict,
     schain_record: SChainRecord,
     skaled_status: SkaledStatus,
     automatic_repair: bool = True
@@ -309,32 +309,32 @@ def get_skaled_monitor(
     mon_type: Type[BaseSkaledMonitor] = RegularSkaledMonitor
 
     if SYNC_NODE:
-        if no_config(status):
+        if no_config(check_status):
             mon_type = NoConfigSkaledMonitor
-        if is_recreate_mode(status, schain_record):
+        if is_recreate_mode(check_status, schain_record):
             mon_type = RecreateSkaledMonitor
-        elif is_config_update_time(status, skaled_status):
+        elif is_config_update_time(check_status, skaled_status):
             mon_type = UpdateConfigSkaledMonitor
-        elif is_reload_group_mode(status, action_manager.upstream_finish_ts):
+        elif is_reload_group_mode(check_status, action_manager.upstream_finish_ts):
             mon_type = ReloadGroupSkaledMonitor
-        elif is_reload_ip_mode(status, action_manager.econfig.reload_ts):
+        elif is_reload_ip_mode(check_status, action_manager.econfig.reload_ts):
             mon_type = ReloadIpSkaledMonitor
         return mon_type
 
-    if no_config(status):
+    if no_config(check_status):
         mon_type = NoConfigSkaledMonitor
     elif is_backup_mode(schain_record):
         mon_type = BackupSkaledMonitor
-    elif is_repair_mode(schain_record, status, skaled_status, automatic_repair):
+    elif is_repair_mode(schain_record, check_status, skaled_status, automatic_repair):
         mon_type = RepairSkaledMonitor
-    elif is_recreate_mode(status, schain_record):
+    elif is_recreate_mode(check_status, schain_record):
         mon_type = RecreateSkaledMonitor
     elif is_new_node_mode(schain_record, action_manager.finish_ts):
         mon_type = NewNodeSkaledMonitor
-    elif is_config_update_time(status, skaled_status):
+    elif is_config_update_time(check_status, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
-    elif is_reload_group_mode(status, action_manager.upstream_finish_ts):
+    elif is_reload_group_mode(check_status, action_manager.upstream_finish_ts):
         mon_type = ReloadGroupSkaledMonitor
-    elif is_reload_ip_mode(status, action_manager.econfig.reload_ts):
+    elif is_reload_ip_mode(check_status, action_manager.econfig.reload_ts):
         mon_type = ReloadIpSkaledMonitor
     return mon_type
