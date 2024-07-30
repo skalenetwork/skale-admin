@@ -24,7 +24,7 @@ from multiprocessing import Process
 
 from skale import Skale
 
-from core.schains.monitor.main import run_monitor_for_schain
+from core.schains.monitor.main import create_and_execute_pipelines
 from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process_manager_helper import (
     terminate_stuck_schain_process, is_monitor_process_alive, terminate_process
@@ -77,12 +77,13 @@ def run_pm_schain(skale, skale_ima, node_config, schain: Dict) -> None:
         logger.info(f'{log_prefix} PID {schain_record.monitor_id} is not running, spawning...')
         process = Process(
             name=schain['name'],
-            target=run_monitor_for_schain,
+            target=create_and_execute_pipelines,
             args=(
                 skale,
-                skale_ima,
+                schain,
                 node_config,
-                schain
+                skale_ima,
+                schain_record
             )
         )
         process.start()

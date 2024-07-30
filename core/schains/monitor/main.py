@@ -21,11 +21,9 @@ import functools
 import logging
 import queue
 import random
-import sys
 import threading
 import time
-from typing import Callable, Dict, List, NamedTuple, Optional
-from concurrent.futures import Future, ThreadPoolExecutor
+from typing import Callable, Dict, NamedTuple, Optional
 from importlib import reload
 
 from skale import Skale, SkaleIma
@@ -40,7 +38,6 @@ from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.monitor import get_skaled_monitor, RegularConfigMonitor, SyncConfigMonitor
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.external_config import ExternalConfig, ExternalState
-from core.schains.task import keep_tasks_running, Task
 from core.schains.config.static_params import get_automatic_repair_option
 from core.schains.skaled_status import get_skaled_status
 from core.node import get_current_nodes
@@ -58,7 +55,7 @@ MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 40
 
 SKALED_PIPELINE_SLEEP = 2
 CONFIG_PIPELINE_SLEEP = 3
-STUCK_TIMEOUT = 60 * 60 * 3
+STUCK_TIMEOUT = 60 * 60 * 2
 SHUTDOWN_INTERVAL = 60 * 10
 
 logger = logging.getLogger(__name__)
@@ -189,19 +186,18 @@ def post_monitor_sleep():
     time.sleep(schain_monitor_sleep)
 
 
-def create_and_execute_tasks(
-    skale,
-    schain,
+def create_and_execute_pipelines(
+    skale: Skale,
+    schain: dict,
     node_config: NodeConfig,
     skale_ima: SkaleIma,
-    stream_version,
-    schain_record,
-    executor,
-    futures,
-    dutils,
-):
+    schain_record: SChainRecord,
+    dutils: Optional[DockerUtils] = None,
+) -> bool:
     reload(web3_request)
     name = schain['name']
+
+    stream_version = get_skale_node_version()
 
     is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
@@ -222,13 +218,13 @@ def create_and_execute_tasks(
     statsd_client.incr(f'admin.schain.monitor.{no_hyphens(name)}')
     statsd_client.gauge(f'admin.schain.monitor_last_seen.{no_hyphens(name)}', monitor_last_seen_ts)
 
-    tasks = []
+    pipelines = []
     if not leaving_chain:
-        logger.info('Adding config task to the pool')
-        tasks.append(
-            Task(
-                f'{name}-config',
-                functools.partial(
+        logger.info('Adding config pipelines to the pool')
+        pipelines.append(
+            Pipeline(
+                name='config',
+                job=functools.partial(
                     run_config_pipeline,
                     skale=skale,
                     skale_ima=skale_ima,
@@ -236,7 +232,6 @@ def create_and_execute_tasks(
                     node_config=node_config,
                     stream_version=stream_version,
                 ),
-                sleep=CONFIG_PIPELINE_SLEEP,
             )
         )
     if schain_record.config_version != stream_version or (
@@ -244,55 +239,26 @@ def create_and_execute_tasks(
     ):
         ConfigFileManager(name).remove_skaled_config()
     else:
-        logger.info('Adding skaled task to the pool')
-        tasks.append(
-            Task(
-                f'{name}-skaled',
-                functools.partial(
+        logger.info('Adding skaled pipeline to the pool')
+        pipelines.append(
+            Pipeline(
+                name='skaled',
+                job=functools.partial(
                     run_skaled_pipeline,
                     skale=skale,
                     schain=schain,
                     node_config=node_config,
                     dutils=dutils,
                 ),
-                sleep=SKALED_PIPELINE_SLEEP,
             )
         )
 
-    if len(tasks) == 0:
-        logger.warning('No tasks to run')
-    keep_tasks_running(executor, tasks, futures)
+    if len(pipelines) == 0:
+        logger.warning('No pipelines to run')
+        return False
 
-
-def run_monitor_for_schain(
-    skale, skale_ima, node_config: NodeConfig, schain, dutils=None, once=False
-):
-    stream_version = get_skale_node_version()
-    tasks_number = 2
-    with ThreadPoolExecutor(max_workers=tasks_number, thread_name_prefix='T') as executor:
-        futures: List[Optional[Future]] = [None for i in range(tasks_number)]
-        while True:
-            schain_record = SChainRecord.get_by_name(schain['name'])
-            try:
-                create_and_execute_tasks(
-                    skale,
-                    schain,
-                    node_config,
-                    skale_ima,
-                    stream_version,
-                    schain_record,
-                    executor,
-                    futures,
-                    dutils,
-                )
-                if once:
-                    return True
-                post_monitor_sleep()
-            except Exception:
-                logger.exception('Monitor iteration failed')
-                if once:
-                    return False
-                post_monitor_sleep()
+    run_pipelines(pipelines)
+    return True
 
 
 def run_pipelines(
@@ -310,8 +276,8 @@ def run_pipelines(
     threads = [
         threading.Thread(
             name=pipeline.name,
-            target=keep_pipeline, args=[heartbeat_queue, terminating_event, pipeline.job],
-            daemon=True
+            target=keep_pipeline,
+            args=[heartbeat_queue, terminating_event, pipeline.job]
         )
         for heartbeat_queue, terminating_event, pipeline in zip(
             heartbeat_queues, terminating_events, pipelines
@@ -326,29 +292,40 @@ def run_pipelines(
         for pindex, heartbeat_queue in enumerate(heartbeat_queues):
             if not heartbeat_queue.empty():
                 heartbeat_ts[pindex] = heartbeat_queue.get()
-            if time.time() - heartbeat_ts[pindex] > stuck_timeout:
-                logger.info('Pipeline with number %d/%d stuck', pindex, len(pipelines))
+            ts = time.time()
+            if ts - heartbeat_ts[pindex] > stuck_timeout:
+                logger.warning(
+                    '%s pipeline has stucked (last heartbeat %d)',
+                    pipelines[pindex].name,
+                    heartbeat_ts[pindex],
+                )
                 stuck = True
                 break
         if once and all((lambda ts: ts > init_ts, heartbeat_ts)):
-            logger.info('Successfully completed required one run. Shutting down the process')
+            logger.info('Successfully completed requested single run')
             break
 
     logger.info('Terminating all pipelines')
     for event in terminating_events:
-        event.set()
+        if not event.is_set():
+            event.set()
     if stuck:
-        logger.info('Waiting for graceful completion interval')
-        time.sleep(shutdown_interval)
-        logger.info('Stuck was detected')
-        sys.exit(1)
+        logger.info('Joining threads with timeout')
+        for thread in threads:
+            thread.join(timeout=shutdown_interval)
+        logger.warning('Stuck was detected')
+    logger.info('Finishing with pipelines')
 
 
 def keep_pipeline(
-    heartbeat_queue: queue.Queue, terminating_event: threading.Event, pipeline: Callable
+    heartbeat_queue: queue.Queue, terminate: threading.Event, pipeline: Callable
 ) -> None:
-    while not terminating_event.is_set():
+    while not terminate.is_set():
         logger.info('Running pipeline')
-        pipeline()
+        try:
+            pipeline()
+        except Exception:
+            logger.exception('Pipeline run failed')
+            terminate.set()
         heartbeat_queue.put(time.time())
         post_monitor_sleep()
