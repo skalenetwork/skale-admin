@@ -17,8 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import sys
 import logging
+import sys
+import time
 from typing import Dict
 from multiprocessing import Process
 
@@ -26,8 +27,10 @@ from skale import Skale
 
 from core.schains.monitor.main import create_and_execute_pipelines
 from core.schains.notifications import notify_if_not_enough_balance
-from core.schains.process_manager_helper import (
-    terminate_stuck_schain_process, is_monitor_process_alive, terminate_process
+from core.schains.process import (
+    is_monitor_process_alive,
+    terminate_process,
+    ProcessReport,
 )
 
 from web.models.schain import upsert_schain_record, SChainRecord
@@ -35,6 +38,9 @@ from tools.str_formatters import arguments_list_string
 
 
 logger = logging.getLogger(__name__)
+
+
+DKG_TIMEOUT_COEFFICIENT = 2.2
 
 
 def pm_signal_handler(*args):
@@ -68,9 +74,13 @@ def run_process_manager(skale, skale_ima, node_config):
 
 def run_pm_schain(skale, skale_ima, node_config, schain: Dict) -> None:
     schain_record = upsert_schain_record(schain['name'])
+    process_report = ProcessReport(schain['name'])
     log_prefix = f'sChain {schain["name"]} -'  # todo - move to logger formatter
 
-    terminate_stuck_schain_process(skale, schain_record, schain)
+    dkg_timeout = skale.constants_holder.get_dkg_timeout()
+    allowed_diff = int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
+    if int(time.time()) - process_report.ts > allowed_diff:
+        terminate_process(process_report.pid)
     monitor_process_alive = is_monitor_process_alive(schain_record.monitor_id)
 
     if not monitor_process_alive:

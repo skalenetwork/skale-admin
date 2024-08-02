@@ -19,12 +19,15 @@
 
 import logging
 import os
+import shutil
 import signal
-from datetime import datetime
+import json
 
+import pathlib
 import psutil
 
 
+from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import check_pid
 
 
@@ -32,28 +35,6 @@ logger = logging.getLogger(__name__)
 
 TIMEOUT_COEFFICIENT = 2.2
 P_KILL_WAIT_TIMEOUT = 60
-
-
-def terminate_stuck_schain_process(skale, schain_record, schain):
-    """
-    This function terminates the process if last_seen time is less than
-    DKG timeout * TIMEOUT_COEFFICIENT
-    """
-    allowed_last_seen_time = _calc_allowed_last_seen_time(skale)
-    if not schain_record.monitor_last_seen:
-        logging.warning(f'schain: {schain["name"]}, monitor_last_seen is None, skipping...')
-        return
-    schain_monitor_last_seen = schain_record.monitor_last_seen.timestamp()
-    if allowed_last_seen_time > schain_monitor_last_seen:
-        logger.warning(f'schain: {schain["name"]}, pid {schain_record.monitor_id} last seen is \
-{schain_monitor_last_seen}, while max allowed last_seen is {allowed_last_seen_time}, pid \
-{schain_record.monitor_id} will be terminated now!')
-        terminate_schain_process(schain_record)
-
-
-def terminate_schain_process(schain_record):
-    log_msg = f'schain: {schain_record.name}'
-    terminate_process(schain_record.monitor_id, log_msg=log_msg)
 
 
 def terminate_process(pid, kill_timeout=P_KILL_WAIT_TIMEOUT, log_msg=''):
@@ -79,14 +60,49 @@ def terminate_process(pid, kill_timeout=P_KILL_WAIT_TIMEOUT, log_msg=''):
         logging.exception(f'{log_prefix} - termination failed!')
 
 
+def terminate_schain_process(schain_record):
+    log_msg = f'schain: {schain_record.name}'
+    terminate_process(schain_record.monitor_id, log_msg=log_msg)
+
+
 def is_monitor_process_alive(monitor_id):
     """Checks that provided monitor_id is inited and alive"""
     return monitor_id != 0 and check_pid(monitor_id)
 
 
-def _calc_allowed_last_seen_time(skale):
-    dkg_timeout = skale.constants_holder.get_dkg_timeout()
-    allowed_diff = int(dkg_timeout * TIMEOUT_COEFFICIENT)
-    logger.info(f'dkg_timeout: {dkg_timeout}, TIMEOUT_COEFFICIENT: {TIMEOUT_COEFFICIENT}, \
-allowed_diff: {allowed_diff}')
-    return datetime.now().timestamp() - allowed_diff
+class ProcessReport:
+    REPORT_FILENAME = 'process.json'
+
+    def __init__(self, name: str) -> None:
+        self.path = pathlib.Path.joinpath(SCHAINS_DIR_PATH, name, self.REPORT_FILENAME)
+
+    @property
+    def ts(self) -> int:
+        return self.read()['ts']
+
+    @property
+    def pid(self) -> int:
+        return self.read()['pid']
+
+    @property
+    def _tmp_path(self) -> str:
+        path = pathlib.Path(self.path)
+        return path.with_stem('.tmp.' + path.stem)
+
+    def read(self) -> dict:
+        with open(self.path) as process_file:
+            data = json.load(process_file)
+        return data
+
+    def _save_tmp(self, pid: int, ts: int) -> None:
+        data = {'pid': pid, 'ts': ts}
+        with open(self._tmp_path, 'w') as tmp_file:
+            json.dump(data, tmp_file)
+
+    def _move(self) -> str:
+        if os.path.isfile(self._tmp_path):
+            shutil.move(self._tmp_path, self.path)
+
+    def update(self, pid: int, ts: int) -> None:
+        self._save_tmp(pid=pid, ts=ts)
+        self._move()

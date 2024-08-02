@@ -1,18 +1,15 @@
 import functools
-import mock
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Process
 
 import pytest
 
 from core.schains.firewall.types import IpRange
 from core.schains.firewall.utils import get_sync_agent_ranges
-from core.schains.monitor.main import Pipeline, run_monitor_for_schain, run_pipelines
-from core.schains.task import Task
+from core.schains.monitor.main import Pipeline, run_pipelines
 
 from tools.helper import is_node_part_of_chain
-from web.models.schain import upsert_schain_record
 
 
 @pytest.fixture
@@ -52,50 +49,6 @@ def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
     assert not chain_on_node
 
 
-def test_run_monitor_for_schain(
-    skale,
-    skale_ima,
-    schain_on_contracts,
-    node_config,
-    schain_db,
-    dutils
-):
-    with mock.patch('core.schains.monitor.main.keep_tasks_running') as keep_tasks_running_mock:
-        run_monitor_for_schain(
-            skale,
-            skale_ima,
-            node_config,
-            schain={'name': schain_db, 'partOfNode': 0, 'generation': 0},
-            dutils=dutils,
-            once=True
-        )
-        assert isinstance(keep_tasks_running_mock.call_args[0][0], ThreadPoolExecutor)
-        assert isinstance(keep_tasks_running_mock.call_args[0][1][0], Task)
-        assert isinstance(keep_tasks_running_mock.call_args[0][1][1], Task)
-        assert keep_tasks_running_mock.call_args[0][2] == [None, None]
-
-
-def test_run_monitor_for_schain_left(
-    skale,
-    skale_ima,
-    node_config,
-    schain_db,
-    dutils
-):
-    schain_not_exists = 'not-on-node'
-    upsert_schain_record(schain_not_exists)
-    with mock.patch('core.schains.monitor.main.keep_tasks_running') as keep_tasks_running_mock:
-        run_monitor_for_schain(
-            skale,
-            skale_ima,
-            node_config,
-            schain={'name': schain_not_exists, 'partOfNode': 0, 'generation': 0},
-            dutils=dutils,
-            once=True
-        )
-        keep_tasks_running_mock.assert_not_called()
-
-
 def test_run_pipelines():
     def simple_pipeline(index: int):
         logging.info('Running simple pipeline %d', index)
@@ -108,13 +61,19 @@ def test_run_pipelines():
             logging.info('Stuck pipeline %d beat', index)
             time.sleep(2)
 
-    run_pipelines([
+    target = functools.partial(run_pipelines, pipelines=[
         Pipeline(name='healthy0', job=functools.partial(simple_pipeline, index=0)),
         Pipeline(name='healthy1', job=functools.partial(simple_pipeline, index=1)),
     ], once=True, stuck_timeout=5, shutdown_interval=10)
+    monitor_process = Process(target=target)
+    monitor_process.start()
+    monitor_process.join()
 
-    with pytest.raises(SystemExit):
-        run_pipelines([
-            Pipeline(name='healthy', job=functools.partial(simple_pipeline, index=0)),
-            Pipeline(name='stuck', job=functools.partial(stuck_pipeline, index=1))
-        ], stuck_timeout=5, shutdown_interval=10)
+    run_pipelines([
+        Pipeline(name='healthy', job=functools.partial(simple_pipeline, index=0)),
+        Pipeline(name='stuck', job=functools.partial(stuck_pipeline, index=1))
+    ], stuck_timeout=5, shutdown_interval=10)
+
+    monitor_process = Process(target=target)
+    monitor_process.start()
+    monitor_process.join(timeout=50)

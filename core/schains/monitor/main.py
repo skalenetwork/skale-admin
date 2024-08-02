@@ -19,11 +19,7 @@
 
 import functools
 import logging
-import queue
-import random
-import threading
-import time
-from typing import Callable, Dict, NamedTuple, Optional
+from typing import Dict, Optional
 from importlib import reload
 
 from skale import Skale, SkaleIma
@@ -33,12 +29,14 @@ from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.checks import ConfigChecks, get_api_checks_status, TG_ALLOWED_CHECKS, SkaledChecks
 from core.schains.config.file_manager import ConfigFileManager
+from core.schains.config.static_params import get_automatic_repair_option
 from core.schains.firewall import get_default_rule_controller
 from core.schains.firewall.utils import get_sync_agent_ranges
+from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.monitor import get_skaled_monitor, RegularConfigMonitor, SyncConfigMonitor
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
-from core.schains.external_config import ExternalConfig, ExternalState
-from core.schains.config.static_params import get_automatic_repair_option
+from core.schains.monitor.pipeline import Pipeline, run_pipelines
+from core.schains.process import ProcessReport
 from core.schains.skaled_status import get_skaled_status
 from core.node import get_current_nodes
 
@@ -53,17 +51,10 @@ from web.models.schain import SChainRecord
 MIN_SCHAIN_MONITOR_SLEEP_INTERVAL = 20
 MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 40
 
-SKALED_PIPELINE_SLEEP = 2
-CONFIG_PIPELINE_SLEEP = 3
 STUCK_TIMEOUT = 60 * 60 * 2
 SHUTDOWN_INTERVAL = 60 * 10
 
 logger = logging.getLogger(__name__)
-
-
-class Pipeline(NamedTuple):
-    name: str
-    job: Callable
 
 
 def run_config_pipeline(
@@ -178,20 +169,13 @@ def run_skaled_pipeline(
         mon(skaled_am, skaled_checks).run()
 
 
-def post_monitor_sleep():
-    schain_monitor_sleep = random.randint(
-        MIN_SCHAIN_MONITOR_SLEEP_INTERVAL, MAX_SCHAIN_MONITOR_SLEEP_INTERVAL
-    )
-    logger.info('Monitor iteration completed, sleeping for %d', schain_monitor_sleep)
-    time.sleep(schain_monitor_sleep)
-
-
 def create_and_execute_pipelines(
     skale: Skale,
     schain: dict,
     node_config: NodeConfig,
     skale_ima: SkaleIma,
     schain_record: SChainRecord,
+    process_report: ProcessReport,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
     reload(web3_request)
@@ -259,73 +243,3 @@ def create_and_execute_pipelines(
 
     run_pipelines(pipelines)
     return True
-
-
-def run_pipelines(
-    pipelines: list[Pipeline],
-    once: bool = False,
-    stuck_timeout: int = STUCK_TIMEOUT,
-    shutdown_interval: int = SHUTDOWN_INTERVAL,
-) -> None:
-    init_ts = time.time()
-
-    heartbeat_queues = [queue.Queue() for _ in range(len(pipelines))]
-    terminating_events = [threading.Event() for _ in range(len(pipelines))]
-    heartbeat_ts = [init_ts for _ in range(len(pipelines))]
-
-    threads = [
-        threading.Thread(
-            name=pipeline.name,
-            target=keep_pipeline,
-            args=[heartbeat_queue, terminating_event, pipeline.job]
-        )
-        for heartbeat_queue, terminating_event, pipeline in zip(
-            heartbeat_queues, terminating_events, pipelines
-        )
-    ]
-
-    for th in threads:
-        th.start()
-
-    stuck = False
-    while not stuck:
-        for pindex, heartbeat_queue in enumerate(heartbeat_queues):
-            if not heartbeat_queue.empty():
-                heartbeat_ts[pindex] = heartbeat_queue.get()
-            ts = time.time()
-            if ts - heartbeat_ts[pindex] > stuck_timeout:
-                logger.warning(
-                    '%s pipeline has stucked (last heartbeat %d)',
-                    pipelines[pindex].name,
-                    heartbeat_ts[pindex],
-                )
-                stuck = True
-                break
-        if once and all((lambda ts: ts > init_ts, heartbeat_ts)):
-            logger.info('Successfully completed requested single run')
-            break
-
-    logger.info('Terminating all pipelines')
-    for event in terminating_events:
-        if not event.is_set():
-            event.set()
-    if stuck:
-        logger.info('Joining threads with timeout')
-        for thread in threads:
-            thread.join(timeout=shutdown_interval)
-        logger.warning('Stuck was detected')
-    logger.info('Finishing with pipelines')
-
-
-def keep_pipeline(
-    heartbeat_queue: queue.Queue, terminate: threading.Event, pipeline: Callable
-) -> None:
-    while not terminate.is_set():
-        logger.info('Running pipeline')
-        try:
-            pipeline()
-        except Exception:
-            logger.exception('Pipeline run failed')
-            terminate.set()
-        heartbeat_queue.put(time.time())
-        post_monitor_sleep()

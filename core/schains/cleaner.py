@@ -35,7 +35,7 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config
 )
-from core.schains.process_manager_helper import terminate_schain_process
+from core.schains.process import terminate_schain_process
 from core.schains.runner import get_container_name, is_exited
 from core.schains.external_config import ExternalConfig
 from core.schains.types import ContainerType
