@@ -11,9 +11,8 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 
 
 @pytest.fixture
-def tmp_dir():
-    schain_name = 'test'
-    path = os.path.join(SCHAINS_DIR_PATH, schain_name)
+def tmp_dir(_schain_name):
+    path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
     Path(path).mkdir()
     try:
         yield path
@@ -21,9 +20,8 @@ def tmp_dir():
         shutil.rmtree(path, ignore_errors=True)
 
 
-def test_process_report(tmp_dir):
-    path = os.path.join(tmp_dir, 'process.json')
-    report = ProcessReport(path)
+def test_process_report(_schain_name, tmp_dir):
+    report = ProcessReport(_schain_name)
     with pytest.raises(FileNotFoundError):
         assert report.ts == 0
 

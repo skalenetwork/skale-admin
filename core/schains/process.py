@@ -74,35 +74,55 @@ class ProcessReport:
     REPORT_FILENAME = 'process.json'
 
     def __init__(self, name: str) -> None:
-        self.path = pathlib.Path.joinpath(SCHAINS_DIR_PATH, name, self.REPORT_FILENAME)
+        self.path = pathlib.Path(SCHAINS_DIR_PATH).joinpath(name, self.REPORT_FILENAME)
+
+    def is_exist(self) -> bool:
+        return os.path.isfile(self.path)
 
     @property
     def ts(self) -> int:
         return self.read()['ts']
 
+    @ts.setter
+    def ts(self, value: int) -> None:
+        report = {}
+        if self.is_exist():
+            report = self.read()
+        report['ts'] = value
+        self._save_tmp(report)
+        self._move()
+
     @property
     def pid(self) -> int:
         return self.read()['pid']
 
+    @pid.setter
+    def pid(self, value: int) -> None:
+        report = {}
+        if self.is_exist():
+            report = self.read()
+        report['pid'] = value
+        self._save_tmp(report)
+        self._move()
+
     @property
     def _tmp_path(self) -> str:
-        path = pathlib.Path(self.path)
-        return path.with_stem('.tmp.' + path.stem)
+        return self.path.with_stem('.tmp.' + self.path.stem)
 
     def read(self) -> dict:
         with open(self.path) as process_file:
             data = json.load(process_file)
         return data
 
-    def _save_tmp(self, pid: int, ts: int) -> None:
-        data = {'pid': pid, 'ts': ts}
+    def _save_tmp(self, report: dict) -> None:
         with open(self._tmp_path, 'w') as tmp_file:
-            json.dump(data, tmp_file)
+            json.dump(report, tmp_file)
 
     def _move(self) -> str:
         if os.path.isfile(self._tmp_path):
             shutil.move(self._tmp_path, self.path)
 
     def update(self, pid: int, ts: int) -> None:
-        self._save_tmp(pid=pid, ts=ts)
+        report = {'pid': pid, 'ts': ts}
+        self._save_tmp(report=report)
         self._move()

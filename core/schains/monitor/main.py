@@ -19,7 +19,7 @@
 
 import functools
 import logging
-from typing import Dict, Optional
+from typing import Optional
 from importlib import reload
 
 from skale import Skale, SkaleIma
@@ -45,7 +45,7 @@ from tools.configs import SYNC_NODE
 from tools.notifications.messages import notify_checks
 from tools.helper import is_node_part_of_chain, no_hyphens
 from tools.resources import get_statsd_client
-from web.models.schain import SChainRecord
+from web.models.schain import SChainRecord, upsert_schain_record
 
 
 MIN_SCHAIN_MONITOR_SLEEP_INTERVAL = 20
@@ -53,12 +53,13 @@ MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 40
 
 STUCK_TIMEOUT = 60 * 60 * 2
 SHUTDOWN_INTERVAL = 60 * 10
+DKG_TIMEOUT_COEFFICIENT = 2.2
 
 logger = logging.getLogger(__name__)
 
 
 def run_config_pipeline(
-    skale: Skale, skale_ima: SkaleIma, schain: Dict, node_config: NodeConfig, stream_version: str
+    skale: Skale, skale_ima: SkaleIma, schain: dict, node_config: NodeConfig, stream_version: str
 ) -> None:
     name = schain['name']
     schain_record = SChainRecord.get_by_name(name)
@@ -119,7 +120,7 @@ def run_config_pipeline(
 
 
 def run_skaled_pipeline(
-    skale: Skale, schain: Dict, node_config: NodeConfig, dutils: DockerUtils
+    skale: Skale, schain: dict, node_config: NodeConfig, dutils: DockerUtils
 ) -> None:
     name = schain['name']
     schain_record = SChainRecord.get_by_name(name)
@@ -169,12 +170,11 @@ def run_skaled_pipeline(
         mon(skaled_am, skaled_checks).run()
 
 
-def create_and_execute_pipelines(
+def start_monitor(
     skale: Skale,
     schain: dict,
     node_config: NodeConfig,
     skale_ima: SkaleIma,
-    schain_record: SChainRecord,
     process_report: ProcessReport,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
@@ -182,6 +182,7 @@ def create_and_execute_pipelines(
     name = schain['name']
 
     stream_version = get_skale_node_version()
+    schain_record = upsert_schain_record(name)
 
     is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
@@ -205,6 +206,8 @@ def create_and_execute_pipelines(
     pipelines = []
     if not leaving_chain:
         logger.info('Adding config pipelines to the pool')
+        dkg_timeout = skale.constants_holder.get_dkg_timeout()
+        stuck_timeout = int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
         pipelines.append(
             Pipeline(
                 name='config',
@@ -241,5 +244,5 @@ def create_and_execute_pipelines(
         logger.warning('No pipelines to run')
         return False
 
-    run_pipelines(pipelines)
+    run_pipelines(pipelines=pipelines, process_report=process_report)
     return True

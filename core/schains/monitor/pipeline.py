@@ -1,12 +1,11 @@
 import logging
 import queue
 import random
-import sys
 import threading
 import time
 
 from typing import Callable, NamedTuple
-from core.schains.config.directory import schain_config_dir
+from core.schains.process import ProcessReport
 
 logger = logging.getLogger(__name__)
 
