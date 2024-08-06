@@ -42,6 +42,7 @@ from core.node import get_current_nodes
 
 from tools.docker_utils import DockerUtils
 from tools.configs import SYNC_NODE
+from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
 from tools.notifications.messages import notify_checks
 from tools.helper import is_node_part_of_chain, no_hyphens
 from tools.resources import get_statsd_client
@@ -53,7 +54,6 @@ MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 40
 
 STUCK_TIMEOUT = 60 * 60 * 2
 SHUTDOWN_INTERVAL = 60 * 10
-DKG_TIMEOUT_COEFFICIENT = 2.2
 
 logger = logging.getLogger(__name__)
 
@@ -184,6 +184,9 @@ def start_monitor(
     stream_version = get_skale_node_version()
     schain_record = upsert_schain_record(name)
 
+    dkg_timeout = skale.constants_holder.get_dkg_timeout()
+    stuck_timeout = int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
+
     is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
     leaving_chain = not SYNC_NODE and not is_node_part_of_chain(skale, name, node_config.id)
@@ -206,8 +209,6 @@ def start_monitor(
     pipelines = []
     if not leaving_chain:
         logger.info('Adding config pipelines to the pool')
-        dkg_timeout = skale.constants_holder.get_dkg_timeout()
-        stuck_timeout = int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
         pipelines.append(
             Pipeline(
                 name='config',
@@ -244,5 +245,5 @@ def start_monitor(
         logger.warning('No pipelines to run')
         return False
 
-    run_pipelines(pipelines=pipelines, process_report=process_report)
+    run_pipelines(pipelines=pipelines, process_report=process_report, stuck_timeout=stuck_timeout)
     return True

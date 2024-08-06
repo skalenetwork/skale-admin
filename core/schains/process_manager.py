@@ -34,12 +34,9 @@ from core.schains.process import (
 )
 
 from tools.str_formatters import arguments_list_string
-
+from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
 
 logger = logging.getLogger(__name__)
-
-
-DKG_TIMEOUT_COEFFICIENT = 2.2
 
 
 def run_process_manager(skale: Skale, skale_ima: SkaleIma, node_config: NodeConfig) -> None:
