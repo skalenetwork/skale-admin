@@ -17,12 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import functools
 import logging
-import threading
+import time
 from datetime import datetime
 
 from peewee import (CharField, DateTimeField,
-                    IntegrityError, IntegerField, BooleanField)
+                    IntegrityError, IntegerField, BooleanField, OperationalError)
 
 from core.schains.dkg.structures import DKGStatus
 from web.models.base import BaseModel
@@ -30,10 +31,31 @@ from web.models.base import BaseModel
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG_VERSION = '0.0.0'
+RETRY_ATTEMPTS = 10
+TIMEOUTS = [2 ** p for p in range(RETRY_ATTEMPTS)]
+
+
+def operational_error_retry(func):
+    @functools.wraps(func)
+    def wrapper(cls, *args, **kwargs):
+        result, error = None, None
+        for i, timeout in enumerate(TIMEOUTS):
+            try:
+                result = func(cls, *args, **kwargs)
+            except OperationalError as e:
+                logger.exception('DB operational error')
+                error = e
+                time.sleep(timeout)
+            else:
+                error = None
+                break
+        if error is not None:
+            raise error
+        return result
+    return wrapper
 
 
 class SChainRecord(BaseModel):
-    _lock = threading.Lock()
     name = CharField(unique=True)
     added_at = DateTimeField()
     dkg_status = IntegerField()
@@ -70,6 +92,7 @@ class SChainRecord(BaseModel):
             return (None, err)
 
     @classmethod
+    @operational_error_retry
     def get_by_name(cls, name):
         return cls.get(cls.name == name)
 
@@ -107,10 +130,6 @@ class SChainRecord(BaseModel):
             'failed_rpc_count': record.failed_rpc_count
         }
 
-    def upload(self, *args, **kwargs) -> None:
-        with SChainRecord._lock:
-            self.save(*args, **kwargs)
-
     def dkg_started(self):
         self.set_dkg_status(DKGStatus.IN_PROGRESS)
 
@@ -126,66 +145,66 @@ class SChainRecord(BaseModel):
     def set_dkg_status(self, val: DKGStatus) -> None:
         logger.info(f'Changing DKG status for {self.name} to {val.name}')
         self.dkg_status = val
-        self.upload()
+        self.save()
 
     def set_deleted(self):
         self.is_deleted = True
-        self.upload()
+        self.save()
 
     def set_first_run(self, val):
         logger.info(f'Changing first_run for {self.name} to {val}')
         self.first_run = val
-        self.upload(only=[SChainRecord.first_run])
+        self.save(only=[SChainRecord.first_run])
 
     def set_backup_run(self, val):
         logger.info(f'Changing backup_run for {self.name} to {val}')
         self.backup_run = val
-        self.upload(only=[SChainRecord.backup_run])
+        self.save(only=[SChainRecord.backup_run])
 
     def set_repair_mode(self, value):
         logger.info(f'Changing repair_mode for {self.name} to {value}')
         self.repair_mode = value
-        self.upload()
+        self.save()
 
     def set_new_schain(self, value):
         logger.info(f'Changing new_schain for {self.name} to {value}')
         self.new_schain = value
-        self.upload()
+        self.save()
 
     def set_needs_reload(self, value):
         logger.info(f'Changing needs_reload for {self.name} to {value}')
         self.needs_reload = value
-        self.upload()
+        self.save()
 
     def set_monitor_last_seen(self, value):
         logger.info(f'Changing monitor_last_seen for {self.name} to {value}')
         self.monitor_last_seen = value
-        self.upload()
+        self.save()
 
     def set_monitor_id(self, value):
         logger.info(f'Changing monitor_id for {self.name} to {value}')
         self.monitor_id = value
-        self.upload()
+        self.save()
 
     def set_config_version(self, value):
         logger.info(f'Changing config_version for {self.name} to {value}')
         self.config_version = value
-        self.upload()
+        self.save()
 
     def set_restart_count(self, value: int) -> None:
         logger.info(f'Changing restart count for {self.name} to {value}')
         self.restart_count = value
-        self.upload()
+        self.save()
 
     def set_failed_rpc_count(self, value: int) -> None:
         logger.info(f'Changing failed rpc count for {self.name} to {value}')
         self.failed_rpc_count = value
-        self.upload()
+        self.save()
 
     def set_snapshot_from(self, value: str) -> None:
         logger.info(f'Changing snapshot from for {self.name} to {value}')
         self.snapshot_from = value
-        self.upload()
+        self.save()
 
     def reset_failed_counters(self) -> None:
         logger.info(f'Resetting failed counters for {self.name}')
@@ -203,7 +222,7 @@ class SChainRecord(BaseModel):
     def set_sync_config_run(self, value):
         logger.info(f'Changing sync_config_run for {self.name} to {value}')
         self.sync_config_run = value
-        self.upload()
+        self.save()
 
     def is_dkg_unsuccessful(self) -> bool:
         return self.dkg_status in [
