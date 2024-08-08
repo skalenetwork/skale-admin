@@ -22,11 +22,15 @@ jobs:
         with:
           submodules: true
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
         run: |
           pwd
           ls -altr
           source ~/ga/bin/activate
+
+      - name: Check python version
+        run: |
+          python -v
 
       - name: Install python dependencies
         run: bash ./scripts/install_python_dependencies.sh
