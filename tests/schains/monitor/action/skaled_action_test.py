@@ -3,6 +3,7 @@ import json
 import os
 import time
 
+import docker
 import freezegun
 import pytest
 import mock
@@ -297,7 +298,13 @@ def test_ima_container_action_image_pulling(
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
     with freezegun.freeze_time(dt):
-        skaled_am.ima_container()
+        for _ in range(5):
+            try:
+                skaled_am.ima_container()
+            except docker.errors.APIError:
+                time.sleep(1)
+            else:
+                break
         containers = dutils.get_all_ima_containers(all=True)
         assert len(containers) == 1
         assert containers[0].name == f'skale_ima_{skaled_am.name}'
