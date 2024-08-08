@@ -34,6 +34,7 @@ from docker.client import DockerClient
 from docker.models.containers import Container
 from docker.models.volumes import Volume
 
+from tools.configs import NODE_DOCKER_CONFIG_PATH
 from tools.configs.containers import (
     CONTAINER_NOT_FOUND,
     CREATED_STATUS,
@@ -46,6 +47,7 @@ from tools.configs.containers import (
     CONTAINER_LOGS_SEPARATOR
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
+from tools.helper import read_json
 
 
 logger = logging.getLogger(__name__)
@@ -79,6 +81,10 @@ def format_containers(f):
         return res
 
     return inner
+
+
+def get_docker_group_id(path: Optional[str] = NODE_DOCKER_CONFIG_PATH) -> int:
+    return read_json(path)['docker_group_id']
 
 
 class DockerUtils:

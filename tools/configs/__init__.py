@@ -95,6 +95,7 @@ ZMQ_TIMEOUT = 5
 CHECK_REPORT_PATH = os.path.join(SKALE_VOLUME_PATH, 'reports', 'checks.json')
 
 NODE_OPTIONS_FILEPATH = os.path.join(NODE_DATA_PATH, 'node_options.json')
+NODE_DOCKER_CONFIG_PATH = os.path.join(NODE_DATA_PATH, 'docker.json')
 
 PULL_CONFIG_FOR_SCHAIN = os.getenv('PULL_CONFIG_FOR_SCHAIN')
 
