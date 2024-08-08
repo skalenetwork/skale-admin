@@ -26,7 +26,7 @@ jobs:
         run: |
           pwd
           ls -altr
-          source ga/bin/activate
+          source ~/ga/bin/activate
 
       - name: Install python dependencies
         run: bash ./scripts/install_python_dependencies.sh
