@@ -23,9 +23,10 @@ jobs:
           submodules: true
 
       - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v1
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+        run: |
+          pwd
+          ls -altr
+          source ga/bin/activate
 
       - name: Install python dependencies
         run: bash ./scripts/install_python_dependencies.sh
