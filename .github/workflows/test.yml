@@ -77,6 +77,11 @@ jobs:
           sudo lsblk -f
           sudo free -h
 
+      - name: Cleanup
+        if: always()
+        run: | 
+          docker rm -f anvil
+
       - name: Run codecov
         run: |
           codecov -t $CODECOV_TOKEN
