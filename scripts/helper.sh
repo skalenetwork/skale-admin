@@ -17,6 +17,8 @@ export_test_env () {
     export FLASK_DEBUG_MODE=True
     export TG_CHAT_ID=-1231232
     export TG_API_KEY=123
+    export REDIS_URI="redis://@127.0.0.1:6379"
+
     export ENV_TYPE=devnet
     export ENV=test
     export ALLOWED_TS_DIFF=9000000
