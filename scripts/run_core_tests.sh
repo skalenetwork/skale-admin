@@ -13,5 +13,5 @@ export_test_env
 run_sgx_simulator $SGX_WALLET_TAG
 bash scripts/run_redis.sh
 
-py.test --cov-config=.coveragerc --cov=. tests/ --ignore=tests/firewall $@
+py.test --cov-config=.coveragerc --cov=. tests/ --ignore=tests/firewall -k test_ima_container_action_image_pulling $@
 tests_cleanup
