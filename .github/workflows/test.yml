@@ -23,7 +23,10 @@ jobs:
           submodules: true
 
       - name: Install python dependencies
-        run: bash ./scripts/install_python_dependencies.sh
+        run: |
+          source ~/ga/bin/activate
+          python --version
+          bash ./scripts/install_python_dependencies.sh
 
       - name: Lint with flake8
         run: flake8 .
@@ -49,6 +52,7 @@ jobs:
       - name: Run core tests
         run: |
           source ~/ga/bin/activate
+          python --version
           bash ./scripts/run_core_tests.sh
 
       - name: Cleanup docker artifacts
