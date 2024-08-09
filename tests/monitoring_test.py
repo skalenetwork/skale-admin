@@ -65,3 +65,5 @@ def test_update_telegraf_service(telegraf_template, cleanup_container, dutils):
         config = config.read()
         assert config == '\n[agent]\n  interval = "60s"\n  hostname = "1.1.1.1"\n  omit_hostname = false\n\n[global_tags]\n  node_id = "1"\n\n[[outputs.db]]\n  alias = "db"\n  urls = ["http://127.0.0.1:1231"]\n'  # noqa
     assert dutils.is_container_running('skale_telegraf')
+    print(dutils.get_info('skale_telegraf')['stats'])
+    assert dutils.get_info('skale_telegraf')['stats']['Config']['User'] == 'telegraf:998'

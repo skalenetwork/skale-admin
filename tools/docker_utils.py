@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import grp
 import io
 import itertools
 import logging
@@ -52,6 +53,7 @@ logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 12
 CONTAINER_CREATION_TIMEOUT = 10
+DOCKER_GROUPNAME = 'docker'
 
 
 class ContainerCreationTimeoutError(Exception):
@@ -79,6 +81,10 @@ def format_containers(f):
         return res
 
     return inner
+
+
+def get_docker_group_id() -> int:
+    return grp.getgrnam('docker').gr_gid
 
 
 class DockerUtils:
