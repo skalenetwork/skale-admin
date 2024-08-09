@@ -30,7 +30,7 @@ jobs:
 
       - name: Check python version
         run: |
-          python -v
+          python --version
 
       - name: Install python dependencies
         run: bash ./scripts/install_python_dependencies.sh
