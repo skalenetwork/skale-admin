@@ -22,21 +22,6 @@ jobs:
         with:
           submodules: true
 
-      - name: Check python version
-        run: |
-          python --version
-
-      - name: Set up Python
-        run: |
-          pwd
-          ls -altr
-          source ~/ga/bin/activate
-          python --version
-
-      - name: Check python version
-        run: |
-          python --version
-
       - name: Install python dependencies
         run: bash ./scripts/install_python_dependencies.sh
 
@@ -63,6 +48,7 @@ jobs:
 
       - name: Run core tests
         run: |
+          source ~/ga/bin/activate
           bash ./scripts/run_core_tests.sh
 
       - name: Cleanup docker artifacts
