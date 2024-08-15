@@ -75,9 +75,11 @@ class SChainVolumeAlloc(Alloc):
         self.values = {}
         for size_name in disk_alloc_dict:
             self.values[size_name] = {}
-            for key, value in proportions.items():
-                lim = int(value * disk_alloc_dict[size_name])
-                self.values[size_name][key] = lim
+            for allocation_type, distribution in proportions.items():
+                self.values[size_name][allocation_type] = {}
+                for key, value in distribution.items():
+                    lim = int(value * disk_alloc_dict[size_name])
+                    self.values[size_name][allocation_type].update({key: lim})
 
 
 class LevelDBAlloc(Alloc):
@@ -85,9 +87,11 @@ class LevelDBAlloc(Alloc):
         self.values = {}
         for size_name in disk_alloc_dict:
             self.values[size_name] = {}
-            for key, value in proportions.items():
-                lim = int(value * disk_alloc_dict[size_name]['max_skaled_leveldb_storage_bytes'])  # noqa
-                self.values[size_name][key] = lim
+            for allocation_type, limits in disk_alloc_dict[size_name].items():
+                self.values[size_name][allocation_type] = {}
+                for key, value in proportions.items():
+                    lim = int(value * limits['max_skaled_leveldb_storage_bytes'])  # noqa
+                    self.values[size_name][allocation_type][key] = lim
 
 
 def calculate_free_disk_space(disk_size: int) -> int:
@@ -192,7 +196,7 @@ def main():
     skale_node_path = os.environ['SKALE_NODE_PATH']
     allocation = generate_schain_allocation(skale_node_path)
     print('Generated allocation')
-    allocation_filepath = os.path.join(skale_node_path, 'schain_allocation_new.yml')
+    allocation_filepath = os.path.join(skale_node_path, 'schain_allocation.yml')
     save_allocation(allocation, allocation_filepath)
     print(f'Results saved to {allocation_filepath}')
 

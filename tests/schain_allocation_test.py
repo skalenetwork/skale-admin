@@ -1,109 +1,122 @@
+import pytest
 from tools.configs import CONFIG_FOLDER
 from tools.schain_allocation import generate_schain_allocation
 
+EXPECTED_SCHAIN_ALLOCATION = [
+    (
+        'mainnet',
+        'medium',
+        'default',
+        {
+            'max_consensus_storage_bytes': 63269997772,
+            'max_file_storage_bytes': 63269997772,
+            'max_reserved_storage_bytes': 21089999257,
+            'max_skaled_leveldb_storage_bytes': 63269997772,
+        },
+    ),
+    (
+        'mainnet',
+        'medium',
+        'no_filestorage',
+        {
+            'max_consensus_storage_bytes': 94904996659,
+            'max_file_storage_bytes': 0,
+            'max_reserved_storage_bytes': 21089999257,
+            'max_skaled_leveldb_storage_bytes': 94904996659,
+        },
+    ),
+    (
+        'mainnet',
+        'medium',
+        'max_contract_storage',
+        {
+            'max_consensus_storage_bytes': 28471498997,
+            'max_file_storage_bytes': 0,
+            'max_reserved_storage_bytes': 21089999257,
+            'max_skaled_leveldb_storage_bytes': 161338494320,
+        },
+    ),
+    (
+        'mainnet',
+        'medium',
+        'max_consensus_db',
+        {
+            'max_consensus_storage_bytes': 151847994654,
+            'max_file_storage_bytes': 0,
+            'max_reserved_storage_bytes': 21089999257,
+            'max_skaled_leveldb_storage_bytes': 37961998663,
+        },
+    ),
+    (
+        'mainnet',
+        'medium',
+        'max_filestorage',
+        {
+            'max_consensus_storage_bytes': 28471498997,
+            'max_file_storage_bytes': 132866995322,
+            'max_reserved_storage_bytes': 21089999257,
+            'max_skaled_leveldb_storage_bytes': 28471498997,
+        },
+    ),
+]
 
-def test_schain_allocation():
-    allocation = generate_schain_allocation(CONFIG_FOLDER)
 
-    # devnet
-    volume_limits = allocation['devnet']['volume_limits']
-    assert volume_limits['large'] == {
-        'max_consensus_storage_bytes': 21311992627,
-        'max_file_storage_bytes': 21311992627,
-        'max_reserved_storage_bytes': 7103997542,
-        'max_skaled_leveldb_storage_bytes': 21311992627,
-    }
+EXPECTED_LEVELDB_ALLOCATION = [
+    (
+        'mainnet',
+        'medium',
+        'default',
+        {'contract_storage': 37961998663, 'db_storage': 12653999554},
+    ),
+    (
+        'mainnet',
+        'medium',
+        'no_filestorage',
+        {'contract_storage': 56942997995, 'db_storage': 18980999331},
+    ),
+    (
+        'mainnet',
+        'medium',
+        'max_contract_storage',
+        {'contract_storage': 96803096592, 'db_storage': 32267698864},
+    ),
+    (
+        'mainnet',
+        'medium',
+        'max_consensus_db',
+        {'contract_storage': 22777199197, 'db_storage': 7592399732},
+    ),
+    (
+        'mainnet',
+        'medium',
+        'max_filestorage',
+        {'contract_storage': 17082899398, 'db_storage': 5694299799},
+    ),
+]
 
-    assert volume_limits['medium'] == {
-        'max_consensus_storage_bytes': 2663999078,
-        'max_file_storage_bytes': 2663999078,
-        'max_reserved_storage_bytes': 887999692,
-        'max_skaled_leveldb_storage_bytes': 2663999078,
-    }
-    assert volume_limits['small'] == {
-        'max_consensus_storage_bytes': 166499942,
-        'max_file_storage_bytes': 166499942,
-        'max_reserved_storage_bytes': 55499980,
-        'max_skaled_leveldb_storage_bytes': 166499942,
-    }
-    assert volume_limits['test'] == {
-        'max_consensus_storage_bytes': 2663999078,
-        'max_file_storage_bytes': 2663999078,
-        'max_reserved_storage_bytes': 887999692,
-        'max_skaled_leveldb_storage_bytes': 2663999078,
-    }
-    assert volume_limits['test4'] == {
-        'max_consensus_storage_bytes': 2663999078,
-        'max_file_storage_bytes': 2663999078,
-        'max_reserved_storage_bytes': 887999692,
-        'max_skaled_leveldb_storage_bytes': 2663999078,
-    }
 
-    # mainnet
-    volume_limits = allocation['mainnet']['volume_limits']
-    assert volume_limits['large'] == {
-        'max_consensus_storage_bytes': 506159982182,
-        'max_file_storage_bytes': 506159982182,
-        'max_reserved_storage_bytes': 168719994060,
-        'max_skaled_leveldb_storage_bytes': 506159982182,
-    }
+@pytest.fixture(scope='module')
+def schain_allocation():
+    return generate_schain_allocation(CONFIG_FOLDER)
 
-    assert volume_limits['medium'] == {
-        'max_consensus_storage_bytes': 63269997772,
-        'max_file_storage_bytes': 63269997772,
-        'max_reserved_storage_bytes': 21089999257,
-        'max_skaled_leveldb_storage_bytes': 63269997772,
-    }
-    assert volume_limits['small'] == {
-        'max_consensus_storage_bytes': 3954374860,
-        'max_file_storage_bytes': 3954374860,
-        'max_reserved_storage_bytes': 1318124953,
-        'max_skaled_leveldb_storage_bytes': 3954374860,
-    }
-    assert volume_limits['test'] == {
-        'max_consensus_storage_bytes': 63269997772,
-        'max_file_storage_bytes': 63269997772,
-        'max_reserved_storage_bytes': 21089999257,
-        'max_skaled_leveldb_storage_bytes': 63269997772,
-    }
-    assert volume_limits['test4'] == {
-        'max_consensus_storage_bytes': 63269997772,
-        'max_file_storage_bytes': 63269997772,
-        'max_reserved_storage_bytes': 21089999257,
-        'max_skaled_leveldb_storage_bytes': 63269997772,
-    }
 
-    # testnet
-    volume_limits = allocation['testnet']['volume_limits']
-    assert volume_limits['large'] == {
-        'max_consensus_storage_bytes': 53279981568,
-        'max_file_storage_bytes': 53279981568,
-        'max_reserved_storage_bytes': 17759993856,
-        'max_skaled_leveldb_storage_bytes': 53279981568,
-    }
-    assert volume_limits['medium'] == {
-        'max_consensus_storage_bytes': 6659997696,
-        'max_file_storage_bytes': 6659997696,
-        'max_reserved_storage_bytes': 2219999232,
-        'max_skaled_leveldb_storage_bytes': 6659997696,
-    }
-    assert volume_limits['small'] == {
-        'max_consensus_storage_bytes': 416249856,
-        'max_file_storage_bytes': 416249856,
-        'max_reserved_storage_bytes': 138749952,
-        'max_skaled_leveldb_storage_bytes': 416249856,
-    }
-    assert volume_limits['test'] == {
-        'max_consensus_storage_bytes': 6659997696,
-        'max_file_storage_bytes': 6659997696,
-        'max_reserved_storage_bytes': 2219999232,
-        'max_skaled_leveldb_storage_bytes': 6659997696,
-    }
-    assert volume_limits['test4'] == {
-        'max_consensus_storage_bytes': 6659997696,
-        'max_file_storage_bytes': 6659997696,
-        'max_reserved_storage_bytes': 2219999232,
-        'max_skaled_leveldb_storage_bytes': 6659997696,
-    }
+@pytest.mark.parametrize(
+    'network_type,size_name,allocation_type,expected', EXPECTED_SCHAIN_ALLOCATION
+)
+def test_schain_allocation(network_type, size_name, allocation_type, expected, schain_allocation):
+    volume_limits = schain_allocation[network_type]['volume_limits']
+    assert volume_limits[size_name][allocation_type] == expected
 
+
+@pytest.mark.parametrize(
+    'network_type,size_name,allocation_type,expected', EXPECTED_LEVELDB_ALLOCATION
+)
+def test_leveldb_allocation(network_type, size_name, allocation_type, expected, schain_allocation):
+    leveldb_limits = schain_allocation[network_type]['leveldb_limits']
+    assert leveldb_limits[size_name][allocation_type] == expected
+
+
+def test_schain_allocation_testnet(schain_allocation):
+    allocation = schain_allocation
     assert allocation['qanet']['volume_limits'] == allocation['testnet']['volume_limits']
+    assert allocation['qanet']['leveldb_limits'] == allocation['testnet']['leveldb_limits']
