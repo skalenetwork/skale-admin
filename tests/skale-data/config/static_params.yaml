@@ -7,10 +7,31 @@ common:
       skaled: 0.8
       ima: 0.2
     volume_limits:
-      max_consensus_storage_bytes: 0.3
-      max_skaled_leveldb_storage_bytes: 0.3
-      max_file_storage_bytes: 0.3
-      max_reserved_storage_bytes: 0.1
+      default:
+        max_consensus_storage_bytes: 0.3
+        max_skaled_leveldb_storage_bytes: 0.3
+        max_file_storage_bytes: 0.3
+        max_reserved_storage_bytes: 0.1
+      no_filestorage:
+        max_consensus_storage_bytes: 0.45
+        max_skaled_leveldb_storage_bytes: 0.45
+        max_file_storage_bytes: 0.0
+        max_reserved_storage_bytes: 0.1
+      max_contract_storage:
+        max_consensus_storage_bytes: 0.135
+        max_skaled_leveldb_storage_bytes: 0.765
+        max_file_storage_bytes: 0.0
+        max_reserved_storage_bytes: 0.1
+      max_filestorage:
+        max_consensus_storage_bytes: 0.135
+        max_skaled_leveldb_storage_bytes: 0.135
+        max_file_storage_bytes: 0.63
+        max_reserved_storage_bytes: 0.1
+      max_consensus_db:
+        max_consensus_storage_bytes: 0.72
+        max_skaled_leveldb_storage_bytes: 0.18
+        max_file_storage_bytes: 0.0
+        max_reserved_storage_bytes: 0.1
     leveldb_limits:
       contract_storage: 0.6
       db_storage: 0.2 # leveldb may use x2 storage, so 0.4 divided by 2, actually using 0.4
@@ -37,18 +58,37 @@ envs:
       docker-compose: 1.27.4
 
     schain:
-      contractStorageZeroValuePatchTimestamp:
-        default: 800000
-        test-schain: 1500000
-      revertableFSPatchTimestamp: 1000000
-      contractStoragePatchTimestamp: 1000000
-      snapshotIntervalSec: 0
+      contractStorageZeroValuePatchTimestamp: 1681128000
+      revertableFSPatchTimestamp: 1681473600
+      contractStoragePatchTimestamp: 1681732800
+      verifyDaSigsPatchTimestamp: 1681300800
+      storageDestructionPatchTimestamp: 1703851200
+      powCheckPatchTimestamp: 1703592000
+      skipInvalidTransactionsPatchTimestamp: 1703764800
+      pushZeroPatchTimestamp: 1712142000
+      precompiledConfigPatchTimestamp: 1712314800
+      correctForkInPowPatchTimestamp: 1711969200
+      EIP1559TransactionsPatchTimestamp: 1722942000
+      fastConsensusPatchTimestamp: 1723114800
+      flexibleDeploymentPatchTimestamp:
+        default: 0
+        honorable-steel-rasalhague: 1723460400
+        elated-tan-skat: 1723460400
+        green-giddy-denebola: 1723460400
+        parallel-stormy-spica: 1723460400
+      verifyBlsSyncPatchTimestamp: 1722855600
+      snapshotIntervalSec: 86400
       emptyBlockIntervalMs: 10000
       snapshotDownloadTimeout: 18000
       snapshotDownloadInactiveTimeout: 120
 
+    ima:
+      time_frame:
+        before: 1800
+        after: 900
+
     schain_cmd:
-      ["-v 3", "--web3-trace", "--enable-debug-behavior-apis", "--aa no"]
+      ["-v 2", "--aa no"]
 
     node:
       common:
@@ -63,35 +103,45 @@ envs:
         collectionQueueSize: 2
         collectionDuration: 10
         transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
         maxOpenLeveldbFiles: 25
       medium:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       large:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       test:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       test4:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
 
   testnet:
     server:
@@ -114,18 +164,32 @@ envs:
       docker-compose: 1.27.4
 
     schain:
-      contractStorageZeroValuePatchTimestamp:
-        default: 800000
-        test-schain: 1500000
-      revertableFSPatchTimestamp: 1000000
-      contractStoragePatchTimestamp: 1000000
-      snapshotIntervalSec: 0
+      contractStorageZeroValuePatchTimestamp: 1678100400
+      revertableFSPatchTimestamp: 1678100400
+      contractStoragePatchTimestamp: 1678100400
+      verifyDaSigsPatchTimestamp: 1678100400
+      storageDestructionPatchTimestamp: 1702393200
+      powCheckPatchTimestamp: 1702296000
+      skipInvalidTransactionsPatchTimestamp: 1702382400
+      pushZeroPatchTimestamp: 1710331200
+      precompiledConfigPatchTimestamp: 1710331200
+      correctForkInPowPatchTimestamp: 1710331200
+      EIP1559TransactionsPatchTimestamp: 1721818800
+      fastConsensusPatchTimestamp: 1721822400
+      flexibleDeploymentPatchTimestamp: 1721826000
+      verifyBlsSyncPatchTimestamp: 1721829600
+      snapshotIntervalSec: 86400
       emptyBlockIntervalMs: 10000
       snapshotDownloadTimeout: 18000
       snapshotDownloadInactiveTimeout: 120
 
+    ima:
+      time_frame:
+        before: 1800
+        after: 900
+
     schain_cmd:
-      ["-v 3", "--web3-trace", "--enable-debug-behavior-apis", "--aa no"]
+      ["-v 2", "--aa no"]
 
     node:
       common:
@@ -140,35 +204,45 @@ envs:
         collectionQueueSize: 2
         collectionDuration: 10
         transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
         maxOpenLeveldbFiles: 25
       medium:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       large:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       test:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       test4:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
 
   qanet:
     server:
@@ -191,64 +265,87 @@ envs:
       docker-compose: 1.27.4
 
     schain:
-      contractStorageZeroValuePatchTimestamp:
-        default: 800000
-        test-schain: 1500000
-      revertableFSPatchTimestamp: 1000000
-      contractStoragePatchTimestamp: 1000000
-      snapshotIntervalSec: 0
+      contractStorageZeroValuePatchTimestamp: 1691146800
+      revertableFSPatchTimestamp: 1691146800
+      contractStoragePatchTimestamp: 1691146800
+      verifyDaSigsPatchTimestamp: 1691146800
+      storageDestructionPatchTimestamp: 1699618500
+      powCheckPatchTimestamp: 1699625700
+      skipInvalidTransactionsPatchTimestamp: 1699632900
+      pushZeroPatchTimestamp: 1712142000
+      precompiledConfigPatchTimestamp: 1712314800
+      correctForkInPowPatchTimestamp: 1711969200
+      EIP1559TransactionsPatchTimestamp: 0
+      fastConsensusPatchTimestamp: 0
+      flexibleDeploymentPatchTimestamp: 0
+      verifyBlsSyncPatchTimestamp: 0
+      snapshotIntervalSec: 3600
       emptyBlockIntervalMs: 10000
       snapshotDownloadTimeout: 18000
       snapshotDownloadInactiveTimeout: 120
 
+    ima:
+      time_frame:
+        before: 1800
+        after: 900
+
     schain_cmd:
-      ["-v 3", "--web3-trace", "--enable-debug-behavior-apis", "--aa no"]
+      ["-v 2", "--aa no"]
 
     node:
-      admin:
-        automatic_repair: false
       common:
         bindIP: "0.0.0.0"
         logLevel: "info"
         logLevelConfig: "info"
         pg-threads: 10
         pg-threads-limit: 10
+      admin:
+        automatic_repair: false
       small:
         minCacheSize: 1000000
         maxCacheSize: 2000000
         collectionQueueSize: 2
         collectionDuration: 10
         transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
         maxOpenLeveldbFiles: 25
       medium:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       large:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       test:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       test4:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
-
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
 
   devnet:
     server:
@@ -271,12 +368,21 @@ envs:
       docker-compose: 1.27.4
 
     schain:
-      contractStorageZeroValuePatchTimestamp:
-        default: 800000
-        test-schain: 1500000
+      contractStorageZeroValuePatchTimestamp: 1000000
       revertableFSPatchTimestamp: 1000000
       contractStoragePatchTimestamp: 1000000
-      snapshotIntervalSec: 0
+      verifyDaSigsPatchTimestamp: 1000000
+      storageDestructionPatchTimestamp: 1000000
+      powCheckPatchTimestamp: 1000000
+      skipInvalidTransactionsPatchTimestamp: 1000000
+      pushZeroPatchTimestamp: 1712142000
+      precompiledConfigPatchTimestamp: 1712314800
+      correctForkInPowPatchTimestamp: 1711969200
+      EIP1559TransactionsPatchTimestamp: 0
+      fastConsensusPatchTimestamp: 0
+      flexibleDeploymentPatchTimestamp: 0
+      verifyBlsSyncPatchTimestamp: 0
+      snapshotIntervalSec: 3600
       emptyBlockIntervalMs: 10000
       snapshotDownloadTimeout: 18000
       snapshotDownloadInactiveTimeout: 120
@@ -290,8 +396,6 @@ envs:
       ["-v 3", "--web3-trace", "--enable-debug-behavior-apis", "--aa no"]
 
     node:
-      admin:
-        automatic_repair: true
       common:
         bindIP: "0.0.0.0"
         logLevel: "info"
@@ -304,32 +408,42 @@ envs:
         collectionQueueSize: 2
         collectionDuration: 10
         transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
         maxOpenLeveldbFiles: 25
       medium:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       large:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       test:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
       test4:
         minCacheSize: 8000000
         maxCacheSize: 16000000
         collectionQueueSize: 20
         collectionDuration: 60
-        transactionQueueSize: 100000
-        maxOpenLeveldbFiles: 256
+        transactionQueueSize: 1000
+        transactionQueueLimitBytes: 69206016
+        futureTransactionQueueLimitBytes: 140509184
+        maxOpenLeveldbFiles: 1000
