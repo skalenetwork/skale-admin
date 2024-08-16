@@ -166,7 +166,6 @@ def generate_shared_space_value(
 
 def generate_schain_allocation(skale_node_path: str) -> dict:
     configs_filepath = os.path.join(skale_node_path, 'static_params.yaml')
-    schain_allocation_filepath = os.path.join(skale_node_path, 'schain_allocation.yml')
     configs = safe_load_yaml(configs_filepath)
 
     schain_allocation = {}

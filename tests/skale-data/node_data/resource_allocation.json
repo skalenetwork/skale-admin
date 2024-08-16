@@ -1,110 +1,315 @@
 {
     "schain": {
         "cpu_shares": {
-            "test4": 22,
-            "test": 22,
-            "small": 5,
-            "medium": 22,
-            "large": 716,
-            "sync_node": 716
+            "test4": 102,
+            "test": 102,
+            "small": 6,
+            "medium": 102,
+            "large": 819
         },
         "mem": {
-            "test4": 300647710,
-            "test": 300647710,
-            "small": 75161927,
-            "medium": 300647710,
-            "large": 9620726743,
-            "sync_node": 9620726743
+            "test4": 1325679575,
+            "test": 1325679575,
+            "small": 82854973,
+            "medium": 1325679575,
+            "large": 10605436600
         },
         "disk": {
-            "sync_node": 75999936512,
-            "large": 75999936512,
-            "medium": 2374998016,
-            "small": 593749504,
-            "test": 2374998016,
-            "test4": 2374998016
+            "large": 1687199940608,
+            "medium": 210899992576,
+            "small": 13181249536,
+            "test": 210899992576,
+            "test4": 210899992576
         },
         "volume_limits": {
-            "sync_node": {
-                "max_consensus_storage_bytes": 22799980953,
-                "max_file_storage_bytes": 22799980953,
-                "max_reserved_storage_bytes": 7599993651,
-                "max_skaled_leveldb_storage_bytes": 22799980953
-            },
             "large": {
-                "max_consensus_storage_bytes": 22799980953,
-                "max_file_storage_bytes": 22799980953,
-                "max_reserved_storage_bytes": 7599993651,
-                "max_skaled_leveldb_storage_bytes": 22799980953
+                "default": {
+                    "max_consensus_storage_bytes": 506159982182,
+                    "max_file_storage_bytes": 506159982182,
+                    "max_reserved_storage_bytes": 168719994060,
+                    "max_skaled_leveldb_storage_bytes": 506159982182
+                },
+                "max_consensus_db": {
+                    "max_consensus_storage_bytes": 1214783957237,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 168719994060,
+                    "max_skaled_leveldb_storage_bytes": 303695989309
+                },
+                "max_contract_storage": {
+                    "max_consensus_storage_bytes": 227771991982,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 168719994060,
+                    "max_skaled_leveldb_storage_bytes": 1290707954565
+                },
+                "max_filestorage": {
+                    "max_consensus_storage_bytes": 227771991982,
+                    "max_file_storage_bytes": 1062935962583,
+                    "max_reserved_storage_bytes": 168719994060,
+                    "max_skaled_leveldb_storage_bytes": 227771991982
+                },
+                "no_filestorage": {
+                    "max_consensus_storage_bytes": 759239973273,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 168719994060,
+                    "max_skaled_leveldb_storage_bytes": 759239973273
+                }
             },
             "medium": {
-                "max_consensus_storage_bytes": 712499404,
-                "max_file_storage_bytes": 712499404,
-                "max_reserved_storage_bytes": 237499801,
-                "max_skaled_leveldb_storage_bytes": 712499404
+                "default": {
+                    "max_consensus_storage_bytes": 63269997772,
+                    "max_file_storage_bytes": 63269997772,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 63269997772
+                },
+                "max_consensus_db": {
+                    "max_consensus_storage_bytes": 151847994654,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 37961998663
+                },
+                "max_contract_storage": {
+                    "max_consensus_storage_bytes": 28471498997,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 161338494320
+                },
+                "max_filestorage": {
+                    "max_consensus_storage_bytes": 28471498997,
+                    "max_file_storage_bytes": 132866995322,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 28471498997
+                },
+                "no_filestorage": {
+                    "max_consensus_storage_bytes": 94904996659,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 94904996659
+                }
             },
             "small": {
-                "max_consensus_storage_bytes": 178124851,
-                "max_file_storage_bytes": 178124851,
-                "max_reserved_storage_bytes": 59374950,
-                "max_skaled_leveldb_storage_bytes": 178124851
+                "default": {
+                    "max_consensus_storage_bytes": 3954374860,
+                    "max_file_storage_bytes": 3954374860,
+                    "max_reserved_storage_bytes": 1318124953,
+                    "max_skaled_leveldb_storage_bytes": 3954374860
+                },
+                "max_consensus_db": {
+                    "max_consensus_storage_bytes": 9490499665,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 1318124953,
+                    "max_skaled_leveldb_storage_bytes": 2372624916
+                },
+                "max_contract_storage": {
+                    "max_consensus_storage_bytes": 1779468687,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 1318124953,
+                    "max_skaled_leveldb_storage_bytes": 10083655895
+                },
+                "max_filestorage": {
+                    "max_consensus_storage_bytes": 1779468687,
+                    "max_file_storage_bytes": 8304187207,
+                    "max_reserved_storage_bytes": 1318124953,
+                    "max_skaled_leveldb_storage_bytes": 1779468687
+                },
+                "no_filestorage": {
+                    "max_consensus_storage_bytes": 5931562291,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 1318124953,
+                    "max_skaled_leveldb_storage_bytes": 5931562291
+                }
             },
             "test": {
-                "max_consensus_storage_bytes": 712499404,
-                "max_file_storage_bytes": 712499404,
-                "max_reserved_storage_bytes": 237499801,
-                "max_skaled_leveldb_storage_bytes": 712499404
+                "default": {
+                    "max_consensus_storage_bytes": 63269997772,
+                    "max_file_storage_bytes": 63269997772,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 63269997772
+                },
+                "max_consensus_db": {
+                    "max_consensus_storage_bytes": 151847994654,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 37961998663
+                },
+                "max_contract_storage": {
+                    "max_consensus_storage_bytes": 28471498997,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 161338494320
+                },
+                "max_filestorage": {
+                    "max_consensus_storage_bytes": 28471498997,
+                    "max_file_storage_bytes": 132866995322,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 28471498997
+                },
+                "no_filestorage": {
+                    "max_consensus_storage_bytes": 94904996659,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 94904996659
+                }
             },
             "test4": {
-                "max_consensus_storage_bytes": 712499404,
-                "max_file_storage_bytes": 712499404,
-                "max_reserved_storage_bytes": 237499801,
-                "max_skaled_leveldb_storage_bytes": 712499404
+                "default": {
+                    "max_consensus_storage_bytes": 63269997772,
+                    "max_file_storage_bytes": 63269997772,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 63269997772
+                },
+                "max_consensus_db": {
+                    "max_consensus_storage_bytes": 151847994654,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 37961998663
+                },
+                "max_contract_storage": {
+                    "max_consensus_storage_bytes": 28471498997,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 161338494320
+                },
+                "max_filestorage": {
+                    "max_consensus_storage_bytes": 28471498997,
+                    "max_file_storage_bytes": 132866995322,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 28471498997
+                },
+                "no_filestorage": {
+                    "max_consensus_storage_bytes": 94904996659,
+                    "max_file_storage_bytes": 0,
+                    "max_reserved_storage_bytes": 21089999257,
+                    "max_skaled_leveldb_storage_bytes": 94904996659
+                }
             }
         },
         "leveldb_limits": {
-            "sync_node": {
-                "contract_storage": 13679988571,
-                "db_storage": 9119992381
-            },
             "large": {
-                "contract_storage": 13679988571,
-                "db_storage": 9119992381
+                "default": {
+                    "contract_storage": 303695989309,
+                    "db_storage": 101231996436
+                },
+                "max_consensus_db": {
+                    "contract_storage": 182217593585,
+                    "db_storage": 60739197861
+                },
+                "max_contract_storage": {
+                    "contract_storage": 774424772739,
+                    "db_storage": 258141590913
+                },
+                "max_filestorage": {
+                    "contract_storage": 136663195189,
+                    "db_storage": 45554398396
+                },
+                "no_filestorage": {
+                    "contract_storage": 455543983963,
+                    "db_storage": 151847994654
+                }
             },
             "medium": {
-                "contract_storage": 427499642,
-                "db_storage": 284999761
+                "default": {
+                    "contract_storage": 37961998663,
+                    "db_storage": 12653999554
+                },
+                "max_consensus_db": {
+                    "contract_storage": 22777199197,
+                    "db_storage": 7592399732
+                },
+                "max_contract_storage": {
+                    "contract_storage": 96803096592,
+                    "db_storage": 32267698864
+                },
+                "max_filestorage": {
+                    "contract_storage": 17082899398,
+                    "db_storage": 5694299799
+                },
+                "no_filestorage": {
+                    "contract_storage": 56942997995,
+                    "db_storage": 18980999331
+                }
             },
             "small": {
-                "contract_storage": 106874910,
-                "db_storage": 71249940
+                "default": {
+                    "contract_storage": 2372624916,
+                    "db_storage": 790874972
+                },
+                "max_consensus_db": {
+                    "contract_storage": 1423574949,
+                    "db_storage": 474524983
+                },
+                "max_contract_storage": {
+                    "contract_storage": 6050193537,
+                    "db_storage": 2016731179
+                },
+                "max_filestorage": {
+                    "contract_storage": 1067681212,
+                    "db_storage": 355893737
+                },
+                "no_filestorage": {
+                    "contract_storage": 3558937374,
+                    "db_storage": 1186312458
+                }
             },
             "test": {
-                "contract_storage": 427499642,
-                "db_storage": 284999761
+                "default": {
+                    "contract_storage": 37961998663,
+                    "db_storage": 12653999554
+                },
+                "max_consensus_db": {
+                    "contract_storage": 22777199197,
+                    "db_storage": 7592399732
+                },
+                "max_contract_storage": {
+                    "contract_storage": 96803096592,
+                    "db_storage": 32267698864
+                },
+                "max_filestorage": {
+                    "contract_storage": 17082899398,
+                    "db_storage": 5694299799
+                },
+                "no_filestorage": {
+                    "contract_storage": 56942997995,
+                    "db_storage": 18980999331
+                }
             },
             "test4": {
-                "contract_storage": 427499642,
-                "db_storage": 284999761
+                "default": {
+                    "contract_storage": 37961998663,
+                    "db_storage": 12653999554
+                },
+                "max_consensus_db": {
+                    "contract_storage": 22777199197,
+                    "db_storage": 7592399732
+                },
+                "max_contract_storage": {
+                    "contract_storage": 96803096592,
+                    "db_storage": 32267698864
+                },
+                "max_filestorage": {
+                    "contract_storage": 17082899398,
+                    "db_storage": 5694299799
+                },
+                "no_filestorage": {
+                    "contract_storage": 56942997995,
+                    "db_storage": 18980999331
+                }
             }
         }
     },
     "ima": {
         "cpu_shares": {
-            "test4": 9,
-            "test": 9,
-            "small": 2,
-            "medium": 9,
-            "large": 307,
-            "sync_node": 307
+            "test4": 25,
+            "test": 25,
+            "small": 1,
+            "medium": 25,
+            "large": 204
         },
         "mem": {
-            "test4": 128849018,
-            "test": 128849018,
-            "small": 32212254,
-            "medium": 128849018,
-            "large": 4123168604,
-            "sync_node": 4123168604
+            "test4": 331419893,
+            "test": 331419893,
+            "small": 20713743,
+            "medium": 331419893,
+            "large": 2651359150
         }
     }
 }
