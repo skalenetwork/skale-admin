@@ -189,6 +189,7 @@ def generate_schain_config(
         logger.info('Static accounts not found, generating regular accounts section')
         predeployed_accounts = generate_predeployed_accounts(
             schain_name=schain['name'],
+            allocation_type=schain['allocationType'],
             schain_type=schain_type,
             schain_nodes=schain_nodes_with_schains,
             on_chain_owner=on_chain_owner,

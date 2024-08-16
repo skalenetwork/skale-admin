@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import pytest
+from skale.dataclasses.schain_options import AllocationType
 from etherbase_predeployed import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
 from filestorage_predeployed import FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTATION_ADDRESS
@@ -391,6 +392,61 @@ def test_generate_schain_config_gen0_schain_id(
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['schainID'] == 1
+
+
+def test_generate_schain_config_allocation_type(schain_secret_key_file_default_chain, skale_manager_opts):
+    node_id, generation, rotation_id = 1, 1, 0
+    ecdsa_key_name = 'test'
+    node_groups = {}
+
+    schain = {
+        'name': 'test_schain',
+        'partOfNode': 0,
+        'generation': 1,
+        'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
+        'originator': '0x0000000000000000000000000000000000000000',
+        'multitransactionMode': True,
+        'allocationType': AllocationType.NO_FILESTORAGE
+    }
+    schain_config = generate_schain_config(
+        schain=schain,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=True,
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000
+    )
+    config = schain_config.to_dict()
+    assert config['skaleConfig']['sChain']['maxConsensusStorageBytes'] == 94904996659
+    assert config['skaleConfig']['sChain']['maxSkaledLeveldbStorageBytes'] == 94904996659
+    assert config['skaleConfig']['sChain']['maxFileStorageBytes'] == 0
+
+    schain['allocationType'] = AllocationType.MAX_CONSENSUS_DB
+
+    schain_config = generate_schain_config(
+        schain=schain,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=True,
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000
+    )
+    config = schain_config.to_dict()
+    assert config['skaleConfig']['sChain']['maxConsensusStorageBytes'] == 151847994654
+    assert config['skaleConfig']['sChain']['maxSkaledLeveldbStorageBytes'] == 37961998663
+    assert config['skaleConfig']['sChain']['maxFileStorageBytes'] == 0
 
 
 def test_generate_schain_config_with_skale_gen2(

@@ -17,6 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from skale.dataclasses.schain_options import AllocationType, SchainOptions
+
 from core.schains.types import SchainType, ContainerType, MetricType
 from tools.helper import read_json
 from tools.configs.resource_allocation import (
@@ -31,6 +33,10 @@ def get_schain_type(schain_part_of_node: int) -> SchainType:
     if isinstance(schain_part_of_node, str):
         schain_part_of_node = int(schain_part_of_node)
     return SchainType(schain_part_of_node)
+
+
+def get_allocation_type(schain_options: SchainOptions) -> str:
+    return schain_options.allocation_type.name.lower()
 
 
 def get_limit(metric_type: MetricType, schain_type: SchainType, container_type: ContainerType,
@@ -53,7 +59,7 @@ def get_limit(metric_type: MetricType, schain_type: SchainType, container_type: 
     return resource_allocation[container_type.name][metric_type.name][schain_type.name]
 
 
-def get_schain_limit(schain_type: SchainType, metric_type: MetricType) -> int:
+def get_schain_limit(schain_type: SchainType, metric_type: MetricType) -> dict:
     alloc = _get_resource_allocation_info()
     return get_limit(metric_type, schain_type, ContainerType.schain, alloc)
 
@@ -63,8 +69,9 @@ def get_ima_limit(schain_type: SchainType, metric_type: MetricType) -> int:
     return get_limit(metric_type, schain_type, ContainerType.ima, alloc)
 
 
-def get_fs_allocated_storage(schain_type: SchainType) -> str:
-    volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)
+def get_fs_allocated_storage(schain_type: SchainType, allocation_type: AllocationType) -> str:
+    allocation_type_name = allocation_type.name.lower()
+    volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)[allocation_type_name]
     return volume_limits[FILESTORAGE_LIMIT_OPTION_NAME]
 
 
