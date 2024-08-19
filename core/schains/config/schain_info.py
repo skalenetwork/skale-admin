@@ -19,7 +19,7 @@
 
 from dataclasses import dataclass
 
-from core.schains.limits import get_allocation_type, get_schain_limit, get_schain_type
+from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
 
 from tools.configs.schains import MAX_CONSENSUS_STORAGE_INF_VALUE
@@ -75,7 +75,6 @@ def generate_schain_info(
     sync_node: bool,
     archive: bool
 ) -> SChainInfo:
-    print('HERE', schain)
     schain_type = get_schain_type(schain['partOfNode'])
     allocation_type = schain['allocationType'].name.lower()
     volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)[allocation_type]
