@@ -54,6 +54,7 @@ SCHAIN_WITHOUT_ORIGINATOR = {
     'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
     'originator': '0x0000000000000000000000000000000000000000',
     'multitransactionMode': True,
+    'allocationType': AllocationType.DEFAULT
 }
 
 SCHAIN_WITH_ORIGINATOR = {
@@ -63,6 +64,7 @@ SCHAIN_WITH_ORIGINATOR = {
     'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
     'originator': TEST_ORIGINATOR_ADDRESS,
     'multitransactionMode': True,
+    'allocationType': AllocationType.DEFAULT
 }
 
 SCHAIN_WITH_STATIC_ACCOUNTS = {
@@ -72,6 +74,7 @@ SCHAIN_WITH_STATIC_ACCOUNTS = {
     'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
     'originator': TEST_ORIGINATOR_ADDRESS,
     'multitransactionMode': True,
+    'allocationType': AllocationType.DEFAULT
 }
 
 
@@ -261,6 +264,7 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
         'mainnetOwner': '0x30E1C96277735B03E59B3098204fd04FD0e78a46',
         'originator': TEST_ORIGINATOR_ADDRESS,
         'multitransactionMode': True,
+        'allocationType': AllocationType.DEFAULT
     }
 
     node_id, generation, rotation_id = 1, 0, 0
@@ -534,7 +538,7 @@ def test_generate_sync_node_config(schain_secret_key_file_default_chain, skale_m
     config = schain_config.to_dict()
 
     assert config['skaleConfig']['nodeInfo']['syncNode']
-    assert config['skaleConfig']['sChain']['dbStorageLimit'] == 284999761
+    assert config['skaleConfig']['sChain']['dbStorageLimit'] == 12653999554
 
 
 def test_generate_sync_node_config_archive_catchup(
