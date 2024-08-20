@@ -35,7 +35,7 @@ def test_get_static_schain_info():
         'correctForkInPowPatchTimestamp': 1711969200,
         'EIP1559TransactionsPatchTimestamp': 0,
         'fastConsensusPatchTimestamp': 0,
-        'flexibleDeploymentPatchTimestamp': 0,
+        'flexibleDeploymentPatchTimestamp': 1723460400,
         'verifyBlsSyncPatchTimestamp': 0,
         'snapshotIntervalSec': 3600,
         'emptyBlockIntervalMs': 10000,
@@ -51,8 +51,8 @@ def test_get_static_schain_info_custom_chain_ts():
     assert custom_schain_info[TS_FOR_ALL_NAME] == default_schain_info[TS_FOR_ALL_NAME]
     assert custom_schain_info[TS_BY_CHAIN_NAME] != default_schain_info[TS_BY_CHAIN_NAME]
 
-    assert custom_schain_info[TS_BY_CHAIN_NAME] == 1500000
-    assert default_schain_info[TS_BY_CHAIN_NAME] == 800000
+    assert custom_schain_info[TS_BY_CHAIN_NAME] == 1723460400
+    assert default_schain_info[TS_BY_CHAIN_NAME] == 0
 
 
 def test_get_schain_static_param():
