@@ -380,7 +380,9 @@ envs:
       correctForkInPowPatchTimestamp: 1711969200
       EIP1559TransactionsPatchTimestamp: 0
       fastConsensusPatchTimestamp: 0
-      flexibleDeploymentPatchTimestamp: 0
+      flexibleDeploymentPatchTimestamp:
+        default: 0
+        test-schain: 1723460400
       verifyBlsSyncPatchTimestamp: 0
       snapshotIntervalSec: 3600
       emptyBlockIntervalMs: 10000
