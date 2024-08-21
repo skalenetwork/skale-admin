@@ -11,7 +11,7 @@ env:
 
 jobs:
   test_core:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
       ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
       ENDPOINT: http://127.0.0.1:8545
@@ -22,11 +22,12 @@ jobs:
         with:
           submodules: true
 
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
       - name: Install python dependencies
-        run: |
-          source ~/ga/bin/activate
-          python --version
-          bash ./scripts/install_python_dependencies.sh
+        run: bash ./scripts/install_python_dependencies.sh
 
       - name: Lint with flake8
         run: flake8 .
@@ -51,8 +52,6 @@ jobs:
 
       - name: Run core tests
         run: |
-          source ~/ga/bin/activate
-          python --version
           bash ./scripts/run_core_tests.sh
 
       - name: Cleanup docker artifacts
@@ -65,6 +64,12 @@ jobs:
         run: |
           sudo lsblk -f
           sudo free -h
+
+      - name: Cleanup docker artifacts
+        if: always()
+        run: |
+          docker rm -f $(docker ps -aq)
+          docker rmi -f $(docker images -q)
 
       - name: Run firewall tests
         run: |
