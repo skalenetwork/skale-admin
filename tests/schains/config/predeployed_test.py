@@ -1,7 +1,6 @@
 from marionette_predeployed import MARIONETTE_ADDRESS
 from etherbase_predeployed import ETHERBASE_ADDRESS
 from context_predeployed import CONTEXT_ADDRESS
-from skale.dataclasses.schain_options import AllocationType
 
 from core.schains.types import SchainType
 from core.schains.config.predeployed import (
