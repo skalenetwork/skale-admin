@@ -43,7 +43,7 @@ def test_generate_predeployed_accounts():
 def test_generate_v1_predeployed_contracts():
     v1_precompiled_contracts = generate_v1_predeployed_contracts(
         schain_type=SchainType.medium,
-        allocation_type=AllocationType.DEFAULT,
+        allocation_type='default',
         on_chain_owner=MARIONETTE_ADDRESS,
         mainnet_owner='0x0123456789Ab',
         message_proxy_for_schain_address='0x987654321fC',
