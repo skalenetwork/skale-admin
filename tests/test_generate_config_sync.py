@@ -1,6 +1,5 @@
 import json
 import pytest
-from skale.dataclasses.schain_options import AllocationType
 from skale.schain_config.rotation_history import get_previous_schain_groups
 
 from core.schains.config.predeployed import generate_predeployed_accounts
@@ -49,7 +48,7 @@ def test_generate_config(skale):
 
         predeployed_accounts = generate_predeployed_accounts(
             schain_name=schain['name'],
-            allocation_type=AllocationType.DEFAULT,
+            allocation_type='default',
             schain_type=schain_type,
             schain_nodes=schain_nodes_with_schains,
             on_chain_owner=on_chain_owner,

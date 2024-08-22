@@ -18,7 +18,7 @@ def test_generate_predeployed_accounts():
     predeployed_section = generate_predeployed_accounts(
         schain_name='abc',
         schain_type=SchainType.medium,
-        allocation_type=AllocationType.DEFAULT,
+        allocation_type='default',
         schain_nodes={},
         on_chain_owner='0xD1000000000000000000000000000000000000D1',
         mainnet_owner='0xD4000000000000000000000000000000000000D4',
@@ -30,7 +30,7 @@ def test_generate_predeployed_accounts():
     predeployed_section = generate_predeployed_accounts(
         schain_name='abc',
         schain_type=SchainType.medium,
-        allocation_type=AllocationType.DEFAULT,
+        allocation_type='default',
         schain_nodes={},
         on_chain_owner='0xD1000000000000000000000000000000000000D1',
         mainnet_owner='0xD4000000000000000000000000000000000000D4',

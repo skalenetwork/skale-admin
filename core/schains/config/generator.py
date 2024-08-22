@@ -37,7 +37,7 @@ from core.schains.config.generation import Gen
 from core.schains.config.static_accounts import is_static_accounts, static_accounts
 from core.schains.config.helper import get_chain_id, get_schain_id
 from core.schains.dkg.utils import get_common_bls_public_key
-from core.schains.limits import get_schain_type
+from core.schains.limits import get_allocation_type, get_schain_type
 
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
@@ -189,7 +189,7 @@ def generate_schain_config(
         logger.info('Static accounts not found, generating regular accounts section')
         predeployed_accounts = generate_predeployed_accounts(
             schain_name=schain['name'],
-            allocation_type=schain['allocationType'],
+            allocation_type=get_allocation_type(schain),
             schain_type=schain_type,
             schain_nodes=schain_nodes_with_schains,
             on_chain_owner=on_chain_owner,

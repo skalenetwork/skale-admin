@@ -100,5 +100,5 @@ def generate_skale_section(
     return SkaleConfig(
         contract_settings=contract_settings,
         node_info=node_info,
-        schain_info=schain_info,
+        schain_info=schain_info
     )

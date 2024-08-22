@@ -19,7 +19,6 @@
 
 import logging
 
-from skale.dataclasses.schain_options import AllocationType
 from skale.wallets.web3_wallet import public_key_to_address
 
 from etherbase_predeployed import (
@@ -61,7 +60,7 @@ PROXY_ADMIN_PREDEPLOYED_ADDRESS = '0xD1000000000000000000000000000000000000D1'
 def generate_predeployed_accounts(
     schain_name: str,
     schain_type: SchainType,
-    allocation_type: AllocationType,
+    allocation_type: str,
     schain_nodes: list,
     on_chain_owner: str,
     mainnet_owner: str,
@@ -97,7 +96,7 @@ def generate_predeployed_accounts(
 
 def generate_v1_predeployed_contracts(
     schain_type: SchainType,
-    allocation_type: AllocationType,
+    allocation_type: str,
     on_chain_owner: str,
     mainnet_owner: str,
     originator_address: str,
