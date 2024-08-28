@@ -13,6 +13,7 @@ from skale.skale_manager import spawn_skale_manager_lib
 from core.schains.cleaner import (
     cleanup_schain,
     delete_bls_keys,
+    remove_schain,
     monitor,
     get_schains_on_node,
     remove_config_dir,
@@ -236,6 +237,17 @@ def test_get_schains_on_node(schain_dirs_for_monitor,
         TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2,
         PHANTOM_SCHAIN_NAME, schain_name
     ]).issubset(set(result))
+
+
+def test_remove_schain(skale, schain_db, node_config, dutils):
+    schain_name = schain_db
+    remove_schain(skale, node_config.id, schain_name, msg='Test remove_schain', dutils=dutils)
+    container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
+    assert not is_container_running(dutils, container_name)
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
+    assert not os.path.isdir(schain_dir_path)
+    record = SChainRecord.get_by_name(schain_name)
+    assert record.is_deleted is True
 
 
 def test_cleanup_schain(
