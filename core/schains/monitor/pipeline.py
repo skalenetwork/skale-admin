@@ -24,46 +24,6 @@ class Pipeline(NamedTuple):
     job: Callable
 
 
-# class Runner:
-#     def __init__(
-#         self,
-#         pipelines: list[Pipeline],
-#         reporting_queue: queue.Queue,
-#         stuck_timeout: int = STUCK_TIMEOUT,
-#         shutdown_interval: int = SHUTDOWN_INTERVAL
-#     ) -> None:
-#         self.pipelines = pipelines
-#         self.reporting_queue = reporting_queue
-#         self.stuck_timeout = stuck_timeout
-#         self.shutdown_interval = shutdown_interval
-#         self.number = len(pipelines)
-#
-#     def make_threads(self) -> None:
-#         init_ts = time.time()
-#         heartbeat_queues = [queue.Queue() for _ in range(self.number)]
-#         terminating_events = [threading.Event() for _ in range(self.number)]
-#         heartbeat_ts = [init_ts for _ in range(self.number)]
-#
-#         return [
-#             threading.Thread(
-#                 name=pipeline.name,
-#                 target=keep_pipeline,
-#                 args=[heartbeat_queue, terminating_event, pipeline.job],
-#             )
-#             for heartbeat_queue, terminating_event, pipeline in zip(
-#                     heartbeat_queues, terminating_events, self.pipelines
-#             )
-#         ]
-#
-#     def run_threads(self, threads: list[threading.Thread]) -> None:
-#         for th in threads:
-#             th.start()
-#
-#     def run(self, once: bool = False) -> None:
-#         threads = self.make_threads()
-#         self.run_threads(threads)
-
-
 def run_pipelines(
     pipelines: list[Pipeline],
     process_report: ProcessReport,
