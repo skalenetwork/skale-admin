@@ -75,6 +75,7 @@ class ProcessReport:
 
     def __init__(self, name: str) -> None:
         self.path = pathlib.Path(SCHAINS_DIR_PATH).joinpath(name, self.REPORT_FILENAME)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def is_exist(self) -> bool:
         return os.path.isfile(self.path)
