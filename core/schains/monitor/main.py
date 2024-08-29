@@ -40,12 +40,16 @@ from core.schains.process import ProcessReport
 from core.schains.skaled_status import get_skaled_status
 from core.node import get_current_nodes
 
-from tools.docker_utils import DockerUtils
+from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.configs import SYNC_NODE
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH
+from tools.docker_utils import DockerUtils
 from tools.notifications.messages import notify_checks
 from tools.helper import is_node_part_of_chain, no_hyphens
 from tools.resources import get_statsd_client
+from tools.wallet_utils import init_wallet
+
 from web.models.schain import SChainRecord, upsert_schain_record
 
 
@@ -120,7 +124,7 @@ def run_config_pipeline(
 
 
 def run_skaled_pipeline(
-    skale: Skale, schain: dict, node_config: NodeConfig, dutils: DockerUtils
+    schain: dict, node_config: NodeConfig, dutils: DockerUtils
 ) -> None:
     name = schain['name']
     schain_record = SChainRecord.get_by_name(name)
@@ -168,6 +172,79 @@ def run_skaled_pipeline(
     statsd_client.incr(f'admin.skaled_pipeline.{mon.__name__}.{no_hyphens(name)}')
     with statsd_client.timer(f'admin.skaled_pipeline.duration.{no_hyphens(name)}'):
         mon(skaled_am, skaled_checks).run()
+
+
+def get_pipelines(
+    schain: dict,
+    node_config: NodeConfig,
+) -> bool:
+    reload(web3_request)
+    name = schain['name']
+
+    stream_version = get_skale_node_version()
+    schain_record = upsert_schain_record(name)
+    wallet = init_wallet(node_config=node_config)
+    skale = Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
+    skale_ima = SkaleIma(ENDPOINT, MAINNET_IMA_ABI_FILEPATH, wallet)
+    dutils = DockerUtils()
+
+    is_rotation_active = skale.node_rotation.is_rotation_active(name)
+
+    leaving_chain = not SYNC_NODE and not is_node_part_of_chain(skale, name, node_config.id)
+    if leaving_chain and not is_rotation_active:
+        logger.info('Not on node (%d), finishing process', node_config.id)
+        return True
+
+    logger.info(
+        'sync_config_run %s, config_version %s, stream_version %s',
+        schain_record.sync_config_run,
+        schain_record.config_version,
+        stream_version,
+    )
+
+    statsd_client = get_statsd_client()
+    monitor_last_seen_ts = schain_record.monitor_last_seen.timestamp()
+    statsd_client.incr(f'admin.schain.monitor.{no_hyphens(name)}')
+    statsd_client.gauge(f'admin.schain.monitor_last_seen.{no_hyphens(name)}', monitor_last_seen_ts)
+
+    pipelines = []
+    if not leaving_chain:
+        logger.info('Adding config pipelines to the pool')
+        pipelines.append(
+            Pipeline(
+                name=f'{name}-config',
+                job=functools.partial(
+                    run_config_pipeline,
+                    skale=skale,
+                    skale_ima=skale_ima,
+                    schain=schain,
+                    node_config=node_config,
+                    stream_version=stream_version,
+                ),
+            )
+        )
+    if schain_record.config_version != stream_version or (
+        schain_record.sync_config_run and schain_record.first_run
+    ):
+        ConfigFileManager(name).remove_skaled_config()
+    else:
+        logger.info('Adding skaled pipeline to the pool')
+        pipelines.append(
+            Pipeline(
+                name=f'{name}-skaled',
+                job=functools.partial(
+                    run_skaled_pipeline,
+                    schain=schain,
+                    node_config=node_config,
+                    dutils=dutils,
+                ),
+            )
+        )
+
+    if len(pipelines) == 0:
+        logger.warning('No pipelines to run')
+
+    return pipelines
 
 
 def start_monitor(

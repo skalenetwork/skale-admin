@@ -30,8 +30,7 @@ from core.updates import soft_updates
 from core.monitoring import update_monitoring_services
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
-from tools.configs.web3 import (
-    ENDPOINT, ABI_FILEPATH, STATE_FILEPATH)
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
@@ -59,7 +58,7 @@ ERROR_SLEEP_INTERVAL = 1
 def monitor(skale, skale_ima, node_config):
     while True:
         try:
-            run_process_manager(skale, skale_ima, node_config)
+            run_process_manager(skale, node_config)
         except Exception:
             logger.exception('Process manager procedure failed!')
         logger.info(

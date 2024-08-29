@@ -78,18 +78,15 @@ class SChainRecord(BaseModel):
 
     @classmethod
     def add(cls, name):
-        try:
-            with cls.database.atomic():
-                schain = cls.create(
-                    name=name,
-                    added_at=datetime.now(),
-                    dkg_status=DKGStatus.NOT_STARTED,
-                    new_schain=True,
-                    monitor_last_seen=datetime.now()
-                )
-            return (schain, None)
-        except IntegrityError as err:
-            return (None, err)
+        with cls.database.atomic():
+            schain = cls.create(
+                name=name,
+                added_at=datetime.now(),
+                dkg_status=DKGStatus.NOT_STARTED,
+                new_schain=True,
+                monitor_last_seen=datetime.now()
+            )
+            return schain
 
     @classmethod
     @operational_error_retry
@@ -277,15 +274,18 @@ def set_schains_monitor_id():
 
 
 def upsert_schain_record(name):
-    if not SChainRecord.added(name):
-        logger.debug(f'Could not find sChain record: {name}, going to add')
-        schain_record, _ = SChainRecord.add(name)
-    else:
-        logger.debug(f'Getting sChain record by name: {name}')
+    added = SChainRecord.added(name)
+    schain_record = None
+    if added:
         schain_record = SChainRecord.get_by_name(name)
+        if not schain_record:
+            logger.warning(f'schain_record is None for {name}. Cleaning')
+            schain_record.delete_instance()
+            added = False
 
-    if not schain_record:
-        logger.error(f'schain_record is None for {name}')
+    if not added:
+        logger.info(f'Could not find sChain record: {name}, going to add')
+        schain_record = SChainRecord.add(name)
 
     return schain_record
 

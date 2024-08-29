@@ -18,6 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import queue
+import threading
 import time
 from multiprocessing import Process
 from typing import Optional
@@ -25,7 +27,8 @@ from typing import Optional
 from skale import Skale, SkaleIma
 
 from core.node_config import NodeConfig
-from core.schains.monitor.main import start_monitor
+from core.schains.monitor.main import get_pipelines, start_monitor
+from core.schains.monitor.pipeline import keep_pipeline
 from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process import (
     is_monitor_process_alive,
@@ -39,16 +42,71 @@ from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
 logger = logging.getLogger(__name__)
 
 
-def run_process_manager(skale: Skale, skale_ima: SkaleIma, node_config: NodeConfig) -> None:
+def run_pipelines(
+    threads: list[threading.Thread],
+    heartbeat_queues: list[queue.Queue],
+    once: bool = False,
+) -> bool:
+    stuck_timeout = 10
+    init_ts = int(time.time())
+    heartbeat_ts = [init_ts for _ in range(len(threads))]
+
+    for index, thread in enumerate(threads):
+        if not thread.is_alive():
+            thread.start()
+        if not heartbeat_queues[index].empty():
+            heartbeat_ts[index] = heartbeat_queues[index].get()
+        ts = int(time.time())
+        if ts - heartbeat_ts[index] > stuck_timeout:
+            logger.warning(
+                '%s thread has stucked (last heartbeat %d)',
+                thread.name,
+                heartbeat_ts[index],
+            )
+            return True
+        if once and all((lambda ts: ts > init_ts, heartbeat_ts)):
+            logger.info('Successfully completed requested single run')
+            return False
+
+
+def run_process_manager(skale: Skale, node_config: NodeConfig) -> None:
     logger.info('Process manager started')
     node_id = node_config.id
-    node_info = node_config.all()
-    notify_if_not_enough_balance(skale, node_info)
 
     schains_to_monitor = fetch_schains_to_monitor(skale, node_id)
+
+    pipelines = []
     for schain in schains_to_monitor:
-        run_pm_schain(skale, skale_ima, node_config, schain)
-    logger.info('Process manager procedure finished')
+        pipelines.extend(get_pipelines(schain, node_config))
+
+    heartbeat_queues = [queue.Queue() for _ in range(len(pipelines))]
+    terminating_events = [threading.Event() for _ in range(len(pipelines))]
+
+    threads = [
+        threading.Thread(
+            name=pipeline.name,
+            target=keep_pipeline,
+            args=[heartbeat_queue, terminating_event, pipeline.job],
+        )
+        for heartbeat_queue, terminating_event, pipeline in zip(
+            heartbeat_queues, terminating_events, pipelines
+        )
+    ]
+    stuck = run_pipelines(threads, heartbeat_queues)
+
+    logger.info('Terminating all pipelines')
+    for event in terminating_events:
+        if not event.is_set():
+            event.set()
+
+    shutdown_interval = 10
+    logger.info('Joining threads with timeout')
+    for thread in threads:
+        thread.join(timeout=shutdown_interval)
+    if stuck:
+        logger.info('Stuck was detected')
+
+    logger.info('Finishing with pipelines')
 
 
 def run_pm_schain(
