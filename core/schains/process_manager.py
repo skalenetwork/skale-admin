@@ -29,7 +29,6 @@ from skale import Skale, SkaleIma
 from core.node_config import NodeConfig
 from core.schains.monitor.main import get_pipelines, start_monitor
 from core.schains.monitor.pipeline import keep_pipeline
-from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process import (
     is_monitor_process_alive,
     terminate_process,
@@ -83,7 +82,7 @@ def run_process_manager(skale: Skale, node_config: NodeConfig) -> None:
     terminating_events = [threading.Event() for _ in range(len(pipelines))]
 
     threads = [
-        threading.Thread(
+        Process(
             name=pipeline.name,
             target=keep_pipeline,
             args=[heartbeat_queue, terminating_event, pipeline.job],
