@@ -15,6 +15,7 @@ export_test_env () {
     export FLASK_APP_HOST=0.0.0.0
     export FLASK_APP_PORT=3008
     export FLASK_DEBUG_MODE=True
+    export REDIS_URI="redis://@127.0.0.1:6381"
     export TG_CHAT_ID=-1231232
     export TG_API_KEY=123
     export ENV_TYPE=devnet
