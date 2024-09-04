@@ -27,6 +27,7 @@ from importlib import reload
 from typing import List, Optional
 
 from skale import Skale, SkaleIma
+from skale.contracts.manager.schains import SchainStructure
 from web3._utils import request as web3_request
 
 from core.node import get_skale_node_version
@@ -105,9 +106,7 @@ def run_config_pipeline(
 
     if SYNC_NODE:
         logger.info(
-            'Sync node last_dkg_successful %s, rotation_data %s',
-            last_dkg_successful,
-            rotation_data
+            'Sync node last_dkg_successful %s, rotation_data %s', last_dkg_successful, rotation_data
         )
         mon = SyncConfigMonitor(config_am, config_checks)
     else:
@@ -124,7 +123,7 @@ def run_config_pipeline(
 
 
 def run_skaled_pipeline(
-    skale: Skale, schain: Dict, node_config: NodeConfig, dutils: DockerUtils
+    skale: Skale, schain: SchainStructure, node_config: NodeConfig, dutils: DockerUtils
 ) -> None:
     name = schain['name']
     schain_record = SChainRecord.get_by_name(name)
@@ -134,7 +133,7 @@ def run_skaled_pipeline(
 
     rc = get_default_rule_controller(name=name)
     skaled_checks = SkaledChecks(
-        schain_name=schain['name'],
+        schain_name=schain.name,
         schain_record=schain_record,
         rule_controller=rc,
         dutils=dutils,

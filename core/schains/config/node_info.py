@@ -49,8 +49,8 @@ class CurrentNodeInfo(NodeInfo):
     archive: bool
     catchup: bool
 
+    """Returns camel-case representation of the CurrentNodeInfo object"""
     def to_dict(self):
-        """Returns camel-case representation of the CurrentNodeInfo object"""
         node_info = {
             **super().to_dict(),
             **{
@@ -81,7 +81,7 @@ def generate_current_node_info(
     sync_node: bool = False, archive: bool = False, catchup: bool = False
 ) -> CurrentNodeInfo:
     wallets = generate_wallets_config(
-        schain['name'],
+        schain.name,
         rotation_id,
         sync_node,
         nodes_in_schain,

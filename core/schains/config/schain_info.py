@@ -75,7 +75,7 @@ def generate_schain_info(
     sync_node: bool,
     archive: bool
 ) -> SChainInfo:
-    schain_type = get_schain_type(schain['partOfNode'])
+    schain_type = get_schain_type(schain.part_of_node)
     allocation_type = get_allocation_type(schain)
     volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)[allocation_type]
     if sync_node and archive:
@@ -86,13 +86,13 @@ def generate_schain_info(
 
     return SChainInfo(
         schain_id=schain_id,
-        name=schain['name'],
+        name=schain.name,
         block_author=on_chain_etherbase,
         contract_storage_limit=contract_storage_limit,
         db_storage_limit=db_storage_limit,
         node_groups=node_groups,
         nodes=nodes,
-        multitransaction_mode=schain['multitransactionMode'],
+        multitransaction_mode=schain.options.multitransaction_mode,
         static_schain_info=static_schain_info,
         **volume_limits
     )

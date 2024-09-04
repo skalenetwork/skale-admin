@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import pytest
+from skale.contracts.manager.schains import SchainStructure
 from skale.dataclasses.schain_options import AllocationType
 from etherbase_predeployed import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
@@ -24,6 +25,8 @@ from core.schains.config.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.node_options import NodeOptions
 
+from tests.utils import get_schain_struct, TEST_ORIGINATOR_ADDRESS, TEST_MAINNET_OWNER_ADDRESS
+
 
 NODE_ID = 1
 ECDSA_KEY_NAME = 'TEST:KEY:NAME'
@@ -41,44 +44,22 @@ SECRET_KEY = {
     ],
 }
 
-TEST_ORIGINATOR_ADDRESS = '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34'
-TEST_MAINNET_OWNER_ADDRESS = '0x30E1C96277735B03E59B3098204fd04FD0e78a46'
-
 TEST_NODE = {'id': 1, 'name': 'test', 'publicKey': '0x5556', 'port': 10000}
 
 
-SCHAIN_WITHOUT_ORIGINATOR = {
-    'name': 'test_schain',
-    'partOfNode': 0,
-    'generation': 1,
-    'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
-    'originator': '0x0000000000000000000000000000000000000000',
-    'multitransactionMode': True,
-    'allocationType': AllocationType.DEFAULT
-}
+def get_schain_struct_no_originator() -> SchainStructure:
+    schain = get_schain_struct(schain_name='test_schain')
+    schain.originator = '0x0000000000000000000000000000000000000000'
+    return schain
 
-SCHAIN_WITH_ORIGINATOR = {
-    'name': 'test_schain',
-    'partOfNode': 0,
-    'generation': 1,
-    'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
-    'originator': TEST_ORIGINATOR_ADDRESS,
-    'multitransactionMode': True,
-    'allocationType': AllocationType.DEFAULT
-}
 
-SCHAIN_WITH_STATIC_ACCOUNTS = {
-    'name': 'static_chain',
-    'partOfNode': 0,
-    'generation': 1,
-    'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
-    'originator': TEST_ORIGINATOR_ADDRESS,
-    'multitransactionMode': True,
-    'allocationType': AllocationType.DEFAULT
-}
+def get_schain_struct_static_account() -> SchainStructure:
+    schain = get_schain_struct(schain_name='static_chain')
+    return schain
 
 
 def get_schain_node_with_schains(schain_name: str) -> list:
+    schain = get_schain_struct(schain_name=schain_name)
     return [
         {
             'name': 'test',
@@ -87,7 +68,7 @@ def get_schain_node_with_schains(schain_name: str) -> list:
             'publicKey': '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34',
             'port': 10000,
             'id': 1,
-            'schains': [{'name': schain_name}],
+            'schains': [schain],
         }
     ]
 
@@ -257,22 +238,12 @@ def test_generate_schain_config_with_skale(
 
 
 def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale_manager_opts):
-    schain = {
-        'name': 'test_schain',
-        'partOfNode': 0,
-        'generation': 0,
-        'mainnetOwner': '0x30E1C96277735B03E59B3098204fd04FD0e78a46',
-        'originator': TEST_ORIGINATOR_ADDRESS,
-        'multitransactionMode': True,
-        'allocationType': AllocationType.DEFAULT
-    }
-
     node_id, generation, rotation_id = 1, 0, 0
     ecdsa_key_name = 'test'
     node_groups = {}
 
     schain_config = generate_schain_config(
-        schain=schain,
+        schain=get_schain_struct(schain_name='test_schain'),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -297,7 +268,7 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale
     node_groups = {}
 
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITH_ORIGINATOR,
+        schain=get_schain_struct(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -342,7 +313,7 @@ def test_generate_schain_config_gen1_pk_owner(
     node_groups = {}
 
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -369,7 +340,7 @@ def test_generate_schain_config_gen2_schain_id(
     node_groups = {}
 
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -391,7 +362,7 @@ def test_generate_schain_config_gen1_schain_id(
 ):
     node_id, generation, rotation_id = 1, 1, 0
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name='test',
@@ -413,7 +384,7 @@ def test_generate_schain_config_gen0_schain_id(
 ):
     node_id, generation, rotation_id = 1, 0, 0
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name='test',
@@ -437,15 +408,9 @@ def test_generate_schain_config_allocation_type(
     ecdsa_key_name = 'test'
     node_groups = {}
 
-    schain = {
-        'name': 'test_schain',
-        'partOfNode': 0,
-        'generation': 1,
-        'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
-        'originator': '0x0000000000000000000000000000000000000000',
-        'multitransactionMode': True,
-        'allocationType': AllocationType.NO_FILESTORAGE,
-    }
+    schain = get_schain_struct(schain_name='test_schain')
+    schain.options.allocation_type = AllocationType.NO_FILESTORAGE
+
     schain_config = generate_schain_config(
         schain=schain,
         node=TEST_NODE,
@@ -465,7 +430,8 @@ def test_generate_schain_config_allocation_type(
     assert config['skaleConfig']['sChain']['maxSkaledLeveldbStorageBytes'] == 94904996659
     assert config['skaleConfig']['sChain']['maxFileStorageBytes'] == 0
 
-    schain['allocationType'] = AllocationType.MAX_CONSENSUS_DB
+    schain = get_schain_struct(schain_name='test_schain')
+    schain.options.allocation_type = AllocationType.MAX_CONSENSUS_DB
 
     schain_config = generate_schain_config(
         schain=schain,
@@ -508,10 +474,10 @@ def test_generate_schain_config_with_skale_gen2(
 
 
 def test_get_schain_originator(predeployed_ima):
-    originator = get_schain_originator(SCHAIN_WITHOUT_ORIGINATOR)
+    originator = get_schain_originator(get_schain_struct_no_originator())
     assert originator == TEST_MAINNET_OWNER_ADDRESS
 
-    originator = get_schain_originator(SCHAIN_WITH_ORIGINATOR)
+    originator = get_schain_originator(get_schain_struct())
     assert originator == TEST_ORIGINATOR_ADDRESS
 
 
@@ -521,7 +487,7 @@ def test_generate_sync_node_config(schain_secret_key_file_default_chain, skale_m
     node_groups = {}
 
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -549,7 +515,7 @@ def test_generate_sync_node_config_archive_catchup(
     node_groups = {}
 
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -570,7 +536,7 @@ def test_generate_sync_node_config_archive_catchup(
     assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') < 1000000000000000000
 
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -593,7 +559,7 @@ def test_generate_sync_node_config_archive_catchup(
     assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') < 1000000000000000000
 
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -616,7 +582,7 @@ def test_generate_sync_node_config_archive_catchup(
     assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') < 1000000000000000000
 
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITHOUT_ORIGINATOR,
+        schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -647,7 +613,7 @@ def test_generate_sync_node_config_static_accounts(
     node_groups = {}
 
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITH_STATIC_ACCOUNTS,
+        schain=get_schain_struct_static_account(),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -665,13 +631,15 @@ def test_generate_sync_node_config_static_accounts(
     assert config['accounts'].get('0x1111111')
     assert config['accounts']['0x1111111']['balance'] == '1000000000000000000000000000000'
 
+    schain = get_schain_struct()
+
     schain_config = generate_schain_config(
-        schain=SCHAIN_WITH_ORIGINATOR,
+        schain=schain,
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
+        schain_nodes_with_schains=get_schain_node_with_schains(schain.name),
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,

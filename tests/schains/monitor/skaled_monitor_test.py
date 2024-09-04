@@ -34,7 +34,7 @@ CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 
 def run_ima_container_mock(schain: dict, mainnet_chain_id: int, dutils=None):
     image_name, container_name, _, _ = get_container_info(
-        IMA_CONTAINER, schain['name'])
+        IMA_CONTAINER, schain.name)
     dutils.safe_rm(container_name)
     dutils.run_container(
         image_name=image_name,
@@ -54,7 +54,7 @@ def monitor_schain_container_mock(
     historic_state=False
 ):
     image_name, container_name, _, _ = get_container_info(
-        SCHAIN_CONTAINER, schain['name'])
+        SCHAIN_CONTAINER, schain.name)
     dutils.safe_rm(container_name)
     dutils.run_container(
         image_name=image_name,

@@ -17,6 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from skale.contracts.manager.schains import SchainStructure
+
 from core.schains.types import SchainType, ContainerType, MetricType
 from tools.helper import read_json
 from tools.configs.resource_allocation import (
@@ -33,8 +35,8 @@ def get_schain_type(schain_part_of_node: int) -> SchainType:
     return SchainType(schain_part_of_node)
 
 
-def get_allocation_type(schain: dict) -> str:
-    return schain['allocationType'].name.lower()
+def get_allocation_type(schain: SchainStructure) -> str:
+    return schain.options.allocation_type.name.lower()
 
 
 def get_limit(metric_type: MetricType, schain_type: SchainType, container_type: ContainerType,
