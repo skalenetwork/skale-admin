@@ -268,7 +268,7 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale
     node_groups = {}
 
     schain_config = generate_schain_config(
-        schain=get_schain_struct(),
+        schain=get_schain_struct(schain_name='test_schain'),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
