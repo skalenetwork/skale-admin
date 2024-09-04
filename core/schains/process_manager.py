@@ -100,7 +100,7 @@ def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
     schains = skale.schains.get_schains_for_node(node_id)
     leaving_schains = get_leaving_schains_for_node(skale, node_id)
     schains.extend(leaving_schains)
-    active_schains = list(filter(lambda schain: schain['active'], schains))
+    active_schains = list(filter(lambda schain: schain.active, schains))
     schains_holes = len(schains) - len(active_schains)
     logger.info(
         arguments_list_string({'Node ID': node_id, 'sChains on node': active_schains,
