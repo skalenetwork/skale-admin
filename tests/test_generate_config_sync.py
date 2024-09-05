@@ -48,7 +48,7 @@ def test_generate_config(skale):
 
         predeployed_accounts = generate_predeployed_accounts(
             schain_name=schain.name,
-            allocation_type='default',
+            allocation_type=AllocationType.DEFAULT,
             schain_type=schain_type,
             schain_nodes=schain_nodes_with_schains,
             on_chain_owner=on_chain_owner,

@@ -1,3 +1,5 @@
+from skale.dataclasses.schain_options import AllocationType
+
 from marionette_predeployed import MARIONETTE_ADDRESS
 from etherbase_predeployed import ETHERBASE_ADDRESS
 from context_predeployed import CONTEXT_ADDRESS
@@ -17,7 +19,7 @@ def test_generate_predeployed_accounts():
     predeployed_section = generate_predeployed_accounts(
         schain_name='abc',
         schain_type=SchainType.medium,
-        allocation_type='default',
+        allocation_type=AllocationType.DEFAULT,
         schain_nodes={},
         on_chain_owner='0xD1000000000000000000000000000000000000D1',
         mainnet_owner='0xD4000000000000000000000000000000000000D4',
@@ -29,7 +31,7 @@ def test_generate_predeployed_accounts():
     predeployed_section = generate_predeployed_accounts(
         schain_name='abc',
         schain_type=SchainType.medium,
-        allocation_type='default',
+        allocation_type=AllocationType.DEFAULT,
         schain_nodes={},
         on_chain_owner='0xD1000000000000000000000000000000000000D1',
         mainnet_owner='0xD4000000000000000000000000000000000000D4',
@@ -42,7 +44,7 @@ def test_generate_predeployed_accounts():
 def test_generate_v1_predeployed_contracts():
     v1_precompiled_contracts = generate_v1_predeployed_contracts(
         schain_type=SchainType.medium,
-        allocation_type='default',
+        allocation_type=AllocationType.DEFAULT,
         on_chain_owner=MARIONETTE_ADDRESS,
         mainnet_owner='0x0123456789Ab',
         message_proxy_for_schain_address='0x987654321fC',

@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from skale.contracts.manager.schains import SchainStructure
+from skale.dataclasses.schain_options import AllocationType
 
 from core.schains.types import SchainType, ContainerType, MetricType
 from tools.helper import read_json
@@ -69,8 +70,9 @@ def get_ima_limit(schain_type: SchainType, metric_type: MetricType) -> int:
     return get_limit(metric_type, schain_type, ContainerType.ima, alloc)
 
 
-def get_fs_allocated_storage(schain_type: SchainType, allocation_type: str) -> str:
-    volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)[allocation_type]
+def get_fs_allocated_storage(schain_type: SchainType, allocation_type: AllocationType) -> str:
+    allocation_type_name = get_allocation_type(allocation_type)
+    volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)[allocation_type_name]
     return volume_limits[FILESTORAGE_LIMIT_OPTION_NAME]
 
 
