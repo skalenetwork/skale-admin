@@ -94,7 +94,7 @@ def schains_checks():
     )
     checks = []
     for schain in schains:
-        if schain.get('name') != '':
+        if schain.name != '':
             rotation_data = g.skale.node_rotation.get_rotation(schain.name)
             rotation_id = rotation_data['rotation_id']
             if SChainRecord.added(schain.name):
