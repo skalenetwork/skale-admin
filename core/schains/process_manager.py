@@ -67,8 +67,8 @@ def run_process_manager(skale, skale_ima, node_config):
 
 
 def run_pm_schain(skale, skale_ima, node_config, schain: Dict) -> None:
-    schain_record = upsert_schain_record(schain['name'])
-    log_prefix = f'sChain {schain["name"]} -'  # todo - move to logger formatter
+    schain_record = upsert_schain_record(schain.name)
+    log_prefix = f'sChain {schain.name} -'  # todo - move to logger formatter
 
     terminate_stuck_schain_process(skale, schain_record, schain)
     monitor_process_alive = is_monitor_process_alive(schain_record.monitor_id)
@@ -76,7 +76,7 @@ def run_pm_schain(skale, skale_ima, node_config, schain: Dict) -> None:
     if not monitor_process_alive:
         logger.info(f'{log_prefix} PID {schain_record.monitor_id} is not running, spawning...')
         process = Process(
-            name=schain['name'],
+            name=schain.name,
             target=run_monitor_for_schain,
             args=(
                 skale,
@@ -115,8 +115,8 @@ def get_leaving_schains_for_node(skale: Skale, node_id: int) -> list:
     leaving_history = skale.node_rotation.get_leaving_history(node_id)
     for leaving_schain in leaving_history:
         schain = skale.schains.get(leaving_schain['schain_id'])
-        if skale.node_rotation.is_rotation_active(schain['name']) and schain['name']:
-            schain['active'] = True
+        if skale.node_rotation.is_rotation_active(schain.name) and schain.name:
+            schain.active = True
             leaving_schains.append(schain)
     logger.info(f'Got leaving sChains for the node: {leaving_schains}')
     return leaving_schains

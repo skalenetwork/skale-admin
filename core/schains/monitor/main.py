@@ -64,7 +64,7 @@ logger = logging.getLogger(__name__)
 def run_config_pipeline(
     skale: Skale, skale_ima: SkaleIma, schain: Dict, node_config: NodeConfig, stream_version: str
 ) -> None:
-    name = schain['name']
+    name = schain.name
     schain_record = SChainRecord.get_by_name(name)
     rotation_data = skale.node_rotation.get_rotation(name)
     allowed_ranges = get_sync_agent_ranges(skale)
@@ -125,7 +125,7 @@ def run_config_pipeline(
 def run_skaled_pipeline(
     skale: Skale, schain: SchainStructure, node_config: NodeConfig, dutils: DockerUtils
 ) -> None:
-    name = schain['name']
+    name = schain.name
     schain_record = SChainRecord.get_by_name(name)
     logger.info('Record: %s', SChainRecord.to_dict(schain_record))
 
@@ -193,7 +193,7 @@ def create_and_execute_tasks(
     dutils,
 ):
     reload(web3_request)
-    name = schain['name']
+    name = schain.name
 
     is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
@@ -264,7 +264,7 @@ def run_monitor_for_schain(
     with ThreadPoolExecutor(max_workers=tasks_number, thread_name_prefix='T') as executor:
         futures: List[Optional[Future]] = [None for i in range(tasks_number)]
         while True:
-            schain_record = SChainRecord.get_by_name(schain['name'])
+            schain_record = SChainRecord.get_by_name(schain.name)
             try:
                 create_and_execute_tasks(
                     skale,
