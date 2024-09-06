@@ -24,6 +24,7 @@ jobs:
 
       - name: Install python dependencies
         run: |
+          ls -altr
           source .venv/bin/activate
           python --version
           uv pip install -r requirements.txt --prerelease=allow
