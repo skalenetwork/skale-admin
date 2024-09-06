@@ -26,7 +26,7 @@ jobs:
         run: |
           pwd
           ls -altr .venv
-          source .venv/bin/activate
+          source ../.venv/bin/activate
           python --version
           uv pip install -r requirements.txt --prerelease=allow
           uv pip install -r requirements-dev.txt
@@ -54,7 +54,7 @@ jobs:
 
       - name: Run core tests
         run: |
-          source .venv/bin/activate
+          source ../.venv/bin/activate
           python --version
           bash ./scripts/run_core_tests.sh
 
