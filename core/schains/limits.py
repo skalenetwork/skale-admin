@@ -36,8 +36,8 @@ def get_schain_type(schain_part_of_node: int) -> SchainType:
     return SchainType(schain_part_of_node)
 
 
-def get_allocation_type(schain: SchainStructure) -> str:
-    return schain.options.allocation_type.name.lower()
+def get_allocation_type_name(allocation_type: AllocationType) -> str:
+    return allocation_type.name.lower()
 
 
 def get_limit(metric_type: MetricType, schain_type: SchainType, container_type: ContainerType,
@@ -71,7 +71,7 @@ def get_ima_limit(schain_type: SchainType, metric_type: MetricType) -> int:
 
 
 def get_fs_allocated_storage(schain_type: SchainType, allocation_type: AllocationType) -> str:
-    allocation_type_name = get_allocation_type(allocation_type)
+    allocation_type_name = get_allocation_type_name(allocation_type)
     volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)[allocation_type_name]
     return volume_limits[FILESTORAGE_LIMIT_OPTION_NAME]
 
