@@ -49,8 +49,8 @@ jobs:
       - name: Show stats before tests
         if: always()
         run: | 
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
 
       - name: Run core tests
         run: |
@@ -66,8 +66,8 @@ jobs:
       - name: Show stats after core tests
         if: always()
         run: |
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
 
       - name: Run firewall tests
         run: |
@@ -76,8 +76,8 @@ jobs:
       - name: Show stats after firewall tests
         if: always()
         run: | 
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
 
       - name: Cleanup docker artifacts
         if: always()
