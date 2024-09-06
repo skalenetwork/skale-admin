@@ -24,7 +24,7 @@ jobs:
 
       - name: Install python dependencies
         run: |
-          ls -altr
+          pwd
           ls -altr .venv
           source .venv/bin/activate
           python --version
