@@ -17,6 +17,9 @@ jobs:
       ENDPOINT: http://127.0.0.1:8545
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
+    defaults:
+      run:
+        working-directory: ~/admin
     steps:
       - uses: actions/checkout@v2
         with:
@@ -24,7 +27,7 @@ jobs:
 
       - name: Install python dependencies
         run: |
-          source ~/ga/bin/activate
+          source ~/admin/.venv/bin/activate
           python --version
           bash ./scripts/install_python_dependencies.sh
 
