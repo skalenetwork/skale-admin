@@ -17,9 +17,6 @@ jobs:
       ENDPOINT: http://127.0.0.1:8545
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-    defaults:
-      run:
-        working-directory: ~/admin
     steps:
       - uses: actions/checkout@v2
         with:
