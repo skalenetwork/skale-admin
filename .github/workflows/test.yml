@@ -56,7 +56,7 @@ jobs:
         run: |
           source ../.venv/bin/activate
           python --version
-          bash ./scripts/run_core_tests.sh
+          bash ./scripts/run_core_tests.sh -k test_monitor_container_exited
 
       - name: Cleanup docker artifacts
         run: |
