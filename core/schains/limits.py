@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from skale.contracts.manager.schains import SchainStructure
 from skale.dataclasses.schain_options import AllocationType
 
 from core.schains.types import SchainType, ContainerType, MetricType
