@@ -27,9 +27,10 @@ jobs:
 
       - name: Install python dependencies
         run: |
-          source ~/admin/.venv/bin/activate
+          source .venv/bin/activate
           python --version
-          bash ./scripts/install_python_dependencies.sh
+          uv pip install -r requirements.txt --prerelease=allow
+          uv pip install -r requirements-dev.txt
 
       - name: Lint with flake8
         run: flake8 .
@@ -54,7 +55,7 @@ jobs:
 
       - name: Run core tests
         run: |
-          source ~/ga/bin/activate
+          source .venv/bin/activate
           python --version
           bash ./scripts/run_core_tests.sh
 
