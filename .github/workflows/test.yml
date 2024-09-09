@@ -42,10 +42,6 @@ jobs:
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
 
-      - name: Cleanup skale-manager image
-        run: |
-          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
-
       - name: Show stats before tests
         if: always()
         run: | 
@@ -61,7 +57,6 @@ jobs:
       - name: Cleanup docker artifacts
         run: |
           docker rm -f $(docker ps -aq)
-          docker rmi -f $(docker images -q)
 
       - name: Show stats after core tests
         if: always()
@@ -83,7 +78,6 @@ jobs:
         if: always()
         run: |
           docker rm -f $(docker ps -aq)
-          docker rmi -f $(docker images -q)
 
       - name: Run codecov
         run: |
