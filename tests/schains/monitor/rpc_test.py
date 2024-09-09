@@ -1,7 +1,7 @@
 import datetime
 import json
 import time
-from unittests import mock
+from unittest import mock
 
 import freezegun
 import requests
