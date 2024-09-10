@@ -26,7 +26,6 @@ import json
 import pathlib
 import psutil
 
-
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import check_pid
 
@@ -35,39 +34,6 @@ logger = logging.getLogger(__name__)
 
 TIMEOUT_COEFFICIENT = 2.2
 P_KILL_WAIT_TIMEOUT = 60
-
-
-def terminate_process(pid, kill_timeout=P_KILL_WAIT_TIMEOUT, log_msg=''):
-    log_prefix = f'pid: {pid} - '
-    if log_msg != '':
-        log_prefix += f'{log_msg} - '
-    if pid == 0:
-        logger.warning(f'{log_prefix} - pid is 0, skipping')
-        return
-    try:
-        logger.warning(f'{log_prefix} - going to terminate')
-        p = psutil.Process(pid)
-        os.kill(p.pid, signal.SIGTERM)
-        p.wait(timeout=kill_timeout)
-        logger.info(f'{log_prefix} was terminated')
-    except psutil.NoSuchProcess:
-        logger.info(f'{log_prefix} - no such process')
-    except psutil.TimeoutExpired:
-        logger.warning(f'{log_prefix} - timout expired, going to kill')
-        p.kill()
-        logger.info(f'{log_prefix} -  process was killed')
-    except Exception:
-        logging.exception(f'{log_prefix} - termination failed!')
-
-
-def terminate_schain_process(schain_record):
-    log_msg = f'schain: {schain_record.name}'
-    terminate_process(schain_record.monitor_id, log_msg=log_msg)
-
-
-def is_monitor_process_alive(monitor_id):
-    """Checks that provided monitor_id is inited and alive"""
-    return monitor_id != 0 and check_pid(monitor_id)
 
 
 class ProcessReport:
@@ -127,3 +93,43 @@ class ProcessReport:
         report = {'pid': pid, 'ts': ts}
         self._save_tmp(report=report)
         self._move()
+
+    def cleanup(self) -> None:
+        os.remove(self.path)
+
+
+def terminate_process(
+    process_report: ProcessReport,
+    kill_timeout: int = P_KILL_WAIT_TIMEOUT,
+    log_msg: str = ''
+) -> None:
+    pid = process_report.pid
+    log_prefix = f'pid: {pid} - '
+
+    if log_msg != '':
+        log_prefix += f'{log_msg} - '
+    if pid == 0:
+        logger.warning(f'{log_prefix} - pid is 0, skipping')
+        return
+    try:
+        logger.warning(f'{log_prefix} - going to terminate')
+        p = psutil.Process(pid)
+        os.kill(p.pid, signal.SIGTERM)
+        p.wait(timeout=kill_timeout)
+        logger.info(f'{log_prefix} was terminated')
+    except psutil.NoSuchProcess:
+        logger.info(f'{log_prefix} - no such process')
+    except psutil.TimeoutExpired:
+        logger.warning(f'{log_prefix} - timout expired, going to kill')
+        p.kill()
+        logger.info(f'{log_prefix} -  process was killed')
+    except Exception:
+        logger.exception(f'{log_prefix} - termination failed!')
+        return
+    logger.info(f'{log_prefix} - removing process report for {pid}')
+    process_report.cleanup()
+
+
+def is_monitor_process_alive(monitor_pid: int) -> bool:
+    """Checks that provided monitor_id is inited and alive"""
+    return monitor_pid != 0 and check_pid(monitor_pid)

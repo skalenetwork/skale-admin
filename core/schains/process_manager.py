@@ -66,26 +66,26 @@ def run_pm_schain(
         dkg_timeout = skale.constants_holder.get_dkg_timeout()
         allowed_diff = timeout or int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
 
-    process_report = ProcessReport(schain['name'])
+    report = ProcessReport(schain['name'])
     init_ts = int(time.time())
-    if process_report.is_exist():
-        if init_ts - process_report.ts > allowed_diff:
-            logger.info('%s Terminating process: PID = %d', log_prefix, process_report.pid)
-            terminate_process(process_report.pid)
+    if report.is_exist() and is_monitor_process_alive(report.pid):
+        if init_ts - report.ts > allowed_diff:
+            logger.info('%s Terminating process: PID = %d', log_prefix, report.pid)
+            terminate_process(report.pid)
         else:
-            pid = process_report.pid
+            pid = report.pid
             logger.info('%s Process is running: PID = %d', log_prefix, pid)
 
-    if not process_report.is_exist() or not is_monitor_process_alive(process_report.pid):
-        process_report.ts = init_ts
+    if not report.is_exist() or not is_monitor_process_alive(report.pid):
+        report.ts = init_ts
         process = Process(
             name=schain['name'],
             target=start_monitor,
-            args=(skale, schain, node_config, skale_ima, process_report),
+            args=(skale, schain, node_config, skale_ima, report),
         )
         process.start()
         pid = process.ident
-        process_report.pid = pid
+        report.pid = pid
         logger.info('%s Process started: PID = %d', log_prefix, pid)
 
 

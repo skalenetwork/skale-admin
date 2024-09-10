@@ -37,7 +37,7 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
-from core.schains.process import terminate_schain_process
+from core.schains.process import ProcessReport, terminate_process
 from core.schains.runner import get_container_name, is_exited
 from core.schains.external_config import ExternalConfig
 from core.schains.types import ContainerType
@@ -185,9 +185,10 @@ def remove_schain(
     msg: str,
     dutils: Optional[DockerUtils] = None,
 ) -> None:
-    schain_record = upsert_schain_record(schain_name)
     logger.warning(msg)
-    terminate_schain_process(schain_record)
+    report = ProcessReport(name=schain_name)
+    if report.is_exist():
+        terminate_process(report)
 
     delete_bls_keys(skale, schain_name)
     sync_agent_ranges = get_sync_agent_ranges(skale)
