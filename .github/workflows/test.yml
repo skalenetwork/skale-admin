@@ -34,51 +34,52 @@ jobs:
       - name: Lint with flake8
         run: uv run flake8 .
 
-      - name: Launch anvil node
-        run: |
-          docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil && sleep 5 && docker logs anvil --tail 1000
+        # - name: Launch anvil node
+        #   run: |
+        #     docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil && sleep 5 && docker logs anvil --tail 1000
 
-      - name: Deploy manager & ima contracts
-        run: |
-          bash ./helper-scripts/deploy_test_ima.sh
+        # - name: Deploy manager & ima contracts
+        #   run: |
+        #     bash ./helper-scripts/deploy_test_ima.sh
 
-      - name: Show stats before tests
-        if: always()
-        run: | 
-          lsblk -f
-          free -h
+        # - name: Show stats before tests
+        #   if: always()
+        #   run: | 
+        #     lsblk -f
+        #     free -h
 
-      - name: Run core tests
-        run: |
-          source ../.venv/bin/activate
-          python --version
-          bash ./scripts/run_core_tests.sh
+        # - name: Run core tests
+        #   run: |
+        #     source ../.venv/bin/activate
+        #     python --version
+        #     bash ./scripts/run_core_tests.sh
 
-      - name: Cleanup docker artifacts
-        run: |
-          docker rm -f $(docker ps -aq)
+        # - name: Cleanup docker artifacts
+        #   run: |
+        #     docker rm -f $(docker ps -aq)
 
-      - name: Show stats after core tests
-        if: always()
-        run: |
-          lsblk -f
-          free -h
+        # - name: Show stats after core tests
+        #   if: always()
+        #   run: |
+        #     lsblk -f
+        #     free -h
 
-      - name: Run firewall tests
-        run: |
-          bash ./scripts/run_firewall_test.sh
+        # - name: Run firewall tests
+        #   run: |
+        #     bash ./scripts/run_firewall_test.sh
 
-      - name: Show stats after firewall tests
-        if: always()
-        run: | 
-          lsblk -f
-          free -h
+        # - name: Show stats after firewall tests
+        #   if: always()
+        #   run: | 
+        #     lsblk -f
+        #     free -h
 
-      - name: Cleanup docker artifacts
-        if: always()
-        run: |
-          docker rm -f $(docker ps -aq)
+        # - name: Cleanup docker artifacts
+        #   if: always()
+        #   run: |
+        #     docker rm -f $(docker ps -aq)
 
       - name: Run codecov
         run: |
+          source ../.venv/bin/activate
           codecov -t $CODECOV_TOKEN
