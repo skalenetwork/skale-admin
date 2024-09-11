@@ -11,34 +11,28 @@ env:
 
 jobs:
   test_core:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
       ENDPOINT: http://127.0.0.1:8545
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-    defaults:
-      run:
-        working-directory: ~/admin
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: true
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v1
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
       - name: Install python dependencies
         run: |
-          source .venv/bin/activate
+          pwd
+          ls -altr ../.venv
+          source ../.venv/bin/activate
           python --version
           uv pip install -r requirements.txt --prerelease=allow
           uv pip install -r requirements-dev.txt
 
       - name: Lint with flake8
-        run: flake8 .
+        run: uv run flake8 .
 
       - name: Launch anvil node
         run: |
@@ -48,32 +42,27 @@ jobs:
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
 
-      - name: Cleanup skale-manager image
-        run: |
-          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
-
       - name: Show stats before tests
         if: always()
         run: | 
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
 
       - name: Run core tests
         run: |
-          source .venv/bin/activate
+          source ../.venv/bin/activate
           python --version
           bash ./scripts/run_core_tests.sh
 
       - name: Cleanup docker artifacts
         run: |
           docker rm -f $(docker ps -aq)
-          docker rmi -f $(docker images -q)
 
       - name: Show stats after core tests
         if: always()
         run: |
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
 
       - name: Run firewall tests
         run: |
@@ -82,9 +71,15 @@ jobs:
       - name: Show stats after firewall tests
         if: always()
         run: | 
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
+
+      - name: Cleanup docker artifacts
+        if: always()
+        run: |
+          docker rm -f $(docker ps -aq)
 
       - name: Run codecov
         run: |
+          source ../.venv/bin/activate
           codecov -t $CODECOV_TOKEN
