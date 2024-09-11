@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import grp
 import io
 import itertools
 import logging
@@ -35,6 +34,7 @@ from docker.client import DockerClient
 from docker.models.containers import Container
 from docker.models.volumes import Volume
 
+from tools.configs import DOCKER_NODE_CONFIG_FILEPATH
 from tools.configs.containers import (
     CONTAINER_NOT_FOUND,
     CREATED_STATUS,
@@ -47,6 +47,7 @@ from tools.configs.containers import (
     CONTAINER_LOGS_SEPARATOR
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
+from tools.helper import read_json
 
 
 logger = logging.getLogger(__name__)
@@ -84,7 +85,7 @@ def format_containers(f):
 
 
 def get_docker_group_id() -> int:
-    return grp.getgrnam('docker').gr_gid
+    return read_json(DOCKER_NODE_CONFIG_FILEPATH)['docker_group_id']
 
 
 class DockerUtils:
