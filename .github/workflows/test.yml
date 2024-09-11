@@ -24,10 +24,7 @@ jobs:
 
       - name: Install python dependencies
         run: |
-          pwd
-          ls -altr ../.venv
           source ../.venv/bin/activate
-          python --version
           uv pip install -r requirements.txt --prerelease=allow
           uv pip install -r requirements-dev.txt
 
@@ -51,7 +48,6 @@ jobs:
       - name: Run core tests
         run: |
           source ../.venv/bin/activate
-          python --version
           bash ./scripts/run_core_tests.sh
 
       - name: Cleanup docker artifacts
@@ -78,6 +74,12 @@ jobs:
         if: always()
         run: |
           docker rm -f $(docker ps -aq)
+
+      - name: Cleanup docker artifacts
+        if: always()
+        run: |
+          docker rm -f $(docker ps -aq)
+          docker rmi -f $(docker images -q)
 
       - name: Run codecov
         run: |
