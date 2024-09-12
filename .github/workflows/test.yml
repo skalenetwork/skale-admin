@@ -75,12 +75,6 @@ jobs:
         run: |
           docker rm -f $(docker ps -aq)
 
-      - name: Cleanup docker artifacts
-        if: always()
-        run: |
-          docker rm -f $(docker ps -aq)
-          docker rmi -f $(docker images -q)
-
       - name: Run codecov
         run: |
           source ../.venv/bin/activate
