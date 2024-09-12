@@ -54,7 +54,6 @@ logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 12
 CONTAINER_CREATION_TIMEOUT = 10
-DOCKER_GROUPNAME = 'docker'
 
 
 class ContainerCreationTimeoutError(Exception):
