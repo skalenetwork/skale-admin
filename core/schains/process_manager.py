@@ -71,7 +71,7 @@ def run_pm_schain(
     if report.is_exist() and is_monitor_process_alive(report.pid):
         if init_ts - report.ts > allowed_diff:
             logger.info('%s Terminating process: PID = %d', log_prefix, report.pid)
-            terminate_process(report.pid)
+            terminate_process(report)
         else:
             pid = report.pid
             logger.info('%s Process is running: PID = %d', log_prefix, pid)
