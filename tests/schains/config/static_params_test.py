@@ -11,8 +11,8 @@ from tools.configs import ENV_TYPE
 
 
 TEST_SCHAIN_NAME = 'test-schain'
-TS_FOR_ALL_NAME = 'revertableFSPatchTimestamp'
-TS_BY_CHAIN_NAME = 'flexibleDeploymentPatchTimestamp'
+DEFAULT_TS_NAME = 'revertableFSPatchTimestamp'
+CHAIN_SPECIFIC_TS_NAME = 'flexibleDeploymentPatchTimestamp'
 
 
 def test_get_static_schain_cmd():
@@ -48,34 +48,36 @@ def test_get_static_schain_info_custom_chain_ts():
     custom_schain_info = get_static_schain_info(TEST_SCHAIN_NAME)
     default_schain_info = get_static_schain_info('test')
 
-    assert custom_schain_info[TS_FOR_ALL_NAME] == default_schain_info[TS_FOR_ALL_NAME]
-    assert custom_schain_info[TS_BY_CHAIN_NAME] != default_schain_info[TS_BY_CHAIN_NAME]
+    assert custom_schain_info[DEFAULT_TS_NAME] == default_schain_info[DEFAULT_TS_NAME]
+    assert custom_schain_info[CHAIN_SPECIFIC_TS_NAME] != default_schain_info[CHAIN_SPECIFIC_TS_NAME]
 
-    assert custom_schain_info[TS_BY_CHAIN_NAME] == 1723460400
-    assert default_schain_info[TS_BY_CHAIN_NAME] == 0
+    assert custom_schain_info[CHAIN_SPECIFIC_TS_NAME] == 1723460400
+    assert default_schain_info[CHAIN_SPECIFIC_TS_NAME] == 0
 
 
 def test_get_schain_static_param():
     static_params = get_static_params(ENV_TYPE)
     legacy_ts_info = get_schain_static_param(
-        static_params['schain'][TS_FOR_ALL_NAME], TEST_SCHAIN_NAME
+        static_params['schain'][DEFAULT_TS_NAME], TEST_SCHAIN_NAME
     )
-    assert legacy_ts_info == static_params['schain'].get(TS_FOR_ALL_NAME)
+    assert legacy_ts_info == static_params['schain'].get(DEFAULT_TS_NAME)
     print(static_params['schain'])
 
     new_ts_info_custom_chain = get_schain_static_param(
-        static_params['schain'][TS_BY_CHAIN_NAME], TEST_SCHAIN_NAME
+        static_params['schain'][CHAIN_SPECIFIC_TS_NAME], TEST_SCHAIN_NAME
     )
 
-    assert new_ts_info_custom_chain != static_params['schain'][TS_BY_CHAIN_NAME]
-    assert new_ts_info_custom_chain == static_params['schain'][TS_BY_CHAIN_NAME][TEST_SCHAIN_NAME]
+    assert new_ts_info_custom_chain != static_params['schain'][CHAIN_SPECIFIC_TS_NAME]
+    assert new_ts_info_custom_chain == \
+        static_params['schain'][CHAIN_SPECIFIC_TS_NAME][TEST_SCHAIN_NAME]
 
     new_ts_info_default_chain = get_schain_static_param(
-        static_params['schain'][TS_BY_CHAIN_NAME], 'test'
+        static_params['schain'][CHAIN_SPECIFIC_TS_NAME], 'test'
     )
-    assert new_ts_info_default_chain != static_params['schain'][TS_BY_CHAIN_NAME]
-    assert new_ts_info_default_chain != static_params['schain'][TS_BY_CHAIN_NAME].get('test')
-    assert new_ts_info_default_chain == static_params['schain'][TS_BY_CHAIN_NAME].get('default')
+    assert new_ts_info_default_chain != static_params['schain'][CHAIN_SPECIFIC_TS_NAME]
+    assert new_ts_info_default_chain != static_params['schain'][CHAIN_SPECIFIC_TS_NAME].get('test')
+    assert new_ts_info_default_chain == \
+        static_params['schain'][CHAIN_SPECIFIC_TS_NAME].get('default')
 
 
 def test_get_static_node_info():
