@@ -49,8 +49,8 @@ class CurrentNodeInfo(NodeInfo):
     archive: bool
     catchup: bool
 
-    """Returns camel-case representation of the CurrentNodeInfo object"""
     def to_dict(self):
+        """Returns camel-case representation of the CurrentNodeInfo object"""
         node_info = {
             **super().to_dict(),
             **{

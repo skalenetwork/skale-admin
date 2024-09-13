@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import TypedDict
 from skale.dataclasses.schain_options import AllocationType
 
 from core.schains.types import SchainType, ContainerType, MetricType
@@ -40,7 +41,7 @@ def get_allocation_type_name(allocation_type: AllocationType) -> str:
 
 
 def get_limit(metric_type: MetricType, schain_type: SchainType, container_type: ContainerType,
-              resource_allocation: dict) -> int:
+              resource_allocation: TypedDict) -> TypedDict:
     """
     Get allocation option from the resources allocation file
 
@@ -59,7 +60,7 @@ def get_limit(metric_type: MetricType, schain_type: SchainType, container_type: 
     return resource_allocation[container_type.name][metric_type.name][schain_type.name]
 
 
-def get_schain_limit(schain_type: SchainType, metric_type: MetricType) -> dict:
+def get_schain_limit(schain_type: SchainType, metric_type: MetricType) -> TypedDict:
     alloc = _get_resource_allocation_info()
     return get_limit(metric_type, schain_type, ContainerType.schain, alloc)
 
