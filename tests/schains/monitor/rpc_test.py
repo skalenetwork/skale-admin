@@ -1,7 +1,7 @@
 import datetime
+import time
 import json
-import mock
-from time import sleep
+from unittest import mock
 
 import freezegun
 import requests
@@ -37,7 +37,7 @@ def test_handle_failed_schain_rpc_exit_time_reached(
     image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, schain_db)
 
     dutils.run_container(image_name=image_name, name=container_name, entrypoint='bash -c "exit 0"')
-    sleep(7)
+    time.sleep(7)
     schain_record.set_failed_rpc_count(100)
 
     container_info = dutils.get_info(container_name)
@@ -65,7 +65,7 @@ def test_monitor_schain_downloading_snapshot(
     dutils.run_container(
         image_name=image_name, name=container_name, entrypoint='bash -c "sleep 100"'
     )
-    sleep(7)
+    time.sleep(7)
     schain_record.set_failed_rpc_count(100)
 
     container_info = dutils.get_info(container_name)
@@ -112,6 +112,8 @@ def test_monitor_container_exited(schain_db, dutils, cleanup_schain_containers, 
     dutils.run_container(
         image_name=image_name, name=container_name, entrypoint='bash -c "exit 100;"'
     )
+    # Wait for container initialization
+    time.sleep(2)
 
     schain_record.set_failed_rpc_count(100)
     schain_record.set_restart_count(0)
@@ -126,6 +128,8 @@ def test_monitor_container_exited(schain_db, dutils, cleanup_schain_containers, 
         skaled_status=skaled_status,
         dutils=dutils,
     )
+    # Wait for container initialization
+    time.sleep(2)
     assert schain_record.restart_count == 0
     container_info = dutils.get_info(container_name)
     assert container_info['stats']['State']['FinishedAt'] == finished_at
