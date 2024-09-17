@@ -48,7 +48,6 @@ jobs:
       - name: Run core tests
         run: |
           source ../.venv/bin/activate
-          python --version
           bash ./scripts/run_core_tests.sh
 
       - name: Cleanup docker artifacts

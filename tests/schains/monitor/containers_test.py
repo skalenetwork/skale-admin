@@ -1,5 +1,5 @@
-import mock
 import time
+from unittest import mock
 
 from core.schains.monitor.containers import monitor_schain_container
 from core.schains.runner import is_container_exists
@@ -75,8 +75,9 @@ def test_monitor_schain_container_ec(
     schain = get_schain_struct(schain_name=schain_db)
 
     run_custom_schain_container(dutils, schain.name, entrypoint=['sh', 'exit', '1'])
-    # to make sure container initializaed
+    # To make sure container initializaed
     time.sleep(2)
+
     with mock.patch('core.schains.monitor.containers.is_volume_exists', return_value=True):
         schain_record.set_failed_rpc_count(100)
         schain_record.set_restart_count(0)
