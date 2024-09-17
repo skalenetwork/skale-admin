@@ -21,7 +21,7 @@ import logging
 from typing import Optional
 
 from tools.helper import process_template
-from tools.docker_utils import DockerUtils
+from tools.docker_utils import DockerUtils, get_docker_group_id
 
 from tools.configs import SKALE_DIR_HOST
 from tools.configs.monitoring import (
@@ -68,11 +68,12 @@ def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
     if dutils.is_container_exists(TELEGRAF_CONTAINER_NAME):
         dutils.restart(TELEGRAF_CONTAINER_NAME)
     else:
+        group_id = get_docker_group_id()
         dutils.run_container(
             image_name=TELEGRAF_IMAGE,
             name=TELEGRAF_CONTAINER_NAME,
             network_mode='host',
-            user='telegraf:998',
+            user=f'telegraf:{group_id}',
             restart_policy={'name': 'on-failure'},
             environment={'HOST_PROC': '/host/proc'},
             volumes={
