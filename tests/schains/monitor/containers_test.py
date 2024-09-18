@@ -1,10 +1,11 @@
-import mock
+import time
+from unittest import mock
 
 from core.schains.monitor.containers import monitor_schain_container
 from core.schains.runner import is_container_exists
 from web.models.schain import upsert_schain_record
 
-from tests.utils import run_custom_schain_container
+from tests.utils import get_schain_struct, run_custom_schain_container
 
 
 def test_monitor_schain_container(
@@ -16,7 +17,7 @@ def test_monitor_schain_container(
     cleanup_schain_containers
 ):
     schain_record = upsert_schain_record(schain_db)
-    schain = {'name': schain_db, 'partOfNode': 0, 'generation': 0}
+    schain = get_schain_struct(schain_name=schain_db)
 
     monitor_schain_container(schain, schain_record, skaled_status, dutils=dutils)
     assert not is_container_exists(schain_db, dutils=dutils)
@@ -35,7 +36,7 @@ def test_monitor_schain_container_exit_time_reached(
     cleanup_schain_containers
 ):
     schain_record = upsert_schain_record(schain_db)
-    schain = {'name': schain_db, 'partOfNode': 0, 'generation': 0}
+    schain = get_schain_struct(schain_name=schain_db)
 
     with mock.patch('core.schains.monitor.containers.is_volume_exists', return_value=True):
         schain_record.set_failed_rpc_count(100)
@@ -71,10 +72,12 @@ def test_monitor_schain_container_ec(
     cleanup_schain_containers
 ):
     schain_record = upsert_schain_record(schain_db)
-    schain = {'name': schain_db, 'partOfNode': 0, 'generation': 0}
-    schain_name = schain_db
+    schain = get_schain_struct(schain_name=schain_db)
 
-    run_custom_schain_container(dutils, schain_name, entrypoint=['sh', 'exit', '1'])
+    run_custom_schain_container(dutils, schain.name, entrypoint=['sh', 'exit', '1'])
+    # To make sure container initializaed
+    time.sleep(2)
+
     with mock.patch('core.schains.monitor.containers.is_volume_exists', return_value=True):
         schain_record.set_failed_rpc_count(100)
         schain_record.set_restart_count(0)

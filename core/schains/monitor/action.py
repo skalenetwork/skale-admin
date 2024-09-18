@@ -150,7 +150,7 @@ class ConfigActionManager(BaseActionManager):
     ):
         self.skale = skale
         self.schain = schain
-        self.generation = schain['generation']
+        self.generation = schain.generation
         self.node_config = node_config
         self.checks = checks
         self.stream_version = stream_version
@@ -159,13 +159,13 @@ class ConfigActionManager(BaseActionManager):
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
         self.estate = estate
-        self.econfig = econfig or ExternalConfig(name=schain['name'])
+        self.econfig = econfig or ExternalConfig(name=schain.name)
         self.node_options = node_options or NodeOptions()
         self.cfm: ConfigFileManager = ConfigFileManager(
-            schain_name=self.schain['name']
+            schain_name=self.schain.name
         )
         self.statsd_client = get_statsd_client()
-        super().__init__(name=schain['name'])
+        super().__init__(name=schain.name)
 
     @BaseActionManager.monitor_block
     def config_dir(self) -> bool:
@@ -302,26 +302,26 @@ class SkaledActionManager(BaseActionManager):
         node_options: NodeOptions = None
     ):
         self.schain = schain
-        self.generation = schain['generation']
+        self.generation = schain.generation
         self.checks = checks
         self.node_config = node_config
 
         self.rc = rule_controller
-        self.skaled_status = init_skaled_status(self.schain['name'])
-        self.schain_type = get_schain_type(schain['partOfNode'])
-        self.econfig = econfig or ExternalConfig(schain['name'])
+        self.skaled_status = init_skaled_status(self.schain.name)
+        self.schain_type = get_schain_type(schain.part_of_node)
+        self.econfig = econfig or ExternalConfig(schain.name)
         self.cfm: ConfigFileManager = ConfigFileManager(
-            schain_name=self.schain['name']
+            schain_name=self.schain.name
         )
 
-        self.esfm = ExitScheduleFileManager(schain['name'])
+        self.esfm = ExitScheduleFileManager(schain.name)
         self.dutils = dutils or DockerUtils()
         self.statsd_client = get_statsd_client()
 
         self.node_options = node_options or NodeOptions()
         self.ncli_status = ncli_status
 
-        super().__init__(name=schain['name'])
+        super().__init__(name=schain.name)
 
     @BaseActionManager.monitor_block
     def volume(self) -> bool:
