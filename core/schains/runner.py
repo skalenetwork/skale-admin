@@ -21,6 +21,7 @@ import copy
 import logging
 
 from docker.types import LogConfig, Ulimit
+from skale.contracts.manager.schains import SchainStructure
 
 from core.schains.volume import get_schain_volume_config
 from core.schains.limits import get_schain_limit, get_ima_limit, get_schain_type
@@ -161,13 +162,12 @@ def run_container(
 
 def restart_container(
     type,
-    schain,
+    schain: SchainStructure,
     timeout=SCHAIN_STOP_TIMEOUT,
     dutils=None
 ):
     dutils = dutils or DockerUtils()
-    schain_name = schain['name']
-    container_name = get_container_name(type, schain_name)
+    container_name = get_container_name(type, schain.name)
 
     logger.info(arguments_list_string({'Container name': container_name},
                                       'Restarting container...'))
@@ -176,7 +176,7 @@ def restart_container(
 
 
 def run_schain_container(
-    schain,
+    schain: SchainStructure,
     download_snapshot=False,
     start_ts=None,
     dutils=None,
@@ -187,8 +187,8 @@ def run_schain_container(
     sync_node=False,
     historic_state=False
 ):
-    schain_name = schain['name']
-    schain_type = get_schain_type(schain['partOfNode'])
+    schain_name = schain.name
+    schain_type = get_schain_type(schain.part_of_node)
 
     cpu_limit = None if sync_node else get_schain_limit(schain_type, MetricType.cpu_shares)
     mem_limit = None if sync_node else get_schain_limit(schain_type, MetricType.mem)
@@ -224,22 +224,22 @@ def run_schain_container(
 
 
 def run_ima_container(
-    schain: dict,
+    schain: SchainStructure,
     mainnet_chain_id: int,
     time_frame: int,
     image: str,
     dutils: DockerUtils = None
 ) -> None:
     dutils = dutils or DockerUtils()
-    env = get_ima_env(schain['name'], mainnet_chain_id, time_frame)
+    env = get_ima_env(schain.name, mainnet_chain_id, time_frame)
 
-    schain_type = get_schain_type(schain['partOfNode'])
+    schain_type = get_schain_type(schain.part_of_node)
     cpu_limit = get_ima_limit(schain_type, MetricType.cpu_shares)
     mem_limit = get_ima_limit(schain_type, MetricType.mem)
 
     run_container(
         image_type=IMA_CONTAINER,
-        schain_name=schain['name'],
+        schain_name=schain.name,
         env=env.to_dict(),
         cpu_shares_limit=cpu_limit,
         mem_limit=mem_limit,

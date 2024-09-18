@@ -32,7 +32,7 @@ from web.models.schain import upsert_schain_record, SChainRecord
 from tests.utils import (
     CONFIG_STREAM,
     generate_schain_config,
-    get_schain_contracts_data,
+    get_schain_struct,
     response_mock,
     request_mock
 )
@@ -207,7 +207,7 @@ def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
     ts = int(time.time())
     mts = ts + 3600
     name = schain_checks.name
-    schain = get_schain_contracts_data(name)
+    schain = get_schain_struct(name)
     image = get_image_name(image_type=IMA_CONTAINER)
     # new_image = get_image_name(type=IMA_CONTAINER, new=True)
 

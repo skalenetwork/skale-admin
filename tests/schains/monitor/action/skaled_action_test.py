@@ -31,7 +31,7 @@ def run_ima_container_mock(
     dutils=None
 ):
     image_name, container_name, _, _ = get_container_info(
-        IMA_CONTAINER, schain['name'])
+        IMA_CONTAINER, schain.name)
     image = image or image_name
     dutils.safe_rm(container_name)
     dutils.run_container(
@@ -53,7 +53,7 @@ def monitor_schain_container_mock(
     historic_state=False
 ):
     image_name, container_name, _, _ = get_container_info(
-        SCHAIN_CONTAINER, schain['name'])
+        SCHAIN_CONTAINER, schain.name)
     dutils.safe_rm(container_name)
     if not skaled_status.exit_time_reached or not abort_on_exit:
         dutils.run_container(
