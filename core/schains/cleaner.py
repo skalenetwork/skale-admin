@@ -120,7 +120,7 @@ sChains on node: {schains_on_node}')
 
 def get_schain_names_from_contract(skale, node_id):
     schains_on_contract = skale.schains.get_schains_for_node(node_id)
-    return list(map(lambda schain: schain['name'], schains_on_contract))
+    return list(map(lambda schain: schain.name, schains_on_contract))
 
 
 def get_schains_with_containers(dutils=None):

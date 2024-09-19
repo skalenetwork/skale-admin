@@ -24,12 +24,12 @@ jobs:
 
       - name: Install python dependencies
         run: |
-          source ~/ga/bin/activate
-          python --version
-          bash ./scripts/install_python_dependencies.sh
+          source ../.venv/bin/activate
+          uv pip install -r requirements.txt --prerelease=allow
+          uv pip install -r requirements-dev.txt
 
       - name: Lint with flake8
-        run: flake8 .
+        run: uv run flake8 .
 
       - name: Launch anvil node
         run: |
@@ -39,32 +39,26 @@ jobs:
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
 
-      - name: Cleanup skale-manager image
-        run: |
-          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
-
       - name: Show stats before tests
         if: always()
         run: | 
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
 
       - name: Run core tests
         run: |
-          source ~/ga/bin/activate
-          python --version
+          source ../.venv/bin/activate
           bash ./scripts/run_core_tests.sh
 
       - name: Cleanup docker artifacts
         run: |
           docker rm -f $(docker ps -aq)
-          docker rmi -f $(docker images -q)
 
       - name: Show stats after core tests
         if: always()
         run: |
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
 
       - name: Run firewall tests
         run: |
@@ -73,15 +67,15 @@ jobs:
       - name: Show stats after firewall tests
         if: always()
         run: | 
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
 
       - name: Cleanup docker artifacts
         if: always()
         run: |
           docker rm -f $(docker ps -aq)
-          docker rmi -f $(docker images -q)
 
       - name: Run codecov
         run: |
+          source ../.venv/bin/activate
           codecov -t $CODECOV_TOKEN

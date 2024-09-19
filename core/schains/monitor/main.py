@@ -23,6 +23,7 @@ from typing import Optional
 from importlib import reload
 
 from skale import Skale, SkaleIma
+from skale.contracts.manager.schains import SchainStructure
 from web3._utils import request as web3_request
 
 from core.node import get_skale_node_version
@@ -61,7 +62,7 @@ logger = logging.getLogger(__name__)
 def run_config_pipeline(
     skale: Skale, skale_ima: SkaleIma, schain: dict, node_config: NodeConfig, stream_version: str
 ) -> None:
-    name = schain['name']
+    name = schain.name
     schain_record = SChainRecord.get_by_name(name)
     rotation_data = skale.node_rotation.get_rotation(name)
     allowed_ranges = get_sync_agent_ranges(skale)
@@ -120,9 +121,9 @@ def run_config_pipeline(
 
 
 def run_skaled_pipeline(
-    skale: Skale, schain: dict, node_config: NodeConfig, dutils: DockerUtils
+    skale: Skale, schain: SchainStructure, node_config: NodeConfig, dutils: DockerUtils
 ) -> None:
-    name = schain['name']
+    name = schain.name
     schain_record = SChainRecord.get_by_name(name)
     logger.info('Record: %s', SChainRecord.to_dict(schain_record))
 
@@ -130,7 +131,7 @@ def run_skaled_pipeline(
 
     rc = get_default_rule_controller(name=name)
     skaled_checks = SkaledChecks(
-        schain_name=schain['name'],
+        schain_name=schain.name,
         schain_record=schain_record,
         rule_controller=rc,
         dutils=dutils,
@@ -179,7 +180,7 @@ def start_monitor(
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
     reload(web3_request)
-    name = schain['name']
+    name = schain.name
 
     stream_version = get_skale_node_version()
     schain_record = upsert_schain_record(name)

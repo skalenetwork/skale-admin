@@ -23,6 +23,7 @@ from multiprocessing import Process
 from typing import Optional
 
 from skale import Skale, SkaleIma
+from skale.contracts.manager.schains import SchainStructure
 
 from core.node_config import NodeConfig
 from core.schains.monitor.main import start_monitor
@@ -55,7 +56,7 @@ def run_pm_schain(
     skale: Skale,
     skale_ima: SkaleIma,
     node_config: NodeConfig,
-    schain: dict,
+    schain: SchainStructure,
     timeout: Optional[int] = None,
 ) -> None:
     log_prefix = f'sChain {schain["name"]} -'
@@ -66,7 +67,7 @@ def run_pm_schain(
         dkg_timeout = skale.constants_holder.get_dkg_timeout()
         allowed_diff = timeout or int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
 
-    report = ProcessReport(schain['name'])
+    report = ProcessReport(schain.name)
     init_ts = int(time.time())
     if report.is_exist() and is_monitor_process_alive(report.pid):
         if init_ts - report.ts > allowed_diff:
@@ -79,7 +80,7 @@ def run_pm_schain(
     if not report.is_exist() or not is_monitor_process_alive(report.pid):
         report.ts = init_ts
         process = Process(
-            name=schain['name'],
+            name=schain.name,
             target=start_monitor,
             args=(skale, schain, node_config, skale_ima, report),
         )
@@ -97,7 +98,7 @@ def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
     schains = skale.schains.get_schains_for_node(node_id)
     leaving_schains = get_leaving_schains_for_node(skale, node_id)
     schains.extend(leaving_schains)
-    active_schains = list(filter(lambda schain: schain['active'], schains))
+    active_schains = list(filter(lambda schain: schain.active, schains))
     schains_holes = len(schains) - len(active_schains)
     logger.info(
         arguments_list_string(
@@ -119,8 +120,8 @@ def get_leaving_schains_for_node(skale: Skale, node_id: int) -> list:
     leaving_history = skale.node_rotation.get_leaving_history(node_id)
     for leaving_schain in leaving_history:
         schain = skale.schains.get(leaving_schain['schain_id'])
-        if skale.node_rotation.is_rotation_active(schain['name']) and schain['name']:
-            schain['active'] = True
+        if skale.node_rotation.is_rotation_active(schain.name) and schain.name:
+            schain.active = True
             leaving_schains.append(schain)
     logger.info(f'Got leaving sChains for the node: {leaving_schains}')
     return leaving_schains

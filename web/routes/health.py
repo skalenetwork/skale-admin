@@ -94,18 +94,18 @@ def schains_checks():
     )
     checks = []
     for schain in schains:
-        if schain.get('name') != '':
-            rotation_data = g.skale.node_rotation.get_rotation(schain['name'])
+        if schain.name != '':
+            rotation_data = g.skale.node_rotation.get_rotation(schain.name)
             rotation_id = rotation_data['rotation_id']
-            if SChainRecord.added(schain['name']):
+            if SChainRecord.added(schain.name):
                 rc = get_default_rule_controller(
-                    name=schain['name'],
+                    name=schain.name,
                     sync_agent_ranges=sync_agent_ranges
                 )
-                current_nodes = get_current_nodes(g.skale, schain['name'])
-                schain_record = SChainRecord.get_by_name(schain['name'])
+                current_nodes = get_current_nodes(g.skale, schain.name)
+                schain_record = SChainRecord.get_by_name(schain.name)
                 schain_checks = SChainChecks(
-                    schain['name'],
+                    schain.name,
                     node_id,
                     schain_record=schain_record,
                     rule_controller=rc,
@@ -117,7 +117,7 @@ def schains_checks():
                     sync_node=False
                 ).get_all(needed=checks_filter)
                 checks.append({
-                    'name': schain['name'],
+                    'name': schain.name,
                     'healthchecks': schain_checks
                 })
     return construct_ok_response(checks)

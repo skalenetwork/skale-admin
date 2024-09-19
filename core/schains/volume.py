@@ -21,6 +21,7 @@ import logging
 import os
 import shutil
 
+from skale.contracts.manager.schains import SchainStructure
 from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
 from tools.configs.schains import SCHAIN_STATE_PATH, SCHAIN_STATIC_PATH
@@ -45,24 +46,23 @@ def is_volume_exists(schain_name, sync_node=False, dutils=None):
 
 
 def init_data_volume(
-    schain: dict,
+    schain: SchainStructure,
     sync_node: bool = False,
     dutils: DockerUtils = None
 ):
     dutils = dutils or DockerUtils()
-    schain_name = schain['name']
 
-    if is_volume_exists(schain_name, sync_node=sync_node, dutils=dutils):
-        logger.debug(f'Volume already exists: {schain_name}')
+    if is_volume_exists(schain.name, sync_node=sync_node, dutils=dutils):
+        logger.debug(f'Volume already exists: {schain.name}')
         return
 
-    logger.info(f'Creating volume for schain: {schain_name}')
+    logger.info(f'Creating volume for schain: {schain.name}')
     if sync_node:
-        ensure_data_dir_path(schain['name'])
+        ensure_data_dir_path(schain.name)
     else:
-        schain_type = get_schain_type(schain['partOfNode'])
+        schain_type = get_schain_type(schain.part_of_node)
         disk_limit = get_schain_limit(schain_type, MetricType.disk)
-        dutils.create_data_volume(schain_name, disk_limit)
+        dutils.create_data_volume(schain.name, disk_limit)
 
 
 def remove_data_dir(schain_name):

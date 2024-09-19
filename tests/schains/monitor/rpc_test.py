@@ -1,7 +1,7 @@
 import datetime
 import json
-import mock
-from time import sleep
+import time
+from unittest import mock
 
 import freezegun
 import requests
@@ -11,6 +11,7 @@ from core.schains.runner import get_container_info
 from core.schains.rpc import check_endpoint_blocks
 from tools.configs.containers import SCHAIN_CONTAINER
 from web.models.schain import SChainRecord
+from tests.utils import get_schain_struct
 
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
@@ -21,7 +22,7 @@ def test_handle_failed_schain_rpc_no_container(schain_db, dutils, skaled_status)
     image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, schain_db)
 
     assert not handle_failed_schain_rpc(
-        schain={'name': schain_db},
+        schain=get_schain_struct(schain_name=schain_db),
         schain_record=schain_record,
         skaled_status=skaled_status,
         dutils=dutils,
@@ -37,14 +38,14 @@ def test_handle_failed_schain_rpc_exit_time_reached(
     image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, schain_db)
 
     dutils.run_container(image_name=image_name, name=container_name, entrypoint='bash -c "exit 0"')
-    sleep(7)
+    time.sleep(7)
     schain_record.set_failed_rpc_count(100)
 
     container_info = dutils.get_info(container_name)
     finished_at = container_info['stats']['State']['FinishedAt']
 
     assert not handle_failed_schain_rpc(
-        schain={'name': schain_db},
+        schain=get_schain_struct(schain_name=schain_db),
         schain_record=schain_record,
         skaled_status=skaled_status_exit_time_reached,
         dutils=dutils,
@@ -65,14 +66,14 @@ def test_monitor_schain_downloading_snapshot(
     dutils.run_container(
         image_name=image_name, name=container_name, entrypoint='bash -c "sleep 100"'
     )
-    sleep(7)
+    time.sleep(7)
     schain_record.set_failed_rpc_count(100)
 
     container_info = dutils.get_info(container_name)
     finished_at = container_info['stats']['State']['FinishedAt']
 
     handle_failed_schain_rpc(
-        schain={'name': schain_db},
+        schain=get_schain_struct(schain_name=schain_db),
         schain_record=schain_record,
         skaled_status=skaled_status_downloading_snapshot,
         dutils=dutils,
@@ -97,7 +98,7 @@ def test_handle_failed_schain_rpc_stuck_max_retries(
     finished_at = container_info['stats']['State']['FinishedAt']
 
     handle_failed_schain_rpc(
-        schain={'name': schain_db},
+        schain=get_schain_struct(schain_name=schain_db),
         schain_record=schain_record,
         skaled_status=skaled_status,
         dutils=dutils,
@@ -112,6 +113,8 @@ def test_monitor_container_exited(schain_db, dutils, cleanup_schain_containers, 
     dutils.run_container(
         image_name=image_name, name=container_name, entrypoint='bash -c "exit 100;"'
     )
+    # Wait for container initialization
+    time.sleep(2)
 
     schain_record.set_failed_rpc_count(100)
     schain_record.set_restart_count(0)
@@ -121,11 +124,13 @@ def test_monitor_container_exited(schain_db, dutils, cleanup_schain_containers, 
 
     assert schain_record.restart_count == 0
     handle_failed_schain_rpc(
-        schain={'name': schain_db},
+        schain=get_schain_struct(schain_name=schain_db),
         schain_record=schain_record,
         skaled_status=skaled_status,
         dutils=dutils,
     )
+    # Wait for container initialization
+    time.sleep(2)
     assert schain_record.restart_count == 0
     container_info = dutils.get_info(container_name)
     assert container_info['stats']['State']['FinishedAt'] == finished_at
@@ -148,7 +153,7 @@ def test_handle_failed_schain_rpc_stuck(
 
     assert schain_record.restart_count == 0
     handle_failed_schain_rpc(
-        schain={'name': schain_db},
+        schain=get_schain_struct(schain_name=schain_db),
         schain_record=schain_record,
         skaled_status=skaled_status,
         dutils=dutils,
