@@ -59,7 +59,7 @@ def run_pm_schain(
     schain: SchainStructure,
     timeout: Optional[int] = None,
 ) -> None:
-    log_prefix = f'sChain {schain["name"]} -'
+    log_prefix = f'sChain {schain.name} -'
 
     if timeout is not None:
         allowed_diff = timeout
