@@ -487,3 +487,12 @@ def test_firewall_rules_action(skaled_am, skaled_checks, rule_controller, econfi
         SChainRule(port=10009),
         SChainRule(port=10010, first_ip='127.0.0.2', last_ip='127.0.0.2')
     ]
+
+
+def test_disable_repair_mode(skaled_am):
+    skaled_am.schain_record.set_repair_mode(True)
+    assert skaled_am.schain_record.repair_mode
+    skaled_am.disable_repair_mode()
+    assert not skaled_am.schain_record.repair_mode
+    skaled_am.disable_repair_mode()
+    assert not skaled_am.schain_record.repair_mode
