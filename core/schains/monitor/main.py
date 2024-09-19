@@ -173,7 +173,7 @@ def run_skaled_pipeline(
 
 def start_monitor(
     skale: Skale,
-    schain: dict,
+    schain: SchainStructure,
     node_config: NodeConfig,
     skale_ima: SkaleIma,
     process_report: ProcessReport,
