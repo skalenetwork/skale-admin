@@ -1,4 +1,5 @@
 from core.schains.status import (
+    get_node_cli_status,
     node_cli_status_filepath,
     NodeCliStatus,
     SkaledStatus,
@@ -58,6 +59,9 @@ def test_log(skaled_status, _schain_name, caplog):
 
 
 def test_node_cli_status_empty(_schain_name):
+    cli_status = get_node_cli_status(_schain_name)
+    assert cli_status is None
+
     status_filepath = node_cli_status_filepath(_schain_name)
     cli_status = NodeCliStatus(filepath=status_filepath)
 
@@ -66,8 +70,7 @@ def test_node_cli_status_empty(_schain_name):
 
 
 def test_node_cli_status_repair(_schain_name, ncli_status):
-    status_filepath = node_cli_status_filepath(_schain_name)
-    cli_status = NodeCliStatus(filepath=status_filepath)
+    cli_status = get_node_cli_status(_schain_name)
 
     assert cli_status.repair_ts == CURRENT_TS
     assert cli_status.snapshot_from == '127.0.0.1'
