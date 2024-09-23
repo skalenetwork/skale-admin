@@ -39,6 +39,7 @@ from tools.configs.web3 import ABI_FILEPATH
 
 from web.models.schain import upsert_schain_record
 
+CURRENT_TS = 1594903080
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')

@@ -41,7 +41,7 @@ from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.task import keep_tasks_running, Task
 from core.schains.config.static_params import get_automatic_repair_option
-from core.schains.skaled_status import get_skaled_status
+from core.schains.status import get_node_cli_status, get_skaled_status
 from core.node import get_current_nodes
 
 from tools.docker_utils import DockerUtils
@@ -141,30 +141,33 @@ def run_skaled_pipeline(
     )
 
     skaled_status = get_skaled_status(name)
+    ncli_status = get_node_cli_status(name)
 
     skaled_am = SkaledActionManager(
         schain=schain,
         rule_controller=rc,
         checks=skaled_checks,
         node_config=node_config,
+        ncli_status=ncli_status,
         econfig=ExternalConfig(name),
         dutils=dutils,
     )
-    status = skaled_checks.get_all(log=False, expose=True)
+    check_status = skaled_checks.get_all(log=False, expose=True)
     automatic_repair = get_automatic_repair_option()
-    api_status = get_api_checks_status(status=status, allowed=TG_ALLOWED_CHECKS)
+    api_status = get_api_checks_status(status=check_status, allowed=TG_ALLOWED_CHECKS)
     notify_checks(name, node_config.all(), api_status)
 
-    logger.info('Skaled status: %s', status)
+    logger.info('Skaled check status: %s', check_status)
 
     logger.info('Upstream config %s', skaled_am.upstream_config_path)
 
     mon = get_skaled_monitor(
         action_manager=skaled_am,
-        status=status,
+        check_status=check_status,
         schain_record=schain_record,
         skaled_status=skaled_status,
-        automatic_repair=automatic_repair,
+        ncli_status=ncli_status,
+        automatic_repair=automatic_repair
     )
 
     statsd_client = get_statsd_client()

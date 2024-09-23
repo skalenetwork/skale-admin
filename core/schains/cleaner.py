@@ -238,14 +238,16 @@ def cleanup_schain(
         dutils=dutils,
         sync_node=SYNC_NODE,
     )
-    status = checks.get_all()
-    if status['skaled_container'] or is_exited(
-        schain_name, container_type=ContainerType.schain, dutils=dutils
+    check_status = checks.get_all()
+    if check_status['skaled_container'] or is_exited(
+        schain_name,
+        container_type=ContainerType.schain,
+        dutils=dutils
     ):
         remove_schain_container(schain_name, dutils=dutils)
-    if status['volume']:
+    if check_status['volume']:
         remove_schain_volume(schain_name, dutils=dutils)
-    if status['firewall_rules']:
+    if check_status['firewall_rules']:
         conf = ConfigFileManager(schain_name).skaled_config
         base_port = get_base_port_from_config(conf)
         own_ip = get_own_ip_from_config(conf)
@@ -256,11 +258,13 @@ def cleanup_schain(
         rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips, sync_ip_ranges=ranges)
         rc.cleanup()
     if estate is not None and estate.ima_linked:
-        if status.get('ima_container', False) or is_exited(
-            schain_name, container_type=ContainerType.ima, dutils=dutils
+        if check_status.get('ima_container', False) or is_exited(
+            schain_name,
+            container_type=ContainerType.ima,
+            dutils=dutils
         ):
             remove_ima_container(schain_name, dutils=dutils)
-    if status['config_dir']:
+    if check_status['config_dir']:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
 
