@@ -38,7 +38,7 @@ from core.schains.monitor import get_skaled_monitor, RegularConfigMonitor, SyncC
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.monitor.pipeline import Pipeline, run_pipelines
 from core.schains.process import ProcessReport
-from core.schains.skaled_status import get_skaled_status
+from core.schains.status import get_node_cli_status, get_skaled_status
 from core.node import get_current_nodes
 
 from tools.docker_utils import DockerUtils
@@ -139,12 +139,14 @@ def run_skaled_pipeline(
     )
 
     skaled_status = get_skaled_status(name)
+    ncli_status = get_node_cli_status(name)
 
     skaled_am = SkaledActionManager(
         schain=schain,
         rule_controller=rc,
         checks=skaled_checks,
         node_config=node_config,
+        ncli_status=ncli_status,
         econfig=ExternalConfig(name),
         dutils=dutils,
     )
@@ -162,7 +164,8 @@ def run_skaled_pipeline(
         check_status=check_status,
         schain_record=schain_record,
         skaled_status=skaled_status,
-        automatic_repair=automatic_repair,
+        ncli_status=ncli_status,
+        automatic_repair=automatic_repair
     )
 
     statsd_client = get_statsd_client()
