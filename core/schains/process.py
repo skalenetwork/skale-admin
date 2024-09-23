@@ -98,12 +98,22 @@ class ProcessReport:
         os.remove(self.path)
 
 
-def terminate_process(
+def shutdown_process(
     process_report: ProcessReport,
     kill_timeout: int = P_KILL_WAIT_TIMEOUT,
     log_msg: str = ''
 ) -> None:
     pid = process_report.pid
+    terminate_process(pid=pid, kill_timeout=kill_timeout, log_msg=log_msg)
+    logger.info(f'Removing process report for {pid}')
+    process_report.cleanup()
+
+
+def terminate_process(
+    pid: int,
+    kill_timeout: int = P_KILL_WAIT_TIMEOUT,
+    log_msg: str = ''
+) -> None:
     log_prefix = f'pid: {pid} - '
 
     if log_msg != '':
@@ -126,8 +136,6 @@ def terminate_process(
     except Exception:
         logger.exception(f'{log_prefix} - termination failed!')
         return
-    logger.info(f'{log_prefix} - removing process report for {pid}')
-    process_report.cleanup()
 
 
 def is_monitor_process_alive(monitor_pid: int) -> bool:

@@ -30,7 +30,7 @@ from core.schains.monitor.main import start_monitor
 from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process import (
     is_monitor_process_alive,
-    terminate_process,
+    shutdown_process,
     ProcessReport,
 )
 
@@ -72,7 +72,7 @@ def run_pm_schain(
     if report.is_exist() and is_monitor_process_alive(report.pid):
         if init_ts - report.ts > allowed_diff:
             logger.info('%s Terminating process: PID = %d', log_prefix, report.pid)
-            terminate_process(report)
+            shutdown_process(report)
         else:
             pid = report.pid
             logger.info('%s Process is running: PID = %d', log_prefix, pid)
