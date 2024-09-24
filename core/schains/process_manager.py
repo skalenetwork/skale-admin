@@ -26,7 +26,7 @@ from skale import Skale, SkaleIma
 from skale.contracts.manager.schains import SchainStructure
 
 from core.node_config import NodeConfig
-from core.schains.monitor.main import start_monitor
+from core.schains.monitor.main import start_tasks
 from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process import (
     is_monitor_process_alive,
@@ -81,7 +81,7 @@ def run_pm_schain(
         report.ts = init_ts
         process = Process(
             name=schain.name,
-            target=start_monitor,
+            target=start_tasks,
             args=(skale, schain, node_config, skale_ima, report),
         )
         process.start()

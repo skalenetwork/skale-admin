@@ -4,6 +4,7 @@ import os
 import pathlib
 import shutil
 import time
+from concurrent.futures import Future
 from multiprocessing import Process
 from typing import Callable
 
@@ -13,7 +14,7 @@ from core.schains.firewall.types import IpRange
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.monitor.main import Pipeline, run_pipelines
 from core.schains.process import ProcessReport, terminate_process
-from core.schains.monitor.tasks import execute_tasks, ITaskBuilder
+from core.schains.monitor.tasks import execute_tasks, ITask
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import is_node_part_of_chain
 
@@ -127,55 +128,70 @@ def test_run_pipelines(tmp_dir, _schain_name):
     assert terminated
 
 
-def test_execute_jobs(tmp_dir, _schain_name):
-    def simple_pipeline(index: int) -> None:
-        logging.info('Running simple pipeline %d', index)
-        iterations = 7
-        for i in range(iterations):
-            logging.info('Simple pipeline beat %d', index)
-            time.sleep(1)
-
-    def stuck_pipeline(index: int) -> None:
+def test_execute_tasks(tmp_dir, _schain_name):
+    def run_stuck_pipeline(index: int) -> None:
         logging.info('Running stuck pipeline %d', index)
         iterations = 7
         for i in range(iterations):
             logging.info('Stuck pipeline %d beat', index)
             time.sleep(1)
 
-    class NormalTaskBuilder(ITaskBuilder):
-        def __init__(self, index: int) -> None:
-            self.index = index
-            self.task_name = 'task-a'
-            self._stuck_timeout = 11
-
-        def task_name(self) -> str:
-            return self._task_name
-
-        def stuck_timeout(self) -> int:
-            return self._stuck_timeout
-
-        def build_task(self) -> Callable:
-            return functools.partial(simple_pipeline, index=self.index)
-
-    class StuckTaskBuilder(ITaskBuilder):
+    class StuckedTask(ITask):
         def __init__(self, index) -> None:
-            self._task_name = 'task-b'
+            self._name = 'stucked-task'
             self.index = index
             self._stuck_timeout = 5
+            self._start_ts = 0
+            self._future = Future()
 
+        @property
+        def name(self) -> str:
+            return self._name
+
+        @property
+        def future(self) -> Future:
+            return self._future
+
+        @future.setter
+        def future(self, value: Future) -> None:
+            self._future = value
+
+        @property
+        def start_ts(self) -> int:
+            return self._start_ts
+
+        @start_ts.setter
+        def start_ts(self, value: int) -> None:
+            self._start_ts = value
+
+        @property
         def task_name(self) -> str:
             return self._task_name
 
+        @property
         def stuck_timeout(self) -> int:
             return self._stuck_timeout
 
-        def build_task(self) -> Callable:
-            return functools.partial(stuck_pipeline, index=self.index)
+        @property
+        def needed(self) -> bool:
+            return True
+
+        def create_pipeline(self) -> Callable:
+            return functools.partial(run_stuck_pipeline, index=self.index)
+
+    class NotNeededTask(StuckedTask):
+        def __init__(self, index: int) -> None:
+            self.index = index
+            self._name = 'not-needed-task'
+
+        @property
+        def needed(self) -> bool:
+            return False
 
     process_report = ProcessReport(name=_schain_name)
     target = functools.partial(
          execute_tasks,
-         task_builders=[StuckTaskBuilder(0), StuckTaskBuilder(1)],
+         tasks=[StuckedTask(0), NotNeededTask(1)],
          process_report=process_report,
          shutdown_interval=10,
     )

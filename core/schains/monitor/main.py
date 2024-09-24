@@ -19,7 +19,7 @@
 
 import functools
 import logging
-from typing import Optional
+from typing import Callable, Optional
 from importlib import reload
 
 from skale import Skale, SkaleIma
@@ -37,6 +37,7 @@ from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.monitor import get_skaled_monitor, RegularConfigMonitor, SyncConfigMonitor
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
 from core.schains.monitor.pipeline import Pipeline, run_pipelines
+from core.schains.monitor.tasks import execute_tasks, Future, ITask
 from core.schains.process import ProcessReport
 from core.schains.status import get_node_cli_status, get_skaled_status
 from core.node import get_current_nodes
@@ -59,24 +60,32 @@ SHUTDOWN_INTERVAL = 60 * 10
 logger = logging.getLogger(__name__)
 
 
+class NoTasksToRunError(Exception):
+    pass
+
+
 def run_config_pipeline(
-    skale: Skale, skale_ima: SkaleIma, schain: dict, node_config: NodeConfig, stream_version: str
+    schain_name: str,
+    skale: Skale,
+    skale_ima: SkaleIma,
+    node_config: NodeConfig,
+    stream_version: str,
 ) -> None:
-    name = schain.name
-    schain_record = SChainRecord.get_by_name(name)
-    rotation_data = skale.node_rotation.get_rotation(name)
+    schain = skale.schains.get_by_name(schain_name)
+    schain_record = SChainRecord.get_by_name(schain_name)
+    rotation_data = skale.node_rotation.get_rotation(schain_name)
     allowed_ranges = get_sync_agent_ranges(skale)
-    ima_linked = not SYNC_NODE and skale_ima.linker.has_schain(name)
-    group_index = skale.schains.name_to_group_id(name)
+    ima_linked = not SYNC_NODE and skale_ima.linker.has_schain(schain_name)
+    group_index = skale.schains.name_to_group_id(schain_name)
     last_dkg_successful = skale.dkg.is_last_dkg_successful(group_index)
-    current_nodes = get_current_nodes(skale, name)
+    current_nodes = get_current_nodes(skale, schain_name)
 
     estate = ExternalState(
         ima_linked=ima_linked, chain_id=skale_ima.web3.eth.chain_id, ranges=allowed_ranges
     )
-    econfig = ExternalConfig(name)
+    econfig = ExternalConfig(schain_name)
     config_checks = ConfigChecks(
-        schain_name=name,
+        schain_name=schain_name,
         node_id=node_config.id,
         schain_record=schain_record,
         stream_version=stream_version,
@@ -112,24 +121,25 @@ def run_config_pipeline(
         mon = RegularConfigMonitor(config_am, config_checks)
     statsd_client = get_statsd_client()
 
-    statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(name)}')
+    statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(schain_name)}')
     statsd_client.gauge(
-        f'admin.config_pipeline.rotation_id.{no_hyphens(name)}', rotation_data['rotation_id']
+        f'admin.config_pipeline.rotation_id.{no_hyphens(schain_name)}', rotation_data['rotation_id']
     )
-    with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(name)}'):
+    with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(schain_name)}'):
         mon.run()
 
 
 def run_skaled_pipeline(
-    skale: Skale, schain: SchainStructure, node_config: NodeConfig, dutils: DockerUtils
+    schain_name: str, skale: Skale, node_config: NodeConfig, dutils: DockerUtils
 ) -> None:
-    name = schain.name
-    schain_record = SChainRecord.get_by_name(name)
+    schain = skale.schains.get_by_name(schain_name)
+    schain_record = SChainRecord.get_by_name(schain_name)
+
     logger.info('Record: %s', SChainRecord.to_dict(schain_record))
 
     dutils = dutils or DockerUtils()
 
-    rc = get_default_rule_controller(name=name)
+    rc = get_default_rule_controller(name=schain_name)
     skaled_checks = SkaledChecks(
         schain_name=schain.name,
         schain_record=schain_record,
@@ -138,8 +148,8 @@ def run_skaled_pipeline(
         sync_node=SYNC_NODE,
     )
 
-    skaled_status = get_skaled_status(name)
-    ncli_status = get_node_cli_status(name)
+    skaled_status = get_skaled_status(schain_name)
+    ncli_status = get_node_cli_status(schain_name)
 
     skaled_am = SkaledActionManager(
         schain=schain,
@@ -147,13 +157,13 @@ def run_skaled_pipeline(
         checks=skaled_checks,
         node_config=node_config,
         ncli_status=ncli_status,
-        econfig=ExternalConfig(name),
+        econfig=ExternalConfig(schain_name),
         dutils=dutils,
     )
     check_status = skaled_checks.get_all(log=False, expose=True)
     automatic_repair = get_automatic_repair_option()
     api_status = get_api_checks_status(status=check_status, allowed=TG_ALLOWED_CHECKS)
-    notify_checks(name, node_config.all(), api_status)
+    notify_checks(schain_name, node_config.all(), api_status)
 
     logger.info('Skaled check status: %s', check_status)
 
@@ -165,12 +175,12 @@ def run_skaled_pipeline(
         schain_record=schain_record,
         skaled_status=skaled_status,
         ncli_status=ncli_status,
-        automatic_repair=automatic_repair
+        automatic_repair=automatic_repair,
     )
 
     statsd_client = get_statsd_client()
-    statsd_client.incr(f'admin.skaled_pipeline.{mon.__name__}.{no_hyphens(name)}')
-    with statsd_client.timer(f'admin.skaled_pipeline.duration.{no_hyphens(name)}'):
+    statsd_client.incr(f'admin.skaled_pipeline.{mon.__name__}.{no_hyphens(schain_name)}')
+    with statsd_client.timer(f'admin.skaled_pipeline.duration.{no_hyphens(schain_name)}'):
         mon(skaled_am, skaled_checks).run()
 
 
@@ -253,7 +263,127 @@ def start_monitor(
     return True
 
 
-def start_jobs(
+class SkaledTask(ITask):
+    NAME = 'skaled'
+    STUCK_TIMEOUT = 3600  # 1 hours
+
+    def __init__(
+        self,
+        schain_name: str,
+        skale: Skale,
+        node_config: NodeConfig,
+        stream_version: str,
+        dutils: Optional[DockerUtils] = None,
+    ) -> None:
+        self.schain_name = schain_name
+        self.skale = skale
+        self.node_config = node_config
+        self.dutils = dutils
+        self._future = Future()
+        self.stream_version = stream_version
+
+    @property
+    def name(self) -> str:
+        return self.NAME
+
+    @property
+    def stuck_timeout(self) -> int:
+        return self.STUCK_TIMEOUT
+
+    @property
+    def future(self) -> Future:
+        return self._future
+
+    @future.setter
+    def future(self, value: Future) -> None:
+        self._future = value
+
+    @property
+    def start_ts(self) -> int:
+        return self._start_ts
+
+    @start_ts.setter
+    def start_ts(self, value: int) -> None:
+        self._start_ts = value
+
+    @property
+    def needed(self) -> bool:
+        schain_record = upsert_schain_record(self.schain_name)
+        return schain_record.config_version == self.stream_version and (
+            not schain_record.sync_config_run or not schain_record.first_run
+        )
+
+    def create_pipeline(self) -> Callable:
+        return functools.partial(
+            run_skaled_pipeline,
+            schain_name=self.schain_name,
+            skale=self.skale,
+            node_config=self.node_config,
+            dutils=self.dutils,
+        )
+
+
+class ConfigTask(ITask):
+    NAME = 'config'
+    STUCK_TIMEOUT = 60 * 60 * 2
+
+    def __init__(
+        self,
+        schain_name: str,
+        skale: Skale,
+        skale_ima: SkaleIma,
+        node_config: NodeConfig,
+        stream_version: str,
+    ) -> None:
+        self.schain_name = schain_name
+        self.skale = skale
+        self.skale_ima = skale_ima
+        self.node_config = node_config
+        self.stream_version = stream_version
+        self._start_ts = 0
+        self._future = Future()
+
+    @property
+    def name(self) -> str:
+        return self.NAME
+
+    @property
+    def future(self) -> Future:
+        return self._future
+
+    @future.setter
+    def future(self, value: Future) -> None:
+        self._future = value
+
+    @property
+    def stuck_timeout(self) -> int:
+        dkg_timeout = self.skale.constants_holder.get_dkg_timeout()
+        return int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
+
+    @property
+    def start_ts(self) -> int:
+        return self._start_ts
+
+    @start_ts.setter
+    def start_ts(self, value: int) -> None:
+        self._start_ts = value
+
+    @property
+    def needed(self) -> bool:
+        return SYNC_NODE or is_node_part_of_chain(self.skale, self.schain_name, self.node_config.id)
+
+    def create_pipeline(self) -> Callable:
+        return functools.partial(
+            run_config_pipeline,
+            schain_name=self.schain_name,
+            skale=self.skale,
+            skale_ima=self.skale_ima,
+            node_config=self.node_config,
+            stream_version=self.stream_version,
+        )
+
+
+def start_tasks(
     skale: Skale,
     schain: SchainStructure,
     node_config: NodeConfig,
@@ -262,13 +392,11 @@ def start_jobs(
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
     reload(web3_request)
+
     name = schain.name
 
     stream_version = get_skale_node_version()
     schain_record = upsert_schain_record(name)
-
-    dkg_timeout = skale.constants_holder.get_dkg_timeout()
-    stuck_timeout = int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
 
     is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
@@ -289,44 +417,26 @@ def start_jobs(
     statsd_client.incr(f'admin.schain.monitor.{no_hyphens(name)}')
     statsd_client.gauge(f'admin.schain.monitor_last_seen.{no_hyphens(name)}', monitor_last_seen_ts)
 
-    job_builders = []
-    if not leaving_chain:
-        logger.info('Adding config pipelines to the pool')
-        pipelines.append(
-            Pipeline(
-                name='config',
-                job=functools.partial(
-                    run_config_pipeline,
-                    skale=skale,
-                    skale_ima=skale_ima,
-                    schain=schain,
-                    node_config=node_config,
-                    stream_version=stream_version,
-                ),
-            )
-        )
     if schain_record.config_version != stream_version or (
         schain_record.sync_config_run and schain_record.first_run
     ):
+        logger.info('Fetching upstream config requested. Removing the old skaled config')
         ConfigFileManager(name).remove_skaled_config()
-    else:
-        logger.info('Adding skaled pipeline to the pool')
-        pipelines.append(
-            Pipeline(
-                name='skaled',
-                job=functools.partial(
-                    run_skaled_pipeline,
-                    skale=skale,
-                    schain=schain,
-                    node_config=node_config,
-                    dutils=dutils,
-                ),
-            )
-        )
 
-    if len(pipelines) == 0:
-        logger.warning('No pipelines to run')
-        return False
-
-    run_pipelines(pipelines=pipelines, process_report=process_report, stuck_timeout=stuck_timeout)
-    return True
+    tasks = [
+        ConfigTask(
+            schain_name=schain.name,
+            skale=skale,
+            skale_ima=skale_ima,
+            node_config=node_config,
+            stream_version=stream_version,
+        ),
+        SkaledTask(
+            schain_name=schain.name,
+            skale=skale,
+            node_config=node_config,
+            stream_version=stream_version,
+            dutils=dutils
+        ),
+    ]
+    execute_tasks(tasks=tasks, process_report=process_report)
