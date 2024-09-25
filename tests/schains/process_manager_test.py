@@ -39,7 +39,7 @@ def test_run_pm_schain(tmp_dir, skale, skale_ima, node_config, _schain_name):
 
     timeout = 7
 
-    with mock.patch('core.schains.process_manager.start_monitor', target_regular_mock):
+    with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
         run_pm_schain(skale, skale_ima, node_config, schain, timeout=timeout)
     pid = ProcessReport(_schain_name).pid
     assert psutil.Process(pid).is_running()

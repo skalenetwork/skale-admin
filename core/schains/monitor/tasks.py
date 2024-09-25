@@ -83,6 +83,7 @@ def execute_tasks(
                         canceled = task.future.cancel()
                         if not canceled:
                             logger.warning('Stuck detected for job {task.name}')
+                            task.start_ts = -1
                             stucked.append(task.name)
             time.sleep(sleep_interval)
             if len(stucked) > 0:

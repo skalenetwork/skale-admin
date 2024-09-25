@@ -140,7 +140,7 @@ def test_execute_tasks(tmp_dir, _schain_name):
         def __init__(self, index) -> None:
             self._name = 'stucked-task'
             self.index = index
-            self._stuck_timeout = 5
+            self._stuck_timeout = 3
             self._start_ts = 0
             self._future = Future()
 
@@ -162,6 +162,7 @@ def test_execute_tasks(tmp_dir, _schain_name):
 
         @start_ts.setter
         def start_ts(self, value: int) -> None:
+            print(f'Updating start_ts {self} {value}')
             self._start_ts = value
 
         @property
@@ -181,7 +182,7 @@ def test_execute_tasks(tmp_dir, _schain_name):
 
     class NotNeededTask(StuckedTask):
         def __init__(self, index: int) -> None:
-            self.index = index
+            super().__init__(index=index)
             self._name = 'not-needed-task'
 
         @property
@@ -189,22 +190,13 @@ def test_execute_tasks(tmp_dir, _schain_name):
             return False
 
     process_report = ProcessReport(name=_schain_name)
-    target = functools.partial(
-         execute_tasks,
-         tasks=[StuckedTask(0), NotNeededTask(1)],
-         process_report=process_report,
-         shutdown_interval=10,
+    tasks = [StuckedTask(0), NotNeededTask(1)]
+    execute_tasks(
+        tasks=tasks,
+        process_report=process_report,
+        sleep_interval=1
     )
 
-    monitor_process = Process(target=target)
-    terminated = False
-
-    try:
-        monitor_process.start()
-        monitor_process.join(timeout=50)
-    finally:
-        if monitor_process.is_alive():
-            terminated = True
-        terminate_process(monitor_process.ident)
-
-    assert terminated
+    print(tasks[0], tasks[1])
+    assert tasks[0].start_ts == -1
+    assert tasks[1].start_ts == 0
