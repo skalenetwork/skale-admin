@@ -51,11 +51,6 @@ logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'health'
 
 
-class SGXStatus(Enum):
-    CONNECTED = 0
-    NOT_CONNECTED = 1
-
-
 health_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
 
@@ -138,26 +133,27 @@ def ima_log_checks():
 def sgx_info():
     logger.debug(request)
     sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+    status_https = False
+    status_zmq = False
+    version = None
     try:
-        status = sgx.get_server_status()
+        if sgx.get_server_status() == 0:
+            status_https = True
         version = sgx.get_server_version()
     except Exception as e:  # todo: catch specific error - edit sgx.py
         logger.info(e)
-        status = 1
-        version = None
-    sgx_host = urlparse(SGX_SERVER_URL).hostname
-    tn = telnetlib.Telnet()
-    zmq_status = 0
+    sgx_zmq = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER, zmq=True)
     try:
-        tn.open(sgx_host, ZMQ_PORT, timeout=ZMQ_TIMEOUT)
-    except Exception as err:
-        zmq_status = 1
-        logger.error(err)
-    else:
-        tn.close()
+        if sgx_zmq.zmq.get_server_status() == 0:
+            status_zmq = True
+        if version is None:
+            version = sgx_zmq.zmq.get_server_version()
+    except Exception as e:  # todo: catch specific error - edit sgx.py
+        logger.info(e)
+
     res = {
-        'status': zmq_status,
-        'status_name': SGXStatus(status).name,
+        'status_zmq': status_zmq,
+        'status_https': status_https,
         'sgx_server_url': SGX_SERVER_URL,
         'sgx_keyname': g.config.sgx_key_name,
         'sgx_wallet_version': version
