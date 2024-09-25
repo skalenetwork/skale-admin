@@ -132,24 +132,24 @@ def ima_log_checks():
 @health_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx'), methods=['GET'])
 def sgx_info():
     logger.debug(request)
-    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
-    status_https = False
     status_zmq = False
+    status_https = False
     version = None
+    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER, zmq=True)
     try:
-        if sgx.get_server_status() == 0:
-            status_https = True
-        version = sgx.get_server_version()
-    except Exception as e:  # todo: catch specific error - edit sgx.py
-        logger.info(e)
-    sgx_zmq = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER, zmq=True)
-    try:
-        if sgx_zmq.zmq.get_server_status() == 0:
+        if sgx.zmq.get_server_status() == 0:
             status_zmq = True
+        version = sgx.zmq.get_server_version()
+    except Exception as err:
+        logger.error(f'Cannot make SGX ZMQ check {err}')
+    sgx_https = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+    try:
+        if sgx_https.get_server_status() == 0:
+            status_https = True
         if version is None:
-            version = sgx_zmq.zmq.get_server_version()
-    except Exception as e:  # todo: catch specific error - edit sgx.py
-        logger.info(e)
+            version = sgx_https.get_server_version()
+    except Exception as err:
+        logger.error(f'Cannot make SGX HTTPS check {err}')
 
     res = {
         'status_zmq': status_zmq,
