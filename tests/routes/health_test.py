@@ -159,8 +159,8 @@ def test_sgx(skale_bp, skale):
     assert data == {
         'payload': {
             'sgx_server_url': SGX_SERVER_URL,
-            'status': 0,
-            'status_name': 'CONNECTED',
+            'status_zmq': True,
+            'status_https': True,
             'sgx_wallet_version': version,
             'sgx_keyname': TEST_SGX_KEYNAME,
         },
