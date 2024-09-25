@@ -18,8 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import telnetlib
-from enum import Enum
 from http import HTTPStatus
 
 
@@ -27,7 +25,6 @@ from flask import Blueprint, g, request
 from sgx import SgxClient
 
 
-from urllib.parse import urlparse
 from core.node import get_check_report, get_skale_node_version
 from core.node import get_current_nodes
 from core.schains.checks import SChainChecks
@@ -38,7 +35,6 @@ from core.schains.firewall.utils import (
 from core.schains.ima import get_ima_log_checks
 from core.schains.external_config import ExternalState
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
-from tools.configs import ZMQ_PORT, ZMQ_TIMEOUT
 from web.models.schain import SChainRecord
 from web.helper import (
     construct_err_response,
