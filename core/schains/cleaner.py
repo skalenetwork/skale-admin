@@ -188,7 +188,7 @@ def remove_schain(
     logger.warning(msg)
     report = ProcessReport(name=schain_name)
     if report.is_exist():
-        terminate_process(report)
+        terminate_process(report.pid)
 
     delete_bls_keys(skale, schain_name)
     sync_agent_ranges = get_sync_agent_ranges(skale)

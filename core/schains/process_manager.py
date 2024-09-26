@@ -29,9 +29,9 @@ from core.node_config import NodeConfig
 from core.schains.monitor.main import start_tasks
 from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process import (
+    get_schain_process_info,
     is_monitor_process_alive,
-    shutdown_process,
-    ProcessReport,
+    terminate_process
 )
 
 from tools.str_formatters import arguments_list_string
@@ -67,26 +67,21 @@ def run_pm_schain(
         dkg_timeout = skale.constants_holder.get_dkg_timeout()
         allowed_diff = timeout or int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
 
-    report = ProcessReport(schain.name)
-    init_ts = int(time.time())
-    if report.is_exist() and is_monitor_process_alive(report.pid):
-        if init_ts - report.ts > allowed_diff:
-            logger.info('%s Terminating process: PID = %d', log_prefix, report.pid)
-            shutdown_process(report)
+    pid, pts = get_schain_process_info(schain.name)
+    if pid is not None and is_monitor_process_alive(pid):
+        if int(time.time()) - pts > allowed_diff:
+            logger.info('%s Terminating process: PID = %d', log_prefix, pid)
+            terminate_process(pid)
         else:
-            pid = report.pid
             logger.info('%s Process is running: PID = %d', log_prefix, pid)
     else:
-        report.ts = init_ts
         process = Process(
             name=schain.name,
             target=start_tasks,
-            args=(skale, schain, node_config, skale_ima, report),
+            args=(skale, schain, node_config, skale_ima)
         )
         process.start()
-        pid = process.ident
-        report.pid = pid
-        logger.info('%s Process started: PID = %d', log_prefix, pid)
+        logger.info('Process started for %s', schain.name)
 
 
 def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:

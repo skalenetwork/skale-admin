@@ -17,11 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
 import logging
 import os
 import shutil
 import signal
-import json
+from typing import Tuple
 
 import pathlib
 import psutil
@@ -34,6 +35,19 @@ logger = logging.getLogger(__name__)
 
 TIMEOUT_COEFFICIENT = 2.2
 P_KILL_WAIT_TIMEOUT = 60
+
+
+def is_schain_process_report_exist(schain_name: str) -> None:
+    path = pathlib.Path(SCHAINS_DIR_PATH).joinpath(schain_name, ProcessReport.REPORT_FILENAME)
+    return path.is_file()
+
+
+def get_schain_process_info(schain_name: str) -> Tuple[int | None, int | None]:
+    report = ProcessReport(schain_name)
+    if not ProcessReport(schain_name).is_exist():
+        return None, None
+    else:
+        return report.pid, report.ts
 
 
 class ProcessReport:
@@ -96,17 +110,6 @@ class ProcessReport:
 
     def cleanup(self) -> None:
         os.remove(self.path)
-
-
-def shutdown_process(
-    process_report: ProcessReport,
-    kill_timeout: int = P_KILL_WAIT_TIMEOUT,
-    log_msg: str = ''
-) -> None:
-    pid = process_report.pid
-    terminate_process(pid=pid, kill_timeout=kill_timeout, log_msg=log_msg)
-    logger.info(f'Removing process report for {pid}')
-    process_report.cleanup()
 
 
 def terminate_process(

@@ -19,6 +19,8 @@
 
 import functools
 import logging
+import os
+import time
 from typing import Callable, Optional
 from importlib import reload
 
@@ -388,12 +390,15 @@ def start_tasks(
     schain: SchainStructure,
     node_config: NodeConfig,
     skale_ima: SkaleIma,
-    process_report: ProcessReport,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
     reload(web3_request)
 
     name = schain.name
+    init_ts, pid = int(time.time()), os.getpid()
+    logger.info('Initialazing process report %d %d', pid, init_ts)
+    process_report = ProcessReport(name)
+    process_report.update(pid, init_ts)
 
     stream_version = get_skale_node_version()
     schain_record = upsert_schain_record(name)
