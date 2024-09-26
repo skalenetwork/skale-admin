@@ -212,7 +212,7 @@ class ConfigActionManager(BaseActionManager):
     def upstream_config(self) -> bool:
         with self.statsd_client.timer(f'admin.action.upstream_config.{no_hyphens(self.name)}'):
             logger.info(
-                'Creating new upstream_config rotation_id: %s, stream: %s',
+                'Generating new upstream_config rotation_id: %s, stream: %s',
                 self.rotation_data.get('rotation_id'), self.stream_version
             )
             new_config = create_new_upstream_config(

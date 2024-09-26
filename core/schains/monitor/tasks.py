@@ -77,7 +77,7 @@ def execute_tasks(
                     logger.info('Starting task %s at %d', task.name, task.start_ts)
                     pipeline = task.create_pipeline()
                     task.future = executor.submit(pipeline)
-                if task.future.running():
+                elif task.future.running():
                     if int(time.time()) - task.start_ts > task.stuck_timeout:
                         logger.info('Canceling future for %s', task.name)
                         canceled = task.future.cancel()

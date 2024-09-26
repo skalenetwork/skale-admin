@@ -38,7 +38,6 @@ from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.monitor import get_skaled_monitor, RegularConfigMonitor, SyncConfigMonitor
 from core.schains.monitor.action import ConfigActionManager, SkaledActionManager
-from core.schains.monitor.pipeline import Pipeline, run_pipelines
 from core.schains.monitor.tasks import execute_tasks, Future, ITask
 from core.schains.process import ProcessReport
 from core.schains.status import get_node_cli_status, get_skaled_status
@@ -184,85 +183,6 @@ def run_skaled_pipeline(
     statsd_client.incr(f'admin.skaled_pipeline.{mon.__name__}.{no_hyphens(schain_name)}')
     with statsd_client.timer(f'admin.skaled_pipeline.duration.{no_hyphens(schain_name)}'):
         mon(skaled_am, skaled_checks).run()
-
-
-def start_monitor(
-    skale: Skale,
-    schain: SchainStructure,
-    node_config: NodeConfig,
-    skale_ima: SkaleIma,
-    process_report: ProcessReport,
-    dutils: Optional[DockerUtils] = None,
-) -> bool:
-    reload(web3_request)
-    name = schain.name
-
-    stream_version = get_skale_node_version()
-    schain_record = upsert_schain_record(name)
-
-    dkg_timeout = skale.constants_holder.get_dkg_timeout()
-    stuck_timeout = int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
-
-    is_rotation_active = skale.node_rotation.is_rotation_active(name)
-
-    leaving_chain = not SYNC_NODE and not is_node_part_of_chain(skale, name, node_config.id)
-    if leaving_chain and not is_rotation_active:
-        logger.info('Not on node (%d), finishing process', node_config.id)
-        return True
-
-    logger.info(
-        'sync_config_run %s, config_version %s, stream_version %s',
-        schain_record.sync_config_run,
-        schain_record.config_version,
-        stream_version,
-    )
-
-    statsd_client = get_statsd_client()
-    monitor_last_seen_ts = schain_record.monitor_last_seen.timestamp()
-    statsd_client.incr(f'admin.schain.monitor.{no_hyphens(name)}')
-    statsd_client.gauge(f'admin.schain.monitor_last_seen.{no_hyphens(name)}', monitor_last_seen_ts)
-
-    pipelines = []
-    if not leaving_chain:
-        logger.info('Adding config pipelines to the pool')
-        pipelines.append(
-            Pipeline(
-                name='config',
-                job=functools.partial(
-                    run_config_pipeline,
-                    skale=skale,
-                    skale_ima=skale_ima,
-                    schain=schain,
-                    node_config=node_config,
-                    stream_version=stream_version,
-                ),
-            )
-        )
-    if schain_record.config_version != stream_version or (
-        schain_record.sync_config_run and schain_record.first_run
-    ):
-        ConfigFileManager(name).remove_skaled_config()
-    else:
-        logger.info('Adding skaled pipeline to the pool')
-        pipelines.append(
-            Pipeline(
-                name='skaled',
-                job=functools.partial(
-                    run_skaled_pipeline,
-                    skale=skale,
-                    schain=schain,
-                    node_config=node_config,
-                    dutils=dutils,
-                ),
-            )
-        )
-
-    if len(pipelines) == 0:
-        logger.warning('No pipelines to run')
-        return False
-
-    run_pipelines(pipelines=pipelines, process_report=process_report, stuck_timeout=stuck_timeout)
-    return True
 
 
 class SkaledTask(ITask):
