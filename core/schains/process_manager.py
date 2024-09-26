@@ -76,8 +76,7 @@ def run_pm_schain(
         else:
             pid = report.pid
             logger.info('%s Process is running: PID = %d', log_prefix, pid)
-
-    if not report.is_exist() or not is_monitor_process_alive(report.pid):
+    else:
         report.ts = init_ts
         process = Process(
             name=schain.name,
