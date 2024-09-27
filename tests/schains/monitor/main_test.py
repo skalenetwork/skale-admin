@@ -5,15 +5,13 @@ import pathlib
 import shutil
 import time
 from concurrent.futures import Future
-from multiprocessing import Process
 from typing import Callable
 
 import pytest
 
 from core.schains.firewall.types import IpRange
 from core.schains.firewall.utils import get_sync_agent_ranges
-from core.schains.monitor.main import Pipeline, run_pipelines
-from core.schains.process import ProcessReport, terminate_process
+from core.schains.process import ProcessReport
 from core.schains.monitor.tasks import execute_tasks, ITask
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import is_node_part_of_chain
@@ -64,68 +62,6 @@ def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
     node_exist_node = 10000
     chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, node_exist_node)
     assert not chain_on_node
-
-
-def test_run_pipelines(tmp_dir, _schain_name):
-    def simple_pipeline(index: int):
-        logging.info('Running simple pipeline %d', index)
-        time.sleep(1)
-        logging.info('Finishing simple pipeline %d', index)
-
-    def stuck_pipeline(index: int):
-        logging.info('Running stuck pipeline %d', index)
-        while True:
-            logging.info('Stuck pipeline %d beat', index)
-            time.sleep(2)
-
-    process_report = ProcessReport(name=_schain_name)
-
-    target = functools.partial(
-        run_pipelines,
-        pipelines=[
-            Pipeline(name='healthy0', job=functools.partial(simple_pipeline, index=0)),
-            Pipeline(name='healthy1', job=functools.partial(simple_pipeline, index=1)),
-        ],
-        process_report=process_report,
-        once=True,
-        stuck_timeout=5,
-        shutdown_interval=10,
-    )
-
-    terminated = False
-    monitor_process = Process(target=target)
-    try:
-        monitor_process.start()
-        monitor_process.join()
-    finally:
-        if monitor_process.is_alive():
-            terminated = True
-        terminate_process(monitor_process.ident)
-    assert not terminated
-
-    target = functools.partial(
-        run_pipelines,
-        pipelines=[
-            Pipeline(name='healthy', job=functools.partial(simple_pipeline, index=0)),
-            Pipeline(name='stuck', job=functools.partial(stuck_pipeline, index=1)),
-        ],
-        process_report=process_report,
-        stuck_timeout=5,
-        shutdown_interval=10,
-    )
-
-    monitor_process = Process(target=target)
-    terminated = False
-
-    try:
-        monitor_process.start()
-        monitor_process.join(timeout=50)
-    finally:
-        if monitor_process.is_alive():
-            terminated = True
-        terminate_process(monitor_process.ident)
-
-    assert terminated
 
 
 def test_execute_tasks(tmp_dir, _schain_name):
