@@ -10,8 +10,7 @@ from core.schains.process import ProcessReport
 logger = logging.getLogger(__name__)
 
 
-STUCK_TIMEOUT = 60 * 60 * 2
-SLEEP_INTERVAL = 60 * 10
+SLEEP_INTERVAL = 10
 
 
 class Pipeline(NamedTuple):
@@ -68,6 +67,7 @@ def execute_tasks(
     process_report: ProcessReport,
     sleep_interval: int = SLEEP_INTERVAL,
 ) -> None:
+    logger.info('Running tasks %s', tasks)
     with ThreadPoolExecutor(max_workers=len(tasks), thread_name_prefix='mon') as executor:
         stucked = []
         while True:
@@ -82,7 +82,7 @@ def execute_tasks(
                         logger.info('Canceling future for %s', task.name)
                         canceled = task.future.cancel()
                         if not canceled:
-                            logger.warning('Stuck detected for job {task.name}')
+                            logger.warning('Stuck detected for job %s', task.name)
                             task.start_ts = -1
                             stucked.append(task.name)
             time.sleep(sleep_interval)

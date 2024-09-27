@@ -187,7 +187,7 @@ def run_skaled_pipeline(
 
 class SkaledTask(ITask):
     NAME = 'skaled'
-    STUCK_TIMEOUT = 3600  # 1 hours
+    STUCK_TIMEOUT = 3600  # 1 hour
 
     def __init__(
         self,

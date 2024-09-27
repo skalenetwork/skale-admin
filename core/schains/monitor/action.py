@@ -229,6 +229,7 @@ class ConfigActionManager(BaseActionManager):
             result = False
             if not self.cfm.upstream_config_exists() or \
                     new_config != self.cfm.latest_upstream_config:
+                logger.info('Saving new config')
                 rotation_id = self.rotation_data['rotation_id']
                 logger.info(
                     'Saving new upstream config rotation_id: %d, ips: %s',
