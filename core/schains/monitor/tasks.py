@@ -2,7 +2,7 @@ import abc
 import logging
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Callable, NamedTuple
+from typing import Callable
 
 from core.schains.process import ProcessReport
 
@@ -11,11 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 SLEEP_INTERVAL = 10
-
-
-class Pipeline(NamedTuple):
-    name: str
-    job: Callable
 
 
 class ITask(metaclass=abc.ABCMeta):
@@ -58,17 +53,13 @@ class ITask(metaclass=abc.ABCMeta):
         pass
 
 
-class StuckMonitorError(Exception):
-    pass
-
-
 def execute_tasks(
     tasks: list[ITask],
     process_report: ProcessReport,
     sleep_interval: int = SLEEP_INTERVAL,
 ) -> None:
     logger.info('Running tasks %s', tasks)
-    with ThreadPoolExecutor(max_workers=len(tasks), thread_name_prefix='mon') as executor:
+    with ThreadPoolExecutor(max_workers=len(tasks), thread_name_prefix='T') as executor:
         stucked = []
         while True:
             for index, task in enumerate(tasks):

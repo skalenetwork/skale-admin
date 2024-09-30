@@ -109,12 +109,11 @@ sChains on node: {schains_on_node}')
 
     for schain_name in schains_on_node:
         if schain_name not in schain_names_on_contracts:
-            logger.warning(f'sChain {schain_name} was found on node, but not on contracts: \
-{schain_names_on_contracts}, going to remove it!')
+            logger.warning('%s was found on node, but not on contracts: %s, trying to cleanup', schain_name, schain_names_on_contracts)
             try:
                 ensure_schain_removed(skale, schain_name, node_config.id, dutils=dutils)
             except Exception:
-                logger.exception(f'sChain removal {schain_name} failed')
+                logger.exception('%s removal failed', schain_name)
     logger.info('Cleanup procedure finished')
 
 
