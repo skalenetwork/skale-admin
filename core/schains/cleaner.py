@@ -109,7 +109,11 @@ sChains on node: {schains_on_node}')
 
     for schain_name in schains_on_node:
         if schain_name not in schain_names_on_contracts:
-            logger.warning('%s was found on node, but not on contracts: %s, trying to cleanup', schain_name, schain_names_on_contracts)
+            logger.warning(
+                '%s was found on node, but not on contracts: %s, trying to cleanup',
+                schain_name,
+                schain_names_on_contracts,
+            )
             try:
                 ensure_schain_removed(skale, schain_name, node_config.id, dutils=dutils)
             except Exception:
@@ -240,9 +244,7 @@ def cleanup_schain(
     )
     check_status = checks.get_all()
     if check_status['skaled_container'] or is_exited(
-        schain_name,
-        container_type=ContainerType.schain,
-        dutils=dutils
+        schain_name, container_type=ContainerType.schain, dutils=dutils
     ):
         remove_schain_container(schain_name, dutils=dutils)
     if check_status['volume']:
@@ -259,9 +261,7 @@ def cleanup_schain(
         rc.cleanup()
     if estate is not None and estate.ima_linked:
         if check_status.get('ima_container', False) or is_exited(
-            schain_name,
-            container_type=ContainerType.ima,
-            dutils=dutils
+            schain_name, container_type=ContainerType.ima, dutils=dutils
         ):
             remove_ima_container(schain_name, dutils=dutils)
     if check_status['config_dir']:
