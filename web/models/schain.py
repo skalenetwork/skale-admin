@@ -31,7 +31,7 @@ from web.models.base import BaseModel
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG_VERSION = '0.0.0'
-RETRY_ATTEMPTS = 10
+RETRY_ATTEMPTS = 5
 TIMEOUTS = [2 ** p for p in range(RETRY_ATTEMPTS)]
 
 
@@ -43,7 +43,7 @@ def operational_error_retry(func):
             try:
                 result = func(cls, *args, **kwargs)
             except OperationalError as e:
-                logger.exception('DB operational error')
+                logger.error('DB operational error. Sleeping %d', timeout, exc_info=e)
                 error = e
                 time.sleep(timeout)
             else:

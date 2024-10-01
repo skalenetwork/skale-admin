@@ -202,6 +202,7 @@ class SkaledTask(ITask):
         self.node_config = node_config
         self.dutils = dutils
         self._future = Future()
+        self._start_ts = 0
         self.stream_version = stream_version
 
     @property

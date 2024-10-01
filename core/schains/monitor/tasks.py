@@ -63,7 +63,7 @@ def execute_tasks(
         stucked = []
         while True:
             for index, task in enumerate(tasks):
-                if not task.future.running() and task.needed:
+                if not task.future.running() and task.needed and len(stucked) == 0:
                     task.start_ts = int(time.time())
                     logger.info('Starting task %s at %d', task.name, task.start_ts)
                     pipeline = task.create_pipeline()

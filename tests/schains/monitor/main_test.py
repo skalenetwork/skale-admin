@@ -6,15 +6,18 @@ import shutil
 import time
 from concurrent.futures import Future
 from typing import Callable
+from unittest import mock
 
 import pytest
 
 from core.schains.firewall.types import IpRange
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.process import ProcessReport
+from core.schains.monitor.main import ConfigTask, SkaledTask
 from core.schains.monitor.tasks import execute_tasks, ITask
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import is_node_part_of_chain
+from web.models.schain import upsert_schain_record
 
 
 @pytest.fixture
@@ -62,6 +65,57 @@ def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
     node_exist_node = 10000
     chain_on_node = is_node_part_of_chain(skale, schain_on_contracts, node_exist_node)
     assert not chain_on_node
+
+
+def test_config_task(skale, skale_ima, schain_db, schain_on_contracts, node_config):
+    stream_version = '2.3.0'
+    config_task = ConfigTask(
+        schain_name=schain_on_contracts,
+        skale=skale,
+        skale_ima=skale_ima,
+        node_config=node_config,
+        stream_version=stream_version,
+    )
+    assert config_task.needed
+    skale_ima.linker.has_schain = mock.Mock(return_value=True)
+
+    def get_monitor_mock(*args, **kwargs):
+        result = mock.MagicMock()
+        result.__name__ = 'TestConfigMonitor'
+        return result
+
+    with mock.patch('core.schains.monitor.main.RegularConfigMonitor', get_monitor_mock):
+        pipeline = config_task.create_pipeline()
+        pipeline()
+
+
+def test_skaled_task(skale, schain_db, schain_on_contracts, node_config, dutils):
+    record = upsert_schain_record(schain_on_contracts)
+    stream_version = '2.3.0'
+    skaled_task = SkaledTask(
+        schain_name=schain_on_contracts,
+        skale=skale,
+        node_config=node_config,
+        stream_version=stream_version,
+        dutils=dutils,
+    )
+    assert not skaled_task.needed
+    assert skaled_task.name == 'skaled'
+    assert skaled_task.start_ts == 0
+    assert skaled_task.stuck_timeout == 3600
+
+    record.set_config_version(stream_version)
+    assert skaled_task.needed
+
+    def get_monitor_mock(*args, **kwargs):
+        result = mock.MagicMock()
+        result.__name__ = 'TestSkaledMonitor'
+        return result
+
+    with mock.patch('core.schains.monitor.main.get_skaled_monitor', get_monitor_mock):
+        with mock.patch('core.schains.monitor.main.notify_checks'):
+            pipeline = skaled_task.create_pipeline()
+            pipeline()
 
 
 def test_execute_tasks(tmp_dir, _schain_name):
@@ -127,11 +181,7 @@ def test_execute_tasks(tmp_dir, _schain_name):
 
     process_report = ProcessReport(name=_schain_name)
     tasks = [StuckedTask(0), NotNeededTask(1)]
-    execute_tasks(
-        tasks=tasks,
-        process_report=process_report,
-        sleep_interval=1
-    )
+    execute_tasks(tasks=tasks, process_report=process_report, sleep_interval=1)
 
     print(tasks[0], tasks[1])
     assert tasks[0].start_ts == -1
