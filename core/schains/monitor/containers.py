@@ -20,6 +20,7 @@
 import logging
 import time
 from typing import Optional
+from skale.contracts.manager.schains import SchainStructure
 
 from core.schains.volume import is_volume_exists
 from core.schains.runner import (
@@ -35,6 +36,7 @@ from core.schains.runner import (
 )
 from core.ima.schain import copy_schain_ima_abi
 from core.schains.ima import get_ima_time_frame, ImaData
+from core.schains.ssl import update_ssl_change_date
 
 from tools.configs import SYNC_NODE
 from tools.configs.containers import (
@@ -49,62 +51,65 @@ logger = logging.getLogger(__name__)
 
 
 def monitor_schain_container(
-    schain,
+    schain: SchainStructure,
     schain_record,
     skaled_status,
     download_snapshot=False,
     start_ts=None,
+    snapshot_from: Optional[str] = None,
     abort_on_exit: bool = True,
     dutils: Optional[DockerUtils] = None,
     sync_node: bool = False,
     historic_state: bool = False
 ) -> None:
     dutils = dutils or DockerUtils()
-    schain_name = schain['name']
-    logger.info(f'Monitoring container for sChain {schain_name}')
+    schain.name = schain.name
+    logger.info(f'Monitoring container for sChain {schain.name}')
 
-    if not is_volume_exists(schain_name, sync_node=sync_node, dutils=dutils):
-        logger.error(f'Data volume for sChain {schain_name} does not exist')
+    if not is_volume_exists(schain.name, sync_node=sync_node, dutils=dutils):
+        logger.error(f'Data volume for sChain {schain.name} does not exist')
         return
 
     if skaled_status.exit_time_reached and abort_on_exit:
         logger.info(
-            f'{schain_name} - Skipping container monitor: exit time reached')
+            f'{schain.name} - Skipping container monitor: exit time reached')
         skaled_status.log()
         schain_record.reset_failed_counters()
         return
 
-    if not is_container_exists(schain_name, dutils=dutils):
-        logger.info(f'SChain {schain_name}: container doesn\'t exits')
+    if not is_container_exists(schain.name, dutils=dutils):
+        logger.info(f'SChain {schain.name}: container doesn\'t exits')
         run_schain_container(
             schain=schain,
             download_snapshot=download_snapshot,
             start_ts=start_ts,
             dutils=dutils,
-            snapshot_from=schain_record.snapshot_from,
+            snapshot_from=snapshot_from,
             sync_node=sync_node,
             historic_state=historic_state,
         )
+        update_ssl_change_date(schain_record)
         schain_record.reset_failed_counters()
         return
 
     if skaled_status.clear_data_dir and skaled_status.start_from_snapshot:
         logger.info(
-            f'{schain_name} - Skipping container monitor: sChain should be repaired')
+            f'{schain.name} - Skipping container monitor: sChain should be repaired')
         skaled_status.log()
         schain_record.reset_failed_counters()
         return
 
-    if is_schain_container_failed(schain_name, dutils=dutils):
+    if is_schain_container_failed(schain.name, dutils=dutils):
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
-            logger.info('sChain %s: restarting container', schain_name)
+            logger.info('sChain %s: restarting container', schain.name)
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
+            update_ssl_change_date(schain_record)
             schain_record.set_restart_count(schain_record.restart_count + 1)
             schain_record.set_failed_rpc_count(0)
         else:
             logger.warning(
                 'SChain %s: max restart count exceeded - %d',
-                schain_name,
+                schain.name,
                 MAX_SCHAIN_RESTART_COUNT
             )
     else:
@@ -117,42 +122,41 @@ def monitor_ima_container(
     migration_ts: int = 0,
     dutils: DockerUtils = None
 ) -> None:
-    schain_name = schain["name"]
 
     if SYNC_NODE:
         return
 
     if not ima_data.linked:
-        logger.info(f'{schain_name} - not registered in IMA, skipping')
+        logger.info(f'{schain.name} - not registered in IMA, skipping')
         return
 
-    copy_schain_ima_abi(schain_name)
+    copy_schain_ima_abi(schain.name)
 
     container_exists = is_container_exists(
-        schain_name, container_type=IMA_CONTAINER, dutils=dutils)
+        schain.name, container_type=IMA_CONTAINER, dutils=dutils)
 
     if time.time() > migration_ts:
         logger.debug('IMA migration time passed')
 
         image = get_image_name(image_type=IMA_CONTAINER, new=True)
-        time_frame = get_ima_time_frame(schain_name, after=True)
+        time_frame = get_ima_time_frame(schain.name, after=True)
         if container_exists:
-            container_image = get_container_image(schain_name, IMA_CONTAINER, dutils)
-            container_time_frame = get_ima_container_time_frame(schain_name, dutils)
+            container_image = get_container_image(schain.name, IMA_CONTAINER, dutils)
+            container_time_frame = get_ima_container_time_frame(schain.name, dutils)
 
             if image != container_image or time_frame != container_time_frame:
                 logger.info('Removing old container as part of IMA migration')
-                remove_container(schain_name, IMA_CONTAINER, dutils)
+                remove_container(schain.name, IMA_CONTAINER, dutils)
                 container_exists = False
     else:
-        time_frame = get_ima_time_frame(schain_name, after=False)
+        time_frame = get_ima_time_frame(schain.name, after=False)
         image = get_image_name(image_type=IMA_CONTAINER, new=False)
     logger.debug('IMA time frame %d', time_frame)
 
     if not container_exists:
         logger.info(
             '%s No IMA container, creating, image %s, time frame %d',
-            schain_name, image, time_frame
+            schain.name, image, time_frame
         )
         run_ima_container(
             schain,
@@ -163,4 +167,4 @@ def monitor_ima_container(
         )
     else:
         logger.debug(
-            'sChain %s: IMA container exists, but not running, skipping', schain_name)
+            'sChain %s: IMA container exists, but not running, skipping', schain.name)

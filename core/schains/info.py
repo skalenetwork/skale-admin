@@ -47,8 +47,8 @@ def get_schain_info_by_name(skale: Skale, schain_name: str) -> SchainData:
     return SchainData(
         schain_name,
         sid,
-        contracts_info['mainnetOwner'],
-        contracts_info['partOfNode'],
+        contracts_info.mainnet_owner,
+        contracts_info.part_of_node,
         record.dkg_status,
         record.is_deleted,
         record.first_run,

@@ -11,6 +11,8 @@ from core.schains.task import Task
 from tools.helper import is_node_part_of_chain
 from web.models.schain import upsert_schain_record
 
+from tests.utils import get_schain_struct
+
 
 @pytest.fixture
 def sync_ranges(skale):
@@ -62,7 +64,7 @@ def test_run_monitor_for_schain(
             skale,
             skale_ima,
             node_config,
-            schain={'name': schain_db, 'partOfNode': 0, 'generation': 0},
+            get_schain_struct(schain_name=schain_db),
             dutils=dutils,
             once=True
         )
@@ -86,7 +88,7 @@ def test_run_monitor_for_schain_left(
             skale,
             skale_ima,
             node_config,
-            schain={'name': schain_not_exists, 'partOfNode': 0, 'generation': 0},
+            get_schain_struct(schain_name=schain_db),
             dutils=dutils,
             once=True
         )

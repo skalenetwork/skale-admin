@@ -21,6 +21,7 @@ import logging
 from dataclasses import dataclass
 
 from skale import Skale
+from skale.contracts.manager.schains import SchainStructure
 from skale.schain_config.generator import get_schain_nodes_with_schains
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.schain_config.rotation_history import get_previous_schain_groups
@@ -88,26 +89,26 @@ class SChainConfig:
         }
 
 
-def get_on_chain_owner(schain: dict, generation: int, is_owner_contract: bool) -> str:
+def get_on_chain_owner(schain: SchainStructure, generation: int, is_owner_contract: bool) -> str:
     """
     Returns on-chain owner depending on sChain generation.
     """
     if not is_owner_contract:
-        return schain['mainnetOwner']
+        return schain.mainnet_owner
     if generation >= Gen.ONE:
         return MARIONETTE_ADDRESS
     if generation == Gen.ZERO:
-        return schain['mainnetOwner']
+        return schain.mainnet_owner
 
 
-def get_on_chain_etherbase(schain: dict, generation: int) -> str:
+def get_on_chain_etherbase(schain: SchainStructure, generation: int) -> str:
     """
     Returns on-chain owner depending on sChain generation.
     """
     if generation >= Gen.ONE:
         return ETHERBASE_ADDRESS
     if generation == Gen.ZERO:
-        return schain['mainnetOwner']
+        return schain.mainnet_owner
 
 
 def get_schain_id_for_chain(schain_name: str, generation: int) -> int:
@@ -120,17 +121,17 @@ def get_schain_id_for_chain(schain_name: str, generation: int) -> int:
         return 1
 
 
-def get_schain_originator(schain: dict):
+def get_schain_originator(schain: SchainStructure) -> str:
     """
     Returns address that will be used as an sChain originator
     """
-    if is_zero_address(schain['originator']):
-        return schain['mainnetOwner']
-    return schain['originator']
+    if is_zero_address(schain.originator):
+        return schain.mainnet_owner
+    return schain.originator
 
 
 def generate_schain_config(
-    schain: dict, node_id: int, node: dict, ecdsa_key_name: str,
+    schain: SchainStructure, node_id: int, node: dict, ecdsa_key_name: str,
     rotation_id: int, schain_nodes_with_schains: list,
     node_groups: list, generation: int, is_owner_contract: bool,
     skale_manager_opts: SkaleManagerOpts, schain_base_port: int, common_bls_public_keys: list[str],
@@ -139,7 +140,7 @@ def generate_schain_config(
 ) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
-        f'Going to generate sChain config for {schain["name"]}, '
+        f'Going to generate sChain config for {schain.name}, '
         f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}'
     )
     if sync_node:
@@ -149,15 +150,15 @@ def generate_schain_config(
 
     on_chain_etherbase = get_on_chain_etherbase(schain, generation)
     on_chain_owner = get_on_chain_owner(schain, generation, is_owner_contract)
-    mainnet_owner = schain['mainnetOwner']
-    schain_type = get_schain_type(schain['partOfNode'])
+    mainnet_owner = schain.mainnet_owner
+    schain_type = get_schain_type(schain.part_of_node)
 
-    schain_id = get_schain_id_for_chain(schain['name'], generation)
+    schain_id = get_schain_id_for_chain(schain.name, generation)
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
     dynamic_params = {
-        'chainID': get_chain_id(schain['name'])
+        'chainID': get_chain_id(schain.name)
     }
 
     legacy_groups = static_groups(schain['name'])
@@ -188,13 +189,14 @@ def generate_schain_config(
     )
 
     accounts = {}
-    if is_static_accounts(schain['name']):
-        logger.info(f'Found static account for {schain["name"]}, going to use in config')
-        accounts = static_accounts(schain['name'])['accounts']
+    if is_static_accounts(schain.name):
+        logger.info(f'Found static account for {schain.name}, going to use in config')
+        accounts = static_accounts(schain.name)['accounts']
     else:
         logger.info('Static accounts not found, generating regular accounts section')
         predeployed_accounts = generate_predeployed_accounts(
-            schain_name=schain['name'],
+            schain_name=schain.name,
+            allocation_type=schain.options.allocation_type,
             schain_type=schain_type,
             schain_nodes=schain_nodes_with_schains,
             on_chain_owner=on_chain_owner,
@@ -241,7 +243,7 @@ def generate_schain_config_with_skale(
     node = skale.nodes.get(node_config.id)
     node_groups = get_previous_schain_groups(skale, schain_name)
 
-    is_owner_contract = is_address_contract(skale.web3, schain['mainnetOwner'])
+    is_owner_contract = is_address_contract(skale.web3, schain.mainnet_owner)
 
     skale_manager_opts = init_skale_manager_opts(skale)
     group_index = skale.schains.name_to_id(schain_name)
@@ -252,7 +254,7 @@ def generate_schain_config_with_skale(
     else:
         schain_base_port = get_schain_base_port_on_node(
             schains_on_node,
-            schain['name'],
+            schain.name,
             node['port']
         )
 

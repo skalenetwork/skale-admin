@@ -54,6 +54,8 @@ class SChainRecord(BaseModel):
 
     ssl_change_date = DateTimeField(default=datetime.now())
 
+    repair_date = DateTimeField(default=datetime.now())
+
     @classmethod
     def add(cls, name):
         try:
@@ -98,7 +100,13 @@ class SChainRecord(BaseModel):
             'monitor_last_seen': record.monitor_last_seen.timestamp(),
             'monitor_id': record.monitor_id,
             'config_version': record.config_version,
-            'ssl_change_date': record.ssl_change_date.timestamp()
+            'ssl_change_date': record.ssl_change_date.timestamp(),
+            'repair_mode': record.repair_mode,
+            'backup_run': record.backup_run,
+            'sync_config_run': record.sync_config_run,
+            'snapshot_from': record.snapshot_from,
+            'restart_count': record.restart_count,
+            'failed_rpc_count': record.failed_rpc_count
         }
 
     def upload(self, *args, **kwargs) -> None:
@@ -205,6 +213,11 @@ class SChainRecord(BaseModel):
             DKGStatus.FAILED
         ]
 
+    def set_repair_date(self, value: datetime) -> None:
+        logger.info(f'Changing repair_date for {self.name} to {value}')
+        self.repair_date = value
+        self.save()
+
 
 def create_tables():
     logger.info('Creating schainrecord table...')
@@ -296,23 +309,3 @@ def get_schains_names(include_deleted=False):
 def get_schains_statuses(include_deleted=False):
     return [SChainRecord.to_dict(r)
             for r in SChainRecord.get_all_records(include_deleted)]
-
-
-def toggle_schain_repair_mode(name, snapshot_from: str = ''):
-    logger.info(f'Toggling repair mode for schain {name}')
-    query = SChainRecord.update(
-        repair_mode=True,
-        snapshot_from=snapshot_from
-    ).where(SChainRecord.name == name)
-    count = query.execute()
-    return count > 0
-
-
-def switch_off_repair_mode(name):
-    logger.info(f'Disabling repair mode for schain {name}')
-    query = SChainRecord.update(
-        repair_mode=False,
-        snapshot_from=''
-    ).where(SChainRecord.name == name)
-    count = query.execute()
-    return count > 0

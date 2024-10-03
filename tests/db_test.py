@@ -7,8 +7,6 @@ from web.models.schain import (
     get_schains_statuses,
     mark_schain_deleted,
     set_schains_first_run,
-    switch_off_repair_mode,
-    toggle_schain_repair_mode,
     SChainRecord,
     upsert_schain_record
 )
@@ -65,44 +63,6 @@ def test_schains_first_run(db, upsert_db):
     set_schains_first_run()
     assert SChainRecord.select().where(
         SChainRecord.first_run == True).count() == RECORDS_NUMBER  # noqa: E712
-
-
-def test_toggle_repair_mode(db, upsert_db):
-    result = toggle_schain_repair_mode('schain-0')
-    assert result
-    assert SChainRecord.select().where(
-        SChainRecord.repair_mode == True).count() == 1  # noqa: E712
-    cursor = SChainRecord.select().where(
-        SChainRecord.repair_mode == True).execute()  # noqa: E712
-    records = list(cursor)
-    assert len(records) == 1
-    assert records[0].name == 'schain-0'
-    assert records[0].snapshot_from == ''
-
-    result = toggle_schain_repair_mode('schain-0', '1.1.1.1')
-    cursor = SChainRecord.select().where(
-        SChainRecord.repair_mode == True).execute()  # noqa: E712
-    records = list(cursor)
-    assert len(records) == 1
-    assert records[0].name == 'schain-0'
-    assert records[0].snapshot_from == '1.1.1.1'
-
-    switch_off_repair_mode('schain-0')
-    assert SChainRecord.select().where(
-        SChainRecord.repair_mode == True).count() == 0  # noqa: E712
-    cursor = SChainRecord.select().where(
-        SChainRecord.name == 'schain-0').execute()  # noqa: E712
-    records = list(cursor)
-    assert records[0].name == 'schain-0'
-    assert not records[0].repair_mode
-    assert records[0].snapshot_from == ''
-
-
-def test_toggle_repair_mode_schain_not_exists(db, upsert_db):
-    result = toggle_schain_repair_mode('undefined-schain')
-    assert not result
-    assert SChainRecord.select().where(
-        SChainRecord.repair_mode == True).count() == 0  # noqa: E712
 
 
 def test_get_schains_names(db, upsert_db):

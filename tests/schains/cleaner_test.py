@@ -13,6 +13,7 @@ from skale.skale_manager import spawn_skale_manager_lib
 from core.schains.cleaner import (
     cleanup_schain,
     delete_bls_keys,
+    remove_schain,
     monitor,
     get_schains_on_node,
     remove_config_dir,
@@ -27,7 +28,7 @@ from web.models.schain import (
     SChainRecord, mark_schain_deleted, upsert_schain_record)
 
 
-from tests.utils import (get_schain_contracts_data,
+from tests.utils import (get_schain_struct,
                          run_simple_schain_container,
                          run_simple_ima_container)
 
@@ -123,7 +124,7 @@ def test_remove_schain_volume(dutils, schain_config):
 def schain_container(schain_config, ssl_folder, dutils):
     """ Creates and removes schain container """
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_contracts_data(schain_name)
+    schain_data = get_schain_struct(schain_name)
     try:
         run_simple_schain_container(schain_data, dutils)
         yield schain_name
@@ -146,7 +147,7 @@ def test_remove_schain_container(
     cert_key_pair
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_contracts_data(schain_name)
+    schain_data = get_schain_struct(schain_name)
     run_simple_schain_container(schain_data, dutils)
     container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert is_container_running(dutils, container_name)
@@ -157,7 +158,7 @@ def test_remove_schain_container(
 @pytest.mark.skip('Docker API GA issues need to be resolved')
 def test_remove_ima_container(dutils, schain_container):
     schain_name = schain_container
-    schain_data = get_schain_contracts_data(schain_name)
+    schain_data = get_schain_struct(schain_name)
     with mock.patch('core.schains.runner.get_ima_env', return_value=ImaEnv(
         schain_dir='/'
     )):
@@ -238,6 +239,17 @@ def test_get_schains_on_node(schain_dirs_for_monitor,
     ]).issubset(set(result))
 
 
+def test_remove_schain(skale, schain_db, node_config, dutils):
+    schain_name = schain_db
+    remove_schain(skale, node_config.id, schain_name, msg='Test remove_schain', dutils=dutils)
+    container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
+    assert not is_container_running(dutils, container_name)
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
+    assert not os.path.isdir(schain_dir_path)
+    record = SChainRecord.get_by_name(schain_name)
+    assert record.is_deleted is True
+
+
 def test_cleanup_schain(
     schain_db,
     node_config,
@@ -255,6 +267,7 @@ def test_cleanup_schain(
         schain_name,
         current_nodes=current_nodes,
         sync_agent_ranges=[],
+        last_dkg_successful=True,
         rotation_id=0,
         estate=estate,
         dutils=dutils

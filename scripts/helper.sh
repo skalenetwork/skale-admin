@@ -15,6 +15,7 @@ export_test_env () {
     export FLASK_APP_HOST=0.0.0.0
     export FLASK_APP_PORT=3008
     export FLASK_DEBUG_MODE=True
+    export REDIS_URI="redis://@127.0.0.1:6381"
     export TG_CHAT_ID=-1231232
     export TG_API_KEY=123
     export ENV_TYPE=devnet
@@ -23,6 +24,7 @@ export_test_env () {
     export SCHAIN_STOP_TIMEOUT=1
     export ABI_FILEPATH=${ABI_FILEPATH="$PWD/helper-scripts/contracts_data/manager.json"}
     export IMA_ABI_FILEPATH=${IMA_ABI_FILEPATH}
+    export DEFAULT_GAS_PRICE_WEI=1000000000
 
     cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info
 }

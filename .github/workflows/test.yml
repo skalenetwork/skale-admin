@@ -8,9 +8,10 @@ env:
   SGX_WALLET_TAG: "1.83.0-beta.5"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   PYTHON_VERSION: 3.11
+
 jobs:
   test_core:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
       ENDPOINT: http://127.0.0.1:8545
@@ -20,34 +21,61 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v1
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+
       - name: Install python dependencies
-        run: bash ./scripts/install_python_dependencies.sh
+        run: |
+          source ../.venv/bin/activate
+          uv pip install -r requirements.txt --prerelease=allow
+          uv pip install -r requirements-dev.txt
+
       - name: Lint with flake8
-        run: flake8 .
+        run: uv run flake8 .
+
       - name: Launch anvil node
         run: |
           docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil && sleep 5 && docker logs anvil --tail 1000
+
       - name: Deploy manager & ima contracts
         run: |
           bash ./helper-scripts/deploy_test_ima.sh
-          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
+
       - name: Show stats before tests
         if: always()
         run: | 
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
+
       - name: Run core tests
         run: |
+          source ../.venv/bin/activate
           bash ./scripts/run_core_tests.sh
-      - name: Show stats after tests
+
+      - name: Cleanup docker artifacts
+        run: |
+          docker rm -f $(docker ps -aq)
+
+      - name: Show stats after core tests
+        if: always()
+        run: |
+          lsblk -f
+          free -h
+
+      - name: Run firewall tests
+        run: |
+          bash ./scripts/run_firewall_test.sh
+
+      - name: Show stats after firewall tests
         if: always()
         run: | 
-          sudo lsblk -f
-          sudo free -h
+          lsblk -f
+          free -h
+
+      - name: Cleanup docker artifacts
+        if: always()
+        run: |
+          docker rm -f $(docker ps -aq)
+
       - name: Run codecov
         run: |
+          source ../.venv/bin/activate
           codecov -t $CODECOV_TOKEN
