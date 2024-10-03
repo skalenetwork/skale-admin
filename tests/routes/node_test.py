@@ -40,22 +40,24 @@ def skale_bp(skale, dutils):
         yield app.test_client()
 
 
-@pytest.fixture
-def node_contracts(skale):
-    ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name,
-                              domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
-    node_id = skale.nodes.node_name_to_index(name)
-    yield node_id
-    skale.nodes.init_exit(node_id)
-    skale.manager.node_exit(node_id, wait_for=True)
+# @pytest.fixture
+# def node_contracts(skale):
+#     ip, public_ip, port, name = generate_random_node_data()
+#     skale.manager.create_node(ip, port, name,
+#                               domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
+#     node_id = skale.nodes.node_name_to_index(name)
+#     try:
+#         yield node_id
+#     finally:
+#         skale.nodes.init_exit(node_id)
+#         skale.manager.node_exit(node_id, wait_for=True)
 
 
-@pytest.fixture
-def node_config(node_contracts):
-    config = NodeConfig()
-    config.id = node_contracts
-    return config
+# @pytest.fixture
+# def node_config(node_contracts):
+#     config = NodeConfig()
+#     config.id = node_contracts
+#     return config
 
 
 def test_node_info(skale_bp, skale, node_config):
@@ -272,3 +274,38 @@ def test_exit_maintenance(skale_bp, node_config_in_maintenance):
     )
     assert data['status'] == 'error'
     data['payload'] == {}
+
+
+@pytest.fixture
+def skale_bp_node(skale, node_config, schain_on_contracts, schain_db, dutils):
+    app = Flask(__name__)
+    app.register_blueprint(node_bp)
+
+    def handler(sender, **kwargs):
+        g.docker_utils = dutils
+        g.wallet = skale.wallet
+        g.config = node_config
+
+    with appcontext_pushed.connected_to(handler, app):
+        yield app.test_client()
+
+
+def test_can_update(skale, node_config, skale_bp_node):
+    data = get_bp_data(
+        skale_bp_node,
+        get_api_url(BLUEPRINT_NAME, 'can-update'),
+    )
+    assert data['status'] == 'ok'
+    data['payload'] == {'can-update': True}
+
+    print(skale.schains.get_schains_for_node(node_config.id))
+    skale.nodes.init_exit(node_config.id)
+    skale.manager.node_exit(node_config.id)
+
+    data = get_bp_data(
+        skale_bp_node,
+        get_api_url(BLUEPRINT_NAME, 'can-update'),
+    )
+    print(data)
+    data['payload'] == {'can-update': False}
+    assert data['status'] == 'ok'

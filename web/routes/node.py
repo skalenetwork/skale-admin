@@ -29,6 +29,7 @@ from tools.helper import get_endpoint_call_speed
 
 from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info, get_abi_hash
 from core.node import check_validator_nodes
+from core.updates import is_update_possible
 
 
 from tools.configs.web3 import ABI_FILEPATH, ENDPOINT, UNTRUSTED_PROVIDERS
@@ -266,3 +267,11 @@ def ima_abi():
     logger.debug(request)
     abi_hash = get_abi_hash(MAINNET_IMA_ABI_FILEPATH)
     return construct_ok_response(data=abi_hash)
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'can-update'), methods=['GET'])
+@g_skale
+def update_possible():
+    logger.debug(request)
+    possible = is_update_possible(g.skale, g.config, g.docker_utils)
+    return construct_ok_response(data={'can_update': possible})

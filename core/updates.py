@@ -23,6 +23,8 @@ from skale.utils.helper import ip_from_bytes
 
 from core.node_config import NodeConfig
 from core.ima.schain import update_predeployed_ima
+from core.schains.cleaner import get_schains_on_node
+from tools.docker_utils import DockerUtils
 
 
 logger = logging.getLogger(__name__)
@@ -56,3 +58,14 @@ def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:
             node_config.ip = ip
         if node_config.name != name:
             node_config.name = name
+
+
+def is_update_possible(skale: Skale, node_config: NodeConfig, dutils: DockerUtils) -> bool:
+    schains_on_node = get_schains_on_node(dutils=dutils)
+    result = True
+
+    for schain_name in schains_on_node:
+        if skale.node_rotation.is_rotation_active(schain_name):
+            logger.info('Rotation for %s is in progress', schain_name)
+            result = False
+    return result
