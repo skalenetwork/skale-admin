@@ -161,7 +161,7 @@ def generate_schain_config(
         'chainID': get_chain_id(schain.name)
     }
 
-    legacy_groups = static_groups(schain['name'])
+    legacy_groups = static_groups(schain.name)
     logger.debug('Legacy node groups: %s', legacy_groups)
     logger.debug('Vanilla node groups: %s', node_groups)
     node_groups.update(legacy_groups)
