@@ -29,7 +29,7 @@ BLUEPRINT_NAME = 'node'
 
 
 @pytest.fixture
-def skale_bp(skale, dutils):
+def skale_bp(skale, node_config, dutils):
     app = Flask(__name__)
     app.register_blueprint(node_bp)
 
@@ -42,34 +42,14 @@ def skale_bp(skale, dutils):
         yield app.test_client()
 
 
-# @pytest.fixture
-# def node_contracts(skale):
-#     ip, public_ip, port, name = generate_random_node_data()
-#     skale.manager.create_node(ip, port, name,
-#                               domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
-#     node_id = skale.nodes.node_name_to_index(name)
-#     try:
-#         yield node_id
-#     finally:
-#         skale.nodes.init_exit(node_id)
-#         skale.manager.node_exit(node_id, wait_for=True)
-
-
-# @pytest.fixture
-# def node_config(node_contracts):
-#     config = NodeConfig()
-#     config.id = node_contracts
-#     return config
-
-
-def test_node_info(skale_bp, skale, node_config):
+def test_node_info(skale_bp, skale, node_config, node_wallets):
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'info'))
     status = NodeStatus.ACTIVE.value
     assert data['status'] == 'ok'
     node_info = data['payload']['node_info']
     assert node_info['id'] == node_config.id
     assert node_info['status'] == status
-    assert to_checksum_address(node_info['owner']) == skale.wallet.address
+    assert to_checksum_address(node_info['owner']) == node_wallets[0].address
 
 
 def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
@@ -278,23 +258,9 @@ def test_exit_maintenance(skale_bp, node_config_in_maintenance):
     data['payload'] == {}
 
 
-@pytest.fixture
-def skale_node_bp(skale, node_config, dutils):
-    app = Flask(__name__)
-    app.register_blueprint(node_bp)
-
-    def handler(sender, **kwargs):
-        g.docker_utils = dutils
-        g.wallet = skale.wallet
-        g.config = NodeConfig()
-
-    with appcontext_pushed.connected_to(handler, app):
-        yield app.test_client()
-
-
-def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale_node_bp):
+def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale_bp):
     data = get_bp_data(
-        skale_node_bp,
+        skale_bp,
         get_api_url(BLUEPRINT_NAME, 'update-safe'),
     )
     assert data['status'] == 'ok'
@@ -303,7 +269,7 @@ def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale
     with mock.patch('web.helper.init_skale', return_value=skale):
         skale.node_rotation.is_rotation_active = mock.Mock(return_value=True)
         data = get_bp_data(
-            skale_node_bp,
+            skale_bp,
             get_api_url(BLUEPRINT_NAME, 'update-safe'),
         )
 
@@ -314,7 +280,7 @@ def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale
     cfm.save_skaled_config({})
 
     data = get_bp_data(
-        skale_node_bp,
+        skale_bp,
         get_api_url(BLUEPRINT_NAME, 'update-safe'),
     )
 
