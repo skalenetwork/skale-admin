@@ -60,7 +60,11 @@ def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:
             node_config.name = name
 
 
-def update_unsafe_for_schains(skale: Skale, node_config: NodeConfig, dutils: DockerUtils) -> list[str]:
+def update_unsafe_for_schains(
+    skale: Skale,
+    node_config: NodeConfig,
+    dutils: DockerUtils
+) -> list[str]:
     schains_on_node = get_schains_on_node(dutils=dutils)
     unsafe_chains = []
     for schain_name in schains_on_node:
