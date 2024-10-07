@@ -29,8 +29,7 @@ from tools.helper import get_endpoint_call_speed
 
 from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info, get_abi_hash
 from core.node import check_validator_nodes
-from core.updates import is_update_possible
-
+from core.updates import update_unsafe_for_schains
 
 from tools.configs.web3 import ABI_FILEPATH, ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
@@ -269,9 +268,10 @@ def ima_abi():
     return construct_ok_response(data=abi_hash)
 
 
-@node_bp.route(get_api_url(BLUEPRINT_NAME, 'can-update'), methods=['GET'])
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'update-safe'), methods=['GET'])
 @g_skale
-def update_possible():
+def update_safe():
     logger.debug(request)
-    possible = is_update_possible(g.skale, g.config, g.docker_utils)
-    return construct_ok_response(data={'can_update': possible})
+    unsafe_chains = update_unsafe_for_schains(g.skale, g.config, g.docker_utils)
+    safe = len(unsafe_chains) == 0
+    return construct_ok_response(data={'update_safe': safe, 'unsafe_chains': unsafe_chains})

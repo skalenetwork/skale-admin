@@ -14,10 +14,12 @@ from skale.utils.web3_utils import to_checksum_address
 
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
-from tests.utils import get_bp_data, post_bp_data
+from core.schains.config.file_manager import ConfigFileManager
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from web.routes.node import node_bp
 from web.helper import get_api_url
+
+from tests.utils import get_bp_data, post_bp_data
 
 
 CURRENT_TIMESTAMP = 1594903080
@@ -277,35 +279,43 @@ def test_exit_maintenance(skale_bp, node_config_in_maintenance):
 
 
 @pytest.fixture
-def skale_bp_node(skale, node_config, schain_on_contracts, schain_db, dutils):
+def skale_node_bp(skale, node_config, dutils):
     app = Flask(__name__)
     app.register_blueprint(node_bp)
 
     def handler(sender, **kwargs):
         g.docker_utils = dutils
         g.wallet = skale.wallet
-        g.config = node_config
+        g.config = NodeConfig()
 
     with appcontext_pushed.connected_to(handler, app):
         yield app.test_client()
 
 
-def test_can_update(skale, node_config, skale_bp_node):
+def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale_node_bp):
     data = get_bp_data(
-        skale_bp_node,
-        get_api_url(BLUEPRINT_NAME, 'can-update'),
+        skale_node_bp,
+        get_api_url(BLUEPRINT_NAME, 'update-safe'),
     )
     assert data['status'] == 'ok'
-    data['payload'] == {'can-update': True}
+    assert data['payload'] == {'update_safe': True, 'unsafe_chains': []}
 
-    print(skale.schains.get_schains_for_node(node_config.id))
-    skale.nodes.init_exit(node_config.id)
-    skale.manager.node_exit(node_config.id)
+    with mock.patch('web.helper.init_skale', return_value=skale):
+        skale.node_rotation.is_rotation_active = mock.Mock(return_value=True)
+        data = get_bp_data(
+            skale_node_bp,
+            get_api_url(BLUEPRINT_NAME, 'update-safe'),
+        )
+
+        assert data['payload'] == {'update_safe': False, 'unsafe_chains': [schain_on_contracts]}
+
+    cfm = ConfigFileManager(schain_on_contracts)
+
+    cfm.save_skaled_config({})
 
     data = get_bp_data(
-        skale_bp_node,
-        get_api_url(BLUEPRINT_NAME, 'can-update'),
+        skale_node_bp,
+        get_api_url(BLUEPRINT_NAME, 'update-safe'),
     )
-    print(data)
-    data['payload'] == {'can-update': False}
-    assert data['status'] == 'ok'
+
+    assert data['payload'] == {'update_safe': False, 'unsafe_chains': [schain_on_contracts]}
