@@ -267,13 +267,13 @@ def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale
     assert data['payload'] == {'update_safe': True, 'unsafe_chains': []}
 
     with mock.patch('web.helper.init_skale', return_value=skale):
-        skale.node_rotation.is_rotation_active = mock.Mock(return_value=True)
-        data = get_bp_data(
-            skale_bp,
-            get_api_url(BLUEPRINT_NAME, 'update-safe'),
-        )
-
-        assert data['payload'] == {'update_safe': False, 'unsafe_chains': [schain_on_contracts]}
+        with mock.patch.object(skale.node_rotation, 'is_rotation_active', return_value=False):
+            skale.node_rotation.is_rotation_active = mock.Mock(return_value=True)
+            data = get_bp_data(
+                skale_bp,
+                get_api_url(BLUEPRINT_NAME, 'update-safe'),
+            )
+            assert data['payload'] == {'update_safe': False, 'unsafe_chains': [schain_on_contracts]}
 
     cfm = ConfigFileManager(schain_on_contracts)
 
