@@ -86,7 +86,6 @@ def schain_config():
 @g_skale
 def schains_list():
     logger.debug(request)
-    logger.debug(request)
     node_id = g.config.id
     if node_id is None:
         return construct_err_response(msg='No node installed')
