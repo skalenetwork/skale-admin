@@ -14,10 +14,12 @@ from skale.utils.web3_utils import to_checksum_address
 
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
-from tests.utils import get_bp_data, post_bp_data
+from core.schains.config.file_manager import ConfigFileManager
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from web.routes.node import node_bp
 from web.helper import get_api_url
+
+from tests.utils import get_bp_data, post_bp_data
 
 
 CURRENT_TIMESTAMP = 1594903080
@@ -27,7 +29,7 @@ BLUEPRINT_NAME = 'node'
 
 
 @pytest.fixture
-def skale_bp(skale, dutils):
+def skale_bp(skale, node_config, dutils):
     app = Flask(__name__)
     app.register_blueprint(node_bp)
 
@@ -40,32 +42,14 @@ def skale_bp(skale, dutils):
         yield app.test_client()
 
 
-@pytest.fixture
-def node_contracts(skale):
-    ip, public_ip, port, name = generate_random_node_data()
-    skale.manager.create_node(ip, port, name,
-                              domain_name=DEFAULT_DOMAIN_NAME, wait_for=True)
-    node_id = skale.nodes.node_name_to_index(name)
-    yield node_id
-    skale.nodes.init_exit(node_id)
-    skale.manager.node_exit(node_id, wait_for=True)
-
-
-@pytest.fixture
-def node_config(node_contracts):
-    config = NodeConfig()
-    config.id = node_contracts
-    return config
-
-
-def test_node_info(skale_bp, skale, node_config):
+def test_node_info(skale_bp, skale, node_config, node_wallets):
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'info'))
     status = NodeStatus.ACTIVE.value
     assert data['status'] == 'ok'
     node_info = data['payload']['node_info']
     assert node_info['id'] == node_config.id
     assert node_info['status'] == status
-    assert to_checksum_address(node_info['owner']) == skale.wallet.address
+    assert to_checksum_address(node_info['owner']) == node_wallets[0].address
 
 
 def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
@@ -272,3 +256,32 @@ def test_exit_maintenance(skale_bp, node_config_in_maintenance):
     )
     assert data['status'] == 'error'
     data['payload'] == {}
+
+
+def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale_bp):
+    data = get_bp_data(
+        skale_bp,
+        get_api_url(BLUEPRINT_NAME, 'update-safe'),
+    )
+    assert data['status'] == 'ok'
+    assert data['payload'] == {'update_safe': True, 'unsafe_chains': []}
+
+    with mock.patch('web.helper.init_skale', return_value=skale):
+        with mock.patch.object(skale.node_rotation, 'is_rotation_active', return_value=False):
+            skale.node_rotation.is_rotation_active = mock.Mock(return_value=True)
+            data = get_bp_data(
+                skale_bp,
+                get_api_url(BLUEPRINT_NAME, 'update-safe'),
+            )
+            assert data['payload'] == {'update_safe': False, 'unsafe_chains': [schain_on_contracts]}
+
+    cfm = ConfigFileManager(schain_on_contracts)
+
+    cfm.save_skaled_config({})
+
+    data = get_bp_data(
+        skale_bp,
+        get_api_url(BLUEPRINT_NAME, 'update-safe'),
+    )
+
+    assert data['payload'] == {'update_safe': False, 'unsafe_chains': [schain_on_contracts]}

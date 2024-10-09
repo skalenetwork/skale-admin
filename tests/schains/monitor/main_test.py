@@ -83,13 +83,14 @@ def test_run_monitor_for_schain_left(
 ):
     schain_not_exists = 'not-on-node'
     upsert_schain_record(schain_not_exists)
-    with mock.patch('core.schains.monitor.main.keep_tasks_running') as keep_tasks_running_mock:
-        run_monitor_for_schain(
-            skale,
-            skale_ima,
-            node_config,
-            get_schain_struct(schain_name=schain_db),
-            dutils=dutils,
-            once=True
-        )
-        keep_tasks_running_mock.assert_not_called()
+    with mock.patch('core.schains.monitor.main.is_node_part_of_chain', return_value=False):
+        with mock.patch('core.schains.monitor.main.keep_tasks_running') as keep_tasks_running_mock:
+            run_monitor_for_schain(
+                skale,
+                skale_ima,
+                node_config,
+                get_schain_struct(schain_name=schain_not_exists),
+                dutils=dutils,
+                once=True
+            )
+            keep_tasks_running_mock.assert_not_called()
