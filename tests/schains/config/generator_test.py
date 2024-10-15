@@ -734,17 +734,13 @@ def test_generate_config_static_groups(
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
 
-    schain_data = {
-        'name': _schain_name,
-        'partOfNode': 0,
-        'generation': 1,
-        'mainnetOwner': TEST_MAINNET_OWNER_ADDRESS,
-        'originator': TEST_ORIGINATOR_ADDRESS,
-        'multitransactionMode': True
-    }
+    schain = get_schain_struct(schain_name=_schain_name)
+    schain.mainnet_owner = TEST_MAINNET_OWNER_ADDRESS
+    schain.originator = TEST_ORIGINATOR_ADDRESS
+    schain.options.multitransaction_mode = True
 
     schain_config = generate_schain_config(
-        schain=schain_data,
+        schain=schain,
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
