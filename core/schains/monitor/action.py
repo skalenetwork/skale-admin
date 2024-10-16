@@ -369,12 +369,13 @@ class SkaledActionManager(BaseActionManager):
         start_ts: Optional[int] = None,
         abort_on_exit: bool = True,
     ) -> bool:
-        logger.info(
-            'Starting skaled container watchman snapshot: %s, start_ts: %s',
-            download_snapshot,
-            start_ts
-        )
         snapshot_from = self.ncli_status.snapshot_from if self.ncli_status else None
+        logger.info(
+            'Starting skaled container watchman snapshot: %s, start_ts: %s, snapshot_from: %s',
+            download_snapshot,
+            start_ts,
+            snapshot_from
+        )
         monitor_schain_container(
             self.schain,
             schain_record=self.schain_record,
