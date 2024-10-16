@@ -52,12 +52,6 @@ from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord, upsert_schain_record
 
 
-MIN_SCHAIN_MONITOR_SLEEP_INTERVAL = 20
-MAX_SCHAIN_MONITOR_SLEEP_INTERVAL = 40
-
-STUCK_TIMEOUT = 60 * 60 * 2
-SHUTDOWN_INTERVAL = 60 * 10
-
 logger = logging.getLogger(__name__)
 
 
@@ -187,7 +181,7 @@ def run_skaled_pipeline(
 
 class SkaledTask(ITask):
     NAME = 'skaled'
-    STUCK_TIMEOUT = 3600  # 1 hour
+    STUCK_TIMEOUT_SECONDS = 3600  # 1 hour
 
     def __init__(
         self,
@@ -211,7 +205,7 @@ class SkaledTask(ITask):
 
     @property
     def stuck_timeout(self) -> int:
-        return self.STUCK_TIMEOUT
+        return self.STUCK_TIMEOUT_SECONDS
 
     @property
     def future(self) -> Future:
@@ -248,7 +242,7 @@ class SkaledTask(ITask):
 
 class ConfigTask(ITask):
     NAME = 'config'
-    STUCK_TIMEOUT = 60 * 60 * 2
+    STUCK_TIMEOUT_SECONDS = 60 * 60 * 2
 
     def __init__(
         self,

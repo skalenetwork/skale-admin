@@ -10,7 +10,7 @@ from core.schains.process import ProcessReport
 logger = logging.getLogger(__name__)
 
 
-SLEEP_INTERVAL = 10
+SLEEP_INTERVAL_SECONDS = 10
 
 
 class ITask(metaclass=abc.ABCMeta):
@@ -56,7 +56,7 @@ class ITask(metaclass=abc.ABCMeta):
 def execute_tasks(
     tasks: list[ITask],
     process_report: ProcessReport,
-    sleep_interval: int = SLEEP_INTERVAL,
+    sleep_interval: int = SLEEP_INTERVAL_SECONDS,
 ) -> None:
     logger.info('Running tasks %s', tasks)
     with ThreadPoolExecutor(max_workers=len(tasks), thread_name_prefix='T') as executor:

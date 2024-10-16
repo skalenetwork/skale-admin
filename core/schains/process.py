@@ -33,7 +33,6 @@ from tools.helper import check_pid
 
 logger = logging.getLogger(__name__)
 
-TIMEOUT_COEFFICIENT = 2.2
 P_KILL_WAIT_TIMEOUT = 60
 
 
