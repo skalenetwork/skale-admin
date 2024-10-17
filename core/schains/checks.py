@@ -41,7 +41,7 @@ from core.schains.config.main import (
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
 from core.schains.ima import get_ima_time_frame, get_migration_ts as get_ima_migration_ts
-from core.schains.process_manager_helper import is_monitor_process_alive
+from core.schains.process import is_monitor_process_alive
 from core.schains.rpc import (
     check_endpoint_alive,
     check_endpoint_blocks,

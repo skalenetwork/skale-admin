@@ -287,7 +287,7 @@ def test_ima_container_action_from_scratch(
     container_name = containers[0].name
     assert container_name == f'skale_ima_{skaled_am.name}'
     image = dutils.get_container_image_name(container_name)
-    assert image == 'skalenetwork/ima:2.0.0-beta.9'
+    assert image == 'skalenetwork/ima:2.1.0'
 
 
 # @pytest.mark.skip('Docker API GA issues need to be resolved')
@@ -309,8 +309,8 @@ def test_ima_container_action_image_pulling(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-develop.3'
-        assert dutils.pulled('skalenetwork/ima:2.0.0-beta.9')
+        assert image == 'skalenetwork/ima:2.1.0-beta.3'
+        assert dutils.pulled('skalenetwork/ima:2.1.0')
 
 
 def test_ima_container_action_image_migration(
@@ -330,7 +330,7 @@ def test_ima_container_action_image_migration(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-beta.9'
+        assert image == 'skalenetwork/ima:2.1.0'
 
 
 def test_ima_container_action_time_frame_migration(
