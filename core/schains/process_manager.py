@@ -17,44 +17,30 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import sys
 import logging
-from typing import Dict
+import time
 from multiprocessing import Process
+from typing import Optional
 
-from skale import Skale
+from skale import Skale, SkaleIma
+from skale.contracts.manager.schains import SchainStructure
 
-from core.schains.monitor.main import run_monitor_for_schain
+from core.node_config import NodeConfig
+from core.schains.monitor.main import start_tasks
 from core.schains.notifications import notify_if_not_enough_balance
-from core.schains.process_manager_helper import (
-    terminate_stuck_schain_process, is_monitor_process_alive, terminate_process
+from core.schains.process import (
+    get_schain_process_info,
+    is_monitor_process_alive,
+    terminate_process
 )
 
-from web.models.schain import upsert_schain_record, SChainRecord
 from tools.str_formatters import arguments_list_string
-
+from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
 
 logger = logging.getLogger(__name__)
 
 
-def pm_signal_handler(*args):
-    """
-    This function is trigerred when SIGTERM signal is received by the main process of the app.
-    The purpose of the process manager signal handler is to forward SIGTERM signal to all sChain
-    processes so they can gracefully save DKG results before
-    """
-    records = SChainRecord.select()
-    print(f'schain_records: {len(records)}')
-    print(f'schain_records: {records}')
-    for r in records:
-        logger.warning(f'Sending SIGTERM to {r.name}, {r.monitor_id}')
-        terminate_process(r.monitor_id)
-    logger.warning('All sChain processes stopped, exiting...')
-    sys.exit(0)
-
-
-def run_process_manager(skale, skale_ima, node_config):
-    # signal.signal(signal.SIGTERM, pm_signal_handler)
+def run_process_manager(skale: Skale, skale_ima: SkaleIma, node_config: NodeConfig) -> None:
     logger.info('Process manager started')
     node_id = node_config.id
     node_info = node_config.all()
@@ -66,30 +52,36 @@ def run_process_manager(skale, skale_ima, node_config):
     logger.info('Process manager procedure finished')
 
 
-def run_pm_schain(skale, skale_ima, node_config, schain: Dict) -> None:
-    schain_record = upsert_schain_record(schain.name)
-    log_prefix = f'sChain {schain.name} -'  # todo - move to logger formatter
+def run_pm_schain(
+    skale: Skale,
+    skale_ima: SkaleIma,
+    node_config: NodeConfig,
+    schain: SchainStructure,
+    timeout: Optional[int] = None,
+) -> None:
+    log_prefix = f'sChain {schain.name} -'
 
-    terminate_stuck_schain_process(skale, schain_record, schain)
-    monitor_process_alive = is_monitor_process_alive(schain_record.monitor_id)
+    if timeout is not None:
+        allowed_diff = timeout
+    else:
+        dkg_timeout = skale.constants_holder.get_dkg_timeout()
+        allowed_diff = timeout or int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
 
-    if not monitor_process_alive:
-        logger.info(f'{log_prefix} PID {schain_record.monitor_id} is not running, spawning...')
+    pid, pts = get_schain_process_info(schain.name)
+    if pid is not None and is_monitor_process_alive(pid):
+        if int(time.time()) - pts > allowed_diff:
+            logger.info('%s Terminating process: PID = %d', log_prefix, pid)
+            terminate_process(pid)
+        else:
+            logger.info('%s Process is running: PID = %d', log_prefix, pid)
+    else:
         process = Process(
             name=schain.name,
-            target=run_monitor_for_schain,
-            args=(
-                skale,
-                skale_ima,
-                node_config,
-                schain
-            )
+            target=start_tasks,
+            args=(skale, schain, node_config, skale_ima)
         )
         process.start()
-        schain_record.set_monitor_id(process.ident)
-        logger.info(f'{log_prefix} Process started: PID = {process.ident}')
-    else:
-        logger.info(f'{log_prefix} Process is running: PID = {schain_record.monitor_id}')
+        logger.info('Process started for %s', schain.name)
 
 
 def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
@@ -103,9 +95,16 @@ def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
     active_schains = list(filter(lambda schain: schain.active, schains))
     schains_holes = len(schains) - len(active_schains)
     logger.info(
-        arguments_list_string({'Node ID': node_id, 'sChains on node': active_schains,
-                               'Number of sChains on node': len(active_schains),
-                               'Empty sChain structs': schains_holes}, 'Monitoring sChains'))
+        arguments_list_string(
+            {
+                'Node ID': node_id,
+                'sChains on node': active_schains,
+                'Number of sChains on node': len(active_schains),
+                'Empty sChain structs': schains_holes,
+            },
+            'Monitoring sChains',
+        )
+    )
     return active_schains
 
 

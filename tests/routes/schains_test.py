@@ -139,8 +139,8 @@ def test_get_schain(
 
 
 def test_schain_containers_versions(skale_bp):
-    expected_skaled_version = '3.16.1'
-    expected_ima_version = '2.0.0-beta.9'
+    expected_skaled_version = '3.19.0'
+    expected_ima_version = '2.1.0'
     data = get_bp_data(skale_bp, get_api_url(
         BLUEPRINT_NAME, 'container-versions'))
     assert data == {
