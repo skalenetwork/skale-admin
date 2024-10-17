@@ -77,10 +77,6 @@ def test_monitor_schain_container_ec(
     run_custom_schain_container(dutils, schain.name, entrypoint=['sh', 'exit', '1'])
     # To make sure container initializaed
     time.sleep(2)
-
-    run_custom_schain_container(dutils, schain.name, entrypoint=['sh', 'exit', '1'])
-    # To make sure container initializaed
-    time.sleep(2)
     with mock.patch('core.schains.monitor.containers.is_volume_exists', return_value=True):
         schain_record.set_failed_rpc_count(100)
         schain_record.set_restart_count(0)

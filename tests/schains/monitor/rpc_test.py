@@ -1,6 +1,6 @@
 import datetime
-import time
 import json
+import time
 from unittest import mock
 
 import freezegun
