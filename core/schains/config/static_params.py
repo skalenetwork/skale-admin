@@ -21,13 +21,15 @@ from core.schains.types import SchainType
 from core.schains.config.helper import get_static_params
 from tools.configs import ENV_TYPE
 
+from typing import Optional
+
 
 def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:
     static_params = get_static_params(env_type)
     return static_params['schain_cmd']
 
 
-def get_static_schain_info(schain_name: str, env_type: str = ENV_TYPE) -> dict | None:
+def get_static_schain_info(schain_name: str, env_type: str = ENV_TYPE) -> Optional[dict]:
     static_params = get_static_params(env_type)
     static_params_schain = static_params['schain']
     processed_params = {}
@@ -36,7 +38,7 @@ def get_static_schain_info(schain_name: str, env_type: str = ENV_TYPE) -> dict |
     return processed_params
 
 
-def get_schain_static_param(static_param_schain: dict | int, schain_name: str) -> int:
+def get_schain_static_param(static_param_schain: dict, schain_name: str) -> int:
     if isinstance(static_param_schain, int):
         return static_param_schain
     elif isinstance(static_param_schain, dict) and schain_name in static_param_schain:

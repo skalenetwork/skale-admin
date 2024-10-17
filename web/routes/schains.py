@@ -31,11 +31,11 @@ from core.schains.firewall.utils import (
     get_default_rule_controller,
     get_sync_agent_ranges
 )
-from core.schains.skaled_status import init_skaled_status
+from core.schains.status import init_skaled_status
 from core.schains.ima import get_ima_version_after_migration
 from core.schains.info import get_schain_info_by_name, get_skaled_version
 from core.schains.cleaner import get_schains_on_node
-from web.models.schain import get_schains_statuses, toggle_schain_repair_mode
+from web.models.schain import get_schains_statuses
 from web.helper import (
     construct_ok_response,
     construct_err_response,
@@ -86,7 +86,6 @@ def schain_config():
 @g_skale
 def schains_list():
     logger.debug(request)
-    logger.debug(request)
     node_id = g.config.id
     if node_id is None:
         return construct_err_response(msg='No node installed')
@@ -130,21 +129,6 @@ def firewall_rules():
     )
     endpoints = [e._asdict() for e in rc.actual_rules()]
     return construct_ok_response({'endpoints': endpoints})
-
-
-@schains_bp.route(get_api_url(BLUEPRINT_NAME, 'repair'), methods=['POST'])
-def repair():
-    logger.debug(request)
-    schain_name = request.json.get('schain_name')
-    snapshot_from = request.json.get('snapshot_from', '')
-    result = toggle_schain_repair_mode(
-        schain_name, snapshot_from=snapshot_from)
-    if result:
-        return construct_ok_response()
-    else:
-        return construct_err_response(
-            msg=f'No schain with name {schain_name}'
-        )
 
 
 @schains_bp.route(get_api_url(BLUEPRINT_NAME, 'get'), methods=['GET'])

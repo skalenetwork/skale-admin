@@ -10,7 +10,7 @@ from Crypto.Hash import keccak
 
 from core.node_config import NodeConfig
 from core.schains.config.file_manager import ConfigFileManager
-from tests.utils import get_bp_data, get_test_rule_controller, post_bp_data
+from tests.utils import get_bp_data, get_test_rule_controller
 from web.models.schain import SChainRecord, upsert_schain_record
 from web.routes.schains import schains_bp
 from web.helper import get_api_url
@@ -97,39 +97,6 @@ def test_firewall_rules_route(skale_bp, schain_config):
     }
 
 
-def test_enable_repair_mode(skale_bp, schain_db):
-    schain_name = schain_db
-    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'repair'),
-                        params={'schain_name': schain_name})
-    assert data == {
-        'payload': {},
-        'status': 'ok'
-    }
-    r = upsert_schain_record(schain_name)
-    assert r.repair_mode
-    assert r.snapshot_from == ''
-
-    data = post_bp_data(
-        skale_bp,
-        get_api_url(BLUEPRINT_NAME, 'repair'),
-        params={'schain_name': schain_name, 'snapshot_from': '1.1.1.1'}
-    )
-    assert data == {
-        'payload': {},
-        'status': 'ok'
-    }
-    r = upsert_schain_record(schain_name)
-    assert r.repair_mode
-    assert r.snapshot_from == '1.1.1.1'
-
-    data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'repair'),
-                        params={'schain_name': 'undefined-schain'})
-    assert data == {
-        'payload': 'No schain with name undefined-schain',
-        'status': 'error'
-    }
-
-
 def test_get_schain(
     skale_bp,
     skale,
@@ -172,8 +139,8 @@ def test_get_schain(
 
 
 def test_schain_containers_versions(skale_bp):
-    expected_skaled_version = '3.16.1'
-    expected_ima_version = '2.0.0-beta.9'
+    expected_skaled_version = '3.19.0'
+    expected_ima_version = '2.1.0'
     data = get_bp_data(skale_bp, get_api_url(
         BLUEPRINT_NAME, 'container-versions'))
     assert data == {

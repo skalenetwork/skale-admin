@@ -45,6 +45,8 @@ class BaseConfigMonitor(IMonitor):
             self.execute()
             self.am.log_executed_blocks()
             self.am._upd_last_seen()
+        except Exception as e:
+            logger.info('Config monitor type failed %s', typename, exc_info=e)
         finally:
             logger.info('Config monitor type finished %s', typename)
 
