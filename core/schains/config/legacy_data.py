@@ -19,8 +19,10 @@
 
 import os
 
+from skale.schain_config.rotation_history import RotationNodeData
+
 from tools.helper import read_json
-from tools.configs import STATIC_ACCOUNTS_FOLDER, ENV_TYPE
+from tools.configs import STATIC_ACCOUNTS_FOLDER, STATIC_GROUPS_FOLDER, ENV_TYPE
 
 
 def static_accounts(schain_name: str) -> dict:
@@ -36,3 +38,25 @@ def static_accounts_filepath(schain_name: str) -> str:
     if not os.path.isdir(static_accounts_env_path):
         return ''
     return os.path.join(static_accounts_env_path, f'schain-{schain_name}.json')
+
+
+def static_groups(schain_name: str) -> dict:
+    static_groups_env_path = static_groups_filepath(schain_name)
+    if not os.path.isfile(static_groups_env_path):
+        return {}
+    groups = read_json(static_groups_env_path)
+    prepared_groups = {}
+    for plain_rotation_id, data in groups.items():
+        rotation_id = int(plain_rotation_id)
+        prepared_groups[rotation_id] = data
+        prepared_nodes = prepared_groups[rotation_id]['nodes']
+        node_ids_string = list(data['nodes'].keys())
+        for node_id_string in node_ids_string:
+            node_info = prepared_nodes.pop(node_id_string)
+            prepared_nodes[int(node_id_string)] = RotationNodeData(*node_info)
+    return prepared_groups
+
+
+def static_groups_filepath(schain_name: str) -> str:
+    static_groups_env_path = os.path.join(STATIC_GROUPS_FOLDER, ENV_TYPE)
+    return os.path.join(static_groups_env_path, f'schain-{schain_name}.json')

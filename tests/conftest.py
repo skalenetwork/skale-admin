@@ -50,7 +50,13 @@ from core.schains.status import (
 )
 from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
-from tools.configs import CONFIG_FOLDER, ENV_TYPE, META_FILEPATH, SSL_CERTIFICATES_FILEPATH
+from tools.configs import (
+    CONFIG_FOLDER,
+    ENV_TYPE,
+    META_FILEPATH,
+    SSL_CERTIFICATES_FILEPATH,
+    STATIC_GROUPS_FOLDER
+)
 from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -67,6 +73,7 @@ from tests.utils import (
     ENDPOINT,
     ETH_AMOUNT_PER_NODE,
     ETH_PRIVATE_KEY,
+    STATIC_NODE_GROUPS,
     generate_cert,
     generate_schain_config,
     get_test_rule_controller,
@@ -593,6 +600,21 @@ def ima_migration_schedule(schain_db):
         yield migration_schedule_path
     finally:
         os.remove(migration_schedule_path)
+
+
+@pytest.fixture
+def static_groups_for_schain(_schain_name):
+    parent_folder = os.path.join(STATIC_GROUPS_FOLDER, ENV_TYPE)
+    os.makedirs(parent_folder)
+    static_groups_env_path = os.path.join(
+        parent_folder,
+        os.path.join(f'schain-{_schain_name}.json')
+    )
+    try:
+        write_json(static_groups_env_path, STATIC_NODE_GROUPS)
+        yield STATIC_NODE_GROUPS
+    finally:
+        shutil.rmtree(STATIC_GROUPS_FOLDER, ignore_errors=True)
 
 
 NCLI_STATUS_DICT = {'repair_ts': CURRENT_TS, 'snapshot_from': '127.0.0.1'}

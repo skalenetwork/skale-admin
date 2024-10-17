@@ -44,6 +44,79 @@ SECRET_KEY = {
     ],
 }
 
+NODE_GROUPS = {
+    2: {
+        "rotation": {
+            "leaving_node_id": 0,
+            "new_node_id": 5,
+        },
+        "nodes": {
+            "4": [
+                4,
+                31,
+                "0x5d"
+            ],
+            "5": [
+                8,
+                179,
+                "0xon"
+            ],
+        },
+        "finish_ts": 1681498775,
+        "bls_public_key": {
+            "blsPublicKey0": "9",
+            "blsPublicKey1": "1",
+            "blsPublicKey2": "3",
+            "blsPublicKey3": "2"
+        }
+    },
+    1: {
+        "rotation": {
+            "leaving_node_id": 3,
+            "new_node_id": 4,
+        },
+        "nodes": {
+            "0": [
+                0,
+                159,
+                "0xgd"
+            ],
+            "4": [
+                4,
+                31,
+                "0x5d"
+            ],
+        },
+        "finish_ts": 1681390775,
+        "bls_public_key": {
+            "blsPublicKey0": "3",
+            "blsPublicKey1": "4",
+            "blsPublicKey2": "7",
+            "blsPublicKey3": "9"
+        }
+    },
+    0: {
+        "rotation": {
+            "leaving_node_id": 2,
+            "new_node_id": 3,
+        },
+        "nodes": {
+            "0": [
+                0,
+                159,
+                "0xgd"
+            ],
+            "3": [
+                7,
+                61,
+                "0xbh"
+            ],
+        },
+        "finish_ts": None,
+        "bls_public_key": None
+    }
+}
+
 TEST_NODE = {'id': 1, 'name': 'test', 'publicKey': '0x5556', 'port': 10000}
 
 
@@ -650,3 +723,42 @@ def test_generate_sync_node_config_static_accounts(
     )
     config = schain_config.to_dict()
     assert not config['accounts'].get('0x1111111')
+
+
+def test_generate_config_static_groups(
+    _schain_name,
+    schain_secret_key_file_default_chain,
+    static_groups_for_schain,
+    skale_manager_opts
+):
+    node_id, generation, rotation_id = 1, 1, 0
+    ecdsa_key_name = 'test'
+
+    schain = get_schain_struct(schain_name=_schain_name)
+    schain.mainnet_owner = TEST_MAINNET_OWNER_ADDRESS
+    schain.originator = TEST_ORIGINATOR_ADDRESS
+    schain.options.multitransaction_mode = True
+
+    schain_config = generate_schain_config(
+        schain=schain,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        rotation_id=rotation_id,
+        schain_nodes_with_schains=get_schain_node_with_schains(_schain_name),
+        node_groups=NODE_GROUPS,
+        generation=generation,
+        is_owner_contract=False,
+        skale_manager_opts=skale_manager_opts,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000,
+        sync_node=True
+    )
+    config = schain_config.to_dict()
+
+    config_group = config['skaleConfig']['sChain']['nodeGroups']
+    assert len(config_group.keys()) == 3
+    for rotation_id_string in static_groups_for_schain:
+        rotation_id = int(rotation_id_string)
+        assert json.dumps(config_group[rotation_id]) == \
+            json.dumps(static_groups_for_schain[rotation_id_string])
