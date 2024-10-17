@@ -37,7 +37,7 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
-from core.schains.process_manager_helper import terminate_schain_process
+from core.schains.process import ProcessReport, terminate_process
 from core.schains.runner import get_container_name, is_exited
 from core.schains.external_config import ExternalConfig
 from core.schains.types import ContainerType
@@ -109,18 +109,21 @@ sChains on node: {schains_on_node}')
 
     for schain_name in schains_on_node:
         if schain_name not in schain_names_on_contracts:
-            logger.warning(f'sChain {schain_name} was found on node, but not on contracts: \
-{schain_names_on_contracts}, going to remove it!')
+            logger.warning(
+                '%s was found on node, but not on contracts: %s, trying to cleanup',
+                schain_name,
+                schain_names_on_contracts,
+            )
             try:
                 ensure_schain_removed(skale, schain_name, node_config.id, dutils=dutils)
             except Exception:
-                logger.exception(f'sChain removal {schain_name} failed')
+                logger.exception('%s removal failed', schain_name)
     logger.info('Cleanup procedure finished')
 
 
 def get_schain_names_from_contract(skale, node_id):
     schains_on_contract = skale.schains.get_schains_for_node(node_id)
-    return list(map(lambda schain: schain['name'], schains_on_contract))
+    return list(map(lambda schain: schain.name, schains_on_contract))
 
 
 def get_schains_with_containers(dutils=None):
@@ -185,9 +188,10 @@ def remove_schain(
     msg: str,
     dutils: Optional[DockerUtils] = None,
 ) -> None:
-    schain_record = upsert_schain_record(schain_name)
     logger.warning(msg)
-    terminate_schain_process(schain_record)
+    report = ProcessReport(name=schain_name)
+    if report.is_exist():
+        terminate_process(report.pid)
 
     delete_bls_keys(skale, schain_name)
     sync_agent_ranges = get_sync_agent_ranges(skale)
@@ -238,14 +242,14 @@ def cleanup_schain(
         dutils=dutils,
         sync_node=SYNC_NODE,
     )
-    status = checks.get_all()
-    if status['skaled_container'] or is_exited(
+    check_status = checks.get_all()
+    if check_status['skaled_container'] or is_exited(
         schain_name, container_type=ContainerType.schain, dutils=dutils
     ):
         remove_schain_container(schain_name, dutils=dutils)
-    if status['volume']:
+    if check_status['volume']:
         remove_schain_volume(schain_name, dutils=dutils)
-    if status['firewall_rules']:
+    if check_status['firewall_rules']:
         conf = ConfigFileManager(schain_name).skaled_config
         base_port = get_base_port_from_config(conf)
         own_ip = get_own_ip_from_config(conf)
@@ -256,11 +260,11 @@ def cleanup_schain(
         rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips, sync_ip_ranges=ranges)
         rc.cleanup()
     if estate is not None and estate.ima_linked:
-        if status.get('ima_container', False) or is_exited(
+        if check_status.get('ima_container', False) or is_exited(
             schain_name, container_type=ContainerType.ima, dutils=dutils
         ):
             remove_ima_container(schain_name, dutils=dutils)
-    if status['config_dir']:
+    if check_status['config_dir']:
         remove_config_dir(schain_name)
     mark_schain_deleted(schain_name)
 

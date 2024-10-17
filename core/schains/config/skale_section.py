@@ -58,9 +58,9 @@ def generate_skale_section(
         schain_nodes=schain_nodes_with_schains
     )
 
-    schain_type = get_schain_type(schain['partOfNode'])
+    schain_type = get_schain_type(schain.part_of_node)
     static_node_info = get_static_node_info(schain_type)
-    static_schain_info = get_static_schain_info(schain['name'])
+    static_schain_info = get_static_schain_info(schain.name)
     nodes_in_schain = len(schain_nodes_with_schains)
 
     node_info = generate_current_node_info(
@@ -81,7 +81,7 @@ def generate_skale_section(
 
     schain_nodes = generate_schain_nodes(
         schain_nodes_with_schains=schain_nodes_with_schains,
-        schain_name=schain['name'],
+        schain_name=schain.name,
         rotation_id=rotation_id,
         sync_node=sync_node
     )
@@ -100,5 +100,5 @@ def generate_skale_section(
     return SkaleConfig(
         contract_settings=contract_settings,
         node_info=node_info,
-        schain_info=schain_info,
+        schain_info=schain_info
     )

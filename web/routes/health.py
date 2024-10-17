@@ -18,8 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import telnetlib
-from enum import Enum
 from http import HTTPStatus
 
 
@@ -27,7 +25,6 @@ from flask import Blueprint, g, request
 from sgx import SgxClient
 
 
-from urllib.parse import urlparse
 from core.node import get_check_report, get_skale_node_version
 from core.node import get_current_nodes
 from core.schains.checks import SChainChecks
@@ -38,7 +35,6 @@ from core.schains.firewall.utils import (
 from core.schains.ima import get_ima_log_checks
 from core.schains.external_config import ExternalState
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
-from tools.configs import ZMQ_PORT, ZMQ_TIMEOUT
 from web.models.schain import SChainRecord
 from web.helper import (
     construct_err_response,
@@ -49,11 +45,6 @@ from web.helper import (
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'health'
-
-
-class SGXStatus(Enum):
-    CONNECTED = 0
-    NOT_CONNECTED = 1
 
 
 health_bp = Blueprint(BLUEPRINT_NAME, __name__)
@@ -94,18 +85,18 @@ def schains_checks():
     )
     checks = []
     for schain in schains:
-        if schain.get('name') != '':
-            rotation_data = g.skale.node_rotation.get_rotation(schain['name'])
+        if schain.name != '':
+            rotation_data = g.skale.node_rotation.get_rotation(schain.name)
             rotation_id = rotation_data['rotation_id']
-            if SChainRecord.added(schain['name']):
+            if SChainRecord.added(schain.name):
                 rc = get_default_rule_controller(
-                    name=schain['name'],
+                    name=schain.name,
                     sync_agent_ranges=sync_agent_ranges
                 )
-                current_nodes = get_current_nodes(g.skale, schain['name'])
-                schain_record = SChainRecord.get_by_name(schain['name'])
+                current_nodes = get_current_nodes(g.skale, schain.name)
+                schain_record = SChainRecord.get_by_name(schain.name)
                 schain_checks = SChainChecks(
-                    schain['name'],
+                    schain.name,
                     node_id,
                     schain_record=schain_record,
                     rule_controller=rc,
@@ -117,7 +108,7 @@ def schains_checks():
                     sync_node=False
                 ).get_all(needed=checks_filter)
                 checks.append({
-                    'name': schain['name'],
+                    'name': schain.name,
                     'healthchecks': schain_checks
                 })
     return construct_ok_response(checks)
@@ -137,27 +128,28 @@ def ima_log_checks():
 @health_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx'), methods=['GET'])
 def sgx_info():
     logger.debug(request)
-    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+    status_zmq = False
+    status_https = False
+    version = None
+    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER, zmq=True)
     try:
-        status = sgx.get_server_status()
-        version = sgx.get_server_version()
-    except Exception as e:  # todo: catch specific error - edit sgx.py
-        logger.info(e)
-        status = 1
-        version = None
-    sgx_host = urlparse(SGX_SERVER_URL).hostname
-    tn = telnetlib.Telnet()
-    zmq_status = 0
-    try:
-        tn.open(sgx_host, ZMQ_PORT, timeout=ZMQ_TIMEOUT)
+        if sgx.zmq.get_server_status() == 0:
+            status_zmq = True
+        version = sgx.zmq.get_server_version()
     except Exception as err:
-        zmq_status = 1
-        logger.error(err)
-    else:
-        tn.close()
+        logger.error(f'Cannot make SGX ZMQ check {err}')
+    sgx_https = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+    try:
+        if sgx_https.get_server_status() == 0:
+            status_https = True
+        if version is None:
+            version = sgx_https.get_server_version()
+    except Exception as err:
+        logger.error(f'Cannot make SGX HTTPS check {err}')
+
     res = {
-        'status': zmq_status,
-        'status_name': SGXStatus(status).name,
+        'status_zmq': status_zmq,
+        'status_https': status_https,
         'sgx_server_url': SGX_SERVER_URL,
         'sgx_keyname': g.config.sgx_key_name,
         'sgx_wallet_version': version

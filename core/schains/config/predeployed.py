@@ -19,6 +19,7 @@
 
 import logging
 
+from skale.dataclasses.schain_options import AllocationType
 from skale.wallets.web3_wallet import public_key_to_address
 
 from etherbase_predeployed import (
@@ -60,6 +61,7 @@ PROXY_ADMIN_PREDEPLOYED_ADDRESS = '0xD1000000000000000000000000000000000000D1'
 def generate_predeployed_accounts(
     schain_name: str,
     schain_type: SchainType,
+    allocation_type: AllocationType,
     schain_nodes: list,
     on_chain_owner: str,
     mainnet_owner: str,
@@ -80,6 +82,7 @@ def generate_predeployed_accounts(
     if generation >= Gen.ONE:
         v1_predeployed_contracts = generate_v1_predeployed_contracts(
             schain_type=schain_type,
+            allocation_type=allocation_type,
             on_chain_owner=on_chain_owner,
             mainnet_owner=mainnet_owner,
             originator_address=originator_address,
@@ -94,6 +97,7 @@ def generate_predeployed_accounts(
 
 def generate_v1_predeployed_contracts(
     schain_type: SchainType,
+    allocation_type: AllocationType,
     on_chain_owner: str,
     mainnet_owner: str,
     originator_address: str,
@@ -127,7 +131,7 @@ def generate_v1_predeployed_contracts(
         ima=message_proxy_for_schain_address,
     )
 
-    allocated_storage = get_fs_allocated_storage(schain_type)
+    allocated_storage = get_fs_allocated_storage(schain_type, allocation_type)
     filestorage_generator = UpgradeableFileStorageGenerator()
     filestorage_predeployed = filestorage_generator.generate_allocation(
         contract_address=FILESTORAGE_ADDRESS,

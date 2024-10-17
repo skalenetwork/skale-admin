@@ -194,7 +194,7 @@ class Node:
             self.config.id)
         schain_statuses = [
             {
-                'name': schain['name'],
+                'name': schain.name,
                 'status': SchainExitStatus.ACTIVE.name
             }
             for schain in active_schains
@@ -207,7 +207,7 @@ class Node:
                 status = SchainExitStatus.LEFT
             else:
                 status = SchainExitStatus.LEAVING
-            schain_name = self.skale.schains.get(schain['schain_id'])['name']
+            schain_name = self.skale.schains.get(schain['schain_id']).name
             if not schain_name:
                 schain_name = '[REMOVED]'
             schain_statuses.append(

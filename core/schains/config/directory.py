@@ -25,10 +25,11 @@ from typing import List
 
 from tools.configs.schains import (
     BASE_SCHAIN_CONFIG_FILEPATH,
+    NODE_CLI_STATUS_FILENAME,
     SCHAINS_DIR_PATH,
     SCHAINS_DIR_PATH_HOST,
     SCHAIN_SCHECKS_FILENAME,
-    SKALED_STATUS_FILENAME
+    SKALED_STATUS_FILENAME,
 )
 
 
@@ -56,6 +57,10 @@ def init_schain_config_dir(name: str) -> str:
 
 def skaled_status_filepath(name: str) -> str:
     return os.path.join(schain_config_dir(name), SKALED_STATUS_FILENAME)
+
+
+def node_cli_status_filepath(name: str) -> str:
+    return os.path.join(schain_config_dir(name), NODE_CLI_STATUS_FILENAME)
 
 
 def get_schain_check_filepath(schain_name):

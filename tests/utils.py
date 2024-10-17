@@ -12,6 +12,8 @@ from mock import Mock, MagicMock
 
 from skale import Skale, SkaleIma
 from skale.utils.web3_utils import init_web3
+from skale.contracts.manager.schains import SchainStructure
+from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.wallets import Web3Wallet
 from web3 import Web3
 
@@ -37,6 +39,7 @@ from tools.configs.web3 import ABI_FILEPATH
 
 from web.models.schain import upsert_schain_record
 
+CURRENT_TS = 1594903080
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
@@ -55,6 +58,9 @@ ALLOWED_RANGES = [
 ]
 
 IMA_MIGRATION_TS = 1688388551
+
+TEST_ORIGINATOR_ADDRESS = '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34'
+TEST_MAINNET_OWNER_ADDRESS = '0x30E1C96277735B03E59B3098204fd04FD0e78a46'
 
 
 class FailedAPICall(Exception):
@@ -113,19 +119,23 @@ def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
     return json.loads(data.decode('utf-8'))
 
 
-def get_schain_contracts_data(schain_name):
-    """ Schain data mock in case if schain on contracts is not required """
-    return {
-        'name': schain_name,
-        'mainnetOwner': '0x1213123091a230923123213123',
-        'indexInOwnerList': 0,
-        'partOfNode': 0,
-        'lifetime': 3600,
-        'startDate': 1575448438,
-        'deposit': 1000000000000000000,
-        'index': 0,
-        'active': True
-    }
+def get_schain_struct(schain_name: str = 'test_chain') -> SchainStructure:
+    return SchainStructure(
+        name=schain_name,
+        part_of_node=0,
+        generation=1,
+        mainnet_owner=TEST_MAINNET_OWNER_ADDRESS,
+        originator=TEST_ORIGINATOR_ADDRESS,
+        options=SchainOptions(True, True, AllocationType.DEFAULT),
+        index_in_owner_list=0,
+        lifetime=3600,
+        start_date=100000000,
+        start_block=1000,
+        deposit=0,
+        index=1,
+        chain_id=1,
+        active=True,
+    )
 
 
 def run_simple_schain_container(schain_data: dict, dutils: DockerUtils):
@@ -462,3 +472,52 @@ def generate_schain_config(schain_name):
             }
         }
     }
+
+
+STATIC_NODE_GROUPS = {
+    '1': {
+        "rotation": {
+            "leaving_node_id": 3,
+            "new_node_id": 4,
+        },
+        "nodes": {
+            "0": [
+                0,
+                159,
+                "0xgd"
+            ],
+            "4": [
+                4,
+                31,
+                "0x5d"
+            ],
+        },
+        "finish_ts": None,
+        "bls_public_key": None
+    },
+    '0': {
+        "rotation": {
+            "leaving_node_id": 2,
+            "new_node_id": 3,
+        },
+        "nodes": {
+            "0": [
+                0,
+                159,
+                "0xgd"
+            ],
+            "3": [
+                7,
+                61,
+                "0xbh"
+            ],
+        },
+        "finish_ts": 1681390775,
+        "bls_public_key": {
+            "blsPublicKey0": "3",
+            "blsPublicKey1": "4",
+            "blsPublicKey2": "7",
+            "blsPublicKey3": "9"
+        }
+    }
+}

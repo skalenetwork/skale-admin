@@ -16,7 +16,8 @@ from web.migrations import (
     add_monitor_id_field,
     add_config_version_field,
     add_restart_count_field,
-    add_ssl_change_date_field
+    add_ssl_change_date_field,
+    add_repair_date_field
 )
 
 
@@ -118,3 +119,9 @@ def test_add_ssl_change_date_field(upserted_db, migrator, model):
     add_ssl_change_date_field(upserted_db, migrator)
     for r in model.select().execute():
         r.ssl_change_date < datetime.now()
+
+
+def test_add_repair_date_field(upserted_db, migrator, model):
+    add_repair_date_field(upserted_db, migrator)
+    for r in model.select().execute():
+        r.repair_date < datetime.now()

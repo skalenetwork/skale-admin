@@ -19,6 +19,8 @@
 
 import logging
 
+from skale.contracts.manager.schains import SchainStructure
+
 from core.schains.runner import restart_container
 from core.schains.runner import is_container_exists, is_container_running
 from tools.docker_utils import DockerUtils
@@ -33,31 +35,30 @@ logger = logging.getLogger(__name__)
 
 
 def handle_failed_schain_rpc(
-    schain,
+    schain: SchainStructure,
     schain_record,
     skaled_status,
     dutils=None
 ):
     dutils = dutils or DockerUtils()
-    schain_name = schain['name']
-    logger.info(f'Monitoring RPC for sChain {schain_name}')
+    logger.info(f'Monitoring RPC for sChain {schain.name}')
 
-    if not is_container_exists(schain_name, dutils=dutils):
-        logger.warning(f'{schain_name} RPC monitor failed: container doesn\'t exit')
+    if not is_container_exists(schain.name, dutils=dutils):
+        logger.warning(f'{schain.name} RPC monitor failed: container doesn\'t exit')
         return
 
-    if not is_container_running(schain_name, dutils=dutils):
-        logger.warning(f'{schain_name} RPC monitor failed: container is not running')
+    if not is_container_running(schain.name, dutils=dutils):
+        logger.warning(f'{schain.name} RPC monitor failed: container is not running')
         return
 
     if skaled_status.exit_time_reached:
-        logger.info(f'{schain_name} - Skipping RPC monitor: exit time reached')
+        logger.info(f'{schain.name} - Skipping RPC monitor: exit time reached')
         skaled_status.log()
         schain_record.set_failed_rpc_count(0)
         return
 
     if skaled_status.downloading_snapshot:
-        logger.info(f'{schain_name} - Skipping RPC monitor: downloading snapshot')
+        logger.info(f'{schain.name} - Skipping RPC monitor: downloading snapshot')
         skaled_status.log()
         schain_record.set_failed_rpc_count(0)
         return
@@ -65,18 +66,18 @@ def handle_failed_schain_rpc(
     rpc_stuck = schain_record.failed_rpc_count > MAX_SCHAIN_FAILED_RPC_COUNT
     logger.info(
         'SChain %s, rpc stuck: %s, failed_rpc_count: %d, restart_count: %d',
-        schain_name,
+        schain.name,
         rpc_stuck,
         schain_record.failed_rpc_count,
         schain_record.restart_count
     )
     if rpc_stuck:
         if schain_record.restart_count < MAX_SCHAIN_RESTART_COUNT:
-            logger.info(f'SChain {schain_name}: restarting container')
+            logger.info(f'SChain {schain.name}: restarting container')
             restart_container(SCHAIN_CONTAINER, schain, dutils=dutils)
             schain_record.set_restart_count(schain_record.restart_count + 1)
         else:
-            logger.warning(f'SChain {schain_name}: max restart count exceeded')
+            logger.warning(f'SChain {schain.name}: max restart count exceeded')
         schain_record.set_failed_rpc_count(0)
     else:
         schain_record.set_failed_rpc_count(schain_record.failed_rpc_count + 1)

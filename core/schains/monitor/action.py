@@ -35,20 +35,18 @@ from core.schains.dkg import (
     run_dkg,
     save_dkg_results
 )
-from core.schains.ima import get_migration_ts as get_ima_migration_ts
 
 from core.schains.cleaner import (
     remove_ima_container,
     remove_schain_container,
     remove_schain_volume
 )
+from core.schains.ima import get_migration_ts as get_ima_migration_ts, ImaData
+from core.schains.status import NodeCliStatus
 from core.schains.firewall.types import IRuleController
-
 from core.schains.volume import init_data_volume
 from core.schains.exit_scheduler import ExitScheduleFileManager
-
 from core.schains.limits import get_schain_type
-
 from core.schains.monitor.containers import monitor_schain_container, monitor_ima_container
 from core.schains.monitor.rpc import handle_failed_schain_rpc
 from core.schains.runner import (
@@ -70,9 +68,8 @@ from core.schains.config.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config
 )
-from core.schains.ima import ImaData
 from core.schains.external_config import ExternalConfig, ExternalState
-from core.schains.skaled_status import init_skaled_status
+from core.schains.status import init_skaled_status
 from core.schains.ssl import update_ssl_change_date
 
 from tools.configs import SYNC_NODE
@@ -153,7 +150,7 @@ class ConfigActionManager(BaseActionManager):
     ):
         self.skale = skale
         self.schain = schain
-        self.generation = schain['generation']
+        self.generation = schain.generation
         self.node_config = node_config
         self.checks = checks
         self.stream_version = stream_version
@@ -162,13 +159,13 @@ class ConfigActionManager(BaseActionManager):
         self.rotation_data = rotation_data
         self.rotation_id = rotation_data['rotation_id']
         self.estate = estate
-        self.econfig = econfig or ExternalConfig(name=schain['name'])
+        self.econfig = econfig or ExternalConfig(name=schain.name)
         self.node_options = node_options or NodeOptions()
         self.cfm: ConfigFileManager = ConfigFileManager(
-            schain_name=self.schain['name']
+            schain_name=self.schain.name
         )
         self.statsd_client = get_statsd_client()
-        super().__init__(name=schain['name'])
+        super().__init__(name=schain.name)
 
     @BaseActionManager.monitor_block
     def config_dir(self) -> bool:
@@ -215,7 +212,7 @@ class ConfigActionManager(BaseActionManager):
     def upstream_config(self) -> bool:
         with self.statsd_client.timer(f'admin.action.upstream_config.{no_hyphens(self.name)}'):
             logger.info(
-                'Creating new upstream_config rotation_id: %s, stream: %s',
+                'Generating new upstream_config rotation_id: %s, stream: %s',
                 self.rotation_data.get('rotation_id'), self.stream_version
             )
             new_config = create_new_upstream_config(
@@ -232,6 +229,7 @@ class ConfigActionManager(BaseActionManager):
             result = False
             if not self.cfm.upstream_config_exists() or \
                     new_config != self.cfm.latest_upstream_config:
+                logger.info('Saving new config')
                 rotation_id = self.rotation_data['rotation_id']
                 logger.info(
                     'Saving new upstream config rotation_id: %d, ips: %s',
@@ -299,30 +297,32 @@ class SkaledActionManager(BaseActionManager):
         rule_controller: IRuleController,
         checks: SkaledChecks,
         node_config: NodeConfig,
+        ncli_status: NodeCliStatus,
         econfig: Optional[ExternalConfig] = None,
         dutils: DockerUtils = None,
         node_options: NodeOptions = None
     ):
         self.schain = schain
-        self.generation = schain['generation']
+        self.generation = schain.generation
         self.checks = checks
         self.node_config = node_config
 
         self.rc = rule_controller
-        self.skaled_status = init_skaled_status(self.schain['name'])
-        self.schain_type = get_schain_type(schain['partOfNode'])
-        self.econfig = econfig or ExternalConfig(schain['name'])
+        self.skaled_status = init_skaled_status(self.schain.name)
+        self.schain_type = get_schain_type(schain.part_of_node)
+        self.econfig = econfig or ExternalConfig(schain.name)
         self.cfm: ConfigFileManager = ConfigFileManager(
-            schain_name=self.schain['name']
+            schain_name=self.schain.name
         )
 
-        self.esfm = ExitScheduleFileManager(schain['name'])
+        self.esfm = ExitScheduleFileManager(schain.name)
         self.dutils = dutils or DockerUtils()
         self.statsd_client = get_statsd_client()
 
         self.node_options = node_options or NodeOptions()
+        self.ncli_status = ncli_status
 
-        super().__init__(name=schain['name'])
+        super().__init__(name=schain.name)
 
     @BaseActionManager.monitor_block
     def volume(self) -> bool:
@@ -375,11 +375,13 @@ class SkaledActionManager(BaseActionManager):
             download_snapshot,
             start_ts
         )
+        snapshot_from = self.ncli_status.snapshot_from if self.ncli_status else None
         monitor_schain_container(
             self.schain,
             schain_record=self.schain_record,
             skaled_status=self.skaled_status,
             download_snapshot=download_snapshot,
+            snapshot_from=snapshot_from,
             start_ts=start_ts,
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,
@@ -556,4 +558,11 @@ class SkaledActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def disable_repair_mode(self) -> None:
         logger.info('Switching off repair mode')
-        self.schain_record.set_repair_mode(False)
+        if self.schain_record.repair_mode:
+            self.schain_record.set_repair_mode(False)
+
+    @BaseActionManager.monitor_block
+    def update_repair_ts(self, new_ts: int) -> None:
+        logger.info('Setting repair_ts to %d', new_ts)
+        new_dt = datetime.utcfromtimestamp(new_ts)
+        self.schain_record.set_repair_date(new_dt)
