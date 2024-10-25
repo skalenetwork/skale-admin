@@ -109,11 +109,14 @@ sChains on node: {schains_on_node}')
 
     for schain_name in schains_on_node:
         if schain_name not in schain_names_on_contracts:
-            logger.warning(
+            logger.info(
                 '%s was found on node, but not on contracts: %s, trying to cleanup',
                 schain_name,
                 schain_names_on_contracts,
             )
+            if schain_name == '':
+                logger.warning('Found phantom schain on node')
+                continue
             try:
                 ensure_schain_removed(skale, schain_name, node_config.id, dutils=dutils)
             except Exception:
@@ -138,6 +141,12 @@ def get_schains_on_node(dutils=None):
     schains_with_dirs = os.listdir(SCHAINS_DIR_PATH)
     schains_with_container = get_schains_with_containers(dutils)
     schains_active_records = get_schains_names()
+    logger.info(
+        'dirs %s, containers: %s, records: %s',
+        schains_with_dirs,
+        schains_with_container,
+        schains_active_records
+    )
     return sorted(merged_unique(schains_with_dirs, schains_with_container, schains_active_records))
 
 
