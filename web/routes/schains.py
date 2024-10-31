@@ -89,10 +89,15 @@ def schains_list():
     node_id = g.config.id
     if node_id is None:
         return construct_err_response(msg='No node installed')
-    schains_list = list(filter(
-        lambda s: s.get('name'),
-        g.skale.schains.get_schains_for_node(node_id)
-    ))
+    schains_list = list(
+        filter(
+            lambda s: s,
+            map(
+                lambda s: s.name,
+                g.skale.schains.get_schains_for_node(node_id)
+            )
+        )
+    )
     return construct_ok_response(schains_list)
 
 

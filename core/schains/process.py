@@ -22,6 +22,7 @@ import logging
 import os
 import shutil
 import signal
+import time
 from typing import Tuple
 
 import pathlib
@@ -143,3 +144,9 @@ def terminate_process(
 def is_monitor_process_alive(monitor_pid: int) -> bool:
     """Checks that provided monitor_id is inited and alive"""
     return monitor_pid != 0 and check_pid(monitor_pid)
+
+
+def is_process_healthy(schain_name: str, allowed_diff: int) -> bool:
+    pid, pts = get_schain_process_info(schain_name)
+    current_ts = int(time.time())
+    return pid is not None and is_monitor_process_alive(pid) and current_ts - pts < allowed_diff
