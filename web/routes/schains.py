@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from dataclasses import asdict
 
 from flask import Blueprint, g, request
 
@@ -89,10 +90,11 @@ def schains_list():
     node_id = g.config.id
     if node_id is None:
         return construct_err_response(msg='No node installed')
-    schains_list = list(filter(
-        lambda s: s.get('name'),
-        g.skale.schains.get_schains_for_node(node_id)
-    ))
+    schains_list = [
+        asdict(s)
+        for s in g.skale.schains.get_schains_for_node(node_id)
+        if s and s.name != ''
+    ]
     return construct_ok_response(schains_list)
 
 

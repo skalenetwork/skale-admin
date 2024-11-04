@@ -28,20 +28,14 @@ from sgx import SgxClient
 from core.node import get_check_report, get_skale_node_version
 from core.node import get_current_nodes
 from core.schains.checks import SChainChecks
-from core.schains.firewall.utils import (
-    get_default_rule_controller,
-    get_sync_agent_ranges
-)
-from core.schains.ima import get_ima_log_checks
 from core.schains.external_config import ExternalState
+from core.schains.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
+from core.schains.ima import get_ima_log_checks
+from core.schains.process import is_process_healthy
+from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from web.models.schain import SChainRecord
-from web.helper import (
-    construct_err_response,
-    construct_ok_response,
-    get_api_url,
-    g_skale
-)
+from web.helper import construct_err_response, construct_ok_response, get_api_url, g_skale
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'health'
@@ -56,9 +50,7 @@ def containers():
     all = request.args.get('all') == 'True'
     name_filter = request.args.get('name_filter') or ''
     containers_list = g.docker_utils.get_containers_info(
-        all=all,
-        name_filter=name_filter,
-        format=True
+        all=all, name_filter=name_filter, format=True
     )
     return construct_ok_response(containers_list)
 
@@ -72,17 +64,13 @@ def schains_checks():
         checks_filter = checks_filter.split(',')
     node_id = g.config.id
     if node_id is None:
-        return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
-                                      msg='No node installed')
+        return construct_err_response(status_code=HTTPStatus.BAD_REQUEST, msg='No node installed')
 
     schains = g.skale.schains.get_schains_for_node(node_id)
+    allowed_diff = int(g.skale.constants_holder.get_dkg_timeout() * DKG_TIMEOUT_COEFFICIENT)
     sync_agent_ranges = get_sync_agent_ranges(g.skale)
     stream_version = get_skale_node_version()
-    estate = ExternalState(
-        chain_id=g.skale.web3.eth.chain_id,
-        ima_linked=True,
-        ranges=[]
-    )
+    estate = ExternalState(chain_id=g.skale.web3.eth.chain_id, ima_linked=True, ranges=[])
     checks = []
     for schain in schains:
         if schain.name != '':
@@ -90,8 +78,7 @@ def schains_checks():
             rotation_id = rotation_data['rotation_id']
             if SChainRecord.added(schain.name):
                 rc = get_default_rule_controller(
-                    name=schain.name,
-                    sync_agent_ranges=sync_agent_ranges
+                    name=schain.name, sync_agent_ranges=sync_agent_ranges
                 )
                 current_nodes = get_current_nodes(g.skale, schain.name)
                 schain_record = SChainRecord.get_by_name(schain.name)
@@ -105,12 +92,14 @@ def schains_checks():
                     current_nodes=current_nodes,
                     last_dkg_successful=True,
                     estate=estate,
-                    sync_node=False
+                    sync_node=False,
                 ).get_all(needed=checks_filter)
-                checks.append({
-                    'name': schain.name,
-                    'healthchecks': schain_checks
-                })
+                if not checks_filter or 'process' in checks_filter:
+                    schain_checks.update(
+                        {'process': is_process_healthy(schain.name, allowed_diff=allowed_diff)}
+                    )
+
+                checks.append({'name': schain.name, 'healthchecks': schain_checks})
     return construct_ok_response(checks)
 
 
@@ -119,8 +108,7 @@ def ima_log_checks():
     logger.debug(request)
     node_id = g.config.id
     if node_id is None:
-        return construct_err_response(status_code=HTTPStatus.BAD_REQUEST,
-                                      msg='No node installed')
+        return construct_err_response(status_code=HTTPStatus.BAD_REQUEST, msg='No node installed')
     checks = get_ima_log_checks()
     return construct_ok_response(checks)
 
@@ -152,15 +140,12 @@ def sgx_info():
         'status_https': status_https,
         'sgx_server_url': SGX_SERVER_URL,
         'sgx_keyname': g.config.sgx_key_name,
-        'sgx_wallet_version': version
+        'sgx_wallet_version': version,
     }
     return construct_ok_response(data=res)
 
 
-@health_bp.route(
-    get_api_url(BLUEPRINT_NAME, 'check-report'),
-    methods=['GET']
-)
+@health_bp.route(get_api_url(BLUEPRINT_NAME, 'check-report'), methods=['GET'])
 def check_report():
     logger.debug(request)
     report = get_check_report()

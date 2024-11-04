@@ -4,7 +4,6 @@ import time
 from http import HTTPStatus
 
 from collections import namedtuple
-from multiprocessing import Process
 
 import mock
 import docker
@@ -20,9 +19,8 @@ from core.schains.config.directory import (
     schain_config_dir
 )
 from core.schains.config.schain_node import generate_schain_nodes
-from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.runner import get_container_info, get_image_name, run_ima_container
-# from core.schains.cleaner import remove_ima_container
+from core.schains.skaled_exit_codes import SkaledExitCodes
 
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.helper import read_json
@@ -330,29 +328,6 @@ def test_exit_code(skale, rule_controller, schain_db, current_nodes, estate, dut
     dutils.safe_rm(container_name)
 
 
-def test_process(skale, rule_controller, schain_db, current_nodes, estate, dutils):
-    schain_record = SChainRecord.get_by_name(schain_db)
-    checks = SChainChecks(
-        schain_db,
-        TEST_NODE_ID,
-        schain_record=schain_record,
-        rule_controller=rule_controller,
-        stream_version=CONFIG_STREAM,
-        current_nodes=current_nodes,
-        last_dkg_successful=True,
-        estate=estate,
-        dutils=dutils
-    )
-    assert not checks.process.status
-
-    process = Process(target=time.sleep, args=(5,))
-    process.start()
-    schain_record.set_monitor_id(process.ident)
-    assert checks.process.status
-    process.join()
-    assert not checks.process.status
-
-
 def test_get_all(schain_config, rule_controller, dutils, current_nodes, schain_db, estate):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_record = SChainRecord.get_by_name(schain_name)
@@ -377,7 +352,6 @@ def test_get_all(schain_config, rule_controller, dutils, current_nodes, schain_d
     assert isinstance(checks_dict['rpc'], bool)
     assert isinstance(checks_dict['blocks'], bool)
     assert isinstance(checks_dict['ima_container'], bool)
-    assert isinstance(checks_dict['process'], bool)
 
     estate.ima_linked = False
     checks_without_ima = SChainChecksMock(
