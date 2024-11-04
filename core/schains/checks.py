@@ -41,7 +41,6 @@ from core.schains.config.main import (
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.firewall.types import IRuleController
 from core.schains.ima import get_ima_time_frame, get_migration_ts as get_ima_migration_ts
-from core.schains.process import is_monitor_process_alive
 from core.schains.rpc import (
     check_endpoint_alive,
     check_endpoint_blocks,
@@ -391,11 +390,6 @@ class SkaledChecks(IChecks):
         return CheckRes(False)
 
     @property
-    def process(self) -> CheckRes:
-        """Checks that sChain monitor process is running"""
-        return CheckRes(is_monitor_process_alive(self.schain_record.monitor_id))
-
-    @property
     def exit_zero(self) -> CheckRes:
         """Check that sChain container exited with zero code"""
         if self.dutils.is_container_running(self.container_name):
@@ -453,7 +447,12 @@ class SChainChecks(IChecks):
     def get_name(self) -> str:
         return self.name
 
-    def get_all(self, log: bool = True, save: bool = False, needed: Optional[List[str]] = None):
+    def get_all(
+        self,
+        log: bool = True,
+        save: bool = False,
+        needed: Optional[List[str]] = None
+    ) -> dict:
         needed = needed or API_ALLOWED_CHECKS
 
         plain_checks = {}

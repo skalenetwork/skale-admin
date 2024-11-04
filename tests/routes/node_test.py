@@ -1,5 +1,7 @@
-import socket
 import datetime
+import glob
+import shutil
+import socket
 
 import pytest
 import mock
@@ -15,6 +17,7 @@ from skale.utils.web3_utils import to_checksum_address
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
 from core.schains.config.file_manager import ConfigFileManager
+from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from web.routes.node import node_bp
 from web.helper import get_api_url
@@ -259,6 +262,10 @@ def test_exit_maintenance(skale_bp, node_config_in_maintenance):
 
 
 def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale_bp):
+    for path in glob.glob(f'{SCHAINS_DIR_PATH}/*'):
+        if not path.endswith(schain_on_contracts):
+            shutil.rmtree(path)
+
     data = get_bp_data(
         skale_bp,
         get_api_url(BLUEPRINT_NAME, 'update-safe'),

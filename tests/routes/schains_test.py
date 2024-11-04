@@ -122,7 +122,7 @@ def test_get_schain(
             'id': schain_id,
             'mainnet_owner': skale.wallet.address,
             'part_of_node': 1, 'dkg_status': 1, 'is_deleted': False,
-            'first_run': True, 'repair_mode': False
+            'first_run': True, 'repair_ts': int(r.repair_date.timestamp())
         }
     }
 
