@@ -128,4 +128,4 @@ def init_api_logger():
 
 
 def init_sync_logger():
-    init_logger(ADMIN_LOG_FORMAT, SYNC_LOG_PATH)
+    init_logger(ADMIN_LOG_FORMAT, SYNC_LOG_PATH, DEBUG_LOG_PATH)
