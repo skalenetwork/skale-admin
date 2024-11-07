@@ -135,6 +135,7 @@ def run_skaled_pipeline(
     dutils = dutils or DockerUtils()
 
     rc = get_default_rule_controller(name=schain_name)
+    logger.info('Initing skaled checks manager')
     skaled_checks = SkaledChecks(
         schain_name=schain.name,
         schain_record=schain_record,
@@ -143,9 +144,12 @@ def run_skaled_pipeline(
         sync_node=SYNC_NODE,
     )
 
+    logger.info('Initing skaled status')
     skaled_status = get_skaled_status(schain_name)
+    logger.info('Initing node-cli status')
     ncli_status = get_node_cli_status(schain_name)
 
+    logger.info('Initing skaled action manager')
     skaled_am = SkaledActionManager(
         schain=schain,
         rule_controller=rc,
@@ -155,8 +159,11 @@ def run_skaled_pipeline(
         econfig=ExternalConfig(schain_name),
         dutils=dutils,
     )
+    logger.info('Fetching skaled checks')
     check_status = skaled_checks.get_all(log=False, expose=True)
+    logger.info('Get automatic repair option')
     automatic_repair = get_automatic_repair_option()
+    logger.info('Creating api only check results')
     api_status = get_api_checks_status(status=check_status, allowed=TG_ALLOWED_CHECKS)
     notify_checks(schain_name, node_config.all(), api_status)
 
