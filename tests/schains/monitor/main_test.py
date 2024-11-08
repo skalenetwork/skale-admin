@@ -85,8 +85,7 @@ def test_config_task(skale, skale_ima, schain_db, schain_on_contracts, node_conf
         return result
 
     with mock.patch('core.schains.monitor.main.RegularConfigMonitor', get_monitor_mock):
-        pipeline = config_task.create_pipeline()
-        pipeline()
+        config_task.run()
 
 
 def test_skaled_task(skale, schain_db, schain_on_contracts, node_config, dutils):
@@ -114,8 +113,7 @@ def test_skaled_task(skale, schain_db, schain_on_contracts, node_config, dutils)
 
     with mock.patch('core.schains.monitor.main.get_skaled_monitor', get_monitor_mock):
         with mock.patch('core.schains.monitor.main.notify_checks'):
-            pipeline = skaled_task.create_pipeline()
-            pipeline()
+            skaled_task.run()
 
 
 def test_execute_tasks(tmp_dir, _schain_name):
@@ -167,8 +165,8 @@ def test_execute_tasks(tmp_dir, _schain_name):
         def needed(self) -> bool:
             return True
 
-        def create_pipeline(self) -> Callable:
-            return functools.partial(run_stuck_pipeline, index=self.index)
+        def run(self) -> None:
+            run_stuck_pipeline(index=self.index)
 
     class NotNeededTask(StuckedTask):
         def __init__(self, index: int) -> None:

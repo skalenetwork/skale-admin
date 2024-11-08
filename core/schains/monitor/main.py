@@ -66,8 +66,8 @@ def run_config_pipeline(
     node_config: NodeConfig,
     stream_version: str,
 ) -> None:
+    logger.info('Gathering initial skale manager data')
     schain = skale.schains.get_by_name(schain_name)
-    schain_record = SChainRecord.get_by_name(schain_name)
     rotation_data = skale.node_rotation.get_rotation(schain_name)
     allowed_ranges = get_sync_agent_ranges(skale)
     ima_linked = not SYNC_NODE and skale_ima.linker.has_schain(schain_name)
@@ -75,10 +75,14 @@ def run_config_pipeline(
     last_dkg_successful = skale.dkg.is_last_dkg_successful(group_index)
     current_nodes = get_current_nodes(skale, schain_name)
 
+    logger.info('Initing schain record')
+    schain_record = SChainRecord.get_by_name(schain_name)
+
     estate = ExternalState(
         ima_linked=ima_linked, chain_id=skale_ima.web3.eth.chain_id, ranges=allowed_ranges
     )
     econfig = ExternalConfig(schain_name)
+    logger.info('Initing config checks')
     config_checks = ConfigChecks(
         schain_name=schain_name,
         node_id=node_config.id,
@@ -91,6 +95,7 @@ def run_config_pipeline(
         estate=estate,
     )
 
+    logger.info('Initing config action manager')
     config_am = ConfigActionManager(
         skale=skale,
         schain=schain,
@@ -103,8 +108,9 @@ def run_config_pipeline(
         econfig=econfig,
     )
 
+    logger.info('Gathering config status')
     status = config_checks.get_all(log=False, expose=True)
-    logger.info('Config checks: %s', status)
+    logger.info('Config status: %s', status)
 
     if SYNC_NODE:
         logger.info(
@@ -128,6 +134,7 @@ def run_skaled_pipeline(
     schain_name: str, skale: Skale, node_config: NodeConfig, dutils: DockerUtils
 ) -> None:
     schain = skale.schains.get_by_name(schain_name)
+    logger.info('Initing schain record')
     schain_record = SChainRecord.get_by_name(schain_name)
 
     logger.info('Record: %s', SChainRecord.to_dict(schain_record))
@@ -135,7 +142,7 @@ def run_skaled_pipeline(
     dutils = dutils or DockerUtils()
 
     rc = get_default_rule_controller(name=schain_name)
-    logger.info('Initing skaled checks manager')
+    logger.info('Initing skaled checks')
     skaled_checks = SkaledChecks(
         schain_name=schain.name,
         schain_record=schain_record,
@@ -159,7 +166,7 @@ def run_skaled_pipeline(
         econfig=ExternalConfig(schain_name),
         dutils=dutils,
     )
-    logger.info('Fetching skaled checks')
+    logger.info('Gathering skaled status')
     check_status = skaled_checks.get_all(log=False, expose=True)
     logger.info('Get automatic repair option')
     automatic_repair = get_automatic_repair_option()
@@ -237,14 +244,16 @@ class SkaledTask(ITask):
             not schain_record.sync_config_run or not schain_record.first_run
         )
 
-    def create_pipeline(self) -> Callable:
-        return functools.partial(
-            run_skaled_pipeline,
-            schain_name=self.schain_name,
-            skale=self.skale,
-            node_config=self.node_config,
-            dutils=self.dutils,
-        )
+    def run(self) -> None:
+        try:
+            run_skaled_pipeline(
+                schain_name=self.schain_name,
+                skale=self.skale,
+                node_config=self.node_config,
+                dutils=self.dutils,
+            )
+        except Exception:
+            logger.exception('Task %s failed', self.name)
 
 
 class ConfigTask(ITask):
@@ -296,15 +305,17 @@ class ConfigTask(ITask):
     def needed(self) -> bool:
         return SYNC_NODE or is_node_part_of_chain(self.skale, self.schain_name, self.node_config.id)
 
-    def create_pipeline(self) -> Callable:
-        return functools.partial(
-            run_config_pipeline,
-            schain_name=self.schain_name,
-            skale=self.skale,
-            skale_ima=self.skale_ima,
-            node_config=self.node_config,
-            stream_version=self.stream_version,
-        )
+    def run(self) -> None:
+        try:
+            run_config_pipeline(
+                schain_name=self.schain_name,
+                skale=self.skale,
+                skale_ima=self.skale_ima,
+                node_config=self.node_config,
+                stream_version=self.stream_version,
+            )
+        except Exception:
+            logger.exception('Task %s failed', self.name)
 
 
 def start_tasks(

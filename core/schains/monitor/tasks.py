@@ -25,7 +25,7 @@ class ITask(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def create_pipeline(self) -> Callable:
+    def run(self) -> None:
         pass
 
     @property
@@ -58,29 +58,38 @@ def execute_tasks(
     process_report: ProcessReport,
     sleep_interval: int = SLEEP_INTERVAL_SECONDS,
 ) -> None:
-    logger.info('Running tasks %s', tasks)
-    with ThreadPoolExecutor(max_workers=len(tasks), thread_name_prefix='T') as executor:
+    logger.info("Running tasks %s", tasks)
+    with ThreadPoolExecutor(max_workers=len(tasks), thread_name_prefix="T") as executor:
         stucked = []
         while True:
             for index, task in enumerate(tasks):
+                logger.info(
+                    "Status of %s, running: %s needed: %s stucked: %s",
+                    task.name,
+                    task.future.running(),
+                    task.needed,
+                    len(stucked),
+                )
                 if not task.future.running() and task.needed and len(stucked) == 0:
+                    if task.future.done():
+                        logger.info('Done')
+                        logger.info('Result %s', task.future.result())
                     task.start_ts = int(time.time())
-                    logger.info('Starting task %s at %d', task.name, task.start_ts)
-                    pipeline = task.create_pipeline()
-                    task.future = executor.submit(pipeline)
+                    logger.info("Starting task %s at %d", task.name, task.start_ts)
+                    task.future = executor.submit(task.run)
                 elif task.future.running():
                     if int(time.time()) - task.start_ts > task.stuck_timeout:
-                        logger.info('Canceling future for %s', task.name)
+                        logger.info("Canceling future for %s", task.name)
                         canceled = task.future.cancel()
                         if not canceled:
-                            logger.warning('Stuck detected for job %s', task.name)
+                            logger.warning("Stuck detected for job %s", task.name)
                             task.start_ts = -1
                             stucked.append(task.name)
             time.sleep(sleep_interval)
             if len(stucked) > 0:
-                logger.info('Sleeping before subverting execution')
+                logger.info("Sleeping before subverting execution")
                 executor.shutdown(wait=False)
-                logger.info('Subverting execution. Stucked %s', stucked)
+                logger.info("Subverting execution. Stucked %s", stucked)
                 process_report.ts = 0
                 break
             process_report.ts = int(time.time())
