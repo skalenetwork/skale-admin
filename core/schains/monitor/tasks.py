@@ -2,7 +2,6 @@ import abc
 import logging
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Callable
 
 from core.schains.process import ProcessReport
 

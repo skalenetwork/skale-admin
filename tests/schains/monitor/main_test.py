@@ -1,11 +1,9 @@
-import functools
 import logging
 import os
 import pathlib
 import shutil
 import time
 from concurrent.futures import Future
-from typing import Callable
 from unittest import mock
 
 import pytest

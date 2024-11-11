@@ -17,11 +17,10 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import functools
 import logging
 import os
 import time
-from typing import Callable, Optional
+from typing import Optional
 from importlib import reload
 
 from skale import Skale, SkaleIma
