@@ -2,7 +2,6 @@ import abc
 import logging
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Callable
 
 from core.schains.process import ProcessReport
 
@@ -25,7 +24,7 @@ class ITask(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def create_pipeline(self) -> Callable:
+    def run(self) -> None:
         pass
 
     @property
@@ -63,11 +62,20 @@ def execute_tasks(
         stucked = []
         while True:
             for index, task in enumerate(tasks):
+                logger.info(
+                    'Status of %s, running: %s needed: %s stucked: %s',
+                    task.name,
+                    task.future.running(),
+                    task.needed,
+                    len(stucked),
+                )
                 if not task.future.running() and task.needed and len(stucked) == 0:
+                    if task.future.done():
+                        logger.info('Done')
+                        logger.info('Result %s', task.future.result())
                     task.start_ts = int(time.time())
                     logger.info('Starting task %s at %d', task.name, task.start_ts)
-                    pipeline = task.create_pipeline()
-                    task.future = executor.submit(pipeline)
+                    task.future = executor.submit(task.run)
                 elif task.future.running():
                     if int(time.time()) - task.start_ts > task.stuck_timeout:
                         logger.info('Canceling future for %s', task.name)
