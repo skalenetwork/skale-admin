@@ -19,7 +19,7 @@ class SchainData:
     dkg_status: int
     is_deleted: bool
     first_run: bool
-    repair_mode: bool
+    repair_ts: int
 
     def to_dict(self) -> dict:
         return {
@@ -30,7 +30,7 @@ class SchainData:
             'dkg_status': self.dkg_status,
             'is_deleted': self.is_deleted,
             'first_run': self.first_run,
-            'repair_mode': self.repair_mode
+            'repair_ts': self.repair_ts
         }
 
 
@@ -47,12 +47,12 @@ def get_schain_info_by_name(skale: Skale, schain_name: str) -> SchainData:
     return SchainData(
         schain_name,
         sid,
-        contracts_info['mainnetOwner'],
-        contracts_info['partOfNode'],
+        contracts_info.mainnet_owner,
+        contracts_info.part_of_node,
         record.dkg_status,
         record.is_deleted,
         record.first_run,
-        record.repair_mode
+        int(record.repair_date.timestamp())
     )
 
 

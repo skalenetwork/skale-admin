@@ -23,7 +23,9 @@ from skale.utils.helper import ip_from_bytes
 
 from core.node_config import NodeConfig
 from core.ima.schain import update_predeployed_ima
-
+from core.schains.config.file_manager import ConfigFileManager
+from core.schains.cleaner import get_schains_on_node
+from tools.docker_utils import DockerUtils
 
 logger = logging.getLogger(__name__)
 
@@ -56,3 +58,22 @@ def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:
             node_config.ip = ip
         if node_config.name != name:
             node_config.name = name
+
+
+def update_unsafe_for_schains(
+    skale: Skale,
+    node_config: NodeConfig,
+    dutils: DockerUtils
+) -> list[str]:
+    schains_on_node = get_schains_on_node(dutils=dutils)
+    unsafe_chains = []
+    for schain_name in schains_on_node:
+        cfm = ConfigFileManager(schain_name=schain_name)
+        if skale.node_rotation.is_rotation_active(schain_name):
+            logger.info('Rotation is in progress for %s', schain_name)
+            unsafe_chains.append(schain_name)
+        # To handle the gap between SM finish ts and skaled exit time
+        elif cfm.skaled_config_exists() and not cfm.skaled_config_synced_with_upstream():
+            logger.info('Skaled config is not synced with upstream for %s', schain_name)
+            unsafe_chains.append(schain_name)
+    return unsafe_chains

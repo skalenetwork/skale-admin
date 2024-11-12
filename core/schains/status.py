@@ -22,22 +22,52 @@ import json
 import logging
 from json.decoder import JSONDecodeError
 from typing import Optional
+from abc import ABCMeta, abstractmethod
 
-from core.schains.config.directory import skaled_status_filepath
+from core.schains.config.directory import node_cli_status_filepath, skaled_status_filepath
 from tools.config_utils import config_getter, log_broken_status_file
 from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
 
 
-class SkaledStatus:
-    def __init__(self, filepath: str):
+class IStatus(metaclass=ABCMeta):
+    @abstractmethod
+    def __init__(self, filepath: str) -> None:
+        pass
+
+    @property
+    @abstractmethod
+    def filepath(self) -> str:
+        pass
+
+    @property
+    def all(self) -> dict:
+        if not os.path.isfile(self.filepath):
+            logger.warning("File %s is not found", self.filepath)
+            return
+        try:
+            return read_json(self.filepath)
+        except JSONDecodeError:
+            log_broken_status_file(self.filepath)
+            return {}
+
+    def log(self) -> None:
+        logger.info(f'{self.__class__.__name__}: \n' + json.dumps(self.all, indent=4))
+
+
+class SkaledStatus(IStatus):
+    def __init__(self, filepath: str) -> None:
         """
         Read-only wrapper for skaled.status file, reads from the file each time.
         Returns dict for top-level keys, True or False for second-level keys.
         Returns None for all keys if file is not found.
         """
-        self.filepath = filepath
+        self._filepath = filepath
+
+    @property
+    def filepath(self) -> str:
+        return self._filepath
 
     @property
     @config_getter
@@ -84,28 +114,48 @@ class SkaledStatus:
             return
         return exit_state['StartFromSnapshot']
 
+
+class NodeCliStatus(IStatus):
+    def __init__(self, filepath: str) -> None:
+        """
+        Read-only wrapper for node_cli.status file, reads from the file each time.
+        """
+        self._filepath = filepath
+
     @property
-    def all(self) -> dict:
-        if not os.path.isfile(self.filepath):
-            logger.warning("File %s is not found", self.filepath)
-            return
-        try:
-            return read_json(self.filepath)
-        except JSONDecodeError:
-            log_broken_status_file(self.filepath)
-            return {}
+    @config_getter
+    def repair_ts(self) -> int:
+        return 'repair_ts', self.filepath
 
-    def log(self) -> None:
-        logger.info('skaled status file: \n' + json.dumps(self.all, indent=4))
+    @property
+    @config_getter
+    def snapshot_from(self) -> int:
+        return 'snapshot_from', self.filepath
+
+    @property
+    def filepath(self) -> str:
+        return self._filepath
 
 
-def init_skaled_status(schain_name) -> SkaledStatus:
+def init_skaled_status(schain_name: str) -> SkaledStatus:
     status_filepath = skaled_status_filepath(schain_name)
     return SkaledStatus(status_filepath)
 
 
-def get_skaled_status(schain_name) -> Optional[SkaledStatus]:
+def get_skaled_status(schain_name: str) -> Optional[SkaledStatus]:
     status_path = skaled_status_filepath(schain_name)
     if os.path.isfile(status_path):
         return SkaledStatus(status_path)
+    return None
+
+
+def init_node_cli_status(schain_name: str) -> SkaledStatus:
+    status_filepath = node_cli_status_filepath(schain_name)
+    return NodeCliStatus(status_filepath)
+
+
+def get_node_cli_status(schain_name: str) -> Optional[SkaledStatus]:
+    status_path = node_cli_status_filepath(schain_name)
+    if os.path.isfile(status_path):
+        return NodeCliStatus(status_path)
     return None

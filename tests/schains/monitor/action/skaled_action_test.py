@@ -31,7 +31,7 @@ def run_ima_container_mock(
     dutils=None
 ):
     image_name, container_name, _, _ = get_container_info(
-        IMA_CONTAINER, schain['name'])
+        IMA_CONTAINER, schain.name)
     image = image or image_name
     dutils.safe_rm(container_name)
     dutils.run_container(
@@ -46,6 +46,7 @@ def monitor_schain_container_mock(
     schain_record,
     skaled_status,
     download_snapshot=False,
+    snapshot_from='',
     start_ts=None,
     abort_on_exit=True,
     dutils=None,
@@ -53,7 +54,7 @@ def monitor_schain_container_mock(
     historic_state=False
 ):
     image_name, container_name, _, _ = get_container_info(
-        SCHAIN_CONTAINER, schain['name'])
+        SCHAIN_CONTAINER, schain.name)
     dutils.safe_rm(container_name)
     if not skaled_status.exit_time_reached or not abort_on_exit:
         dutils.run_container(
@@ -92,6 +93,7 @@ def skaled_am(
     secret_key,
     ssl_folder,
     ima_migration_schedule,
+    ncli_status,
     dutils,
     skaled_checks
 ):
@@ -102,6 +104,7 @@ def skaled_am(
         rule_controller=rule_controller,
         checks=skaled_checks,
         node_config=node_config,
+        ncli_status=ncli_status,
         dutils=dutils
     )
 
@@ -145,6 +148,7 @@ def test_skaled_container_with_snapshot_action(skaled_am):
             schain_record=skaled_am.schain_record,
             skaled_status=skaled_am.skaled_status,
             download_snapshot=True,
+            snapshot_from='127.0.0.1',
             start_ts=None,
             abort_on_exit=True,
             dutils=skaled_am.dutils,
@@ -174,6 +178,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
             start_ts=ts,
             abort_on_exit=True,
             dutils=skaled_am.dutils,
+            snapshot_from='127.0.0.1',
             sync_node=False,
             historic_state=False
         )
@@ -282,7 +287,7 @@ def test_ima_container_action_from_scratch(
     container_name = containers[0].name
     assert container_name == f'skale_ima_{skaled_am.name}'
     image = dutils.get_container_image_name(container_name)
-    assert image == 'skalenetwork/ima:2.0.0-beta.9'
+    assert image == 'skalenetwork/ima:2.1.0'
 
 
 # @pytest.mark.skip('Docker API GA issues need to be resolved')
@@ -304,8 +309,8 @@ def test_ima_container_action_image_pulling(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-develop.3'
-        assert dutils.pulled('skalenetwork/ima:2.0.0-beta.9')
+        assert image == 'skalenetwork/ima:2.1.0-beta.3'
+        assert dutils.pulled('skalenetwork/ima:2.1.0')
 
 
 def test_ima_container_action_image_migration(
@@ -325,7 +330,7 @@ def test_ima_container_action_image_migration(
         container_name = containers[0].name
         assert container_name == f'skale_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.0.0-beta.9'
+        assert image == 'skalenetwork/ima:2.1.0'
 
 
 def test_ima_container_action_time_frame_migration(
@@ -482,3 +487,12 @@ def test_firewall_rules_action(skaled_am, skaled_checks, rule_controller, econfi
         SChainRule(port=10009),
         SChainRule(port=10010, first_ip='127.0.0.2', last_ip='127.0.0.2')
     ]
+
+
+def test_disable_repair_mode(skaled_am):
+    skaled_am.schain_record.set_repair_mode(True)
+    assert skaled_am.schain_record.repair_mode
+    skaled_am.disable_repair_mode()
+    assert not skaled_am.schain_record.repair_mode
+    skaled_am.disable_repair_mode()
+    assert not skaled_am.schain_record.repair_mode
