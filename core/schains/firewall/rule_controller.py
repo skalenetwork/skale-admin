@@ -23,7 +23,7 @@ from abc import abstractmethod
 from functools import wraps
 from typing import Any, Callable, cast, Dict, Iterable, List, Optional, TypeVar
 
-from .firewall_manager import IptablesSChainFirewallManager, NftSchainFirewallManager
+from .firewall_manager import IptablesSChainFirewallManager, NFTSchainFirewallManager
 from .types import (
     IFirewallManager,
     IpRange,
@@ -216,10 +216,10 @@ class IptablesSChainRuleController(SChainRuleController):
         )
 
 
-class NftSchainRuleController(SChainRuleController):
+class NFTSchainRuleController(SChainRuleController):
     @configured_only
-    def create_firewall_manager(self) -> NftSchainFirewallManager:
-        return NftSchainFirewallManager(
+    def create_firewall_manager(self) -> NFTSchainFirewallManager:
+        return NFTSchainFirewallManager(
             self.name,
             self.base_port,  # type: ignore
             self.base_port + self.ports_per_schain - 1  # type: ignore

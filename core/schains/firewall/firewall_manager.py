@@ -22,7 +22,7 @@ from abc import abstractmethod
 from typing import Iterable, Optional
 
 from core.schains.firewall.iptables import IptablesController
-from core.schains.firewall.nftables import NftablesController
+from core.schains.firewall.nftables import NFTablesController
 from core.schains.firewall.types import (
     IFirewallManager,
     IHostFirewallController,
@@ -91,9 +91,9 @@ class IptablesSChainFirewallManager(SChainFirewallManager):
         return IptablesController()
 
 
-class NftSchainFirewallManager(SChainFirewallManager):
-    def create_host_controller(self) -> NftablesController:
-        nc_controller = NftablesController(chain=self.name)
+class NFTSchainFirewallManager(SChainFirewallManager):
+    def create_host_controller(self) -> NFTablesController:
+        nc_controller = NFTablesController(chain=self.name)
         nc_controller.create_table()
         nc_controller.create_chain()
         return nc_controller

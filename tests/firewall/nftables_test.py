@@ -1,17 +1,16 @@
 import concurrent.futures
 import importlib
-import subprocess
 import time
 
 import pytest
 
-from core.schains.firewall.nftables import NftablesController
+from core.schains.firewall.nftables import NFTablesController
 from core.schains.firewall.types import SChainRule
 
 
 @pytest.fixture
 def nf_test_tables():
-    nft = importlib.import_module('nftables').Nftables()
+    nft = importlib.import_module('nftables').NFTables()
     nft.cmd('flush ruleset')
     return nft
 
@@ -28,7 +27,7 @@ def custom_chain(nf_test_tables, filter_table):
 
 
 def test_nftables_controller(custom_chain):
-    nft_controller = NftablesController(chain='test-chain')
+    nft_controller = NFTablesController(chain='test-chain')
     rule_a = SChainRule(10000, '1.1.1.1', '2.2.2.2')
     rule_b = SChainRule(10001, '3.3.3.3')
     nft_controller.add_rule(rule_a)
@@ -46,7 +45,7 @@ def test_nftables_controller(custom_chain):
 
 def test_nftables_controller_duplicates(custom_chain):
     rule_a = SChainRule(10000, '1.1.1.1', '2.2.2.2')
-    manager = NftablesController(chain='test-chain')
+    manager = NFTablesController(chain='test-chain')
     manager.add_rule(rule_a)
     rule_b = SChainRule(10001, '3.3.3.3', '4.4.4.4')
     manager.add_rule(rule_b)
@@ -68,7 +67,7 @@ def test_nftables_controller_duplicates(custom_chain):
 
 
 def add_remove_rule(srule, refresh):
-    manager = NftablesController()
+    manager = NFTablesController()
     manager.add_rule(srule)
     time.sleep(1)
     if not manager.has_rule(srule):
@@ -100,6 +99,6 @@ def test_nftables_manager_parallel(custom_chain):
 
         for future in concurrent.futures.as_completed(futures):
             assert future.result
-    manager = NftablesController(custom_chain)
+    manager = NFTablesController(custom_chain)
     time.sleep(10)
     assert len(list(manager.rules)) == 0

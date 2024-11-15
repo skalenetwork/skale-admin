@@ -25,7 +25,7 @@ from typing import List, Optional, Tuple
 from skale import Skale
 
 from .types import IpRange
-from .rule_controller import IptablesSChainRuleController, NftSchainRuleController
+from .rule_controller import IptablesSChainRuleController, NFTSchainRuleController
 
 
 logger = logging.getLogger(__name__)
@@ -72,11 +72,11 @@ def get_nftables_rule_controller(
     own_ip: Optional[str] = None,
     node_ips: List[str] = [],
     sync_agent_ranges: Optional[List[IpRange]] = []
-) -> NftSchainRuleController:
+) -> NFTSchainRuleController:
     sync_agent_ranges = sync_agent_ranges or []
     logger.info('Creating rule controller for %s', name)
     logger.debug('Rule controller ranges for %s: %s', name, sync_agent_ranges)
-    return NftSchainRuleController(
+    return NFTSchainRuleController(
         name=name,
         base_port=base_port,
         own_ip=own_ip,

@@ -58,11 +58,11 @@ def is_like_number(value):
     return True
 
 
-class NftablesCmdFailedError(Exception):
+class NFTablesCmdFailedError(Exception):
     pass
 
 
-class NftablesController(IHostFirewallController):
+class NFTablesController(IHostFirewallController):
     plock = multiprocessing.Lock()
     FAMILY = 'inet'
 
@@ -70,7 +70,7 @@ class NftablesController(IHostFirewallController):
         self.table = table
         self.chain = chain
         self._nftables = importlib.import_module('nftables')
-        self.nft = self._nftables.Nftables()
+        self.nft = self._nftables.NFTables()
         self.nft.set_json_output(True)
 
     def _compose_json(self, commands: list[dict]) -> dict:
@@ -105,7 +105,7 @@ class NftablesController(IHostFirewallController):
     def chains(self) -> list[dict]:
         output = self.run_cmd('list chains')
         if output[0] != 0:
-            raise NftablesCmdFailedError(output)
+            raise NFTablesCmdFailedError(output)
         parsed = json.loads(output[1])['nftables']
         return [record['chain']['name'] for record in parsed if 'chain' in record]
 
@@ -113,17 +113,17 @@ class NftablesController(IHostFirewallController):
     def tables(self) -> list[dict]:
         output = self.run_cmd('list tables')
         if output[0] != 0:
-            raise NftablesCmdFailedError(output)
+            raise NFTablesCmdFailedError(output)
         parsed = json.loads(output[1])['nftables']
         return [record['table']['name'] for record in parsed if 'table' in record]
 
     def run_json_cmd(self, cmd: dict) -> tuple:
-        logger.debug('Nftables json cmd %s', cmd)
+        logger.debug('NFTables json cmd %s', cmd)
         with self.plock:
             return self.nft.json_cmd(cmd)
 
     def run_cmd(self, cmd: str) -> tuple:
-        logger.debug('Nftables cmd %s', cmd)
+        logger.debug('NFTables cmd %s', cmd)
         with self.plock:
             return self.nft.cmd(cmd)
 
@@ -155,7 +155,7 @@ class NftablesController(IHostFirewallController):
 
         rc, output, error = self.run_json_cmd(json_cmd)
         if rc != 0:
-            raise NftablesCmdFailedError(f'Failed to add allow rule: {error}')
+            raise NFTablesCmdFailedError(f'Failed to add allow rule: {error}')
 
     @classmethod
     def rule_to_expr(cls, rule: SChainRule) -> list:
@@ -256,7 +256,7 @@ class NftablesController(IHostFirewallController):
 
             rc, output, error = self.run_json_cmd(json_cmd)
             if rc != 0:
-                raise NftablesCmdFailedError(f'Failed to delete rule: {error}')
+                raise NFTablesCmdFailedError(f'Failed to delete rule: {error}')
 
     @property  # type: ignore
     def rules(self) -> Iterable[SChainRule]:
