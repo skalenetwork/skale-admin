@@ -70,7 +70,7 @@ class NFTablesController(IHostFirewallController):
         self.table = table
         self.chain = chain
         self._nftables = importlib.import_module('nftables')
-        self.nft = self._nftables.NFTables()
+        self.nft = self._nftables.Nftables()
         self.nft.set_json_output(True)
 
     def _compose_json(self, commands: list[dict]) -> dict:
