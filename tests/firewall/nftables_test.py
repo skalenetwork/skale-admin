@@ -10,7 +10,7 @@ from core.schains.firewall.types import SChainRule
 
 @pytest.fixture
 def nf_test_tables():
-    nft = importlib.import_module('nftables').NFTables()
+    nft = importlib.import_module('nftables').Nftables()
     nft.cmd('flush ruleset')
     return nft
 
