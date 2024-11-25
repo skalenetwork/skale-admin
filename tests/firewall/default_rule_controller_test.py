@@ -180,7 +180,7 @@ def test_concurrent_rc_behavior_no_refresh(attempt):
 
 
 @pytest.mark.parametrize('attempt', range(5))
-def test_concurrent_rc_behavior_with_refresh(attempt, refresh):
+def test_concurrent_rc_behavior_with_refresh(attempt):
     node_number = 16
     schain_number = 8
     own_ip = '1.1.1.1'
