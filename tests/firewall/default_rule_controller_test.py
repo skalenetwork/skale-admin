@@ -9,6 +9,17 @@ from core.schains.firewall import NFTablesController
 from core.schains.firewall.utils import get_default_rule_controller
 from core.schains.firewall.types import IpRange, SkaledPorts
 
+from tools.helper import run_cmd
+
+
+@pytest.fixture
+def refresh():
+    run_cmd(['nft', 'flush', 'ruleset'])
+    try:
+        yield
+    finally:
+        run_cmd(['nft', 'flush', 'ruleset'])
+
 
 def test_get_default_rule_controller():
     own_ip = '3.3.3.3'
@@ -180,7 +191,7 @@ def test_concurrent_rc_behavior_no_refresh(attempt):
 
 
 @pytest.mark.parametrize('attempt', range(5))
-def test_concurrent_rc_behavior_with_refresh(attempt):
+def test_concurrent_rc_behavior_with_refresh(attempt, refresh):
     node_number = 16
     schain_number = 8
     own_ip = '1.1.1.1'
