@@ -224,7 +224,7 @@ class NFTablesController(IHostFirewallController):
             output = None
             rc, output, error = self.run_cmd(f'list chain {self.FAMILY} {self.table} {self.chain}')
             if rc != 0:
-                raise Exception(f'Failed to list rules: {error}')
+                raise NFTablesCmdFailedError(f'Failed to list rules: {error}')
 
             current_rules = json.loads(output)
 
@@ -237,7 +237,7 @@ class NFTablesController(IHostFirewallController):
                         break
 
             if handle is None:
-                raise Exception('Rule not found')
+                raise NFTablesCmdFailedError('Rule not found')
 
             json_cmd = self._compose_json(
                 [
