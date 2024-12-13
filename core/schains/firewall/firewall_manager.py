@@ -95,5 +95,5 @@ class NFTSchainFirewallManager(SChainFirewallManager):
     def create_host_controller(self) -> NFTablesController:
         nc_controller = NFTablesController(chain=self.name)
         nc_controller.create_table()
-        nc_controller.create_chain()
+        nc_controller.create_chain(self.first_port, self.last_port)
         return nc_controller

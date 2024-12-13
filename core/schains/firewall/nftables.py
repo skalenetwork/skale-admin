@@ -22,8 +22,7 @@ import logging
 import importlib
 import ipaddress
 import multiprocessing
-from functools import wraps
-from typing import Callable, Iterable
+from typing import Iterable
 
 from core.schains.firewall.types import IHostFirewallController, SChainRule
 
@@ -35,27 +34,8 @@ T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
 
-TABLE = 'filter'
+TABLE = 'firewall'
 CHAIN = 'INPUT'
-
-
-def refreshed(func: Callable) -> Callable:
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        self.refresh()
-        return func(self, *args, **kwargs)
-
-    return wrapper
-
-
-def is_like_number(value):
-    if value is None:
-        return False
-    try:
-        int(value)
-    except ValueError:
-        return False
-    return True
 
 
 class NFTablesCmdFailedError(Exception):
@@ -82,7 +62,43 @@ class NFTablesController(IHostFirewallController):
         if not self.has_table(self.table):
             return self.run_cmd(f'add table inet {self.table}')
 
-    def create_chain(self) -> None:
+    def add_schain_drop_rule(self, first_port: int, last_port: int) -> None:
+        expr = [
+          {
+            "match": {
+              "left": {
+                "payload": {
+                  "protocol": "tcp",
+                  "field": "dport"
+                }
+              },
+              "op": "==",
+              "right": {'range': [first_port, last_port]}
+            }
+          },
+          {'counter': None},
+          {"drop": None}
+        ]
+
+        if self.expr_to_rule(expr) not in self.get_rules_by_policy(policy='drop'):
+            cmd = {
+                'nftables': [
+                    {
+                        'add': {
+                            'rule': {
+                                'family': self.FAMILY,
+                                'table': self.table,
+                                'chain': self.chain,
+                                'expr': expr,
+                            }
+                        }
+                    }
+                ]
+            }
+            self.run_json_cmd(cmd)
+            logger.info('Added drop rule for chain %s', self.chain)
+
+    def create_chain(self, first_port: int, last_port: int) -> None:
         if not self.has_chain(self.chain):
             return self.run_json_cmd(
                 self._compose_json(
@@ -94,12 +110,16 @@ class NFTablesController(IHostFirewallController):
                                     'table': self.table,
                                     'name': self.chain,
                                     'hook': 'input',
+                                    'type': 'filter',
+                                    'prio': 0,
+                                    'policy': 'accept',
                                 }
                             }
                         }
                     ]
                 )
             )
+            self.add_schain_drop_rule(first_port, last_port)
 
     @property
     def chains(self) -> list[dict]:
@@ -141,7 +161,7 @@ class NFTablesController(IHostFirewallController):
         json_cmd = self._compose_json(
             [
                 {
-                    'add': {
+                    'insert': {
                         'rule': {
                             'family': self.FAMILY,
                             'table': self.table,
@@ -194,7 +214,7 @@ class NFTablesController(IHostFirewallController):
                 }
             )
 
-        expr.append({'accept': None})
+        expr.extend([{'counter': None}, {'accept': None}])
         return expr
 
     @classmethod
@@ -217,6 +237,13 @@ class NFTablesController(IHostFirewallController):
         if any([port, first_ip, last_ip]):
             return SChainRule(port=port, first_ip=first_ip, last_ip=last_ip)
 
+    @classmethod
+    def expr_equals(cls, expr_a: list[dict], expr_b: list[dict]) -> bool:
+        for item_a, item_b in zip(sorted(expr_a), sorted(expr_b)):
+            if 'counter' not in item_a and item_a != item_b:
+                return False
+        return True
+
     def remove_rule(self, rule: SChainRule) -> None:
         if self.has_rule(rule):
             expr = self.rule_to_expr(rule)
@@ -228,11 +255,15 @@ class NFTablesController(IHostFirewallController):
 
             current_rules = json.loads(output)
 
+            logger.info('HERE HERE %s', expr)
+            logger.info('HERE current rules %s', current_rules)
             handle = None
             for item in current_rules.get('nftables', []):
                 if 'rule' in item:
                     rule_data = item['rule']
-                    if rule_data.get('expr') == expr:
+                    logger.info('HERE HERE 2 %s', rule_data['expr'])
+                    logger.info('HERE HERE 3 %s', expr)
+                    if self.expr_equals(rule_data.get('expr'), expr):
                         handle = rule_data.get('handle')
                         break
 
@@ -260,6 +291,12 @@ class NFTablesController(IHostFirewallController):
 
     @property  # type: ignore
     def rules(self) -> Iterable[SChainRule]:
+        return self.get_rules_by_policy(policy='accept')
+
+    def has_rule(self, rule: SChainRule) -> bool:
+        return rule in self.rules
+
+    def get_rules_by_policy(self, policy: str) -> list[SChainRule]:
         output = None
         rc, output, error = self.run_cmd(f'list chain {self.FAMILY} {self.table} {self.chain}')
         if output == '':
@@ -271,13 +308,13 @@ class NFTablesController(IHostFirewallController):
         for item in data.get('nftables', []):
             if 'rule' in item:
                 plain_rule = item['rule']
-                rule = self.expr_to_rule(plain_rule.get('expr', []))
-                if rule:
-                    rules.append(rule)
+                expr = plain_rule.get('expr', [])
+                if {policy: None} in expr:
+                    rule = self.expr_to_rule(expr)
+                    if rule:
+                        rules.append(rule)
+        logger.debug('Rules for policy %s: %s', policy, rules)
         return rules
-
-    def has_rule(self, rule: SChainRule) -> bool:
-        return rule in self.rules
 
     @classmethod
     def from_ip_network(cls, ip: str) -> str:
