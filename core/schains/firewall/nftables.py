@@ -34,8 +34,9 @@ T = TypeVar('T')
 
 logger = logging.getLogger(__name__)
 
+
 TABLE = 'firewall'
-CHAIN = 'INPUT'
+CHAIN = 'skale'
 
 
 class NFTablesCmdFailedError(Exception):
@@ -48,7 +49,7 @@ class NFTablesController(IHostFirewallController):
 
     def __init__(self, table: str = TABLE, chain: str = CHAIN) -> None:
         self.table = table
-        self.chain = chain
+        self.chain = f'skale-{chain}'
         self._nftables = importlib.import_module('nftables')
         self.nft = self._nftables.Nftables()
         self.nft.set_json_output(True)
@@ -95,7 +96,8 @@ class NFTablesController(IHostFirewallController):
 
     def create_chain(self, first_port: int, last_port: int) -> None:
         if not self.has_chain(self.chain):
-            return self.run_json_cmd(
+            logger.info('Creating chain %s', self.chain)
+            self.run_json_cmd(
                 self._compose_json(
                     [
                         {
