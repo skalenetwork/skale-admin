@@ -64,20 +64,15 @@ class NFTablesController(IHostFirewallController):
 
     def add_schain_drop_rule(self, first_port: int, last_port: int) -> None:
         expr = [
-          {
-            "match": {
-              "left": {
-                "payload": {
-                  "protocol": "tcp",
-                  "field": "dport"
+            {
+                'match': {
+                    'op': '==',
+                    'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
+                    'right': {'range': [first_port, last_port]},
                 }
-              },
-              "op": "==",
-              "right": {'range': [first_port, last_port]}
-            }
-          },
-          {'counter': None},
-          {"drop": None}
+            },
+            {'counter': None},
+            {'drop': None},
         ]
 
         if self.expr_to_rule(expr) not in self.get_rules_by_policy(policy='drop'):
@@ -178,7 +173,7 @@ class NFTablesController(IHostFirewallController):
             raise NFTablesCmdFailedError(f'Failed to add allow rule: {error}')
 
     @classmethod
-    def rule_to_expr(cls, rule: SChainRule) -> list:
+    def rule_to_expr(cls, rule: SChainRule, counter: bool = True) -> list:
         expr = []
 
         if rule.first_ip:
@@ -186,8 +181,8 @@ class NFTablesController(IHostFirewallController):
                 expr.append(
                     {
                         'match': {
-                            'left': {'payload': {'protocol': 'ip', 'field': 'saddr'}},
                             'op': '==',
+                            'left': {'payload': {'protocol': 'ip', 'field': 'saddr'}},
                             'right': f'{rule.first_ip}',
                         }
                     }
@@ -196,8 +191,8 @@ class NFTablesController(IHostFirewallController):
                 expr.append(
                     {
                         'match': {
-                            'left': {'payload': {'protocol': 'ip', 'field': 'saddr'}},
                             'op': '==',
+                            'left': {'payload': {'protocol': 'ip', 'field': 'saddr'}},
                             'right': {'range': [f'{rule.first_ip}', f'{rule.last_ip}']},
                         }
                     }
@@ -207,14 +202,17 @@ class NFTablesController(IHostFirewallController):
             expr.append(
                 {
                     'match': {
-                        'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
                         'op': '==',
+                        'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
                         'right': rule.port,
                     }
                 }
             )
 
-        expr.extend([{'counter': None}, {'accept': None}])
+        if counter:
+            expr.append({'counter': None})
+
+        expr.append({'accept': None})
         return expr
 
     @classmethod
@@ -237,16 +235,9 @@ class NFTablesController(IHostFirewallController):
         if any([port, first_ip, last_ip]):
             return SChainRule(port=port, first_ip=first_ip, last_ip=last_ip)
 
-    @classmethod
-    def expr_equals(cls, expr_a: list[dict], expr_b: list[dict]) -> bool:
-        for item_a, item_b in zip(sorted(expr_a), sorted(expr_b)):
-            if 'counter' not in item_a and item_a != item_b:
-                return False
-        return True
-
     def remove_rule(self, rule: SChainRule) -> None:
         if self.has_rule(rule):
-            expr = self.rule_to_expr(rule)
+            expr = self.rule_to_expr(rule, counter=False)
 
             output = None
             rc, output, error = self.run_cmd(f'list chain {self.FAMILY} {self.table} {self.chain}')
@@ -255,15 +246,14 @@ class NFTablesController(IHostFirewallController):
 
             current_rules = json.loads(output)
 
-            logger.info('HERE HERE %s', expr)
-            logger.info('HERE current rules %s', current_rules)
             handle = None
             for item in current_rules.get('nftables', []):
                 if 'rule' in item:
                     rule_data = item['rule']
-                    logger.info('HERE HERE 2 %s', rule_data['expr'])
-                    logger.info('HERE HERE 3 %s', expr)
-                    if self.expr_equals(rule_data.get('expr'), expr):
+                    rule_expr = list(
+                        filter(lambda statement: 'counter' not in statement, rule_data['expr'])
+                    )
+                    if expr == rule_expr:
                         handle = rule_data.get('handle')
                         break
 

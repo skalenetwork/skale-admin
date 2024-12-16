@@ -17,12 +17,12 @@ def nf_test_tables():
 
 @pytest.fixture
 def filter_table(nf_test_tables):
-    print(nf_test_tables.cmd('add table inet filter'))
+    print(nf_test_tables.cmd('add table inet firewall'))
 
 
 @pytest.fixture
 def custom_chain(nf_test_tables, filter_table):
-    nf_test_tables.cmd('add chain inet filter test-chain')
+    nf_test_tables.cmd('add chain inet firewall test-chain')
     return 'test-chain'
 
 
@@ -35,7 +35,7 @@ def test_nftables_controller(custom_chain):
     assert nft_controller.has_rule(rule_a)
     assert nft_controller.has_rule(rule_b)
     rules = list(nft_controller.rules)
-    assert rules == sorted([rule_b, rule_a])
+    assert sorted(rules) == sorted([rule_b, rule_a]), (rules, sorted([rule_b, rule_a]))
     nft_controller.remove_rule(rule_a)
     assert not nft_controller.has_rule(rule_a)
     assert nft_controller.has_rule(rule_b)
