@@ -22,8 +22,9 @@ def filter_table(nf_test_tables):
 
 @pytest.fixture
 def custom_chain(nf_test_tables, filter_table):
-    nf_test_tables.cmd('add chain inet firewall test-chain')
-    return 'test-chain'
+    name = 'test-chain'
+    nf_test_tables.cmd('add chain inet firewall skale-{name}')
+    return name
 
 
 def test_nftables_controller(custom_chain):
