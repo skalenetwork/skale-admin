@@ -18,16 +18,17 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import logging
 import importlib
 import ipaddress
+import json
+import logging
 import multiprocessing
-from typing import Iterable
+import os
+from typing import Iterable, TypeVar
 
 from core.schains.firewall.types import IHostFirewallController, SChainRule
 
-from typing import TypeVar
-import json
+from tools.configs import NFT_CHAIN_BASE_PATH
 
 T = TypeVar('T')
 
@@ -315,3 +316,21 @@ class NFTablesController(IHostFirewallController):
     @classmethod
     def to_ip_network(cls, ip: str) -> str:
         return str(ipaddress.ip_network(ip))
+
+    def get_plain_chain_rules(self) -> str:
+        self.nft.set_json_output(False)
+        output = ''
+        try:
+            rc, output, error = self.run_cmd(f'list chain {self.FAMILY} {self.table} {self.chain}')
+            if rc != 0:
+                raise NFTablesCmdFailedError(f"Failed to get table content: {error}")
+        finally:
+            self.nft.set_json_output(True)
+
+        return output
+
+    def save_rules(self) -> None:
+        chain_rules = self.get_plain_chain_rules()
+        nft_chain_path = os.path.join(NFT_CHAIN_BASE_PATH, f'{self.chain}.conf')
+        with open(nft_chain_path, 'w') as nft_chain_file:
+            nft_chain_file.write(chain_rules)

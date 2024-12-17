@@ -139,3 +139,6 @@ class IptablesController(IHostFirewallController):
     @classmethod
     def to_ip_network(cls, ip: str) -> str:
         return str(ipaddress.ip_network(ip))
+
+    def save_rules(self):
+        raise NotImplementedError('save_rules is not implemented for iptables host controller')

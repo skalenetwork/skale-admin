@@ -71,6 +71,11 @@ class SChainFirewallManager(IFirewallManager):
         rules_to_remove = actual_rules - expected_rules
         self.add_rules(rules_to_add)
         self.remove_rules(rules_to_remove)
+        self.save_rules()
+
+    def save_rules(self) -> None:
+        """ Saves rules into persistent storage """
+        self.host_controller.save_rules()
 
     def add_rules(self, rules: Iterable[SChainRule]) -> None:
         logger.debug('Adding rules %s', rules)
