@@ -1,7 +1,10 @@
 
-import mock
-import pytest
 import concurrent.futures
+import mock
+import os
+import shutil
+
+import pytest
 
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
@@ -21,7 +24,17 @@ def refresh():
         run_cmd(['nft', 'flush', 'ruleset'])
 
 
-def test_get_default_rule_controller():
+@pytest.fixture()
+def nft_chain_folder():
+    path = '/etc/nft.conf.d/chains'
+    try:
+        os.makedirs(path)
+        yield path
+    finally:
+        shutil.rmtree(path)
+
+
+def test_get_default_rule_controller(nft_chain_folder):
     own_ip = '3.3.3.3'
     node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4']
     base_port = 10064
@@ -175,7 +188,7 @@ def run_concurrent_rc_syncing(
 
 
 @pytest.mark.parametrize('attempt', range(5))
-def test_concurrent_rc_behavior_no_refresh(attempt):
+def test_concurrent_rc_behavior_no_refresh(attempt, nft_chain_folder):
     node_number = 16
     schain_number = 8
     own_ip = '1.1.1.1'
@@ -191,7 +204,7 @@ def test_concurrent_rc_behavior_no_refresh(attempt):
 
 
 @pytest.mark.parametrize('attempt', range(5))
-def test_concurrent_rc_behavior_with_refresh(attempt, refresh):
+def test_concurrent_rc_behavior_with_refresh(attempt, refresh, nft_chain_folder):
     node_number = 16
     schain_number = 8
     own_ip = '1.1.1.1'
