@@ -89,6 +89,7 @@ class SChainFirewallManager(IFirewallManager):
 
     def flush(self) -> None:
         self.remove_rules(self.rules)
+        self.host_controller.cleanup()
 
 
 class IptablesSChainFirewallManager(SChainFirewallManager):

@@ -140,5 +140,8 @@ class IptablesController(IHostFirewallController):
     def to_ip_network(cls, ip: str) -> str:
         return str(ipaddress.ip_network(ip))
 
-    def save_rules(self):
+    def save_rules(self) -> None:
         raise NotImplementedError('save_rules is not implemented for iptables host controller')
+
+    def cleanup(self) -> None:
+        raise NotImplementedError('cleanup is not implemented for iptables host controller')

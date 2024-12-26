@@ -92,6 +92,10 @@ class IHostFirewallController(ABC):
     def save_rules(self) -> None:  # pragma: no cover
         pass
 
+    @abstractmethod
+    def cleanup(self) -> None:  # pragma: no cover
+        pass
+
 
 class IFirewallManager(ABC):
     @property

@@ -119,6 +119,25 @@ class NFTablesController(IHostFirewallController):
             )
             self.add_schain_drop_rule(first_port, last_port)
 
+    def delete_chain(self) -> None:
+        if self.has_chain(self.chain):
+            logger.info('Removing chain %s', self.chain)
+            self.run_json_cmd(
+                self._compose_json(
+                    [
+                        {
+                            'delete': {
+                                'chain': {
+                                    'family': self.FAMILY,
+                                    'table': self.table,
+                                    'name': self.chain
+                                }
+                            }
+                        }
+                    ]
+                )
+            )
+
     @property
     def chains(self) -> list[dict]:
         output = self.run_cmd('list chains')
@@ -334,3 +353,6 @@ class NFTablesController(IHostFirewallController):
         nft_chain_path = os.path.join(NFT_CHAIN_BASE_PATH, f'{self.chain}.conf')
         with open(nft_chain_path, 'w') as nft_chain_file:
             nft_chain_file.write(chain_rules)
+
+    def cleanup(self) -> None:
+        self.delete_chain()
