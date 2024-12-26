@@ -225,6 +225,9 @@ class HostTestFirewallController(IHostFirewallController):
     def save_rules(self):
         pass
 
+    def cleanup(self):
+        pass
+
 
 class SChainTestFirewallManager(SChainFirewallManager):
     def create_host_controller(self):
