@@ -19,18 +19,15 @@
 
 
 import importlib
-import ipaddress
 import json
 import logging
 import multiprocessing
 import os
-from typing import Iterable, TypeVar
+from typing import Iterable
 
 from core.schains.firewall.types import IHostFirewallController, SChainRule
 
 from tools.configs import NFT_CHAIN_BASE_PATH
-
-T = TypeVar('T')
 
 
 logger = logging.getLogger(__name__)
@@ -54,6 +51,69 @@ class NFTablesController(IHostFirewallController):
         self._nftables = importlib.import_module('nftables')
         self.nft = self._nftables.Nftables()
         self.nft.set_json_output(True)
+
+    @classmethod
+    def rule_to_expr(cls, rule: SChainRule, counter: bool = True) -> list:
+        expr = []
+
+        if rule.first_ip:
+            if rule.last_ip == rule.first_ip:
+                expr.append(
+                    {
+                        'match': {
+                            'op': '==',
+                            'left': {'payload': {'protocol': 'ip', 'field': 'saddr'}},
+                            'right': f'{rule.first_ip}',
+                        }
+                    }
+                )
+            else:
+                expr.append(
+                    {
+                        'match': {
+                            'op': '==',
+                            'left': {'payload': {'protocol': 'ip', 'field': 'saddr'}},
+                            'right': {'range': [f'{rule.first_ip}', f'{rule.last_ip}']},
+                        }
+                    }
+                )
+
+        if rule.port:
+            expr.append(
+                {
+                    'match': {
+                        'op': '==',
+                        'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
+                        'right': rule.port,
+                    }
+                }
+            )
+
+        if counter:
+            expr.append({'counter': None})
+
+        expr.append({'accept': None})
+        return expr
+
+    @classmethod
+    def expr_to_rule(self, expr: list) -> None:
+        port, first_ip, last_ip = None, None, None
+        for item in expr:
+            if 'match' in item:
+                match = item['match']
+
+                if match.get('left', {}).get('payload', {}).get('field') == 'dport':
+                    port = match.get('right')
+
+                if match.get('left', {}).get('payload', {}).get('field') == 'saddr':
+                    right = match.get('right')
+                    if isinstance(right, str):
+                        first_ip = right
+                    else:
+                        first_ip, last_ip = right['range']
+
+        if any([port, first_ip, last_ip]):
+            return SChainRule(port=port, first_ip=first_ip, last_ip=last_ip)
 
     def _compose_json(self, commands: list[dict]) -> dict:
         json_cmd = {'nftables': commands}
@@ -190,72 +250,9 @@ class NFTablesController(IHostFirewallController):
             ]
         )
 
-        rc, output, error = self.run_json_cmd(json_cmd)
+        rc, _, error = self.run_json_cmd(json_cmd)
         if rc != 0:
             raise NFTablesCmdFailedError(f'Failed to add allow rule: {error}')
-
-    @classmethod
-    def rule_to_expr(cls, rule: SChainRule, counter: bool = True) -> list:
-        expr = []
-
-        if rule.first_ip:
-            if rule.last_ip == rule.first_ip:
-                expr.append(
-                    {
-                        'match': {
-                            'op': '==',
-                            'left': {'payload': {'protocol': 'ip', 'field': 'saddr'}},
-                            'right': f'{rule.first_ip}',
-                        }
-                    }
-                )
-            else:
-                expr.append(
-                    {
-                        'match': {
-                            'op': '==',
-                            'left': {'payload': {'protocol': 'ip', 'field': 'saddr'}},
-                            'right': {'range': [f'{rule.first_ip}', f'{rule.last_ip}']},
-                        }
-                    }
-                )
-
-        if rule.port:
-            expr.append(
-                {
-                    'match': {
-                        'op': '==',
-                        'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
-                        'right': rule.port,
-                    }
-                }
-            )
-
-        if counter:
-            expr.append({'counter': None})
-
-        expr.append({'accept': None})
-        return expr
-
-    @classmethod
-    def expr_to_rule(self, expr: list) -> None:
-        port, first_ip, last_ip = None, None, None
-        for item in expr:
-            if 'match' in item:
-                match = item['match']
-
-                if match.get('left', {}).get('payload', {}).get('field') == 'dport':
-                    port = match.get('right')
-
-                if match.get('left', {}).get('payload', {}).get('field') == 'saddr':
-                    right = match.get('right')
-                    if isinstance(right, str):
-                        first_ip = right
-                    else:
-                        first_ip, last_ip = right['range']
-
-        if any([port, first_ip, last_ip]):
-            return SChainRule(port=port, first_ip=first_ip, last_ip=last_ip)
 
     def remove_rule(self, rule: SChainRule) -> None:
         if self.has_rule(rule):
@@ -297,7 +294,7 @@ class NFTablesController(IHostFirewallController):
                 ]
             )
 
-            rc, output, error = self.run_json_cmd(json_cmd)
+            rc, _, error = self.run_json_cmd(json_cmd)
             if rc != 0:
                 raise NFTablesCmdFailedError(f'Failed to delete rule: {error}')
 
@@ -327,14 +324,6 @@ class NFTablesController(IHostFirewallController):
                         rules.append(rule)
         logger.debug('Rules for policy %s: %s', policy, rules)
         return rules
-
-    @classmethod
-    def from_ip_network(cls, ip: str) -> str:
-        return str(ipaddress.ip_network(ip).hosts()[0])
-
-    @classmethod
-    def to_ip_network(cls, ip: str) -> str:
-        return str(ipaddress.ip_network(ip))
 
     def get_plain_chain_rules(self) -> str:
         self.nft.set_json_output(False)
