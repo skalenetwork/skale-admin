@@ -88,6 +88,14 @@ class IHostFirewallController(ABC):
     def has_rule(self, rule: SChainRule) -> bool:  # pragma: no cover
         pass
 
+    @abstractmethod
+    def save_rules(self) -> None:  # pragma: no cover
+        pass
+
+    @abstractmethod
+    def cleanup(self) -> None:  # pragma: no cover
+        pass
+
 
 class IFirewallManager(ABC):
     @property
