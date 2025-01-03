@@ -1,3 +1,7 @@
 FROM admin:base
 
-RUN pip3 install --no-cache-dir -r requirements-dev.txt
+RUN apt update && apt install -y nftables python3-nftables
+
+RUN pip3 install -r requirements-dev.txt
+
+ENV PYTHONPATH=${PYTHONPATH}:/usr/lib/python3/dist-packages/
