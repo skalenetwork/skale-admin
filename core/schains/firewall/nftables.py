@@ -23,6 +23,7 @@ import json
 import logging
 import multiprocessing
 import os
+import shutil
 from typing import Iterable
 
 from core.schains.firewall.types import IHostFirewallController, SChainRule
@@ -343,5 +344,10 @@ class NFTablesController(IHostFirewallController):
         with open(nft_chain_path, 'w') as nft_chain_file:
             nft_chain_file.write(chain_rules)
 
+    def remove_saved_rules(self) -> None:
+        nft_chain_path = os.path.join(NFT_CHAIN_BASE_PATH, f'{self.chain}.conf')
+        shutil.rmtree(nft_chain_path)
+
     def cleanup(self) -> None:
         self.delete_chain()
+        self.remove_saved_rules()
