@@ -23,7 +23,6 @@ import json
 import logging
 import multiprocessing
 import os
-import shutil
 from typing import Iterable
 
 from core.schains.firewall.types import IHostFirewallController, SChainRule
