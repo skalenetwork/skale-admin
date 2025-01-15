@@ -1,11 +1,14 @@
 import concurrent.futures
 import importlib
+import os
+import shutil
 import time
 
 import pytest
 
-from core.schains.firewall.nftables import NFTablesController
+from core.schains.firewall.nftables import NFTablesController, NFT_CHAIN_BASE_PATH
 from core.schains.firewall.types import SChainRule
+from tools.helper import run_cmd
 
 
 @pytest.fixture
@@ -13,6 +16,16 @@ def nf_test_tables():
     nft = importlib.import_module('nftables').Nftables()
     nft.cmd('flush ruleset')
     return nft
+
+
+@pytest.fixture()
+def nft_chain_folder():
+    path = '/etc/nft.conf.d/chains'
+    try:
+        os.makedirs(path)
+        yield path
+    finally:
+        shutil.rmtree(path)
 
 
 @pytest.fixture
@@ -65,6 +78,27 @@ def test_nftables_controller_duplicates(custom_chain):
     assert list(manager.rules) == [
         SChainRule(port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2')
     ]
+
+
+def test_create_delete_chain(filter_table, nft_chain_folder):
+    chain_name = 'test-chain'
+
+    output = run_cmd(['nft', 'list', 'chains']).stdout.decode('utf-8')
+    output == 'table inet firewall {\n}\n'
+    nft_chain_path = os.path.join(NFT_CHAIN_BASE_PATH, f'skale-{chain_name}.conf')
+    assert not os.path.isfile(nft_chain_path)
+
+    manager = NFTablesController(chain=chain_name)
+    manager.create_chain(first_port=10000, last_port=10063)
+
+    chains = run_cmd(['nft', 'list', 'chains']).stdout.decode('utf-8')
+    assert chains == 'table inet firewall {\n\tchain skale-test-chain {\n\t\ttype filter hook input priority filter; policy accept;\n\t}\n}\n'  # noqa
+    assert os.path.isfile(nft_chain_path)
+
+    manager.cleanup()
+    chains = run_cmd(['nft', 'list', 'chains']).stdout.decode('utf-8')
+    assert chains == 'table inet firewall {\n}\n'
+    assert not os.path.isfile(nft_chain_path)
 
 
 def add_remove_rule(srule, refresh):

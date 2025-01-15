@@ -52,6 +52,7 @@ class NFTablesController(IHostFirewallController):
         self._nftables = importlib.import_module('nftables')
         self.nft = self._nftables.Nftables()
         self.nft.set_json_output(True)
+        self.nft.set_stateless_output(True)
 
     @classmethod
     def rule_to_expr(cls, rule: SChainRule, counter: bool = True) -> list:
@@ -179,6 +180,7 @@ class NFTablesController(IHostFirewallController):
                 )
             )
             self.add_schain_drop_rule(first_port, last_port)
+            self.save_rules()
 
     def delete_chain(self) -> None:
         if self.has_chain(self.chain):
@@ -330,7 +332,9 @@ class NFTablesController(IHostFirewallController):
         self.nft.set_json_output(False)
         output = ''
         try:
-            rc, output, error = self.run_cmd(f'list chain {self.FAMILY} {self.table} {self.chain}')
+            rc, output, error = self.run_cmd(
+                f'list chain {self.FAMILY} {self.table} {self.chain}'
+            )
             if rc != 0:
                 raise NFTablesCmdFailedError(f"Failed to get table content: {error}")
         finally:
@@ -346,7 +350,7 @@ class NFTablesController(IHostFirewallController):
 
     def remove_saved_rules(self) -> None:
         nft_chain_path = os.path.join(NFT_CHAIN_BASE_PATH, f'{self.chain}.conf')
-        shutil.rmtree(nft_chain_path)
+        os.remove(nft_chain_path)
 
     def cleanup(self) -> None:
         self.delete_chain()
