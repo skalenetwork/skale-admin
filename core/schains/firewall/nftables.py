@@ -352,5 +352,5 @@ class NFTablesController(IHostFirewallController):
         os.remove(nft_chain_path)
 
     def cleanup(self) -> None:
-        self.delete_chain()
         self.remove_saved_rules()
+        self.delete_chain()
