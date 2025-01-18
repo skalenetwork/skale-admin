@@ -1,8 +1,6 @@
 
 import concurrent.futures
 import mock
-import os
-import shutil
 
 import pytest
 
@@ -22,16 +20,6 @@ def refresh():
         yield
     finally:
         run_cmd(['nft', 'flush', 'ruleset'])
-
-
-@pytest.fixture()
-def nft_chain_folder():
-    path = '/etc/nft.conf.d/chains'
-    try:
-        os.makedirs(path)
-        yield path
-    finally:
-        shutil.rmtree(path)
 
 
 def test_get_default_rule_controller(nft_chain_folder):

@@ -107,4 +107,4 @@ SYNC_NODE = os.getenv('SYNC_NODE') == 'True'
 
 DOCKER_NODE_CONFIG_FILEPATH = os.path.join(NODE_DATA_PATH, 'docker.json')
 
-NFT_CHAIN_BASE_PATH = '/etc/nft.conf.d/chains'
+NFT_CHAIN_BASE_PATH = '/etc/nft.conf.d/skale/chains'

@@ -103,3 +103,11 @@ class NFTSchainFirewallManager(SChainFirewallManager):
         nc_controller.create_table()
         nc_controller.create_chain(self.first_port, self.last_port)
         return nc_controller
+
+    def rules_saved(self) -> bool:
+        saved = self.host_controller.get_saved_rules()
+        return saved == self.host_controller.get_rules()
+
+    def base_config_applied(self) -> bool:
+        return self.host_controller.has_chain(self.host_controller.chain) and \
+            self.host_controller.has_drop_rule(self.first_port, self.last_port)

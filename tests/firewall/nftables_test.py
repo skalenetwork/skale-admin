@@ -1,7 +1,6 @@
 import concurrent.futures
 import importlib
 import os
-import shutil
 import time
 
 import pytest
@@ -16,16 +15,6 @@ def nf_test_tables():
     nft = importlib.import_module('nftables').Nftables()
     nft.cmd('flush ruleset')
     return nft
-
-
-@pytest.fixture()
-def nft_chain_folder():
-    path = '/etc/nft.conf.d/chains'
-    try:
-        os.makedirs(path)
-        yield path
-    finally:
-        shutil.rmtree(path)
 
 
 @pytest.fixture

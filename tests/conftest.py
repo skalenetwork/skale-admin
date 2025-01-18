@@ -631,3 +631,13 @@ def ncli_status(_schain_name):
         yield init_node_cli_status(_schain_name)
     finally:
         shutil.rmtree(schain_dir_path, ignore_errors=True)
+
+
+@pytest.fixture()
+def nft_chain_folder():
+    path = '/etc/nft.conf.d/skale/chains'
+    try:
+        os.makedirs(path)
+        yield path
+    finally:
+        shutil.rmtree(path)

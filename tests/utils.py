@@ -242,6 +242,12 @@ class SChainTestRuleController(SChainRuleController):
             self.base_port + self.ports_per_schain
         )
 
+    def is_persistent(self) -> bool:
+        return True
+
+    def is_inited(self) -> bool:
+        return True
+
 
 def get_test_rule_controller(
     name,

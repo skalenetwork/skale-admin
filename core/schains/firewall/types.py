@@ -139,3 +139,11 @@ class IRuleController(ABC):
     @abstractmethod
     def cleanup(self) -> None:  # pragma: no cover
         pass
+
+    @abstractmethod
+    def is_persistent(self) -> bool:  # pragma: no cover
+        pass
+
+    @abstractmethod
+    def is_inited(self) -> bool:  # pragma: no cover
+        pass
