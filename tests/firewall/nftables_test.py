@@ -90,6 +90,22 @@ def test_create_delete_chain(filter_table, nft_chain_folder):
     assert not os.path.isfile(nft_chain_path)
 
 
+def test_saved_rules(filter_table, nft_chain_folder):
+    chain_name = 'test-chain'
+    nft_chain_path = os.path.join(NFT_CHAIN_BASE_PATH, f'skale-{chain_name}.conf')
+
+    manager = NFTablesController(chain=chain_name)
+    assert not os.path.isfile(nft_chain_path)
+    manager.create_chain(first_port=10000, last_port=10063)
+    assert os.path.isfile(nft_chain_path)
+    assert manager.get_saved_rules() == 'chain skale-test-chain {\n\ttype filter hook input priority filter; policy accept;\n\ttcp dport 10000-10063 counter drop\n}\n'  # noqa
+
+    assert os.path.isfile(nft_chain_path)
+
+    manager.remove_saved_rules()
+    assert not os.path.isfile(nft_chain_path)
+
+
 def add_remove_rule(srule, refresh):
     manager = NFTablesController()
     manager.add_rule(srule)

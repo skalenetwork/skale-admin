@@ -353,9 +353,18 @@ class NFTablesController(IHostFirewallController):
         finally:
             self.nft.set_json_output(True)
 
+        lines = output.split('\n')
         # cleanup table header
-        output = '\n'.join(output.split('\n')[2:-1])
+        if lines[-1] == '':
+            lines = lines[1:-2]
+        else:
+            lines = lines[1:-1]
 
+        # remove leading tab
+        lines = list(map(lambda line: line[1:], lines))
+        # Adding new line at the end to prevent validation failure
+        lines.append('')
+        output = '\n'.join(lines)
         return output
 
     @property
