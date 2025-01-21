@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import glob
 import logging
 import os
 import shutil
@@ -43,7 +44,11 @@ from core.schains.external_config import ExternalConfig
 from core.schains.types import ContainerType
 from core.schains.firewall.utils import get_sync_agent_ranges
 
-from tools.configs import SGX_CERTIFICATES_FOLDER, SYNC_NODE
+from tools.configs import (
+    NFT_CHAIN_CONFIG_WILDCARD,
+    SGX_CERTIFICATES_FOLDER,
+    SYNC_NODE
+)
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
 from tools.docker_utils import DockerUtils
@@ -136,18 +141,34 @@ def get_schains_with_containers(dutils=None):
     ]
 
 
+def get_schains_firewall_configs() -> list:
+    return list(map(lambda path: os.path.basename(path), glob.glob(NFT_CHAIN_CONFIG_WILDCARD)))
+
+
 def get_schains_on_node(dutils=None):
     dutils = dutils or DockerUtils()
     schains_with_dirs = os.listdir(SCHAINS_DIR_PATH)
     schains_with_container = get_schains_with_containers(dutils)
     schains_active_records = get_schains_names()
+    schains_firewall_configs = list(
+        map(lambda name: name.removeprefix('skale-'),
+        get_schains_firewall_configs())
+    )
     logger.info(
-        'dirs %s, containers: %s, records: %s',
+        'dirs %s, containers: %s, records: %s, firewall configs: %s',
         schains_with_dirs,
         schains_with_container,
-        schains_active_records
+        schains_active_records,
+        schains_firewall_configs
     )
-    return sorted(merged_unique(schains_with_dirs, schains_with_container, schains_active_records))
+    return sorted(
+        merged_unique(
+            schains_with_dirs,
+            schains_with_container,
+            schains_active_records,
+            schains_firewall_configs
+        )
+    )
 
 
 def schain_names_to_ids(skale, schain_names):
@@ -268,6 +289,7 @@ def cleanup_schain(
             ranges = estate.ranges
         rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips, sync_ip_ranges=ranges)
         rc.cleanup()
+
     if estate is not None and estate.ima_linked:
         if check_status.get('ima_container', False) or is_exited(
             schain_name, container_type=ContainerType.ima, dutils=dutils

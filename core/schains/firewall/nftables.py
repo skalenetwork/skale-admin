@@ -384,7 +384,8 @@ class NFTablesController(IHostFirewallController):
             return nft_chain_file.read()
 
     def remove_saved_rules(self) -> None:
-        os.remove(self.nft_chain_path)
+        if os.isfile(self.nft_chain_path):
+            os.remove(self.nft_chain_path)
 
     def cleanup(self) -> None:
         self.remove_saved_rules()

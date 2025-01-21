@@ -302,7 +302,6 @@ class SkaledChecks(IChecks):
     def firewall_rules(self) -> CheckRes:
         """Checks that firewall rules are set correctly"""
         data = {
-            'config': False,
             'inited': False,
             'rules': False,
             'persistant': False,
@@ -318,7 +317,6 @@ class SkaledChecks(IChecks):
             )
             logger.debug(f'Rule controller {self.rc.expected_rules()}')
             data = {
-                'config': True,
                 'inited': self.rc.is_inited(),
                 'rules': self.rc.is_rules_synced(),
                 'persistent': self.rc.is_persistent(),
