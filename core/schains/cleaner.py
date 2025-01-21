@@ -22,6 +22,7 @@ import logging
 import os
 import shutil
 from multiprocessing import Process
+from pathlib import Path
 from typing import Optional
 
 from sgx import SgxClient
@@ -142,7 +143,7 @@ def get_schains_with_containers(dutils=None):
 
 
 def get_schains_firewall_configs() -> list:
-    return list(map(lambda path: os.path.basename(path), glob.glob(NFT_CHAIN_CONFIG_WILDCARD)))
+    return list(map(lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)))
 
 
 def get_schains_on_node(dutils=None):
@@ -279,7 +280,7 @@ def cleanup_schain(
         remove_schain_container(schain_name, dutils=dutils)
     if check_status['volume']:
         remove_schain_volume(schain_name, dutils=dutils)
-    if check_status['firewall_rules']:
+    if any(checks.firewall_rules.data):
         conf = ConfigFileManager(schain_name).skaled_config
         base_port = get_base_port_from_config(conf)
         own_ip = get_own_ip_from_config(conf)
