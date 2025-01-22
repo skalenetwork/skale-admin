@@ -37,6 +37,9 @@ def test_get_default_rule_controller(nft_chain_folder):
         node_ips,
         sync_ip_range
     )
+
+    assert rc.is_inited()
+    assert rc.is_persistent()
     assert rc.actual_rules() == []
     rc.sync()
     assert rc.expected_rules() == rc.actual_rules()
@@ -50,6 +53,10 @@ def test_get_default_rule_controller(nft_chain_folder):
 
     assert hm.add_rule.call_count == 0
     assert hm.remove_rule.call_count == 0
+
+    rc.cleanup()
+    assert not rc.is_inited()
+    assert not rc.is_persistent()
 
 
 def sync_rules(*args):

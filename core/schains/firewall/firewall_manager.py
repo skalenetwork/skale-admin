@@ -105,6 +105,8 @@ class NFTSchainFirewallManager(SChainFirewallManager):
 
     def rules_saved(self) -> bool:
         saved = self.host_controller.get_saved_rules()
+        if saved == '':
+            return False
         return saved == self.host_controller.get_plain_chain_rules()
 
     def base_config_applied(self) -> bool:

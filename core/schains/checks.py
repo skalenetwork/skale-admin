@@ -316,11 +316,11 @@ class SkaledChecks(IChecks):
                 base_port=base_port, own_ip=own_ip, node_ips=node_ips, sync_ip_ranges=ranges
             )
             logger.debug(f'Rule controller {self.rc.expected_rules()}')
-            data = {
+            data.update({
                 'inited': self.rc.is_inited(),
                 'rules': self.rc.is_rules_synced(),
                 'persistent': self.rc.is_persistent(),
-            }
+            })
             logger.debug('Firewall rules check: %s', data)
             status = all(data.values())
             return CheckRes(status=status, data=data)
