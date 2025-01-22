@@ -108,7 +108,7 @@ class IFirewallManager(ABC):
         pass
 
     @abstractmethod
-    def flush(self) -> None:  # pragma: no cover  # noqa
+    def cleanup(self) -> None:  # pragma: no cover  # noqa
         pass
 
 

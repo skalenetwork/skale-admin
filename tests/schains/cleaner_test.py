@@ -239,7 +239,8 @@ def test_get_schains_on_node(schain_dirs_for_monitor,
     ]).issubset(set(result))
 
 
-def test_remove_schain(skale, schain_db, node_config, dutils):
+@mock.patch('core.schains.cleaner.cleanup_firewall_for_schain')
+def test_remove_schain(cleanup_firewall_for_schain, skale, schain_db, node_config, dutils):
     schain_name = schain_db
     remove_schain(skale, node_config.id, schain_name, msg='Test remove_schain', dutils=dutils)
     container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
@@ -250,7 +251,9 @@ def test_remove_schain(skale, schain_db, node_config, dutils):
     assert record.is_deleted is True
 
 
+@mock.patch('core.schains.cleaner.cleanup_firewall_for_schain')
 def test_cleanup_schain(
+    cleanup_firewall_rules,
     schain_db,
     node_config,
     schain_on_contracts,

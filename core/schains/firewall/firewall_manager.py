@@ -87,14 +87,13 @@ class SChainFirewallManager(IFirewallManager):
         for rule in rules:
             self.host_controller.remove_rule(rule)
 
-    def flush(self) -> None:
-        self.remove_rules(self.rules)
-        self.host_controller.cleanup()
-
 
 class IptablesSChainFirewallManager(SChainFirewallManager):
     def create_host_controller(self) -> IptablesController:
         return IptablesController()
+
+    def cleanup(self) -> None:
+        self.remove_rules(self.rules)
 
 
 class NFTSchainFirewallManager(SChainFirewallManager):
@@ -111,3 +110,7 @@ class NFTSchainFirewallManager(SChainFirewallManager):
     def base_config_applied(self) -> bool:
         return self.host_controller.has_chain(self.host_controller.chain) and \
             self.host_controller.has_drop_rule(self.first_port, self.last_port)
+
+    def cleanup(self) -> None:
+        self.host_controller.cleanup()
+        self.host_controller.remove_saved_rules()

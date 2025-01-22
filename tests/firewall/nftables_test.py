@@ -7,6 +7,7 @@ import pytest
 
 from core.schains.firewall.nftables import NFTablesController, NFT_CHAIN_BASE_PATH
 from core.schains.firewall.types import SChainRule
+from core.schains.firewall.utils import cleanup_firewall_for_schain
 from tools.helper import run_cmd
 
 
@@ -87,6 +88,9 @@ def test_create_delete_chain(filter_table, nft_chain_folder):
     manager.cleanup()
     chains = run_cmd(['nft', 'list', 'chains']).stdout.decode('utf-8')
     assert chains == 'table inet firewall {\n}\n'
+    assert os.path.isfile(nft_chain_path)
+
+    manager.remove_saved_rules()
     assert not os.path.isfile(nft_chain_path)
 
 
@@ -106,8 +110,21 @@ def test_saved_rules(filter_table, nft_chain_folder):
     assert not os.path.isfile(nft_chain_path)
 
 
+def test_cleanup_firewall_for_schain(filter_table, nft_chain_folder):
+    chain_name = 'test-chain'
+    nft_chain_path = os.path.join(NFT_CHAIN_BASE_PATH, f'skale-{chain_name}.conf')
+
+    manager = NFTablesController(chain=chain_name)
+    manager.create_chain(first_port=10000, last_port=10063)
+
+    cleanup_firewall_for_schain(schain_name=chain_name)
+    chains = run_cmd(['nft', 'list', 'chains']).stdout.decode('utf-8')
+    assert chains == 'table inet firewall {\n}\n'
+    assert not os.path.isfile(nft_chain_path)
+
+
 def add_remove_rule(srule, refresh):
-    manager = NFTablesController()
+    manager = NFTablesController(chain='test')
     manager.add_rule(srule)
     time.sleep(1)
     if not manager.has_rule(srule):

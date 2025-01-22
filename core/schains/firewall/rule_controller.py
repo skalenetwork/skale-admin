@@ -202,9 +202,6 @@ class SChainRuleController(IRuleController):
         logger.debug('Syncing firewall rules with %s', erules)
         self.firewall_manager.update_rules(erules)
 
-    def cleanup(self) -> None:
-        self.firewall_manager.flush()
-
 
 class IptablesSChainRuleController(SChainRuleController):
     @configured_only
@@ -223,6 +220,10 @@ class IptablesSChainRuleController(SChainRuleController):
     def is_inited(self) -> bool:
         return True
 
+    @configured_only
+    def cleanup(self) -> None:
+        self.firewall_manager.cleanup()
+
 
 class NFTSchainRuleController(SChainRuleController):
     @configured_only
@@ -240,3 +241,6 @@ class NFTSchainRuleController(SChainRuleController):
     @configured_only
     def is_inited(self) -> bool:
         return self.firewall_manager.base_config_applied()
+
+    def cleanup(self) -> None:
+        self.firewall_manager.cleanup()

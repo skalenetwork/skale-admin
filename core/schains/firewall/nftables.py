@@ -44,7 +44,7 @@ class NFTablesController(IHostFirewallController):
     plock = multiprocessing.Lock()
     FAMILY = 'inet'
 
-    def __init__(self, table: str = TABLE, chain: str = CHAIN) -> None:
+    def __init__(self, chain: str, table: str = TABLE) -> None:
         self.table = table
         self.chain = f'skale-{chain}'
         self._nftables = importlib.import_module('nftables')
@@ -384,9 +384,8 @@ class NFTablesController(IHostFirewallController):
             return nft_chain_file.read()
 
     def remove_saved_rules(self) -> None:
-        if os.isfile(self.nft_chain_path):
+        if os.path.isfile(self.nft_chain_path):
             os.remove(self.nft_chain_path)
 
     def cleanup(self) -> None:
-        self.remove_saved_rules()
         self.delete_chain()

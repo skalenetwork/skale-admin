@@ -233,6 +233,9 @@ class SChainTestFirewallManager(SChainFirewallManager):
     def create_host_controller(self):
         return HostTestFirewallController()
 
+    def cleanup(self):
+        self.remove_rules(self.rules)
+
 
 class SChainTestRuleController(SChainRuleController):
     def create_firewall_manager(self):
@@ -247,6 +250,9 @@ class SChainTestRuleController(SChainRuleController):
 
     def is_inited(self) -> bool:
         return True
+
+    def cleanup(self) -> None:
+        self.firewall_manager.cleanup()
 
 
 def get_test_rule_controller(

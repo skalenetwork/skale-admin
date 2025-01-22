@@ -30,15 +30,9 @@ from skale import Skale
 
 from core.node import get_current_nodes, get_skale_node_version
 from core.schains.checks import SChainChecks
-from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.directory import schain_config_dir
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from core.schains.firewall.utils import get_default_rule_controller
-from core.schains.config.helper import (
-    get_base_port_from_config,
-    get_node_ips_from_config,
-    get_own_ip_from_config,
-)
+from core.schains.firewall.utils import cleanup_firewall_for_schain, get_default_rule_controller
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.runner import get_container_name, is_exited
 from core.schains.external_config import ExternalConfig
@@ -152,8 +146,10 @@ def get_schains_on_node(dutils=None):
     schains_with_container = get_schains_with_containers(dutils)
     schains_active_records = get_schains_names()
     schains_firewall_configs = list(
-        map(lambda name: name.removeprefix('skale-'),
-        get_schains_firewall_configs())
+        map(
+            lambda name: name.removeprefix('skale-'),
+            get_schains_firewall_configs()
+        )
     )
     logger.info(
         'dirs %s, containers: %s, records: %s, firewall configs: %s',
@@ -281,15 +277,8 @@ def cleanup_schain(
     if check_status['volume']:
         remove_schain_volume(schain_name, dutils=dutils)
     if any(checks.firewall_rules.data):
-        conf = ConfigFileManager(schain_name).skaled_config
-        base_port = get_base_port_from_config(conf)
-        own_ip = get_own_ip_from_config(conf)
-        node_ips = get_node_ips_from_config(conf)
-        ranges = []
-        if estate is not None:
-            ranges = estate.ranges
-        rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips, sync_ip_ranges=ranges)
-        rc.cleanup()
+        logger.info('Cleaning firewall for %s', schain_name)
+        cleanup_firewall_for_schain(schain_name)
 
     if estate is not None and estate.ima_linked:
         if check_status.get('ima_container', False) or is_exited(
