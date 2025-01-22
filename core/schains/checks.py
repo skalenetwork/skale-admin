@@ -304,7 +304,7 @@ class SkaledChecks(IChecks):
         data = {
             'inited': False,
             'rules': False,
-            'persistant': False,
+            'persistent': False,
         }
         if self.config:
             conf = self.cfm.skaled_config
