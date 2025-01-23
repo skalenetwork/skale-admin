@@ -1,5 +1,4 @@
 #   -*- coding: utf-8 -*-
-#
 #   This file is part of SKALE Admin
 #
 #   Copyright (C) 2024 SKALE Labs
@@ -45,12 +44,13 @@ class NFTablesController(IHostFirewallController):
     plock = multiprocessing.Lock()
     FAMILY = 'inet'
 
-    def __init__(self, table: str = TABLE, chain: str = CHAIN) -> None:
+    def __init__(self, chain: str, table: str = TABLE) -> None:
         self.table = table
         self.chain = f'skale-{chain}'
         self._nftables = importlib.import_module('nftables')
         self.nft = self._nftables.Nftables()
         self.nft.set_json_output(True)
+        self.nft.set_stateless_output(True)
 
     @classmethod
     def rule_to_expr(cls, rule: SChainRule, counter: bool = True) -> list:
@@ -124,7 +124,7 @@ class NFTablesController(IHostFirewallController):
         if not self.has_table(self.table):
             return self.run_cmd(f'add table inet {self.table}')
 
-    def add_schain_drop_rule(self, first_port: int, last_port: int) -> None:
+    def has_drop_rule(self, first_port: int, last_port: int) -> bool:
         expr = [
             {
                 'match': {
@@ -137,7 +137,22 @@ class NFTablesController(IHostFirewallController):
             {'drop': None},
         ]
 
-        if self.expr_to_rule(expr) not in self.get_rules_by_policy(policy='drop'):
+        return self.expr_to_rule(expr) in self.get_rules_by_policy(policy='drop')
+
+    def add_schain_drop_rule(self, first_port: int, last_port: int) -> None:
+        if not self.has_drop_rule(first_port, last_port):
+            expr = [
+                {
+                    'match': {
+                        'op': '==',
+                        'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
+                        'right': {'range': [first_port, last_port]},
+                    }
+                },
+                {'counter': None},
+                {'drop': None},
+            ]
+
             cmd = {
                 'nftables': [
                     {
@@ -177,7 +192,8 @@ class NFTablesController(IHostFirewallController):
                     ]
                 )
             )
-            self.add_schain_drop_rule(first_port, last_port)
+        self.add_schain_drop_rule(first_port, last_port)
+        self.save_rules()
 
     def delete_chain(self) -> None:
         if self.has_chain(self.chain):
@@ -329,19 +345,47 @@ class NFTablesController(IHostFirewallController):
         self.nft.set_json_output(False)
         output = ''
         try:
-            rc, output, error = self.run_cmd(f'list chain {self.FAMILY} {self.table} {self.chain}')
+            rc, output, error = self.run_cmd(
+                f'list chain {self.FAMILY} {self.table} {self.chain}'
+            )
             if rc != 0:
                 raise NFTablesCmdFailedError(f"Failed to get table content: {error}")
         finally:
             self.nft.set_json_output(True)
 
+        lines = output.split('\n')
+        # cleanup table header
+        if lines[-1] == '':
+            lines = lines[1:-2]
+        else:
+            lines = lines[1:-1]
+
+        # remove leading tab
+        lines = list(map(lambda line: line[1:], lines))
+        # Adding new line at the end to prevent validation failure
+        lines.append('')
+        output = '\n'.join(lines)
         return output
 
+    @property
+    def nft_chain_path(self) -> str:
+        return os.path.join(NFT_CHAIN_BASE_PATH, f'{self.chain}.conf')
+
     def save_rules(self) -> None:
+        logger.info('Saving the firewall rules for chain %s', self.chain)
         chain_rules = self.get_plain_chain_rules()
-        nft_chain_path = os.path.join(NFT_CHAIN_BASE_PATH, f'{self.chain}.conf')
-        with open(nft_chain_path, 'w') as nft_chain_file:
+        with open(self.nft_chain_path, 'w') as nft_chain_file:
             nft_chain_file.write(chain_rules)
+
+    def get_saved_rules(self) -> str:
+        if not os.path.isfile(self.nft_chain_path):
+            return ''
+        with open(self.nft_chain_path, 'r') as nft_chain_file:
+            return nft_chain_file.read()
+
+    def remove_saved_rules(self) -> None:
+        if os.path.isfile(self.nft_chain_path):
+            os.remove(self.nft_chain_path)
 
     def cleanup(self) -> None:
         self.delete_chain()
