@@ -25,6 +25,7 @@ from typing import List, Optional, Tuple
 from skale import Skale
 
 from .types import IpRange
+from .nftables import NFTablesController
 from .rule_controller import IptablesSChainRuleController, NFTSchainRuleController
 
 
@@ -101,3 +102,9 @@ def save_sync_ranges(sync_agent_ranges: List[IpRange], path: str) -> None:
 
 def ranges_from_plain_tuples(plain_ranges: List[Tuple]) -> List[IpRange]:
     return list(sorted(map(lambda r: IpRange(*r), plain_ranges)))
+
+
+def cleanup_firewall_for_schain(schain_name: str) -> None:
+    nft = NFTablesController(chain=schain_name)
+    nft.cleanup()
+    nft.remove_saved_rules()

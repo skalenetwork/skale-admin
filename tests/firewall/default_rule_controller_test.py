@@ -1,8 +1,6 @@
 
 import concurrent.futures
 import mock
-import os
-import shutil
 
 import pytest
 
@@ -24,16 +22,6 @@ def refresh():
         run_cmd(['nft', 'flush', 'ruleset'])
 
 
-@pytest.fixture()
-def nft_chain_folder():
-    path = '/etc/nft.conf.d/chains'
-    try:
-        os.makedirs(path)
-        yield path
-    finally:
-        shutil.rmtree(path)
-
-
 def test_get_default_rule_controller(nft_chain_folder):
     own_ip = '3.3.3.3'
     node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4']
@@ -49,6 +37,9 @@ def test_get_default_rule_controller(nft_chain_folder):
         node_ips,
         sync_ip_range
     )
+
+    assert rc.is_inited()
+    assert rc.is_persistent()
     assert rc.actual_rules() == []
     rc.sync()
     assert rc.expected_rules() == rc.actual_rules()
@@ -62,6 +53,10 @@ def test_get_default_rule_controller(nft_chain_folder):
 
     assert hm.add_rule.call_count == 0
     assert hm.remove_rule.call_count == 0
+
+    rc.cleanup()
+    assert not rc.is_inited()
+    assert not rc.is_persistent()
 
 
 def sync_rules(*args):
