@@ -202,9 +202,6 @@ class SChainRuleController(IRuleController):
         logger.debug('Syncing firewall rules with %s', erules)
         self.firewall_manager.update_rules(erules)
 
-    def cleanup(self) -> None:
-        self.firewall_manager.flush()
-
 
 class IptablesSChainRuleController(SChainRuleController):
     @configured_only
@@ -215,6 +212,18 @@ class IptablesSChainRuleController(SChainRuleController):
             self.base_port + self.ports_per_schain - 1  # type: ignore
         )
 
+    @configured_only
+    def is_persistent(self) -> bool:
+        return True
+
+    @configured_only
+    def is_inited(self) -> bool:
+        return True
+
+    @configured_only
+    def cleanup(self) -> None:
+        self.firewall_manager.cleanup()
+
 
 class NFTSchainRuleController(SChainRuleController):
     @configured_only
@@ -224,3 +233,14 @@ class NFTSchainRuleController(SChainRuleController):
             self.base_port,  # type: ignore
             self.base_port + self.ports_per_schain - 1  # type: ignore
         )
+
+    @configured_only
+    def is_persistent(self) -> bool:
+        return self.firewall_manager.rules_saved()
+
+    @configured_only
+    def is_inited(self) -> bool:
+        return self.firewall_manager.base_config_applied()
+
+    def cleanup(self) -> None:
+        self.firewall_manager.cleanup()
