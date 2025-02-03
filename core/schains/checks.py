@@ -301,6 +301,11 @@ class SkaledChecks(IChecks):
     @property
     def firewall_rules(self) -> CheckRes:
         """Checks that firewall rules are set correctly"""
+        data = {
+            'inited': False,
+            'rules': False,
+            'persistent': False,
+        }
         if self.config:
             conf = self.cfm.skaled_config
             base_port = get_base_port_from_config(conf)
@@ -311,8 +316,15 @@ class SkaledChecks(IChecks):
                 base_port=base_port, own_ip=own_ip, node_ips=node_ips, sync_ip_ranges=ranges
             )
             logger.debug(f'Rule controller {self.rc.expected_rules()}')
-            return CheckRes(self.rc.is_rules_synced())
-        return CheckRes(False)
+            data.update({
+                'inited': self.rc.is_inited(),
+                'rules': self.rc.is_rules_synced(),
+                'persistent': self.rc.is_persistent(),
+            })
+            logger.debug('Firewall rules check: %s', data)
+            status = all(data.values())
+            return CheckRes(status=status, data=data)
+        return CheckRes(status=False, data=data)
 
     @property
     def skaled_container(self) -> CheckRes:

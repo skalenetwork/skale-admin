@@ -22,6 +22,7 @@ from abc import abstractmethod
 from typing import Iterable, Optional
 
 from core.schains.firewall.iptables import IptablesController
+from core.schains.firewall.nftables import NFTablesController
 from core.schains.firewall.types import (
     IFirewallManager,
     IHostFirewallController,
@@ -70,6 +71,11 @@ class SChainFirewallManager(IFirewallManager):
         rules_to_remove = actual_rules - expected_rules
         self.add_rules(rules_to_add)
         self.remove_rules(rules_to_remove)
+        self.save_rules()
+
+    def save_rules(self) -> None:
+        """ Saves rules into persistent storage """
+        self.host_controller.save_rules()
 
     def add_rules(self, rules: Iterable[SChainRule]) -> None:
         logger.debug('Adding rules %s', rules)
@@ -81,10 +87,32 @@ class SChainFirewallManager(IFirewallManager):
         for rule in rules:
             self.host_controller.remove_rule(rule)
 
-    def flush(self) -> None:
-        self.remove_rules(self.rules)
-
 
 class IptablesSChainFirewallManager(SChainFirewallManager):
     def create_host_controller(self) -> IptablesController:
         return IptablesController()
+
+    def cleanup(self) -> None:
+        self.remove_rules(self.rules)
+
+
+class NFTSchainFirewallManager(SChainFirewallManager):
+    def create_host_controller(self) -> NFTablesController:
+        nc_controller = NFTablesController(chain=self.name)
+        nc_controller.create_table()
+        nc_controller.create_chain(self.first_port, self.last_port)
+        return nc_controller
+
+    def rules_saved(self) -> bool:
+        saved = self.host_controller.get_saved_rules()
+        if saved == '':
+            return False
+        return saved == self.host_controller.get_plain_chain_rules()
+
+    def base_config_applied(self) -> bool:
+        return self.host_controller.has_chain(self.host_controller.chain) and \
+            self.host_controller.has_drop_rule(self.first_port, self.last_port)
+
+    def cleanup(self) -> None:
+        self.host_controller.cleanup()
+        self.host_controller.remove_saved_rules()

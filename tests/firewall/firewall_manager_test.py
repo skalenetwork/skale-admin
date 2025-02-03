@@ -53,7 +53,7 @@ def test_firewall_manager_update_existed():
     assert fm.host_controller.remove_rule.call_count == 0
 
 
-def test_firewall_manager_flush():
+def test_firewall_manager_cleanup():
     fm = SChainTestFirewallManager('test', 10000, 10064)
     rules = [
         SChainRule(10000, '2.2.2.2'),
@@ -63,6 +63,6 @@ def test_firewall_manager_flush():
     fm.add_rules(rules)
     fm.host_controller.add_rule(SChainRule(10072, '2.2.2.2'))
 
-    fm.flush()
+    fm.cleanup()
     assert list(fm.rules) == []
     assert fm.host_controller.has_rule(SChainRule(10072, '2.2.2.2'))

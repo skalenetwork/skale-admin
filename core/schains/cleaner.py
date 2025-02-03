@@ -17,10 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import glob
 import logging
 import os
 import shutil
 from multiprocessing import Process
+from pathlib import Path
 from typing import Optional
 
 from sgx import SgxClient
@@ -28,22 +30,20 @@ from skale import Skale
 
 from core.node import get_current_nodes, get_skale_node_version
 from core.schains.checks import SChainChecks
-from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.directory import schain_config_dir
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from core.schains.firewall.utils import get_default_rule_controller
-from core.schains.config.helper import (
-    get_base_port_from_config,
-    get_node_ips_from_config,
-    get_own_ip_from_config,
-)
+from core.schains.firewall.utils import cleanup_firewall_for_schain, get_default_rule_controller
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.runner import get_container_name, is_exited
 from core.schains.external_config import ExternalConfig
 from core.schains.types import ContainerType
 from core.schains.firewall.utils import get_sync_agent_ranges
 
-from tools.configs import SGX_CERTIFICATES_FOLDER, SYNC_NODE
+from tools.configs import (
+    NFT_CHAIN_CONFIG_WILDCARD,
+    SGX_CERTIFICATES_FOLDER,
+    SYNC_NODE
+)
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
 from tools.docker_utils import DockerUtils
@@ -136,18 +136,36 @@ def get_schains_with_containers(dutils=None):
     ]
 
 
+def get_schains_firewall_configs() -> list:
+    return list(map(lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)))
+
+
 def get_schains_on_node(dutils=None):
     dutils = dutils or DockerUtils()
     schains_with_dirs = os.listdir(SCHAINS_DIR_PATH)
     schains_with_container = get_schains_with_containers(dutils)
     schains_active_records = get_schains_names()
+    schains_firewall_configs = list(
+        map(
+            lambda name: name.removeprefix('skale-'),
+            get_schains_firewall_configs()
+        )
+    )
     logger.info(
-        'dirs %s, containers: %s, records: %s',
+        'dirs %s, containers: %s, records: %s, firewall configs: %s',
         schains_with_dirs,
         schains_with_container,
-        schains_active_records
+        schains_active_records,
+        schains_firewall_configs
     )
-    return sorted(merged_unique(schains_with_dirs, schains_with_container, schains_active_records))
+    return sorted(
+        merged_unique(
+            schains_with_dirs,
+            schains_with_container,
+            schains_active_records,
+            schains_firewall_configs
+        )
+    )
 
 
 def schain_names_to_ids(skale, schain_names):
@@ -258,16 +276,10 @@ def cleanup_schain(
         remove_schain_container(schain_name, dutils=dutils)
     if check_status['volume']:
         remove_schain_volume(schain_name, dutils=dutils)
-    if check_status['firewall_rules']:
-        conf = ConfigFileManager(schain_name).skaled_config
-        base_port = get_base_port_from_config(conf)
-        own_ip = get_own_ip_from_config(conf)
-        node_ips = get_node_ips_from_config(conf)
-        ranges = []
-        if estate is not None:
-            ranges = estate.ranges
-        rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips, sync_ip_ranges=ranges)
-        rc.cleanup()
+    if any(checks.firewall_rules.data):
+        logger.info('Cleaning firewall for %s', schain_name)
+        cleanup_firewall_for_schain(schain_name)
+
     if estate is not None and estate.ima_linked:
         if check_status.get('ima_container', False) or is_exited(
             schain_name, container_type=ContainerType.ima, dutils=dutils

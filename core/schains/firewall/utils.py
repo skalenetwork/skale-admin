@@ -25,7 +25,8 @@ from typing import List, Optional, Tuple
 from skale import Skale
 
 from .types import IpRange
-from .rule_controller import IptablesSChainRuleController
+from .nftables import NFTablesController
+from .rule_controller import IptablesSChainRuleController, NFTSchainRuleController
 
 
 logger = logging.getLogger(__name__)
@@ -38,10 +39,45 @@ def get_default_rule_controller(
     node_ips: List[str] = [],
     sync_agent_ranges: Optional[List[IpRange]] = []
 ) -> IptablesSChainRuleController:
+    return get_nftables_rule_controller(
+        name=name,
+        base_port=base_port,
+        own_ip=own_ip,
+        node_ips=node_ips,
+        sync_agent_ranges=sync_agent_ranges
+    )
+
+
+def get_iptables_rule_controller(
+    name: str,
+    base_port: Optional[int] = None,
+    own_ip: Optional[str] = None,
+    node_ips: List[str] = [],
+    sync_agent_ranges: Optional[List[IpRange]] = []
+) -> IptablesSChainRuleController:
     sync_agent_ranges = sync_agent_ranges or []
     logger.info('Creating rule controller for %s', name)
     logger.debug('Rule controller ranges for %s: %s', name, sync_agent_ranges)
     return IptablesSChainRuleController(
+        name=name,
+        base_port=base_port,
+        own_ip=own_ip,
+        node_ips=node_ips,
+        sync_ip_ranges=sync_agent_ranges
+    )
+
+
+def get_nftables_rule_controller(
+    name: str,
+    base_port: Optional[int] = None,
+    own_ip: Optional[str] = None,
+    node_ips: List[str] = [],
+    sync_agent_ranges: Optional[List[IpRange]] = []
+) -> NFTSchainRuleController:
+    sync_agent_ranges = sync_agent_ranges or []
+    logger.info('Creating rule controller for %s', name)
+    logger.debug('Rule controller ranges for %s: %s', name, sync_agent_ranges)
+    return NFTSchainRuleController(
         name=name,
         base_port=base_port,
         own_ip=own_ip,
@@ -66,3 +102,9 @@ def save_sync_ranges(sync_agent_ranges: List[IpRange], path: str) -> None:
 
 def ranges_from_plain_tuples(plain_ranges: List[Tuple]) -> List[IpRange]:
     return list(sorted(map(lambda r: IpRange(*r), plain_ranges)))
+
+
+def cleanup_firewall_for_schain(schain_name: str) -> None:
+    nft = NFTablesController(chain=schain_name)
+    nft.cleanup()
+    nft.remove_saved_rules()
