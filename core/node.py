@@ -447,11 +447,10 @@ def check_validator_nodes(skale, node_id):
 
         res = []
         for node_id in node_ids:
-            if str(skale.nodes.get_node_status(node_id)) == str(NodeStatus.ACTIVE.value):
-                ip_bytes = skale.nodes.contract.functions.getNodeIP(
-                    node_id).call()
-                ip = ip_from_bytes(ip_bytes)
-                res.append([node_id, ip, is_port_open(ip, WATCHDOG_PORT)])
+            ip_bytes = skale.nodes.contract.functions.getNodeIP(
+                node_id).call()
+            ip = ip_from_bytes(ip_bytes)
+            res.append([node_id, ip, is_port_open(ip, WATCHDOG_PORT)])
         logger.info(f'validator_nodes check - node_id: {node_id}, res: {res}')
     except Exception as err:
         return {'status': 1, 'errors': [err]}
