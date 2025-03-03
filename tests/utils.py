@@ -1,8 +1,9 @@
-""" SKALE test utilities """
+"""SKALE test utilities"""
 
 import datetime
 import os
 import json
+import pathlib
 import random
 import requests
 import string
@@ -18,11 +19,8 @@ from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.wallets import Web3Wallet
 from web3 import Web3
 
-from core.schains.cleaner import (
-    remove_config_dir,
-    remove_schain_container,
-    remove_schain_volume
-)
+from core.schains.cleaner import remove_config_dir, remove_schain_container, remove_schain_volume
+from core.schains.config.directory import skaled_status_filepath
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.firewall.types import IHostFirewallController, IpRange
 from core.schains.firewall import SChainFirewallManager, SChainRuleController
@@ -30,12 +28,13 @@ from core.schains.runner import (
     get_image_name,
     run_schain_container,
     run_ima_container,
-    get_container_info
+    get_container_info,
 )
 
 from tools.docker_utils import DockerUtils
-from tools.helper import run_cmd
+from tools.helper import run_cmd, write_json
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
+from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ABI_FILEPATH
 
 from web.models.schain import upsert_schain_record
@@ -47,17 +46,15 @@ DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
 IMA_ABI_FILEPATH = os.getenv('IMA_ABI_FILEPATH') or os.path.join(
-    DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'ima.json')
+    DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'ima.json'
+)
 
 
 ETH_AMOUNT_PER_NODE = 1
-CONFIG_STREAM = "1.0.0-testnet"
+CONFIG_STREAM = '1.0.0-testnet'
 
 
-ALLOWED_RANGES = [
-    IpRange('1.1.1.1', '2.2.2.2'),
-    IpRange('3.3.3.3', '4.4.4.4')
-]
+ALLOWED_RANGES = [IpRange('1.1.1.1', '2.2.2.2'), IpRange('3.3.3.3', '4.4.4.4')]
 
 IMA_MIGRATION_TS = 1688388551
 
@@ -82,22 +79,34 @@ def generate_random_port():
 
 
 def generate_random_node_data():
-    return generate_random_ip(), generate_random_ip(), generate_random_port(), \
-        generate_random_name()
+    return (
+        generate_random_ip(),
+        generate_random_ip(),
+        generate_random_port(),
+        generate_random_name(),
+    )
 
 
 def generate_cert(cert_path, key_path):
-    return run_cmd([
-        'openssl', 'req',
-        '-newkey', 'rsa:4096',
-        '-x509',
-        '-sha256',
-        '-days', '365',
-        '-nodes',
-        '-subj', '/',
-        '-out', cert_path,
-        '-keyout', key_path
-    ])
+    return run_cmd(
+        [
+            'openssl',
+            'req',
+            '-newkey',
+            'rsa:4096',
+            '-x509',
+            '-sha256',
+            '-days',
+            '365',
+            '-nodes',
+            '-subj',
+            '/',
+            '-out',
+            cert_path,
+            '-keyout',
+            key_path,
+        ]
+    )
 
 
 def generate_random_schain_data():
@@ -144,9 +153,8 @@ def run_simple_schain_container(schain_data: dict, dutils: DockerUtils):
     run_schain_container(schain_data, dutils=dutils)
 
 
-def run_simple_schain_container_in_sync_mode(schain_data: dict,
-                                             dutils: DockerUtils):
-    public_key = "1:1:1:1"
+def run_simple_schain_container_in_sync_mode(schain_data: dict, dutils: DockerUtils):
+    public_key = '1:1:1:1'
     timestamp = int(time.time())
     run_schain_container(schain_data, public_key, timestamp, dutils=dutils)
 
@@ -177,8 +185,7 @@ def init_web3_wallet() -> Web3Wallet:
     return Web3Wallet(ETH_PRIVATE_KEY, web3)
 
 
-def response_mock(status_code=0, json_data=None, cookies=None,
-                  headers=None, raw=None):
+def response_mock(status_code=0, json_data=None, cookies=None, headers=None, raw=None):
     result = MagicMock()
     result.status_code = status_code
     result.json = MagicMock(return_value=json_data)
@@ -240,9 +247,7 @@ class SChainTestFirewallManager(SChainFirewallManager):
 class SChainTestRuleController(SChainRuleController):
     def create_firewall_manager(self):
         return SChainTestFirewallManager(
-            self.name,
-            self.base_port,
-            self.base_port + self.ports_per_schain
+            self.name, self.base_port, self.base_port + self.ports_per_schain
         )
 
     def is_persistent(self) -> bool:
@@ -256,19 +261,10 @@ class SChainTestRuleController(SChainRuleController):
 
 
 def get_test_rule_controller(
-    name,
-    base_port=None,
-    own_ip=None,
-    node_ips=[],
-    sync_agent_ranges=[],
-    synced=False
+    name, base_port=None, own_ip=None, node_ips=[], sync_agent_ranges=[], synced=False
 ):
     rc = SChainTestRuleController(
-        name,
-        base_port,
-        own_ip,
-        node_ips,
-        sync_ip_ranges=sync_agent_ranges
+        name, base_port, own_ip, node_ips, sync_ip_ranges=sync_agent_ranges
     )
     if synced:
         rc.sync()
@@ -287,13 +283,8 @@ def no_schain_artifacts(schain_name, dutils):
 
 
 def run_custom_schain_container(dutils, schain_name, entrypoint):
-    image_name, container_name, _, _ = get_container_info(
-        SCHAIN_CONTAINER, schain_name)
-    return dutils.run_container(
-        image_name=image_name,
-        name=container_name,
-        entrypoint=entrypoint
-    )
+    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, schain_name)
+    return dutils.run_container(image_name=image_name, name=container_name, entrypoint=entrypoint)
 
 
 def upsert_schain_record_with_config(name, version=None):
@@ -305,239 +296,248 @@ def upsert_schain_record_with_config(name, version=None):
 
 def set_interval_mining(w3: Web3, interval: int) -> None:
     endpoint = w3.provider.endpoint_uri
-    data = {'jsonrpc': '2.0', 'method': 'evm_setIntervalMining', 'params': [interval], "id": 101}
+    data = {'jsonrpc': '2.0', 'method': 'evm_setIntervalMining', 'params': [interval], 'id': 101}
     r = requests.post(endpoint, json=data)
     assert r.status_code == 200 and 'error' not in r.json()
 
 
 def set_automine(w3: Web3, value: bool) -> None:
     endpoint = w3.provider.endpoint_uri
-    data = {'jsonrpc': '2.0', 'method': 'evm_setAutomine', 'params': [value], "id": 102}
+    data = {'jsonrpc': '2.0', 'method': 'evm_setAutomine', 'params': [value], 'id': 102}
     r = requests.post(endpoint, json=data)
     assert r.status_code == 200 and 'error' not in r.json()
 
 
 def generate_schain_config(schain_name):
     return {
-        "sealEngine": "Ethash",
-        "params": {
-            "accountStartNonce": "0x00",
-            "homesteadForkBlock": "0x0",
-            "daoHardforkBlock": "0x0",
-            "EIP150ForkBlock": "0x00",
-            "EIP158ForkBlock": "0x00",
-            "byzantiumForkBlock": "0x0",
-            "constantinopleForkBlock": "0x0",
-            "networkID": "12313219",
-            "chainID": "0x01",
-            "maximumExtraDataSize": "0x20",
-            "tieBreakingGas": False,
-            "minGasLimit": "0xFFFFFFF",
-            "maxGasLimit": "7fffffffffffffff",
-            "gasLimitBoundDivisor": "0x0400",
-            "minimumDifficulty": "0x020000",
-            "difficultyBoundDivisor": "0x0800",
-            "durationLimit": "0x0d",
-            "blockReward": "0x4563918244F40000",
-            "skaleDisableChainIdCheck": True
+        'sealEngine': 'Ethash',
+        'params': {
+            'accountStartNonce': '0x00',
+            'homesteadForkBlock': '0x0',
+            'daoHardforkBlock': '0x0',
+            'EIP150ForkBlock': '0x00',
+            'EIP158ForkBlock': '0x00',
+            'byzantiumForkBlock': '0x0',
+            'constantinopleForkBlock': '0x0',
+            'networkID': '12313219',
+            'chainID': '0x01',
+            'maximumExtraDataSize': '0x20',
+            'tieBreakingGas': False,
+            'minGasLimit': '0xFFFFFFF',
+            'maxGasLimit': '7fffffffffffffff',
+            'gasLimitBoundDivisor': '0x0400',
+            'minimumDifficulty': '0x020000',
+            'difficultyBoundDivisor': '0x0800',
+            'durationLimit': '0x0d',
+            'blockReward': '0x4563918244F40000',
+            'skaleDisableChainIdCheck': True,
         },
-        "genesis": {
-            "nonce": "0x0000000000000042",
-            "difficulty": "0x020000",
-            "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-            "author": "0x0000000000000000000000000000000000000000",
-            "timestamp": "0x00",
-            "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-            "extraData": "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
-            "gasLimit": "0xFFFFFFF"
+        'genesis': {
+            'nonce': '0x0000000000000042',
+            'difficulty': '0x020000',
+            'mixHash': '0x0000000000000000000000000000000000000000000000000000000000000000',
+            'author': '0x0000000000000000000000000000000000000000',
+            'timestamp': '0x00',
+            'parentHash': '0x0000000000000000000000000000000000000000000000000000000000000000',
+            'extraData': '0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa',
+            'gasLimit': '0xFFFFFFF',
         },
-        "accounts": {
-        },
-        "skaleConfig": {
-            "nodeInfo": {
-                "nodeID": 0,
-                "nodeName": "test-node1",
-                "basePort": 10000,
-                "httpRpcPort": 10003,
-                "httpsRpcPort": 10008,
-                "wsRpcPort": 10002,
-                "wssRpcPort": 10007,
-                "infoHttpRpcPort": 10008,
-                "bindIP": "0.0.0.0",
-                "ecdsaKeyName": "NEK:518",
-                "imaMonitoringPort": 10006,
-                "wallets": {
-                    "ima": {
-                        "keyShareName": "bls_key:schain_id:33333333333333333333333333333333333333333333333333333333333333333333333333333:node_id:0:dkg_id:0",  # noqa
-                        "t": 11,
-                        "n": 16,
-                        "certfile": "sgx.crt",
-                        "keyfile": "sgx.key",
-                        "commonBlsPublicKey0": "11111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
-                        "commonBlsPublicKey1": "1111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
-                        "commonBlsPublicKey2": "1111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
-                        "commonBlsPublicKey3": "11111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
-                        "blsPublicKey0": "1111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
-                        "blsPublicKey1": "1111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
-                        "blsPublicKey2": "1111111111111111111111111111111111111111111111111111111111111111111111111111",  # noqa
-                        "blsPublicKey3": "11111111111111111111111111111111111111111111111111111111111111111111111111111"  # noqa
+        'accounts': {},
+        'skaleConfig': {
+            'nodeInfo': {
+                'nodeID': 0,
+                'nodeName': 'test-node1',
+                'basePort': 10000,
+                'httpRpcPort': 10003,
+                'httpsRpcPort': 10008,
+                'wsRpcPort': 10002,
+                'wssRpcPort': 10007,
+                'infoHttpRpcPort': 10008,
+                'bindIP': '0.0.0.0',
+                'ecdsaKeyName': 'NEK:518',
+                'imaMonitoringPort': 10006,
+                'wallets': {
+                    'ima': {
+                        'keyShareName': 'bls_key:schain_id:33333333333333333333333333333333333333333333333333333333333333333333333333333:node_id:0:dkg_id:0',  # noqa
+                        't': 11,
+                        'n': 16,
+                        'certfile': 'sgx.crt',
+                        'keyfile': 'sgx.key',
+                        'commonBlsPublicKey0': '11111111111111111111111111111111111111111111111111111111111111111111111111111',  # noqa
+                        'commonBlsPublicKey1': '1111111111111111111111111111111111111111111111111111111111111111111111111111',  # noqa
+                        'commonBlsPublicKey2': '1111111111111111111111111111111111111111111111111111111111111111111111111111',  # noqa
+                        'commonBlsPublicKey3': '11111111111111111111111111111111111111111111111111111111111111111111111111111',  # noqa
+                        'blsPublicKey0': '1111111111111111111111111111111111111111111111111111111111111111111111111111',  # noqa
+                        'blsPublicKey1': '1111111111111111111111111111111111111111111111111111111111111111111111111111',  # noqa
+                        'blsPublicKey2': '1111111111111111111111111111111111111111111111111111111111111111111111111111',  # noqa
+                        'blsPublicKey3': '11111111111111111111111111111111111111111111111111111111111111111111111111111',  # noqa
                     }
                 },
             },
-            "sChain": {
-                "schainID": 1,
-                "schainName": schain_name,
-                "schainOwner": "0x3483A10F7d6fDeE0b0C1E9ad39cbCE13BD094b12",
-
-
-                "nodeGroups": {
-                    "1": {
-                        "rotation": None,
-                        "nodes": {
-                            "2": [
+            'sChain': {
+                'schainID': 1,
+                'schainName': schain_name,
+                'schainOwner': '0x3483A10F7d6fDeE0b0C1E9ad39cbCE13BD094b12',
+                'nodeGroups': {
+                    '1': {
+                        'rotation': None,
+                        'nodes': {
+                            '2': [
                                 0,
                                 2,
-                                "0xc21d242070e84fe5f8e80f14b8867856b714cf7d1984eaa9eb3f83c2a0a0e291b9b05754d071fbe89a91d4811b9b182d350f706dea6e91205905b86b4764ef9a"  # noqa
+                                '0xc21d242070e84fe5f8e80f14b8867856b714cf7d1984eaa9eb3f83c2a0a0e291b9b05754d071fbe89a91d4811b9b182d350f706dea6e91205905b86b4764ef9a',  # noqa
                             ],
-                            "5": [
+                            '5': [
                                 1,
                                 5,
-                                "0xc37b6db727683379d305a4e38532ddeb58c014ebb151662635839edf3f20042bcdaa8e4b1938e8304512c730671aedf310da76315e329be0814709279a45222a"  # noqa
+                                '0xc37b6db727683379d305a4e38532ddeb58c014ebb151662635839edf3f20042bcdaa8e4b1938e8304512c730671aedf310da76315e329be0814709279a45222a',  # noqa
                             ],
-                            "4": [
+                            '4': [
                                 2,
                                 4,
-                                "0x8b335f65ecf0845d93bc65a340cc2f4b8c49896f5023ecdff7db6f04bc39f9044239f541702ca7ad98c97aa6a7807aa7c41e394262cca0a32847e3c7c187baf5"  # noqa
+                                '0x8b335f65ecf0845d93bc65a340cc2f4b8c49896f5023ecdff7db6f04bc39f9044239f541702ca7ad98c97aa6a7807aa7c41e394262cca0a32847e3c7c187baf5',  # noqa
                             ],
-                            "3": [
+                            '3': [
                                 3,
                                 3,
-                                "0xf3496966c7fd4a82967d32809267abec49bf5c4cc6d88737cee9b1a436366324d4847127a1220575f4ea6a7661723cd5861c9f8de221405b260511b998a0bbc8"  # noqa
-                            ]
+                                '0xf3496966c7fd4a82967d32809267abec49bf5c4cc6d88737cee9b1a436366324d4847127a1220575f4ea6a7661723cd5861c9f8de221405b260511b998a0bbc8',  # noqa
+                            ],
                         },
-                        "finish_ts": None,
-                        "bls_public_key": {
-                            "blsPublicKey0": "8609115311055863404517113391175862520685049234001839865086978176708009850942",  # noqa
-                            "blsPublicKey1": "12596903066793884087763787291339131389612748572700005223043813683790087081",  # noqa
-                            "blsPublicKey2": "20949401227653007081557504259342598891084201308661070577835940778932311075846",  # noqa
-                            "blsPublicKey3": "5476329286206272760147989277520100256618500160343291262709092037265666120930"  # noqa
-                        }
+                        'finish_ts': None,
+                        'bls_public_key': {
+                            'blsPublicKey0': '8609115311055863404517113391175862520685049234001839865086978176708009850942',  # noqa
+                            'blsPublicKey1': '12596903066793884087763787291339131389612748572700005223043813683790087081',  # noqa
+                            'blsPublicKey2': '20949401227653007081557504259342598891084201308661070577835940778932311075846',  # noqa
+                            'blsPublicKey3': '5476329286206272760147989277520100256618500160343291262709092037265666120930',  # noqa
+                        },
                     },
-                    "0": {
-                        "rotation": {
-                            "leaving_node_id": 1,
-                            "new_node_id": 5
-                        },
-                        "nodes": {
-                            "2": [
+                    '0': {
+                        'rotation': {'leaving_node_id': 1, 'new_node_id': 5},
+                        'nodes': {
+                            '2': [
                                 0,
                                 2,
-                                "0xc21d242070e84fe5f8e80f14b8867856b714cf7d1984eaa9eb3f83c2a0a0e291b9b05754d071fbe89a91d4811b9b182d350f706dea6e91205905b86b4764ef9a"  # noqa
+                                '0xc21d242070e84fe5f8e80f14b8867856b714cf7d1984eaa9eb3f83c2a0a0e291b9b05754d071fbe89a91d4811b9b182d350f706dea6e91205905b86b4764ef9a',  # noqa
                             ],
-                            "4": [
+                            '4': [
                                 2,
                                 4,
-                                "0x8b335f65ecf0845d93bc65a340cc2f4b8c49896f5023ecdff7db6f04bc39f9044239f541702ca7ad98c97aa6a7807aa7c41e394262cca0a32847e3c7c187baf5"  # noqa
+                                '0x8b335f65ecf0845d93bc65a340cc2f4b8c49896f5023ecdff7db6f04bc39f9044239f541702ca7ad98c97aa6a7807aa7c41e394262cca0a32847e3c7c187baf5',  # noqa
                             ],
-                            "3": [
+                            '3': [
                                 3,
                                 3,
-                                "0xf3496966c7fd4a82967d32809267abec49bf5c4cc6d88737cee9b1a436366324d4847127a1220575f4ea6a7661723cd5861c9f8de221405b260511b998a0bbc8"  # noqa
+                                '0xf3496966c7fd4a82967d32809267abec49bf5c4cc6d88737cee9b1a436366324d4847127a1220575f4ea6a7661723cd5861c9f8de221405b260511b998a0bbc8',  # noqa
                             ],
-                            "1": [
+                            '1': [
                                 1,
                                 1,
-                                "0x1a857aa4a982ba242c2386febf1eb72dcd1f9669b4237a17878eb836086618af6cda473afa2dfb37c0d2786887397d39bec9601234d933d4384fe38a39b399df"  # noqa
-                            ]
+                                '0x1a857aa4a982ba242c2386febf1eb72dcd1f9669b4237a17878eb836086618af6cda473afa2dfb37c0d2786887397d39bec9601234d933d4384fe38a39b399df',  # noqa
+                            ],
                         },
-                        "finish_ts": 1687180291,
-                        "bls_public_key": {
-                            "blsPublicKey0": "12452613198400495171048259986807077228209876295033433688114313813034253740478",  # noqa
-                            "blsPublicKey1": "10490413552821776191285904316985887024952448646239144269897585941191848882433",  # noqa
-                            "blsPublicKey2": "892041650350974543318836112385472656918171041007469041098688469382831828315",  # noqa
-                            "blsPublicKey3": "14699659615059580586774988732364564692366017113631037780839594032948908579205"  # noqa
-                        }
-                    }
+                        'finish_ts': 1687180291,
+                        'bls_public_key': {
+                            'blsPublicKey0': '12452613198400495171048259986807077228209876295033433688114313813034253740478',  # noqa
+                            'blsPublicKey1': '10490413552821776191285904316985887024952448646239144269897585941191848882433',  # noqa
+                            'blsPublicKey2': '892041650350974543318836112385472656918171041007469041098688469382831828315',  # noqa
+                            'blsPublicKey3': '14699659615059580586774988732364564692366017113631037780839594032948908579205',  # noqa
+                        },
+                    },
                 },
-                "nodes": [
+                'nodes': [
                     {
-                        "nodeID": 0,
-                        "nodeName": "test-node0",
-                        "basePort": 10000,
-                        "httpRpcPort": 100003,
-                        "httpsRpcPort": 10008,
-                        "wsRpcPort": 10002,
-                        "wssRpcPort": 10007,
-                        "infoHttpRpcPort": 10008,
-                        "schainIndex": 1,
-                        "ip": "127.0.0.1",
-                        "owner": "0x41",
-                        "publicIP": "127.0.0.1"
+                        'nodeID': 0,
+                        'nodeName': 'test-node0',
+                        'basePort': 10000,
+                        'httpRpcPort': 100003,
+                        'httpsRpcPort': 10008,
+                        'wsRpcPort': 10002,
+                        'wssRpcPort': 10007,
+                        'infoHttpRpcPort': 10008,
+                        'schainIndex': 1,
+                        'ip': '127.0.0.1',
+                        'owner': '0x41',
+                        'publicIP': '127.0.0.1',
                     },
                     {
-                        "nodeID": 1,
-                        "nodeName": "test-node1",
-                        "basePort": 10010,
-                        "httpRpcPort": 10013,
-                        "httpsRpcPort": 10017,
-                        "wsRpcPort": 10012,
-                        "wssRpcPort": 10018,
-                        "infoHttpRpcPort": 10019,
-                        "schainIndex": 1,
-                        "ip": "127.0.0.2",
-                        "owner": "0x42",
-                        "publicIP": "127.0.0.2"
-                    }
-                ]
-            }
-        }
+                        'nodeID': 1,
+                        'nodeName': 'test-node1',
+                        'basePort': 10010,
+                        'httpRpcPort': 10013,
+                        'httpsRpcPort': 10017,
+                        'wsRpcPort': 10012,
+                        'wssRpcPort': 10018,
+                        'infoHttpRpcPort': 10019,
+                        'schainIndex': 1,
+                        'ip': '127.0.0.2',
+                        'owner': '0x42',
+                        'publicIP': '127.0.0.2',
+                    },
+                ],
+            },
+        },
     }
 
 
 STATIC_NODE_GROUPS = {
     '1': {
-        "rotation": {
-            "leaving_node_id": 3,
-            "new_node_id": 4,
+        'rotation': {
+            'leaving_node_id': 3,
+            'new_node_id': 4,
         },
-        "nodes": {
-            "0": [
-                0,
-                159,
-                "0xgd"
-            ],
-            "4": [
-                4,
-                31,
-                "0x5d"
-            ],
+        'nodes': {
+            '0': [0, 159, '0xgd'],
+            '4': [4, 31, '0x5d'],
         },
-        "finish_ts": None,
-        "bls_public_key": None
+        'finish_ts': None,
+        'bls_public_key': None,
     },
     '0': {
-        "rotation": {
-            "leaving_node_id": 2,
-            "new_node_id": 3,
+        'rotation': {
+            'leaving_node_id': 2,
+            'new_node_id': 3,
         },
-        "nodes": {
-            "0": [
-                0,
-                159,
-                "0xgd"
-            ],
-            "3": [
-                7,
-                61,
-                "0xbh"
-            ],
+        'nodes': {
+            '0': [0, 159, '0xgd'],
+            '3': [7, 61, '0xbh'],
         },
-        "finish_ts": 1681390775,
-        "bls_public_key": {
-            "blsPublicKey0": "3",
-            "blsPublicKey1": "4",
-            "blsPublicKey2": "7",
-            "blsPublicKey3": "9"
-        }
-    }
+        'finish_ts': 1681390775,
+        'bls_public_key': {
+            'blsPublicKey0': '3',
+            'blsPublicKey1': '4',
+            'blsPublicKey2': '7',
+            'blsPublicKey3': '9',
+        },
+    },
 }
+
+
+def get_skaled_status_dict(
+    snapshot_downloader=False,
+    exit_time_reached=False,
+    clear_data_dir=False,
+    start_from_snapshot=False,
+    start_again=False,
+    rpc=True,
+    blockchain=True,
+):
+    return {
+        'subsystemRunning': {
+            'SnapshotDownloader': snapshot_downloader,
+            'Blockchain': blockchain,
+            'Rpc': rpc,
+        },
+        'exitState': {
+            'ClearDataDir': clear_data_dir,
+            'StartAgain': start_again,
+            'StartFromSnapshot': start_from_snapshot,
+            'ExitTimeReached': exit_time_reached,
+        },
+    }
+
+
+def generate_schain_skaled_status_file(_schain_name, **kwargs):
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
+    pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
+    status_filepath = skaled_status_filepath(_schain_name)
+    write_json(status_filepath, get_skaled_status_dict(**kwargs))
