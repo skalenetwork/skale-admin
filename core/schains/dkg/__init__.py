@@ -19,6 +19,6 @@
 
 # flake8: noqa: E402
 
-from core.schains.dkg.main import get_dkg_client, run_dkg, save_dkg_results
-from core.schains.dkg.structures import DKGStatus, DKGStep
-from core.schains.dkg.utils import DkgError, get_secret_key_share_filepath
+from core.schains.dkg.main import get_dkg_client, run_dkg, save_dkg_results  # noqa
+from core.schains.dkg.structures import DKGStatus, DKGStep  # noqa
+from core.schains.dkg.utils import DkgError, get_secret_key_share_filepath  # noqa
