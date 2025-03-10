@@ -10,28 +10,24 @@ This repo contains source code for 3 core SKALE Node containers:
 - `skale_api` - webserver that provides node API
 - `celery` - distributed task queue
 
-## API reference
-
-SKALE API reference could be found in the docs repo: [SKALE Node API](http://docs.skalenetwork.com/).
-
 ## Development
 
 ### Run tests locally
 
-1) Run local ganache, download and deploy SKALE Manager contracts to it
+1. Run local ganache, download and deploy SKALE Manager contracts to it
 
-```bash
-ETH_PRIVATE_KEY=[..] MANAGER_BRANCH=[..] bash ./scripts/deploy_manager.sh
-```
+   ```bash
+   ETH_PRIVATE_KEY=[..] MANAGER_BRANCH=[..] bash ./scripts/deploy_manager.sh
+   ```
 
-- `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
-- `MANAGER_BRANCH` - tag of the SKALE Manager image to use (`$MANAGER_BRANCH-latest` will be used)
-- `SGX_WALLET_TAG` - tag of the SGX simulator to use (optional, `latest` will be used by default)
+   - `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
+   - `MANAGER_BRANCH` - tag of the SKALE Manager image to use (`$MANAGER_BRANCH-latest` will be used)
+   - `SGX_WALLET_TAG` - tag of the SGX simulator to use (optional, `latest` will be used by default)
 
-List of the available SM tags: https://hub.docker.com/r/skalenetwork/skale-manager/tags  
-List of the available SGX tags: https://hub.docker.com/r/skalenetwork/sgxwalletsim/tags
+   List of the available SM tags: <https://hub.docker.com/r/skalenetwork/skale-manager/tags>  
+   List of the available SGX tags: <https://hub.docker.com/r/skalenetwork/sgxwallet_sim/tags>
 
-2) Run SGX wallet simulator and all tests after it
+2. Run SGX wallet simulator and all tests after it
 
 ```bash
 ETH_PRIVATE_KEY=[...] SCHAIN_TYPE=[...] bash ./scripts/run_tests.sh
