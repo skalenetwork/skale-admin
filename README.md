@@ -12,6 +12,16 @@ This repo contains source code for 3 core SKALE Node containers:
 
 ## Development
 
+### Add linting and formatting git hooks
+
+In file `.git/hooks/pre-commit` add:
+
+```shell
+#!/bin/sh
+flake8 .
+ruff check
+```
+
 ### Run tests locally
 
 1. Run local ganache, download and deploy SKALE Manager contracts to it
