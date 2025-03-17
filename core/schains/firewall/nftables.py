@@ -78,32 +78,47 @@ class NFTablesController(IHostFirewallController):
                     }
                 )
 
-        if rule.port:
-            expr.append(
-                {
-                    'match': {
-                        'op': '==',
-                        'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
-                        'right': rule.port,
+        if rule.first_port:
+            if rule.last_port == rule.first_port:
+                expr.append(
+                    {
+                        'match': {
+                            'op': '==',
+                            'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
+                            'right': rule.first_port,
+                        }
                     }
-                }
-            )
+                )
+            else:
+                expr.append(
+                    {
+                        'match': {
+                            'op': '==',
+                            'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
+                            'right': {'range': [f'{rule.first_port}', f'{rule.last_port}']},
+                        }
+                    }
+                )
 
         if counter:
             expr.append({'counter': None})
 
-        expr.append({'accept': None})
+        expr.append({rule.action: None})
         return expr
 
     @classmethod
     def expr_to_rule(self, expr: list) -> None:
-        port, first_ip, last_ip = None, None, None
+        first_port, last_port, first_ip, last_ip = None, None, None, None
         for item in expr:
             if 'match' in item:
                 match = item['match']
 
                 if match.get('left', {}).get('payload', {}).get('field') == 'dport':
-                    port = match.get('right')
+                    port_expr = match.get('right')
+                    if isinstance(port_expr, dict):
+                        first_port, last_port = port_expr['range']
+                    else:
+                        first_port = last_port = port_expr
 
                 if match.get('left', {}).get('payload', {}).get('field') == 'saddr':
                     right = match.get('right')
@@ -112,8 +127,13 @@ class NFTablesController(IHostFirewallController):
                     else:
                         first_ip, last_ip = right['range']
 
-        if any([port, first_ip, last_ip]):
-            return SChainRule(port=port, first_ip=first_ip, last_ip=last_ip)
+        if any([first_port, last_port, first_ip, last_ip]):
+            return SChainRule(
+                first_port=first_port,
+                last_port=last_port,
+                first_ip=first_ip,
+                last_ip=last_ip
+            )
 
     def _compose_json(self, commands: list[dict]) -> dict:
         json_cmd = {'nftables': commands}
@@ -126,6 +146,13 @@ class NFTablesController(IHostFirewallController):
 
     def has_drop_rule(self, first_port: int, last_port: int) -> bool:
         expr = [
+            {
+                'match': {
+                    'op': '!=',
+                    'left': {'meta': {'key': 'iifname'}},
+                    'right': 'lo'
+                }
+            },
             {
                 'match': {
                     'op': '==',
@@ -142,6 +169,13 @@ class NFTablesController(IHostFirewallController):
     def add_schain_drop_rule(self, first_port: int, last_port: int) -> None:
         if not self.has_drop_rule(first_port, last_port):
             expr = [
+                {
+                    'match': {
+                        'op': '!=',
+                        'left': {'meta': {'key': 'iifname'}},
+                        'right': 'lo'
+                    }
+                },
                 {
                     'match': {
                         'op': '==',

@@ -60,7 +60,7 @@ class SChainFirewallManager(IFirewallManager):
     @property
     def rules(self) -> Iterable[SChainRule]:
         return sorted(list(filter(
-            lambda r: self.first_port <= r.port <= self.last_port,
+            lambda r: self.first_port <= r.first_port <= r.last_port <= self.last_port,
             self.host_controller.rules
         )))
 
@@ -110,8 +110,9 @@ class NFTSchainFirewallManager(SChainFirewallManager):
         return saved == self.host_controller.get_plain_chain_rules()
 
     def base_config_applied(self) -> bool:
-        return self.host_controller.has_chain(self.host_controller.chain) and \
-            self.host_controller.has_drop_rule(self.first_port, self.last_port)
+        has_chain = self.host_controller.has_chain(self.host_controller.chain)
+        has_drop_rule = self.host_controller.has_drop_rule(self.first_port, self.last_port)
+        return has_chain and has_drop_rule
 
     def cleanup(self) -> None:
         self.host_controller.cleanup()

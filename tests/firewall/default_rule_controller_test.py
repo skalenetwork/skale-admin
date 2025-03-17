@@ -145,7 +145,7 @@ def run_concurrent_rc_syncing(
     for controller in controllers:
         rules.extend(controller.rules)
 
-    print([r.port for r in rules])
+    print([r.first_port for r in rules])
     print([r.first_ip for r in rules])
 
     # Check that all ip rules are there
@@ -157,17 +157,17 @@ def run_concurrent_rc_syncing(
 
     # Check that all internal ports rules are there except CATCHUP
     for p in internal_ports:
-        assert sum(map(lambda x: x.port == p, rules)) == node_number - 1, p
+        assert sum(map(lambda x: x.first_port == p, rules)) == node_number - 1, p
 
     # Check CATCHUP rules including sync agents rules
     catchup_e_number = node_number + sync_agent_ranges_number - 1
     for p in catchup_ports:
-        assert sum(map(lambda x: x.port == p, rules)) == catchup_e_number, p
+        assert sum(map(lambda x: x.first_port == p, rules)) == catchup_e_number, p
 
     # Check ZMQ rules including sync agents rules
     zmq_e_number = node_number + sync_agent_ranges_number - 1
     for p in zmq_ports:
-        assert sum(map(lambda x: x.port == p, rules)) == zmq_e_number, p
+        assert sum(map(lambda x: x.first_port == p, rules)) == zmq_e_number, p
 
     # Check sync ip ranges rules
     for r in sync_agent_ranges:
@@ -179,7 +179,7 @@ def run_concurrent_rc_syncing(
         ) == schain_number * 2, ip
 
     for port in public_ports:
-        assert sum(map(lambda x: x.port == port, rules)) == 1, port
+        assert sum(map(lambda x: x.first_port == port, rules)) == 1, port
 
 
 @pytest.mark.parametrize('attempt', range(5))

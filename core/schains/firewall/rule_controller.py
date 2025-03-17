@@ -134,7 +134,7 @@ class SChainRuleController(IRuleController):
         for ip in self.node_ips:
             if ip != self.own_ip:
                 for port in self.internal_ports:
-                    yield SChainRule(port, ip)
+                    yield SChainRule(first_port=port, first_ip=ip)
 
     @property  # type: ignore
     @configured_only
@@ -152,7 +152,7 @@ class SChainRuleController(IRuleController):
 
     @property
     def public_rules(self) -> Iterable[SChainRule]:
-        return (SChainRule(port) for port in self.public_ports)
+        return (SChainRule(first_port=port) for port in self.public_ports)
 
     @property  # type: ignore
     @configured_only
@@ -170,7 +170,7 @@ class SChainRuleController(IRuleController):
         if not self.sync_ip_ranges:
             return []
         return (
-            SChainRule(port, r.start_ip, r.end_ip)
+            SChainRule(first_port=port, first_ip=r.start_ip, last_ip=r.end_ip)
             for r in self.sync_ip_ranges
             for port in self.sync_agent_ports
         )

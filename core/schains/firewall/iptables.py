@@ -104,7 +104,7 @@ class IptablesController(IHostFirewallController):
     def schain_rule_to_rule_d(cls, srule: SChainRule) -> Dict:
         rule = {
             'protocol': 'tcp',
-            'tcp': {'dport': str(srule.port)},
+            'tcp': {'dport': str(srule.first_port)},
             'target': 'ACCEPT'
         }
         if srule.first_ip is not None:
@@ -130,7 +130,7 @@ class IptablesController(IHostFirewallController):
             first_ip = cls.from_ip_network(rule_d['src'])
         port = int(rule_d['tcp']['dport'])
 
-        return SChainRule(port, first_ip, last_ip)
+        return SChainRule(first_port=port, first_ip=first_ip, last_ip=last_ip)
 
     @classmethod
     def from_ip_network(cls, ip: str) -> str:
