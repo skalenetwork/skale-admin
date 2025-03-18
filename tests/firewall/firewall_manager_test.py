@@ -16,7 +16,6 @@ def test_firewall_manager():
         SChainRule(first_port=10003)
     ]
     fm.add_rules(rules)
-    print('HERE', fm.rules)
     assert list(sorted(fm.rules)) == rules, list(sorted(fm.rules))
 
     new_rules = [

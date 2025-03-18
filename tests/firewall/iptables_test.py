@@ -55,10 +55,10 @@ def test_iptables_manager(refresh):
 
 
 def test_iptables_manager_add_duplicates(refresh):
-    rule_a = SChainRule(10000, '1.1.1.1', '2.2.2.2')
+    rule_a = SChainRule(first_port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2')
     manager = IptablesController()
     manager.add_rule(rule_a)
-    rule_b = SChainRule(10001, '3.3.3.3', '4.4.4.4')
+    rule_b = SChainRule(first_port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4')
     manager.add_rule(rule_b)
     assert list(manager.rules) == [
         SChainRule(first_port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),

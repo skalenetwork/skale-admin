@@ -54,7 +54,7 @@ class SChainRule:
             )
         ):
             raise ValueError('Rule has no meaningful fields')
-        if self.action not in ['accept', 'drop']:
+        if self.action not in ('accept', 'drop'):
             raise ValueError('Action must be either "allow" or "deny"')
 
     @classmethod
@@ -77,22 +77,34 @@ class SChainRule:
     def __lt__(self, other):
         if not isinstance(other, SChainRule):
             return NotImplemented
-        return self._compare_fields(other, lambda x, y: x < y)
+        fields = [
+            'first_port', 'last_port', 'first_ip', 'last_ip',
+            'action', 'interface_exception', 'name'
+        ]
+        for field in fields:
+            self_value = getattr(self, field)
+            other_value = getattr(other, field)
+            if not field.endswith('_port'):
+                self_value = self_value or ''
+                other_value = other_value or ''
+            if self_value != other_value:
+                return self_value < other_value
+        return True
 
     def __eq__(self, other):
         if not isinstance(other, SChainRule):
             return NotImplemented
-        return self._compare_fields(other, lambda x, y: x == y)
-
-    def _compare_fields(self, other, compare_func):
         fields = [
-            'name', 'first_port', 'last_port', 'first_ip', 'last_ip',
-            'action', 'interface_exception'
+            'first_port', 'last_port', 'first_ip', 'last_ip',
+            'action', 'interface_exception', 'name'
         ]
         for field in fields:
-            self_value = getattr(self, field) or ''
-            other_value = getattr(other, field) or ''
-            if not compare_func(self_value, other_value):
+            self_value = getattr(self, field)
+            other_value = getattr(other, field)
+            if not field.endswith('_port'):
+                self_value = self_value or ''
+                other_value = other_value or ''
+            if self_value != other_value:
                 return False
         return True
 
