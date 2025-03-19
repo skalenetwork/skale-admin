@@ -25,12 +25,14 @@ from typing import Any, Callable, cast, Dict, Iterable, List, Optional, TypeVar
 
 from .firewall_manager import IptablesSChainFirewallManager, NFTSchainFirewallManager
 from .types import (
+    Action,
     IFirewallManager,
     IpRange,
     IRuleController,
     PORTS_PER_SCHAIN,
     SChainRule,
-    SkaledPorts
+    LOOPBACK_INTERFACE,
+    SkaledPorts,
 )
 
 
@@ -52,6 +54,7 @@ def configured_only(func: F) -> F:
         else:
             missing = self.get_missing()
             raise NotInitializedError(f'Missing fields {missing}')
+
     return cast(F, wrapper)
 
 
@@ -64,8 +67,7 @@ class SChainRuleController(IRuleController):
         node_ips: List[str] = [],
         port_allocation: Any = SkaledPorts,  # TODO: better typing for enum
         ports_per_schain: int = PORTS_PER_SCHAIN,
-        sync_ip_ranges: List[IpRange] = []
-
+        sync_ip_ranges: List[IpRange] = [],
     ) -> None:
         self.name = name
         self.base_port = base_port
@@ -95,7 +97,7 @@ class SChainRuleController(IRuleController):
         own_ip: Optional[str] = None,
         node_ips: Optional[List[str]] = None,
         sync_ip_ranges: Optional[List[IpRange]] = None,
-        port_allocation: Any = SkaledPorts
+        port_allocation: Any = SkaledPorts,
     ) -> None:
         self.base_port = base_port or self.base_port
         self.own_ip = own_ip or self.own_ip
@@ -113,7 +115,7 @@ class SChainRuleController(IRuleController):
                 self.port_allocation.PROPOSAL,
                 self.port_allocation.BINARY_CONSENSUS,
                 self.port_allocation.ZMQ_BROADCAST,
-                self.port_allocation.IMA_RPC
+                self.port_allocation.IMA_RPC,
             )
         )
 
@@ -146,7 +148,7 @@ class SChainRuleController(IRuleController):
                 self.port_allocation.HTTPS_JSON,
                 self.port_allocation.WS_JSON,
                 self.port_allocation.WSS_JSON,
-                self.port_allocation.INFO_HTTP_JSON
+                self.port_allocation.INFO_HTTP_JSON,
             )
         )
 
@@ -159,10 +161,7 @@ class SChainRuleController(IRuleController):
     def sync_agent_ports(self) -> Iterable[int]:
         return (
             self.base_port + offset.value
-            for offset in (
-                self.port_allocation.CATCHUP,
-                self.port_allocation.ZMQ_BROADCAST
-            )
+            for offset in (self.port_allocation.CATCHUP, self.port_allocation.ZMQ_BROADCAST)
         )
 
     @property
@@ -176,11 +175,24 @@ class SChainRuleController(IRuleController):
         )
 
     def expected_rules(self) -> Iterable[SChainRule]:
-        return sorted(itertools.chain.from_iterable((
-            self.internal_rules,
-            self.public_rules,
-            self.sync_agent_rules
-        )))
+        return sorted(
+            itertools.chain.from_iterable(
+                (self.internal_rules, self.public_rules, self.sync_agent_rules, self.drop_rules)
+            )
+        )
+
+    @property
+    def drop_rules(self) -> Iterable[SChainRule]:
+        first_port = self.base_port
+        last_port = self.base_port + self.ports_per_schain - 1
+        return [
+            SChainRule(
+                first_port=first_port,
+                last_port=last_port,
+                action=Action.DROP,
+                interface_exception=LOOPBACK_INTERFACE,
+            )
+        ]
 
     def actual_rules(self) -> Iterable[SChainRule]:
         return sorted(self.firewall_manager.rules)
@@ -192,7 +204,7 @@ class SChainRuleController(IRuleController):
         logger.info(
             'Rules status: missing rules %d, redundant rules: %d',
             len(expected - actual),
-            len(actual - expected)
+            len(actual - expected),
         )
         return actual == expected
 
@@ -209,7 +221,7 @@ class IptablesSChainRuleController(SChainRuleController):
         return IptablesSChainFirewallManager(
             self.name,
             self.base_port,  # type: ignore
-            self.base_port + self.ports_per_schain - 1  # type: ignore
+            self.base_port + self.ports_per_schain - 1,  # type: ignore
         )
 
     @configured_only
@@ -231,7 +243,7 @@ class NFTSchainRuleController(SChainRuleController):
         return NFTSchainFirewallManager(
             self.name,
             self.base_port,  # type: ignore
-            self.base_port + self.ports_per_schain - 1  # type: ignore
+            self.base_port + self.ports_per_schain - 1,  # type: ignore
         )
 
     @configured_only

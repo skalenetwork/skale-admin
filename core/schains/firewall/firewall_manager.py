@@ -23,32 +23,21 @@ from typing import Iterable, Optional
 
 from core.schains.firewall.iptables import IptablesController
 from core.schains.firewall.nftables import NFTablesController
-from core.schains.firewall.types import (
-    IFirewallManager,
-    IHostFirewallController,
-    SChainRule
-)
+from core.schains.firewall.types import IFirewallManager, IHostFirewallController, SChainRule
 
 
 logger = logging.getLogger(__name__)
 
 
 class SChainFirewallManager(IFirewallManager):
-    def __init__(
-        self,
-        name: str,
-        first_port: int,
-        last_port: int
-    ) -> None:
+    def __init__(self, name: str, first_port: int, last_port: int) -> None:
         self.name = name
         self.first_port = first_port
         self.last_port = last_port
         self._host_controller: Optional[IHostFirewallController] = None
 
     @abstractmethod
-    def create_host_controller(
-        self
-    ) -> IHostFirewallController:  # pragma: no cover
+    def create_host_controller(self) -> IHostFirewallController:  # pragma: no cover
         pass
 
     @property
@@ -59,10 +48,14 @@ class SChainFirewallManager(IFirewallManager):
 
     @property
     def rules(self) -> Iterable[SChainRule]:
-        return sorted(list(filter(
-            lambda r: self.first_port <= r.first_port <= r.last_port <= self.last_port,
-            self.host_controller.rules
-        )))
+        return sorted(
+            list(
+                filter(
+                    lambda r: self.first_port <= r.first_port <= r.last_port <= self.last_port,
+                    self.host_controller.rules,
+                )
+            )
+        )
 
     def update_rules(self, rules: Iterable[SChainRule]) -> None:
         actual_rules = set(self.rules)
@@ -74,7 +67,7 @@ class SChainFirewallManager(IFirewallManager):
         self.save_rules()
 
     def save_rules(self) -> None:
-        """ Saves rules into persistent storage """
+        """Saves rules into persistent storage"""
         self.host_controller.save_rules()
 
     def add_rules(self, rules: Iterable[SChainRule]) -> None:
@@ -110,9 +103,7 @@ class NFTSchainFirewallManager(SChainFirewallManager):
         return saved == self.host_controller.get_plain_chain_rules()
 
     def base_config_applied(self) -> bool:
-        has_chain = self.host_controller.has_chain(self.host_controller.chain)
-        has_drop_rule = self.host_controller.has_drop_rule(self.first_port, self.last_port)
-        return has_chain and has_drop_rule
+        return self.host_controller.has_chain(self.host_controller.chain)
 
     def cleanup(self) -> None:
         self.host_controller.cleanup()

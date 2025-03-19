@@ -24,7 +24,7 @@ import multiprocessing
 import os
 from typing import Iterable
 
-from core.schains.firewall.types import IHostFirewallController, SChainRule
+from core.schains.firewall.types import Action, IHostFirewallController, SChainRule
 
 from tools.configs import NFT_CHAIN_BASE_PATH
 
@@ -99,16 +99,28 @@ class NFTablesController(IHostFirewallController):
                         }
                     }
                 )
+        if rule.interface_exception:
+            expr.append(
+                {
+                    'match': {
+                        'op': '!=',
+                        'left': {'meta': {'key': 'iifname'}},
+                        'right': rule.interface_exception,
+                    }
+                }
+            )
 
         if counter:
             expr.append({'counter': None})
 
-        expr.append({rule.action: None})
+        action = rule.action.name.lower()
+        expr.append({action: None})
         return expr
 
     @classmethod
     def expr_to_rule(self, expr: list) -> None:
         first_port, last_port, first_ip, last_ip = None, None, None, None
+        interface_exception = None
         for item in expr:
             if 'match' in item:
                 match = item['match']
@@ -127,12 +139,28 @@ class NFTablesController(IHostFirewallController):
                     else:
                         first_ip, last_ip = right['range']
 
+                if match.get('left', {}).get('payload', {}).get('field') == 'saddr':
+                    right = match.get('right')
+                    if isinstance(right, str):
+                        first_ip = right
+                    else:
+                        first_ip, last_ip = right['range']
+
+                if match.get('left', {}).get('meta', {}).get('key') == 'iifname':
+                    interface_exception = match.get('right')
+            if 'accept' in item:
+                action = Action.ACCEPT
+            if 'drop' in item:
+                action = Action.DROP
+
         if any([first_port, last_port, first_ip, last_ip]):
             return SChainRule(
                 first_port=first_port,
                 last_port=last_port,
                 first_ip=first_ip,
-                last_ip=last_ip
+                last_ip=last_ip,
+                interface_exception=interface_exception,
+                action=action,
             )
 
     def _compose_json(self, commands: list[dict]) -> dict:
@@ -146,13 +174,7 @@ class NFTablesController(IHostFirewallController):
 
     def has_drop_rule(self, first_port: int, last_port: int) -> bool:
         expr = [
-            {
-                'match': {
-                    'op': '!=',
-                    'left': {'meta': {'key': 'iifname'}},
-                    'right': 'lo'
-                }
-            },
+            {'match': {'op': '!=', 'left': {'meta': {'key': 'iifname'}}, 'right': 'lo'}},
             {
                 'match': {
                     'op': '==',
@@ -169,13 +191,7 @@ class NFTablesController(IHostFirewallController):
     def add_schain_drop_rule(self, first_port: int, last_port: int) -> None:
         if not self.has_drop_rule(first_port, last_port):
             expr = [
-                {
-                    'match': {
-                        'op': '!=',
-                        'left': {'meta': {'key': 'iifname'}},
-                        'right': 'lo'
-                    }
-                },
+                {'match': {'op': '!=', 'left': {'meta': {'key': 'iifname'}}, 'right': 'lo'}},
                 {
                     'match': {
                         'op': '==',
@@ -226,7 +242,7 @@ class NFTablesController(IHostFirewallController):
                     ]
                 )
             )
-        self.add_schain_drop_rule(first_port, last_port)
+        # self.add_schain_drop_rule(first_port, last_port)
         self.save_rules()
 
     def delete_chain(self) -> None:
@@ -240,7 +256,7 @@ class NFTablesController(IHostFirewallController):
                                 'chain': {
                                     'family': self.FAMILY,
                                     'table': self.table,
-                                    'name': self.chain
+                                    'name': self.chain,
                                 }
                             }
                         }
@@ -350,12 +366,12 @@ class NFTablesController(IHostFirewallController):
 
     @property  # type: ignore
     def rules(self) -> Iterable[SChainRule]:
-        return self.get_rules_by_policy(policy='accept')
+        return self.get_rules_by_policy()
 
     def has_rule(self, rule: SChainRule) -> bool:
         return rule in self.rules
 
-    def get_rules_by_policy(self, policy: str) -> list[SChainRule]:
+    def get_rules_by_policy(self) -> list[SChainRule]:
         output = None
         rc, output, error = self.run_cmd(f'list chain {self.FAMILY} {self.table} {self.chain}')
         if output == '':
@@ -368,22 +384,19 @@ class NFTablesController(IHostFirewallController):
             if 'rule' in item:
                 plain_rule = item['rule']
                 expr = plain_rule.get('expr', [])
-                if {policy: None} in expr:
-                    rule = self.expr_to_rule(expr)
-                    if rule:
-                        rules.append(rule)
-        logger.debug('Rules for policy %s: %s', policy, rules)
+                rule = self.expr_to_rule(expr)
+                if rule:
+                    rules.append(rule)
+        logger.debug('Rules: %s', rules)
         return rules
 
     def get_plain_chain_rules(self) -> str:
         self.nft.set_json_output(False)
         output = ''
         try:
-            rc, output, error = self.run_cmd(
-                f'list chain {self.FAMILY} {self.table} {self.chain}'
-            )
+            rc, output, error = self.run_cmd(f'list chain {self.FAMILY} {self.table} {self.chain}')
             if rc != 0:
-                raise NFTablesCmdFailedError(f"Failed to get table content: {error}")
+                raise NFTablesCmdFailedError(f'Failed to get table content: {error}')
         finally:
             self.nft.set_json_output(True)
 

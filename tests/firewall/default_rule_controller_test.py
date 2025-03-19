@@ -1,4 +1,3 @@
-
 import concurrent.futures
 import mock
 
@@ -8,7 +7,7 @@ from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
 from core.schains.firewall import NFTablesController
 from core.schains.firewall.utils import get_default_rule_controller
-from core.schains.firewall.types import IpRange, SkaledPorts
+from core.schains.firewall.types import Action, IpRange, SkaledPorts
 
 from tools.helper import run_cmd
 
@@ -28,20 +27,16 @@ def test_get_default_rule_controller(nft_chain_folder):
     base_port = 10064
     sync_ip_range = [
         IpRange(start_ip='10.10.10.10', end_ip='15.15.15.15'),
-        IpRange(start_ip='15.15.15.15', end_ip='18.18.18.18')
+        IpRange(start_ip='15.15.15.15', end_ip='18.18.18.18'),
     ]
-    rc = get_default_rule_controller(
-        'test',
-        base_port,
-        own_ip,
-        node_ips,
-        sync_ip_range
-    )
+    rc = get_default_rule_controller('test', base_port, own_ip, node_ips, sync_ip_range)
 
     assert rc.is_inited()
     assert rc.is_persistent()
     assert rc.actual_rules() == []
     rc.sync()
+    print(rc.expected_rules())
+    print(rc.actual_rules())
     assert rc.expected_rules() == rc.actual_rules()
 
     rules = rc.actual_rules()
@@ -68,25 +63,13 @@ def sync_rules(*args):
 
 
 def run_concurrent_rc_syncing(
-    node_number,
-    schain_number,
-    own_ip,
-    workers,
-    sync_agent_ranges_number,
-    attempt=0,
-    refresh=False
+    node_number, schain_number, own_ip, workers, sync_agent_ranges_number, attempt=0, refresh=False
 ):
-    base_ports = [
-        10000 + PORTS_PER_SCHAIN * i
-        for i in range(schain_number)
-    ]
+    base_ports = [10000 + PORTS_PER_SCHAIN * i for i in range(schain_number)]
     schain_names = [f'test-{i}' for i in range(schain_number)]
     node_ips = [f'{i}.{i}.{i}.{i}' for i in range(1, node_number + 1)]
     sync_agent_ranges = [
-        IpRange(
-            f'{i + 1}.{i + 2}.{i + 3}.{i + 3}',
-            f'{i + 1}.{i + 2}.{i + 3}.{i + 4}'
-        )
+        IpRange(f'{i + 1}.{i + 2}.{i + 3}.{i + 3}', f'{i + 1}.{i + 2}.{i + 3}.{i + 4}')
         for i in range(sync_agent_ranges_number)
     ]
     schain_rule_configs = [
@@ -98,18 +81,12 @@ def run_concurrent_rc_syncing(
         for offset in [
             SkaledPorts.PROPOSAL.value,
             SkaledPorts.BINARY_CONSENSUS.value,
-            SkaledPorts.IMA_RPC.value
+            SkaledPorts.IMA_RPC.value,
         ]
         for base_port in base_ports
     ]
-    catchup_ports = [
-        base_port + SkaledPorts.CATCHUP.value
-        for base_port in base_ports
-    ]
-    zmq_ports = [
-        base_port + SkaledPorts.ZMQ_BROADCAST.value
-        for base_port in base_ports
-    ]
+    catchup_ports = [base_port + SkaledPorts.CATCHUP.value for base_port in base_ports]
+    zmq_ports = [base_port + SkaledPorts.ZMQ_BROADCAST.value for base_port in base_ports]
     public_ports = [
         base_port + offset
         for offset in (
@@ -117,19 +94,14 @@ def run_concurrent_rc_syncing(
             SkaledPorts.HTTPS_JSON.value,
             SkaledPorts.WS_JSON.value,
             SkaledPorts.WSS_JSON.value,
-            SkaledPorts.INFO_HTTP_JSON.value
+            SkaledPorts.INFO_HTTP_JSON.value,
         )
         for base_port in base_ports
     ]
 
     futures = []
-    with concurrent.futures.ProcessPoolExecutor(
-        max_workers=workers
-    ) as executor:
-        futures = [
-            executor.submit(sync_rules, *src)
-            for src in schain_rule_configs
-        ]
+    with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
+        futures = [executor.submit(sync_rules, *src) for src in schain_rule_configs]
         for future in concurrent.futures.as_completed(futures):
             r = future.result(timeout=5)
             if refresh:
@@ -148,16 +120,21 @@ def run_concurrent_rc_syncing(
     print([r.first_port for r in rules])
     print([r.first_ip for r in rules])
 
+    # Check that drop rule is here
+    assert sum(map(lambda x: x.action == Action.DROP, rules)) == schain_number
+    assert sum(map(lambda x: x.interface_exception == 'lo', rules)) == schain_number
+
     # Check that all ip rules are there
     for ip in node_ips:
         if ip != own_ip:
-            assert sum(
-                map(lambda x: x.first_ip == ip, rules)
-            ) == 5 * schain_number, ip
+            assert sum(map(lambda x: x.first_ip == ip, rules)) == 5 * schain_number, ip
 
     # Check that all internal ports rules are there except CATCHUP
     for p in internal_ports:
-        assert sum(map(lambda x: x.first_port == p, rules)) == node_number - 1, p
+        assert (
+            sum(map(lambda x: x.first_port == p and x.action == Action.ACCEPT, rules))
+            == node_number - 1
+        ), p
 
     # Check CATCHUP rules including sync agents rules
     catchup_e_number = node_number + sync_agent_ranges_number - 1
@@ -171,12 +148,8 @@ def run_concurrent_rc_syncing(
 
     # Check sync ip ranges rules
     for r in sync_agent_ranges:
-        assert sum(
-            map(lambda x: x.first_ip == r.start_ip, rules)
-        ) == schain_number * 2, ip
-        assert sum(
-            map(lambda x: x.last_ip == r.end_ip, rules)
-        ) == schain_number * 2, ip
+        assert sum(map(lambda x: x.first_ip == r.start_ip, rules)) == schain_number * 2, ip
+        assert sum(map(lambda x: x.last_ip == r.end_ip, rules)) == schain_number * 2, ip
 
     for port in public_ports:
         assert sum(map(lambda x: x.first_port == port, rules)) == 1, port
@@ -194,7 +167,7 @@ def test_concurrent_rc_behavior_no_refresh(attempt, nft_chain_folder):
         own_ip,
         workers=schain_number,
         sync_agent_ranges_number=sync_agent_ranges_number,
-        attempt=attempt
+        attempt=attempt,
     )
 
 
@@ -211,5 +184,5 @@ def test_concurrent_rc_behavior_with_refresh(attempt, refresh, nft_chain_folder)
         workers=schain_number,
         sync_agent_ranges_number=sync_agent_ranges_number,
         attempt=attempt,
-        refresh=True
+        refresh=True,
     )

@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import ABC, abstractmethod
+from enum import IntEnum
 from functools import total_ordering
 from typing import Any, Iterable, List, Optional
 from dataclasses import dataclass
@@ -25,6 +26,15 @@ from dataclasses import dataclass
 from collections import namedtuple
 from skale.dataclasses.skaled_ports import SkaledPorts  # noqa
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
+
+LOOPBACK_INTERFACE = 'lo'
+
+
+class Action(IntEnum):
+    # Order is important: drop rules should be applied first
+    # Therefore they are last in the list
+    DROP = 0
+    ACCEPT = 1
 
 
 @total_ordering
@@ -35,7 +45,7 @@ class SChainRule:
     last_port: Optional[int] = None
     first_ip: Optional[str] = None
     last_ip: Optional[str] = None
-    action: str = 'accept'  # Default action is allow
+    action: Action = Action.ACCEPT
     interface_exception: Optional[str] = None
 
     def __post_init__(self):
@@ -54,8 +64,6 @@ class SChainRule:
             )
         ):
             raise ValueError('Rule has no meaningful fields')
-        if self.action not in ('accept', 'drop'):
-            raise ValueError('Action must be either "allow" or "deny"')
 
     @classmethod
     def _as_tuple(cls, rule) -> tuple:
@@ -78,13 +86,18 @@ class SChainRule:
         if not isinstance(other, SChainRule):
             return NotImplemented
         fields = [
-            'first_port', 'last_port', 'first_ip', 'last_ip',
-            'action', 'interface_exception', 'name'
+            'action',
+            'first_port',
+            'last_port',
+            'first_ip',
+            'last_ip',
+            'interface_exception',
+            'name',
         ]
         for field in fields:
             self_value = getattr(self, field)
             other_value = getattr(other, field)
-            if not field.endswith('_port'):
+            if field in ('first_ip', 'last_ip', 'interface_exception', 'name'):
                 self_value = self_value or ''
                 other_value = other_value or ''
             if self_value != other_value:
@@ -95,8 +108,13 @@ class SChainRule:
         if not isinstance(other, SChainRule):
             return NotImplemented
         fields = [
-            'first_port', 'last_port', 'first_ip', 'last_ip',
-            'action', 'interface_exception', 'name'
+            'first_port',
+            'last_port',
+            'first_ip',
+            'last_ip',
+            'action',
+            'interface_exception',
+            'name',
         ]
         for field in fields:
             self_value = getattr(self, field)
@@ -120,47 +138,6 @@ class SChainRule:
 
     def __hash__(self) -> int:
         return hash(SChainRule._as_tuple(self))
-
-
-# @total_ordering
-# class SChainRule(namedtuple('SChainRule', ['port', 'first_ip', 'last_ip'])):
-#     def __new__(
-#         cls,
-#         port: int,
-#         first_ip: Optional[str] = None,
-#         last_ip: Optional[str] = None
-#     ) -> 'SChainRule':
-#         if first_ip and not last_ip:
-#             last_ip = first_ip
-#         return super(SChainRule, cls).__new__(cls, port, first_ip, last_ip)
-#
-#     def __repr__(self) -> str:
-#         if not self.first_ip:
-#             return f'SChainRule(:{self.port})'
-#         else:
-#             return f'SChainRule({self.first_ip}:{self.port}-{self.last_ip}:{self.port})'  # noqa
-#
-#     def __hash__(self) -> int:
-#         return hash(tuple(self))
-#
-#     def __eq__(self, other) -> bool:
-#         return self.port == other.port and \
-#                 self.first_ip == other.first_ip and \
-#                 self.last_ip == other.last_ip
-#
-#     def __lt__(self, other) -> bool:
-#         if self.port != other.port:
-#             return self.port < other.port
-#         elif self.first_ip != other.first_ip:
-#             ip_a = '' if self.first_ip is None else self.first_ip
-#             ip_b = '' if other.first_ip is None else other.first_ip
-#             return ip_a < ip_b
-#         elif self.last_ip != other.last_ip:
-#             ip_a = '' if self.last_ip is None else self.last_ip
-#             ip_b = '' if other.last_ip is None else other.last_ip
-#             return ip_a < ip_b
-#         else:  # pragma: no cover
-#             return True
 
 
 IpRange = namedtuple('IpRange', ['start_ip', 'end_ip'])
