@@ -24,14 +24,7 @@ def rotation_data(schain_db, skale):
 
 
 @pytest.fixture
-def config_checks(
-    schain_db,
-    skale,
-    node_config,
-    schain_on_contracts,
-    rotation_data,
-    estate
-):
+def config_checks(schain_db, skale, node_config, schain_on_contracts, rotation_data, estate):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
     current_nodes = get_current_nodes(skale, name)
@@ -39,24 +32,17 @@ def config_checks(
         schain_name=name,
         node_id=node_config.id,
         schain_record=schain_record,
-        rotation_id=rotation_data['rotation_id'],
+        rotation_id=rotation_data.rotation_counter,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
         last_dkg_successful=True,
-        estate=estate
+        estate=estate,
     )
 
 
 @pytest.fixture
 def config_am(
-    schain_db,
-    skale,
-    node_config,
-    schain_on_contracts,
-    predeployed_ima,
-    secret_key,
-    config_checks,
-    estate
+    schain_db, skale, node_config, schain_on_contracts, secret_key, config_checks, estate, skale_ima
 ):
     name = schain_db
     rotation_data = skale.node_rotation.get_rotation(name)
@@ -65,13 +51,14 @@ def config_am(
 
     am = ConfigActionManager(
         skale=skale,
+        skale_ima=skale_ima,
         schain=schain,
         node_config=node_config,
         rotation_data=rotation_data,
         stream_version=CONFIG_STREAM,
         checks=config_checks,
         current_nodes=current_nodes,
-        estate=estate
+        estate=estate,
     )
     am.dkg = lambda s: True
     return am
@@ -79,41 +66,27 @@ def config_am(
 
 @pytest.fixture
 def regular_config_monitor(config_am, config_checks):
-    return RegularConfigMonitor(
-        action_manager=config_am,
-        checks=config_checks
-    )
+    return RegularConfigMonitor(action_manager=config_am, checks=config_checks)
 
 
 @pytest.fixture
 def sync_config_monitor(config_am, config_checks):
-    return SyncConfigMonitor(
-        action_manager=config_am,
-        checks=config_checks
-    )
+    return SyncConfigMonitor(action_manager=config_am, checks=config_checks)
 
 
 def test_regular_config_monitor(schain_db, regular_config_monitor, rotation_data):
     name = schain_db
-    rotation_id = rotation_data['rotation_id']
+    rotation_id = rotation_data.rotation_counter
 
     regular_config_monitor.run()
     config_dir = schain_config_dir(name)
 
-    pattern = os.path.join(
-        config_dir,
-        f'schain_{name}_{rotation_id}_*.json'
-    )
+    pattern = os.path.join(config_dir, f'schain_{name}_{rotation_id}_*.json')
     filenames = glob.glob(pattern)
     assert os.path.isfile(filenames[0])
 
 
-def test_regular_config_monitor_change_ip(
-    skale,
-    schain_db,
-    regular_config_monitor,
-    rotation_data
-):
+def test_regular_config_monitor_change_ip(skale, schain_db, regular_config_monitor, rotation_data):
     name = schain_db
     econfig = ExternalConfig(name=name)
     assert econfig.reload_ts is None
@@ -143,22 +116,13 @@ def test_regular_config_monitor_change_ip(
 
 
 def test_sync_config_monitor(
-    skale,
-    schain_db,
-    config_am,
-    config_checks,
-    econfig,
-    estate,
-    rotation_data
+    skale, schain_db, config_am, config_checks, econfig, estate, rotation_data
 ):
     name = schain_db
     config_dir = schain_config_dir(name)
 
-    rotation_id = rotation_data['rotation_id']
-    config_pattern = os.path.join(
-        config_dir,
-        f'schain_{name}_{rotation_id}_*.json'
-    )
+    rotation_id = rotation_data.rotation_counter
+    config_pattern = os.path.join(config_dir, f'schain_{name}_{rotation_id}_*.json')
     assert len(glob.glob(config_pattern)) == 0
 
     assert econfig.synced(estate)
@@ -168,10 +132,7 @@ def test_sync_config_monitor(
     config_am.estate = estate
     assert not econfig.synced(estate)
 
-    sync_config_monitor = SyncConfigMonitor(
-        action_manager=config_am,
-        checks=config_checks
-    )
+    sync_config_monitor = SyncConfigMonitor(action_manager=config_am, checks=config_checks)
     sync_config_monitor.run()
     assert econfig.synced(estate)
     config_filename = glob.glob(config_pattern)
@@ -179,22 +140,13 @@ def test_sync_config_monitor(
 
 
 def test_sync_config_monitor_dkg_not_completed(
-    skale,
-    schain_db,
-    config_am,
-    config_checks,
-    econfig,
-    estate,
-    rotation_data
+    skale, schain_db, config_am, config_checks, econfig, estate, rotation_data
 ):
     name = schain_db
     config_dir = schain_config_dir(name)
 
-    rotation_id = rotation_data['rotation_id']
-    config_pattern = os.path.join(
-        config_dir,
-        f'schain_{name}_{rotation_id}_*.json'
-    )
+    rotation_id = rotation_data.rotation_counter
+    config_pattern = os.path.join(config_dir, f'schain_{name}_{rotation_id}_*.json')
     assert len(glob.glob(config_pattern)) == 0
 
     assert econfig.synced(estate)
@@ -205,10 +157,7 @@ def test_sync_config_monitor_dkg_not_completed(
     config_checks._last_dkg_successful = False
     assert not econfig.synced(estate)
 
-    sync_config_monitor = SyncConfigMonitor(
-        action_manager=config_am,
-        checks=config_checks
-    )
+    sync_config_monitor = SyncConfigMonitor(action_manager=config_am, checks=config_checks)
     sync_config_monitor.run()
     assert econfig.synced(estate)
     # config generation was not triggered because dkg has not been completed

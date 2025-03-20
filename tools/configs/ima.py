@@ -18,74 +18,17 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import (
-    CONTRACTS_INFO_FOLDER,
-    IMA_CONTRACTS_INFO_NAME,
-    SCHAIN_CONFIG_DIR_SKALED
-)
+from tools.configs import SCHAIN_CONFIG_DIR_SKALED
 
-MAINNET_IMA_ABI_FILEPATH = os.getenv('MAINNET_IMA_ABI_FILEPATH') or \
-    os.path.join(CONTRACTS_INFO_FOLDER, IMA_CONTRACTS_INFO_NAME)
+
+IMA_CONTRACTS = os.getenv('IMA_CONTRACTS')
+SCHAIN_IMA_CONTRACTS = 'predeployed'
 
 IMA_NETWORK_BROWSER_FILENAME = 'ima_network_browser_data.json'
 IMA_NETWORK_BROWSER_FILEPATH = os.path.join(SCHAIN_CONFIG_DIR_SKALED, IMA_NETWORK_BROWSER_FILENAME)
 
-SCHAIN_IMA_ABI_FILENAME = 'schain_ima_abi.json'
-SCHAIN_IMA_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, SCHAIN_IMA_ABI_FILENAME)
-
 IMA_STATE_PATH = 'ima_state.json'
 IMA_STATE_CONTAINER_PATH = os.path.join(SCHAIN_CONFIG_DIR_SKALED, IMA_STATE_PATH)
 
-SCHAIN_IMA_CONTRACTS = {
-    'token_manager_eth': {
-        'filename': 'TokenManagerEth'
-    },
-    'token_manager_erc20': {
-        'filename': 'TokenManagerERC20'
-    },
-    'token_manager_erc721': {
-        'filename': 'TokenManagerERC721'
-    },
-    'token_manager_erc1155': {
-        'filename': 'TokenManagerERC1155'
-    },
-    'token_manager_erc721_with_metadata': {
-        'filename': 'TokenManagerERC721WithMetadata'
-    },
-    'message_proxy_chain': {
-        'filename': 'MessageProxyForSchain'
-    },
-    'token_manager_linker': {
-        'filename': 'TokenManagerLinker'
-    },
-    'community_locker': {
-        'filename': 'CommunityLocker'
-    },
-    'eth_erc20': {
-        'filename': 'EthERC20'
-    }
-}
-
-
-MAINNET_IMA_CONTRACTS = {
-    'message_proxy_mainnet': {
-        'filename': 'MessageProxyForMainnet'
-    },
-    'linker': {
-        'filename': 'Linker'
-    },
-    'deposit_box_eth': {
-        'filename': 'DepositBoxEth'
-    },
-    'deposit_box_erc20': {
-        'filename': 'DepositBoxERC20'
-    },
-    'deposit_box_erc721': {
-        'filename': 'DepositBoxERC721'
-    },
-    'deposit_box_erc1155': {
-        'filename': 'DepositBoxERC1155'
-    }
-}
 
 DEFAULT_TIME_FRAME = 1800  # 30 min

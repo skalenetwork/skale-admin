@@ -19,25 +19,22 @@
 
 from dataclasses import dataclass
 
-from skale import Skale
+from skale import SkaleManager
 
 
 @dataclass
 class SkaleManagerOpts:
     """Dataclass that represents skale-manager key of the skaleConfig section"""
+
     schains_internal_address: str
     nodes_address: str
 
     def to_dict(self):
         """Returns camel-case representation of the SkaleManagerOpts object"""
-        return {
-            'SchainsInternal': self.schains_internal_address,
-            'Nodes': self.nodes_address
-        }
+        return {'SchainsInternal': self.schains_internal_address, 'Nodes': self.nodes_address}
 
 
-def init_skale_manager_opts(skale: Skale) -> SkaleManagerOpts:
+def init_skale_manager_opts(skale: SkaleManager) -> SkaleManagerOpts:
     return SkaleManagerOpts(
-        schains_internal_address=skale.schains_internal.address,
-        nodes_address=skale.nodes.address
+        schains_internal_address=skale.schains_internal.address, nodes_address=skale.nodes.address
     )

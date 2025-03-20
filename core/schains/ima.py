@@ -29,19 +29,19 @@ from websocket import create_connection
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import get_chain_id, get_schain_ports_from_config, get_static_params
-from core.ima.schain import get_schain_ima_abi_filepath
 from tools.configs import ENV_TYPE, SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import IMA_MIGRATION_PATH, CONTAINERS_INFO
 from tools.configs.db import REDIS_URI
 from tools.configs.ima import (
-    MAINNET_IMA_ABI_FILEPATH,
+    IMA_CONTRACTS,
+    SCHAIN_IMA_CONTRACTS,
     IMA_STATE_CONTAINER_PATH,
     IMA_NETWORK_BROWSER_FILEPATH,
-    DEFAULT_TIME_FRAME
+    DEFAULT_TIME_FRAME,
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import safe_load_yml
-from tools.configs.web3 import ABI_FILEPATH, ENDPOINT
+from tools.configs.web3 import MANAGER_CONTRACTS, ENDPOINT
 
 
 logger = logging.getLogger(__name__)
@@ -57,9 +57,9 @@ class ImaData:
 class ImaEnv:
     schain_dir: str
 
-    manager_abi_path: str
-    mainnet_proxy_path: str
-    schain_proxy_path: str
+    manager_contracts: str
+    ima_contracts: str
+    ima_schain_contracts: str
 
     state_file: str
     network_browser_data_path: str
@@ -92,9 +92,9 @@ class ImaEnv:
         """Returns upper-case representation of the ImaEnv object"""
         return {
             'SCHAIN_DIR': self.schain_dir,
-            'MANAGER_ABI_PATH': self.manager_abi_path,
-            'MAINNET_PROXY_PATH': self.mainnet_proxy_path,
-            'SCHAIN_PROXY_PATH': self.schain_proxy_path,
+            'MANAGER_CONTRACTS': self.manager_contracts,
+            'IMA_CONTRACTS': self.ima_contracts,
+            'IMA_SCHAIN_CONTRACTS': self.ima_schain_contracts,
             'STATE_FILE': self.state_file,
             'SCHAIN_NAME': self.schain_name,
             'SCHAIN_RPC_URL': self.schain_rpc_url,
@@ -113,7 +113,7 @@ class ImaEnv:
             'MONITORING_PORT': self.monitoring_port,
             'RPC_PORT': self.rpc_port,
             'TIME_FRAMING': self.time_framing,
-            'IMA_NETWORK_BROWSER_DATA_PATH': self.network_browser_data_path
+            'IMA_NETWORK_BROWSER_DATA_PATH': self.network_browser_data_path,
         }
 
 
@@ -147,11 +147,10 @@ def schain_index_to_node_number(node):
 
 def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> ImaEnv:
     schain_config = ConfigFileManager(schain_name).skaled_config
-    node_info = schain_config["skaleConfig"]["nodeInfo"]
+    node_info = schain_config['skaleConfig']['nodeInfo']
     bls_key_name = node_info['wallets']['ima']['keyShareName']
-    schain_nodes = schain_config["skaleConfig"]["sChain"]
-    public_node_info = get_current_node_from_nodes(
-        node_info['nodeID'], schain_nodes)
+    schain_nodes = schain_config['skaleConfig']['sChain']
+    public_node_info = get_current_node_from_nodes(node_info['nodeID'], schain_nodes)
 
     schain_index = schain_index_to_node_number(public_node_info)
     node_address = public_node_info['owner']
@@ -160,9 +159,9 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> Ima
 
     return ImaEnv(
         schain_dir=schain_config_dir(schain_name),
-        manager_abi_path=ABI_FILEPATH,
-        mainnet_proxy_path=MAINNET_IMA_ABI_FILEPATH,
-        schain_proxy_path=get_schain_ima_abi_filepath(schain_name),
+        manager_contracts=MANAGER_CONTRACTS,
+        ima_contracts=IMA_CONTRACTS,
+        ima_schain_contracts=SCHAIN_IMA_CONTRACTS,
         state_file=IMA_STATE_CONTAINER_PATH,
         schain_name=schain_name,
         schain_rpc_url=get_localhost_http_endpoint(schain_name),
@@ -181,7 +180,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> Ima
         monitoring_port=node_info['imaMonitoringPort'],
         rpc_port=get_ima_rpc_port(schain_name),
         time_framing=time_frame,
-        network_browser_data_path=IMA_NETWORK_BROWSER_FILEPATH
+        network_browser_data_path=IMA_NETWORK_BROWSER_FILEPATH,
     )
 
 
@@ -192,8 +191,8 @@ def get_ima_version_after_migration() -> str:
 def get_ima_monitoring_port(schain_name):
     schain_config = ConfigFileManager(schain_name).skaled_config
     if schain_config:
-        node_info = schain_config["skaleConfig"]["nodeInfo"]
-        return int(node_info["imaMonitoringPort"])
+        node_info = schain_config['skaleConfig']['nodeInfo']
+        return int(node_info['imaMonitoringPort'])
     else:
         return None
 
@@ -205,10 +204,11 @@ def get_ima_rpc_port(schain_name):
 
 
 def get_ima_container_statuses():
-    containers_list = g.docker_utils.get_all_ima_containers(
-        all=True, format=True)
-    ima_containers = [{'name': container['name'], 'state': container['state']['Status']}
-                      for container in containers_list]
+    containers_list = g.docker_utils.get_all_ima_containers(all=True, format=True)
+    ima_containers = [
+        {'name': container['name'], 'state': container['state']['Status']}
+        for container in containers_list
+    ]
     return ima_containers
 
 
@@ -224,8 +224,10 @@ def request_ima_healthcheck(endpoint):
     logger.debug(f'Received {result}')
     if result:
         data_json = json.loads(result)
-        data = {'errors': data_json['last_transfer_errors'],
-                'categories': data_json['last_error_categories']}
+        data = {
+            'errors': data_json['last_transfer_errors'],
+            'categories': data_json['last_error_categories'],
+        }
     else:
         data = None
     return data
@@ -239,8 +241,7 @@ def get_ima_log_checks():
         errors = []
         categories = []
         container_name = f'skale_ima_{schain_name}'
-        cont_data = next(
-            (item for item in ima_containers if item["name"] == container_name), None)
+        cont_data = next((item for item in ima_containers if item['name'] == container_name), None)
         if cont_data is None:
             continue
         elif cont_data['state'] != 'running':
@@ -258,8 +259,7 @@ def get_ima_log_checks():
                 try:
                     ima_healthcheck = request_ima_healthcheck(endpoint)
                 except Exception as err:
-                    logger.info(
-                        f'Error occurred while checking IMA state on {endpoint}')
+                    logger.info(f'Error occurred while checking IMA state on {endpoint}')
                     logger.exception(err)
                     error_text = repr(err)
                 else:
@@ -268,9 +268,15 @@ def get_ima_log_checks():
                     else:
                         errors = ima_healthcheck['errors']
                         categories = ima_healthcheck['categories']
-        all_ima_healthchecks.append({schain_name: {'error': error_text,
-                                                   'last_ima_errors': errors,
-                                                   'error_categories': categories}})
+        all_ima_healthchecks.append(
+            {
+                schain_name: {
+                    'error': error_text,
+                    'last_ima_errors': errors,
+                    'error_categories': categories,
+                }
+            }
+        )
     return all_ima_healthchecks
 
 
@@ -286,8 +292,7 @@ def get_ima_time_frame(name: str, after: bool = False) -> int:
     params = get_static_params()
     if 'ima' not in params or 'time_frame' not in params['ima']:
         logger.debug(
-            'IMA time frame intrerval is not set. Using default value %d',
-            DEFAULT_TIME_FRAME
+            'IMA time frame intrerval is not set. Using default value %d', DEFAULT_TIME_FRAME
         )
         return DEFAULT_TIME_FRAME
     if after:

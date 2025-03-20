@@ -22,7 +22,7 @@ import logging
 
 from typing import List, Optional, Tuple
 
-from skale import Skale
+from skale import SkaleManager
 
 from .types import IpRange
 from .nftables import NFTablesController
@@ -37,14 +37,14 @@ def get_default_rule_controller(
     base_port: Optional[int] = None,
     own_ip: Optional[str] = None,
     node_ips: List[str] = [],
-    sync_agent_ranges: Optional[List[IpRange]] = []
+    sync_agent_ranges: Optional[List[IpRange]] = [],
 ) -> IptablesSChainRuleController:
     return get_nftables_rule_controller(
         name=name,
         base_port=base_port,
         own_ip=own_ip,
         node_ips=node_ips,
-        sync_agent_ranges=sync_agent_ranges
+        sync_agent_ranges=sync_agent_ranges,
     )
 
 
@@ -53,7 +53,7 @@ def get_iptables_rule_controller(
     base_port: Optional[int] = None,
     own_ip: Optional[str] = None,
     node_ips: List[str] = [],
-    sync_agent_ranges: Optional[List[IpRange]] = []
+    sync_agent_ranges: Optional[List[IpRange]] = [],
 ) -> IptablesSChainRuleController:
     sync_agent_ranges = sync_agent_ranges or []
     logger.info('Creating rule controller for %s', name)
@@ -63,7 +63,7 @@ def get_iptables_rule_controller(
         base_port=base_port,
         own_ip=own_ip,
         node_ips=node_ips,
-        sync_ip_ranges=sync_agent_ranges
+        sync_ip_ranges=sync_agent_ranges,
     )
 
 
@@ -72,7 +72,7 @@ def get_nftables_rule_controller(
     base_port: Optional[int] = None,
     own_ip: Optional[str] = None,
     node_ips: List[str] = [],
-    sync_agent_ranges: Optional[List[IpRange]] = []
+    sync_agent_ranges: Optional[List[IpRange]] = [],
 ) -> NFTSchainRuleController:
     sync_agent_ranges = sync_agent_ranges or []
     logger.info('Creating rule controller for %s', name)
@@ -82,11 +82,11 @@ def get_nftables_rule_controller(
         base_port=base_port,
         own_ip=own_ip,
         node_ips=node_ips,
-        sync_ip_ranges=sync_agent_ranges
+        sync_ip_ranges=sync_agent_ranges,
     )
 
 
-def get_sync_agent_ranges(skale: Skale) -> List[IpRange]:
+def get_sync_agent_ranges(skale: SkaleManager) -> List[IpRange]:
     sync_agent_ranges = []
     rnum = skale.sync_manager.get_ip_ranges_number()
     for i in range(rnum):

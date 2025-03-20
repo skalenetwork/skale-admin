@@ -18,11 +18,10 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from skale import Skale
+from skale import SkaleManager
 from skale.utils.helper import ip_from_bytes
 
 from core.node_config import NodeConfig
-from core.ima.schain import update_predeployed_ima
 from core.schains.config.file_manager import ConfigFileManager
 from core.schains.cleaner import get_schains_on_node
 from tools.docker_utils import DockerUtils
@@ -30,22 +29,21 @@ from tools.docker_utils import DockerUtils
 logger = logging.getLogger(__name__)
 
 
-def soft_updates(skale: Skale, node_config: NodeConfig) -> None:
+def soft_updates(skale: SkaleManager, node_config: NodeConfig) -> None:
     """
     This function is triggered after each admin container restart and calls all functions that
     could be required to update existing software or config files on the machine.
 
     Parameters:
-    skale (Skale): Instance of skale.py library
+    skale (SkaleManager): Instance of skale.py library
     wallet (Wallet): Instance of skale.py wallet
     node_config (NodeConfig): Instance of NodeConfig class
     """
     logger.info('Performing soft updates ...')
     update_node_config_file(skale, node_config)
-    update_predeployed_ima()
 
 
-def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:
+def update_node_config_file(skale: SkaleManager, node_config: NodeConfig) -> None:
     """
     - Ensure node config name field
     - Ensure node config ip field
@@ -61,9 +59,7 @@ def update_node_config_file(skale: Skale, node_config: NodeConfig) -> None:
 
 
 def update_unsafe_for_schains(
-    skale: Skale,
-    node_config: NodeConfig,
-    dutils: DockerUtils
+    skale: SkaleManager, node_config: NodeConfig, dutils: DockerUtils
 ) -> list[str]:
     schains_on_node = get_schains_on_node(dutils=dutils)
     unsafe_chains = []

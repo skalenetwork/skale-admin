@@ -19,9 +19,7 @@
 
 from dataclasses import dataclass
 
-from core.schains.config.contract_settings import (
-    ContractSettings, generate_contract_settings
-)
+from core.schains.config.contract_settings import ContractSettings, generate_contract_settings
 from core.schains.config.node_info import CurrentNodeInfo, generate_current_node_info
 from core.schains.config.schain_info import SChainInfo, generate_schain_info
 from core.schains.config.schain_node import generate_schain_nodes
@@ -33,6 +31,7 @@ from core.schains.limits import get_schain_type
 @dataclass
 class SkaleConfig:
     """Dataclass that represents skaleConfig key of the sChain config"""
+
     contract_settings: ContractSettings
     node_info: CurrentNodeInfo
     schain_info: SChainInfo
@@ -47,16 +46,24 @@ class SkaleConfig:
 
 
 def generate_skale_section(
-    schain: dict, on_chain_etherbase: str, on_chain_owner: str, schain_id: int, node_id: int,
-    node: dict, ecdsa_key_name: str, schain_nodes_with_schains: list,
-    rotation_id: int, node_groups: dict, skale_manager_opts: SkaleManagerOpts,
+    schain: dict,
+    on_chain_etherbase: str,
+    on_chain_owner: str,
+    schain_id: int,
+    node_id: int,
+    node: dict,
+    ecdsa_key_name: str,
+    schain_nodes_with_schains: list,
+    rotation_id: int,
+    node_groups: dict,
+    skale_manager_opts: SkaleManagerOpts,
     schain_base_port: int,
-    common_bls_public_keys: list[str], sync_node: bool = False, archive=None, catchup=None
+    common_bls_public_keys: list[str],
+    sync_node: bool = False,
+    archive=None,
+    catchup=None,
 ) -> SkaleConfig:
-    contract_settings = generate_contract_settings(
-        on_chain_owner=on_chain_owner,
-        schain_nodes=schain_nodes_with_schains
-    )
+    contract_settings = generate_contract_settings()
 
     schain_type = get_schain_type(schain.part_of_node)
     static_node_info = get_static_node_info(schain_type)
@@ -76,14 +83,14 @@ def generate_skale_section(
         common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
         archive=archive,
-        catchup=catchup
+        catchup=catchup,
     )
 
     schain_nodes = generate_schain_nodes(
         schain_nodes_with_schains=schain_nodes_with_schains,
         schain_name=schain.name,
         rotation_id=rotation_id,
-        sync_node=sync_node
+        sync_node=sync_node,
     )
 
     schain_info = generate_schain_info(
@@ -94,11 +101,9 @@ def generate_skale_section(
         nodes=schain_nodes,
         node_groups=node_groups,
         sync_node=sync_node,
-        archive=archive
+        archive=archive,
     )
 
     return SkaleConfig(
-        contract_settings=contract_settings,
-        node_info=node_info,
-        schain_info=schain_info
+        contract_settings=contract_settings, node_info=node_info, schain_info=schain_info
     )

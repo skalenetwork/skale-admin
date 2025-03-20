@@ -20,7 +20,7 @@
 import logging
 from dataclasses import dataclass
 
-from skale import Skale
+from skale import SkaleManager, SkaleIma
 from skale.contracts.manager.schains import SchainStructure
 from skale.schain_config.generator import get_schain_nodes_with_schains
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
@@ -44,7 +44,9 @@ from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
 from tools.helper import is_zero_address, is_address_contract
 from tools.node_options import NodeOptions
+from typing import Dict
 
+from web3 import Web3
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,7 @@ class NoBaseConfigError(Exception):
 
 class SChainBaseConfig:
     """Wrapper for the static part of sChain config"""
+
     def __init__(self, base_config_path):
         self._base_config_path = base_config_path
         self.read()
@@ -70,6 +73,7 @@ class SChainBaseConfig:
 @dataclass
 class SChainConfig:
     """Dataclass that represents a full sChain configuration"""
+
     seal_engine: str
     params: dict
     unddos: dict
@@ -130,13 +134,58 @@ def get_schain_originator(schain: SchainStructure) -> str:
     return schain.originator
 
 
+def get_ima_contracts_addresses(skale_ima: SkaleIma) -> Dict[str, str]:
+    """Gets core IMA contract addresses from the SkaleIma instance.
+
+    Args:
+        skale_ima: SkaleIma instance to get contract addresses from
+
+    Returns:
+        Dictionary mapping contract names to their addresses
+
+    Raises:
+        Exception: If contract address lookup fails
+    """
+    return {
+        'community_pool_address': Web3.to_hex(
+            skale_ima.instance.get_contract_address('CommunityPool')
+        ),
+        'deposit_box_eth_address': Web3.to_hex(
+            skale_ima.instance.get_contract_address('DepositBoxEth')
+        ),
+        'deposit_box_erc20_address': Web3.to_hex(
+            skale_ima.instance.get_contract_address('DepositBoxERC20')
+        ),
+        'deposit_box_erc721_address': Web3.to_hex(
+            skale_ima.instance.get_contract_address('DepositBoxERC721')
+        ),
+        'deposit_box_erc1155_address': Web3.to_hex(
+            skale_ima.instance.get_contract_address('DepositBoxERC1155')
+        ),
+        'deposit_box_erc721_with_metadata_address': Web3.to_hex(
+            skale_ima.instance.get_contract_address('DepositBoxERC721WithMetadata')
+        ),
+        'linker_address': Web3.to_hex(skale_ima.instance.get_contract_address('Linker')),
+    }
+
+
 def generate_schain_config(
-    schain: SchainStructure, node_id: int, node: dict, ecdsa_key_name: str,
-    rotation_id: int, schain_nodes_with_schains: list,
-    node_groups: list, generation: int, is_owner_contract: bool,
-    skale_manager_opts: SkaleManagerOpts, schain_base_port: int, common_bls_public_keys: list[str],
+    schain: SchainStructure,
+    node_id: int,
+    node: dict,
+    ecdsa_key_name: str,
+    rotation_id: int,
+    schain_nodes_with_schains: list,
+    node_groups: list,
+    generation: int,
+    is_owner_contract: bool,
+    skale_manager_opts: SkaleManagerOpts,
+    schain_base_port: int,
+    common_bls_public_keys: list[str],
+    contracts_on_mainnet: dict[str, str],
     sync_node: bool = False,
-    archive=None, catchup=None
+    archive=None,
+    catchup=None,
 ) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
@@ -157,9 +206,7 @@ def generate_schain_config(
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
-    dynamic_params = {
-        'chainID': get_chain_id(schain.name)
-    }
+    dynamic_params = {'chainID': get_chain_id(schain.name)}
 
     legacy_groups = static_groups(schain.name)
     logger.debug('Legacy node groups: %s', legacy_groups)
@@ -185,7 +232,7 @@ def generate_schain_config(
         common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
         archive=archive,
-        catchup=catchup
+        catchup=catchup,
     )
 
     accounts = {}
@@ -202,11 +249,10 @@ def generate_schain_config(
             on_chain_owner=on_chain_owner,
             mainnet_owner=mainnet_owner,
             originator_address=originator_address,
-            generation=generation
+            generation=generation,
+            contracts_on_mainnet=contracts_on_mainnet,
         )
-        precompiled_accounts = generate_precompiled_accounts(
-            on_chain_owner=on_chain_owner
-        )
+        precompiled_accounts = generate_precompiled_accounts(on_chain_owner=on_chain_owner)
         accounts = {
             **base_config.config['accounts'],
             **predeployed_accounts,
@@ -215,27 +261,25 @@ def generate_schain_config(
 
     schain_config = SChainConfig(
         seal_engine=base_config.config['sealEngine'],
-        params={
-            **base_config.config['params'],
-            **dynamic_params
-        },
+        params={**base_config.config['params'], **dynamic_params},
         unddos=base_config.config['unddos'],
         genesis=base_config.config['genesis'],
         accounts=accounts,
-        skale_config=skale_config
+        skale_config=skale_config,
     )
     return schain_config
 
 
 def generate_schain_config_with_skale(
-    skale: Skale,
+    skale: SkaleManager,
+    skale_ima: SkaleIma,
     schain_name: str,
     generation: int,
     node_config: NodeConfig,
     rotation_data: dict,
     ecdsa_key_name: str,
     sync_node: bool = False,
-    node_options: NodeOptions = NodeOptions()
+    node_options: NodeOptions = NodeOptions(),
 ) -> SChainConfig:
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
     schains_on_node = skale.schains.get_schains_for_node(node_config.id)
@@ -252,18 +296,16 @@ def generate_schain_config_with_skale(
     if sync_node:
         schain_base_port = node_config.schain_base_port
     else:
-        schain_base_port = get_schain_base_port_on_node(
-            schains_on_node,
-            schain.name,
-            node['port']
-        )
+        schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
+
+    contracts_on_mainnet = get_ima_contracts_addresses(skale_ima)
 
     return generate_schain_config(
         schain=schain,
         node=node,
         node_id=node_config.id,
         ecdsa_key_name=ecdsa_key_name,
-        rotation_id=rotation_data['rotation_id'],
+        rotation_id=rotation_data.rotation_counter,
         schain_nodes_with_schains=schain_nodes_with_schains,
         node_groups=node_groups,
         generation=generation,
@@ -273,5 +315,6 @@ def generate_schain_config_with_skale(
         common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
         archive=node_options.archive,
-        catchup=node_options.catchup
+        catchup=node_options.catchup,
+        contracts_on_mainnet=contracts_on_mainnet,
     )

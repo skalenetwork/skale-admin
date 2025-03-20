@@ -26,6 +26,7 @@ from sgx.http import SgxUnreachableError
 from sgx.sgx_rpc_handler import DkgPolyStatus, SgxServerError
 from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.transactions.result import TransactionFailedError
+from skale.utils.helper import split_public_key
 
 from core.schains.dkg.broadcast_filter import Filter
 from core.schains.dkg.structures import ComplaintReason, DKGStep
@@ -64,7 +65,8 @@ def convert_g2_points_to_array(data):
         for coord in point:
             new_coord = int(coord)
             new_point.append(new_coord)
-        g2_array.append(G2Point(*new_point).tuple)
+        new_g2_point = G2Point((new_point[0], new_point[1]), (new_point[2], new_point[3]))
+        g2_array.append(new_g2_point)
     return g2_array
 
 
@@ -89,7 +91,7 @@ def convert_hex_to_g2_array(data):
     g2_array = []
     while len(data) > 0:
         cur = data[:256]
-        g2_array.append([str(x) for x in [int(cur[64 * i: 64 * i + 64], 16) for i in range(4)]])
+        g2_array.append([str(x) for x in [int(cur[64 * i : 64 * i + 64], 16) for i in range(4)]])
         data = data[256:]
     return g2_array
 
@@ -97,14 +99,14 @@ def convert_hex_to_g2_array(data):
 def convert_str_to_key_share(sent_secret_key_contribution, n):
     return_value = []
     for i in range(n):
-        public_key = sent_secret_key_contribution[i * 192 + 64: (i + 1) * 192]
-        key_share = bytes.fromhex(sent_secret_key_contribution[i * 192: i * 192 + 64])
-        return_value.append(KeyShare(public_key, key_share).tuple)
+        public_key = sent_secret_key_contribution[i * 192 + 64 : (i + 1) * 192]
+        key_share = bytes.fromhex(sent_secret_key_contribution[i * 192 : i * 192 + 64])
+        return_value.append(KeyShare(split_public_key(public_key), key_share))
     return return_value
 
 
 def convert_key_share_to_str(data, n):
-    return ''.join(to_verify(s) for s in [data[i * 192: (i + 1) * 192] for i in range(n)])
+    return ''.join(to_verify(s) for s in [data[i * 192 : (i + 1) * 192] for i in range(n)])
 
 
 def to_verify(share):
@@ -112,25 +114,11 @@ def to_verify(share):
 
 
 def generate_poly_name(group_index_str, node_id, dkg_id):
-    return (
-        'POLY:SCHAIN_ID:'
-        f'{group_index_str}'
-        ':NODE_ID:'
-        f'{str(node_id)}'
-        ':DKG_ID:'
-        f'{str(dkg_id)}'
-    )
+    return f'POLY:SCHAIN_ID:{group_index_str}:NODE_ID:{str(node_id)}:DKG_ID:{str(dkg_id)}'
 
 
 def generate_bls_key_name(group_index_str, node_id, dkg_id):
-    return (
-        'BLS_KEY:SCHAIN_ID:'
-        f'{group_index_str}'
-        ':NODE_ID:'
-        f'{str(node_id)}'
-        ':DKG_ID:'
-        f'{str(dkg_id)}'
-    )
+    return f'BLS_KEY:SCHAIN_ID:{group_index_str}:NODE_ID:{str(node_id)}:DKG_ID:{str(dkg_id)}'
 
 
 class DKGClient:
@@ -197,7 +185,7 @@ class DKGClient:
 
     def store_broadcasted_data(self, data, from_node):
         self.incoming_secret_key_contribution[from_node] = data[1][
-            192 * self.node_id_dkg: 192 * (self.node_id_dkg + 1)
+            192 * self.node_id_dkg : 192 * (self.node_id_dkg + 1)
         ]
         if from_node == self.node_id_dkg:
             self.incoming_verification_vector[from_node] = convert_hex_to_g2_array(data[0])
@@ -222,7 +210,7 @@ class DKGClient:
             self.poly_name, self.public_keys
         )
         self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
-            self.node_id_dkg * 192: (self.node_id_dkg + 1) * 192
+            self.node_id_dkg * 192 : (self.node_id_dkg + 1) * 192
         ]
         return convert_str_to_key_share(self.sent_secret_key_contribution, self.n)
 
@@ -243,7 +231,7 @@ class DKGClient:
         channel_opened = self.is_channel_opened()
         if not is_broadcast_possible or not channel_opened:
             logger.info(
-                f'sChain: {self.schain_name}. ' f'{self.node_id_dkg} node could not sent broadcast'
+                f'sChain: {self.schain_name}. {self.node_id_dkg} node could not sent broadcast'
             )
             return
 
@@ -273,8 +261,7 @@ class DKGClient:
                     f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
                 )
             logger.info(
-                f'sChain: {self.schain_name}. '
-                f'All data from {from_node} was received and verified'
+                f'sChain: {self.schain_name}. All data from {from_node} was received and verified'
             )
         except SgxUnreachableError as e:
             raise SgxUnreachableError(
@@ -417,7 +404,7 @@ class DKGClient:
         share = share.split(':')
         for i in range(4):
             share[i] = int(share[i])
-        share = G2Point(*share).tuple
+        share = G2Point((share[0], share[1]), (share[2], share[3]))
         return share, dh_key, verification_vector_mult
 
     def response(self, to_node_index):
@@ -427,7 +414,7 @@ class DKGClient:
 
         if not is_pre_response_possible or not self.is_channel_opened():
             logger.info(
-                f'sChain: {self.schain_name}. ' f'{self.node_id_dkg} node could not sent a response'
+                f'sChain: {self.schain_name}. {self.node_id_dkg} node could not sent a response'
             )
             return
 
@@ -449,8 +436,7 @@ class DKGClient:
 
             if not is_response_possible or not self.is_channel_opened():
                 logger.info(
-                    f'sChain: {self.schain_name}. '
-                    f'{self.node_id_dkg} node could not sent a response'
+                    f'sChain: {self.schain_name}. {self.node_id_dkg} node could not sent a response'
                 )
                 return
 
@@ -470,7 +456,7 @@ class DKGClient:
             broadcasted_data = [event.verificationVector, event.secretKeyContribution]
             self.store_broadcasted_data(broadcasted_data, from_node)
             logger.info(
-                f'sChain: {self.schain_name}. Received by {self.node_id_dkg} from ' f'{from_node}'
+                f'sChain: {self.schain_name}. Received by {self.node_id_dkg} from {from_node}'
             )
 
     def is_all_data_received(self, from_node):

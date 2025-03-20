@@ -20,7 +20,7 @@
 import logging
 import time
 
-from skale import Skale, SkaleIma
+from skale import SkaleManager, SkaleIma
 from filelock import FileLock
 
 from core.node_config import NodeConfig
@@ -30,9 +30,8 @@ from core.updates import soft_updates
 from core.monitoring import update_monitoring_services
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
-from tools.configs.web3 import (
-    ENDPOINT, ABI_FILEPATH, STATE_FILEPATH)
-from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
+from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS, STATE_FILEPATH
+from tools.configs.ima import IMA_CONTRACTS
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 from tools.sgx_utils import generate_sgx_key
@@ -43,7 +42,7 @@ from web.models.schain import (
     set_schains_backup_run,
     set_schains_first_run,
     set_schains_monitor_id,
-    set_schains_sync_config_run
+    set_schains_sync_config_run,
 )
 from web.migrations import migrate
 
@@ -62,9 +61,7 @@ def monitor(skale, skale_ima, node_config):
             run_process_manager(skale, skale_ima, node_config)
         except Exception:
             logger.exception('Process manager procedure failed!')
-        logger.info(
-            f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager'
-        )
+        logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
         time.sleep(SLEEP_INTERVAL)
         run_cleaner(skale, node_config)
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_cleaner')
@@ -78,8 +75,8 @@ def worker():
         time.sleep(SLEEP_INTERVAL)
 
     wallet = init_wallet(node_config=node_config)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
-    skale_ima = SkaleIma(ENDPOINT, MAINNET_IMA_ABI_FILEPATH, wallet)
+    skale = SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet, state_path=STATE_FILEPATH)
+    skale_ima = SkaleIma(ENDPOINT, IMA_CONTRACTS, wallet)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
     update_monitoring_services(node_config.ip, node_config.id, skale)
@@ -87,7 +84,7 @@ def worker():
 
 
 def init():
-    skale = Skale(ENDPOINT, ABI_FILEPATH, state_path=STATE_FILEPATH)
+    skale = SkaleManager(ENDPOINT, MANAGER_CONTRACTS, state_path=STATE_FILEPATH)
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:

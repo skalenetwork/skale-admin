@@ -3,7 +3,9 @@ import os
 from pathlib import Path
 
 import pytest
+from web3 import Web3
 from skale.contracts.manager.schains import SchainStructure
+from skale.types.rotation import Rotation
 from skale.dataclasses.schain_options import AllocationType
 from etherbase_predeployed import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
@@ -19,6 +21,7 @@ from core.schains.config.generator import (
     generate_schain_config_with_skale,
     generate_schain_config,
     get_schain_originator,
+    get_ima_contracts_addresses,
 )
 from core.schains.config.helper import get_schain_id
 from core.schains.config.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
@@ -46,75 +49,51 @@ SECRET_KEY = {
 
 NODE_GROUPS = {
     2: {
-        "rotation": {
-            "leaving_node_id": 0,
-            "new_node_id": 5,
+        'rotation': {
+            'leaving_node_id': 0,
+            'new_node_id': 5,
         },
-        "nodes": {
-            "4": [
-                4,
-                31,
-                "0x5d"
-            ],
-            "5": [
-                8,
-                179,
-                "0xon"
-            ],
+        'nodes': {
+            '4': [4, 31, '0x5d'],
+            '5': [8, 179, '0xon'],
         },
-        "finish_ts": 1681498775,
-        "bls_public_key": {
-            "blsPublicKey0": "9",
-            "blsPublicKey1": "1",
-            "blsPublicKey2": "3",
-            "blsPublicKey3": "2"
-        }
+        'finish_ts': 1681498775,
+        'bls_public_key': {
+            'blsPublicKey0': '9',
+            'blsPublicKey1': '1',
+            'blsPublicKey2': '3',
+            'blsPublicKey3': '2',
+        },
     },
     1: {
-        "rotation": {
-            "leaving_node_id": 3,
-            "new_node_id": 4,
+        'rotation': {
+            'leaving_node_id': 3,
+            'new_node_id': 4,
         },
-        "nodes": {
-            "0": [
-                0,
-                159,
-                "0xgd"
-            ],
-            "4": [
-                4,
-                31,
-                "0x5d"
-            ],
+        'nodes': {
+            '0': [0, 159, '0xgd'],
+            '4': [4, 31, '0x5d'],
         },
-        "finish_ts": 1681390775,
-        "bls_public_key": {
-            "blsPublicKey0": "3",
-            "blsPublicKey1": "4",
-            "blsPublicKey2": "7",
-            "blsPublicKey3": "9"
-        }
+        'finish_ts': 1681390775,
+        'bls_public_key': {
+            'blsPublicKey0': '3',
+            'blsPublicKey1': '4',
+            'blsPublicKey2': '7',
+            'blsPublicKey3': '9',
+        },
     },
     0: {
-        "rotation": {
-            "leaving_node_id": 2,
-            "new_node_id": 3,
+        'rotation': {
+            'leaving_node_id': 2,
+            'new_node_id': 3,
         },
-        "nodes": {
-            "0": [
-                0,
-                159,
-                "0xgd"
-            ],
-            "3": [
-                7,
-                61,
-                "0xbh"
-            ],
+        'nodes': {
+            '0': [0, 159, '0xgd'],
+            '3': [7, 61, '0xbh'],
         },
-        "finish_ts": None,
-        "bls_public_key": None
-    }
+        'finish_ts': None,
+        'bls_public_key': None,
+    },
 }
 
 TEST_NODE = {'id': 1, 'name': 'test', 'publicKey': '0x5556', 'port': 10000}
@@ -147,7 +126,7 @@ def get_schain_node_with_schains(schain_name: str) -> list:
 
 
 @pytest.fixture
-def schain_secret_key_file(schain_on_contracts, predeployed_ima):
+def schain_secret_key_file(schain_on_contracts):
     schain_name = schain_on_contracts
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
     Path(schain_dir_path).mkdir(exist_ok=True)
@@ -162,7 +141,7 @@ def schain_secret_key_file(schain_on_contracts, predeployed_ima):
 
 
 @pytest.fixture
-def schain_secret_key_file_default_chain(predeployed_ima):
+def schain_secret_key_file_default_chain():
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, 'test_schain')
     Path(schain_dir_path).mkdir(exist_ok=True)
     secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')
@@ -173,6 +152,35 @@ def schain_secret_key_file_default_chain(predeployed_ima):
     finally:
         Path(secret_key_path).unlink()
         Path(schain_dir_path).rmdir()
+
+
+def test_get_ima_contracts_addresses(skale_ima):
+    ima_addresses = get_ima_contracts_addresses(skale_ima)
+    expected_keys = [
+        'community_pool_address',
+        'deposit_box_eth_address',
+        'deposit_box_erc20_address',
+        'deposit_box_erc721_address',
+        'deposit_box_erc1155_address',
+        'deposit_box_erc721_with_metadata_address',
+        'linker_address',
+    ]
+    addressConversion = {
+        'community_pool_address': 'CommunityPool',
+        'deposit_box_eth_address': 'DepositBoxEth',
+        'deposit_box_erc20_address': 'DepositBoxERC20',
+        'deposit_box_erc721_address': 'DepositBoxERC721',
+        'deposit_box_erc1155_address': 'DepositBoxERC1155',
+        'deposit_box_erc721_with_metadata_address': 'DepositBoxERC721WithMetadata',
+        'linker_address': 'Linker',
+    }
+    assert isinstance(ima_addresses, dict)
+    assert all(key in ima_addresses for key in expected_keys)
+
+    for key in expected_keys:
+        assert ima_addresses[key] == Web3.to_hex(
+            skale_ima.instance.get_contract_address(addressConversion[key])
+        )
 
 
 def check_keys(data, expected_keys):
@@ -208,8 +216,6 @@ def check_node_info(node_id, info):
         'bindIP',
         'logLevel',
         'logLevelConfig',
-        'imaMessageProxySChain',
-        'imaMessageProxyMainNet',
         'ecdsaKeyName',
         'wallets',
         'minCacheSize',
@@ -219,7 +225,6 @@ def check_node_info(node_id, info):
         'transactionQueueSize',
         'maxOpenLeveldbFiles',
         'info-acceptors',
-        'imaMonitoringPort',
         'skale-manager',
         'syncNode',
         'pg-threads',
@@ -292,17 +297,21 @@ def check_config(node_id, all_node_ids, config):
 
 
 def test_generate_schain_config_with_skale(
-    skale, node_config, schain_on_contracts, schain_secret_key_file
+    skale, skale_ima, node_config, schain_on_contracts, schain_secret_key_file
 ):
     schain_name = schain_on_contracts
     node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
     current_node_id = node_ids[0]
     node_config.id = current_node_id
+
+    rotation_data = Rotation(leaving_node_id=1, new_node_id=0, freeze_until=0, rotation_counter=0)
+
     schain_config = generate_schain_config_with_skale(
         skale=skale,
+        skale_ima=skale_ima,
         schain_name=schain_name,
         node_config=node_config,
-        rotation_data={'rotation_id': 0, 'leaving_node': 1},
+        rotation_data=rotation_data,
         ecdsa_key_name=ECDSA_KEY_NAME,
         generation=0,
         node_options=NodeOptions(),
@@ -310,10 +319,13 @@ def test_generate_schain_config_with_skale(
     check_config(current_node_id, node_ids, schain_config.to_dict())
 
 
-def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale_manager_opts):
+def test_generate_schain_config_gen0(
+    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
+):
     node_id, generation, rotation_id = 1, 0, 0
     ecdsa_key_name = 'test'
     node_groups = {}
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
         schain=get_schain_struct(schain_name='test_schain'),
@@ -328,6 +340,7 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
         skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -335,10 +348,13 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
     assert not config['accounts'].get(TEST_ORIGINATOR_ADDRESS)
 
 
-def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale_manager_opts):
+def test_generate_schain_config_gen1(
+    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
+):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
         schain=get_schain_struct(schain_name='test_schain'),
@@ -353,6 +369,7 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale
         skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -379,11 +396,12 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale
 
 
 def test_generate_schain_config_gen1_pk_owner(
-    schain_secret_key_file_default_chain, skale_manager_opts
+    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
 ):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
         schain=get_schain_struct_no_originator(),
@@ -398,6 +416,7 @@ def test_generate_schain_config_gen1_pk_owner(
         skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -406,11 +425,12 @@ def test_generate_schain_config_gen1_pk_owner(
 
 
 def test_generate_schain_config_gen2_schain_id(
-    schain_secret_key_file_default_chain, skale_manager_opts
+    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
 ):
     node_id, generation, rotation_id = 1, 2, 0
     ecdsa_key_name = 'test'
     node_groups = {}
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
         schain=get_schain_struct_no_originator(),
@@ -425,15 +445,18 @@ def test_generate_schain_config_gen2_schain_id(
         skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['schainID'] == 2755779573749746
 
 
 def test_generate_schain_config_gen1_schain_id(
-    schain_secret_key_file_default_chain, skale_manager_opts
+    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
 ):
     node_id, generation, rotation_id = 1, 1, 0
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
+
     schain_config = generate_schain_config(
         schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
@@ -447,15 +470,18 @@ def test_generate_schain_config_gen1_schain_id(
         skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['schainID'] == 1
 
 
 def test_generate_schain_config_gen0_schain_id(
-    schain_secret_key_file_default_chain, skale_manager_opts
+    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
 ):
     node_id, generation, rotation_id = 1, 0, 0
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
+
     schain_config = generate_schain_config(
         schain=get_schain_struct_no_originator(),
         node=TEST_NODE,
@@ -469,13 +495,14 @@ def test_generate_schain_config_gen0_schain_id(
         skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['schainID'] == 1
 
 
 def test_generate_schain_config_allocation_type(
-    schain_secret_key_file_default_chain, skale_manager_opts
+    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
 ):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
@@ -483,6 +510,8 @@ def test_generate_schain_config_allocation_type(
 
     schain = get_schain_struct(schain_name='test_schain')
     schain.options.allocation_type = AllocationType.NO_FILESTORAGE
+
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
         schain=schain,
@@ -497,6 +526,7 @@ def test_generate_schain_config_allocation_type(
         skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['maxConsensusStorageBytes'] == 94904996659
@@ -519,6 +549,7 @@ def test_generate_schain_config_allocation_type(
         skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['maxConsensusStorageBytes'] == 151847994654
@@ -527,17 +558,21 @@ def test_generate_schain_config_allocation_type(
 
 
 def test_generate_schain_config_with_skale_gen2(
-    skale, schain_on_contracts, schain_secret_key_file, node_config
+    skale, skale_ima, schain_on_contracts, schain_secret_key_file, node_config
 ):
     schain_name = schain_on_contracts
     node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
     current_node_id = node_ids[0]
     node_config.id = current_node_id
+
+    rotation_data = Rotation(leaving_node_id=1, new_node_id=0, freeze_until=0, rotation_counter=0)
+
     schain_config = generate_schain_config_with_skale(
         skale=skale,
+        skale_ima=skale_ima,
         schain_name=schain_name,
         node_config=node_config,
-        rotation_data={'rotation_id': 0, 'leaving_node': 1},
+        rotation_data=rotation_data,
         ecdsa_key_name=ECDSA_KEY_NAME,
         generation=2,
     )
@@ -546,7 +581,7 @@ def test_generate_schain_config_with_skale_gen2(
     assert schain_config_dict['skaleConfig']['sChain']['schainID'] == get_schain_id(schain_name)
 
 
-def test_get_schain_originator(predeployed_ima):
+def test_get_schain_originator():
     originator = get_schain_originator(get_schain_struct_no_originator())
     assert originator == TEST_MAINNET_OWNER_ADDRESS
 
@@ -554,10 +589,14 @@ def test_get_schain_originator(predeployed_ima):
     assert originator == TEST_ORIGINATOR_ADDRESS
 
 
-def test_generate_sync_node_config(schain_secret_key_file_default_chain, skale_manager_opts):
+def test_generate_sync_node_config(
+    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
+):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
+
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
         schain=get_schain_struct_no_originator(),
@@ -573,6 +612,7 @@ def test_generate_sync_node_config(schain_secret_key_file_default_chain, skale_m
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -581,11 +621,13 @@ def test_generate_sync_node_config(schain_secret_key_file_default_chain, skale_m
 
 
 def test_generate_sync_node_config_archive_catchup(
-    schain_secret_key_file_default_chain, skale_manager_opts
+    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
 ):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
+
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
         schain=get_schain_struct_no_originator(),
@@ -601,6 +643,7 @@ def test_generate_sync_node_config_archive_catchup(
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -624,6 +667,7 @@ def test_generate_sync_node_config_archive_catchup(
         sync_node=True,
         archive=False,
         catchup=True,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -647,6 +691,7 @@ def test_generate_sync_node_config_archive_catchup(
         sync_node=False,
         archive=False,
         catchup=True,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -670,6 +715,7 @@ def test_generate_sync_node_config_archive_catchup(
         sync_node=True,
         archive=True,
         catchup=True,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -679,11 +725,13 @@ def test_generate_sync_node_config_archive_catchup(
 
 
 def test_generate_sync_node_config_static_accounts(
-    schain_secret_key_file_default_chain, skale_manager_opts
+    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
 ):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
+
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
         schain=get_schain_struct_static_account(),
@@ -699,6 +747,7 @@ def test_generate_sync_node_config_static_accounts(
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['accounts'].get('0x1111111')
@@ -720,6 +769,7 @@ def test_generate_sync_node_config_static_accounts(
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert not config['accounts'].get('0x1111111')
@@ -729,7 +779,8 @@ def test_generate_config_static_groups(
     _schain_name,
     schain_secret_key_file_default_chain,
     static_groups_for_schain,
-    skale_manager_opts
+    skale_manager_opts,
+    skale_ima,
 ):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
@@ -738,6 +789,8 @@ def test_generate_config_static_groups(
     schain.mainnet_owner = TEST_MAINNET_OWNER_ADDRESS
     schain.originator = TEST_ORIGINATOR_ADDRESS
     schain.options.multitransaction_mode = True
+
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
         schain=schain,
@@ -752,7 +805,8 @@ def test_generate_config_static_groups(
         skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        sync_node=True
+        sync_node=True,
+        contracts_on_mainnet=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -760,5 +814,6 @@ def test_generate_config_static_groups(
     assert len(config_group.keys()) == 3
     for rotation_id_string in static_groups_for_schain:
         rotation_id = int(rotation_id_string)
-        assert json.dumps(config_group[rotation_id]) == \
-            json.dumps(static_groups_for_schain[rotation_id_string])
+        assert json.dumps(config_group[rotation_id]) == json.dumps(
+            static_groups_for_schain[rotation_id_string]
+        )

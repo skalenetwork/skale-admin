@@ -32,18 +32,13 @@ from core.schains.runner import (
     remove_container,
     restart_container,
     run_ima_container,
-    run_schain_container
+    run_schain_container,
 )
-from core.ima.schain import copy_schain_ima_abi
 from core.schains.ima import get_ima_time_frame, ImaData
 from core.schains.ssl import update_ssl_change_date
 
 from tools.configs import SYNC_NODE
-from tools.configs.containers import (
-    MAX_SCHAIN_RESTART_COUNT,
-    SCHAIN_CONTAINER,
-    IMA_CONTAINER
-)
+from tools.configs.containers import MAX_SCHAIN_RESTART_COUNT, SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.docker_utils import DockerUtils
 
 
@@ -60,7 +55,7 @@ def monitor_schain_container(
     abort_on_exit: bool = True,
     dutils: Optional[DockerUtils] = None,
     sync_node: bool = False,
-    historic_state: bool = False
+    historic_state: bool = False,
 ) -> None:
     dutils = dutils or DockerUtils()
     schain.name = schain.name
@@ -71,14 +66,13 @@ def monitor_schain_container(
         return
 
     if skaled_status.exit_time_reached and abort_on_exit:
-        logger.info(
-            f'{schain.name} - Skipping container monitor: exit time reached')
+        logger.info(f'{schain.name} - Skipping container monitor: exit time reached')
         skaled_status.log()
         schain_record.reset_failed_counters()
         return
 
     if not is_container_exists(schain.name, dutils=dutils):
-        logger.info(f'SChain {schain.name}: container doesn\'t exits')
+        logger.info(f"SChain {schain.name}: container doesn't exits")
         run_schain_container(
             schain=schain,
             download_snapshot=download_snapshot,
@@ -93,8 +87,7 @@ def monitor_schain_container(
         return
 
     if skaled_status.clear_data_dir and skaled_status.start_from_snapshot:
-        logger.info(
-            f'{schain.name} - Skipping container monitor: sChain should be repaired')
+        logger.info(f'{schain.name} - Skipping container monitor: sChain should be repaired')
         skaled_status.log()
         schain_record.reset_failed_counters()
         return
@@ -108,21 +101,15 @@ def monitor_schain_container(
             schain_record.set_failed_rpc_count(0)
         else:
             logger.warning(
-                'SChain %s: max restart count exceeded - %d',
-                schain.name,
-                MAX_SCHAIN_RESTART_COUNT
+                'SChain %s: max restart count exceeded - %d', schain.name, MAX_SCHAIN_RESTART_COUNT
             )
     else:
         schain_record.set_restart_count(0)
 
 
 def monitor_ima_container(
-    schain: dict,
-    ima_data: ImaData,
-    migration_ts: int = 0,
-    dutils: DockerUtils = None
+    schain: dict, ima_data: ImaData, migration_ts: int = 0, dutils: DockerUtils = None
 ) -> None:
-
     if SYNC_NODE:
         return
 
@@ -130,10 +117,7 @@ def monitor_ima_container(
         logger.info(f'{schain.name} - not registered in IMA, skipping')
         return
 
-    copy_schain_ima_abi(schain.name)
-
-    container_exists = is_container_exists(
-        schain.name, container_type=IMA_CONTAINER, dutils=dutils)
+    container_exists = is_container_exists(schain.name, container_type=IMA_CONTAINER, dutils=dutils)
 
     if time.time() > migration_ts:
         logger.debug('IMA migration time passed')
@@ -155,16 +139,10 @@ def monitor_ima_container(
 
     if not container_exists:
         logger.info(
-            '%s No IMA container, creating, image %s, time frame %d',
-            schain.name, image, time_frame
+            '%s No IMA container, creating, image %s, time frame %d', schain.name, image, time_frame
         )
         run_ima_container(
-            schain,
-            ima_data.chain_id,
-            image=image,
-            time_frame=time_frame,
-            dutils=dutils
+            schain, ima_data.chain_id, image=image, time_frame=time_frame, dutils=dutils
         )
     else:
-        logger.debug(
-            'sChain %s: IMA container exists, but not running, skipping', schain.name)
+        logger.debug('sChain %s: IMA container exists, but not running, skipping', schain.name)

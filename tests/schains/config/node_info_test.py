@@ -26,7 +26,7 @@ def test_generate_wallets_config():
             0,
             sync_node=False,
             nodes_in_schain=4,
-            common_bls_public_keys=COMMON_PUBLIC_KEY
+            common_bls_public_keys=COMMON_PUBLIC_KEY,
         )
 
     assert wallets['ima']['keyShareName'] == SECRET_KEY_MOCK['key_share_name']
@@ -49,7 +49,7 @@ def test_generate_wallets_config_sync_node():
             0,
             sync_node=True,
             nodes_in_schain=4,
-            common_bls_public_keys=COMMON_PUBLIC_KEY
+            common_bls_public_keys=COMMON_PUBLIC_KEY,
         )
 
     assert 'keyShareName' not in wallets['ima']
@@ -69,7 +69,6 @@ def test_generate_current_node_info(
     skale_manager_opts,
     schain_config,
     _schain_name,
-    predeployed_ima
 ):
     with mock.patch('core.schains.config.static_params.ENV_TYPE', new='testnet'):
         static_node_info = get_static_node_info(SchainType.medium)
@@ -83,7 +82,7 @@ def test_generate_current_node_info(
             skale_manager_opts=skale_manager_opts,
             nodes_in_schain=4,
             schain_base_port=10000,
-            common_bls_public_keys=COMMON_PUBLIC_KEY
+            common_bls_public_keys=COMMON_PUBLIC_KEY,
         )
     current_node_info_dict = current_node_info.to_dict()
     assert current_node_info_dict['nodeID'] == 1
@@ -109,22 +108,17 @@ def test_generate_current_node_info(
             skale_manager_opts=skale_manager_opts,
             nodes_in_schain=4,
             schain_base_port=10000,
-            common_bls_public_keys=COMMON_PUBLIC_KEY
+            common_bls_public_keys=COMMON_PUBLIC_KEY,
         )
     current_node_info_dict = current_node_info.to_dict()
     assert current_node_info_dict['maxCacheSize'] == 16000000
     assert current_node_info_dict['skale-manager'] == {
         'SchainsInternal': '0x1656',
-        'Nodes': '0x7742'
+        'Nodes': '0x7742',
     }
 
 
-def test_skale_manager_opts(
-    skale_manager_opts,
-    schain_config,
-    _schain_name,
-    predeployed_ima
-):
+def test_skale_manager_opts(skale_manager_opts, schain_config, _schain_name):
     with mock.patch('core.schains.config.static_params.ENV_TYPE', new='testnet'):
         static_node_info = get_static_node_info(SchainType.medium)
         current_node_info = generate_current_node_info(
@@ -137,10 +131,10 @@ def test_skale_manager_opts(
             skale_manager_opts=skale_manager_opts,
             nodes_in_schain=4,
             schain_base_port=10000,
-            common_bls_public_keys=COMMON_PUBLIC_KEY
+            common_bls_public_keys=COMMON_PUBLIC_KEY,
         )
         current_node_info_dict = current_node_info.to_dict()
         assert current_node_info_dict['skale-manager'] == {
             'SchainsInternal': '0x1656',
-            'Nodes': '0x7742'
+            'Nodes': '0x7742',
         }

@@ -4,7 +4,7 @@ env:
   ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
   MANAGER_TAG: "1.10.0-v1.10.0.0"
-  IMA_TAG: "1.3.4-beta.5"
+  IMA_TAG: "2.2.0-stable.0"
   SGX_WALLET_TAG: "1.83.0-beta.5"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   PYTHON_VERSION: 3.11
@@ -31,6 +31,9 @@ jobs:
       - name: Lint with flake8
         run: uv run flake8 .
 
+      - name: Checking formatting with ruff
+        run: uv run ruff check
+
       - name: Launch anvil node
         run: |
           docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil && sleep 5 && docker logs anvil --tail 1000
@@ -41,7 +44,7 @@ jobs:
 
       - name: Show stats before tests
         if: always()
-        run: | 
+        run: |
           lsblk -f
           free -h
 
@@ -66,7 +69,7 @@ jobs:
 
       - name: Show stats after firewall tests
         if: always()
-        run: | 
+        run: |
           lsblk -f
           free -h
 

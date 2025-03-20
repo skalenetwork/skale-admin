@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-import hashlib
 import logging
 import os
 import platform
@@ -30,7 +29,7 @@ from typing import Dict, List, Optional, TypedDict
 
 import requests
 
-from skale import Skale
+from skale import SkaleManager
 from skale.schain_config.generator import get_nodes_for_schain
 from skale.transactions.exceptions import TransactionLogicError
 from skale.utils.exceptions import InvalidNodeIdError
@@ -56,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 class NodeStatus(Enum):
     """This class contains possible node statuses"""
+
     ACTIVE = 0
     LEAVING = 1
     FROZEN = 2
@@ -66,6 +66,7 @@ class NodeStatus(Enum):
 
 class NodeExitStatus(Enum):
     """This class contains possible node exit statuses"""
+
     ACTIVE = 0
     IN_PROGRESS = 1
     WAIT_FOR_ROTATIONS = 2
@@ -75,6 +76,7 @@ class NodeExitStatus(Enum):
 
 class SchainExitStatus(Enum):
     """This class contains possible schain exit statuses"""
+
     ACTIVE = 0
     LEAVING = 1
     LEFT = 2
@@ -90,8 +92,17 @@ class Node:
         self.skale = skale
         self.config = config
 
-    def register(self, ip, public_ip, port, name, domain_name,
-                 gas_limit=None, gas_price=None, skip_dry_run=False):
+    def register(
+        self,
+        ip,
+        public_ip,
+        port,
+        name,
+        domain_name,
+        gas_limit=None,
+        gas_price=None,
+        skip_dry_run=False,
+    ):
         """
         Main node registration function.
 
@@ -107,14 +118,12 @@ class Node:
         """
         if self.config.id is not None:
             return self._error(
-                f'Node is already installed on this machine. '
-                f'Node ID: {self.config.id}'
+                f'Node is already installed on this machine. Node ID: {self.config.id}'
             )
         node_id = self.get_node_id_from_contracts(name, ip)
         if node_id < 0:
             if not check_required_balance(self.skale):
-                return self._error(
-                    'Insufficient funds, re-check your wallet')
+                return self._error('Insufficient funds, re-check your wallet')
 
             if not self.skale.nodes.is_node_name_available(name):
                 return self._error(f'Node name is already taken: {name}')
@@ -123,13 +132,10 @@ class Node:
                 return self._error(f'Node IP is already taken: {ip}')
 
             node_id = self.create_node_on_contracts(
-                ip, public_ip, port, name, domain_name,
-                gas_limit, gas_price, skip_dry_run
+                ip, public_ip, port, name, domain_name, gas_limit, gas_price, skip_dry_run
             )
             if node_id < 0:
-                return self._error(
-                    f'Node registration failed: {ip}:{port}, name: {name}'
-                )
+                return self._error(f'Node registration failed: {ip}:{port}, name: {name}')
         self.config.id = self.skale.nodes.node_name_to_index(name)
 
         self.config.name = name
@@ -138,11 +144,18 @@ class Node:
         update_monitoring_services(public_ip, self.config.id, self.skale)
         return self._ok(data=self.config.all())
 
-    def create_node_on_contracts(self, ip, public_ip, port, name, domain_name,
-                                 gas_limit=None, gas_price=None,
-                                 skip_dry_run=False):
-        self._log_node_info('Node registration started', ip,
-                            public_ip, port, name)
+    def create_node_on_contracts(
+        self,
+        ip,
+        public_ip,
+        port,
+        name,
+        domain_name,
+        gas_limit=None,
+        gas_price=None,
+        skip_dry_run=False,
+    ):
+        self._log_node_info('Node registration started', ip, public_ip, port, name)
         try:
             self.skale.manager.create_node(
                 ip=ip,
@@ -153,13 +166,12 @@ class Node:
                 gas_limit=gas_limit,
                 gas_price=gas_price,
                 skip_dry_run=skip_dry_run,
-                wait_for=True
+                wait_for=True,
             )
         except TransactionLogicError:
             logger.exception('Node creation failed')
             return -1
-        self._log_node_info('Node successfully registered', ip,
-                            public_ip, port, name)
+        self._log_node_info('Node successfully registered', ip, public_ip, port, name)
         return self.skale.nodes.node_name_to_index(name)
 
     def get_node_id_from_contracts(self, name, ip) -> int:
@@ -170,18 +182,17 @@ class Node:
             node_id = -1
         else:
             public_key = node_data['publicKey']
-            data_address = to_checksum_address(
-                public_key_to_address(public_key)
-            )
-            if not data_address == self.skale.wallet.address or \
-                not name == node_data['name'] or \
-                    not ip == ip_from_bytes(node_data['ip']):
+            data_address = to_checksum_address(public_key_to_address(public_key))
+            if (
+                not data_address == self.skale.wallet.address
+                or not name == node_data['name']
+                or not ip == ip_from_bytes(node_data['ip'])
+            ):
                 node_id = -1
         return node_id
 
     def exit(self, opts):
-        schains_list = self.skale.schains.get_active_schains_for_node(
-            self.config.id)
+        schains_list = self.skale.schains.get_active_schains_for_node(self.config.id)
         exit_count = len(schains_list) or 1
         for _ in range(exit_count):
             try:
@@ -190,17 +201,12 @@ class Node:
                 logger.exception('Node rotation failed')
 
     def get_exit_status(self):
-        active_schains = self.skale.schains.get_active_schains_for_node(
-            self.config.id)
+        active_schains = self.skale.schains.get_active_schains_for_node(self.config.id)
         schain_statuses = [
-            {
-                'name': schain.name,
-                'status': SchainExitStatus.ACTIVE.name
-            }
+            {'name': schain.name, 'status': SchainExitStatus.ACTIVE.name}
             for schain in active_schains
         ]
-        rotated_schains = self.skale.node_rotation.get_leaving_history(
-            self.config.id)
+        rotated_schains = self.skale.node_rotation.get_leaving_history(self.config.id)
         current_time = time.time()
         for schain in rotated_schains:
             if current_time > schain['finished_rotation']:
@@ -210,21 +216,12 @@ class Node:
             schain_name = self.skale.schains.get(schain['schain_id']).name
             if not schain_name:
                 schain_name = '[REMOVED]'
-            schain_statuses.append(
-                {'name': schain_name, 'status': status.name}
-            )
-        node_status = NodeExitStatus(
-            self.skale.nodes.get_node_status(self.config.id)
-        )
+            schain_statuses.append({'name': schain_name, 'status': status.name})
+        node_status = NodeExitStatus(self.skale.nodes.get_node_status(self.config.id))
         exit_time = self.skale.nodes.get_node_finish_time(self.config.id)
-        if node_status == NodeExitStatus.WAIT_FOR_ROTATIONS and \
-                current_time >= exit_time:
+        if node_status == NodeExitStatus.WAIT_FOR_ROTATIONS and current_time >= exit_time:
             node_status = NodeExitStatus.COMPLETED
-        return {
-            'status': node_status.name,
-            'data': schain_statuses,
-            'exit_time': exit_time
-        }
+        return {'status': node_status.name, 'data': schain_statuses, 'exit_time': exit_time}
 
     def set_maintenance_on(self):
         if NodeStatus(self.info['status']) != NodeStatus.ACTIVE:
@@ -250,10 +247,7 @@ class Node:
 
     def set_domain_name(self, domain_name: str) -> dict:
         try:
-            self.skale.nodes.set_domain_name(
-                self.config.id,
-                domain_name
-            )
+            self.skale.nodes.set_domain_name(self.config.id, domain_name)
         except TransactionLogicError as err:
             return self._error(str(err))
         return self._ok()
@@ -266,8 +260,7 @@ class Node:
         return {'status': 'error', 'errors': [err_msg]}
 
     def _log_node_info(self, title, ip, public_ip, port, name):
-        log_params = {'IP': ip, 'Public IP': public_ip,
-                      'Port': port, 'Name': name}
+        log_params = {'IP': ip, 'Public IP': public_ip, 'Port': port, 'Name': name}
         logger.info(arguments_list_string(log_params, title))
 
     @property
@@ -297,11 +290,8 @@ def _get_node_status(node_info):
 
 
 def get_block_device_size() -> int:
-    """ Returns block device size in bytes """
-    response = requests.get(
-        DOCKER_LVMPY_BLOCK_SIZE_URL,
-        json={'Name': None}
-    )
+    """Returns block device size in bytes"""
+    response = requests.get(DOCKER_LVMPY_BLOCK_SIZE_URL, json={'Name': None})
     data = response.json()
     if data['Err'] != '':
         err = data['Err']
@@ -323,7 +313,7 @@ def get_node_hardware_info() -> dict:
         'mem_available': psutil.virtual_memory().available,
         'system_release': system_release,
         'uname_version': uname_version,
-        'attached_storage_size': attached_storage_size
+        'attached_storage_size': attached_storage_size,
     }
 
 
@@ -336,16 +326,12 @@ def get_skale_node_version():
 
 
 def is_btrfs_loaded():
-    modules = list(
-        filter(lambda s: s.startswith('btrfs'), lsmod().split('\n'))
-    )
+    modules = list(filter(lambda s: s.startswith('btrfs'), lsmod().split('\n')))
     return modules != []
 
 
 def get_btrfs_info() -> dict:
-    return {
-        'kernel_module': is_btrfs_loaded()
-    }
+    return {'kernel_module': is_btrfs_loaded()}
 
 
 def get_check_report(report_path: str = CHECK_REPORT_PATH) -> Dict:
@@ -353,12 +339,6 @@ def get_check_report(report_path: str = CHECK_REPORT_PATH) -> Dict:
         return {}
     with open(report_path) as report_file:
         return json.load(report_file)
-
-
-def get_abi_hash(file_path):
-    with open(file_path, 'rb') as file:
-        abi_hash = hashlib.sha256(file.read()).hexdigest()
-    return abi_hash
 
 
 class ManagerNodeInfo(TypedDict):
@@ -379,7 +359,7 @@ class ExtendedManagerNodeInfo(ManagerNodeInfo):
     ip_change_ts: int
 
 
-def get_current_nodes(skale: Skale, name: str) -> List[ExtendedManagerNodeInfo]:
+def get_current_nodes(skale: SkaleManager, name: str) -> List[ExtendedManagerNodeInfo]:
     if not skale.schains_internal.is_schain_exist(name):
         return []
     current_nodes: ManagerNodeInfo = get_nodes_for_schain(skale, name)
@@ -414,7 +394,7 @@ def get_node_delay(node_index: int) -> int:
     return CHANGE_IP_DELAY * (node_index + 1)
 
 
-def get_node_index_in_group(skale: Skale, schain_name: str, node_id: int) -> Optional[int]:
+def get_node_index_in_group(skale: SkaleManager, schain_name: str, node_id: int) -> Optional[int]:
     """Returns node index in group or None if node is not in group"""
     try:
         node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
@@ -442,13 +422,11 @@ def check_validator_nodes(skale, node_id):
         try:
             node_ids.remove(node_id)
         except ValueError:
-            logger.warning(
-                f'node_id: {node_id} was not found in validator nodes: {node_ids}')
+            logger.warning(f'node_id: {node_id} was not found in validator nodes: {node_ids}')
 
         res = []
         for node_id in node_ids:
-            ip_bytes = skale.nodes.contract.functions.getNodeIP(
-                node_id).call()
+            ip_bytes = skale.nodes.contract.functions.getNodeIP(node_id).call()
             ip = ip_from_bytes(ip_bytes)
             res.append([node_id, ip, is_port_open(ip, WATCHDOG_PORT)])
         logger.info(f'validator_nodes check - node_id: {node_id}, res: {res}')

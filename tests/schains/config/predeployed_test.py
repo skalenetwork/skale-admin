@@ -5,17 +5,20 @@ from etherbase_predeployed import ETHERBASE_ADDRESS
 from context_predeployed import CONTEXT_ADDRESS
 
 from core.schains.types import SchainType
+from core.schains.config.generator import get_ima_contracts_addresses
 from core.schains.config.predeployed import (
-    generate_v1_predeployed_contracts, generate_predeployed_accounts
+    generate_v1_predeployed_contracts,
+    generate_predeployed_accounts,
 )
 from tools.configs.schains import ETHERBASE_ALLOC
-
 
 NUM_OF_PREDEPLOYED_CONTRACTS_GEN_0 = 22
 NUM_OF_PREDEPLOYED_CONTRACTS_GEN_1 = 33
 
 
-def test_generate_predeployed_accounts():
+def test_generate_predeployed_accounts(skale_ima):
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
+
     predeployed_section = generate_predeployed_accounts(
         schain_name='abc',
         schain_type=SchainType.medium,
@@ -24,7 +27,8 @@ def test_generate_predeployed_accounts():
         on_chain_owner='0xD1000000000000000000000000000000000000D1',
         mainnet_owner='0xD4000000000000000000000000000000000000D4',
         originator_address='0xD500000000000000000000000000000000D5',
-        generation=0
+        generation=0,
+        contracts_on_mainnet=contracts_addresses,
     )
     assert len(predeployed_section.keys()) == NUM_OF_PREDEPLOYED_CONTRACTS_GEN_0
 
@@ -36,7 +40,8 @@ def test_generate_predeployed_accounts():
         on_chain_owner='0xD1000000000000000000000000000000000000D1',
         mainnet_owner='0xD4000000000000000000000000000000000000D4',
         originator_address='0xD1000000000000000000000000000000000000D1',
-        generation=1
+        generation=1,
+        contracts_on_mainnet=contracts_addresses,
     )
     assert len(predeployed_section.keys()) == NUM_OF_PREDEPLOYED_CONTRACTS_GEN_1
 
@@ -49,7 +54,7 @@ def test_generate_v1_predeployed_contracts():
         mainnet_owner='0x0123456789Ab',
         message_proxy_for_schain_address='0x987654321fC',
         originator_address='0xD500000000000000000000000000000000D5',
-        schain_name='test'
+        schain_name='test',
     )
     assert len(v1_precompiled_contracts.keys()) == 11
     assert v1_precompiled_contracts.get('0xD1000000000000000000000000000000000000D1')

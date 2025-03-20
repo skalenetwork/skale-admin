@@ -23,7 +23,7 @@ import time
 from typing import Optional
 from importlib import reload
 
-from skale import Skale, SkaleIma
+from skale import SkaleManager, SkaleIma
 from skale.contracts.manager.schains import SchainStructure
 from web3._utils import request as web3_request
 
@@ -60,7 +60,7 @@ class NoTasksToRunError(Exception):
 
 def run_config_pipeline(
     schain_name: str,
-    skale: Skale,
+    skale: SkaleManager,
     skale_ima: SkaleIma,
     node_config: NodeConfig,
     stream_version: str,
@@ -87,7 +87,7 @@ def run_config_pipeline(
         node_id=node_config.id,
         schain_record=schain_record,
         stream_version=stream_version,
-        rotation_id=rotation_data['rotation_id'],
+        rotation_id=rotation_data.rotation_counter,
         current_nodes=current_nodes,
         last_dkg_successful=last_dkg_successful,
         econfig=econfig,
@@ -123,14 +123,15 @@ def run_config_pipeline(
 
     statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(schain_name)}')
     statsd_client.gauge(
-        f'admin.config_pipeline.rotation_id.{no_hyphens(schain_name)}', rotation_data['rotation_id']
+        f'admin.config_pipeline.rotation_id.{no_hyphens(schain_name)}',
+        rotation_data.rotation_counter,
     )
     with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(schain_name)}'):
         mon.run()
 
 
 def run_skaled_pipeline(
-    schain_name: str, skale: Skale, node_config: NodeConfig, dutils: DockerUtils
+    schain_name: str, skale: SkaleManager, node_config: NodeConfig, dutils: DockerUtils
 ) -> None:
     schain = skale.schains.get_by_name(schain_name)
     logger.info('Initing schain record')
@@ -199,7 +200,7 @@ class SkaledTask(ITask):
     def __init__(
         self,
         schain_name: str,
-        skale: Skale,
+        skale: SkaleManager,
         node_config: NodeConfig,
         stream_version: str,
         dutils: Optional[DockerUtils] = None,
@@ -262,7 +263,7 @@ class ConfigTask(ITask):
     def __init__(
         self,
         schain_name: str,
-        skale: Skale,
+        skale: SkaleManager,
         skale_ima: SkaleIma,
         node_config: NodeConfig,
         stream_version: str,
@@ -318,7 +319,7 @@ class ConfigTask(ITask):
 
 
 def start_tasks(
-    skale: Skale,
+    skale: SkaleManager,
     schain: SchainStructure,
     node_config: NodeConfig,
     skale_ima: SkaleIma,
@@ -373,7 +374,7 @@ def start_tasks(
             skale=skale,
             node_config=node_config,
             stream_version=stream_version,
-            dutils=dutils
+            dutils=dutils,
         ),
     ]
     execute_tasks(tasks=tasks, process_report=process_report)

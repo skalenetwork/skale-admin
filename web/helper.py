@@ -24,7 +24,7 @@ from functools import wraps
 from http import HTTPStatus
 
 from flask import g, Response
-from skale import Skale
+from skale import SkaleManager
 from skale.utils.web3_utils import init_web3
 
 from core.node_config import NodeConfig
@@ -39,11 +39,7 @@ logger = logging.getLogger(__name__)
 
 
 def construct_response(status, data):
-    return Response(
-        response=json.dumps(data),
-        status=status,
-        mimetype='application/json'
-    )
+    return Response(response=json.dumps(data), status=status, mimetype='application/json')
 
 
 def construct_ok_response(data=None):
@@ -68,7 +64,7 @@ def get_api_url(blueprint_name, method_name):
     return os.path.join(API_VERSION_PREFIX, blueprint_name, method_name)
 
 
-def init_skale_from_node_config(node_config: NodeConfig) -> Skale:
+def init_skale_from_node_config(node_config: NodeConfig) -> SkaleManager:
     wallet = init_wallet(node_config)
     return init_skale(wallet)
 
@@ -78,6 +74,7 @@ def g_web3(func):
     def wrapper(*args, **kwargs):
         g.web3 = init_web3(ENDPOINT)
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -90,4 +87,5 @@ def g_skale(func):
         else:
             g.skale = init_skale(g.wallet)
         return func(*args, **kwargs)
+
     return wrapper
