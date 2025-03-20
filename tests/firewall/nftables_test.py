@@ -94,8 +94,8 @@ def test_create_delete_chain(filter_table, nft_chain_folder):
     chains = run_cmd(['nft', 'list', 'chains']).stdout.decode('utf-8')
     assert (
         chains
-        == 'table inet firewall {\n\tchain skale-test-chain {\n\t\ttype filter hook input priority filter; policy accept;\n\t}\n}\n'
-    )  # noqa
+        == 'table inet firewall {\n\tchain skale-test-chain {\n\t\ttype filter hook input priority filter; policy accept;\n\t}\n}\n'  # noqa
+    )
     assert os.path.isfile(nft_chain_path)
 
     manager.cleanup()
