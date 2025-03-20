@@ -25,6 +25,7 @@ from skale.contracts.manager.schains import SchainStructure
 from skale.schain_config.generator import get_schain_nodes_with_schains
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.schain_config.rotation_history import get_previous_schain_groups
+from skale.types.rotation import Rotation
 
 from etherbase_predeployed import ETHERBASE_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS
@@ -276,7 +277,7 @@ def generate_schain_config_with_skale(
     schain_name: str,
     generation: int,
     node_config: NodeConfig,
-    rotation_data: dict,
+    rotation_data: Rotation,
     ecdsa_key_name: str,
     sync_node: bool = False,
     node_options: NodeOptions = NodeOptions(),

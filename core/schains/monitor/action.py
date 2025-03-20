@@ -24,6 +24,7 @@ from functools import wraps
 from typing import Dict, Optional, List
 
 from skale import SkaleManager, SkaleIma
+from skale.types.rotation import Rotation
 
 from core.node_config import NodeConfig
 from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
@@ -139,7 +140,7 @@ class ConfigActionManager(BaseActionManager):
         skale_ima: SkaleIma,
         schain: dict,
         node_config: NodeConfig,
-        rotation_data: dict,
+        rotation_data: Rotation,
         stream_version: str,
         checks: ConfigChecks,
         estate: ExternalState,

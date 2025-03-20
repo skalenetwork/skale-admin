@@ -21,6 +21,7 @@ import logging
 from typing import Dict, List, Optional
 
 from skale import SkaleManager, SkaleIma
+from skale.types.rotation import Rotation
 
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
@@ -45,7 +46,7 @@ def create_new_upstream_config(
     schain_name: str,
     generation: int,
     ecdsa_sgx_key_name: str,
-    rotation_data: dict,
+    rotation_data: Rotation,
     sync_node: bool,
     node_options: NodeOptions,
 ) -> Dict:
