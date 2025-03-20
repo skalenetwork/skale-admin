@@ -6,7 +6,7 @@ import time
 import pytest
 
 from core.schains.firewall.nftables import NFTablesController, NFT_CHAIN_BASE_PATH
-from core.schains.firewall.types import SChainRule
+from core.schains.firewall.types import Action, SChainRule
 from core.schains.firewall.utils import cleanup_firewall_for_schain
 from tools.helper import run_cmd
 
@@ -45,6 +45,12 @@ def test_nftables_controller(custom_chain):
     assert nft_controller.has_rule(rule_b)
     nft_controller.remove_rule(rule_b)
     assert not nft_controller.has_rule(rule_a)
+
+    rule_c = SChainRule(first_port=10000, last_port=10063, action=Action.DROP)
+    nft_controller.add_rule(rule_c)
+    assert nft_controller.has_rule(rule_c)
+    nft_controller.remove_rule(rule_c)
+    assert not nft_controller.has_rule(rule_c)
 
 
 def test_nftables_controller_duplicates(custom_chain):

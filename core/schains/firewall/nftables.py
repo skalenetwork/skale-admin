@@ -95,7 +95,7 @@ class NFTablesController(IHostFirewallController):
                         'match': {
                             'op': '==',
                             'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
-                            'right': {'range': [f'{rule.first_port}', f'{rule.last_port}']},
+                            'right': {'range': [rule.first_port, rule.last_port]},
                         }
                     }
                 )
@@ -300,11 +300,14 @@ class NFTablesController(IHostFirewallController):
         if self.has_rule(rule):
             return
         expr = self.rule_to_expr(rule)
+        operation = 'insert'
+        if rule.action == Action.DROP:
+            operation = 'add'
 
         json_cmd = self._compose_json(
             [
                 {
-                    'insert': {
+                    operation: {
                         'rule': {
                             'family': self.FAMILY,
                             'table': self.table,
