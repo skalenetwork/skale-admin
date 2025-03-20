@@ -129,7 +129,7 @@ def firewall_rules():
         node_ips,
         sync_agent_ranges
     )
-    endpoints = [e._asdict() for e in rc.actual_rules()]
+    endpoints = [e.to_dict() for e in rc.actual_rules()]
     return construct_ok_response({'endpoints': endpoints})
 
 

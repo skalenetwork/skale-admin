@@ -35,8 +35,6 @@ def test_get_default_rule_controller(nft_chain_folder):
     assert rc.is_persistent()
     assert rc.actual_rules() == []
     rc.sync()
-    print(rc.expected_rules())
-    print(rc.actual_rules())
     assert rc.expected_rules() == rc.actual_rules()
 
     rules = rc.actual_rules()
@@ -116,9 +114,6 @@ def run_concurrent_rc_syncing(
     rules = []
     for controller in controllers:
         rules.extend(controller.rules)
-
-    print([r.first_port for r in rules])
-    print([r.first_ip for r in rules])
 
     # Check that drop rule is here
     assert sum(map(lambda x: x.action == Action.DROP, rules)) == schain_number

@@ -188,38 +188,6 @@ class NFTablesController(IHostFirewallController):
 
         return self.expr_to_rule(expr) in self.get_rules_by_policy(policy='drop')
 
-    def add_schain_drop_rule(self, first_port: int, last_port: int) -> None:
-        if not self.has_drop_rule(first_port, last_port):
-            expr = [
-                {'match': {'op': '!=', 'left': {'meta': {'key': 'iifname'}}, 'right': 'lo'}},
-                {
-                    'match': {
-                        'op': '==',
-                        'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
-                        'right': {'range': [first_port, last_port]},
-                    }
-                },
-                {'counter': None},
-                {'drop': None},
-            ]
-
-            cmd = {
-                'nftables': [
-                    {
-                        'add': {
-                            'rule': {
-                                'family': self.FAMILY,
-                                'table': self.table,
-                                'chain': self.chain,
-                                'expr': expr,
-                            }
-                        }
-                    }
-                ]
-            }
-            self.run_json_cmd(cmd)
-            logger.info('Added drop rule for chain %s', self.chain)
-
     def create_chain(self, first_port: int, last_port: int) -> None:
         if not self.has_chain(self.chain):
             logger.info('Creating chain %s', self.chain)
@@ -242,7 +210,6 @@ class NFTablesController(IHostFirewallController):
                     ]
                 )
             )
-        # self.add_schain_drop_rule(first_port, last_port)
         self.save_rules()
 
     def delete_chain(self) -> None:

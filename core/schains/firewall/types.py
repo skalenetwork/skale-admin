@@ -66,7 +66,7 @@ class SChainRule:
             raise ValueError('Rule has no meaningful fields')
 
     @classmethod
-    def _as_tuple(cls, rule) -> tuple:
+    def _to_tuple(cls, rule) -> tuple:
         return tuple(
             map(
                 str,
@@ -137,7 +137,17 @@ class SChainRule:
         return representative.replace('None', '')
 
     def __hash__(self) -> int:
-        return hash(SChainRule._as_tuple(self))
+        return hash(SChainRule._to_tuple(self))
+
+    def to_dict(self) -> dict:
+        return {
+            'first_port': self.first_port,
+            'last_port': self.last_port,
+            'first_ip': self.first_ip,
+            'last_ip': self.last_ip,
+            'action': self.action.name.lower(),
+            'interface_exception': self.interface_exception
+        }
 
 
 IpRange = namedtuple('IpRange', ['start_ip', 'end_ip'])
