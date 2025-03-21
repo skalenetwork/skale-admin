@@ -11,7 +11,7 @@ from core.schains.checks import SkaledChecks
 from core.schains.cleaner import remove_ima_container
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.file_manager import UpstreamConfigFilename
-from core.schains.firewall.types import SChainRule
+from core.schains.firewall.types import Action, SChainRule, LOOPBACK_INTERFACE
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
@@ -24,20 +24,15 @@ CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 
 
 def run_ima_container_mock(
-    schain: dict,
-    mainnet_chain_id: int,
-    image: str,
-    time_frame: int,
-    dutils=None
+    schain: dict, mainnet_chain_id: int, image: str, time_frame: int, dutils=None
 ):
-    image_name, container_name, _, _ = get_container_info(
-        IMA_CONTAINER, schain.name)
+    image_name, container_name, _, _ = get_container_info(IMA_CONTAINER, schain.name)
     image = image or image_name
     dutils.safe_rm(container_name)
     dutils.run_container(
         image_name=image,
         name=container_name,
-        entrypoint='bash -c "while true; do foo; sleep 2; done"'
+        entrypoint='bash -c "while true; do foo; sleep 2; done"',
     )
 
 
@@ -51,26 +46,20 @@ def monitor_schain_container_mock(
     abort_on_exit=True,
     dutils=None,
     sync_node=False,
-    historic_state=False
+    historic_state=False,
 ):
-    image_name, container_name, _, _ = get_container_info(
-        SCHAIN_CONTAINER, schain.name)
+    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, schain.name)
     dutils.safe_rm(container_name)
     if not skaled_status.exit_time_reached or not abort_on_exit:
         dutils.run_container(
             image_name=image_name,
             name=container_name,
-            entrypoint='bash -c "while true; do foo; sleep 2; done"'
+            entrypoint='bash -c "while true; do foo; sleep 2; done"',
         )
 
 
 @pytest.fixture
-def skaled_checks(
-    schain_db,
-    skale,
-    rule_controller,
-    dutils
-):
+def skaled_checks(schain_db, skale, rule_controller, dutils):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
     return SkaledChecks(
@@ -78,7 +67,7 @@ def skaled_checks(
         schain_record=schain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        sync_node=False
+        sync_node=False,
     )
 
 
@@ -95,7 +84,7 @@ def skaled_am(
     ima_migration_schedule,
     ncli_status,
     dutils,
-    skaled_checks
+    skaled_checks,
 ):
     name = schain_db
     schain = skale.schains.get_by_name(name)
@@ -105,7 +94,7 @@ def skaled_am(
         checks=skaled_checks,
         node_config=node_config,
         ncli_status=ncli_status,
-        dutils=dutils
+        dutils=dutils,
     )
 
 
@@ -123,8 +112,7 @@ def test_volume_action(skaled_am, skaled_checks):
 def test_skaled_container_action(skaled_am, skaled_checks):
     try:
         with mock.patch(
-            'core.schains.monitor.action.monitor_schain_container',
-            monitor_schain_container_mock
+            'core.schains.monitor.action.monitor_schain_container', monitor_schain_container_mock
         ):
             skaled_am.volume()
             assert not skaled_checks.skaled_container
@@ -138,8 +126,7 @@ def test_skaled_container_with_snapshot_action(skaled_am):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.schains.monitor.action.monitor_schain_container',
-            new=mock.Mock()
+            'core.schains.monitor.action.monitor_schain_container', new=mock.Mock()
         ) as monitor_schain_mock:
             skaled_am.skaled_container(download_snapshot=True)
 
@@ -153,7 +140,7 @@ def test_skaled_container_with_snapshot_action(skaled_am):
             abort_on_exit=True,
             dutils=skaled_am.dutils,
             sync_node=False,
-            historic_state=False
+            historic_state=False,
         )
         assert monitor_schain_mock.call_count == 1
     finally:
@@ -165,8 +152,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.schains.monitor.action.monitor_schain_container',
-            new=mock.Mock()
+            'core.schains.monitor.action.monitor_schain_container', new=mock.Mock()
         ) as monitor_schain_mock:
             skaled_am.skaled_container(download_snapshot=True, start_ts=ts)
 
@@ -180,7 +166,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
             dutils=skaled_am.dutils,
             snapshot_from='127.0.0.1',
             sync_node=False,
-            historic_state=False
+            historic_state=False,
         )
         assert monitor_schain_mock.call_count == 1
     finally:
@@ -191,8 +177,7 @@ def test_restart_skaled_container_action(skaled_am, skaled_checks):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.schains.monitor.action.monitor_schain_container',
-            monitor_schain_container_mock
+            'core.schains.monitor.action.monitor_schain_container', monitor_schain_container_mock
         ):
             assert not skaled_checks.skaled_container
             skaled_am.restart_skaled_container()
@@ -208,15 +193,12 @@ def test_restart_skaled_container_action(skaled_am, skaled_checks):
 
 
 def test_restart_skaled_container_action_exit_reached(
-    skaled_am,
-    skaled_checks,
-    skaled_status_exit_time_reached
+    skaled_am, skaled_checks, skaled_status_exit_time_reached
 ):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.schains.monitor.action.monitor_schain_container',
-            monitor_schain_container_mock
+            'core.schains.monitor.action.monitor_schain_container', monitor_schain_container_mock
         ):
             assert not skaled_checks.skaled_container
             skaled_am.reloaded_skaled_container()
@@ -243,12 +225,7 @@ def ima_linked(econfig):
 
 
 def test_recreated_schain_containers(
-    skaled_am,
-    skaled_checks,
-    ima_linked,
-    cleanup_ima,
-    schain_db,
-    dutils
+    skaled_am, skaled_checks, ima_linked, cleanup_ima, schain_db, dutils
 ):
     name = schain_db
 
@@ -279,7 +256,7 @@ def test_ima_container_action_from_scratch(
     ima_linked,
     cleanup_ima,
     ima_migration_schedule,
-    dutils
+    dutils,
 ):
     skaled_am.ima_container()
     containers = dutils.get_all_ima_containers(all=True)
@@ -292,13 +269,7 @@ def test_ima_container_action_from_scratch(
 
 # @pytest.mark.skip('Docker API GA issues need to be resolved')
 def test_ima_container_action_image_pulling(
-    skaled_am,
-    skaled_checks,
-    schain_config,
-    predeployed_ima,
-    ima_linked,
-    cleanup_ima,
-    dutils
+    skaled_am, skaled_checks, schain_config, predeployed_ima, ima_linked, cleanup_ima, dutils
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
     with freezegun.freeze_time(dt):
@@ -314,13 +285,7 @@ def test_ima_container_action_image_pulling(
 
 
 def test_ima_container_action_image_migration(
-    skaled_am,
-    skaled_checks,
-    schain_config,
-    predeployed_ima,
-    ima_linked,
-    cleanup_ima,
-    dutils
+    skaled_am, skaled_checks, schain_config, predeployed_ima, ima_linked, cleanup_ima, dutils
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS + 5)
     with freezegun.freeze_time(dt):
@@ -334,18 +299,14 @@ def test_ima_container_action_image_migration(
 
 
 def test_ima_container_action_time_frame_migration(
-    skaled_am,
-    skaled_checks,
-    schain_config,
-    predeployed_ima,
-    ima_linked,
-    cleanup_ima,
-    dutils
+    skaled_am, skaled_checks, schain_config, predeployed_ima, ima_linked, cleanup_ima, dutils
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
     with freezegun.freeze_time(dt):
-        with mock.patch('core.schains.monitor.containers.get_image_name',
-                        return_value='skalenetwork/ima:2.0.0-beta.9'):
+        with mock.patch(
+            'core.schains.monitor.containers.get_image_name',
+            return_value='skalenetwork/ima:2.0.0-beta.9',
+        ):
             skaled_am.ima_container()
             containers = dutils.get_all_ima_containers(all=True)
             assert len(containers) == 1
@@ -358,8 +319,10 @@ def test_ima_container_action_time_frame_migration(
 
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS + 5)
     with freezegun.freeze_time(dt):
-        with mock.patch('core.schains.monitor.containers.get_image_name',
-                        return_value='skalenetwork/ima:2.0.0-beta.9'):
+        with mock.patch(
+            'core.schains.monitor.containers.get_image_name',
+            return_value='skalenetwork/ima:2.0.0-beta.9',
+        ):
             skaled_am.ima_container()
             containers = dutils.get_all_ima_containers(all=True)
             assert len(containers) == 1
@@ -378,7 +341,7 @@ def test_ima_container_action_not_linked(
     _schain_name,
     cleanup_ima_containers,
     ima_migration_schedule,
-    dutils
+    dutils,
 ):
     skaled_am.ima_container()
     assert skaled_checks.ima_container
@@ -402,8 +365,7 @@ def test_display_skaled_logs(skale, skaled_am, _schain_name):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.schains.monitor.action.monitor_schain_container',
-            monitor_schain_container_mock
+            'core.schains.monitor.action.monitor_schain_container', monitor_schain_container_mock
         ):
             skaled_am.skaled_container()
     finally:
@@ -439,7 +401,8 @@ def test_update_config(skaled_am, skaled_checks):
 
     assert not skaled_checks.config_updated
     upstream_path = UpstreamConfigFilename(
-        skaled_am.name, rotation_id=5, ts=int(time.time())).abspath(folder)
+        skaled_am.name, rotation_id=5, ts=int(time.time())
+    ).abspath(folder)
 
     config_content = {'config': 'mock_v5'}
     with open(upstream_path, 'w') as upstream_file:
@@ -452,7 +415,8 @@ def test_update_config(skaled_am, skaled_checks):
 
     time.sleep(1)
     upstream_path = UpstreamConfigFilename(
-        skaled_am.name, rotation_id=6, ts=int(time.time())).abspath(folder)
+        skaled_am.name, rotation_id=6, ts=int(time.time())
+    ).abspath(folder)
 
     config_content = {'config': 'mock_v6'}
     with open(upstream_path, 'w') as upstream_file:
@@ -471,6 +435,12 @@ def test_firewall_rules_action(skaled_am, skaled_checks, rule_controller, econfi
     assert skaled_checks.firewall_rules
     added_rules = list(rule_controller.firewall_manager.rules)
     assert added_rules == [
+        SChainRule(
+            first_port=10000,
+            last_port=10063,
+            interface_exception=LOOPBACK_INTERFACE,
+            action=Action.DROP,
+        ),
         SChainRule(first_port=10000, first_ip='127.0.0.2', last_ip='127.0.0.2'),
         SChainRule(first_port=10001, first_ip='1.1.1.1', last_ip='2.2.2.2'),
         SChainRule(first_port=10001, first_ip='127.0.0.2', last_ip='127.0.0.2'),
@@ -484,7 +454,7 @@ def test_firewall_rules_action(skaled_am, skaled_checks, rule_controller, econfi
         SChainRule(first_port=10007),
         SChainRule(first_port=10008),
         SChainRule(first_port=10009),
-        SChainRule(first_port=10010, first_ip='127.0.0.2', last_ip='127.0.0.2')
+        SChainRule(first_port=10010, first_ip='127.0.0.2', last_ip='127.0.0.2'),
     ]
 
 

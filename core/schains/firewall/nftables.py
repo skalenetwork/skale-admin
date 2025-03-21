@@ -118,7 +118,7 @@ class NFTablesController(IHostFirewallController):
         return expr
 
     @classmethod
-    def expr_to_rule(self, expr: list) -> None:
+    def expr_to_rule(self, expr: list) -> SChainRule:
         first_port, last_port, first_ip, last_ip = None, None, None, None
         interface_exception = None
         for item in expr:
