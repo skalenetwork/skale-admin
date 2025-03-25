@@ -44,10 +44,19 @@ def is_schain_process_report_exist(schain_name: str) -> None:
 
 def get_schain_process_info(schain_name: str) -> Tuple[int | None, int | None]:
     report = ProcessReport(schain_name)
-    if not ProcessReport(schain_name).is_exist():
+    if not ProcessReport(schain_name).exists():
         return None, None
     else:
         return report.pid, report.ts
+
+
+def cleanup_schains_pids() -> None:
+    schains_with_dirs = os.listdir(SCHAINS_DIR_PATH)
+    logger.info('Cleaning process reports for all schains: %s', schains_with_dirs)
+    for schain_name in schains_with_dirs:
+        report = ProcessReport(schain_name)
+        if report.exists():
+            report.cleanup()
 
 
 class ProcessReport:
@@ -57,7 +66,7 @@ class ProcessReport:
         self.path = pathlib.Path(SCHAINS_DIR_PATH).joinpath(name, self.REPORT_FILENAME)
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
-    def is_exist(self) -> bool:
+    def exists(self) -> bool:
         return os.path.isfile(self.path)
 
     @property
@@ -67,7 +76,7 @@ class ProcessReport:
     @ts.setter
     def ts(self, value: int) -> None:
         report = {}
-        if self.is_exist():
+        if self.exists():
             report = self.read()
         report['ts'] = value
         self._save_tmp(report)
@@ -80,7 +89,7 @@ class ProcessReport:
     @pid.setter
     def pid(self, value: int) -> None:
         report = {}
-        if self.is_exist():
+        if self.exists():
             report = self.read()
         report['pid'] = value
         self._save_tmp(report)
@@ -112,11 +121,7 @@ class ProcessReport:
         os.remove(self.path)
 
 
-def terminate_process(
-    pid: int,
-    kill_timeout: int = P_KILL_WAIT_TIMEOUT,
-    log_msg: str = ''
-) -> None:
+def terminate_process(pid: int, kill_timeout: int = P_KILL_WAIT_TIMEOUT, log_msg: str = '') -> None:
     log_prefix = f'pid: {pid} - '
 
     if log_msg != '':
