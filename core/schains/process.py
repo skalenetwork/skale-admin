@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 P_KILL_WAIT_TIMEOUT = 60
 
 
-def is_schain_process_report_exist(schain_name: str) -> None:
+def is_schain_process_report_exist(schain_name: str) -> bool:
     path = pathlib.Path(SCHAINS_DIR_PATH).joinpath(schain_name, ProcessReport.REPORT_FILENAME)
     return path.is_file()
 
@@ -108,7 +108,7 @@ class ProcessReport:
         with open(self._tmp_path, 'w') as tmp_file:
             json.dump(report, tmp_file)
 
-    def _move(self) -> str:
+    def _move(self) -> None:
         if os.path.isfile(self._tmp_path):
             shutil.move(self._tmp_path, self.path)
 
