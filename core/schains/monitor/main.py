@@ -97,6 +97,7 @@ def run_config_pipeline(
     logger.info('Initing config action manager')
     config_am = ConfigActionManager(
         skale=skale,
+        skale_ima=skale_ima,
         schain=schain,
         node_config=node_config,
         rotation_data=rotation_data,
