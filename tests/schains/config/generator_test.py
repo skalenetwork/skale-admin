@@ -319,9 +319,7 @@ def test_generate_schain_config_with_skale(
     check_config(current_node_id, node_ids, schain_config.to_dict())
 
 
-def test_generate_schain_config_gen0(
-    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
-):
+def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 0, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -337,7 +335,6 @@ def test_generate_schain_config_gen0(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         contracts_on_mainnet=contracts_addresses,
@@ -348,9 +345,7 @@ def test_generate_schain_config_gen0(
     assert not config['accounts'].get(TEST_ORIGINATOR_ADDRESS)
 
 
-def test_generate_schain_config_gen1(
-    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
-):
+def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -366,7 +361,6 @@ def test_generate_schain_config_gen1(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=True,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         contracts_on_mainnet=contracts_addresses,
@@ -395,9 +389,7 @@ def test_generate_schain_config_gen1(
     assert not config['accounts'].get(TEST_MAINNET_OWNER_ADDRESS)
 
 
-def test_generate_schain_config_gen1_pk_owner(
-    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
-):
+def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -413,7 +405,6 @@ def test_generate_schain_config_gen1_pk_owner(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         contracts_on_mainnet=contracts_addresses,
@@ -424,9 +415,7 @@ def test_generate_schain_config_gen1_pk_owner(
     assert config['accounts'].get(TEST_MAINNET_OWNER_ADDRESS)
 
 
-def test_generate_schain_config_gen2_schain_id(
-    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
-):
+def test_generate_schain_config_gen2_schain_id(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 2, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -442,7 +431,6 @@ def test_generate_schain_config_gen2_schain_id(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         contracts_on_mainnet=contracts_addresses,
@@ -451,9 +439,7 @@ def test_generate_schain_config_gen2_schain_id(
     assert config['skaleConfig']['sChain']['schainID'] == 2755779573749746
 
 
-def test_generate_schain_config_gen1_schain_id(
-    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
-):
+def test_generate_schain_config_gen1_schain_id(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 1, 0
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
@@ -467,7 +453,6 @@ def test_generate_schain_config_gen1_schain_id(
         node_groups={},
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         contracts_on_mainnet=contracts_addresses,
@@ -476,9 +461,7 @@ def test_generate_schain_config_gen1_schain_id(
     assert config['skaleConfig']['sChain']['schainID'] == 1
 
 
-def test_generate_schain_config_gen0_schain_id(
-    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
-):
+def test_generate_schain_config_gen0_schain_id(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 0, 0
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
@@ -492,7 +475,6 @@ def test_generate_schain_config_gen0_schain_id(
         node_groups={},
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         contracts_on_mainnet=contracts_addresses,
@@ -501,9 +483,7 @@ def test_generate_schain_config_gen0_schain_id(
     assert config['skaleConfig']['sChain']['schainID'] == 1
 
 
-def test_generate_schain_config_allocation_type(
-    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
-):
+def test_generate_schain_config_allocation_type(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -523,7 +503,6 @@ def test_generate_schain_config_allocation_type(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=True,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         contracts_on_mainnet=contracts_addresses,
@@ -546,7 +525,6 @@ def test_generate_schain_config_allocation_type(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=True,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         contracts_on_mainnet=contracts_addresses,
@@ -589,9 +567,7 @@ def test_get_schain_originator():
     assert originator == TEST_ORIGINATOR_ADDRESS
 
 
-def test_generate_sync_node_config(
-    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
-):
+def test_generate_sync_node_config(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -608,7 +584,6 @@ def test_generate_sync_node_config(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
@@ -620,9 +595,7 @@ def test_generate_sync_node_config(
     assert config['skaleConfig']['sChain']['dbStorageLimit'] == 12653999554
 
 
-def test_generate_sync_node_config_archive_catchup(
-    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
-):
+def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -639,7 +612,6 @@ def test_generate_sync_node_config_archive_catchup(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
@@ -661,7 +633,6 @@ def test_generate_sync_node_config_archive_catchup(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
@@ -685,7 +656,6 @@ def test_generate_sync_node_config_archive_catchup(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=False,
@@ -709,7 +679,6 @@ def test_generate_sync_node_config_archive_catchup(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
@@ -724,9 +693,7 @@ def test_generate_sync_node_config_archive_catchup(
     assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') == 1000000000000000000
 
 
-def test_generate_sync_node_config_static_accounts(
-    schain_secret_key_file_default_chain, skale_manager_opts, skale_ima
-):
+def test_generate_sync_node_config_static_accounts(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -743,7 +710,6 @@ def test_generate_sync_node_config_static_accounts(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
@@ -765,7 +731,6 @@ def test_generate_sync_node_config_static_accounts(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
@@ -779,7 +744,6 @@ def test_generate_config_static_groups(
     _schain_name,
     schain_secret_key_file_default_chain,
     static_groups_for_schain,
-    skale_manager_opts,
     skale_ima,
 ):
     node_id, generation, rotation_id = 1, 1, 0
@@ -802,7 +766,6 @@ def test_generate_config_static_groups(
         node_groups=NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
-        skale_manager_opts=skale_manager_opts,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,

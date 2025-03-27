@@ -23,7 +23,6 @@ from core.schains.config.contract_settings import ContractSettings, generate_con
 from core.schains.config.node_info import CurrentNodeInfo, generate_current_node_info
 from core.schains.config.schain_info import SChainInfo, generate_schain_info
 from core.schains.config.schain_node import generate_schain_nodes
-from core.schains.config.skale_manager_opts import SkaleManagerOpts
 from core.schains.config.static_params import get_static_schain_info, get_static_node_info
 from core.schains.limits import get_schain_type
 
@@ -56,7 +55,6 @@ def generate_skale_section(
     schain_nodes_with_schains: list,
     rotation_id: int,
     node_groups: dict,
-    skale_manager_opts: SkaleManagerOpts,
     schain_base_port: int,
     common_bls_public_keys: list[str],
     sync_node: bool = False,
@@ -77,7 +75,6 @@ def generate_skale_section(
         static_node_info=static_node_info,
         schain=schain,
         rotation_id=rotation_id,
-        skale_manager_opts=skale_manager_opts,
         schain_base_port=schain_base_port,
         nodes_in_schain=nodes_in_schain,
         common_bls_public_keys=common_bls_public_keys,

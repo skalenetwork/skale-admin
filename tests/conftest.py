@@ -47,7 +47,6 @@ from core.schains.status import (
     node_cli_status_filepath,
     SkaledStatus,
 )
-from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
 from tools.configs import (
     CONFIG_FOLDER,
@@ -492,11 +491,6 @@ def synced_rule_controller(rule_controller):
 @pytest.fixture
 def uninited_rule_controller(_schain_name):
     return get_test_rule_controller(name=_schain_name)
-
-
-@pytest.fixture
-def skale_manager_opts():
-    return SkaleManagerOpts(schains_internal_address='0x1656', nodes_address='0x7742')
 
 
 @pytest.fixture

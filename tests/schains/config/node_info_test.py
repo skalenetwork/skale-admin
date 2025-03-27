@@ -66,7 +66,6 @@ def test_generate_wallets_config_sync_node():
 
 
 def test_generate_current_node_info(
-    skale_manager_opts,
     schain_config,
     _schain_name,
 ):
@@ -79,7 +78,6 @@ def test_generate_current_node_info(
             static_node_info=static_node_info,
             schain=get_schain_struct(schain_name=_schain_name),
             rotation_id=0,
-            skale_manager_opts=skale_manager_opts,
             nodes_in_schain=4,
             schain_base_port=10000,
             common_bls_public_keys=COMMON_PUBLIC_KEY,
@@ -105,7 +103,6 @@ def test_generate_current_node_info(
             static_node_info=static_node_info,
             schain=get_schain_struct(schain_name=_schain_name),
             rotation_id=0,
-            skale_manager_opts=skale_manager_opts,
             nodes_in_schain=4,
             schain_base_port=10000,
             common_bls_public_keys=COMMON_PUBLIC_KEY,
@@ -116,25 +113,3 @@ def test_generate_current_node_info(
         'SchainsInternal': '0x1656',
         'Nodes': '0x7742',
     }
-
-
-def test_skale_manager_opts(skale_manager_opts, schain_config, _schain_name):
-    with mock.patch('core.schains.config.static_params.ENV_TYPE', new='testnet'):
-        static_node_info = get_static_node_info(SchainType.medium)
-        current_node_info = generate_current_node_info(
-            node={'name': 'test', 'port': 10000},
-            node_id=1,
-            ecdsa_key_name='123',
-            static_node_info=static_node_info,
-            schain=get_schain_struct(schain_name=_schain_name),
-            rotation_id=0,
-            skale_manager_opts=skale_manager_opts,
-            nodes_in_schain=4,
-            schain_base_port=10000,
-            common_bls_public_keys=COMMON_PUBLIC_KEY,
-        )
-        current_node_info_dict = current_node_info.to_dict()
-        assert current_node_info_dict['skale-manager'] == {
-            'SchainsInternal': '0x1656',
-            'Nodes': '0x7742',
-        }

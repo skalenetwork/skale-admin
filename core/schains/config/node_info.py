@@ -22,7 +22,6 @@ from dataclasses import dataclass
 
 from skale.dataclasses.node_info import NodeInfo
 
-from core.schains.config.skale_manager_opts import SkaleManagerOpts
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
@@ -39,7 +38,6 @@ class CurrentNodeInfo(NodeInfo):
     ecdsa_key_name: str
     wallets: dict
 
-    skale_manager_opts: SkaleManagerOpts
     static_node_info: dict
 
     sync_node: bool
@@ -53,7 +51,6 @@ class CurrentNodeInfo(NodeInfo):
             **{
                 'ecdsaKeyName': self.ecdsa_key_name,
                 'wallets': self.wallets,
-                'skale-manager': self.skale_manager_opts.to_dict(),
                 'syncNode': self.sync_node,
                 'info-acceptors': 1,
                 **self.static_node_info,
@@ -73,7 +70,6 @@ def generate_current_node_info(
     schain: dict,
     rotation_id: int,
     nodes_in_schain: int,
-    skale_manager_opts: SkaleManagerOpts,
     schain_base_port: int,
     common_bls_public_keys: list[str],
     sync_node: bool = False,
@@ -93,7 +89,6 @@ def generate_current_node_info(
         base_port=schain_base_port,
         ecdsa_key_name=ecdsa_key_name,
         wallets=wallets,
-        skale_manager_opts=skale_manager_opts,
         sync_node=sync_node,
         archive=archive,
         catchup=catchup,

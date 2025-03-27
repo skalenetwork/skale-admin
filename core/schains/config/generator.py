@@ -31,7 +31,6 @@ from etherbase_predeployed import ETHERBASE_ADDRESS
 from marionette_predeployed import MARIONETTE_ADDRESS
 
 from core.node_config import NodeConfig
-from core.schains.config.skale_manager_opts import SkaleManagerOpts, init_skale_manager_opts
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
 from core.schains.config.predeployed import generate_predeployed_accounts
 from core.schains.config.precompiled import generate_precompiled_accounts
@@ -180,7 +179,6 @@ def generate_schain_config(
     node_groups: list,
     generation: int,
     is_owner_contract: bool,
-    skale_manager_opts: SkaleManagerOpts,
     schain_base_port: int,
     common_bls_public_keys: list[str],
     contracts_on_mainnet: dict[str, str],
@@ -228,7 +226,6 @@ def generate_schain_config(
         schain_nodes_with_schains=schain_nodes_with_schains,
         rotation_id=rotation_id,
         node_groups=node_groups,
-        skale_manager_opts=skale_manager_opts,
         schain_base_port=schain_base_port,
         common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
@@ -290,7 +287,6 @@ def generate_schain_config_with_skale(
 
     is_owner_contract = is_address_contract(skale.web3, schain.mainnet_owner)
 
-    skale_manager_opts = init_skale_manager_opts(skale)
     group_index = skale.schains.name_to_id(schain_name)
     common_bls_public_keys = get_common_bls_public_key(skale, group_index)
 
@@ -311,7 +307,6 @@ def generate_schain_config_with_skale(
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=is_owner_contract,
-        skale_manager_opts=skale_manager_opts,
         schain_base_port=schain_base_port,
         common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
