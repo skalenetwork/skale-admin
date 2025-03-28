@@ -225,7 +225,6 @@ def check_node_info(node_id, info):
         'transactionQueueSize',
         'maxOpenLeveldbFiles',
         'info-acceptors',
-        'skale-manager',
         'syncNode',
         'pg-threads',
         'pg-threads-limit',
