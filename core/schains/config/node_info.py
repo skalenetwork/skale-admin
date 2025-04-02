@@ -47,6 +47,7 @@ class CurrentNodeInfo(NodeInfo):
     static_node_info: dict
 
     sync_node: bool
+    catchup: bool
     archive: bool
 
     def to_dict(self):
@@ -67,7 +68,7 @@ class CurrentNodeInfo(NodeInfo):
         }
         if self.sync_node:
             node_info['archiveMode'] = self.archive
-            node_info['syncFromCatchup'] = self.archive
+            node_info['syncFromCatchup'] = self.catchup
         return node_info
 
 
