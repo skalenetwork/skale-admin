@@ -41,40 +41,33 @@ from tools.configs.containers import (
     HISTORIC_STATE_IMAGE_POSTFIX,
     SCHAIN_CONTAINER,
     SCHAIN_STOP_TIMEOUT,
-    CONTAINERS_INFO
+    CONTAINERS_INFO,
 )
-from tools.configs import (NODE_DATA_PATH_HOST, SCHAIN_NODE_DATA_PATH, SKALE_DIR_HOST,
-                           SKALE_VOLUME_PATH, SCHAIN_CONFIG_DIR_SKALED)
+from tools.configs import (
+    NODE_DATA_PATH_HOST,
+    SCHAIN_NODE_DATA_PATH,
+    SKALE_DIR_HOST,
+    SKALE_VOLUME_PATH,
+    SCHAIN_CONFIG_DIR_SKALED,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
-def is_container_exists(
-    schain_name,
-    container_type=SCHAIN_CONTAINER,
-    dutils=None
-):
+def is_container_exists(schain_name, container_type=SCHAIN_CONTAINER, dutils=None):
     dutils = dutils or DockerUtils()
     container_name = get_container_name(container_type, schain_name)
     return dutils.is_container_exists(container_name)
 
 
-def get_container_image(
-    schain_name,
-    container_type=SCHAIN_CONTAINER,
-    dutils=None
-):
+def get_container_image(schain_name, container_type=SCHAIN_CONTAINER, dutils=None):
     dutils = dutils or DockerUtils()
     container_name = get_container_name(container_type, schain_name)
     return dutils.get_container_image_name(container_name)
 
 
-def is_container_running(
-    schain_name,
-    container_type=SCHAIN_CONTAINER,
-    dutils=None
-):
+def is_container_running(schain_name, container_type=SCHAIN_CONTAINER, dutils=None):
     dutils = dutils or DockerUtils()
     container_name = get_container_name(container_type, schain_name)
     return dutils.is_container_running(container_name)
@@ -92,7 +85,7 @@ def get_image_name(image_type: str, new: bool = False, historic_state: bool = Fa
 
 
 def get_container_name(image_type: str, schain_name: str) -> str:
-    return f"{CONTAINER_NAME_PREFIX}_{image_type}_{schain_name}"
+    return f'{CONTAINER_NAME_PREFIX}_{image_type}_{schain_name}'
 
 
 def get_container_args(image_type: str) -> str:
@@ -104,9 +97,12 @@ def get_container_custom_args(image_type):
 
 
 def get_container_info(image_type: str, schain_name: str, historic_state: bool = False):
-    return (get_image_name(image_type=image_type, historic_state=historic_state),
-            get_container_name(image_type=image_type, schain_name=schain_name),
-            get_container_args(image_type=image_type), get_container_custom_args(image_type))
+    return (
+        get_image_name(image_type=image_type, historic_state=historic_state),
+        get_container_name(image_type=image_type, schain_name=schain_name),
+        get_container_args(image_type=image_type),
+        get_container_custom_args(image_type),
+    )
 
 
 def get_logs_config(config):
@@ -114,8 +110,12 @@ def get_logs_config(config):
 
 
 def get_ulimits_config(config):
-    return list(map(lambda ulimit:
-                    Ulimit(name=ulimit['name'], soft=ulimit['soft'], hard=ulimit['hard']), config))
+    return list(
+        map(
+            lambda ulimit: Ulimit(name=ulimit['name'], soft=ulimit['soft'], hard=ulimit['hard']),
+            config,
+        )
+    )
 
 
 def run_container(
@@ -129,11 +129,12 @@ def run_container(
     image=None,
     dutils=None,
     volume_mode=None,
-    historic_state=False
+    historic_state=False,
 ):
     dutils = dutils or DockerUtils()
     default_image, container_name, run_args, custom_args = get_container_info(
-        image_type, schain_name, historic_state=historic_state)
+        image_type, schain_name, historic_state=historic_state
+    )
 
     image_name = image or default_image
 
@@ -153,25 +154,30 @@ def run_container(
     if cmd:
         run_args['command'] = cmd
 
-    logger.info(arguments_list_string({'Container name': container_name, 'Image name': image_name,
-                                       'Args': run_args}, 'Running container...'))
+    logger.info(
+        arguments_list_string(
+            {'Container name': container_name, 'Image name': image_name, 'Args': run_args},
+            'Running container...',
+        )
+    )
     cont = dutils.run_container(image_name, container_name, **run_args)
-    logger.info(arguments_list_string({'Container name': container_name, 'Container id': cont.id},
-                                      'Container created', 'success'))
+    logger.info(
+        arguments_list_string(
+            {'Container name': container_name, 'Container id': cont.id},
+            'Container created',
+            'success',
+        )
+    )
     return cont
 
 
-def restart_container(
-    type,
-    schain: SchainStructure,
-    timeout=SCHAIN_STOP_TIMEOUT,
-    dutils=None
-):
+def restart_container(type, schain: SchainStructure, timeout=SCHAIN_STOP_TIMEOUT, dutils=None):
     dutils = dutils or DockerUtils()
     container_name = get_container_name(type, schain.name)
 
-    logger.info(arguments_list_string({'Container name': container_name},
-                                      'Restarting container...'))
+    logger.info(
+        arguments_list_string({'Container name': container_name}, 'Restarting container...')
+    )
     cont = dutils.restart(container_name, timeout=SCHAIN_STOP_TIMEOUT)
     return cont
 
@@ -186,7 +192,7 @@ def run_schain_container(
     enable_ssl=True,
     snapshot_from: Optional[str] = None,
     sync_node=False,
-    historic_state=False
+    historic_state=False,
 ):
     schain_name = schain.name
     schain_type = get_schain_type(schain.part_of_node)
@@ -195,10 +201,7 @@ def run_schain_container(
     mem_limit = None if sync_node else get_schain_limit(schain_type, MetricType.mem)
 
     volume_config = get_schain_volume_config(
-        schain_name,
-        DATA_DIR_CONTAINER_PATH,
-        mode=volume_mode,
-        sync_node=sync_node
+        schain_name, DATA_DIR_CONTAINER_PATH, mode=volume_mode, sync_node=sync_node
     )
     env = get_schain_env(ulimit_check=ulimit_check)
 
@@ -208,7 +211,7 @@ def run_schain_container(
         download_snapshot=download_snapshot,
         enable_ssl=enable_ssl,
         sync_node=sync_node,
-        snapshot_from=snapshot_from
+        snapshot_from=snapshot_from,
     )
     run_container(
         SCHAIN_CONTAINER,
@@ -220,7 +223,7 @@ def run_schain_container(
         mem_limit,
         volume_mode=volume_mode,
         historic_state=historic_state,
-        dutils=dutils
+        dutils=dutils,
     )
 
 
@@ -229,7 +232,7 @@ def run_ima_container(
     mainnet_chain_id: int,
     time_frame: int,
     image: str,
-    dutils: DockerUtils = None
+    dutils: DockerUtils = None,
 ) -> None:
     dutils = dutils or DockerUtils()
     env = get_ima_env(schain.name, mainnet_chain_id, time_frame)
@@ -245,7 +248,7 @@ def run_ima_container(
         cpu_shares_limit=cpu_limit,
         mem_limit=mem_limit,
         image=image,
-        dutils=dutils
+        dutils=dutils,
     )
 
 
@@ -255,36 +258,24 @@ def add_config_volume(run_args, schain_name, mode=None):
     config_dir_host = schain_config_dir_host(schain_name)
 
     # mount /skale_node_data
-    run_args['volumes'][NODE_DATA_PATH_HOST] = {
-        'bind': SCHAIN_NODE_DATA_PATH,
-        'mode': mode or 'ro'
-    }
+    run_args['volumes'][NODE_DATA_PATH_HOST] = {'bind': SCHAIN_NODE_DATA_PATH, 'mode': mode or 'ro'}
     # mount /skale_vol
-    run_args['volumes'][SKALE_DIR_HOST] = {
-        'bind': SKALE_VOLUME_PATH,
-        'mode': mode or 'ro'
-    }
+    run_args['volumes'][SKALE_DIR_HOST] = {'bind': SKALE_VOLUME_PATH, 'mode': mode or 'ro'}
     # mount /skale_schain_data
-    run_args['volumes'][config_dir_host] = {
-        'bind': SCHAIN_CONFIG_DIR_SKALED,
-        'mode': mode or 'rw'
-    }
+    run_args['volumes'][config_dir_host] = {'bind': SCHAIN_CONFIG_DIR_SKALED, 'mode': mode or 'rw'}
 
 
 def is_exited(
     schain_name: str,
     container_type: ContainerType = ContainerType.schain,
-    dutils: DockerUtils = None
+    dutils: DockerUtils = None,
 ):
     dutils = dutils or DockerUtils()
     name = get_container_name(container_type.name, schain_name)
     return dutils.is_container_exited(name)
 
 
-def is_schain_container_failed(
-    schain_name: str,
-    dutils: DockerUtils = None
-) -> bool:
+def is_schain_container_failed(schain_name: str, dutils: DockerUtils = None) -> bool:
     dutils = dutils or DockerUtils()
     name = get_container_name(SCHAIN_CONTAINER, schain_name)
     created = dutils.is_container_created(name)
