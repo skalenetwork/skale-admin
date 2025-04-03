@@ -67,14 +67,6 @@ def get_base_port_from_config(config: Dict) -> int:
 
 def get_own_ip_from_config(config: Dict) -> Optional[str]:
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
-
-    logger.info('---------')
-    logger.info(config)
-    logger.info(config['skaleConfig'])
-    logger.info(config['skaleConfig']['nodeInfo'])
-    logger.info(config['skaleConfig']['nodeInfo']['nodeID'])
-    logger.info('---------')
-
     own_id = config['skaleConfig']['nodeInfo']['nodeID']
     for node_data in schain_nodes_config:
         if node_data['nodeID'] == own_id:
