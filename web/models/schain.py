@@ -22,8 +22,14 @@ import logging
 import time
 from datetime import datetime
 
-from peewee import (CharField, DateTimeField,
-                    IntegrityError, IntegerField, BooleanField, OperationalError)
+from peewee import (
+    CharField,
+    DateTimeField,
+    IntegrityError,
+    IntegerField,
+    BooleanField,
+    OperationalError,
+)
 
 from core.schains.dkg.structures import DKGStatus
 from web.models.base import BaseModel
@@ -32,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG_VERSION = '0.0.0'
 RETRY_ATTEMPTS = 5
-TIMEOUTS = [2 ** p for p in range(RETRY_ATTEMPTS)]
+TIMEOUTS = [2**p for p in range(RETRY_ATTEMPTS)]
 
 
 def operational_error_retry(func):
@@ -52,6 +58,7 @@ def operational_error_retry(func):
         if error is not None:
             raise error
         return result
+
     return wrapper
 
 
@@ -87,7 +94,7 @@ class SChainRecord(BaseModel):
                     added_at=datetime.now(),
                     dkg_status=DKGStatus.NOT_STARTED,
                     new_schain=True,
-                    monitor_last_seen=datetime.now()
+                    monitor_last_seen=datetime.now(),
                 )
             return (schain, None)
         except IntegrityError as err:
@@ -129,7 +136,7 @@ class SChainRecord(BaseModel):
             'sync_config_run': record.sync_config_run,
             'snapshot_from': record.snapshot_from,
             'restart_count': record.restart_count,
-            'failed_rpc_count': record.failed_rpc_count
+            'failed_rpc_count': record.failed_rpc_count,
         }
 
     def dkg_started(self):
@@ -183,11 +190,6 @@ class SChainRecord(BaseModel):
         self.monitor_last_seen = value
         self.save()
 
-    def set_monitor_id(self, value):
-        logger.info(f'Changing monitor_id for {self.name} to {value}')
-        self.monitor_id = value
-        self.save()
-
     def set_config_version(self, value):
         logger.info(f'Changing config_version for {self.name} to {value}')
         self.config_version = value
@@ -227,10 +229,7 @@ class SChainRecord(BaseModel):
         self.save()
 
     def is_dkg_unsuccessful(self) -> bool:
-        return self.dkg_status in [
-            DKGStatus.KEY_GENERATION_ERROR,
-            DKGStatus.FAILED
-        ]
+        return self.dkg_status in [DKGStatus.KEY_GENERATION_ERROR, DKGStatus.FAILED]
 
     def set_repair_date(self, value: datetime) -> None:
         logger.info(f'Changing repair_date for {self.name} to {value}')
@@ -246,15 +245,13 @@ def create_tables():
 
 def set_schains_first_run():
     logger.info('Setting first_run=True for all sChain records')
-    query = SChainRecord.update(first_run=True).where(
-        SChainRecord.first_run == False)  # noqa
+    query = SChainRecord.update(first_run=True).where(SChainRecord.first_run == False)  # noqa
     query.execute()
 
 
 def set_schains_backup_run():
     logger.info('Setting backup_run=True for all sChain records')
-    query = SChainRecord.update(backup_run=True).where(
-        SChainRecord.backup_run == False)  # noqa
+    query = SChainRecord.update(backup_run=True).where(SChainRecord.backup_run == False)  # noqa
     query.execute()
 
 
@@ -262,24 +259,18 @@ def set_schains_sync_config_run(chain: str):
     logger.info('Setting sync_config_run=True for sChain: %s', chain)
     if chain == 'all':
         query = SChainRecord.update(sync_config_run=True).where(
-            SChainRecord.sync_config_run == False)  # noqa
+            SChainRecord.sync_config_run == False  # noqa
+        )
     else:
         query = SChainRecord.update(sync_config_run=True).where(
-            SChainRecord.sync_config_run == False and SChainRecord.name == chain)  # noqa
+            SChainRecord.sync_config_run == False and SChainRecord.name == chain  # noqa
+        )
     query.execute()
 
 
 def set_schains_need_reload():
     logger.info('Setting needs_reload=True for all sChain records')
-    query = SChainRecord.update(needs_reload=True).where(
-        SChainRecord.needs_reload == False)  # noqa
-    query.execute()
-
-
-def set_schains_monitor_id():
-    logger.info('Setting monitor_id=0 for all sChain records')
-    query = SChainRecord.update(monitor_id=0).where(
-        SChainRecord.monitor_id != 0)  # noqa
+    query = SChainRecord.update(needs_reload=True).where(SChainRecord.needs_reload == False)  # noqa
     query.execute()
 
 
@@ -326,5 +317,4 @@ def get_schains_names(include_deleted=False):
 
 
 def get_schains_statuses(include_deleted=False):
-    return [SChainRecord.to_dict(r)
-            for r in SChainRecord.get_all_records(include_deleted)]
+    return [SChainRecord.to_dict(r) for r in SChainRecord.get_all_records(include_deleted)]

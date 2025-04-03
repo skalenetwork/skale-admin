@@ -8,7 +8,7 @@ import time
 import psutil
 import pytest
 
-from core.schains.process import ProcessReport, terminate_process
+from core.schains.process import ProcessReport, cleanup_schains_pids, terminate_process
 from core.schains.process_manager import run_pm_schain
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tests.utils import get_schain_struct
@@ -52,10 +52,10 @@ def target_stuck_mock(*args, **kwargs):
 
 def wait_for_process_report(process_report):
     wait_it = 0
-    while wait_it < MAX_ITERATIONS and not process_report.is_exist():
+    while wait_it < MAX_ITERATIONS and not process_report.exists():
         time.sleep(0.5)
         wait_it += 1
-    assert process_report.is_exist()
+    assert process_report.exists()
 
 
 def test_run_pm_schain(tmp_dir, skale, skale_ima, node_config, _schain_name):
@@ -106,3 +106,18 @@ def test_run_pm_schain(tmp_dir, skale, skale_ima, node_config, _schain_name):
     finally:
         pid = ProcessReport(_schain_name).pid
         terminate_process(pid)
+
+
+def test_cleanup_schains_pids(tmp_dir, skale, skale_ima, node_config, _schain_name):
+    schain = get_schain_struct(schain_name=_schain_name)
+
+    process_report = ProcessReport(schain.name)
+    assert not process_report.exists()
+
+    with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
+        run_pm_schain(skale, skale_ima, node_config, schain)
+
+    wait_for_process_report(process_report)
+    assert process_report.exists()
+    cleanup_schains_pids()
+    assert not process_report.exists()
