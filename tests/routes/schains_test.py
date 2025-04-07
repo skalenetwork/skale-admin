@@ -52,10 +52,8 @@ def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):
         with open(filepath, 'w') as f:
             text = {'skaleConfig': {'nodeInfo': {'nodeID': 1}}}
             f.write(json.dumps(text))
-        data = get_bp_data(skale_bp, get_api_url(
-            BLUEPRINT_NAME, 'config'), {'schain_name': name})
-        assert data == {'payload': {'nodeInfo': {'nodeID': 1}},
-                        'status': 'ok'}
+        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'config'), {'schain_name': name})
+        assert data == {'payload': {'nodeInfo': {'nodeID': 1}}, 'status': 'ok'}
     finally:
         os.remove(filepath)
         shutil.rmtree(os.path.dirname(filepath), ignore_errors=True)
@@ -71,49 +69,119 @@ def schain_config_exists_mock(schain):
 
 
 @mock.patch(
-    'web.routes.schains.get_default_rule_controller',
-    partial(get_test_rule_controller, synced=True)
+    'web.routes.schains.get_default_rule_controller', partial(get_test_rule_controller, synced=True)
 )
 def test_firewall_rules_route(skale_bp, schain_config):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'firewall-rules'),
-                       params={'schain_name': schain_name})
+    data = get_bp_data(
+        skale_bp, get_api_url(BLUEPRINT_NAME, 'firewall-rules'), params={'schain_name': schain_name}
+    )
     assert data == {
         'status': 'ok',
         'payload': {
             'endpoints': [
-                {'port': 10000, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
-                {'port': 10001, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
-                {'port': 10002, 'first_ip': None, 'last_ip': None},
-                {'port': 10003, 'first_ip': None, 'last_ip': None},
-                {'port': 10004, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
-                {'port': 10005, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'},
-                {'port': 10007, 'first_ip': None, 'last_ip': None},
-                {'port': 10008, 'first_ip': None, 'last_ip': None},
-                {'port': 10009, 'first_ip': None, 'last_ip': None},
-                {'port': 10010, 'first_ip': '127.0.0.2', 'last_ip': '127.0.0.2'}
+                {
+                    'first_port': 10000,
+                    'last_port': 10063,
+                    'first_ip': None,
+                    'last_ip': None,
+                    'action': 'drop',
+                    'interface_exception': 'lo',
+                },
+                {
+                    'first_port': 10000,
+                    'last_port': 10000,
+                    'first_ip': '127.0.0.2',
+                    'last_ip': '127.0.0.2',
+                    'action': 'accept',
+                    'interface_exception': None,
+                },
+                {
+                    'first_port': 10001,
+                    'last_port': 10001,
+                    'first_ip': '127.0.0.2',
+                    'last_ip': '127.0.0.2',
+                    'action': 'accept',
+                    'interface_exception': None,
+                },
+                {
+                    'first_port': 10002,
+                    'last_port': 10002,
+                    'first_ip': None,
+                    'last_ip': None,
+                    'action': 'accept',
+                    'interface_exception': None,
+                },
+                {
+                    'first_port': 10003,
+                    'last_port': 10003,
+                    'first_ip': None,
+                    'last_ip': None,
+                    'action': 'accept',
+                    'interface_exception': None,
+                },
+                {
+                    'first_port': 10004,
+                    'last_port': 10004,
+                    'first_ip': '127.0.0.2',
+                    'last_ip': '127.0.0.2',
+                    'action': 'accept',
+                    'interface_exception': None,
+                },
+                {
+                    'first_port': 10005,
+                    'last_port': 10005,
+                    'first_ip': '127.0.0.2',
+                    'last_ip': '127.0.0.2',
+                    'action': 'accept',
+                    'interface_exception': None,
+                },
+                {
+                    'first_port': 10007,
+                    'last_port': 10007,
+                    'first_ip': None,
+                    'last_ip': None,
+                    'action': 'accept',
+                    'interface_exception': None,
+                },
+                {
+                    'first_port': 10008,
+                    'last_port': 10008,
+                    'first_ip': None,
+                    'last_ip': None,
+                    'action': 'accept',
+                    'interface_exception': None,
+                },
+                {
+                    'first_port': 10009,
+                    'last_port': 10009,
+                    'first_ip': None,
+                    'last_ip': None,
+                    'action': 'accept',
+                    'interface_exception': None,
+                },
+                {
+                    'first_port': 10010,
+                    'last_port': 10010,
+                    'first_ip': '127.0.0.2',
+                    'last_ip': '127.0.0.2',
+                    'action': 'accept',
+                    'interface_exception': None,
+                },
             ]
-        }
+        },
     }
 
 
-def test_get_schain(
-    skale_bp,
-    skale,
-    schain_db,
-    meta_file,
-    schain_on_contracts
-):
+def test_get_schain(skale_bp, skale, schain_db, meta_file, schain_on_contracts):
     schain_name = schain_on_contracts
-    keccak_hash = keccak.new(data=schain_name.encode("utf8"), digest_bits=256)
+    keccak_hash = keccak.new(data=schain_name.encode('utf8'), digest_bits=256)
     schain_id = '0x' + keccak_hash.hexdigest()
 
     r = upsert_schain_record(schain_name)
     r.set_config_version(meta_file['config_stream'])
     data = get_bp_data(
-        skale_bp,
-        get_api_url(BLUEPRINT_NAME, 'get'),
-        params={'schain_name': schain_name}
+        skale_bp, get_api_url(BLUEPRINT_NAME, 'get'), params={'schain_name': schain_name}
     )
     assert data == {
         'status': 'ok',
@@ -121,32 +189,26 @@ def test_get_schain(
             'name': schain_name,
             'id': schain_id,
             'mainnet_owner': skale.wallet.address,
-            'part_of_node': 1, 'dkg_status': 1, 'is_deleted': False,
-            'first_run': True, 'repair_ts': int(r.repair_date.timestamp())
-        }
+            'part_of_node': 1,
+            'dkg_status': 1,
+            'is_deleted': False,
+            'first_run': True,
+            'repair_ts': int(r.repair_date.timestamp()),
+        },
     }
 
     not_existing_schain = 'not-existing-schain'
     data = get_bp_data(
-        skale_bp,
-        get_api_url(BLUEPRINT_NAME, 'get'),
-        params={'schain_name': not_existing_schain}
+        skale_bp, get_api_url(BLUEPRINT_NAME, 'get'), params={'schain_name': not_existing_schain}
     )
-    assert data == {
-        'payload': f'No schain with name {not_existing_schain}',
-        'status': 'error'
-    }
+    assert data == {'payload': f'No schain with name {not_existing_schain}', 'status': 'error'}
 
 
 def test_schain_containers_versions(skale_bp):
     expected_skaled_version = '3.19.0'
     expected_ima_version = '2.1.0'
-    data = get_bp_data(skale_bp, get_api_url(
-        BLUEPRINT_NAME, 'container-versions'))
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'container-versions'))
     assert data == {
         'status': 'ok',
-        'payload': {
-            'skaled_version': expected_skaled_version,
-            'ima_version': expected_ima_version
-        }
+        'payload': {'skaled_version': expected_skaled_version, 'ima_version': expected_ima_version},
     }
