@@ -1,6 +1,6 @@
 FROM admin:base
 
-RUN apt update && apt install -y nftables python3-nftables
+RUN apt-get update && apt-get install -y nftables python3-nftables
 
 RUN pip3 install -r requirements-dev.txt
 

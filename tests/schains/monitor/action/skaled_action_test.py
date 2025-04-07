@@ -11,7 +11,7 @@ from core.schains.checks import SkaledChecks
 from core.schains.cleaner import remove_ima_container
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.file_manager import UpstreamConfigFilename
-from core.schains.firewall.types import SChainRule
+from core.schains.firewall.types import Action, SChainRule, LOOPBACK_INTERFACE
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
@@ -427,22 +427,27 @@ def test_firewall_rules_action(skaled_am, skaled_checks, rule_controller, econfi
     skaled_am.firewall_rules()
     assert skaled_checks.firewall_rules
     added_rules = list(rule_controller.firewall_manager.rules)
-    print(added_rules)
     assert added_rules == [
-        SChainRule(port=10000, first_ip='127.0.0.2', last_ip='127.0.0.2'),
-        SChainRule(port=10001, first_ip='1.1.1.1', last_ip='2.2.2.2'),
-        SChainRule(port=10001, first_ip='127.0.0.2', last_ip='127.0.0.2'),
-        SChainRule(port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
-        SChainRule(port=10002),
-        SChainRule(port=10003),
-        SChainRule(port=10004, first_ip='127.0.0.2', last_ip='127.0.0.2'),
-        SChainRule(port=10005, first_ip='1.1.1.1', last_ip='2.2.2.2'),
-        SChainRule(port=10005, first_ip='127.0.0.2', last_ip='127.0.0.2'),
-        SChainRule(port=10005, first_ip='3.3.3.3', last_ip='4.4.4.4'),
-        SChainRule(port=10007),
-        SChainRule(port=10008),
-        SChainRule(port=10009),
-        SChainRule(port=10010, first_ip='127.0.0.2', last_ip='127.0.0.2'),
+        SChainRule(
+            first_port=10000,
+            last_port=10063,
+            interface_exception=LOOPBACK_INTERFACE,
+            action=Action.DROP,
+        ),
+        SChainRule(first_port=10000, first_ip='127.0.0.2', last_ip='127.0.0.2'),
+        SChainRule(first_port=10001, first_ip='1.1.1.1', last_ip='2.2.2.2'),
+        SChainRule(first_port=10001, first_ip='127.0.0.2', last_ip='127.0.0.2'),
+        SChainRule(first_port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
+        SChainRule(first_port=10002),
+        SChainRule(first_port=10003),
+        SChainRule(first_port=10004, first_ip='127.0.0.2', last_ip='127.0.0.2'),
+        SChainRule(first_port=10005, first_ip='1.1.1.1', last_ip='2.2.2.2'),
+        SChainRule(first_port=10005, first_ip='127.0.0.2', last_ip='127.0.0.2'),
+        SChainRule(first_port=10005, first_ip='3.3.3.3', last_ip='4.4.4.4'),
+        SChainRule(first_port=10007),
+        SChainRule(first_port=10008),
+        SChainRule(first_port=10009),
+        SChainRule(first_port=10010, first_ip='127.0.0.2', last_ip='127.0.0.2'),
     ]
 
 

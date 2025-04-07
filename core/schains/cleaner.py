@@ -212,7 +212,7 @@ def remove_schain(
 ) -> None:
     logger.warning(msg)
     report = ProcessReport(name=schain_name)
-    if report.is_exist():
+    if report.exists():
         terminate_process(report.pid)
 
     delete_bls_keys(skale, schain_name)

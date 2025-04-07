@@ -41,8 +41,8 @@ class CurrentNodeInfo(NodeInfo):
     static_node_info: dict
 
     sync_node: bool
-    archive: bool
     catchup: bool
+    archive: bool
 
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""

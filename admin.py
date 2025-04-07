@@ -26,6 +26,7 @@ from filelock import FileLock
 from core.node_config import NodeConfig
 from core.schains.process_manager import run_process_manager
 from core.schains.cleaner import run_cleaner
+from core.schains.process import cleanup_schains_pids
 from core.updates import soft_updates
 from core.monitoring import update_monitoring_services
 
@@ -41,7 +42,6 @@ from web.models.schain import (
     create_tables,
     set_schains_backup_run,
     set_schains_first_run,
-    set_schains_monitor_id,
     set_schains_sync_config_run,
 )
 from web.migrations import migrate
@@ -93,7 +93,7 @@ def init():
         create_tables()
         migrate()
         set_schains_first_run()
-        set_schains_monitor_id()
+        cleanup_schains_pids()
         if BACKUP_RUN:
             set_schains_backup_run()
         if PULL_CONFIG_FOR_SCHAIN:
