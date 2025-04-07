@@ -52,7 +52,6 @@ def test_schain_rule_controller():
     src = SChainTestRuleController(
         'test', base_port, own_ip, node_ips, SkaledPorts, sync_ip_ranges=sync_ip_ranges
     )
-    print(src.expected_rules())
     assert list(src.expected_rules()) == list(sorted(expected_rules))
     src.sync()
     assert src.is_rules_synced()

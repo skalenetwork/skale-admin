@@ -115,7 +115,6 @@ def test_saved_rules(filter_table, nft_chain_folder):
     assert not os.path.isfile(nft_chain_path)
     manager.create_chain(first_port=10000, last_port=10063)
     assert os.path.isfile(nft_chain_path)
-    print('HEREJ', manager.get_saved_rules())
     assert (
         manager.get_saved_rules()
         == 'chain skale-test-chain {\n\ttype filter hook input priority filter; policy accept;\n}\n'
