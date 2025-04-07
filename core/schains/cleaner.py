@@ -39,11 +39,7 @@ from core.schains.external_config import ExternalConfig
 from core.schains.types import ContainerType
 from core.schains.firewall.utils import get_sync_agent_ranges
 
-from tools.configs import (
-    NFT_CHAIN_CONFIG_WILDCARD,
-    SGX_CERTIFICATES_FOLDER,
-    SYNC_NODE
-)
+from tools.configs import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER, SYNC_NODE
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
 from tools.docker_utils import DockerUtils
@@ -104,8 +100,10 @@ def monitor(skale, node_config, dutils=None):
     logger.info('Cleaner procedure started.')
     schains_on_node = get_schains_on_node(dutils=dutils)
     schain_names_on_contracts = get_schain_names_from_contract(skale, node_config.id)
-    logger.info(f'\nsChains on contracts: {schain_names_on_contracts}\n\
-sChains on node: {schains_on_node}')
+    logger.info(
+        f'\nsChains on contracts: {schain_names_on_contracts}\n\
+sChains on node: {schains_on_node}'
+    )
 
     for schain_name in schains_on_node:
         if schain_name not in schain_names_on_contracts:
@@ -146,24 +144,21 @@ def get_schains_on_node(dutils=None):
     schains_with_container = get_schains_with_containers(dutils)
     schains_active_records = get_schains_names()
     schains_firewall_configs = list(
-        map(
-            lambda name: name.removeprefix('skale-'),
-            get_schains_firewall_configs()
-        )
+        map(lambda name: name.removeprefix('skale-'), get_schains_firewall_configs())
     )
     logger.info(
         'dirs %s, containers: %s, records: %s, firewall configs: %s',
         schains_with_dirs,
         schains_with_container,
         schains_active_records,
-        schains_firewall_configs
+        schains_firewall_configs,
     )
     return sorted(
         merged_unique(
             schains_with_dirs,
             schains_with_container,
             schains_active_records,
-            schains_firewall_configs
+            schains_firewall_configs,
         )
     )
 
@@ -217,7 +212,7 @@ def remove_schain(
 ) -> None:
     logger.warning(msg)
     report = ProcessReport(name=schain_name)
-    if report.is_exist():
+    if report.exists():
         terminate_process(report.pid)
 
     delete_bls_keys(skale, schain_name)

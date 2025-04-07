@@ -77,6 +77,23 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
             self.am.ima_container()
 
 
+class SnapshotSkaledMonitor(BaseSkaledMonitor):
+    """
+    Triggered only on sync node, when repair_ts is set
+    """
+
+    def execute(self) -> None:
+        if not self.checks.firewall_rules:
+            self.am.firewall_rules()
+        if not self.checks.volume:
+            self.am.volume()
+        if not self.checks.skaled_container:
+            self.am.skaled_container(download_snapshot=True)
+        else:
+            self.am.reset_restart_counter()
+        self.am.update_repair_ts(new_ts=int(time.time()))
+
+
 class RepairSkaledMonitor(BaseSkaledMonitor):
     """
     When node-cli or skaled requested repair mode -
@@ -304,8 +321,10 @@ def get_skaled_monitor(
     if SYNC_NODE:
         if no_config(check_status):
             mon_type = NoConfigSkaledMonitor
-        if is_recreate_mode(check_status, schain_record):
+        elif is_recreate_mode(check_status, schain_record):
             mon_type = RecreateSkaledMonitor
+        elif is_repair_mode(schain_record, check_status, skaled_status, ncli_status, False):
+            mon_type = SnapshotSkaledMonitor
         elif is_config_update_time(check_status, skaled_status):
             mon_type = UpdateConfigSkaledMonitor
         elif is_reload_group_mode(check_status, action_manager.upstream_finish_ts):

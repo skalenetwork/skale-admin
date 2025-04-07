@@ -33,14 +33,10 @@ from core.schains.dkg import (
     get_dkg_client,
     get_secret_key_share_filepath,
     run_dkg,
-    save_dkg_results
+    save_dkg_results,
 )
 
-from core.schains.cleaner import (
-    remove_ima_container,
-    remove_schain_container,
-    remove_schain_volume
-)
+from core.schains.cleaner import remove_ima_container, remove_schain_container, remove_schain_volume
 from core.schains.ima import get_migration_ts as get_ima_migration_ts, ImaData
 from core.schains.status import NodeCliStatus
 from core.schains.firewall.types import IRuleController
@@ -53,12 +49,12 @@ from core.schains.runner import (
     get_container_name,
     is_container_exists,
     pull_new_image,
-    restart_container
+    restart_container,
 )
 from core.schains.config.main import (
     create_new_upstream_config,
     get_finish_ts_from_skaled_config,
-    get_finish_ts_from_latest_upstream
+    get_finish_ts_from_latest_upstream,
 )
 from core.schains.config import init_schain_config_dir
 from core.schains.config.main import update_schain_config_version
@@ -66,7 +62,7 @@ from core.schains.config.file_manager import ConfigFileManager
 from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
-    get_own_ip_from_config
+    get_own_ip_from_config,
 )
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.status import init_skaled_status
@@ -105,9 +101,10 @@ class BaseActionManager:
             self.executed_blocks[f.__name__] = {
                 'ts': ts,
                 'te': te,
-                'initial_status': initial_status
+                'initial_status': initial_status,
             }
             return initial_status
+
         return _monitor_block
 
     @property
@@ -126,12 +123,13 @@ class BaseActionManager:
         logger.info(
             'restart_count - %s, failed_rpc_count - %s',
             self.schain_record.restart_count,
-            self.schain_record.failed_rpc_count
+            self.schain_record.failed_rpc_count,
         )
 
     def log_executed_blocks(self) -> None:
-        logger.info(arguments_list_string(
-            self.executed_blocks, f'Finished monitor runner - {self.name}'))
+        logger.info(
+            arguments_list_string(self.executed_blocks, f'Finished monitor runner - {self.name}')
+        )
 
 
 class ConfigActionManager(BaseActionManager):
@@ -146,7 +144,7 @@ class ConfigActionManager(BaseActionManager):
         estate: ExternalState,
         current_nodes: List[ExtendedManagerNodeInfo],
         econfig: Optional[ExternalConfig] = None,
-        node_options: NodeOptions = None
+        node_options: NodeOptions = None,
     ):
         self.skale = skale
         self.schain = schain
@@ -161,9 +159,7 @@ class ConfigActionManager(BaseActionManager):
         self.estate = estate
         self.econfig = econfig or ExternalConfig(name=schain.name)
         self.node_options = node_options or NodeOptions()
-        self.cfm: ConfigFileManager = ConfigFileManager(
-            schain_name=self.schain.name
-        )
+        self.cfm: ConfigFileManager = ConfigFileManager(schain_name=self.schain.name)
         self.statsd_client = get_statsd_client()
         super().__init__(name=schain.name)
 
@@ -184,7 +180,7 @@ class ConfigActionManager(BaseActionManager):
                     node_id=self.node_config.id,
                     schain_name=self.name,
                     sgx_key_name=self.node_config.sgx_key_name,
-                    rotation_id=self.rotation_id
+                    rotation_id=self.rotation_id,
                 )
                 logger.info('Running run_dkg')
                 dkg_result = run_dkg(
@@ -193,13 +189,13 @@ class ConfigActionManager(BaseActionManager):
                     schain_name=self.name,
                     node_id=self.node_config.id,
                     sgx_key_name=self.node_config.sgx_key_name,
-                    rotation_id=self.rotation_id
+                    rotation_id=self.rotation_id,
                 )
                 logger.info('DKG finished with %s', dkg_result)
                 if dkg_result.status.is_done():
                     save_dkg_results(
                         dkg_result.keys_data,
-                        get_secret_key_share_filepath(self.name, self.rotation_id)
+                        get_secret_key_share_filepath(self.name, self.rotation_id),
                     )
                 self.schain_record.set_dkg_status(dkg_result.status)
                 if not dkg_result.status.is_done():
@@ -213,7 +209,8 @@ class ConfigActionManager(BaseActionManager):
         with self.statsd_client.timer(f'admin.action.upstream_config.{no_hyphens(self.name)}'):
             logger.info(
                 'Generating new upstream_config rotation_id: %s, stream: %s',
-                self.rotation_data.get('rotation_id'), self.stream_version
+                self.rotation_data.get('rotation_id'),
+                self.stream_version,
             )
             new_config = create_new_upstream_config(
                 skale=self.skale,
@@ -223,32 +220,32 @@ class ConfigActionManager(BaseActionManager):
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,
                 sync_node=SYNC_NODE,
-                node_options=self.node_options
+                node_options=self.node_options,
             )
 
             result = False
-            if not self.cfm.upstream_config_exists() or \
-                    new_config != self.cfm.latest_upstream_config:
+            if (
+                not self.cfm.upstream_config_exists()
+                or new_config != self.cfm.latest_upstream_config
+            ):
                 logger.info('Saving new config')
                 rotation_id = self.rotation_data['rotation_id']
                 logger.info(
                     'Saving new upstream config rotation_id: %d, ips: %s',
                     rotation_id,
-                    self.current_nodes
+                    self.current_nodes,
                 )
                 self.cfm.save_new_upstream(rotation_id, new_config)
                 result = True
             else:
                 logger.info('Generated config is the same as latest upstream')
 
-            update_schain_config_version(
-                self.name, schain_record=self.schain_record)
+            update_schain_config_version(self.name, schain_record=self.schain_record)
             return result
 
     @BaseActionManager.monitor_block
     def reset_config_record(self) -> bool:
-        update_schain_config_version(
-            self.name, schain_record=self.schain_record)
+        update_schain_config_version(self.name, schain_record=self.schain_record)
         self.schain_record.set_sync_config_run(False)
         return True
 
@@ -261,12 +258,12 @@ class ConfigActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def update_reload_ts(self, ip_matched: bool, sync_node: bool = False) -> bool:
-        '''
+        """
         - If ip_matched is True, then config is synced and skaled reload is not needed
         - If ip_matched is False, then config is not synced and skaled reload is needed
 
         For sync node node_index_in_group is always 0 to reload sync nodes immediately
-        '''
+        """
         logger.info('Setting reload_ts')
         if ip_matched:
             logger.info('Resetting reload_ts')
@@ -277,9 +274,7 @@ class ConfigActionManager(BaseActionManager):
         node_index_in_group = 0
         if not sync_node:
             node_index_in_group = get_node_index_in_group(
-                self.skale,
-                self.name,
-                self.node_config.id
+                self.skale, self.name, self.node_config.id
             )
             if node_index_in_group is None:
                 logger.warning(f'node {self.node_config.id} is not in chain {self.name}')
@@ -300,7 +295,7 @@ class SkaledActionManager(BaseActionManager):
         ncli_status: NodeCliStatus,
         econfig: Optional[ExternalConfig] = None,
         dutils: DockerUtils = None,
-        node_options: NodeOptions = None
+        node_options: NodeOptions = None,
     ):
         self.schain = schain
         self.generation = schain.generation
@@ -311,9 +306,7 @@ class SkaledActionManager(BaseActionManager):
         self.skaled_status = init_skaled_status(self.schain.name)
         self.schain_type = get_schain_type(schain.part_of_node)
         self.econfig = econfig or ExternalConfig(schain.name)
-        self.cfm: ConfigFileManager = ConfigFileManager(
-            schain_name=self.schain.name
-        )
+        self.cfm: ConfigFileManager = ConfigFileManager(schain_name=self.schain.name)
 
         self.esfm = ExitScheduleFileManager(schain.name)
         self.dutils = dutils or DockerUtils()
@@ -351,14 +344,11 @@ class SkaledActionManager(BaseActionManager):
             logger.info('Adding ranges %s', ranges)
             with self.statsd_client.timer(f'admin.action.firewall.{no_hyphens(self.name)}'):
                 self.rc.configure(
-                    base_port=base_port,
-                    own_ip=own_ip,
-                    node_ips=node_ips,
-                    sync_ip_ranges=ranges
+                    base_port=base_port, own_ip=own_ip, node_ips=node_ips, sync_ip_ranges=ranges
                 )
                 self.statsd_client.gauge(
                     f'admin.action.expected_rules.{no_hyphens(self.name)}',
-                    len(self.rc.expected_rules())
+                    len(self.rc.expected_rules()),
                 )
                 self.rc.sync()
         return initial_status
@@ -373,7 +363,7 @@ class SkaledActionManager(BaseActionManager):
         logger.info(
             'Starting skaled container watchman snapshot: %s, start_ts: %s',
             download_snapshot,
-            start_ts
+            start_ts,
         )
         snapshot_from = self.ncli_status.snapshot_from if self.ncli_status else None
         monitor_schain_container(
@@ -386,7 +376,7 @@ class SkaledActionManager(BaseActionManager):
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,
             sync_node=SYNC_NODE,
-            historic_state=self.node_options.historic_state
+            historic_state=self.node_options.historic_state,
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)
         return True
@@ -396,12 +386,10 @@ class SkaledActionManager(BaseActionManager):
         initial_status = True
         if is_container_exists(self.name, dutils=self.dutils):
             logger.info('Skaled container exists, restarting')
-            restart_container(SCHAIN_CONTAINER, self.schain,
-                              dutils=self.dutils)
+            restart_container(SCHAIN_CONTAINER, self.schain, dutils=self.dutils)
             update_ssl_change_date(self.schain_record)
         else:
-            logger.info(
-                'Skaled container does not exists, running skaled watchman')
+            logger.info('Skaled container does not exists, running skaled watchman')
             initial_status = self.skaled_container()
         return initial_status
 
@@ -412,8 +400,7 @@ class SkaledActionManager(BaseActionManager):
             logger.info('IMA container exists, restarting')
             restart_container(IMA_CONTAINER, self.schain, dutils=self.dutils)
         else:
-            logger.info(
-                'IMA container doesn\'t exists, running skaled watchman')
+            logger.info("IMA container doesn't exists, running skaled watchman")
             initial_status = self.ima_container()
         return initial_status
 
@@ -434,8 +421,7 @@ class SkaledActionManager(BaseActionManager):
         self.schain_record.set_restart_count(0)
         self.schain_record.set_failed_rpc_count(0)
         self.schain_record.set_needs_reload(False)
-        initial_status = self.skaled_container(
-            abort_on_exit=abort_on_exit)
+        initial_status = self.skaled_container(abort_on_exit=abort_on_exit)
         return initial_status
 
     @BaseActionManager.monitor_block
@@ -467,7 +453,7 @@ class SkaledActionManager(BaseActionManager):
                 self.schain,
                 schain_record=self.schain_record,
                 skaled_status=self.skaled_status,
-                dutils=self.dutils
+                dutils=self.dutils,
             )
         else:
             self.schain_record.set_failed_rpc_count(0)
@@ -480,16 +466,10 @@ class SkaledActionManager(BaseActionManager):
         logger.debug('Migration time for %s IMA - %d', self.name, migration_ts)
         if not initial_status:
             pull_new_image(image_type=IMA_CONTAINER, dutils=self.dutils)
-            ima_data = ImaData(
-                linked=self.econfig.ima_linked,
-                chain_id=self.econfig.chain_id
-            )
+            ima_data = ImaData(linked=self.econfig.ima_linked, chain_id=self.econfig.chain_id)
             logger.info('Running IMA container watchman')
             monitor_ima_container(
-                self.schain,
-                ima_data,
-                migration_ts=migration_ts,
-                dutils=self.dutils
+                self.schain, ima_data, migration_ts=migration_ts, dutils=self.dutils
             )
         else:
             logger.info('ima_container - ok')
@@ -545,15 +525,11 @@ class SkaledActionManager(BaseActionManager):
             container_name = get_container_name(SCHAIN_CONTAINER, self.name)
             self.dutils.display_container_logs(container_name)
         else:
-            logger.warning(
-                f'sChain {self.name}: container doesn\'t exists, could not show logs')
+            logger.warning(f"sChain {self.name}: container doesn't exists, could not show logs")
 
     @BaseActionManager.monitor_block
     def notify_repair_mode(self) -> None:
-        notify_repair_mode(
-            self.node_config.all(),
-            self.name
-        )
+        notify_repair_mode(self.node_config.all(), self.name)
 
     @BaseActionManager.monitor_block
     def disable_repair_mode(self) -> None:
@@ -564,5 +540,5 @@ class SkaledActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def update_repair_ts(self, new_ts: int) -> None:
         logger.info('Setting repair_ts to %d', new_ts)
-        new_dt = datetime.utcfromtimestamp(new_ts)
+        new_dt = datetime.fromtimestamp(new_ts, tz=datetime.timezone.utc)
         self.schain_record.set_repair_date(new_dt)
