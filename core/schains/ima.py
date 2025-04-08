@@ -28,6 +28,7 @@ from websocket import create_connection
 
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.file_manager import ConfigFileManager
+from core.schains.config.node_info import CurrentNodeInfo
 from core.schains.config.helper import get_chain_id, get_schain_ports_from_config, get_static_params
 from tools.configs import ENV_TYPE, SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
 from tools.configs.containers import IMA_MIGRATION_PATH, CONTAINERS_INFO
@@ -177,7 +178,7 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> Ima
         tm_url_mainnet=REDIS_URI,
         cid_main_net=mainnet_chain_id,
         cid_schain=schain_chain_id,
-        monitoring_port=node_info['imaMonitoringPort'],
+        monitoring_port=parse_ima_monitoring_port(node_info),
         rpc_port=get_ima_rpc_port(schain_name),
         time_framing=time_frame,
         network_browser_data_path=IMA_NETWORK_BROWSER_FILEPATH,
@@ -188,11 +189,14 @@ def get_ima_version_after_migration() -> str:
     return CONTAINERS_INFO['ima'].get('new_version') or CONTAINERS_INFO['ima']['version']
 
 
+def parse_ima_monitoring_port(node_info: CurrentNodeInfo) -> int:
+    return node_info['basePort'] + SkaledPorts.IMA_MONITORING.value
+
+
 def get_ima_monitoring_port(schain_name):
-    schain_config = ConfigFileManager(schain_name).skaled_config
-    if schain_config:
-        node_info = schain_config['skaleConfig']['nodeInfo']
-        return int(node_info['imaMonitoringPort'])
+    config = ConfigFileManager(schain_name).skaled_config
+    if config:
+        return parse_ima_monitoring_port(config['skaleConfig']['nodeInfo'])
     else:
         return None
 
