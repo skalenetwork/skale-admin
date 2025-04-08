@@ -32,6 +32,8 @@ LARGE_DIVIDER = 1
 MEDIUM_DIVIDER = 8
 TEST_DIVIDER = 8
 SMALL_DIVIDER = 128
+LIGHT64_DIVIDER = 64
+LIGHT32_DIVIDER = 32
 
 VOLUME_CHUNK = 512 * SMALL_DIVIDER
 DISK_FACTOR = calc_disk_factor(MEDIUM_DIVIDER)
@@ -48,6 +50,8 @@ class ResourceAlloc(Alloc):
             'test4': value / TEST_DIVIDER,
             'test': value / TEST_DIVIDER,
             'small': value / SMALL_DIVIDER,
+            'light64': value / LIGHT64_DIVIDER,
+            'light32': value / LIGHT32_DIVIDER,
             'medium': value / MEDIUM_DIVIDER,
             'large': value / LARGE_DIVIDER
         }
@@ -62,6 +66,8 @@ class DiskResourceAlloc(Alloc):
             'test4': value / TEST_DIVIDER,
             'test': value / TEST_DIVIDER,
             'small': value / SMALL_DIVIDER,
+            'light64': value / LIGHT64_DIVIDER,
+            'light32': value / LIGHT32_DIVIDER,
             'medium': value / MEDIUM_DIVIDER,
             'large': value / LARGE_DIVIDER
         }

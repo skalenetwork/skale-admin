@@ -27,6 +27,8 @@ class SchainType(Enum):
     medium = 16
     small = 1
     sync_node = 314
+    light64 = 2
+    light32 = 4
 
 
 class ContainerType(Enum):
