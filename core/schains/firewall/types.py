@@ -18,53 +18,136 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import ABC, abstractmethod
+from enum import IntEnum
 from functools import total_ordering
 from typing import Any, Iterable, List, Optional
+from dataclasses import dataclass
 
 from collections import namedtuple
 from skale.dataclasses.skaled_ports import SkaledPorts  # noqa
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
+LOOPBACK_INTERFACE = 'lo'
+
+
+class Action(IntEnum):
+    # Order is important: drop rules should be applied first
+    # Therefore they are last in the list
+    DROP = 0
+    ACCEPT = 1
+
 
 @total_ordering
-class SChainRule(namedtuple('SChainRule', ['port', 'first_ip', 'last_ip'])):
-    def __new__(
-        cls,
-        port: int,
-        first_ip: Optional[str] = None,
-        last_ip: Optional[str] = None
-    ) -> 'SChainRule':
-        if first_ip and not last_ip:
-            last_ip = first_ip
-        return super(SChainRule, cls).__new__(cls, port, first_ip, last_ip)
+@dataclass
+class SChainRule:
+    name: Optional[str] = None
+    first_port: Optional[int] = None
+    last_port: Optional[int] = None
+    first_ip: Optional[str] = None
+    last_ip: Optional[str] = None
+    action: Action = Action.ACCEPT
+    interface_exception: Optional[str] = None
+
+    def __post_init__(self):
+        if self.first_ip is not None and self.last_ip is None:
+            self.last_ip = self.first_ip
+        if self.first_port is not None and self.last_port is None:
+            self.last_port = self.first_port
+        if all(
+            val is None
+            for val in (
+                self.first_ip,
+                self.last_ip,
+                self.first_port,
+                self.last_port,
+                self.interface_exception,
+            )
+        ):
+            raise ValueError('Rule has no meaningful fields')
+
+    @classmethod
+    def _to_tuple(cls, rule) -> tuple:
+        return tuple(
+            map(
+                str,
+                (
+                    rule.name,
+                    rule.first_ip,
+                    rule.last_ip,
+                    rule.first_port,
+                    rule.last_port,
+                    rule.action,
+                    rule.interface_exception,
+                ),
+            )
+        )
+
+    def __lt__(self, other):
+        if not isinstance(other, SChainRule):
+            return NotImplemented
+        fields = [
+            'action',
+            'first_port',
+            'last_port',
+            'first_ip',
+            'last_ip',
+            'interface_exception',
+            'name',
+        ]
+        for field in fields:
+            self_value = getattr(self, field)
+            other_value = getattr(other, field)
+            if field in ('first_ip', 'last_ip', 'interface_exception', 'name'):
+                self_value = self_value or ''
+                other_value = other_value or ''
+            if self_value != other_value:
+                return self_value < other_value
+        return True
+
+    def __eq__(self, other):
+        if not isinstance(other, SChainRule):
+            return NotImplemented
+        fields = [
+            'first_port',
+            'last_port',
+            'first_ip',
+            'last_ip',
+            'action',
+            'interface_exception',
+            'name',
+        ]
+        for field in fields:
+            self_value = getattr(self, field)
+            other_value = getattr(other, field)
+            if not field.endswith('_port'):
+                self_value = self_value or ''
+                other_value = other_value or ''
+            if self_value != other_value:
+                return False
+        return True
 
     def __repr__(self) -> str:
-        if not self.first_ip:
-            return f'SChainRule(:{self.port})'
-        else:
-            return f'SChainRule({self.first_ip}:{self.port}-{self.last_ip}:{self.port})'  # noqa
+        iface = f'!{self.interface_exception}' if self.interface_exception else ''
+        representative = (
+            'SChainRule('
+            f'{self.first_ip}:{self.last_ip}, {self.first_port}:{self.last_port}, '
+            f'{self.action}, {iface}'
+            ')'  # noqa
+        )
+        return representative.replace('None', '')
 
     def __hash__(self) -> int:
-        return hash(tuple(self))
+        return hash(SChainRule._to_tuple(self))
 
-    def __eq__(self, other) -> bool:
-        return self.port == other.port and \
-                self.first_ip == other.first_ip and \
-                self.last_ip == other.last_ip
-
-    def __lt__(self, other) -> bool:
-        if self.port != other.port:
-            return self.port < other.port
-        elif self.first_ip != other.first_ip:
-            ip_a = '' if self.first_ip is None else self.first_ip
-            ip_b = '' if other.first_ip is None else other.first_ip
-            return ip_a < ip_b
-        elif self.last_ip != other.last_ip:
-            ip_a = '' if self.last_ip is None else self.last_ip
-            ip_b = '' if other.last_ip is None else other.last_ip
-            return ip_a < ip_b
-        else:  # pragma: no cover
-            return True
+    def to_dict(self) -> dict:
+        return {
+            'first_port': self.first_port,
+            'last_port': self.last_port,
+            'first_ip': self.first_ip,
+            'last_ip': self.last_ip,
+            'action': self.action.name.lower(),
+            'interface_exception': self.interface_exception
+        }
 
 
 IpRange = namedtuple('IpRange', ['start_ip', 'end_ip'])
@@ -120,7 +203,7 @@ class IRuleController(ABC):
         own_ip: Optional[str] = None,
         node_ips: Optional[List[str]] = None,
         sync_ip_ranges: Optional[List[IpRange]] = None,
-        port_allocation: Any = SkaledPorts
+        port_allocation: Any = SkaledPorts,
     ) -> None:
         pass
 

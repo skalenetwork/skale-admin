@@ -26,12 +26,12 @@ from filelock import FileLock
 from core.node_config import NodeConfig
 from core.schains.process_manager import run_process_manager
 from core.schains.cleaner import run_cleaner
+from core.schains.process import cleanup_schains_pids
 from core.updates import soft_updates
 from core.monitoring import update_monitoring_services
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
-from tools.configs.web3 import (
-    ENDPOINT, ABI_FILEPATH, STATE_FILEPATH)
+from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH
 from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
@@ -42,8 +42,7 @@ from web.models.schain import (
     create_tables,
     set_schains_backup_run,
     set_schains_first_run,
-    set_schains_monitor_id,
-    set_schains_sync_config_run
+    set_schains_sync_config_run,
 )
 from web.migrations import migrate
 
@@ -62,9 +61,7 @@ def monitor(skale, skale_ima, node_config):
             run_process_manager(skale, skale_ima, node_config)
         except Exception:
             logger.exception('Process manager procedure failed!')
-        logger.info(
-            f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager'
-        )
+        logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
         time.sleep(SLEEP_INTERVAL)
         run_cleaner(skale, node_config)
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_cleaner')
@@ -96,7 +93,7 @@ def init():
         create_tables()
         migrate()
         set_schains_first_run()
-        set_schains_monitor_id()
+        cleanup_schains_pids()
         if BACKUP_RUN:
             set_schains_backup_run()
         if PULL_CONFIG_FOR_SCHAIN:
