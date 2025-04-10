@@ -6,7 +6,7 @@ import time
 import pytest
 
 from core.schains.firewall.nftables import NFTablesController, NFT_CHAIN_BASE_PATH
-from core.schains.firewall.types import SChainRule
+from core.schains.firewall.types import Action, SChainRule
 from core.schains.firewall.utils import cleanup_firewall_for_schain
 from tools.helper import run_cmd
 
@@ -32,8 +32,8 @@ def custom_chain(nf_test_tables, filter_table):
 
 def test_nftables_controller(custom_chain):
     nft_controller = NFTablesController(chain='test-chain')
-    rule_a = SChainRule(10000, '1.1.1.1', '2.2.2.2')
-    rule_b = SChainRule(10001, '3.3.3.3')
+    rule_a = SChainRule(first_port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2')
+    rule_b = SChainRule(first_port=10001, first_ip='3.3.3.3')
     nft_controller.add_rule(rule_a)
     nft_controller.add_rule(rule_b)
     assert nft_controller.has_rule(rule_a)
@@ -46,27 +46,37 @@ def test_nftables_controller(custom_chain):
     nft_controller.remove_rule(rule_b)
     assert not nft_controller.has_rule(rule_a)
 
+    rule_c = SChainRule(first_port=10000, last_port=10063, action=Action.DROP)
+    nft_controller.add_rule(rule_c)
+    assert nft_controller.has_rule(rule_c)
+    nft_controller.remove_rule(rule_c)
+    assert not nft_controller.has_rule(rule_c)
+
 
 def test_nftables_controller_duplicates(custom_chain):
-    rule_a = SChainRule(10000, '1.1.1.1', '2.2.2.2')
+    rule_a = SChainRule(first_port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2')
     manager = NFTablesController(chain='test-chain')
     manager.add_rule(rule_a)
-    rule_b = SChainRule(10001, '3.3.3.3', '4.4.4.4')
+    rule_b = SChainRule(first_port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4')
     manager.add_rule(rule_b)
-    assert sorted(list(manager.rules)) == sorted([
-        SChainRule(port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
-        SChainRule(port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2')
-    ])
+    assert sorted(list(manager.rules)) == sorted(
+        [
+            SChainRule(first_port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
+            SChainRule(first_port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2'),
+        ]
+    )
     assert manager.has_rule(rule_b)
     manager.add_rule(rule_b)
     assert manager.has_rule(rule_b)
-    assert sorted(list(manager.rules)) == sorted([
-        SChainRule(port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
-        SChainRule(port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2')
-    ])
+    assert sorted(list(manager.rules)) == sorted(
+        [
+            SChainRule(first_port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
+            SChainRule(first_port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2'),
+        ]
+    )
     manager.remove_rule(rule_b)
     assert list(manager.rules) == [
-        SChainRule(port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2')
+        SChainRule(first_port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2')
     ]
 
 
@@ -82,7 +92,10 @@ def test_create_delete_chain(filter_table, nft_chain_folder):
     manager.create_chain(first_port=10000, last_port=10063)
 
     chains = run_cmd(['nft', 'list', 'chains']).stdout.decode('utf-8')
-    assert chains == 'table inet firewall {\n\tchain skale-test-chain {\n\t\ttype filter hook input priority filter; policy accept;\n\t}\n}\n'  # noqa
+    assert (
+        chains
+        == 'table inet firewall {\n\tchain skale-test-chain {\n\t\ttype filter hook input priority filter; policy accept;\n\t}\n}\n'  # noqa
+    )
     assert os.path.isfile(nft_chain_path)
 
     manager.cleanup()
@@ -102,7 +115,10 @@ def test_saved_rules(filter_table, nft_chain_folder):
     assert not os.path.isfile(nft_chain_path)
     manager.create_chain(first_port=10000, last_port=10063)
     assert os.path.isfile(nft_chain_path)
-    assert manager.get_saved_rules() == 'chain skale-test-chain {\n\ttype filter hook input priority filter; policy accept;\n\ttcp dport 10000-10063 counter drop\n}\n'  # noqa
+    assert (
+        manager.get_saved_rules()
+        == 'chain skale-test-chain {\n\ttype filter hook input priority filter; policy accept;\n}\n'
+    )  # noqa
 
     assert os.path.isfile(nft_chain_path)
 
@@ -137,8 +153,9 @@ def add_remove_rule(srule, refresh):
 def generate_srules(number=5):
     return [
         SChainRule(
-            10000 + 1,
-            f'{i}.{i}.{i}.{i}', f'{i + 1}.{i + 1}.{i + 1}.{i + 1}'
+            first_port=10000 + 1,
+            first_ip=f'{i}.{i}.{i}.{i}',
+            last_ip=f'{i + 1}.{i + 1}.{i + 1}.{i + 1}',
         )
         for i in range(1, number * 2, 2)
     ]
@@ -149,10 +166,7 @@ def test_nftables_manager_parallel(custom_chain):
 
     futures = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=12) as executor:
-        futures = [
-            executor.submit(add_remove_rule, srule)
-            for srule in srules
-        ]
+        futures = [executor.submit(add_remove_rule, srule) for srule in srules]
 
         for future in concurrent.futures.as_completed(futures):
             assert future.result

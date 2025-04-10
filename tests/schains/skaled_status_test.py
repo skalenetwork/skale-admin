@@ -17,8 +17,8 @@ def test_skaled_status(skaled_status, _schain_name):
 
     assert skaled_status.subsystem_running == {
         'SnapshotDownloader': False,
-        'Blockchain': False,
-        'Rpc': False,
+        'Blockchain': True,
+        'Rpc': True,
     }
 
     assert skaled_status.exit_state == {

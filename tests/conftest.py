@@ -55,7 +55,7 @@ from tools.configs import (
     ENV_TYPE,
     META_FILEPATH,
     SSL_CERTIFICATES_FILEPATH,
-    STATIC_GROUPS_FOLDER
+    STATIC_GROUPS_FOLDER,
 )
 from tools.configs.containers import CONTAINERS_FILEPATH
 from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH
@@ -81,6 +81,7 @@ from tests.utils import (
     init_skale_from_wallet,
     init_skale_ima,
     upsert_schain_record_with_config,
+    generate_schain_skaled_status_file,
 )
 
 NUMBER_OF_NODES = 2
@@ -197,28 +198,6 @@ def get_random_string(length=8):
     return ''.join(random.choice(letters) for i in range(length))
 
 
-def get_skaled_status_dict(
-    snapshot_downloader=False,
-    exit_time_reached=False,
-    clear_data_dir=False,
-    start_from_snapshot=False,
-    start_again=False,
-):
-    return {
-        'subsystemRunning': {
-            'SnapshotDownloader': snapshot_downloader,
-            'Blockchain': False,
-            'Rpc': False,
-        },
-        'exitState': {
-            'ClearDataDir': clear_data_dir,
-            'StartAgain': start_again,
-            'StartFromSnapshot': start_from_snapshot,
-            'ExitTimeReached': exit_time_reached,
-        },
-    }
-
-
 SECRET_KEY = {
     'common_public_key': [
         11111111111111111111111111111111111111111111111111111111111111111111111111111,
@@ -303,13 +282,6 @@ def schain_config(_schain_name, secret_key, predeployed_ima):
         yield schain_config
     finally:
         rm_schain_dir(_schain_name)
-
-
-def generate_schain_skaled_status_file(_schain_name, **kwargs):
-    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
-    pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
-    status_filepath = skaled_status_filepath(_schain_name)
-    write_json(status_filepath, get_skaled_status_dict(**kwargs))
 
 
 def rm_schain_dir(schain_name):
@@ -607,8 +579,7 @@ def static_groups_for_schain(_schain_name):
     parent_folder = os.path.join(STATIC_GROUPS_FOLDER, ENV_TYPE)
     os.makedirs(parent_folder)
     static_groups_env_path = os.path.join(
-        parent_folder,
-        os.path.join(f'schain-{_schain_name}.json')
+        parent_folder, os.path.join(f'schain-{_schain_name}.json')
     )
     try:
         write_json(static_groups_env_path, STATIC_NODE_GROUPS)
