@@ -406,7 +406,7 @@ def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_cha
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        mainnet_ima_addressess=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
 
