@@ -19,9 +19,10 @@
 
 import logging
 
+from eth_typing import ChecksumAddress
+
 from skale.dataclasses.schain_options import AllocationType
 from skale.wallets.web3_wallet import public_key_to_address
-
 from etherbase_predeployed import (
     UpgradeableEtherbaseUpgradeableGenerator,
     ETHERBASE_ADDRESS,
@@ -71,7 +72,7 @@ def generate_predeployed_accounts(
     mainnet_owner: str,
     originator_address: str,
     generation: int,
-    contracts_on_mainnet: dict,
+    mainnet_ima_addresses: dict[str, ChecksumAddress],
 ) -> dict:
     """Main function used to generate dynamic accounts for the sChain config.
     For the params explanation please refer to the nested functions.
@@ -81,7 +82,7 @@ def generate_predeployed_accounts(
     """
     predeployed_section = {
         **generate_owner_accounts(on_chain_owner, originator_address, schain_nodes, generation),
-        **generate_ima_accounts(on_chain_owner, schain_name, contracts_on_mainnet),
+        **generate_ima_accounts(on_chain_owner, schain_name, mainnet_ima_addresses),
     }
 
     if generation >= Gen.ONE:
@@ -204,7 +205,7 @@ def generate_owner_accounts(
 
 
 def generate_ima_accounts(
-    on_chain_owner: str, schain_name: str, contracts_on_mainnet: dict[str, str]
+    on_chain_owner: str, schain_name: str, mainnet_ima_addresses: dict[str, ChecksumAddress]
 ) -> dict:
     """
     Generates accounts for the IMA contracts
@@ -213,8 +214,8 @@ def generate_ima_accounts(
     :type on_chain_owner: str
     :param schain_name: sChain name
     :type schain_name: str
-    :param contracts_on_mainnet: Contracts addresses on the mainnet
-    :type contracts_on_mainnet: dict
+    :param mainnet_ima_addresses: Ima contract addresses on the mainnet
+    :type mainnet_ima_addresses: dict[str, ChecksumAddress]
     :returns: Dictionary with accounts
     :rtype: dict
     """
@@ -222,5 +223,5 @@ def generate_ima_accounts(
     return generate_contracts(
         owner_address=on_chain_owner,
         schain_name=schain_name,
-        contracts_on_mainnet=contracts_on_mainnet,
+        mainnet_ima_addresses=mainnet_ima_addresses,
     )

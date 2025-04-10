@@ -164,6 +164,7 @@ def no_id_node(node):
         yield node
     finally:
         config, node.config = node.config, config
+        os.remove(no_id_config_path)
 
 
 def test_get_node_id_restores_no_id_node(no_id_node):

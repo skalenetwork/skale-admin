@@ -336,7 +336,7 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -362,7 +362,7 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale
         is_owner_contract=True,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -406,7 +406,7 @@ def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_cha
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addressess=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -432,7 +432,7 @@ def test_generate_schain_config_gen2_schain_id(schain_secret_key_file_default_ch
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['schainID'] == 2755779573749746
@@ -454,7 +454,7 @@ def test_generate_schain_config_gen1_schain_id(schain_secret_key_file_default_ch
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['schainID'] == 1
@@ -476,7 +476,7 @@ def test_generate_schain_config_gen0_schain_id(schain_secret_key_file_default_ch
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['schainID'] == 1
@@ -504,7 +504,7 @@ def test_generate_schain_config_allocation_type(schain_secret_key_file_default_c
         is_owner_contract=True,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['maxConsensusStorageBytes'] == 94904996659
@@ -526,7 +526,7 @@ def test_generate_schain_config_allocation_type(schain_secret_key_file_default_c
         is_owner_contract=True,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['skaleConfig']['sChain']['maxConsensusStorageBytes'] == 151847994654
@@ -586,7 +586,7 @@ def test_generate_sync_node_config(schain_secret_key_file_default_chain, skale_i
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -614,7 +614,7 @@ def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_defaul
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -637,7 +637,7 @@ def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_defaul
         sync_node=True,
         archive=False,
         catchup=True,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -660,7 +660,7 @@ def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_defaul
         sync_node=False,
         archive=False,
         catchup=True,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -683,7 +683,7 @@ def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_defaul
         sync_node=True,
         archive=True,
         catchup=True,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
 
@@ -712,7 +712,7 @@ def test_generate_sync_node_config_static_accounts(schain_secret_key_file_defaul
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert config['accounts'].get('0x1111111')
@@ -733,7 +733,7 @@ def test_generate_sync_node_config_static_accounts(schain_secret_key_file_defaul
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
     assert not config['accounts'].get('0x1111111')
@@ -768,7 +768,7 @@ def test_generate_config_static_groups(
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
         sync_node=True,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
 

@@ -19,6 +19,12 @@
 
 import logging
 from dataclasses import dataclass
+from typing import Dict
+
+from web3 import Web3
+from etherbase_predeployed import ETHERBASE_ADDRESS
+from marionette_predeployed import MARIONETTE_ADDRESS
+from eth_typing import ChecksumAddress
 
 from skale import SkaleManager, SkaleIma
 from skale.contracts.manager.schains import SchainStructure
@@ -26,9 +32,6 @@ from skale.schain_config.generator import get_schain_nodes_with_schains
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.schain_config.rotation_history import get_previous_schain_groups
 from skale.types.rotation import Rotation
-
-from etherbase_predeployed import ETHERBASE_ADDRESS
-from marionette_predeployed import MARIONETTE_ADDRESS
 
 from core.node_config import NodeConfig
 from core.schains.config.skale_section import SkaleConfig, generate_skale_section
@@ -44,9 +47,7 @@ from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
 from tools.helper import is_zero_address, is_address_contract
 from tools.node_options import NodeOptions
-from typing import Dict
 
-from web3 import Web3
 
 logger = logging.getLogger(__name__)
 
@@ -134,18 +135,9 @@ def get_schain_originator(schain: SchainStructure) -> str:
     return schain.originator
 
 
-def get_ima_contracts_addresses(skale_ima: SkaleIma) -> Dict[str, str]:
-    """Gets core IMA contract addresses from the SkaleIma instance.
+def get_ima_contracts_addresses(skale_ima: SkaleIma) -> Dict[str, ChecksumAddress]:
+    """Gets core IMA contract addresses on mainnet from the SkaleIma instance."""
 
-    Args:
-        skale_ima: SkaleIma instance to get contract addresses from
-
-    Returns:
-        Dictionary mapping contract names to their addresses
-
-    Raises:
-        Exception: If contract address lookup fails
-    """
     return {
         'community_pool_address': Web3.to_hex(
             skale_ima.instance.get_contract_address('CommunityPool')
@@ -181,7 +173,7 @@ def generate_schain_config(
     is_owner_contract: bool,
     schain_base_port: int,
     common_bls_public_keys: list[str],
-    contracts_on_mainnet: dict[str, str],
+    mainnet_ima_addresses: dict[str, ChecksumAddress],
     sync_node: bool = False,
     archive=None,
     catchup=None,
@@ -248,7 +240,7 @@ def generate_schain_config(
             mainnet_owner=mainnet_owner,
             originator_address=originator_address,
             generation=generation,
-            contracts_on_mainnet=contracts_on_mainnet,
+            mainnet_ima_addresses=mainnet_ima_addresses,
         )
         precompiled_accounts = generate_precompiled_accounts(on_chain_owner=on_chain_owner)
         accounts = {
@@ -295,7 +287,7 @@ def generate_schain_config_with_skale(
     else:
         schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
 
-    contracts_on_mainnet = get_ima_contracts_addresses(skale_ima)
+    mainnet_ima_addresses = get_ima_contracts_addresses(skale_ima)
 
     return generate_schain_config(
         schain=schain,
@@ -312,5 +304,5 @@ def generate_schain_config_with_skale(
         sync_node=sync_node,
         archive=node_options.archive,
         catchup=node_options.catchup,
-        contracts_on_mainnet=contracts_on_mainnet,
+        mainnet_ima_addresses=mainnet_ima_addresses,
     )

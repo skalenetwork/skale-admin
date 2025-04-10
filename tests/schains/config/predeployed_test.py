@@ -28,7 +28,7 @@ def test_generate_predeployed_accounts(skale_ima):
         mainnet_owner='0xD4000000000000000000000000000000000000D4',
         originator_address='0xD500000000000000000000000000000000D5',
         generation=0,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     assert len(predeployed_section.keys()) == NUM_OF_PREDEPLOYED_CONTRACTS_GEN_0
 
@@ -41,7 +41,7 @@ def test_generate_predeployed_accounts(skale_ima):
         mainnet_owner='0xD4000000000000000000000000000000000000D4',
         originator_address='0xD1000000000000000000000000000000000000D1',
         generation=1,
-        contracts_on_mainnet=contracts_addresses,
+        mainnet_ima_addresses=contracts_addresses,
     )
     assert len(predeployed_section.keys()) == NUM_OF_PREDEPLOYED_CONTRACTS_GEN_1
 

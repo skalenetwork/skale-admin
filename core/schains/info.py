@@ -1,8 +1,9 @@
 import logging
 from dataclasses import dataclass
 
-from skale import SkaleManager
 from web3 import Web3
+
+from skale import SkaleManager
 
 from tools.configs.containers import CONTAINERS_INFO
 from web.models.schain import SChainRecord

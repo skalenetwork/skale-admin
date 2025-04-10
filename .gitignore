@@ -56,7 +56,10 @@ unique.json
 *.csr
 logs.tar.gz
 
+tests/skale-data/node_data/no_id_config.json
 tests/skale-data/node_data/schains/*
+tests/skale-data/contracts_info/ima.json
+tests/skale-data/contracts_info/schain_ima_abi.json
 test_abi.json
 schain_status_sample.json
 
@@ -66,8 +69,6 @@ skale-manager-*
 manager.json
 meta.json
 
-tests/skale-data/contracts_info/ima.json
-tests/skale-data/contracts_info/schain_ima_abi.json
 temp_*
 
 .DS_Store
