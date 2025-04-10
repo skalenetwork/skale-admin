@@ -223,5 +223,5 @@ def generate_ima_accounts(
     return generate_contracts(
         owner_address=on_chain_owner,
         schain_name=schain_name,
-        mainnet_ima_addresses=mainnet_ima_addresses,
+        contracts_on_mainnet=mainnet_ima_addresses,
     )
