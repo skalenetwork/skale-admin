@@ -6,7 +6,7 @@ from core.schains.config.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
-    get_schain_env
+    get_schain_env,
 )
 from core.schains.config.directory import schain_config_dir
 from core.schains.config.file_manager import ConfigFileManager
@@ -16,8 +16,7 @@ from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_V
 
 
 def test_get_node_ips_from_config(schain_config):
-    assert get_node_ips_from_config(schain_config) == \
-        ['127.0.0.1', '127.0.0.2']
+    assert get_node_ips_from_config(schain_config) == ['127.0.0.1', '127.0.0.2']
 
 
 def test_get_base_port_from_config(schain_config):
@@ -29,26 +28,23 @@ def test_get_own_ip_from_config(schain_config):
 
 
 def test_get_schain_env():
-    expected_env = {"SEGFAULT_SIGNALS": 'all'}
+    expected_env = {'SEGFAULT_SIGNALS': 'all'}
     assert get_schain_env() == expected_env
-    expected_env = {"SEGFAULT_SIGNALS": 'all', 'NO_ULIMIT_CHECK': 1}
+    expected_env = {'SEGFAULT_SIGNALS': 'all', 'NO_ULIMIT_CHECK': 1}
     assert get_schain_env(ulimit_check=False) == expected_env
 
 
-@pytest.mark.skip(reason="shared space is temporarily disabled")
+@pytest.mark.skip(reason='shared space is temporarily disabled')
 def test_get_schain_volume_config():
     volume_config = get_schain_volume_config('test_name', '/mnt/mount_path/')
     assert volume_config == {
         'test_name': {'bind': '/mnt/mount_path/', 'mode': 'rw'},
-        SHARED_SPACE_VOLUME_NAME: {
-            'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'rw'}
+        SHARED_SPACE_VOLUME_NAME: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'rw'},
     }
-    volume_config = get_schain_volume_config('test_name',
-                                             '/mnt/mount_path/', mode='Z')
+    volume_config = get_schain_volume_config('test_name', '/mnt/mount_path/', mode='Z')
     assert volume_config == {
         'test_name': {'bind': '/mnt/mount_path/', 'mode': 'Z'},
-        SHARED_SPACE_VOLUME_NAME: {
-            'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'Z'}
+        SHARED_SPACE_VOLUME_NAME: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': 'Z'},
     }
 
 
@@ -57,8 +53,7 @@ def test_get_schain_upstream_config(schain_db, upstreams):
     cfm = ConfigFileManager(schain_name=name)
     upstream_config = cfm.latest_upstream_path
     config_folder = schain_config_dir(name)
-    expected = os.path.join(
-        config_folder, f'schain_{name}_11_1687183339.json')
+    expected = os.path.join(config_folder, f'schain_{name}_11_1687183339.json')
     assert upstream_config == expected
 
     not_existing_chain = 'not-exist'
@@ -69,10 +64,7 @@ def test_get_schain_upstream_config(schain_db, upstreams):
 
 def test_get_latest_finish_ts(schain_config):
     schain_config['skaleConfig']['sChain']['nodeGroups'].update(
-        {
-            '2': {'finish_ts': None},
-            '3': {'finish_ts': None}
-        }
+        {'2': {'finish_ts': None}, '3': {'finish_ts': None}}
     )
 
     finish_ts = get_latest_finish_ts(schain_config)

@@ -20,8 +20,7 @@ def get_rules_through_subprocess(unique=True):
 
 
 def plain_from_schain_rule(srule):
-    if srule.first_ip != srule.last_ip and \
-            all((srule.first_ip, srule.last_ip)):
+    if srule.first_ip != srule.last_ip and all((srule.first_ip, srule.last_ip)):
         return f'-A INPUT -p tcp -m tcp --dport {srule.first_port} -m iprange --src-range {srule.first_ip}-{srule.last_ip} -j ACCEPT'  # noqa
     elif srule.first_ip is not None:
         return f'-A INPUT -s {srule.first_ip}/32 -p tcp -m tcp --dport {srule.first_port} -j ACCEPT'  # noqa
@@ -62,14 +61,14 @@ def test_iptables_manager_add_duplicates(refresh):
     manager.add_rule(rule_b)
     assert list(manager.rules) == [
         SChainRule(first_port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
-        SChainRule(first_port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2')
+        SChainRule(first_port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2'),
     ]
     assert manager.has_rule(rule_b)
     manager.add_rule(rule_b)
     assert manager.has_rule(rule_b)
     assert list(manager.rules) == [
         SChainRule(first_port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
-        SChainRule(first_port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2')
+        SChainRule(first_port=10000, first_ip='1.1.1.1', last_ip='2.2.2.2'),
     ]
     manager.remove_rule(rule_b)
     assert list(manager.rules) == [
@@ -167,7 +166,7 @@ def test_iptables_manager_correctly_process_old_rules(refresh):
         SChainRule(first_port=8080, first_ip=None, last_ip=None),
         SChainRule(first_port=311, first_ip=None, last_ip=None),
         SChainRule(first_port=22, first_ip=None, last_ip=None),
-        SChainRule(first_port=80, first_ip=None, last_ip=None)
+        SChainRule(first_port=80, first_ip=None, last_ip=None),
     ]
 
 
@@ -186,7 +185,8 @@ def generate_srules(number=5):
     return [
         SChainRule(
             first_port=10000 + 1,
-            first_ip=f'{i}.{i}.{i}.{i}', last_ip=f'{i + 1}.{i + 1}.{i + 1}.{i + 1}'
+            first_ip=f'{i}.{i}.{i}.{i}',
+            last_ip=f'{i + 1}.{i + 1}.{i + 1}.{i + 1}',
         )
         for i in range(1, number * 2, 2)
     ]
@@ -197,10 +197,7 @@ def test_iptables_manager_parallel(refresh):
 
     futures = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=12) as executor:
-        futures = [
-            executor.submit(add_remove_rule, srule)
-            for srule in srules
-        ]
+        futures = [executor.submit(add_remove_rule, srule) for srule in srules]
 
         for future in concurrent.futures.as_completed(futures):
             assert future.result

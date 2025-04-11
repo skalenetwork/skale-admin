@@ -40,7 +40,7 @@ class Filter:
         self.first_unseen_block = -1
         self.dkg_contract = skale.dkg.contract
         self.dkg_contract_address = skale.dkg.address
-        self.event_hash = "0x47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d"
+        self.event_hash = '0x47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d'
         self.n = n
         self.t = (2 * n + 1) // 3
         # TODO: use scheme below to calculate event hash
@@ -51,15 +51,17 @@ class Filter:
     def check_event(self, receipt):
         logs = receipt.get('logs')
         if not logs:
-            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
-                        f' does not have field "logs"')
+            logger.info(
+                f'sChain {self.group_index_str}: receipt {receipt} does not have field "logs"'
+            )
             return False
         if len(logs) == 0:
             return False
         topics = logs[0].get('topics')
         if not topics:
-            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
-                        f' does not have field "topics"')
+            logger.info(
+                f'sChain {self.group_index_str}: receipt {receipt} does not have field "topics"'
+            )
             return False
         if len(topics) < 2:
             return False
@@ -69,19 +71,20 @@ class Filter:
             return False
         data = logs[0].get('data')
         if not data:
-            logger.info(f'sChain {self.group_index_str}: receipt {receipt}'
-                        f' does not have field "data"')
+            logger.info(
+                f'sChain {self.group_index_str}: receipt {receipt} does not have field "data"'
+            )
             return False
         return True
 
     def parse_event(self, receipt):
         event_data = receipt['logs'][0]['data'].hex()[2:]
         node_index = int(receipt['logs'][0]['topics'][2].hex()[2:], 16)
-        vv = event_data[192: 192 + self.t * 256]
-        skc = event_data[192 + 64 + self.t * 256: 192 + 64 + self.t * 256 + 192 * self.n]
-        return DKGEvent(**{
-            'nodeIndex': node_index, "secretKeyContribution": skc, "verificationVector": vv
-            })
+        vv = event_data[192 : 192 + self.t * 256]
+        skc = event_data[192 + 64 + self.t * 256 : 192 + 64 + self.t * 256 + 192 * self.n]
+        return DKGEvent(
+            **{'nodeIndex': node_index, 'secretKeyContribution': skc, 'verificationVector': vv}
+        )
 
     def get_events(self, from_channel_started_block=False):
         events = []
@@ -92,23 +95,26 @@ class Filter:
                 ).call()
             else:
                 start_block = self.first_unseen_block
-            current_block = self.skale.web3.eth.get_block("latest")["number"]
-            logger.info(f'sChain {self.group_index_str}: Parsing broadcast events '
-                        f'from {start_block} block to {current_block} block')
+            current_block = self.skale.web3.eth.get_block('latest')['number']
+            logger.info(
+                f'sChain {self.group_index_str}: Parsing broadcast events '
+                f'from {start_block} block to {current_block} block'
+            )
             for block_number in range(start_block, current_block + 1):
                 block = self.skale.web3.eth.get_block(block_number, full_transactions=True)
-                txns = block["transactions"]
+                txns = block['transactions']
                 for tx in txns:
                     try:
-                        if tx.get("to") != self.dkg_contract_address:
+                        if tx.get('to') != self.dkg_contract_address:
                             continue
 
-                        hash = tx.get("hash")
+                        hash = tx.get('hash')
                         if hash:
                             receipt = self.skale.web3.eth.get_transaction_receipt(hash)
                         else:
-                            logger.info(f'sChain {self.group_index_str}: tx {tx}'
-                                        f' does not have field "hash"')
+                            logger.info(
+                                f'sChain {self.group_index_str}: tx {tx} does not have field "hash"'
+                            )
                             continue
 
                         if not self.check_event(receipt):
@@ -120,6 +126,7 @@ class Filter:
                 self.first_unseen_block = block_number + 1
             return events
         except (ValueError, Web3Exception) as e:
-            logger.info(f'sChain {self.group_index_str}: error during collecting broadcast '
-                        f'events: {e}')
+            logger.info(
+                f'sChain {self.group_index_str}: error during collecting broadcast events: {e}'
+            )
             return events

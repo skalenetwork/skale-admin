@@ -44,7 +44,7 @@ class IStatus(metaclass=ABCMeta):
     @property
     def all(self) -> dict:
         if not os.path.isfile(self.filepath):
-            logger.warning("File %s is not found", self.filepath)
+            logger.warning('File %s is not found', self.filepath)
             return
         try:
             return read_json(self.filepath)

@@ -26,9 +26,7 @@ def generate_account(balance, code=None, storage={}, nonce=0):
         raise ValueError('Code must be a str or None')
     if storage and not isinstance(storage, dict):
         raise ValueError('Code must be a dict or None')
-    account = {
-        'balance': str(balance)
-    }
+    account = {'balance': str(balance)}
     if code:
         account['code'] = code
         account['storage'] = storage

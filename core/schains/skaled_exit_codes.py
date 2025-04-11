@@ -22,6 +22,7 @@ from enum import IntEnum
 
 class SkaledExitCodes(IntEnum):
     """This class contains skaled container exit codes"""
+
     EC_SUCCESS = 0
     EC_FAILURE = 1
     EC_TERMNINATED_BY_SIGNAL = 196

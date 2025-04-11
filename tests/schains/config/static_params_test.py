@@ -68,16 +68,19 @@ def test_get_schain_static_param():
     )
 
     assert new_ts_info_custom_chain != static_params['schain'][CHAIN_SPECIFIC_TS_NAME]
-    assert new_ts_info_custom_chain == \
-        static_params['schain'][CHAIN_SPECIFIC_TS_NAME][TEST_SCHAIN_NAME]
+    assert (
+        new_ts_info_custom_chain
+        == static_params['schain'][CHAIN_SPECIFIC_TS_NAME][TEST_SCHAIN_NAME]
+    )
 
     new_ts_info_default_chain = get_schain_static_param(
         static_params['schain'][CHAIN_SPECIFIC_TS_NAME], 'test'
     )
     assert new_ts_info_default_chain != static_params['schain'][CHAIN_SPECIFIC_TS_NAME]
     assert new_ts_info_default_chain != static_params['schain'][CHAIN_SPECIFIC_TS_NAME].get('test')
-    assert new_ts_info_default_chain == \
-        static_params['schain'][CHAIN_SPECIFIC_TS_NAME].get('default')
+    assert new_ts_info_default_chain == static_params['schain'][CHAIN_SPECIFIC_TS_NAME].get(
+        'default'
+    )
 
 
 def test_get_static_node_info():

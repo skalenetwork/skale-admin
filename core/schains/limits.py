@@ -23,7 +23,8 @@ from skale.dataclasses.schain_options import AllocationType
 from core.schains.types import SchainType, ContainerType, MetricType
 from tools.helper import read_json
 from tools.configs.resource_allocation import (
-    RESOURCE_ALLOCATION_FILEPATH, FILESTORAGE_LIMIT_OPTION_NAME
+    RESOURCE_ALLOCATION_FILEPATH,
+    FILESTORAGE_LIMIT_OPTION_NAME,
 )
 
 
@@ -40,8 +41,12 @@ def get_allocation_type_name(allocation_type: AllocationType) -> str:
     return allocation_type.name.lower()
 
 
-def get_limit(metric_type: MetricType, schain_type: SchainType, container_type: ContainerType,
-              resource_allocation: TypedDict) -> TypedDict:
+def get_limit(
+    metric_type: MetricType,
+    schain_type: SchainType,
+    container_type: ContainerType,
+    resource_allocation: TypedDict,
+) -> TypedDict:
     """
     Get allocation option from the resources allocation file
 

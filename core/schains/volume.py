@@ -25,10 +25,7 @@ from skale.contracts.manager.schains import SchainStructure
 from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
 from tools.configs.schains import SCHAIN_STATE_PATH, SCHAIN_STATIC_PATH
-from tools.configs.containers import (
-    SHARED_SPACE_VOLUME_NAME,
-    SHARED_SPACE_CONTAINER_PATH
-)
+from tools.configs.containers import SHARED_SPACE_VOLUME_NAME, SHARED_SPACE_CONTAINER_PATH
 
 from tools.docker_utils import DockerUtils
 
@@ -45,11 +42,7 @@ def is_volume_exists(schain_name, sync_node=False, dutils=None):
         return dutils.is_data_volume_exists(schain_name)
 
 
-def init_data_volume(
-    schain: SchainStructure,
-    sync_node: bool = False,
-    dutils: DockerUtils = None
-):
+def init_data_volume(schain: SchainStructure, sync_node: bool = False, dutils: DockerUtils = None):
     dutils = dutils or DockerUtils()
 
     if is_volume_exists(schain.name, sync_node=sync_node, dutils=dutils):
@@ -79,11 +72,7 @@ def ensure_data_dir_path(schain_name: str) -> None:
     schain_static_path = os.path.join(SCHAIN_STATIC_PATH, schain_name)
     if os.path.islink(schain_static_path):
         os.unlink(schain_static_path)
-    os.symlink(
-        schain_filestorage_state,
-        schain_static_path,
-        target_is_directory=True
-    )
+    os.symlink(schain_filestorage_state, schain_static_path, target_is_directory=True)
 
 
 def get_schain_volume_config(name, mount_path, mode=None, sync_node=False):
@@ -97,9 +86,6 @@ def get_schain_volume_config(name, mount_path, mode=None, sync_node=False):
 
     config = {
         datadir_src: {'bind': mount_path, 'mode': mode},
-        shared_space_src: {
-            'bind': SHARED_SPACE_CONTAINER_PATH,
-            'mode': mode
-        }
+        shared_space_src: {'bind': SHARED_SPACE_CONTAINER_PATH, 'mode': mode},
     }
     return config

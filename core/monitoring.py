@@ -25,14 +25,16 @@ from tools.docker_utils import DockerUtils, get_docker_group_id
 
 from tools.configs import SKALE_DIR_HOST
 from tools.configs.monitoring import (
-    FILEBEAT_TEMPLATE_PATH, FILEBEAT_CONTAINER_NAME,
+    FILEBEAT_TEMPLATE_PATH,
+    FILEBEAT_CONTAINER_NAME,
     FILEBEAT_CONFIG_PATH,
     INFLUX_URL,
     TELEGRAF,
-    TELEGRAF_CONTAINER_NAME, TELEGRAF_IMAGE,
+    TELEGRAF_CONTAINER_NAME,
+    TELEGRAF_IMAGE,
     TELEGRAF_TEMPLATE_PATH,
     TELEGRAF_CONFIG_PATH,
-    TELEGRAF_MEM_LIMIT
+    TELEGRAF_MEM_LIMIT,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,11 +47,7 @@ class TelegrafNotConfiguredError(Exception):
 def update_filebeat_service(node_ip, node_id, skale, dutils: Optional[DockerUtils] = None):
     dutils = dutils or DockerUtils()
     contract_address = skale.manager.address
-    template_data = {
-        'ip': node_ip,
-        'id': node_id,
-        'contract_address': contract_address
-    }
+    template_data = {'ip': node_ip, 'id': node_id, 'contract_address': contract_address}
 
     logger.info('Configuring filebeat %s', template_data)
     process_template(FILEBEAT_TEMPLATE_PATH, FILEBEAT_CONFIG_PATH, template_data)
@@ -78,26 +76,22 @@ def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
             environment={'HOST_PROC': '/host/proc'},
             volumes={
                 '/proc': {'bind': '/host/proc', 'mode': 'ro'},
-                f'{SKALE_DIR_HOST}/config/telegraf.conf': {'bind': '/etc/telegraf/telegraf.conf', 'mode': 'ro'},  # noqa
+                f'{SKALE_DIR_HOST}/config/telegraf.conf': {
+                    'bind': '/etc/telegraf/telegraf.conf',
+                    'mode': 'ro',
+                },  # noqa
                 f'{SKALE_DIR_HOST}/node_data/telegraf': {'bind': '/var/lib/telegraf', 'mode': 'rw'},
-                '/var/run/skale/': {'bind': '/var/run/skale', 'mode': 'rw'}
+                '/var/run/skale/': {'bind': '/var/run/skale', 'mode': 'rw'},
             },
-            mem_limit=TELEGRAF_MEM_LIMIT
+            mem_limit=TELEGRAF_MEM_LIMIT,
         )
 
 
 def update_telegraf_service(
-    node_ip: str,
-    node_id: int,
-    url: str = INFLUX_URL,
-    dutils: Optional[DockerUtils] = None
+    node_ip: str, node_id: int, url: str = INFLUX_URL, dutils: Optional[DockerUtils] = None
 ) -> None:
     dutils = dutils or DockerUtils()
-    template_data = {
-        'ip': node_ip,
-        'node_id': str(node_id),
-        'url': url
-    }
+    template_data = {'ip': node_ip, 'node_id': str(node_id), 'url': url}
     missing = list(filter(lambda k: not template_data[k], template_data))
 
     if missing:

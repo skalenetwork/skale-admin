@@ -146,7 +146,7 @@ class SChainRule:
             'first_ip': self.first_ip,
             'last_ip': self.last_ip,
             'action': self.action.name.lower(),
-            'interface_exception': self.interface_exception
+            'interface_exception': self.interface_exception,
         }
 
 

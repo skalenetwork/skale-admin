@@ -26,11 +26,7 @@ DISABLE_COLORS = os.environ.get('DISABLE_COLORS', None)
 
 cf.use_style('solarized')
 
-PALETTE = {
-    'success': '#00c853',
-    'info': '#1976d2',
-    'error': '#d50000'
-}
+PALETTE = {'success': '#00c853', 'info': '#1976d2', 'error': '#d50000'}
 
 
 def arguments_list_string(args, title=None, type='info'):

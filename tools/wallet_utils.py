@@ -25,11 +25,7 @@ from skale.utils.web3_utils import init_web3
 from skale.wallets import BaseWallet, RedisWalletAdapter, SgxWallet
 from skale.wallets.web3_wallet import to_checksum_address
 
-from tools.configs import (
-    DEFAULT_POOL,
-    SGX_CERTIFICATES_FOLDER,
-    SGX_SERVER_URL
-)
+from tools.configs import DEFAULT_POOL, SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.configs.web3 import ENDPOINT
 from tools.resources import rs as grs
 
@@ -37,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 # todo: move to smart contracts
 DEPOSIT_AMOUNT_ETH = 0.2
-DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10 ** 18))
+DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10**18))
 
 
 def wallet_with_balance(skale):  # todo: move to the skale.py
@@ -48,7 +44,7 @@ def wallet_with_balance(skale):  # todo: move to the skale.py
         'eth_balance_wei': eth_balance_wei,
         'skale_balance_wei': 0,
         'eth_balance': str(skale.web3.from_wei(eth_balance_wei, 'ether')),
-        'skale_balance': '0'
+        'skale_balance': '0',
     }
 
 
@@ -57,16 +53,12 @@ def check_required_balance(skale):  # todo: move to the skale.py
     return int(balances['eth_balance_wei']) >= DEPOSIT_AMOUNT_ETH_WEI
 
 
-def init_wallet(
-    node_config,
-    rs: Redis = grs,
-    pool: str = DEFAULT_POOL
-) -> BaseWallet:
+def init_wallet(node_config, rs: Redis = grs, pool: str = DEFAULT_POOL) -> BaseWallet:
     web3 = init_web3(ENDPOINT)
     sgx_wallet = SgxWallet(
         web3=web3,
         sgx_endpoint=SGX_SERVER_URL,
         key_name=node_config.sgx_key_name,
-        path_to_cert=SGX_CERTIFICATES_FOLDER
+        path_to_cert=SGX_CERTIFICATES_FOLDER,
     )
     return RedisWalletAdapter(rs, pool, sgx_wallet)

@@ -22,6 +22,7 @@ from enum import Enum
 
 class Gen(int, Enum):
     """This class contains available schain generations"""
+
     ZERO = 0
     ONE = 1
     TWO = 2

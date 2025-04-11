@@ -30,11 +30,12 @@ from tools.configs import SGX_SERVER_URL
 from tools.configs.logs import (
     ADMIN_LOG_FORMAT,
     ADMIN_LOG_PATH,
-    API_LOG_FORMAT, API_LOG_PATH,
+    API_LOG_FORMAT,
+    API_LOG_PATH,
     SYNC_LOG_PATH,
     DEBUG_LOG_PATH,
     LOG_FILE_SIZE_BYTES,
-    LOG_BACKUP_COUNT
+    LOG_BACKUP_COUNT,
 )
 from tools.configs.web3 import ENDPOINT
 
@@ -42,11 +43,7 @@ from tools.configs.web3 import ENDPOINT
 def compose_hiding_patterns():
     sgx_ip = urlparse(SGX_SERVER_URL).hostname
     eth_ip = urlparse(ENDPOINT).hostname
-    return {
-        rf'{sgx_ip}': '[SGX_IP]',
-        rf'{eth_ip}': '[ETH_IP]',
-        r'NEK\:\w+': '[SGX_KEY]'
-    }
+    return {rf'{sgx_ip}': '[SGX_IP]', rf'{eth_ip}': '[ETH_IP]', r'NEK\:\w+': '[SGX_KEY]'}
 
 
 class RequestFormatter(logging.Formatter):
@@ -83,20 +80,14 @@ class HidingFormatter(RequestFormatter):
         return self._filter_sensitive(msg)
 
 
-def init_logger(
-    log_format,
-    log_file_path=None,
-    debug_file_path=None
-):
+def init_logger(log_format, log_file_path=None, debug_file_path=None):
     handlers = []
 
     hiding_patterns = compose_hiding_patterns()
     formatter = HidingFormatter(log_format, hiding_patterns)
     if log_file_path:
         f_handler = RotatingFileHandler(
-            log_file_path,
-            maxBytes=LOG_FILE_SIZE_BYTES,
-            backupCount=LOG_BACKUP_COUNT
+            log_file_path, maxBytes=LOG_FILE_SIZE_BYTES, backupCount=LOG_BACKUP_COUNT
         )
 
         f_handler.setFormatter(formatter)
@@ -109,9 +100,9 @@ def init_logger(
     handlers.append(stream_handler)
 
     if debug_file_path:
-        f_handler_debug = RotatingFileHandler(debug_file_path,
-                                              maxBytes=LOG_FILE_SIZE_BYTES,
-                                              backupCount=LOG_BACKUP_COUNT)
+        f_handler_debug = RotatingFileHandler(
+            debug_file_path, maxBytes=LOG_FILE_SIZE_BYTES, backupCount=LOG_BACKUP_COUNT
+        )
         f_handler_debug.setFormatter(formatter)
         f_handler_debug.setLevel(logging.DEBUG)
         handlers.append(f_handler_debug)

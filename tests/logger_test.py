@@ -19,8 +19,8 @@ def test_custom_formatter():
     )
     record = logging.makeLogRecord({'msg': text})
 
-    formatted_text = HidingFormatter(
-        ADMIN_LOG_FORMAT,
-        compose_hiding_patterns()
-    ).format(record)
-    assert '[MainProcess][MainThread] - None:0 - [SGX_KEY], http://54.545.454.12:1231, [ETH_IP] http://[ETH_IP]:8080, [ETH_IP][ETH_IP]loc https://testnet.com, wss://127.0.0.1.com, ttt://127.0.0.1.com, foo://127.0.0.1.com, NEK//127.0.0.1.com, ' in formatted_text  # noqa
+    formatted_text = HidingFormatter(ADMIN_LOG_FORMAT, compose_hiding_patterns()).format(record)
+    assert (
+        '[MainProcess][MainThread] - None:0 - [SGX_KEY], http://54.545.454.12:1231, [ETH_IP] http://[ETH_IP]:8080, [ETH_IP][ETH_IP]loc https://testnet.com, wss://127.0.0.1.com, ttt://127.0.0.1.com, foo://127.0.0.1.com, NEK//127.0.0.1.com, '  # noqa
+        in formatted_text
+    )

@@ -1,1 +1,1 @@
-""" SKALE test constants """
+"""SKALE test constants"""

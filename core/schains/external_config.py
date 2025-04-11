@@ -20,7 +20,7 @@ class ExternalState:
             'chain_id': self.chain_id,
             'ima_linked': self.ima_linked,
             'ranges': list(map(list, self.ranges)),
-            'reload_ts': self.reload_ts
+            'reload_ts': self.reload_ts,
         }
 
 
@@ -56,7 +56,7 @@ class ExternalConfig:
                 chain_id=plain['chain_id'],
                 ima_linked=plain['ima_linked'],
                 ranges=list(sorted(map(lambda r: IpRange(*r), plain['ranges']))),
-                reload_ts=plain.get('reload_ts')
+                reload_ts=plain.get('reload_ts'),
             )
         return None
 
