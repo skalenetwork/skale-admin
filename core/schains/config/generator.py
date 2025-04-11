@@ -22,10 +22,10 @@ from dataclasses import dataclass
 from typing import Dict
 
 from web3 import Web3
-from etherbase_predeployed import ETHERBASE_ADDRESS
-from marionette_predeployed import MARIONETTE_ADDRESS
 from eth_typing import ChecksumAddress
 
+from etherbase_predeployed import ETHERBASE_ADDRESS
+from marionette_predeployed import MARIONETTE_ADDRESS
 from skale import SkaleManager, SkaleIma
 from skale.contracts.manager.schains import SchainStructure
 from skale.schain_config.generator import get_schain_nodes_with_schains
