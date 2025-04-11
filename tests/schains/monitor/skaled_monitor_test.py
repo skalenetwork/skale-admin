@@ -35,8 +35,7 @@ CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 
 
 def run_ima_container_mock(schain: dict, mainnet_chain_id: int, dutils=None):
-    image_name, container_name, _, _ = get_container_info(
-        IMA_CONTAINER, schain.name)
+    image_name, container_name, _, _ = get_container_info(IMA_CONTAINER, schain.name)
     dutils.safe_rm(container_name)
     dutils.run_container(
         image_name=image_name,
@@ -55,8 +54,7 @@ def monitor_schain_container_mock(
     sync_node=False,
     historic_state=False,
 ):
-    image_name, container_name, _, _ = get_container_info(
-        SCHAIN_CONTAINER, schain.name)
+    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, schain.name)
     dutils.safe_rm(container_name)
     dutils.run_container(
         image_name=image_name,
@@ -90,7 +88,6 @@ def skaled_am(
     node_config,
     rule_controller,
     schain_on_contracts,
-    predeployed_ima,
     rotation_data,
     secret_key,
     ssl_folder,
@@ -268,13 +265,12 @@ def test_get_skaled_monitor_reload_group(
     node_config,
     rule_controller,
     schain_on_contracts,
-    predeployed_ima,
     rotation_data,
     secret_keys,
     ssl_folder,
     skaled_checks,
     ncli_status,
-    dutils
+    dutils,
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
@@ -321,7 +317,6 @@ def test_get_skaled_monitor_reload_ip(
     node_config,
     rule_controller,
     schain_on_contracts,
-    predeployed_ima,
     rotation_data,
     secret_keys,
     ssl_folder,
@@ -365,7 +360,6 @@ def test_get_skaled_monitor_new_node(
     node_config,
     rule_controller,
     schain_on_contracts,
-    predeployed_ima,
     rotation_data,
     secret_key,
     ssl_folder,
@@ -433,25 +427,14 @@ def test_get_skaled_monitor_recreate(
     schain_record.set_ssl_change_date(datetime.datetime.now())
     status = skaled_checks.get_all()
 
-    with mock.patch('core.schains.ssl.get_ssl_files_change_date',
-                    return_value=datetime.datetime.now()):
+    with mock.patch(
+        'core.schains.ssl.get_ssl_files_change_date', return_value=datetime.datetime.now()
+    ):
         status['skaled_container'] = False
-        mon = get_skaled_monitor(
-            skaled_am,
-            status,
-            schain_record,
-            skaled_status,
-            ncli_status
-        )
+        mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
         assert mon == RegularSkaledMonitor
         status['skaled_container'] = True
-        mon = get_skaled_monitor(
-            skaled_am,
-            status,
-            schain_record,
-            skaled_status,
-            ncli_status
-        )
+        mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
         assert mon == RecreateSkaledMonitor
 
 

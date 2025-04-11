@@ -12,9 +12,9 @@ from contextlib import contextmanager
 
 from mock import Mock, MagicMock
 
-from skale import Skale, SkaleIma
+from skale import SkaleManager, SkaleIma
 from skale.utils.web3_utils import init_web3
-from skale.contracts.manager.schains import SchainStructure
+from skale.contracts.manager.schains import SchainStructureWithStatus
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.wallets import Web3Wallet
 from web3 import Web3
@@ -35,7 +35,7 @@ from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd, write_json
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.web3 import ABI_FILEPATH
+from tools.configs.web3 import MANAGER_CONTRACTS
 
 from web.models.schain import upsert_schain_record
 
@@ -45,9 +45,7 @@ CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TS)
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
-IMA_ABI_FILEPATH = os.getenv('IMA_ABI_FILEPATH') or os.path.join(
-    DIR_PATH, os.pardir, 'helper-scripts', 'contracts_data', 'ima.json'
-)
+IMA_CONTRACTS = os.getenv('IMA_CONTRACTS')
 
 
 ETH_AMOUNT_PER_NODE = 1
@@ -130,8 +128,8 @@ def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
     return json.loads(data.decode('utf-8'))
 
 
-def get_schain_struct(schain_name: str = 'test_chain') -> SchainStructure:
-    return SchainStructure(
+def get_schain_struct(schain_name: str = 'test_chain') -> SchainStructureWithStatus:
+    return SchainStructureWithStatus(
         name=schain_name,
         part_of_node=0,
         generation=1,
@@ -164,20 +162,20 @@ def run_simple_ima_container(schain: dict, dutils: DockerUtils):
     run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
 
 
-def init_web3_skale() -> Skale:
+def init_web3_skale() -> SkaleManager:
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
     return init_skale_from_wallet(wallet)
 
 
-def init_skale_from_wallet(wallet) -> Skale:
-    return Skale(ENDPOINT, ABI_FILEPATH, wallet)
+def init_skale_from_wallet(wallet) -> SkaleManager:
+    return SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet)
 
 
 def init_skale_ima():
     web3 = init_web3(ENDPOINT)
     wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    return SkaleIma(ENDPOINT, IMA_ABI_FILEPATH, wallet)
+    return SkaleIma(ENDPOINT, IMA_CONTRACTS, wallet)
 
 
 def init_web3_wallet() -> Web3Wallet:

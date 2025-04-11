@@ -30,11 +30,11 @@ import requests
 import yaml
 from filelock import FileLock
 from jinja2 import Environment
-from skale import Skale
+from skale import SkaleManager
 from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH, STATE_FILEPATH, ZERO_ADDRESS
+from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS, STATE_FILEPATH, ZERO_ADDRESS
 
 
 logger = logging.getLogger(__name__)
@@ -45,12 +45,7 @@ POST_REQUEST_TIMEOUT = 30
 def post_request(url, json, cookies=None, timeout=None):
     timeout = timeout or POST_REQUEST_TIMEOUT
     try:
-        return requests.post(
-            url,
-            json=json,
-            cookies=cookies,
-            timeout=timeout
-        )
+        return requests.post(url, json=json, cookies=cookies, timeout=timeout)
     except requests.exceptions.RequestException as err:
         logger.error(f'Post request failed with: {err}')
         return None
@@ -78,7 +73,7 @@ def files(path):
 
 
 def sanitize_filename(filename):
-    return "".join(x for x in filename if x.isalnum() or x == '_')
+    return ''.join(x for x in filename if x.isalnum() or x == '_')
 
 
 def namedtuple_to_dict(tuple):
@@ -87,8 +82,7 @@ def namedtuple_to_dict(tuple):
 
 def run_cmd(cmd, env={}, shell=False):
     logger.info(f'Running: {cmd}')
-    res = subprocess.run(cmd, shell=shell, stdout=PIPE,
-                         stderr=PIPE, env={**env, **os.environ})
+    res = subprocess.run(cmd, shell=shell, stdout=PIPE, stderr=PIPE, env={**env, **os.environ})
     if res.returncode:
         logger.error('Error during shell execution:')
         logger.error(res.stderr.decode('UTF-8').rstrip())
@@ -97,8 +91,7 @@ def run_cmd(cmd, env={}, shell=False):
 
 
 def format_output(res):
-    return res.stdout.decode('UTF-8').rstrip(), \
-            res.stderr.decode('UTF-8').rstrip()
+    return res.stdout.decode('UTF-8').rstrip(), res.stderr.decode('UTF-8').rstrip()
 
 
 def merged_unique(*args):
@@ -120,7 +113,7 @@ def process_template(source, destination, data):
     with open(source) as template_file:
         template = template_file.read()
     processed_template = Environment().from_string(template).render(data)
-    with open(destination, "w") as f:
+    with open(destination, 'w') as f:
         f.write(processed_template)
 
 
@@ -131,8 +124,8 @@ def wait_until_admin_inited():
         logger.info('Skale admin inited')
 
 
-def init_skale(wallet: BaseWallet) -> Skale:
-    return Skale(ENDPOINT, ABI_FILEPATH, wallet, state_path=STATE_FILEPATH)
+def init_skale(wallet: BaseWallet) -> SkaleManager:
+    return SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet, state_path=STATE_FILEPATH)
 
 
 def safe_load_yml(filepath):
@@ -141,7 +134,7 @@ def safe_load_yml(filepath):
 
 
 def check_pid(pid):
-    """ Check For the existence of a unix pid. """
+    """Check For the existence of a unix pid."""
     try:
         os.kill(pid, 0)
     except OSError:

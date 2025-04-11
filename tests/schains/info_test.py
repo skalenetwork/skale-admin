@@ -3,6 +3,8 @@ import freezegun
 from core.schains.info import get_schain_info_by_name
 from tests.utils import CURRENT_DATETIME, upsert_schain_record_with_config
 
+from web3 import Web3
+
 
 @freezegun.freeze_time(CURRENT_DATETIME)
 def test_get_schain_info_by_name(skale, schain_on_contracts, schain_db):
@@ -20,7 +22,7 @@ def test_get_schain_info_by_name(skale, schain_on_contracts, schain_db):
 
     assert info.to_dict() == {
         'name': name,
-        'id': skale.schains.name_to_id(name),
+        'id': Web3.to_hex(skale.schains.name_to_id(name)),
         'mainnet_owner': info.mainnet_owner,
         'part_of_node': 1,
         'dkg_status': 1,

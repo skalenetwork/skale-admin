@@ -19,22 +19,29 @@
 
 import logging
 
+from eth_typing import ChecksumAddress
+
 from skale.dataclasses.schain_options import AllocationType
 from skale.wallets.web3_wallet import public_key_to_address
-
 from etherbase_predeployed import (
-    UpgradeableEtherbaseUpgradeableGenerator, ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
+    UpgradeableEtherbaseUpgradeableGenerator,
+    ETHERBASE_ADDRESS,
+    ETHERBASE_IMPLEMENTATION_ADDRESS,
 )
 from marionette_predeployed import (
-    UpgradeableMarionetteGenerator, MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
+    UpgradeableMarionetteGenerator,
+    MARIONETTE_ADDRESS,
+    MARIONETTE_IMPLEMENTATION_ADDRESS,
 )
 from filestorage_predeployed import (
-    UpgradeableFileStorageGenerator, FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTATION_ADDRESS
+    UpgradeableFileStorageGenerator,
+    FILESTORAGE_ADDRESS,
+    FILESTORAGE_IMPLEMENTATION_ADDRESS,
 )
 from config_controller_predeployed import (
     UpgradeableConfigControllerGenerator,
     CONFIG_CONTROLLER_ADDRESS,
-    CONFIG_CONTROLLER_IMPLEMENTATION_ADDRESS
+    CONFIG_CONTROLLER_IMPLEMENTATION_ADDRESS,
 )
 from multisigwallet_predeployed import MultiSigWalletGenerator, MULTISIGWALLET_ADDRESS
 from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminGenerator
@@ -48,8 +55,6 @@ from core.schains.types import SchainType
 from core.schains.limits import get_fs_allocated_storage
 
 from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC, ETHERBASE_ALLOC
-from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
-from tools.helper import read_json
 from importlib.metadata import version
 
 logger = logging.getLogger(__name__)
@@ -66,7 +71,8 @@ def generate_predeployed_accounts(
     on_chain_owner: str,
     mainnet_owner: str,
     originator_address: str,
-    generation: int
+    generation: int,
+    mainnet_ima_addresses: dict[str, ChecksumAddress],
 ) -> dict:
     """Main function used to generate dynamic accounts for the sChain config.
     For the params explanation please refer to the nested functions.
@@ -76,7 +82,7 @@ def generate_predeployed_accounts(
     """
     predeployed_section = {
         **generate_owner_accounts(on_chain_owner, originator_address, schain_nodes, generation),
-        **generate_ima_accounts(on_chain_owner, schain_name)
+        **generate_ima_accounts(on_chain_owner, schain_name, mainnet_ima_addresses),
     }
 
     if generation >= Gen.ONE:
@@ -87,7 +93,7 @@ def generate_predeployed_accounts(
             mainnet_owner=mainnet_owner,
             originator_address=originator_address,
             message_proxy_for_schain_address=MESSAGE_PROXY_FOR_SCHAIN_ADDRESS,
-            schain_name=schain_name
+            schain_name=schain_name,
         )
         predeployed_section.update(v1_predeployed_contracts)
     if generation == Gen.ZERO:
@@ -102,12 +108,11 @@ def generate_v1_predeployed_contracts(
     mainnet_owner: str,
     originator_address: str,
     message_proxy_for_schain_address: str,
-    schain_name: str
+    schain_name: str,
 ) -> dict:
     proxy_admin_generator = ProxyAdminGenerator()
     proxy_admin_predeployed = proxy_admin_generator.generate_allocation(
-        contract_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
-        owner_address=on_chain_owner
+        contract_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS, owner_address=on_chain_owner
     )
 
     etherbase_generator = UpgradeableEtherbaseUpgradeableGenerator()
@@ -117,7 +122,7 @@ def generate_v1_predeployed_contracts(
         schain_owner=on_chain_owner,
         ether_managers=[message_proxy_for_schain_address],
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
-        balance=ETHERBASE_ALLOC
+        balance=ETHERBASE_ALLOC,
     )
 
     marionette_generator = UpgradeableMarionetteGenerator()
@@ -139,7 +144,7 @@ def generate_v1_predeployed_contracts(
         schain_owner=on_chain_owner,
         proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
         allocated_storage=allocated_storage,
-        version=version('filestorage_predeployed')
+        version=version('filestorage_predeployed'),
     )
 
     config_generator = UpgradeableConfigControllerGenerator()
@@ -147,20 +152,17 @@ def generate_v1_predeployed_contracts(
         contract_address=CONFIG_CONTROLLER_ADDRESS,
         implementation_address=CONFIG_CONTROLLER_IMPLEMENTATION_ADDRESS,
         schain_owner=on_chain_owner,
-        proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS
+        proxy_admin_address=PROXY_ADMIN_PREDEPLOYED_ADDRESS,
     )
 
     multisigwallet_generator = MultiSigWalletGenerator()
     multisigwallet_predeployed = multisigwallet_generator.generate_allocation(
-        contract_address=MULTISIGWALLET_ADDRESS,
-        originator_addresses=[originator_address]
+        contract_address=MULTISIGWALLET_ADDRESS, originator_addresses=[originator_address]
     )
 
     context_generator = ContextGenerator()
     context_predeployed = context_generator.generate_allocation(
-        CONTEXT_ADDRESS,
-        schain_owner=on_chain_owner,
-        schain_name=schain_name
+        CONTEXT_ADDRESS, schain_owner=on_chain_owner, schain_name=schain_name
     )
 
     return {
@@ -170,15 +172,12 @@ def generate_v1_predeployed_contracts(
         **filestorage_predeployed,
         **config_controller_predeployed,
         **multisigwallet_predeployed,
-        **context_predeployed
+        **context_predeployed,
     }
 
 
 def generate_owner_accounts(
-    on_chain_owner: str,
-    originator_address: str,
-    schain_nodes: list,
-    generation: int
+    on_chain_owner: str, originator_address: str, schain_nodes: list, generation: int
 ) -> dict:
     """
     Generates accounts with allocation for sChain owner and sChain nodes owners
@@ -205,7 +204,9 @@ def generate_owner_accounts(
     return accounts
 
 
-def generate_ima_accounts(on_chain_owner: str, schain_name: str) -> dict:
+def generate_ima_accounts(
+    on_chain_owner: str, schain_name: str, mainnet_ima_addresses: dict[str, ChecksumAddress]
+) -> dict:
     """
     Generates accounts for the IMA contracts
 
@@ -213,12 +214,14 @@ def generate_ima_accounts(on_chain_owner: str, schain_name: str) -> dict:
     :type on_chain_owner: str
     :param schain_name: sChain name
     :type schain_name: str
+    :param mainnet_ima_addresses: Ima contract addresses on the mainnet
+    :type mainnet_ima_addresses: dict[str, ChecksumAddress]
     :returns: Dictionary with accounts
     :rtype: dict
     """
-    mainnet_ima_abi = read_json(MAINNET_IMA_ABI_FILEPATH)
+
     return generate_contracts(
         owner_address=on_chain_owner,
         schain_name=schain_name,
-        contracts_on_mainnet=mainnet_ima_abi
+        contracts_on_mainnet=mainnet_ima_addresses,
     )

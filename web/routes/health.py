@@ -75,7 +75,7 @@ def schains_checks():
     for schain in schains:
         if schain.name != '':
             rotation_data = g.skale.node_rotation.get_rotation(schain.name)
-            rotation_id = rotation_data['rotation_id']
+            rotation_id = rotation_data.rotation_counter
             if SChainRecord.added(schain.name):
                 rc = get_default_rule_controller(
                     name=schain.name, sync_agent_ranges=sync_agent_ranges

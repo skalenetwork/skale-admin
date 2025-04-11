@@ -22,16 +22,15 @@ import time
 import logging
 from typing import Dict
 
-from skale import Skale, SkaleIma
+from skale import SkaleManager, SkaleIma
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
 from core.schains.process_manager import run_pm_schain
 from core.node_config import NodeConfig
-from core.ima.schain import update_predeployed_ima
 
 from tools.logger import init_sync_logger
-from tools.configs.web3 import ENDPOINT, ABI_FILEPATH
-from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
+from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS
+from tools.configs.ima import IMA_CONTRACTS
 
 from web.models.schain import create_tables
 from web.migrations import migrate
@@ -52,15 +51,13 @@ def monitor(skale, skale_ima, node_config, schain: Dict) -> None:
             run_pm_schain(skale, skale_ima, node_config, schain)
         except Exception:
             logger.exception('Process manager procedure failed!')
-        logger.info(
-            f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager'
-        )
+        logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
         time.sleep(SLEEP_INTERVAL)
 
 
 def worker(schain_name: str):
-    skale = Skale(ENDPOINT, ABI_FILEPATH)
-    skale_ima = SkaleIma(ENDPOINT, MAINNET_IMA_ABI_FILEPATH)
+    skale = SkaleManager(ENDPOINT, MANAGER_CONTRACTS)
+    skale_ima = SkaleIma(ENDPOINT, IMA_CONTRACTS)
 
     if not skale.schains_internal.is_schain_exist(schain_name):
         logger.error(f'Provided SKALE Chain does not exist: {schain_name}')
@@ -77,9 +74,7 @@ def worker(schain_name: str):
     if node_config.schain_base_port == -1:
         schains_on_node = skale.schains.get_schains_for_node(node_config.id)
         node_config.schain_base_port = get_schain_base_port_on_node(
-            schains_on_node,
-            schain_name,
-            node['port']
+            schains_on_node, schain_name, node['port']
         )
 
     logger.info(f'Node {node_config.id} will be used as a current node')
@@ -93,7 +88,6 @@ def main():
         try:
             create_tables()
             migrate()
-            update_predeployed_ima()
             worker(SCHAIN_NAME)
         except Exception:
             logger.exception('Sync node worker failed')

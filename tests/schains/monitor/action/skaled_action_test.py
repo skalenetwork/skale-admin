@@ -78,7 +78,6 @@ def skaled_am(
     node_config,
     rule_controller,
     schain_on_contracts,
-    predeployed_ima,
     secret_key,
     ssl_folder,
     ima_migration_schedule,
@@ -249,14 +248,7 @@ def test_recreated_schain_containers(
 
 
 def test_ima_container_action_from_scratch(
-    skaled_am,
-    skaled_checks,
-    schain_config,
-    predeployed_ima,
-    ima_linked,
-    cleanup_ima,
-    ima_migration_schedule,
-    dutils,
+    skaled_am, skaled_checks, schain_config, ima_linked, cleanup_ima, ima_migration_schedule, dutils
 ):
     skaled_am.ima_container()
     containers = dutils.get_all_ima_containers(all=True)
@@ -269,7 +261,7 @@ def test_ima_container_action_from_scratch(
 
 # @pytest.mark.skip('Docker API GA issues need to be resolved')
 def test_ima_container_action_image_pulling(
-    skaled_am, skaled_checks, schain_config, predeployed_ima, ima_linked, cleanup_ima, dutils
+    skaled_am, skaled_checks, schain_config, ima_linked, cleanup_ima, dutils
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
     with freezegun.freeze_time(dt):
@@ -285,7 +277,7 @@ def test_ima_container_action_image_pulling(
 
 
 def test_ima_container_action_image_migration(
-    skaled_am, skaled_checks, schain_config, predeployed_ima, ima_linked, cleanup_ima, dutils
+    skaled_am, skaled_checks, schain_config, ima_linked, cleanup_ima, dutils
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS + 5)
     with freezegun.freeze_time(dt):
@@ -299,7 +291,7 @@ def test_ima_container_action_image_migration(
 
 
 def test_ima_container_action_time_frame_migration(
-    skaled_am, skaled_checks, schain_config, predeployed_ima, ima_linked, cleanup_ima, dutils
+    skaled_am, skaled_checks, schain_config, ima_linked, cleanup_ima, dutils
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
     with freezegun.freeze_time(dt):
@@ -334,6 +326,7 @@ def test_ima_container_action_time_frame_migration(
             assert actual_time_frame == 900
 
 
+@pytest.mark.skip(reason="test needs new version of ima container that doesn't require ABIs")
 def test_ima_container_action_not_linked(
     skaled_am,
     skaled_checks,

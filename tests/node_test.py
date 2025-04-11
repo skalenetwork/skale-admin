@@ -13,11 +13,13 @@ from skale.wallets import Web3Wallet
 from core.node import (
     get_block_device_size,
     get_node_hardware_info,
-    Node, NodeExitStatus, NodeStatus
+    Node,
+    NodeExitStatus,
+    NodeStatus,
 )
 from core.node_config import NodeConfig
 from tools.configs import NODE_DATA_PATH
-from tools.configs.web3 import ABI_FILEPATH
+from tools.configs.web3 import MANAGER_CONTRACTS
 from skale.utils.contracts_provision.main import (
     cleanup_nodes,
     link_nodes_to_validator,
@@ -47,14 +49,14 @@ def new_node_wallet(skale):
         web3=skale.web3,
         wallet=skale.wallet,
         receiver_address=wallet.address,
-        amount=ETH_AMOUNT_PER_NODE
+        amount=ETH_AMOUNT_PER_NODE,
     )
     return wallet
 
 
 @pytest.fixture
 def new_node_skale(skale, new_node_wallet):
-    return SkaleManager(ENDPOINT, ABI_FILEPATH, new_node_wallet)
+    return SkaleManager(ENDPOINT, MANAGER_CONTRACTS, new_node_wallet)
 
 
 @pytest.fixture
@@ -78,15 +80,8 @@ def test_create_insufficient_funds(unregistered_node):
     public_ip = '2.2.2.3'
     port = 8081
     name = 'test-insuff'
-    with mock.patch('core.node.check_required_balance',
-                    new=mock.Mock(return_value=False)):
-        res = unregistered_node.register(
-            ip,
-            public_ip,
-            port,
-            name,
-            domain_name=DEFAULT_DOMAIN_NAME
-        )
+    with mock.patch('core.node.check_required_balance', new=mock.Mock(return_value=False)):
+        res = unregistered_node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
         assert res['status'] == 'error'
         assert res['errors'] == ['Insufficient funds, re-check your wallet']
 
@@ -98,13 +93,7 @@ def test_register_info(unregistered_node):
 
     # Register new node and check that it successfully created on contracts
     with mock.patch('core.node.update_monitoring_services'):
-        res = unregistered_node.register(
-            ip,
-            public_ip,
-            port,
-            name,
-            domain_name=DEFAULT_DOMAIN_NAME
-        )
+        res = unregistered_node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
         assert unregistered_node.config.schain_base_port == -1
     assert res['status'] == 'ok'
     res_data = res.get('data')
@@ -116,13 +105,7 @@ def test_register_info(unregistered_node):
 
     # Register the same node again
     old_config_id = unregistered_node.config.id
-    res = unregistered_node.register(
-        ip,
-        public_ip,
-        port,
-        name,
-        domain_name=DEFAULT_DOMAIN_NAME
-    )
+    res = unregistered_node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
     assert res['status'] == 'error'
     assert unregistered_node.config.id == old_config_id
 
@@ -147,10 +130,7 @@ def maintenance_node(skale, node):
 
 
 def test_get_node_id_node(node):
-    node_id = node.get_node_id_from_contracts(
-        node.config.name,
-        node.config.ip
-    )
+    node_id = node.get_node_id_from_contracts(node.config.name, node.config.ip)
     assert node_id == node.config.id
 
 
@@ -184,26 +164,23 @@ def no_id_node(node):
         yield node
     finally:
         config, node.config = node.config, config
+        os.remove(no_id_config_path)
 
 
 def test_get_node_id_restores_no_id_node(no_id_node):
-    nid = no_id_node.get_node_id_from_contracts(
-        no_id_node.config.name, no_id_node.config.ip
-    )
+    nid = no_id_node.get_node_id_from_contracts(no_id_node.config.name, no_id_node.config.ip)
     assert no_id_node.skale.nodes.get(nid)['name'] == no_id_node.config.name
 
 
 def test_get_node_id_node_not_registered(unregistered_node):
-    nid = unregistered_node.get_node_id_from_contracts(
-        'undefined_name', '0.0.0.0')
+    nid = unregistered_node.get_node_id_from_contracts('undefined_name', '0.0.0.0')
     assert nid == -1
 
 
 def test_start_exit(skale, node):
     skale.nodes.init_exit(node.config.id)
     node.exit({})
-    status = NodeExitStatus(
-        node.skale.nodes.get_node_status(node.config.id))
+    status = NodeExitStatus(node.skale.nodes.get_node_status(node.config.id))
 
     assert status != NodeExitStatus.ACTIVE
 
@@ -233,21 +210,18 @@ def test_exit_status_maintenance(skale, maintenance_node):
 def test_node_maintenance(node, skale):
     res = node.set_maintenance_on()
     assert res == {'data': None, 'status': 'ok'}
-    node_status = NodeStatus(
-        skale.nodes.get_node_status(node.config.id))
+    node_status = NodeStatus(skale.nodes.get_node_status(node.config.id))
     assert node_status == NodeStatus.IN_MAINTENANCE
 
     res = node.set_maintenance_off()
     assert res == {'data': None, 'status': 'ok'}
-    node_status = NodeStatus(
-        skale.nodes.get_node_status(node.config.id))
+    node_status = NodeStatus(skale.nodes.get_node_status(node.config.id))
     assert node_status == NodeStatus.ACTIVE
 
 
 def test_node_maintenance_error(node, skale):
     res = node.set_maintenance_off()
-    assert res == {'status': 'error',
-                   'errors': ['Node is not in maintenance mode']}
+    assert res == {'status': 'error', 'errors': ['Node is not in maintenance mode']}
     try:
         res = node.set_maintenance_on()
         assert res == {'data': None, 'status': 'ok'}
@@ -276,8 +250,7 @@ def test_get_block_device_size():
     device = '/dev/test'
     size = 41224
     response_mock = mock.Mock()
-    response_mock.json = mock.Mock(
-        return_value={'Name': device, 'Size': size, 'Err': ''})
+    response_mock.json = mock.Mock(return_value={'Name': device, 'Size': size, 'Err': ''})
     with mock.patch('requests.get', return_value=response_mock):
         assert get_block_device_size() == size
 

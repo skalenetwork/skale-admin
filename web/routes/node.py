@@ -27,21 +27,14 @@ from flask import Blueprint, abort, g, request
 from core.node import Node, NodeStatus
 from tools.helper import get_endpoint_call_speed
 
-from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info, get_abi_hash
+from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info
 from core.node import check_validator_nodes
 from core.updates import update_unsafe_for_schains
 
-from tools.configs.web3 import ABI_FILEPATH, ENDPOINT, UNTRUSTED_PROVIDERS
-from tools.configs.ima import MAINNET_IMA_ABI_FILEPATH
+from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
-from web.helper import (
-    construct_err_response,
-    construct_ok_response,
-    get_api_url,
-    g_skale,
-    g_web3
-)
+from web.helper import construct_err_response, construct_ok_response, get_api_url, g_skale, g_web3
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'node'
@@ -80,17 +73,10 @@ def register():
         public_ip = ip
 
     node = Node(g.skale, g.config)
-    res = node.register(
-        ip=ip,
-        public_ip=public_ip,
-        port=port,
-        name=name,
-        domain_name=domain_name
-    )
+    res = node.register(ip=ip, public_ip=public_ip, port=port, name=name, domain_name=domain_name)
     if res['status'] != 'ok':
         return construct_err_response(
-            msg=res['errors'],
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            msg=res['errors'], status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
     return construct_ok_response({'node_data': res['data']})
 
@@ -100,8 +86,7 @@ def register():
 def signature():
     logger.debug(request)
     validator_id = int(request.args.get('validator_id'))
-    signature = g.skale.validator_service.get_link_node_signature(
-        validator_id)
+    signature = g.skale.validator_service.get_link_node_signature(validator_id)
     return construct_ok_response(data={'signature': signature})
 
 
@@ -208,7 +193,7 @@ def endpoint_info():
         'trusted': trusted and geth_client,
         'client': eth_client_version,
         'call_speed': call_speed,
-        'syncing': syncing
+        'syncing': syncing,
     }
     logger.info(f'endpoint info: {info}')
     return construct_ok_response(info)
@@ -252,20 +237,6 @@ def _validator_nodes():
     if res['status'] != 0:
         return construct_err_response(msg=res['errors'])
     return construct_ok_response(data=res['data'])
-
-
-@node_bp.route(get_api_url(BLUEPRINT_NAME, 'sm-abi'), methods=['GET'])
-def sm_abi():
-    logger.debug(request)
-    abi_hash = get_abi_hash(ABI_FILEPATH)
-    return construct_ok_response(data=abi_hash)
-
-
-@node_bp.route(get_api_url(BLUEPRINT_NAME, 'ima-abi'), methods=['GET'])
-def ima_abi():
-    logger.debug(request)
-    abi_hash = get_abi_hash(MAINNET_IMA_ABI_FILEPATH)
-    return construct_ok_response(data=abi_hash)
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'update-safe'), methods=['GET'])

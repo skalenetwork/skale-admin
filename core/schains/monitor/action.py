@@ -23,7 +23,8 @@ from datetime import datetime
 from functools import wraps
 from typing import Dict, Optional, List
 
-from skale import Skale
+from skale import SkaleManager, SkaleIma
+from skale.types.rotation import Rotation
 
 from core.node_config import NodeConfig
 from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
@@ -135,10 +136,11 @@ class BaseActionManager:
 class ConfigActionManager(BaseActionManager):
     def __init__(
         self,
-        skale: Skale,
+        skale: SkaleManager,
+        skale_ima: SkaleIma,
         schain: dict,
         node_config: NodeConfig,
-        rotation_data: dict,
+        rotation_data: Rotation,
         stream_version: str,
         checks: ConfigChecks,
         estate: ExternalState,
@@ -147,6 +149,7 @@ class ConfigActionManager(BaseActionManager):
         node_options: NodeOptions = None,
     ):
         self.skale = skale
+        self.skale_ima = skale_ima
         self.schain = schain
         self.generation = schain.generation
         self.node_config = node_config
@@ -155,7 +158,7 @@ class ConfigActionManager(BaseActionManager):
         self.current_nodes = current_nodes
 
         self.rotation_data = rotation_data
-        self.rotation_id = rotation_data['rotation_id']
+        self.rotation_id = rotation_data.rotation_counter
         self.estate = estate
         self.econfig = econfig or ExternalConfig(name=schain.name)
         self.node_options = node_options or NodeOptions()
@@ -209,11 +212,12 @@ class ConfigActionManager(BaseActionManager):
         with self.statsd_client.timer(f'admin.action.upstream_config.{no_hyphens(self.name)}'):
             logger.info(
                 'Generating new upstream_config rotation_id: %s, stream: %s',
-                self.rotation_data.get('rotation_id'),
+                self.rotation_data.rotation_counter,
                 self.stream_version,
             )
             new_config = create_new_upstream_config(
                 skale=self.skale,
+                skale_ima=self.skale_ima,
                 node_config=self.node_config,
                 schain_name=self.name,
                 generation=self.generation,
@@ -229,7 +233,7 @@ class ConfigActionManager(BaseActionManager):
                 or new_config != self.cfm.latest_upstream_config
             ):
                 logger.info('Saving new config')
-                rotation_id = self.rotation_data['rotation_id']
+                rotation_id = self.rotation_data.rotation_counter
                 logger.info(
                     'Saving new upstream config rotation_id: %d, ips: %s',
                     rotation_id,

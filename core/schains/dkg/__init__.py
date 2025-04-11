@@ -17,7 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# flake8: noqa: E402
+# ruff: noqa: F401
 
 from core.schains.dkg.main import get_dkg_client, run_dkg, save_dkg_results
 from core.schains.dkg.structures import DKGStatus, DKGStep

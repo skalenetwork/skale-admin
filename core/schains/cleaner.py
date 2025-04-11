@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Optional
 
 from sgx import SgxClient
-from skale import Skale
+from skale import SkaleManager
 
 from core.node import get_current_nodes, get_skale_node_version
 from core.schains.checks import SChainChecks
@@ -204,7 +204,7 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
 
 
 def remove_schain(
-    skale: Skale,
+    skale: SkaleManager,
     node_id: int,
     schain_name: str,
     msg: str,
@@ -218,7 +218,7 @@ def remove_schain(
     delete_bls_keys(skale, schain_name)
     sync_agent_ranges = get_sync_agent_ranges(skale)
     rotation_data = skale.node_rotation.get_rotation(schain_name)
-    rotation_id = rotation_data['rotation_id']
+    rotation_id = rotation_data.rotation_counter
     estate = ExternalConfig(name=schain_name).get()
     current_nodes = get_current_nodes(skale, schain_name)
     group_index = skale.schains.name_to_group_id(schain_name)

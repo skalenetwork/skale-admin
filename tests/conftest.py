@@ -29,7 +29,6 @@ from skale.utils.contracts_provision.main import (
 )
 from skale.utils.web3_utils import init_web3
 
-from core.ima.schain import update_predeployed_ima
 from core.node import get_current_nodes
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
@@ -48,7 +47,6 @@ from core.schains.status import (
     node_cli_status_filepath,
     SkaledStatus,
 )
-from core.schains.config.skale_manager_opts import SkaleManagerOpts
 
 from tools.configs import (
     CONFIG_FOLDER,
@@ -58,9 +56,8 @@ from tools.configs import (
     STATIC_GROUPS_FOLDER,
 )
 from tools.configs.containers import CONTAINERS_FILEPATH
-from tools.configs.ima import SCHAIN_IMA_ABI_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.web3 import ABI_FILEPATH
+from tools.configs.web3 import MANAGER_CONTRACTS
 from tools.docker_utils import DockerUtils
 from tools.helper import write_json
 
@@ -97,15 +94,6 @@ def images():
     ima_image = '{}/{}'.format(cinfo['ima']['name'], cinfo['ima']['version'])
     dclient.images.pull(schain_image)
     dclient.images.pull(ima_image)
-
-
-@pytest.fixture(scope='session')
-def predeployed_ima():
-    try:
-        update_predeployed_ima()
-        yield
-    finally:
-        os.remove(SCHAIN_IMA_ABI_FILEPATH)
 
 
 @pytest.fixture(scope='session')
@@ -153,7 +141,7 @@ def node_wallets(skale):
 
 @pytest.fixture
 def node_skales(skale, node_wallets):
-    return [SkaleManager(ENDPOINT, ABI_FILEPATH, wallet) for wallet in node_wallets]
+    return [SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet) for wallet in node_wallets]
 
 
 @pytest.fixture
@@ -271,7 +259,7 @@ def secret_keys(_schain_name):
 
 
 @pytest.fixture
-def schain_config(_schain_name, secret_key, predeployed_ima):
+def schain_config(_schain_name, secret_key):
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
     config_path = os.path.join(schain_dir_path, f'schain_{_schain_name}.json')
     try:
@@ -503,11 +491,6 @@ def synced_rule_controller(rule_controller):
 @pytest.fixture
 def uninited_rule_controller(_schain_name):
     return get_test_rule_controller(name=_schain_name)
-
-
-@pytest.fixture
-def skale_manager_opts():
-    return SkaleManagerOpts(schains_internal_address='0x1656', nodes_address='0x7742')
 
 
 @pytest.fixture

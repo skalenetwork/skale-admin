@@ -22,8 +22,10 @@ export_test_env () {
     export ENV=test
     export ALLOWED_TS_DIFF=9000000
     export SCHAIN_STOP_TIMEOUT=1
-    export ABI_FILEPATH=${ABI_FILEPATH="$PWD/helper-scripts/contracts_data/manager.json"}
-    export IMA_ABI_FILEPATH=${IMA_ABI_FILEPATH}
+    SM_ABI_FILEPATH=${ABI_FILEPATH:="$PWD/helper-scripts/contracts_data/manager.json"}
+    export MANAGER_CONTRACTS=$(jq -r '.skale_manager_address' "$SM_ABI_FILEPATH")
+    IMA_ABI_FILEPATH=${IMA_ABI_FILEPATH:="$PWD/helper-scripts/contracts_data/ima.json"}
+    export IMA_CONTRACTS=$(jq -r '.message_proxy_mainnet_address' "$IMA_ABI_FILEPATH")
     export DEFAULT_GAS_PRICE_WEI=1000000000
 
     cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info

@@ -25,9 +25,17 @@ from skale.schain_config.generator import get_nodes_for_schain
 
 from core.schains.dkg.structures import ComplaintReason, DKGStatus, DKGStep
 from core.schains.dkg.utils import (
-    init_dkg_client, send_complaint, get_latest_block_timestamp, DkgError,
-    DKGKeyGenerationError, generate_bls_keys, check_response, check_no_complaints,
-    check_failed_dkg, wait_for_fail, broadcast_and_check_data
+    init_dkg_client,
+    send_complaint,
+    get_latest_block_timestamp,
+    DkgError,
+    DKGKeyGenerationError,
+    generate_bls_keys,
+    check_response,
+    check_no_complaints,
+    check_failed_dkg,
+    wait_for_fail,
+    broadcast_and_check_data,
 )
 from tools.helper import write_json
 
@@ -43,7 +51,7 @@ def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
         channel_started_time = skale.dkg.get_channel_started_time(
             skale.schains.name_to_group_id(schain_name)
         )
-        wait_for_fail(skale, schain_name, channel_started_time, "broadcast")
+        wait_for_fail(skale, schain_name, channel_started_time, 'broadcast')
         raise
     if not dkg_client:
         raise DkgError('Dkg client was not inited successfully')
@@ -56,17 +64,19 @@ def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
 
     channel_started_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
 
-    rotaion_mainnet = dkg_client.skale.node_rotation.get_rotation_obj(schain_name).rotation_counter
+    rotaion_mainnet = dkg_client.skale.node_rotation.get_rotation(schain_name).rotation_counter
     if rotation_id != rotaion_mainnet:
-        logger.info(f'sChain {schain_name}: Rotaion id on SKALE MANAGER {rotaion_mainnet} is '
-                    f'different from the one passed by SKALE ADMIN {rotation_id}.'
-                    f' Need to restart')
+        logger.info(
+            f'sChain {schain_name}: Rotaion id on SKALE MANAGER {rotaion_mainnet} is '
+            f'different from the one passed by SKALE ADMIN {rotation_id}.'
+            f' Need to restart'
+        )
         raise DkgError(f'sChain {schain_name}: restarting DKG')
 
     broadcast_and_check_data(dkg_client)
 
     if not dkg_client.is_everyone_broadcasted():
-        wait_for_fail(skale, schain_name, channel_started_time, "broadcast")
+        wait_for_fail(skale, schain_name, channel_started_time, 'broadcast')
 
     check_failed_dkg(skale, schain_name)
 
@@ -88,8 +98,10 @@ def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
         check_failed_dkg(skale, schain_name)
         if not check_no_complaints(dkg_client):
             break
-        if get_latest_block_timestamp(dkg_client.skale) - \
-                start_time_alright > dkg_client.dkg_timeout:
+        if (
+            get_latest_block_timestamp(dkg_client.skale) - start_time_alright
+            > dkg_client.dkg_timeout
+        ):
             break
         for from_node in range(dkg_client.n):
             if not is_alright_sent_list[from_node]:
@@ -104,7 +116,7 @@ def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
     check_response(dkg_client)
 
     if not dkg_client.is_everyone_sent_algright() and check_no_complaints(dkg_client):
-        wait_for_fail(skale, schain_name, channel_started_time, "alright")
+        wait_for_fail(skale, schain_name, channel_started_time, 'alright')
 
     if not check_no_complaints(dkg_client):
         check_response(dkg_client)
@@ -112,14 +124,15 @@ def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
         complaint_data = skale.dkg.get_complaint_data(dkg_client.group_index)
         complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
 
-        wait_for_fail(skale, schain_name, channel_started_time, "correct data")
+        wait_for_fail(skale, schain_name, channel_started_time, 'correct data')
 
         complaint_itself = complainted_node_index == dkg_client.node_id_dkg
         if check_failed_dkg(skale, schain_name) and not complaint_itself:
-            logger.info(f'sChain: {schain_name}. '
-                        'Accused node has not sent response. Sending complaint...')
+            logger.info(
+                f'sChain: {schain_name}. Accused node has not sent response. Sending complaint...'
+            )
             send_complaint(dkg_client, complainted_node_index, reason=ComplaintReason.NO_RESPONSE)
-            wait_for_fail(skale, schain_name, channel_started_time, "response")
+            wait_for_fail(skale, schain_name, channel_started_time, 'response')
 
     if False in is_alright_sent_list:
         logger.info(f'sChain: {schain_name}: Not everyone sent alright')
@@ -147,26 +160,15 @@ class DKGResult:
     keys_data: dict
 
 
-def run_dkg(
-    skale,
-    dkg_client,
-    schain_name,
-    node_id,
-    sgx_key_name,
-    rotation_id
-) -> DKGResult:
+def run_dkg(skale, dkg_client, schain_name, node_id, sgx_key_name, rotation_id) -> DKGResult:
     keys_data, status = None, None
     try:
         if is_last_dkg_finished(skale, schain_name):
             logger.info(f'Dkg for {schain_name} is completed. Fetching data')
             dkg_client.fetch_all_broadcasted_data()
-        elif skale.dkg.is_channel_opened(
-            skale.schains.name_to_group_id(schain_name)
-        ):
+        elif skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
             logger.info(f'Starting dkg procedure for {schain_name}')
-            if skale.dkg.is_channel_opened(
-                skale.schains.name_to_group_id(schain_name)
-            ):
+            if skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
                 status = DKGStatus.IN_PROGRESS
                 init_bls(dkg_client, node_id, sgx_key_name, rotation_id)
             else:
@@ -182,8 +184,7 @@ def run_dkg(
         try:
             keys_data = generate_bls_keys(dkg_client)
         except DKGKeyGenerationError as e:
-            logger.info(
-                f'sChain {schain_name} DKG failed during key generation, err {e}')
+            logger.info(f'sChain {schain_name} DKG failed during key generation, err {e}')
             status = DKGStatus.KEY_GENERATION_ERROR
 
     if keys_data:
@@ -191,8 +192,4 @@ def run_dkg(
     else:
         if status != DKGStatus.KEY_GENERATION_ERROR:
             status = DKGStatus.FAILED
-    return DKGResult(
-        keys_data=keys_data,
-        step=dkg_client.last_completed_step,
-        status=status
-    )
+    return DKGResult(keys_data=keys_data, step=dkg_client.last_completed_step, status=status)
