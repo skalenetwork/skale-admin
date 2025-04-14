@@ -471,5 +471,5 @@ def test_disable_repair_mode(skaled_am):
 def test_update_repair_ts(skaled_am):
     skaled_am.schain_record.set_repair_mode(True)
     assert skaled_am.schain_record.repair_mode
-    skaled_am.update_repair_ts()
+    skaled_am.update_repair_ts(CURRENT_DATETIME)
     assert skaled_am.schain_record.repair_ts == CURRENT_DATETIME
