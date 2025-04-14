@@ -20,7 +20,7 @@ from web.models.schain import SChainRecord
 from tests.utils import IMA_MIGRATION_TS
 
 CURRENT_TIMESTAMP = 1594903080
-CURRENT_DATETIME = datetime.datetime.fromtimestamp(CURRENT_TIMESTAMP, tz=datetime.timezone.utc)
+CURRENT_DATETIME = datetime.datetime.fromtimestamp(CURRENT_TIMESTAMP)
 
 
 def run_ima_container_mock(
@@ -471,5 +471,5 @@ def test_disable_repair_mode(skaled_am):
 def test_update_repair_ts(skaled_am):
     skaled_am.schain_record.set_repair_mode(True)
     assert skaled_am.schain_record.repair_mode
-    skaled_am.update_repair_ts(CURRENT_DATETIME)
+    skaled_am.update_repair_ts(CURRENT_TIMESTAMP)
     assert skaled_am.schain_record.repair_ts == CURRENT_DATETIME
