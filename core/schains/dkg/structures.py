@@ -32,7 +32,8 @@ class DKGStatus(int, Enum):
 
 
 class DKGStep(int, Enum):
-    """ Index of DKG step """
+    """Index of DKG step"""
+
     NONE = 0
     BROADCAST = 1
     BROADCAST_VERIFICATION = 2
@@ -48,7 +49,8 @@ class DKGStep(int, Enum):
 
 
 class ComplaintReason(int, Enum):
-    """ Index of complaint reason """
+    """Index of complaint reason"""
+
     NO_BROADCAST = 0
     BAD_DATA = 1
     NO_ALRIGHT = 2

@@ -27,10 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class JsonObject:
-    def __init__(
-        self,
-        filepath: str
-    ):
+    def __init__(self, filepath: str):
         self.filepath = filepath
         self.lock_filepath = filepath + '.lock'
         init_file(filepath, {})

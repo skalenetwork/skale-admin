@@ -29,6 +29,7 @@ from core.schains.config.helper import parse_public_key_info, get_bls_public_key
 @dataclass
 class SChainNodeInfo(NodeInfo):
     """Dataclass that represents sChain node key of the schain section"""
+
     public_key: str
     bls_public_key: str
     owner: str
@@ -37,7 +38,7 @@ class SChainNodeInfo(NodeInfo):
     public_ip: str
 
     def to_dict(self):
-        """ Returns camel-case representation of the SChainNodeInfo object """
+        """Returns camel-case representation of the SChainNodeInfo object"""
         node_info = super().to_dict()
         # dropping infoHttpRpcPort since skaled doesn't support this key in nodes section
         node_info.pop('infoHttpRpcPort', None)
@@ -49,21 +50,18 @@ class SChainNodeInfo(NodeInfo):
                 'owner': self.owner,
                 'schainIndex': self.schain_index,
                 'ip': self.ip,
-                'publicIP': self.public_ip
-            }
+                'publicIP': self.public_ip,
+            },
         }
 
 
 def generate_schain_nodes(
-    schain_nodes_with_schains: list,
-    schain_name: str,
-    rotation_id: int,
-    sync_node: bool = False
+    schain_nodes_with_schains: list, schain_name: str, rotation_id: int, sync_node: bool = False
 ):
     schain_nodes = []
 
     if sync_node:
-        bls_public_keys = ["0:0:1:0"] * len(schain_nodes_with_schains)
+        bls_public_keys = ['0:0:1:0'] * len(schain_nodes_with_schains)
     else:
         bls_public_keys = get_bls_public_keys(schain_name, rotation_id)
 
@@ -78,7 +76,7 @@ def generate_schain_nodes(
             ip=ip_from_bytes(node['ip']),
             public_key=node['publicKey'],
             public_ip=ip_from_bytes(node['publicIP']),
-            owner=public_key_to_address(node['publicKey'])
+            owner=public_key_to_address(node['publicKey']),
         ).to_dict()
         schain_nodes.append(node_info)
 

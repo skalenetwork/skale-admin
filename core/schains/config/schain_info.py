@@ -28,6 +28,7 @@ from tools.configs.schains import MAX_CONSENSUS_STORAGE_INF_VALUE, MAX_HISTORIC_
 @dataclass
 class SChainInfo:
     """Dataclass that represents sChain key of the skaleConfig section"""
+
     schain_id: int
     name: str
     block_author: str
@@ -62,7 +63,7 @@ class SChainInfo:
             'nodeGroups': self.node_groups,
             'multiTransactionMode': self.multitransaction_mode,
             'nodes': self.nodes,
-            **self.static_schain_info
+            **self.static_schain_info,
         }
         if self.max_historic_state_db_size:
             data.update({'maxHistoricStateDbSize': self.max_historic_state_db_size})
@@ -77,7 +78,7 @@ def generate_schain_info(
     node_groups: dict,
     nodes: dict,
     sync_node: bool,
-    archive: bool
+    archive: bool,
 ) -> SChainInfo:
     schain_type = get_schain_type(schain.part_of_node)
     allocation_type_name = get_allocation_type_name(schain.options.allocation_type)
@@ -99,5 +100,5 @@ def generate_schain_info(
         nodes=nodes,
         multitransaction_mode=schain.options.multitransaction_mode,
         static_schain_info=static_schain_info,
-        **volume_limits
+        **volume_limits,
     )

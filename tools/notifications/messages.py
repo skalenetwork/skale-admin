@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 redis_client = Redis(connection_pool=BlockingConnectionPool())
 
 
-RED_LIGHT = '\u274C'
+RED_LIGHT = '\u274c'
 GREEN_LIGHT = '\u2705'
 EXCLAMATION_MARK = '\u2757'
 SUCCESS_MAX_ATTEMPS = 1
@@ -52,8 +52,7 @@ def notifications_enabled(func):
             try:
                 return func(*args, **kwargs)
             except Exception:
-                logger.exception(
-                    'Notification %s sending failed', func.__name__)
+                logger.exception('Notification %s sending failed', func.__name__)
 
     return wrapper
 
@@ -71,12 +70,7 @@ def is_checks_passed(checks: Dict) -> bool:
     return all(checks.values())
 
 
-def compose_checks_message(
-    schain_name: str,
-    node: Dict,
-    checks: Dict,
-    raw: bool = False
-):
+def compose_checks_message(schain_name: str, node: Dict, checks: Dict, raw: bool = False):
     if raw:
         msg = {
             'schain_name': schain_name,
@@ -85,10 +79,7 @@ def compose_checks_message(
             'checks': checks,
         }
     else:
-        msg = [
-            f'Node ID: {node["node_id"]}, IP: {node["node_ip"]}',
-            f'sChain name: {schain_name}'
-        ]
+        msg = [f'Node ID: {node["node_id"]}, IP: {node["node_ip"]}', f'sChain name: {schain_name}']
         if is_checks_passed(checks):
             msg.append(f'\n{GREEN_LIGHT} All checks passed')
             return msg
@@ -105,11 +96,7 @@ def get_state_from_checks(checks: Dict) -> str:
 
 @notifications_enabled
 def notify_checks(
-    schain_name: str,
-    node: Dict,
-    checks: Dict,
-    *,
-    client: Optional[Redis] = None
+    schain_name: str, node: Dict, checks: Dict, *, client: Optional[Redis] = None
 ) -> None:
     client = client or redis_client
     count_key = f'messages.checks.{schain_name}.count'
@@ -124,8 +111,8 @@ def notify_checks(
     success = is_checks_passed(checks)
 
     if saved_state != state or (
-        success and count < SUCCESS_MAX_ATTEMPS or
-            not success and count < FAILED_MAX_ATTEMPS):
+        success and count < SUCCESS_MAX_ATTEMPS or not success and count < FAILED_MAX_ATTEMPS
+    ):
         message = compose_checks_message(schain_name, node, checks)
         logger.info(f'Sending checks notification with state {state}')
         send_message(message)
@@ -144,11 +131,7 @@ def notify_checks(
         client.set(count_key, count)
 
 
-def compose_balance_message(
-    node_info: Dict,
-    balance: float,
-    required_balance: float
-) -> List[str]:
+def compose_balance_message(node_info: Dict, balance: float, required_balance: float) -> List[str]:
     if balance < required_balance:
         header = f'{EXCLAMATION_MARK} Balance on node is too low \n'
     else:
@@ -157,17 +140,13 @@ def compose_balance_message(
         header,
         f'Node ID: {node_info["node_id"]}, IP: {node_info["node_ip"]}',
         f'Balance: {balance} ETH',
-        f'Required: {required_balance} ETH'
+        f'Required: {required_balance} ETH',
     ]
 
 
 @notifications_enabled
 def notify_balance(
-    node_info: Dict,
-    balance: float,
-    required_balance: float,
-    *,
-    client: Optional[Redis] = None
+    node_info: Dict, balance: float, required_balance: float, *, client: Optional[Redis] = None
 ) -> None:
     client = client or redis_client
     count_key = 'messages.balance.count'
@@ -178,8 +157,7 @@ def notify_balance(
     success = balance > required_balance
 
     if saved_state != state or (
-        success and count < SUCCESS_MAX_ATTEMPS or
-        not success and count < FAILED_MAX_ATTEMPS
+        success and count < SUCCESS_MAX_ATTEMPS or not success and count < FAILED_MAX_ATTEMPS
     ):
         message = compose_balance_message(node_info, balance, required_balance)
         logger.info(f'Sending balance notificaton {state}')
@@ -190,16 +168,13 @@ def notify_balance(
     client.mset({count_key: count, state_key: str(state)})
 
 
-def compose_repair_mode_notification(
-    node_info: Dict,
-    schain_name: str
-) -> List:
+def compose_repair_mode_notification(node_info: Dict, schain_name: str) -> List:
     header = f'{EXCLAMATION_MARK} Repair mode for {schain_name} enabled \n'
     return [
         header,
         f'Node ID: {node_info["node_id"]}',
         f'Node IP: {node_info["node_ip"]}',
-        f'SChain: {schain_name}'
+        f'SChain: {schain_name}',
     ]
 
 
@@ -210,11 +185,7 @@ def notify_repair_mode(node_info: Dict, schain_name: str) -> None:
     send_message(message)
 
 
-def send_message(message: List, api_key: str = TG_API_KEY,
-                 chat_id: str = TG_CHAT_ID):
-    message.extend([
-        f'\nTimestamp: {int(time.time())}',
-        f'Datetime: {datetime.utcnow().ctime()}'
-    ])
+def send_message(message: List, api_key: str = TG_API_KEY, chat_id: str = TG_CHAT_ID):
+    message.extend([f'\nTimestamp: {int(time.time())}', f'Datetime: {datetime.utcnow().ctime()}'])
     plain_message = '\n'.join(message)
     return send_message_to_telegram.delay(api_key, chat_id, plain_message)

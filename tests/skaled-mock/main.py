@@ -8,7 +8,7 @@ logging.basicConfig(
     handlers=[
         StreamHandler(),
     ],
-    level=logging.INFO
+    level=logging.INFO,
 )
 
 logger = logging.getLogger(__name__)

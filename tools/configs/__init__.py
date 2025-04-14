@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 
 LONG_LINE = '=' * 100
 
-DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 RUNNING_ON_HOST = os.getenv('RUNNING_ON_HOST', False)
 SKALE_DIR_HOST = os.getenv('SKALE_DIR_HOST')
@@ -71,8 +71,7 @@ else:
 
 NODE_CONFIG_LOCK_PATH = os.getenv('NODE_CONFIG_LOCK_PATH')
 if not NODE_CONFIG_LOCK_PATH:
-    NODE_CONFIG_LOCK_PATH = os.path.join(NODE_DATA_PATH,
-                                         'node_config.lock')
+    NODE_CONFIG_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'node_config.lock')
 INIT_LOCK_PATH = os.getenv('INIT_LOCK_PATH')
 if not INIT_LOCK_PATH:
     INIT_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'init.lock')

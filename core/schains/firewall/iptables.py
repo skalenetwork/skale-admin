@@ -40,6 +40,7 @@ def refreshed(func: Callable) -> Callable:
     def wrapper(self, *args, **kwargs):
         self.refresh()
         return func(self, *args, **kwargs)
+
     return wrapper
 
 
@@ -78,11 +79,13 @@ class IptablesController(IHostFirewallController):
 
     @classmethod
     def is_manageable(cls, rule_d: Dict) -> bool:
-        return all((
-            rule_d.get('protocol') == 'tcp',
-            rule_d.get('target') == 'ACCEPT',
-            is_like_number(rule_d.get('tcp', {}).get('dport'))
-        ))
+        return all(
+            (
+                rule_d.get('protocol') == 'tcp',
+                rule_d.get('target') == 'ACCEPT',
+                is_like_number(rule_d.get('tcp', {}).get('dport')),
+            )
+        )
 
     @property  # type: ignore
     @refreshed
@@ -102,20 +105,12 @@ class IptablesController(IHostFirewallController):
 
     @classmethod
     def schain_rule_to_rule_d(cls, srule: SChainRule) -> Dict:
-        rule = {
-            'protocol': 'tcp',
-            'tcp': {'dport': str(srule.first_port)},
-            'target': 'ACCEPT'
-        }
+        rule = {'protocol': 'tcp', 'tcp': {'dport': str(srule.first_port)}, 'target': 'ACCEPT'}
         if srule.first_ip is not None:
             if srule.first_ip == srule.last_ip or srule.last_ip is None:
                 rule.update({'src': cls.to_ip_network(srule.first_ip)})
             else:
-                rule.update({
-                    'iprange': {
-                        'src-range': f'{srule.first_ip}-{srule.last_ip}'
-                    }
-                })
+                rule.update({'iprange': {'src-range': f'{srule.first_ip}-{srule.last_ip}'}})
         return rule
 
     @classmethod

@@ -55,8 +55,9 @@ def test_node_info(skale_bp, skale, node_config, node_wallets):
     assert to_checksum_address(node_info['owner']) == node_wallets[0].address
 
 
-def register_mock(self, ip, public_ip, port, name, domain_name, gas_limit=None,
-                  gas_price=None, skip_dry_run=False):
+def register_mock(
+    self, ip, public_ip, port, name, domain_name, gas_limit=None, gas_price=None, skip_dry_run=False
+):
     return {'status': 'ok', 'data': 1}
 
 
@@ -78,8 +79,8 @@ def test_node_create(skale_bp):
         'publicIP': public_ip,
         'port': port,
         'gas_limit': 8000000,
-        'gas_price': 2 * 10 ** 9,
-        'domain_name': DEFAULT_DOMAIN_NAME
+        'gas_price': 2 * 10**9,
+        'domain_name': DEFAULT_DOMAIN_NAME,
     }
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'register'), json_data)
     assert data == {'status': 'ok', 'payload': {'node_data': 1}}
@@ -90,7 +91,7 @@ def test_node_create(skale_bp):
         'ip': ip,
         'publicIP': public_ip,
         'port': port,
-        'gas_price': 2 * 10 ** 9
+        'gas_price': 2 * 10**9,
     }
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'register'), json_data)
     assert data == {'status': 'ok', 'payload': {'node_data': 1}}
@@ -101,15 +102,14 @@ def test_node_create(skale_bp):
         'ip': ip,
         'publicIP': public_ip,
         'port': port,
-        'gas_price': 2 * 10 ** 9
+        'gas_price': 2 * 10**9,
     }
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'register'), json_data)
     assert data == {'status': 'ok', 'payload': {'node_data': 1}}
 
 
 def failed_register_mock(
-    self, ip, public_ip, port, name, domain_name, gas_limit=None,
-    gas_price=None, skip_dry_run=False
+    self, ip, public_ip, port, name, domain_name, gas_limit=None, gas_price=None, skip_dry_run=False
 ):
     return {'status': 'error', 'errors': ['Already registered']}
 
@@ -122,7 +122,7 @@ def test_create_with_errors(skale_bp):
         'ip': ip,
         'publicIP': public_ip,
         'port': port,
-        'domain_name': DEFAULT_DOMAIN_NAME
+        'domain_name': DEFAULT_DOMAIN_NAME,
     }
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'register'), json_data)
     assert data == {'payload': ['Already registered'], 'status': 'error'}
@@ -139,8 +139,7 @@ def test_node_signature(skale_bp, skale):
     json_data = {'validator_id': validator_id}
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'signature'), json_data)
     expected_signature = get_expected_signature(skale, validator_id)
-    assert data == {'status': 'ok', 'payload': {
-        'signature': expected_signature}}
+    assert data == {'status': 'ok', 'payload': {'signature': expected_signature}}
 
 
 @patch.object(Node, 'set_maintenance_on', set_maintenance_mock)
@@ -166,19 +165,18 @@ def test_set_domain_name(skale_bp, skale):
 def test_send_tg_notification(skale_bp):
     with mock.patch(
         'tools.notifications.messages.send_message_to_telegram',
-        mock.Mock(return_value={'message': 'test'})
+        mock.Mock(return_value={'message': 'test'}),
     ) as send_message_to_telegram_mock:
-        data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'send-tg-notification'),
-                            {'message': ['test']})
+        data = post_bp_data(
+            skale_bp, get_api_url(BLUEPRINT_NAME, 'send-tg-notification'), {'message': ['test']}
+        )
         send_message_to_telegram_mock.delay.assert_called_once_with(
             TG_API_KEY,
             TG_CHAT_ID,
-            'test\n\nTimestamp: 1594903080\n'
-            'Datetime: Thu Jul 16 12:38:00 2020'
+            'test\n\nTimestamp: 1594903080\nDatetime: Thu Jul 16 12:38:00 2020',
         )
 
-    expected = {'status': 'ok',
-                'payload': 'Message was sent successfully'}
+    expected = {'status': 'ok', 'payload': 'Message was sent successfully'}
     assert data == expected
 
 
@@ -203,8 +201,7 @@ def test_public_ip_info(skale_bp):
     assert data['status'] == 'ok'
     ip = data['payload']['public_ip']
     socket.inet_aton(ip)
-    with mock.patch('web.routes.node.requests.get',
-                    side_effect=ValueError()):
+    with mock.patch('web.routes.node.requests.get', side_effect=ValueError()):
         data = get_bp_data(skale_bp, '/api/v1/node/public-ip')
         assert data['status'] == 'error'
         assert data['payload'] == 'Public ip request failed'
@@ -228,7 +225,7 @@ def test_exit_status(skale_bp, skale, schain_on_contracts, node_config_for_schai
     schain_id = skale.schains.name_to_id(schain_on_contracts)
     with mock.patch(
         'skale.contracts.manager.node_rotation.NodeRotation.get_leaving_history',
-        return_value=[{'schain_id': schain_id, 'finished_rotation': 1000}]
+        return_value=[{'schain_id': schain_id, 'finished_rotation': 1000}],
     ):
         data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'exit/status'))
         assert data['status'] == 'ok'

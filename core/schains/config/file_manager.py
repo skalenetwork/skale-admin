@@ -62,9 +62,11 @@ class UpstreamConfigFilename(IConfigFilename):
         return f'schain_{self.name}_{self.rotation_id}_{self.ts}.json'
 
     def __eq__(self, other) -> bool:
-        return self.name == other.name and \
-            self.rotation_id == other.rotation_id and \
-            self.ts == other.ts
+        return (
+            self.name == other.name
+            and self.rotation_id == other.rotation_id
+            and self.ts == other.ts
+        )
 
     def __lt__(self, other) -> bool:
         if self.name != other.name:
@@ -78,9 +80,9 @@ class UpstreamConfigFilename(IConfigFilename):
     def from_filename(cls, filename: str):
         stem = Path(filename).stem
         ts_start = stem.rfind('_', 0, len(stem))
-        ts: int = int(stem[ts_start + 1:])
+        ts: int = int(stem[ts_start + 1 :])
         rid_start = stem.rfind('_', 0, ts_start)
-        rotation_id: int = int(stem[rid_start + 1: ts_start])
+        rotation_id: int = int(stem[rid_start + 1 : ts_start])
         name = stem[:rid_start].replace('schain_', '', 1)
         return cls(name=name, rotation_id=rotation_id, ts=ts)
 
@@ -110,15 +112,9 @@ class ConfigFileManager:
     def get_upstream_configs(self) -> List[UpstreamConfigFilename]:
         pattern = re.compile(rf'{self.upstream_prefix}\d+_\d+.json')
         with ConfigFileManager.CFM_LOCK:
-            filenames = get_files_with_prefix(
-                self.dirname,
-                self.upstream_prefix
-            )
+            filenames = get_files_with_prefix(self.dirname, self.upstream_prefix)
             return sorted(
-                map(
-                    UpstreamConfigFilename.from_filename,
-                    filter(pattern.search, filenames)
-                )
+                map(UpstreamConfigFilename.from_filename, filter(pattern.search, filenames))
             )
 
     @property
@@ -166,11 +162,7 @@ class ConfigFileManager:
 
     def get_new_upstream_filepath(self, rotation_id: int) -> str:
         ts = int(time.time())
-        filename = UpstreamConfigFilename(
-            self.schain_name,
-            rotation_id=rotation_id,
-            ts=ts
-        )
+        filename = UpstreamConfigFilename(self.schain_name, rotation_id=rotation_id, ts=ts)
         return filename.abspath(self.dirname)
 
     def save_new_upstream(self, rotation_id: int, config: Dict) -> None:

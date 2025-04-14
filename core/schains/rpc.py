@@ -33,8 +33,8 @@ def make_rpc_call(http_endpoint, method, params=None, timeout=None) -> bool:
     params = params or []
     return post_request(
         http_endpoint,
-        json={"jsonrpc": "2.0", "method": method, "params": params, "id": 1},
-        timeout=timeout
+        json={'jsonrpc': '2.0', 'method': method, 'params': params, 'id': 1},
+        timeout=timeout,
     )
 
 

@@ -31,9 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 def migrate():
-    """ This function will include all migrations for the SQLite database
-        To add a new field create a new method named `add_FIELD_NAME_field`
-        to this file and run it from `run_migrations` method
+    """This function will include all migrations for the SQLite database
+    To add a new field create a new method named `add_FIELD_NAME_field`
+    to this file and run it from `run_migrations` method
     """
     db = get_database()
     migrator = SqliteMigrator(db)
@@ -70,101 +70,63 @@ def run_migrations(db, migrator):
 
 
 def add_new_schain_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'new_schain',
-        BooleanField(default=True)
-    )
+    add_column(db, migrator, 'SChainRecord', 'new_schain', BooleanField(default=True))
 
 
 def add_repair_mode_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'repair_mode',
-        BooleanField(default=False)
-    )
+    add_column(db, migrator, 'SChainRecord', 'repair_mode', BooleanField(default=False))
 
 
 def add_needs_reload_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'needs_reload',
-        BooleanField(default=False)
-    )
+    add_column(db, migrator, 'SChainRecord', 'needs_reload', BooleanField(default=False))
 
 
 def add_monitor_last_seen_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'monitor_last_seen',
-        DateTimeField(null=True)
-    )
+    add_column(db, migrator, 'SChainRecord', 'monitor_last_seen', DateTimeField(null=True))
 
 
 def add_monitor_id_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'monitor_id',
-        IntegerField(default=0)
-    )
+    add_column(db, migrator, 'SChainRecord', 'monitor_id', IntegerField(default=0))
 
 
 def add_config_version_field(db, migrator):
     add_column(
-        db, migrator, 'SChainRecord', 'config_version',
-        CharField(default=DEFAULT_CONFIG_VERSION)
+        db, migrator, 'SChainRecord', 'config_version', CharField(default=DEFAULT_CONFIG_VERSION)
     )
 
 
 def add_restart_count_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'restart_count',
-        IntegerField(default=0)
-    )
+    add_column(db, migrator, 'SChainRecord', 'restart_count', IntegerField(default=0))
 
 
 def add_failed_rpc_count_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'failed_rpc_count',
-        IntegerField(default=0)
-    )
+    add_column(db, migrator, 'SChainRecord', 'failed_rpc_count', IntegerField(default=0))
 
 
 def add_ssl_change_date_field(db, migrator):
     add_column(
-        db, migrator, 'SChainRecord', 'ssl_change_date',
-        DateTimeField(default=datetime.now())
+        db, migrator, 'SChainRecord', 'ssl_change_date', DateTimeField(default=datetime.now())
     )
 
 
 def add_failed_snapshot_from(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'snapshot_from',
-        CharField(default='')
-    )
+    add_column(db, migrator, 'SChainRecord', 'snapshot_from', CharField(default=''))
 
 
 def add_backup_run_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'backup_run',
-        BooleanField(default=False)
-    )
+    add_column(db, migrator, 'SChainRecord', 'backup_run', BooleanField(default=False))
 
 
 def add_sync_config_run_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'sync_config_run',
-        BooleanField(default=False)
-    )
+    add_column(db, migrator, 'SChainRecord', 'sync_config_run', BooleanField(default=False))
 
 
 def add_dkg_step_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'dkg_step',
-        IntegerField(default=0)
-    )
+    add_column(db, migrator, 'SChainRecord', 'dkg_step', IntegerField(default=0))
 
 
 def add_repair_date_field(db, migrator):
-    add_column(
-        db, migrator, 'SChainRecord', 'repair_date',
-        DateTimeField(default=datetime.now())
-    )
+    add_column(db, migrator, 'SChainRecord', 'repair_date', DateTimeField(default=datetime.now()))
 
 
 def find_column(db, table_name, column_name):
@@ -176,6 +138,4 @@ def add_column(db, migrator, table_name, column_name, field):
     logging.info(f'Add column: {table_name}.{column_name}')
     if not find_column(db, table_name, column_name):
         logging.info(f'Going to add: {table_name}.{column_name}')
-        playhouse_migrate(
-            migrator.add_column(table_name, column_name, field)
-        )
+        playhouse_migrate(migrator.add_column(table_name, column_name, field))

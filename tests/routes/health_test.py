@@ -63,11 +63,7 @@ def test_containers(skale_bp, dutils):
     data = get_bp_data(skale_bp, get_api_url('health', 'containers'))
     expected = {
         'status': 'ok',
-        'payload': dutils.get_containers_info(
-            all=False,
-            name_filter='',
-            format=True
-        )
+        'payload': dutils.get_containers_info(all=False, name_filter='', format=True),
     }
     assert data == expected
     for container_info in data['payload']:
@@ -82,11 +78,7 @@ def test_containers_all(skale_bp, dutils, schain_db, cleanup_schain_containers):
     data = get_bp_data(skale_bp, get_api_url('health', 'containers'), params={'all': True})
     expected = {
         'status': 'ok',
-        'payload': dutils.get_containers_info(
-            all=True,
-            name_filter='',
-            format=True
-        )
+        'payload': dutils.get_containers_info(all=True, name_filter='', format=True),
     }
     assert data == expected
     for container_info in data['payload']:
@@ -112,7 +104,7 @@ def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils)
     with mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
         with mock.patch(
             'skale.contracts.manager.schains.SChains.get_schains_for_node',
-            get_schains_for_node_mock
+            get_schains_for_node_mock,
         ):
             data = get_bp_data(skale_bp, get_api_url('health', 'schains'))
             assert data['status'] == 'ok'
@@ -130,7 +122,7 @@ def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils)
                 'rpc': False,
                 'blocks': False,
                 'process': False,
-                'ima_container': False
+                'ima_container': False,
             }
 
             request_params = {'checks_filter': 'skaled_container,volume,config'}
@@ -139,7 +131,7 @@ def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils)
             assert data['payload'][0]['healthchecks'] == {
                 'skaled_container': False,
                 'volume': False,
-                'config': False
+                'config': False,
             }
 
 
@@ -164,5 +156,5 @@ def test_sgx(skale_bp, skale):
             'sgx_wallet_version': version,
             'sgx_keyname': TEST_SGX_KEYNAME,
         },
-        'status': 'ok'
+        'status': 'ok',
     }

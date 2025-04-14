@@ -29,11 +29,7 @@ from flask import Flask, g
 from core.node_config import NodeConfig
 
 from tools.configs import FLASK_SECRET_KEY_FILE, SGX_SERVER_URL
-from tools.configs.flask import (
-    FLASK_APP_HOST,
-    FLASK_APP_PORT,
-    FLASK_DEBUG_MODE
-)
+from tools.configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from tools.configs.web3 import ENDPOINT
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
@@ -67,9 +63,7 @@ def before_request():
     wait_until_admin_inited()
     g.request_start_time = time.time()
     g.config = NodeConfig()
-    g.request_id = binascii.b2a_hex(
-        os.urandom(REQ_ID_SIZE // 2)
-    ).decode('utf-8')
+    g.request_id = binascii.b2a_hex(os.urandom(REQ_ID_SIZE // 2)).decode('utf-8')
     g.db = get_database()
     g.db.connect(reuse_if_open=True)
     g.docker_utils = DockerUtils()
@@ -89,18 +83,15 @@ def teardown_request(response):
 def recursion_error_handler(e):
     return construct_err_response(
         status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        msg='Unexpected RecursionError in API, try again'
+        msg='Unexpected RecursionError in API, try again',
     )
 
 
 @app.errorhandler(werkzeug.exceptions.InternalServerError)
 def any_error_handler(e):
-    original = getattr(e, "original_exception", None)
+    original = getattr(e, 'original_exception', None)
     logger.exception('Request failed with error %s', original)
-    return construct_err_response(
-        status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        msg=str(e)
-    )
+    return construct_err_response(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, msg=str(e))
 
 
 app.secret_key = FLASK_SECRET_KEY_FILE
@@ -109,11 +100,16 @@ logger.info('Starting api ...')
 
 
 def main():
-    logger.info(arguments_list_string({
-        'Endpoint': ENDPOINT,
-        'Redis uri': REDIS_URI,
-        'SGX Server': SGX_SERVER_URL or 'Not connected'
-        }, 'Starting Flask server'))
+    logger.info(
+        arguments_list_string(
+            {
+                'Endpoint': ENDPOINT,
+                'Redis uri': REDIS_URI,
+                'SGX Server': SGX_SERVER_URL or 'Not connected',
+            },
+            'Starting Flask server',
+        )
+    )
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST)
 
 

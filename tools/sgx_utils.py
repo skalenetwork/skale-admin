@@ -30,7 +30,7 @@ from tools.str_formatters import arguments_list_string
 logger = logging.getLogger(__name__)
 
 RETRY_ATTEMPTS = 14
-TIMEOUTS = [2 ** p for p in range(RETRY_ATTEMPTS)]
+TIMEOUTS = [2**p for p in range(RETRY_ATTEMPTS)]
 
 
 class EmptySgxUrlError(Exception):
@@ -54,6 +54,7 @@ def sgx_unreachable_retry(func):
         if error is not None:
             raise error
         return result
+
     return wrapper
 
 
@@ -65,8 +66,9 @@ def generate_sgx_key(config):
     if not config.sgx_key_name:
         sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
         key_info = sgx.generate_key()
-        logger.info(arguments_list_string({
-            'Name hash': key_info.name,
-            'Address': key_info.address
-            }, 'Generated new SGX key'))
+        logger.info(
+            arguments_list_string(
+                {'Name hash': key_info.name, 'Address': key_info.address}, 'Generated new SGX key'
+            )
+        )
         config.sgx_key_name = key_info.name

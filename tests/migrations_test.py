@@ -17,7 +17,7 @@ from web.migrations import (
     add_config_version_field,
     add_restart_count_field,
     add_ssl_change_date_field,
-    add_repair_date_field
+    add_repair_date_field,
 )
 
 
@@ -57,9 +57,7 @@ def migrator(test_db):
 
 @pytest.fixture
 def upserted_db(test_db, model):
-    data = [
-        {'name': generate_random_name()} for i in range(NUMBER_OF_RECORDS)
-    ]
+    data = [{'name': generate_random_name()} for i in range(NUMBER_OF_RECORDS)]
     model.insert_many(data)
     yield test_db
 

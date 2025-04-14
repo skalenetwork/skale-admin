@@ -62,27 +62,36 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
     node_ids_dkg = {}
     for i, node in enumerate(schain_nodes):
         if not len(node):
-            raise DkgError(f'sChain: {schain_name}: '
-                           'Initialization failed, node info is empty.')
+            raise DkgError(f'sChain: {schain_name}: Initialization failed, node info is empty.')
         if node['id'] == node_id:
             node_id_dkg = i
 
-        node_ids_contract[node["id"]] = i
-        node_ids_dkg[i] = node["id"]
-        public_keys[i] = node["publicKey"]
+        node_ids_contract[node['id']] = i
+        node_ids_dkg[i] = node['id']
+        public_keys[i] = node['publicKey']
 
     logger.info('Nodes in chain: %s', node_ids_dkg)
 
     if node_id_dkg == -1:
-        raise DkgError(f'sChain: {schain_name}: {node_id} '
-                       'Initialization failed, nodeID not found for schain.')
+        raise DkgError(
+            f'sChain: {schain_name}: {node_id} Initialization failed, nodeID not found for schain.'
+        )
 
     logger.info('Node index in group is %d. Node id on contracts - %d', node_id_dkg, node_id)
 
     logger.info('Creating DKGClient')
     dkg_client = DKGClient(
-        node_id_dkg, node_id, skale, t, n, schain_name,
-        public_keys, node_ids_dkg, node_ids_contract, sgx_eth_key_name, rotation_id
+        node_id_dkg,
+        node_id,
+        skale,
+        t,
+        n,
+        schain_name,
+        public_keys,
+        node_ids_dkg,
+        node_ids_contract,
+        sgx_eth_key_name,
+        rotation_id,
     )
 
     return dkg_client
@@ -114,8 +123,10 @@ def sync_broadcast_data(dkg_client, dkg_filter, is_received, is_correct, broadca
             f'sChain: {dkg_client.schain_name}. Received by {dkg_client.node_id_dkg} from '
             f'{from_node}'
         )
-    logger.info(f'sChain {dkg_client.schain_name}: total received {len(broadcasts_found)} '
-                f'broadcasts from nodes {broadcasts_found}')
+    logger.info(
+        f'sChain {dkg_client.schain_name}: total received {len(broadcasts_found)} '
+        f'broadcasts from nodes {broadcasts_found}'
+    )
     return (is_received, is_correct, broadcasts_found)
 
 
@@ -140,11 +151,12 @@ def receive_broadcast_data(dkg_client: DKGClient) -> BroadcastResult:
     while False in is_received:
         time_gone = get_latest_block_timestamp(dkg_client.skale) - start_time
         time_left = max(dkg_client.dkg_timeout - time_gone, 0)
-        logger.info(f'sChain {schain_name}: trying to receive broadcasted data,'
-                    f'{time_left} seconds left')
-        is_received, is_correct, broadcasts_found = sync_broadcast_data(dkg_client, dkg_filter,
-                                                                        is_received, is_correct,
-                                                                        broadcasts_found)
+        logger.info(
+            f'sChain {schain_name}: trying to receive broadcasted data,{time_left} seconds left'
+        )
+        is_received, is_correct, broadcasts_found = sync_broadcast_data(
+            dkg_client, dkg_filter, is_received, is_correct, broadcasts_found
+        )
         if time_gone > dkg_client.dkg_timeout:
             break
 
@@ -170,8 +182,7 @@ def generate_bls_keys(dkg_client):
     try:
         if not dkg_client.is_bls_key_generated():
             encrypted_bls_key = dkg_client.generate_bls_key()
-            logger.info(f'sChain: {schain_name}. '
-                        f'Node`s encrypted bls key is: {encrypted_bls_key}')
+            logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
         else:
             logger.info(f'sChain: {schain_name}. BLS key exists. Fetching')
             dkg_client.fetch_bls_public_key()
@@ -187,17 +198,13 @@ def generate_bls_keys(dkg_client):
         'bls_public_keys': bls_public_keys,
         't': dkg_client.t,
         'n': dkg_client.n,
-        'key_share_name': dkg_client.bls_name
+        'key_share_name': dkg_client.bls_name,
     }
 
 
 def get_common_bls_public_key(skale, group_index: str) -> list[str]:
     raw_common_public_key = skale.key_storage.get_common_public_key(group_index)
-    return [
-        elem
-        for coord in raw_common_public_key
-        for elem in coord
-    ]
+    return [elem for coord in raw_common_public_key for elem in coord]
 
 
 def send_complaint(dkg_client: DKGClient, index: int, reason: ComplaintReason):
@@ -205,17 +212,12 @@ def send_complaint(dkg_client: DKGClient, index: int, reason: ComplaintReason):
     reason_to_missing = {
         ComplaintReason.NO_ALRIGHT: 'alright',
         ComplaintReason.NO_BROADCAST: 'broadcast',
-        ComplaintReason.NO_RESPONSE: 'response'
+        ComplaintReason.NO_RESPONSE: 'response',
     }
     missing = reason_to_missing.get(reason, '')
     try:
         if dkg_client.send_complaint(index, reason=reason):
-            wait_for_fail(
-                dkg_client.skale,
-                dkg_client.schain_name,
-                channel_started_time,
-                missing
-            )
+            wait_for_fail(dkg_client.skale, dkg_client.schain_name, channel_started_time, missing)
     except DkgTransactionError:
         pass
 
@@ -224,14 +226,18 @@ def report_bad_data(dkg_client, index):
     try:
         channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
         if dkg_client.send_complaint(index, reason=ComplaintReason.BAD_DATA):
-            wait_for_fail(dkg_client.skale, dkg_client.schain_name,
-                          channel_started_time, "correct data")
-            logger.info(f'sChain {dkg_client.schain_name}:'
-                        'Complainted node did not send a response.'
-                        f'Sending complaint once again')
+            wait_for_fail(
+                dkg_client.skale, dkg_client.schain_name, channel_started_time, 'correct data'
+            )
+            logger.info(
+                f'sChain {dkg_client.schain_name}:'
+                'Complainted node did not send a response.'
+                f'Sending complaint once again'
+            )
             dkg_client.send_complaint(index, reason=ComplaintReason.NO_RESPONSE)
-            wait_for_fail(dkg_client.skale, dkg_client.schain_name,
-                          channel_started_time, "response")
+            wait_for_fail(
+                dkg_client.skale, dkg_client.schain_name, channel_started_time, 'response'
+            )
     except DkgTransactionError:
         pass
 
@@ -258,8 +264,10 @@ def check_broadcast_result(dkg_client, broadcast_result):
 def check_failed_dkg(skale, schain_name):
     group_index = skale.schains.name_to_group_id(schain_name)
     if not skale.dkg.is_channel_opened(group_index):
-        if not skale.dkg.is_last_dkg_successful(group_index) \
-                and skale.dkg.get_time_of_last_successful_dkg(group_index) != 0:
+        if (
+            not skale.dkg.is_last_dkg_successful(group_index)
+            and skale.dkg.get_time_of_last_successful_dkg(group_index) != 0
+        ):
             raise DkgFailedError(f'sChain: {schain_name}. Dkg failed')
     return True
 
@@ -270,8 +278,9 @@ def check_response(dkg_client):
         logger.info(f'sChain: {dkg_client.schain_name}: Complaint received. Sending response ...')
         channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
         response(dkg_client, complaint_data[0])
-        logger.info(f'sChain: {dkg_client.schain_name}: Response sent.'
-                    ' Waiting for FailedDkg event ...')
+        logger.info(
+            f'sChain: {dkg_client.schain_name}: Response sent. Waiting for FailedDkg event ...'
+        )
         wait_for_fail(dkg_client.skale, dkg_client.schain_name, channel_started_time)
 
 
@@ -280,29 +289,28 @@ def check_no_complaints(dkg_client):
     return complaint_data[0] == UINT_CONSTANT and complaint_data[1] == UINT_CONSTANT
 
 
-def wait_for_fail(skale, schain_name, channel_started_time, reason=""):
+def wait_for_fail(skale, schain_name, channel_started_time, reason=''):
     logger.info(f'sChain: {schain_name}. Will wait for FailedDkg event')
     start_time = get_latest_block_timestamp(skale)
     dkg_timeout = skale.constants_holder.get_dkg_timeout()
     group_index = skale.schains.name_to_group_id(schain_name)
     while get_latest_block_timestamp(skale) - start_time < dkg_timeout:
         if len(reason) > 0:
-            logger.info(f'sChain: {schain_name}.'
-                        f' Not all nodes sent {reason}. Waiting for FailedDkg event...')
+            logger.info(
+                f'sChain: {schain_name}.'
+                f' Not all nodes sent {reason}. Waiting for FailedDkg event...'
+            )
         else:
             logger.info(f'sChain: {schain_name}. Waiting for FailedDkg event...')
         check_failed_dkg(skale, schain_name)
         if channel_started_time != skale.dkg.get_channel_started_time(group_index):
-            raise DkgFailedError(
-                f'sChain: {schain_name}. Dkg failed due to event FailedDKG'
-            )
+            raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
         sleep(30)
 
 
 def get_latest_block_timestamp(skale):
-    return skale.web3.eth.get_block("latest")["timestamp"]
+    return skale.web3.eth.get_block('latest')['timestamp']
 
 
 def get_secret_key_share_filepath(schain_name, rotation_id):
-    return os.path.join(NODE_DATA_PATH, 'schains', schain_name,
-                        f'secret_key_{rotation_id}.json')
+    return os.path.join(NODE_DATA_PATH, 'schains', schain_name, f'secret_key_{rotation_id}.json')

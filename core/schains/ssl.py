@@ -36,8 +36,9 @@ def get_ssl_filepath():
     if is_ssl_folder_empty():
         return 'NULL', 'NULL'
     else:
-        return os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key'), \
-            os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+        return os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key'), os.path.join(
+            SSL_CERTIFICATES_FILEPATH, 'ssl_cert'
+        )
 
 
 def get_ssl_files_change_date() -> datetime:
@@ -51,7 +52,8 @@ def update_ssl_change_date(schain_record: SChainRecord) -> bool:
     ssl_files_change_date = get_ssl_files_change_date()
     if not ssl_files_change_date:
         logger.warning(
-            f'Tried to update SSL change date for {schain_record.name}, but no SSL files found')
+            f'Tried to update SSL change date for {schain_record.name}, but no SSL files found'
+        )
         return False
     schain_record.set_ssl_change_date(ssl_files_change_date)
     return True
@@ -61,8 +63,11 @@ def ssl_reload_needed(schain_record: SChainRecord) -> bool:
     ssl_files_change_date = get_ssl_files_change_date()
     if not ssl_files_change_date:
         logger.warning(
-            f'Tried to get SSL change date for {schain_record.name}, but no SSL files found')
+            f'Tried to get SSL change date for {schain_record.name}, but no SSL files found'
+        )
         return False
-    logger.info(f'ssl_files_change_date: {ssl_files_change_date}, \
-ssl_change_date for chain {schain_record.name}: {schain_record.ssl_change_date}')
+    logger.info(
+        f'ssl_files_change_date: {ssl_files_change_date}, \
+ssl_change_date for chain {schain_record.name}: {schain_record.ssl_change_date}'
+    )
     return ssl_files_change_date != schain_record.ssl_change_date

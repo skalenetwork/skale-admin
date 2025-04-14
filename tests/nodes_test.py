@@ -5,7 +5,7 @@ from core.node import (
     get_max_ip_change_ts,
     calc_reload_ts,
     get_node_index_in_group,
-    get_node_delay
+    get_node_delay,
 )
 from tests.utils import generate_random_ip
 from tests.conftest import NUMBER_OF_NODES
