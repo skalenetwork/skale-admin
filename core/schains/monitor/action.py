@@ -19,7 +19,7 @@
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import wraps
 from typing import Dict, Optional, List
 
@@ -540,5 +540,5 @@ class SkaledActionManager(BaseActionManager):
     @BaseActionManager.monitor_block
     def update_repair_ts(self, new_ts: int) -> None:
         logger.info('Setting repair_ts to %d', new_ts)
-        new_dt = datetime.fromtimestamp(new_ts, tz=timezone.utc)
+        new_dt = datetime.utcfromtimestamp(new_ts)
         self.schain_record.set_repair_date(new_dt)
