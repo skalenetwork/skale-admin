@@ -19,7 +19,7 @@
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import wraps
 from typing import Dict, Optional, List
 
