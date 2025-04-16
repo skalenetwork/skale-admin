@@ -136,6 +136,7 @@ def safe_load_yml(filepath):
 def check_pid(pid):
     """Check For the existence of a unix pid."""
     try:
+        # os.kill() with signal 0 doesn't kill the process, just tests if it exists.
         os.kill(pid, 0)
     except OSError:
         return False

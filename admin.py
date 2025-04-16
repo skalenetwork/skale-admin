@@ -27,7 +27,7 @@ from core.node_config import NodeConfig
 from core.schains.process_manager import run_process_manager
 from core.schains.cleaner import run_cleaner
 from core.schains.process import cleanup_schains_pids
-from core.updates import soft_updates
+from core.updates import update_node_config_file
 from core.monitoring import update_monitoring_services
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
@@ -89,7 +89,7 @@ def init():
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:
         generate_sgx_key(node_config)
-        soft_updates(skale, node_config)
+        update_node_config_file(skale, node_config)
         create_tables()
         migrate()
         set_schains_first_run()

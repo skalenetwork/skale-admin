@@ -243,6 +243,6 @@ def _validator_nodes():
 @g_skale
 def update_safe():
     logger.debug(request)
-    unsafe_chains = update_unsafe_for_schains(g.skale, g.config, g.docker_utils)
+    unsafe_chains = update_unsafe_for_schains(g.skale, g.docker_utils)
     safe = len(unsafe_chains) == 0
     return construct_ok_response(data={'update_safe': safe, 'unsafe_chains': unsafe_chains})

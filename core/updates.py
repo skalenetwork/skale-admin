@@ -29,22 +29,11 @@ from tools.docker_utils import DockerUtils
 logger = logging.getLogger(__name__)
 
 
-def soft_updates(skale: SkaleManager, node_config: NodeConfig) -> None:
+def update_node_config_file(skale: SkaleManager, node_config: NodeConfig) -> None:
     """
     This function is triggered after each admin container restart and calls all functions that
     could be required to update existing software or config files on the machine.
 
-    Parameters:
-    skale (SkaleManager): Instance of skale.py library
-    wallet (Wallet): Instance of skale.py wallet
-    node_config (NodeConfig): Instance of NodeConfig class
-    """
-    logger.info('Performing soft updates ...')
-    update_node_config_file(skale, node_config)
-
-
-def update_node_config_file(skale: SkaleManager, node_config: NodeConfig) -> None:
-    """
     - Ensure node config name field
     - Ensure node config ip field
     """
@@ -58,9 +47,7 @@ def update_node_config_file(skale: SkaleManager, node_config: NodeConfig) -> Non
             node_config.name = name
 
 
-def update_unsafe_for_schains(
-    skale: SkaleManager, node_config: NodeConfig, dutils: DockerUtils
-) -> list[str]:
+def update_unsafe_for_schains(skale: SkaleManager, dutils: DockerUtils) -> list[str]:
     schains_on_node = get_schains_on_node(dutils=dutils)
     unsafe_chains = []
     for schain_name in schains_on_node:
