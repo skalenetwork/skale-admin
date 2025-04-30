@@ -252,7 +252,7 @@ def generate_schain_config_with_skale(
         schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
 
     if SKALE_NETWORK_TYPE == 'mirage':
-        return generate_mirage_config(
+        return generate_mirage_config(  # TODOA
             node_groups=node_groups,
         )
 

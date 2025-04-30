@@ -22,8 +22,9 @@ from dataclasses import dataclass
 
 from core.config.base_config import MirageConfig, SChainBaseConfig
 from core.config.mirage.schain_info import MirageSChainInfo
+from core.config.mirage.node_info import MirageCurrentNodeInfo
 from core.config.precompiled import get_precompiled_contracts_mirage
-from core.config.schain.static_params import get_static_schain_info, get_static_node_info
+from core.config.schain.static_params import get_static_schain_info
 
 from tools.configs import MIRAGE_CHAIN_NAME
 from tools.configs.schains import (
@@ -37,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MirageSkaleConfig:
-    # node_info: CurrentNodeInfo
+    node_info: MirageCurrentNodeInfo
     schain_info: MirageSChainInfo
 
     def to_dict(self):
@@ -78,11 +79,13 @@ def generate_mirage_config(nodes: list, node_groups: dict) -> MirageConfig:
         db_storage_limit=db_storage_limit,
         max_consensus_storage_bytes=max_consensus_storage_bytes,
         node_groups=node_groups,
-        nodes=nodes,
+        nodes=nodes,  # TODOA
         static_schain_info=static_schain_info,
     )
 
-    skale_config = MirageSkaleConfig(schain_info=schain_info)
+    current_node_info = MirageCurrentNodeInfo(test_value=0)  # TODOA
+
+    skale_config = MirageSkaleConfig(schain_info=schain_info, node_info=current_node_info)
 
     return MirageConfig(
         seal_engine=base_config.config['sealEngine'],

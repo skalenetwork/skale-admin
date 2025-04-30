@@ -1,7 +1,7 @@
 from core.config.mirage.generator import generate_mirage_config
 
 
-def test_generate_mirage_config():
+def test_generate_mirage_config():  # TODOA
     nodes = []
     node_groups = {}
     schain_config = generate_mirage_config(nodes, node_groups)
