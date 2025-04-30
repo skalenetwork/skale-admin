@@ -26,7 +26,7 @@ from tools.helper import read_json
 
 if TYPE_CHECKING:
     from core.config.schain.skale_section import SkaleConfig
-    from core.config.mirage.generation import MirageSkaleConfig
+    from core.config.mirage.generator import MirageSkaleConfig
 
 
 logger = logging.getLogger(__name__)

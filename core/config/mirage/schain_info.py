@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2025 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -19,49 +19,31 @@
 
 from dataclasses import dataclass
 
-from core.schains.limits import get_allocation_type_name, get_schain_limit, get_schain_type
-from core.schains.types import MetricType
-
 from tools.configs.schains import MAX_CONSENSUS_STORAGE_INF_VALUE, MAX_HISTORIC_STATE_DB_SIZE
 
 
 @dataclass
-class SChainInfo:
-    """Dataclass that represents sChain key of the skaleConfig section"""
-
+class MirageSChainInfo:
     schain_id: int
-    name: str
-    block_author: str
 
     contract_storage_limit: int
     db_storage_limit: int
-
     max_consensus_storage_bytes: int
-    max_skaled_leveldb_storage_bytes: int
-    max_file_storage_bytes: int
-    max_reserved_storage_bytes: int
 
     node_groups: dict
     nodes: list
     static_schain_info: dict
 
-    multitransaction_mode: bool
     max_historic_state_db_size: int | None = None
 
     def to_dict(self):
-        """Returns camel-case representation of the SChainInfo object"""
         data = {
             'schainID': self.schain_id,
-            'schainName': self.name,
-            'blockAuthor': self.block_author,
             'contractStorageLimit': self.contract_storage_limit,
             'dbStorageLimit': self.db_storage_limit,
             'maxConsensusStorageBytes': self.max_consensus_storage_bytes,
-            'maxSkaledLeveldbStorageBytes': self.max_skaled_leveldb_storage_bytes,
-            'maxFileStorageBytes': self.max_file_storage_bytes,
-            'maxReservedStorageBytes': self.max_reserved_storage_bytes,
             'nodeGroups': self.node_groups,
-            'multiTransactionMode': self.multitransaction_mode,
+            'multiTransactionMode': True,
             'nodes': self.nodes,
             **self.static_schain_info,
         }
@@ -72,33 +54,29 @@ class SChainInfo:
 
 def generate_schain_info(
     schain_id: int,
-    schain: dict,
-    on_chain_etherbase: str,
     static_schain_info: dict,
     node_groups: dict,
-    nodes: dict,
+    nodes: list,
     sync_node: bool,
     archive: bool,
-) -> SChainInfo:
-    schain_type = get_schain_type(schain.part_of_node)
-    allocation_type_name = get_allocation_type_name(schain.options.allocation_type)
-    volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)[allocation_type_name]
-    if sync_node and archive:
-        volume_limits['max_consensus_storage_bytes'] = MAX_CONSENSUS_STORAGE_INF_VALUE
-        volume_limits['max_historic_state_db_size'] = MAX_HISTORIC_STATE_DB_SIZE
-    leveldb_limits = get_schain_limit(schain_type, MetricType.leveldb_limits)[allocation_type_name]
-    contract_storage_limit = leveldb_limits['contract_storage']
-    db_storage_limit = leveldb_limits['db_storage']
+) -> MirageSChainInfo:
+    contract_storage_limit = 10  # todo: from config
+    db_storage_limit = 10  # todo: from config
 
-    return SChainInfo(
+    if sync_node and archive:
+        max_consensus_storage_bytes = MAX_CONSENSUS_STORAGE_INF_VALUE
+        max_historic_state_db_size = MAX_HISTORIC_STATE_DB_SIZE
+    else:
+        max_historic_state_db_size = None
+        max_consensus_storage_bytes = 10  # todo: from config
+
+    return MirageSChainInfo(
         schain_id=schain_id,
-        name=schain.name,
-        block_author=on_chain_etherbase,
-        contract_storage_limit=contract_storage_limit,
-        db_storage_limit=db_storage_limit,
         node_groups=node_groups,
         nodes=nodes,
-        multitransaction_mode=schain.options.multitransaction_mode,
         static_schain_info=static_schain_info,
-        **volume_limits,
+        contract_storage_limit=contract_storage_limit,
+        db_storage_limit=db_storage_limit,
+        max_consensus_storage_bytes=max_consensus_storage_bytes,
+        max_historic_state_db_size=max_historic_state_db_size,
     )

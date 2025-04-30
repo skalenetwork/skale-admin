@@ -44,7 +44,7 @@ from core.schains.dkg.utils import get_common_bls_public_key
 from core.schains.limits import get_schain_type
 from core.config.base_config import SChainConfig, MirageConfig, SChainBaseConfig
 
-from core.mirage.config import generate_mirage_config
+from core.config.mirage.generator import generate_mirage_config
 
 from tools.configs import SKALE_NETWORK_TYPE
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
@@ -252,7 +252,9 @@ def generate_schain_config_with_skale(
         schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
 
     if SKALE_NETWORK_TYPE == 'mirage':
-        return generate_mirage_config()
+        return generate_mirage_config(
+            node_groups=node_groups,
+        )
 
     mainnet_ima_addresses = get_ima_contracts_addresses(skale_ima)
 
