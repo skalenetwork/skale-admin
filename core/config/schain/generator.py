@@ -42,11 +42,10 @@ from core.config.schain.legacy_data import is_static_accounts, static_accounts, 
 from core.config.schain.helper import get_chain_id, get_schain_id
 from core.schains.dkg.utils import get_common_bls_public_key
 from core.schains.limits import get_schain_type
-from core.types.config import SChainConfig, MirageConfig
+from core.config.base_config import SChainConfig, MirageConfig, SChainBaseConfig
 
 from core.mirage.config import generate_mirage_config
 
-from tools.helper import read_json
 from tools.configs import SKALE_NETWORK_TYPE
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
 from tools.helper import is_zero_address, is_address_contract
@@ -54,25 +53,6 @@ from tools.node_options import NodeOptions
 
 
 logger = logging.getLogger(__name__)
-
-
-class NoBaseConfigError(Exception):
-    pass
-
-
-class SChainBaseConfig:
-    """Wrapper for the static part of sChain config"""
-
-    def __init__(self, base_config_path):
-        self._base_config_path = base_config_path
-        self.read()
-
-    def read(self):
-        logger.debug(f'Reading sChain base config: {self._base_config_path}')
-        try:
-            self.config = read_json(self._base_config_path)
-        except Exception as err:
-            raise NoBaseConfigError(err)
 
 
 def get_on_chain_owner(schain: SchainStructure, generation: int, is_owner_contract: bool) -> str:
@@ -85,6 +65,7 @@ def get_on_chain_owner(schain: SchainStructure, generation: int, is_owner_contra
         return MARIONETTE_ADDRESS
     if generation == Gen.ZERO:
         return schain.mainnet_owner
+    return MARIONETTE_ADDRESS
 
 
 def get_on_chain_etherbase(schain: SchainStructure, generation: int) -> str:
@@ -95,6 +76,7 @@ def get_on_chain_etherbase(schain: SchainStructure, generation: int) -> str:
         return ETHERBASE_ADDRESS
     if generation == Gen.ZERO:
         return schain.mainnet_owner
+    return ETHERBASE_ADDRESS
 
 
 def get_schain_id_for_chain(schain_name: str, generation: int) -> int:
@@ -105,6 +87,7 @@ def get_schain_id_for_chain(schain_name: str, generation: int) -> int:
         return get_schain_id(schain_name)
     if generation >= Gen.ZERO:
         return 1
+    return get_schain_id(schain_name)
 
 
 def get_schain_originator(schain: SchainStructure) -> str:

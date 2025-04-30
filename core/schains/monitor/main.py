@@ -30,8 +30,8 @@ from web3._utils import request as web3_request
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.checks import ConfigChecks, get_api_checks_status, TG_ALLOWED_CHECKS, SkaledChecks
-from core.schains.config.file_manager import ConfigFileManager
-from core.schains.config.static_params import get_automatic_repair_option
+from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.static_params import get_automatic_repair_option
 from core.schains.firewall import get_default_rule_controller
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.external_config import ExternalConfig, ExternalState

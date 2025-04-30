@@ -26,15 +26,15 @@ from typing import Any, Dict, List, Optional
 import statsd
 
 from core.node import ExtendedManagerNodeInfo, get_current_ips
-from core.schains.config.directory import get_schain_check_filepath
-from core.schains.config.file_manager import ConfigFileManager
-from core.schains.config.helper import (
+from core.config.schain.directory import get_schain_check_filepath
+from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
     get_local_schain_http_endpoint_from_config,
 )
-from core.schains.config.main import (
+from core.config.schain.main import (
     get_skaled_config_rotations_ids,
     get_upstream_config_rotation_ids,
 )

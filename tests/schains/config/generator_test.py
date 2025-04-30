@@ -17,14 +17,14 @@ from config_controller_predeployed import (
 from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
 
-from core.schains.config.generator import (
+from core.config.schain.generator import (
     generate_schain_config_with_skale,
     generate_schain_config,
     get_schain_originator,
     get_ima_contracts_addresses,
 )
-from core.schains.config.helper import get_schain_id
-from core.schains.config.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
+from core.config.schain.helper import get_schain_id
+from core.config.schain.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.node_options import NodeOptions
 

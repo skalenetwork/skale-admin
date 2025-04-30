@@ -1,5 +1,5 @@
 from core.schains.cmd import get_schain_container_cmd, get_snapshot_opts
-from core.schains.config.main import get_skaled_container_config_path
+from core.config.schain.main import get_skaled_container_config_path
 from core.schains.ssl import get_ssl_filepath
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH
 

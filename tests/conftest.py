@@ -32,12 +32,12 @@ from skale.utils.web3_utils import init_web3
 from core.node import get_current_nodes
 from core.node_config import NodeConfig
 from core.schains.checks import SChainChecks
-from core.schains.config.helper import (
+from core.config.schain.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
-from core.schains.config.directory import schain_config_dir, skaled_status_filepath
+from core.config.schain.directory import schain_config_dir, skaled_status_filepath
 from core.schains.cleaner import remove_schain_container, remove_schain_volume
 from core.schains.ima import ImaData
 from core.schains.external_config import ExternalConfig, ExternalState

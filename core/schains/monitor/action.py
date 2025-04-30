@@ -52,15 +52,15 @@ from core.schains.runner import (
     pull_new_image,
     restart_container,
 )
-from core.schains.config.main import (
+from core.config.schain.main import (
     create_new_upstream_config,
     get_finish_ts_from_skaled_config,
     get_finish_ts_from_latest_upstream,
 )
-from core.schains.config import init_schain_config_dir
-from core.schains.config.main import update_schain_config_version
-from core.schains.config.file_manager import ConfigFileManager
-from core.schains.config.helper import (
+from core.config.schain import init_schain_config_dir
+from core.config.schain.main import update_schain_config_version
+from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,

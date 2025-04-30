@@ -22,8 +22,8 @@ from dataclasses import asdict
 
 from flask import Blueprint, g, request
 
-from core.schains.config.file_manager import ConfigFileManager
-from core.schains.config.helper import (
+from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,

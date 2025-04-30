@@ -17,12 +17,37 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from core.config.schain.node_info import generate_current_node_info
-from core.config.schain.schain_info import generate_schain_info
+from dataclasses import dataclass
+
+from core.config.schain.node_info import CurrentNodeInfo, generate_current_node_info
+from core.config.schain.schain_info import SChainInfo, generate_schain_info
 from core.config.schain.schain_node import generate_schain_nodes
 from core.config.schain.static_params import get_static_schain_info, get_static_node_info
 from core.schains.limits import get_schain_type
-from core.types.config import SkaleConfig, ContractSettings
+
+
+@dataclass
+class ContractSettings:
+    common: dict
+
+    def to_dict(self):
+        return {
+            'common': self.common,
+        }
+
+
+@dataclass
+class SkaleConfig:
+    contract_settings: ContractSettings
+    node_info: CurrentNodeInfo
+    schain_info: SChainInfo
+
+    def to_dict(self):
+        return {
+            'contractSettings': self.contract_settings.to_dict(),
+            'nodeInfo': self.node_info.to_dict(),
+            'sChain': self.schain_info.to_dict(),
+        }
 
 
 def generate_contract_settings() -> ContractSettings:

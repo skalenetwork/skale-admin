@@ -3,11 +3,11 @@ import pytest
 from skale.schain_config.rotation_history import get_previous_schain_groups
 from skale.dataclasses.schain_options import AllocationType
 
-from core.schains.config.predeployed import generate_predeployed_accounts
-from core.schains.config.precompiled import generate_precompiled_accounts
+from core.config.schain.predeployed import generate_predeployed_accounts
+from core.config.precompiled import generate_precompiled_accounts
 
 from core.schains.limits import get_schain_type
-from core.schains.config.generator import (
+from core.config.schain.generator import (
     get_on_chain_owner,
     get_schain_originator,
     SChainBaseConfig,
