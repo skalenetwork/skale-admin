@@ -79,7 +79,7 @@ def worker():
     skale_ima = SkaleIma(ENDPOINT, IMA_CONTRACTS, wallet)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
-    update_monitoring_services(node_config.ip, node_config.id, skale)
+    update_monitoring_services(node_config.ip, node_config.id, skale.manager.address)
     monitor(skale, skale_ima, node_config)
 
 

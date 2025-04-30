@@ -19,6 +19,8 @@
 
 import logging
 
+from skale.types.node import NodeId
+
 from tools.configs import NODE_CONFIG_FILEPATH
 from tools.json_object import JsonObject
 
@@ -30,7 +32,7 @@ class NodeConfig(JsonObject):
         super().__init__(filepath=filepath)
 
     @property
-    def id(self) -> int:
+    def id(self) -> NodeId:
         return self._get('node_id')
 
     @id.setter

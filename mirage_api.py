@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2025 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -32,15 +32,10 @@ from tools.configs import FLASK_SECRET_KEY_FILE
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
-from tools.resources import get_database
 
-from web.routes.node import node_bp
-from web.routes.schains import schains_bp
-from web.routes.wallet import wallet_bp
-from web.routes.ssl import ssl_bp
-from web.routes.health import health_bp
-from web.routes.info import info_bp
+from web.routes.mirage_node import mirage_node_bp
 from web.helper import construct_err_response
+from web.routes.info import info_bp
 
 REQ_ID_SIZE = 10
 
@@ -49,11 +44,7 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.register_blueprint(node_bp)
-app.register_blueprint(schains_bp)
-app.register_blueprint(wallet_bp)
-app.register_blueprint(ssl_bp)
-app.register_blueprint(health_bp)
+app.register_blueprint(mirage_node_bp)
 app.register_blueprint(info_bp)
 
 
@@ -63,8 +54,6 @@ def before_request():
     g.request_start_time = time.time()
     g.config = NodeConfig()
     g.request_id = binascii.b2a_hex(os.urandom(REQ_ID_SIZE // 2)).decode('utf-8')
-    g.db = get_database()
-    g.db.connect(reuse_if_open=True)
     g.docker_utils = DockerUtils()
     logger.info(f'Processing request {g.request_id}')
 
@@ -73,8 +62,6 @@ def before_request():
 def teardown_request(response):
     elapsed = int(time.time() - g.request_start_time)
     logger.info(f'Request finished {g.request_id}, time elapsed: {elapsed}s')
-    if not g.db.is_closed():
-        g.db.close()
     return response
 
 
@@ -94,5 +81,4 @@ def any_error_handler(e):
 
 
 app.secret_key = FLASK_SECRET_KEY_FILE
-app.use_reloader = False
-logger.info('Starting api ...')
+logger.info('Starting Mirage API ...')

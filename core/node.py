@@ -141,7 +141,7 @@ class Node:
         self.config.name = name
         self.config.ip = ip
 
-        update_monitoring_services(public_ip, self.config.id, self.skale)
+        update_monitoring_services(public_ip, self.config.id, self.skale.manager.address)
         return self._ok(data=self.config.all())
 
     def create_node_on_contracts(

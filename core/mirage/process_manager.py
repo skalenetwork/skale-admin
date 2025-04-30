@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2025 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,19 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+import logging
+from typing import Optional
 
-from tools.configs import NODE_DATA_PATH
+from skale import MirageManager
 
-ENDPOINT = os.environ['ENDPOINT']
+from core.node_config import NodeConfig
 
-UNTRUSTED_PROVIDERS = ['infura.io', 'gateway.pokt.network']
-MANAGER_CONTRACTS = os.getenv('MANAGER_CONTRACTS')
-MIRAGE_CONTRACTS = os.getenv('MIRAGE_CONTRACTS')
-STATE_FILENAME = os.getenv('STATE_FILENAME')
-STATE_BASE_PATH = os.path.join(NODE_DATA_PATH, 'eth-state')
-STATE_FILEPATH = None if not STATE_FILENAME else os.path.join(STATE_BASE_PATH, STATE_FILENAME)
+from tools.docker_utils import DockerUtils
 
-NODE_REGISTER_CONFIRMATION_BLOCKS = 5
 
-ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+logger = logging.getLogger(__name__)
+
+
+def start_tasks(
+    mirage: MirageManager,
+    node_config: NodeConfig,
+    dutils: Optional[DockerUtils] = None,
+) -> bool:
+    return True

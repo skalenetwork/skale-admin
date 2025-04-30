@@ -22,10 +22,8 @@ from http import HTTPStatus
 
 
 from flask import Blueprint, g, request
-from sgx import SgxClient
 
-
-from core.node import get_check_report, get_skale_node_version
+from core.node import get_skale_node_version
 from core.node import get_current_nodes
 from core.schains.checks import SChainChecks
 from core.schains.external_config import ExternalState
@@ -33,7 +31,6 @@ from core.schains.firewall.utils import get_default_rule_controller, get_sync_ag
 from core.schains.ima import get_ima_log_checks
 from core.schains.process import is_process_healthy
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
-from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from web.models.schain import SChainRecord
 from web.helper import construct_err_response, construct_ok_response, get_api_url, g_skale
 
@@ -111,42 +108,3 @@ def ima_log_checks():
         return construct_err_response(status_code=HTTPStatus.BAD_REQUEST, msg='No node installed')
     checks = get_ima_log_checks()
     return construct_ok_response(checks)
-
-
-@health_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx'), methods=['GET'])
-def sgx_info():
-    logger.debug(request)
-    status_zmq = False
-    status_https = False
-    version = None
-    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER, zmq=True)
-    try:
-        if sgx.zmq.get_server_status() == 0:
-            status_zmq = True
-        version = sgx.zmq.get_server_version()
-    except Exception as err:
-        logger.error(f'Cannot make SGX ZMQ check {err}')
-    sgx_https = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
-    try:
-        if sgx_https.get_server_status() == 0:
-            status_https = True
-        if version is None:
-            version = sgx_https.get_server_version()
-    except Exception as err:
-        logger.error(f'Cannot make SGX HTTPS check {err}')
-
-    res = {
-        'status_zmq': status_zmq,
-        'status_https': status_https,
-        'sgx_server_url': SGX_SERVER_URL,
-        'sgx_keyname': g.config.sgx_key_name,
-        'sgx_wallet_version': version,
-    }
-    return construct_ok_response(data=res)
-
-
-@health_bp.route(get_api_url(BLUEPRINT_NAME, 'check-report'), methods=['GET'])
-def check_report():
-    logger.debug(request)
-    report = get_check_report()
-    return construct_ok_response(data=report)
