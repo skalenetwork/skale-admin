@@ -252,8 +252,18 @@ def generate_schain_config_with_skale(
         schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
 
     if SKALE_NETWORK_TYPE == 'mirage':
-        return generate_mirage_config(  # TODOA
+        return generate_mirage_config(
+            schain=schain,
+            rotation_data=rotation_data,
+            node_id=node_config.id,
+            ecdsa_key_name=ecdsa_key_name,
+            schain_nodes_with_schains=schain_nodes_with_schains,
             node_groups=node_groups,
+            schain_base_port=schain_base_port,
+            common_bls_public_keys=common_bls_public_keys,
+            sync_node=sync_node,
+            archive=node_options.archive,
+            catchup=node_options.catchup,
         )
 
     mainnet_ima_addresses = get_ima_contracts_addresses(skale_ima)

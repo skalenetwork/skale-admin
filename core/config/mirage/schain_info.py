@@ -31,7 +31,7 @@ class MirageSChainInfo:
     max_consensus_storage_bytes: int
 
     node_groups: dict
-    nodes: list
+    nodes: dict
     static_schain_info: dict
 
     max_historic_state_db_size: int | None = None

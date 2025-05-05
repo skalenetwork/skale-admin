@@ -20,11 +20,16 @@
 import logging
 from dataclasses import dataclass
 
+from skale.types.rotation import Rotation
+from skale.contracts.manager.schains import SchainStructure
+
 from core.config.base_config import MirageConfig, SChainBaseConfig
 from core.config.mirage.schain_info import MirageSChainInfo
-from core.config.mirage.node_info import MirageCurrentNodeInfo
+from core.config.mirage.node_info import MirageCurrentNodeInfo, generate_mirage_current_node_info
 from core.config.precompiled import get_precompiled_contracts_mirage
-from core.config.schain.static_params import get_static_schain_info
+from core.config.schain.static_params import get_static_schain_info, get_static_node_info
+from core.config.schain.schain_node import generate_schain_nodes
+from core.schains.limits import get_schain_type
 
 from tools.configs import MIRAGE_CHAIN_NAME
 from tools.configs.schains import (
@@ -43,7 +48,7 @@ class MirageSkaleConfig:
 
     def to_dict(self):
         return {
-            # 'nodeInfo': self.node_info.to_dict(),
+            'nodeInfo': self.node_info.to_dict(),
             'sChain': self.schain_info.to_dict(),
         }
 
@@ -57,7 +62,19 @@ def get_mirage_chain_id() -> str:
     return '0x3A6'  # TODO: Replace with actual logic to get the chain ID (or move to config file)
 
 
-def generate_mirage_config(nodes: list, node_groups: dict) -> MirageConfig:
+def generate_mirage_config(
+    schain: SchainStructure,
+    schain_nodes_with_schains: list,
+    node_groups: dict,
+    rotation_data: Rotation,
+    node_id: int,
+    ecdsa_key_name: str,
+    schain_base_port: int,
+    common_bls_public_keys: list[str],
+    sync_node: bool = False,
+    archive: bool = False,
+    catchup: bool = False,
+) -> MirageConfig:
     logger.info('Generating Mirage config...')
     base_config = SChainBaseConfig(MIRAGE_BASE_SCHAIN_CONFIG_FILEPATH)
 
@@ -73,17 +90,45 @@ def generate_mirage_config(nodes: list, node_groups: dict) -> MirageConfig:
     db_storage_limit = MAX_CONSENSUS_STORAGE_INF_VALUE  # TODO: temporary value
     max_consensus_storage_bytes = MAX_CONSENSUS_STORAGE_INF_VALUE  # TODO: temporary value
 
+    schain_nodes = generate_schain_nodes(
+        schain_nodes_with_schains=schain_nodes_with_schains,
+        schain_name=schain.name,
+        rotation_id=rotation_data.rotation_counter,
+        sync_node=False,
+    )
+
+    nodes = {
+        rotation_data.freeze_until: schain_nodes,
+        '': [],
+    }  # TODO: Add second group here and tweak how we get the node lists
+
     schain_info = MirageSChainInfo(
         schain_id=chain_id_int,
         contract_storage_limit=contract_storage_limit,
         db_storage_limit=db_storage_limit,
         max_consensus_storage_bytes=max_consensus_storage_bytes,
         node_groups=node_groups,
-        nodes=nodes,  # TODOA
+        nodes=nodes,
         static_schain_info=static_schain_info,
     )
 
-    current_node_info = MirageCurrentNodeInfo(test_value=0)  # TODOA
+    schain_type = get_schain_type(schain.part_of_node)
+    static_node_info = get_static_node_info(schain_type)
+    nodes_in_schain = len(schain_nodes_with_schains)
+
+    current_node_info = generate_mirage_current_node_info(
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        static_node_info=static_node_info,
+        schain=schain,
+        rotation_id=rotation_data.rotation_counter,
+        schain_base_port=schain_base_port,
+        nodes_in_schain=nodes_in_schain,
+        common_bls_public_keys=common_bls_public_keys,
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup,
+    )
 
     skale_config = MirageSkaleConfig(schain_info=schain_info, node_info=current_node_info)
 

@@ -17,18 +17,117 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 from dataclasses import dataclass
+
+from skale.dataclasses.node_info import NodeInfo
+from skale.contracts.manager.schains import SchainStructure
+
+from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
+
+from core.schains.dkg.utils import get_secret_key_share_filepath
+from tools.helper import read_json
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
-class MirageCurrentNodeInfo:  # TODOA
-    test_value: int
+class MirageCurrentNodeInfo(NodeInfo):
+    """Dataclass that represents nodeInfo key of Mirage the skaleConfig section"""
+
+    ecdsa_key_name: str
+    wallets: dict
+
+    static_node_info: dict
+
+    sync_node: bool
+    catchup: bool
+    archive: bool
 
     def to_dict(self):
-        return {'testValue': self.test_value}
+        """Returns camel-case representation of the MirageCurrentNodeInfo object"""
+        node_info = {
+            **super().to_dict(),
+            **{
+                'ecdsaKeyName': self.ecdsa_key_name,
+                'wallets': self.wallets,
+                'syncNode': self.sync_node,
+                'info-acceptors': 1,
+                **self.static_node_info,
+            },
+        }
+        if self.sync_node:
+            node_info['archiveMode'] = self.archive
+            node_info['syncFromCatchup'] = self.catchup
+        return node_info
 
 
-def generate_mirage_current_node_info(test_value: int) -> MirageCurrentNodeInfo:
-    return MirageCurrentNodeInfo(
-        test_value=test_value,
+def generate_mirage_current_node_info(
+    node_id: int,
+    ecdsa_key_name: str,
+    static_node_info: dict,
+    schain: SchainStructure,
+    rotation_id: int,
+    nodes_in_schain: int,
+    schain_base_port: int,
+    common_bls_public_keys: list[str],
+    sync_node: bool = False,
+    archive: bool = False,
+    catchup: bool = False,
+) -> MirageCurrentNodeInfo:
+    wallets = generate_mirage_wallets_config(
+        schain.name, rotation_id, sync_node, nodes_in_schain, common_bls_public_keys
     )
+
+    if ecdsa_key_name is None:
+        ecdsa_key_name = ''
+
+    return MirageCurrentNodeInfo(
+        node_id=node_id,
+        name=str(node_id),
+        base_port=schain_base_port,
+        ecdsa_key_name=ecdsa_key_name,
+        wallets=wallets,
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup,
+        static_node_info=static_node_info,
+    )
+
+
+def generate_mirage_wallets_config(
+    schain_name: str,
+    rotation_id: int,
+    sync_node: bool,
+    nodes_in_schain: int,
+    common_bls_public_keys: list[str],
+) -> dict:
+    wallets = {}
+    formatted_common_pk = {}
+
+    for i, value in enumerate(common_bls_public_keys):
+        name = 'commonBLSPublicKey' + str(i)
+        formatted_common_pk[name] = str(value)
+
+    wallets.update({'n': nodes_in_schain, **formatted_common_pk})
+
+    if not sync_node:
+        secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
+        secret_key_share_config = read_json(secret_key_share_filepath)
+
+        wallets.update(
+            {
+                'keyShareName': secret_key_share_config['key_share_name'],
+                't': secret_key_share_config['t'],
+                'certFile': SGX_SSL_CERT_FILEPATH,
+                'keyFile': SGX_SSL_KEY_FILEPATH,
+            }
+        )
+
+        public_keys = secret_key_share_config['public_key']
+        for i, value in enumerate(public_keys):
+            name = 'BLSPublicKey' + str(i)
+            wallets[name] = str(value)
+
+    return wallets

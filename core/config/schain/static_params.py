@@ -21,7 +21,6 @@ from core.schains.types import SchainType
 from core.config.schain.helper import get_static_params
 from tools.configs import ENV_TYPE
 
-from typing import Optional
 
 
 def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:

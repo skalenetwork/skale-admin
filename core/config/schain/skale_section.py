@@ -19,6 +19,8 @@
 
 from dataclasses import dataclass
 
+from skale.types.schain import SchainStructure
+
 from core.config.schain.node_info import CurrentNodeInfo, generate_current_node_info
 from core.config.schain.schain_info import SChainInfo, generate_schain_info
 from core.config.schain.schain_node import generate_schain_nodes
@@ -57,7 +59,7 @@ def generate_contract_settings() -> ContractSettings:
 
 
 def generate_skale_section(
-    schain: dict,
+    schain: SchainStructure,
     on_chain_etherbase: str,
     on_chain_owner: str,
     schain_id: int,
