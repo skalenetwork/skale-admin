@@ -3,7 +3,9 @@ import os
 from pathlib import Path
 
 import pytest
+import mock
 from web3 import Web3
+
 from skale.contracts.manager.schains import SchainStructure
 from skale.types.rotation import Rotation
 from skale.dataclasses.schain_options import AllocationType
@@ -17,6 +19,7 @@ from config_controller_predeployed import (
 from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
 
+from core.config.base_config import MirageConfig
 from core.config.schain.generator import (
     generate_schain_config_with_skale,
     generate_schain_config,
@@ -779,3 +782,43 @@ def test_generate_config_static_groups(
         assert json.dumps(config_group[rotation_id]) == json.dumps(
             static_groups_for_schain[rotation_id_string]
         )
+
+
+@mock.patch('core.config.schain.generator.generate_mirage_config')
+@mock.patch('core.config.schain.generator.generate_schain_config')
+@mock.patch.dict(os.environ, {'SKALE_NETWORK_TYPE': 'mirage'}, clear=True)
+def test_generate_schain_config_with_skale_calls_mirage(
+    mock_generate_standard,
+    mock_generate_mirage,
+    skale,
+    skale_ima,
+    node_config,
+    schain_on_contracts,
+    schain_secret_key_file,
+):
+    schain_name = schain_on_contracts
+    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    current_node_id = node_ids[0]
+    node_config.id = current_node_id
+
+    rotation_data = Rotation(leaving_node_id=1, new_node_id=0, freeze_until=0, rotation_counter=0)
+
+    # Set return spec for the mocked target function
+    mock_generate_mirage.return_value = mock.MagicMock(spec=MirageConfig)
+
+    # Call the function under test with minimal viable arguments
+    result = generate_schain_config_with_skale(
+        skale=skale,
+        skale_ima=skale_ima,
+        schain_name=schain_name,
+        generation=2,
+        node_config=node_config,
+        rotation_data=rotation_data,
+        ecdsa_key_name=ECDSA_KEY_NAME,
+        sync_node=False,
+        node_options=NodeOptions(),
+    )
+
+    mock_generate_mirage.assert_called_once()
+    mock_generate_standard.assert_not_called()
+    assert isinstance(result, MirageConfig)
