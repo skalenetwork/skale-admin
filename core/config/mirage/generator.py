@@ -26,9 +26,9 @@ from skale.contracts.manager.schains import SchainStructure
 from core.config.base_config import MirageConfig, SChainBaseConfig
 from core.config.mirage.schain_info import MirageSChainInfo
 from core.config.mirage.node_info import MirageCurrentNodeInfo, generate_mirage_current_node_info
+from core.config.mirage.mirage_schain_node import generate_mirage_schain_nodes
 from core.config.precompiled import get_precompiled_contracts_mirage
 from core.config.schain.static_params import get_static_schain_info, get_static_node_info
-from core.config.schain.schain_node import generate_schain_nodes
 from core.schains.limits import get_schain_type
 
 from tools.configs import MIRAGE_CHAIN_NAME
@@ -90,7 +90,7 @@ def generate_mirage_config(
     db_storage_limit = MAX_CONSENSUS_STORAGE_INF_VALUE  # TODO: temporary value
     max_consensus_storage_bytes = MAX_CONSENSUS_STORAGE_INF_VALUE  # TODO: temporary value
 
-    schain_nodes = generate_schain_nodes(
+    schain_nodes = generate_mirage_schain_nodes(
         schain_nodes_with_schains=schain_nodes_with_schains,
         schain_name=schain.name,
         rotation_id=rotation_data.rotation_counter,
