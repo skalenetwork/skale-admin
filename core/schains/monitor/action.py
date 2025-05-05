@@ -57,7 +57,7 @@ from core.config.schain.main import (
     get_finish_ts_from_skaled_config,
     get_finish_ts_from_latest_upstream,
 )
-from core.config.schain import init_schain_config_dir
+from core.config.schain.directory import init_schain_config_dir
 from core.config.schain.main import update_schain_config_version
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.helper import (

@@ -9,7 +9,7 @@ from core.config.mirage.generator import generate_mirage_config
 from core.config.base_config import MirageConfig
 
 
-def test_generate_mirage_config_minimal_regular():
+def test_generate_mirage_config_minimal_regular(schain_secret_key_file):
     mock_schain = mock.MagicMock(spec=SchainStructure)
     mock_schain.name = 'mirage'
     mock_schain.part_of_node = 1
@@ -77,7 +77,7 @@ def test_generate_mirage_config_minimal_regular():
     assert 'publicIP' not in node_list[0]
 
 
-def test_generate_mirage_config_minimal_sync():
+def test_generate_mirage_config_minimal_sync(schain_secret_key_file):
     mock_schain = mock.MagicMock(spec=SchainStructure)
     mock_schain.name = 'mirage'
     mock_schain.part_of_node = 1

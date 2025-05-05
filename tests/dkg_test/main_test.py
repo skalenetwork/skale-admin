@@ -24,7 +24,7 @@ from core.schains.dkg.client import DkgError
 from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, run_dkg
 from core.schains.dkg.structures import DKGStatus, DKGStep
 from core.schains.dkg.utils import DKGKeyGenerationError, generate_bls_keys
-from core.config.schain import init_schain_config_dir
+from core.config.schain.directory import init_schain_config_dir
 from core.config.schain.generator import get_schain_nodes_with_schains
 
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
