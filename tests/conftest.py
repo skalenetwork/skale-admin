@@ -11,7 +11,6 @@ import docker
 import pytest
 import yaml
 
-
 from skale import SkaleManager
 from skale.wallets import Web3Wallet
 from skale.utils.account_tools import generate_account, send_eth
