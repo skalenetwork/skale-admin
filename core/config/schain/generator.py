@@ -44,7 +44,7 @@ from core.schains.dkg.utils import get_common_bls_public_key
 from core.schains.limits import get_schain_type
 from core.config.base_config import SChainConfig, MirageConfig, SChainBaseConfig
 
-from core.config.mirage.generator import generate_mirage_config
+from core.config.mirage.generator import generate_mirage_config_adapter
 
 from tools.configs import SKALE_NETWORK_TYPE
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
@@ -252,10 +252,10 @@ def generate_schain_config_with_skale(
         schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
 
     if SKALE_NETWORK_TYPE == 'mirage':
-        return generate_mirage_config(
-            schain=schain,
-            rotation_data=rotation_data,
+        return generate_mirage_config_adapter(
+            skale_node=node,
             node_id=node_config.id,
+            rotation_data=rotation_data,
             ecdsa_key_name=ecdsa_key_name,
             schain_nodes_with_schains=schain_nodes_with_schains,
             node_groups=node_groups,

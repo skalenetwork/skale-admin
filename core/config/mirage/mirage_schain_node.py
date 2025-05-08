@@ -19,59 +19,53 @@
 
 from dataclasses import dataclass
 from skale.dataclasses.node_info import NodeInfo
-from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.utils.helper import ip_from_bytes
-from skale.utils.web3_utils import public_key_to_address
+from skale.types.node import MirageNode
 
 from core.config.schain.helper import parse_public_key_info, get_bls_public_keys
+from tools.configs import MIRAGE_CHAIN_NAME
 
 
 @dataclass
-class MirageSChainNodeInfo(NodeInfo):
-    """Dataclass that represents Mirage sChain node key of the schain section"""
-
+class MirageChainNodeInfo(NodeInfo):
     bls_public_key: str
     owner: str
-    schain_index: int
+    committee_index: int
     ip: str
 
     def to_dict(self):
-        """Returns camel-case representation of the MirageSChainNodeInfo object"""
         node_info = super().to_dict()
-        # dropping infoHttpRpcPort since skaled doesn't support this key in nodes section
-        node_info.pop('infoHttpRpcPort', None)
         return {
             **node_info,
             **parse_public_key_info(self.bls_public_key),
             **{
                 'owner': self.owner,
-                'schainIndex': self.schain_index,
+                'schainIndex': self.committee_index,
                 'ip': self.ip,
             },
         }
 
 
-def generate_mirage_schain_nodes(
-    schain_nodes_with_schains: list, schain_name: str, rotation_id: int, sync_node: bool = False
-) -> list[MirageSChainNodeInfo]:
-    schain_nodes = []
+def generate_mirage_chain_nodes(
+    committee_nodes: list[MirageNode], rotation_id: int, sync_node: bool = False
+) -> list[MirageChainNodeInfo]:
+    chain_nodes = []
 
     if sync_node:
-        bls_public_keys = ['0:0:1:0'] * len(schain_nodes_with_schains)
+        bls_public_keys = ['0:0:1:0'] * len(committee_nodes)
     else:
-        bls_public_keys = get_bls_public_keys(schain_name, rotation_id)
+        bls_public_keys = get_bls_public_keys(MIRAGE_CHAIN_NAME, rotation_id)
 
-    for i, node in enumerate(schain_nodes_with_schains, 1):
-        base_port = get_schain_base_port_on_node(node['schains'], schain_name, node['port'])
-        node_info = MirageSChainNodeInfo(
-            name=node['name'],
-            node_id=node['id'],
-            base_port=base_port,
+    for i, node in enumerate(committee_nodes, 1):
+        node_info = MirageChainNodeInfo(
+            name=node.name,
+            node_id=node.id,
+            base_port=node.port,
             bls_public_key=bls_public_keys[i - 1],
-            schain_index=i,
-            ip=ip_from_bytes(node['ip']),
-            owner=public_key_to_address(node['publicKey']),
+            committee_index=i,
+            ip=ip_from_bytes(node.ip),
+            owner=node.address,
         ).to_dict()
-        schain_nodes.append(node_info)
+        chain_nodes.append(node_info)
 
-    return schain_nodes
+    return chain_nodes

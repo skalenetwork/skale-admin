@@ -18,20 +18,18 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-
-from tools.configs.schains import MAX_CONSENSUS_STORAGE_INF_VALUE, MAX_HISTORIC_STATE_DB_SIZE
+from typing import Dict
+from skale.types.rotation import NodesGroup
+from core.config.mirage.mirage_schain_node import MirageChainNodeInfo
+from tools.configs.schains import MAX_HISTORIC_STATE_DB_SIZE
 
 
 @dataclass
-class MirageSChainInfo:
+class MirageChainInfo:
     schain_id: int
 
-    contract_storage_limit: int
-    db_storage_limit: int
-    max_consensus_storage_bytes: int
-
-    node_groups: dict
-    nodes: dict
+    node_groups: Dict[int, NodesGroup]
+    nodes: list[MirageChainNodeInfo]
     static_schain_info: dict
 
     max_historic_state_db_size: int | None = None
@@ -39,9 +37,6 @@ class MirageSChainInfo:
     def to_dict(self):
         data = {
             'schainID': self.schain_id,
-            'contractStorageLimit': self.contract_storage_limit,
-            'dbStorageLimit': self.db_storage_limit,
-            'maxConsensusStorageBytes': self.max_consensus_storage_bytes,
             'nodeGroups': self.node_groups,
             'multiTransactionMode': True,
             'nodes': self.nodes,
@@ -59,24 +54,19 @@ def generate_schain_info(
     nodes: list,
     sync_node: bool,
     archive: bool,
-) -> MirageSChainInfo:
-    contract_storage_limit = 10  # todo: from config
-    db_storage_limit = 10  # todo: from config
-
+) -> MirageChainInfo:
+    # TODOd: fix override from config
     if sync_node and archive:
-        max_consensus_storage_bytes = MAX_CONSENSUS_STORAGE_INF_VALUE
+        # max_consensus_storage_bytes = MAX_CONSENSUS_STORAGE_INF_VALUE
         max_historic_state_db_size = MAX_HISTORIC_STATE_DB_SIZE
     else:
         max_historic_state_db_size = None
-        max_consensus_storage_bytes = 10  # todo: from config
+        # max_consensus_storage_bytes = 10  # todo: from config
 
-    return MirageSChainInfo(
+    return MirageChainInfo(
         schain_id=schain_id,
         node_groups=node_groups,
         nodes=nodes,
         static_schain_info=static_schain_info,
-        contract_storage_limit=contract_storage_limit,
-        db_storage_limit=db_storage_limit,
-        max_consensus_storage_bytes=max_consensus_storage_bytes,
         max_historic_state_db_size=max_historic_state_db_size,
     )

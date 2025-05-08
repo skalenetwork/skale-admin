@@ -20,10 +20,10 @@
 import logging
 from dataclasses import dataclass
 
+from skale.types.node import NodeId, Port
 from skale.dataclasses.node_info import NodeInfo
-from skale.contracts.manager.schains import SchainStructure
 
-from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
+from tools.configs import MIRAGE_CHAIN_NAME, SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.helper import read_json
@@ -64,20 +64,19 @@ class MirageCurrentNodeInfo(NodeInfo):
 
 
 def generate_mirage_current_node_info(
-    node_id: int,
+    node_id: NodeId,
     ecdsa_key_name: str,
     static_node_info: dict,
-    schain: SchainStructure,
     rotation_id: int,
-    nodes_in_schain: int,
-    schain_base_port: int,
+    nodes_in_chain: int,
+    port: Port,
     common_bls_public_keys: list[str],
     sync_node: bool = False,
     archive: bool = False,
     catchup: bool = False,
 ) -> MirageCurrentNodeInfo:
     wallets = generate_mirage_wallets_config(
-        schain.name, rotation_id, sync_node, nodes_in_schain, common_bls_public_keys
+        rotation_id, sync_node, nodes_in_chain, common_bls_public_keys
     )
 
     if ecdsa_key_name is None:
@@ -86,7 +85,7 @@ def generate_mirage_current_node_info(
     return MirageCurrentNodeInfo(
         node_id=node_id,
         name=str(node_id),
-        base_port=schain_base_port,
+        base_port=port,
         ecdsa_key_name=ecdsa_key_name,
         wallets=wallets,
         sync_node=sync_node,
@@ -97,10 +96,9 @@ def generate_mirage_current_node_info(
 
 
 def generate_mirage_wallets_config(
-    schain_name: str,
     rotation_id: int,
     sync_node: bool,
-    nodes_in_schain: int,
+    nodes_in_chain: int,
     common_bls_public_keys: list[str],
 ) -> dict:
     wallets = {}
@@ -110,10 +108,10 @@ def generate_mirage_wallets_config(
         name = 'commonBLSPublicKey' + str(i)
         formatted_common_pk[name] = str(value)
 
-    wallets.update({'n': nodes_in_schain, **formatted_common_pk})
+    wallets.update({'n': nodes_in_chain, **formatted_common_pk})
 
     if not sync_node:
-        secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
+        secret_key_share_filepath = get_secret_key_share_filepath(MIRAGE_CHAIN_NAME, rotation_id)
         secret_key_share_config = read_json(secret_key_share_filepath)
 
         wallets.update(

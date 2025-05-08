@@ -17,26 +17,26 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import socket
 import logging
 from dataclasses import dataclass
+from typing import Dict
 
-from skale.types.rotation import Rotation
-from skale.contracts.manager.schains import SchainStructure
+from skale.types.rotation import NodesGroup, Rotation
+from skale.types.node import Node as SkaleNode, NodeWithSchains, MirageNode, NodeId
+from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.config.base_config import MirageConfig, SChainBaseConfig
-from core.config.mirage.schain_info import MirageSChainInfo
+from core.config.mirage.schain_info import MirageChainInfo
 from core.config.mirage.node_info import MirageCurrentNodeInfo, generate_mirage_current_node_info
-from core.config.mirage.mirage_schain_node import generate_mirage_schain_nodes
+from core.config.mirage.mirage_schain_node import generate_mirage_chain_nodes
 from core.config.precompiled import get_precompiled_contracts_mirage
-from core.config.schain.static_params import get_static_schain_info, get_static_node_info
-from core.schains.limits import get_schain_type
-
-from tools.configs import MIRAGE_CHAIN_NAME
-from tools.configs.schains import (
-    MIRAGE_BASE_SCHAIN_CONFIG_FILEPATH,
-    MAX_CONSENSUS_STORAGE_INF_VALUE,
+from core.config.schain.static_params import (
+    get_static_schain_info_mirage,
+    get_static_node_info_mirage,
 )
 
+from tools.configs.schains import MIRAGE_BASE_SCHAIN_CONFIG_FILEPATH
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MirageSkaleConfig:
     node_info: MirageCurrentNodeInfo
-    schain_info: MirageSChainInfo
+    schain_info: MirageChainInfo
 
     def to_dict(self):
         return {
@@ -62,14 +62,54 @@ def get_mirage_chain_id() -> str:
     return '0x3A6'  # TODO: Replace with actual logic to get the chain ID (or move to config file)
 
 
-def generate_mirage_config(
-    schain: SchainStructure,
-    schain_nodes_with_schains: list,
-    node_groups: dict,
+def skale_node_to_mirage_node_adapter(skale_node: SkaleNode, node_id: NodeId) -> MirageNode:
+    return MirageNode(
+        id=node_id,
+        ip=skale_node['ip'],
+        ip_str=socket.inet_ntoa(skale_node['ip']),
+        port=skale_node['port'],
+        domain_name=skale_node['domain_name'],
+        address=to_checksum_address(public_key_to_address(skale_node['publicKey'])),
+        name=skale_node['name'],
+    )
+
+
+def generate_mirage_config_adapter(
+    skale_node: SkaleNode,
+    node_id: NodeId,
+    schain_nodes_with_schains: list[NodeWithSchains],
+    node_groups: Dict[int, NodesGroup],
     rotation_data: Rotation,
-    node_id: int,
     ecdsa_key_name: str,
-    schain_base_port: int,
+    common_bls_public_keys: list[str],
+    sync_node: bool = False,
+    archive: bool = False,
+    catchup: bool = False,
+):
+    node = skale_node_to_mirage_node_adapter(skale_node, node_id)
+    committee_nodes = [
+        skale_node_to_mirage_node_adapter(schain_node, node_id)
+        for schain_node in schain_nodes_with_schains
+    ]
+    return generate_mirage_config(
+        node=node,
+        committee_nodes=committee_nodes,
+        node_groups=node_groups,
+        rotation_counter=rotation_data.rotation_counter,
+        ecdsa_key_name=ecdsa_key_name,
+        common_bls_public_keys=common_bls_public_keys,
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup,
+    )
+
+
+def generate_mirage_config(
+    node: MirageNode,
+    committee_nodes: list[MirageNode],
+    node_groups: Dict[int, NodesGroup],
+    rotation_counter: int,
+    ecdsa_key_name: str,
     common_bls_public_keys: list[str],
     sync_node: bool = False,
     archive: bool = False,
@@ -84,46 +124,31 @@ def generate_mirage_config(
     dynamic_params = {'chainID': chain_id}
     accounts = get_precompiled_contracts_mirage()
 
-    static_schain_info = get_static_schain_info(MIRAGE_CHAIN_NAME)
+    static_schain_info = get_static_schain_info_mirage()
 
-    contract_storage_limit = MAX_CONSENSUS_STORAGE_INF_VALUE  # TODO: temporary value
-    db_storage_limit = MAX_CONSENSUS_STORAGE_INF_VALUE  # TODO: temporary value
-    max_consensus_storage_bytes = MAX_CONSENSUS_STORAGE_INF_VALUE  # TODO: temporary value
-
-    schain_nodes = generate_mirage_schain_nodes(
-        schain_nodes_with_schains=schain_nodes_with_schains,
-        schain_name=schain.name,
-        rotation_id=rotation_data.rotation_counter,
+    chain_nodes = generate_mirage_chain_nodes(
+        committee_nodes=committee_nodes,
+        rotation_id=rotation_counter,
         sync_node=False,
     )
 
-    nodes = {
-        rotation_data.freeze_until: schain_nodes,
-        '': [],
-    }  # TODO: Add second group here and tweak how we get the node lists
-
-    schain_info = MirageSChainInfo(
+    schain_info = MirageChainInfo(
         schain_id=chain_id_int,
-        contract_storage_limit=contract_storage_limit,
-        db_storage_limit=db_storage_limit,
-        max_consensus_storage_bytes=max_consensus_storage_bytes,
         node_groups=node_groups,
-        nodes=nodes,
+        nodes=chain_nodes,
         static_schain_info=static_schain_info,
     )
 
-    schain_type = get_schain_type(schain.part_of_node)
-    static_node_info = get_static_node_info(schain_type)
-    nodes_in_schain = len(schain_nodes_with_schains)
+    static_node_info = get_static_node_info_mirage()
+    nodes_in_chain = len(committee_nodes)
 
     current_node_info = generate_mirage_current_node_info(
-        node_id=node_id,
+        node_id=node.id,
         ecdsa_key_name=ecdsa_key_name,
         static_node_info=static_node_info,
-        schain=schain,
-        rotation_id=rotation_data.rotation_counter,
-        schain_base_port=schain_base_port,
-        nodes_in_schain=nodes_in_schain,
+        rotation_id=rotation_counter,
+        port=node.port,
+        nodes_in_chain=nodes_in_chain,
         common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
         archive=archive,
