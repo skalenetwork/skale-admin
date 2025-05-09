@@ -95,7 +95,7 @@ def generate_mirage_config_adapter(
         node=node,
         committee_nodes=committee_nodes,
         node_groups=node_groups,
-        rotation_counter=rotation_data.rotation_counter,
+        group_index=rotation_data.rotation_counter,
         ecdsa_key_name=ecdsa_key_name,
         common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
@@ -108,7 +108,7 @@ def generate_mirage_config(
     node: MirageNode,
     committee_nodes: list[MirageNode],
     node_groups: Dict[int, NodesGroup],
-    rotation_counter: int,
+    group_index: int,
     ecdsa_key_name: str,
     common_bls_public_keys: list[str],
     sync_node: bool = False,
@@ -128,7 +128,7 @@ def generate_mirage_config(
 
     chain_nodes = generate_mirage_chain_nodes(
         committee_nodes=committee_nodes,
-        rotation_id=rotation_counter,
+        rotation_id=group_index,
         sync_node=False,
     )
 
@@ -146,7 +146,7 @@ def generate_mirage_config(
         node_id=node.id,
         ecdsa_key_name=ecdsa_key_name,
         static_node_info=static_node_info,
-        rotation_id=rotation_counter,
+        group_index=group_index,
         port=node.port,
         nodes_in_chain=nodes_in_chain,
         common_bls_public_keys=common_bls_public_keys,

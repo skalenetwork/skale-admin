@@ -67,7 +67,7 @@ def generate_mirage_current_node_info(
     node_id: NodeId,
     ecdsa_key_name: str,
     static_node_info: dict,
-    rotation_id: int,
+    group_index: int,
     nodes_in_chain: int,
     port: Port,
     common_bls_public_keys: list[str],
@@ -76,7 +76,7 @@ def generate_mirage_current_node_info(
     catchup: bool = False,
 ) -> MirageCurrentNodeInfo:
     wallets = generate_mirage_wallets_config(
-        rotation_id, sync_node, nodes_in_chain, common_bls_public_keys
+        group_index, sync_node, nodes_in_chain, common_bls_public_keys
     )
 
     if ecdsa_key_name is None:
@@ -96,7 +96,7 @@ def generate_mirage_current_node_info(
 
 
 def generate_mirage_wallets_config(
-    rotation_id: int,
+    group_index: int,
     sync_node: bool,
     nodes_in_chain: int,
     common_bls_public_keys: list[str],
@@ -111,7 +111,7 @@ def generate_mirage_wallets_config(
     wallets.update({'n': nodes_in_chain, **formatted_common_pk})
 
     if not sync_node:
-        secret_key_share_filepath = get_secret_key_share_filepath(MIRAGE_CHAIN_NAME, rotation_id)
+        secret_key_share_filepath = get_secret_key_share_filepath(MIRAGE_CHAIN_NAME, group_index)
         secret_key_share_config = read_json(secret_key_share_filepath)
 
         wallets.update(
