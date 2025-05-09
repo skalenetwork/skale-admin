@@ -21,11 +21,9 @@ import logging
 import os
 import time
 from typing import Optional
-from importlib import reload
 
 from skale import SkaleManager, SkaleIma
 from skale.contracts.manager.schains import SchainStructure
-from web3._utils import request as web3_request
 
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
@@ -326,8 +324,6 @@ def start_tasks(
     skale_ima: SkaleIma,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
-    reload(web3_request)
-
     name = schain.name
     init_ts, pid = int(time.time()), os.getpid()
     logger.info('Initialazing process report %d %d', pid, init_ts)
