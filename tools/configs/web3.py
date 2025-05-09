@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+from eth_typing import HexAddress, HexStr
 
 from tools.configs import NODE_DATA_PATH
 
@@ -31,4 +32,4 @@ STATE_FILEPATH = None if not STATE_FILENAME else os.path.join(STATE_BASE_PATH, S
 
 NODE_REGISTER_CONFIRMATION_BLOCKS = 5
 
-ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+ZERO_ADDRESS = HexAddress(HexStr('0x0000000000000000000000000000000000000000'))
