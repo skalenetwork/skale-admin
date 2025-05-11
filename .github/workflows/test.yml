@@ -3,8 +3,8 @@ on: [push]
 env:
   ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-  MANAGER_TAG: "1.10.0-v1.10.0.0"
-  IMA_TAG: "2.2.0-stable.0"
+  MANAGER_TAG: "1.12.0-develop.21"
+  IMA_TAG: "2.3.0-beta.3"
   SGX_WALLET_TAG: "1.83.0-beta.5"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   PYTHON_VERSION: 3.11
@@ -34,14 +34,21 @@ jobs:
 
       - name: Checking formatting with ruff
         run: uv run ruff check
-
-      - name: Launch anvil node
+      
+      - name: Launch hardhat node
+        working-directory: hardhat-node
         run: |
-          docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil && sleep 5 && docker logs anvil --tail 1000
+          docker compose up -d && sleep 20
 
-      - name: Deploy manager & ima contracts
+      - name: Deploy manager
         run: |
-          bash ./helper-scripts/deploy_test_ima.sh
+          bash ./helper-scripts/deploy_manager.sh
+          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
+      
+      - name: Deploy IMA
+        run: |
+          bash ./helper-scripts/deploy_ima.sh
+          docker rmi -f skalenetwork/ima-contracts:${{ env.IMA_TAG }}
 
       - name: Show stats before tests
         if: always()
