@@ -451,7 +451,7 @@ class DKGClient:
 
     def fetch_all_broadcasted_data(self):
         dkg_filter = Filter(self.skale, self.schain_name, self.n)
-        events = dkg_filter.get_events(from_channel_started_block=True)
+        events = dkg_filter.get_events()
 
         for event in events:
             from_node = self.node_ids_contract[event.nodeIndex]
