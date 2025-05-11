@@ -90,7 +90,7 @@ class Filter:
                 ).call()
             else:
                 start_block = self.first_unseen_block
-            filter = self.dkg_contract.events[self.event_name].create_filter(fromBlock=start_block)
+            filter = self.dkg_contract.events[self.event_name].create_filter(from_block=start_block)
             raw_events = filter.get_all_entries()
             for raw_event in raw_events:
                 events.append(self.parse_event(raw_event))
