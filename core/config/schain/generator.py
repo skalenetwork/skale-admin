@@ -33,6 +33,8 @@ from skale.schain_config.rotation_history import get_previous_schain_groups
 from skale.types.rotation import Rotation
 from skale.types.schain import SchainName
 
+from skale_contracts.projects.ima import MainnetImaContract
+
 from core.node_config import NodeConfig
 from core.config.schain.skale_section import generate_skale_section
 from core.config.schain.predeployed import generate_predeployed_accounts
@@ -103,25 +105,27 @@ def get_ima_contracts_addresses(skale_ima: SkaleIma) -> Dict[str, ChecksumAddres
     """Gets core IMA contract addresses on mainnet from the SkaleIma instance."""
 
     return {
-        'community_pool_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('CommunityPool')
+        'community_pool_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.COMMUNITY_POOL)
         ),
-        'deposit_box_eth_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('DepositBoxEth')
+        'deposit_box_eth_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ETH)
         ),
-        'deposit_box_erc20_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('DepositBoxERC20')
+        'deposit_box_erc20_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC20)
         ),
-        'deposit_box_erc721_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('DepositBoxERC721')
+        'deposit_box_erc721_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC721)
         ),
-        'deposit_box_erc1155_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('DepositBoxERC1155')
+        'deposit_box_erc1155_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC1155)
         ),
-        'deposit_box_erc721_with_metadata_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('DepositBoxERC721WithMetadata')
+        'deposit_box_erc721_with_metadata_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC721_WITH_META)
         ),
-        'linker_address': Web3.to_hex(skale_ima.instance.get_contract_address('Linker')),
+        'linker_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.LINKER)
+        ),
     }
 
 
