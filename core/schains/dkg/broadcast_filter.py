@@ -90,10 +90,16 @@ class Filter:
                 ).call()
             else:
                 start_block = self.first_unseen_block
-            filter = self.dkg_contract.events[self.event_name].create_filter(from_block=start_block)
+
+            filter = self.dkg_contract.events[self.event_name].create_filter(
+                from_block=start_block,
+                argument_filters={'schainHash': self.group_index},
+            )
             raw_events = filter.get_all_entries()
             for raw_event in raw_events:
-                events.append(self.parse_event(raw_event))
+                parsed_event = self.parse_event(raw_event)
+                events.append(parsed_event)
+
             if raw_events:
                 self.first_unseen_block = raw_events[-1]['blockNumber'] + 1
             return events
