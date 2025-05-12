@@ -40,8 +40,6 @@ class SChainNodeInfo(NodeInfo):
     def to_dict(self):
         """Returns camel-case representation of the SChainNodeInfo object"""
         node_info = super().to_dict()
-        # dropping infoHttpRpcPort since skaled doesn't support this key in nodes section
-        node_info.pop('infoHttpRpcPort', None)
         return {
             **node_info,
             **parse_public_key_info(self.bls_public_key),

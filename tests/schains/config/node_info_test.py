@@ -89,7 +89,6 @@ def test_generate_current_node_info(
     assert current_node_info_dict['httpRpcPort'] == 10003
     assert current_node_info_dict['httpsRpcPort'] == 10008
     assert current_node_info_dict['wsRpcPort'] == 10002
-    assert current_node_info_dict['infoHttpRpcPort'] == 10009
     assert current_node_info_dict['minCacheSize'] == 8000000
     assert current_node_info_dict['maxCacheSize'] == 16000000
     assert current_node_info_dict['collectionQueueSize'] == 20

@@ -21,6 +21,7 @@ jobs:
       ENDPOINT: http://127.0.0.1:8545
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
+      RUN_ANVIL: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,11 +35,6 @@ jobs:
 
       - name: Checking formatting with ruff
         run: uv run ruff check
-      
-      - name: Launch hardhat node
-        working-directory: hardhat-node
-        run: |
-          docker compose up -d && sleep 20
 
       - name: Deploy manager
         run: |

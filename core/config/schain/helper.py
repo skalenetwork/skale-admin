@@ -88,7 +88,6 @@ def get_schain_ports_from_config(config: Dict):
         'ws': int(node_info['wsRpcPort']),
         'https': int(node_info['httpsRpcPort']),
         'wss': int(node_info['wssRpcPort']),
-        'info_http': int(node_info['infoHttpRpcPort']),
     }
 
 
