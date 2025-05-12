@@ -189,7 +189,7 @@ def generate_broadcast_data(skale, schain_name, node_id):
 
 
 def send_fake_broadcast(skale, schain_name, node_id, rotation_id=0):
-    group_index = skale.schains.name_to_group_id(schain_name).hex()
+    group_index = skale.schains.name_to_group_id(schain_name)
     verification_vector, _ = generate_broadcast_data(skale, schain_name, node_id)
     secret_key_contribution = [
         (
