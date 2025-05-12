@@ -32,6 +32,7 @@ from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.schain_config.rotation_history import get_previous_schain_groups
 from skale.types.rotation import Rotation
 from skale.types.schain import SchainName
+from skale.types.node import NodeId
 
 from skale_contracts.projects.ima import MainnetImaContract
 
@@ -258,12 +259,11 @@ def generate_schain_config_with_skale(
     if SKALE_NETWORK_TYPE == 'mirage':
         return generate_mirage_config_adapter(
             skale_node=node,
-            node_id=node_config.id,
+            node_id=NodeId(node_config.id),
             rotation_data=rotation_data,
             ecdsa_key_name=ecdsa_key_name,
             schain_nodes_with_schains=schain_nodes_with_schains,
             node_groups=node_groups,
-            schain_base_port=schain_base_port,
             common_bls_public_keys=common_bls_public_keys,
             sync_node=sync_node,
             archive=node_options.archive,
