@@ -81,6 +81,7 @@ META_FILEPATH = os.path.join(NODE_DATA_PATH, 'meta.json')
 ALLOWED_TIMESTAMP_DIFF = int(os.getenv('ALLOWED_TIMESTAMP_DIFF', 120))
 
 ENV_TYPE = os.environ.get('ENV_TYPE')
+SKALE_NETWORK_TYPE = os.environ.get('SKALE_NETWORK_TYPE')
 ALLOCATION_FILEPATH = os.path.join(CONFIG_FOLDER, 'schain_allocation.yml')
 
 STATIC_PARAMS_FILEPATH = os.path.join(CONFIG_FOLDER, 'static_params.yaml')
@@ -108,3 +109,5 @@ DOCKER_NODE_CONFIG_FILEPATH = os.path.join(NODE_DATA_PATH, 'docker.json')
 
 NFT_CHAIN_BASE_PATH = '/etc/nft.conf.d/skale/chains'
 NFT_CHAIN_CONFIG_WILDCARD = os.path.join(NFT_CHAIN_BASE_PATH, '*')
+
+MIRAGE_CHAIN_NAME = 'mirage'
