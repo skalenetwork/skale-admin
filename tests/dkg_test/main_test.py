@@ -11,6 +11,8 @@ from concurrent.futures import Future, ThreadPoolExecutor as Executor
 from contextlib import contextmanager
 from enum import Enum
 
+from eth_utils.hexadecimal import remove_0x_prefix
+
 import mock
 import pytest
 import warnings
@@ -169,7 +171,7 @@ def generate_broadcast_data(skale, schain_name, node_id):
     client.n, client.t = n, t
 
     group_index = skale.schains.name_to_group_id(schain_name)
-    group_index_str = str(int(skale.web3.to_hex(group_index)[2:], 16))
+    group_index_str = str(int(remove_0x_prefix(skale.web3.to_hex(group_index)), 16))
     rotation = skale.node_rotation.get_rotation(schain_name)
 
     rotation_id = rotation.rotation_counter

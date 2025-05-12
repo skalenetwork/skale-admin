@@ -20,6 +20,7 @@
 from dataclasses import dataclass
 import logging
 
+from eth_utils.hexadecimal import remove_0x_prefix
 from web3.exceptions import Web3Exception, TransactionNotFound
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class Filter:
     def __init__(self, skale, schain_name, n):
         self.skale = skale
         self.group_index = skale.web3.keccak(text=schain_name)
-        self.group_index_str = self.skale.web3.to_hex(self.group_index)[2:]
+        self.group_index_str = remove_0x_prefix(self.skale.web3.to_hex(self.group_index))
         self.first_unseen_block = -1
         self.dkg_contract = skale.dkg.contract
         self.dkg_contract_address = skale.dkg.address
@@ -77,8 +78,8 @@ class Filter:
         return True
 
     def parse_event(self, receipt):
-        event_data = receipt['logs'][0]['data'].hex()[2:]
-        node_index = int(receipt['logs'][0]['topics'][2].hex()[2:], 16)
+        event_data = remove_0x_prefix(receipt['logs'][0]['data'].hex())
+        node_index = int(remove_0x_prefix(receipt['logs'][0]['topics'][2].hex()), 16)
         vv = event_data[192 : 192 + self.t * 256]
         skc = event_data[192 + 64 + self.t * 256 : 192 + 64 + self.t * 256 + 192 * self.n]
         return DKGEvent(
