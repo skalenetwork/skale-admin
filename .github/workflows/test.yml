@@ -17,7 +17,7 @@ jobs:
   test_core:
     runs-on: self-hosted
     env:
-      ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
+      # ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
       ENDPOINT: http://127.0.0.1:8545
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}

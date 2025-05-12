@@ -28,6 +28,8 @@ export_test_env () {
     export IMA_CONTRACTS=$(jq -r '.message_proxy_mainnet_address' "$IMA_ABI_FILEPATH")
     export DEFAULT_GAS_PRICE_WEI=1000000000
 
+    export ETH_PRIVATE_KEY=$(cat $PWD/helper-scripts/private_key.txt)
+
     cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info
 }
 
