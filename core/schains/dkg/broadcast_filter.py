@@ -19,7 +19,8 @@
 
 from dataclasses import dataclass
 import logging
-from web3.exceptions import Web3Exception
+
+from web3.exceptions import Web3Exception, TransactionNotFound
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +36,11 @@ class Filter:
     def __init__(self, skale, schain_name, n):
         self.skale = skale
         self.group_index = skale.web3.keccak(text=schain_name)
-        self.group_index_str = self.skale.web3.to_hex(self.group_index)
+        self.group_index_str = self.skale.web3.to_hex(self.group_index)[2:]
         self.first_unseen_block = -1
         self.dkg_contract = skale.dkg.contract
         self.dkg_contract_address = skale.dkg.address
-        self.event_name = 'BroadcastAndKeyShare'
+        self.event_hash = '47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d'
         self.n = n
         self.t = (2 * n + 1) // 3
 
@@ -59,10 +60,13 @@ class Filter:
             )
             return False
         if len(topics) < 2:
+            logger.info(f'sChain {self.group_index_str}: topics is less than 2')
             return False
-        if topics[0].hex() != self.dkg_contract.events[self.event_name].abi['signature']:
+        if topics[0].hex() != self.event_hash:
+            logger.info(f'sChain {self.group_index_str}: Event hash is not equal')
             return False
         if topics[1].hex() != self.group_index_str:
+            logger.info(f'sChain {self.group_index_str}: Group index is not equal')
             return False
         data = logs[0].get('data')
         if not data:
@@ -90,18 +94,35 @@ class Filter:
                 ).call()
             else:
                 start_block = self.first_unseen_block
-
-            filter = self.dkg_contract.events[self.event_name].create_filter(
-                from_block=start_block,
-                argument_filters={'schainHash': self.group_index},
+            current_block = self.skale.web3.eth.get_block('latest')['number']
+            logger.info(
+                f'sChain {self.group_index_str}: Parsing broadcast events '
+                f'from {start_block} block to {current_block} block'
             )
-            raw_events = filter.get_all_entries()
-            for raw_event in raw_events:
-                parsed_event = self.parse_event(raw_event)
-                events.append(parsed_event)
+            for block_number in range(start_block, current_block + 1):
+                block = self.skale.web3.eth.get_block(block_number, full_transactions=True)
+                txns = block['transactions']
+                for tx in txns:
+                    try:
+                        if tx.get('to') != self.dkg_contract_address:
+                            continue
 
-            if raw_events:
-                self.first_unseen_block = raw_events[-1]['blockNumber'] + 1
+                        hash = tx.get('hash')
+                        if hash:
+                            receipt = self.skale.web3.eth.get_transaction_receipt(hash)
+                        else:
+                            logger.info(
+                                f'sChain {self.group_index_str}: tx {tx} does not have field "hash"'
+                            )
+                            continue
+
+                        if not self.check_event(receipt):
+                            continue
+                        else:
+                            events.append(self.parse_event(receipt))
+                    except TransactionNotFound:
+                        pass
+                self.first_unseen_block = block_number + 1
             return events
         except (ValueError, Web3Exception) as e:
             logger.info(

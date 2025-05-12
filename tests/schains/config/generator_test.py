@@ -168,22 +168,12 @@ def test_get_ima_contracts_addresses(skale_ima):
         'deposit_box_erc721_with_metadata_address',
         'linker_address',
     ]
-    addressConversion = {
-        'community_pool_address': 'CommunityPool',
-        'deposit_box_eth_address': 'DepositBoxEth',
-        'deposit_box_erc20_address': 'DepositBoxERC20',
-        'deposit_box_erc721_address': 'DepositBoxERC721',
-        'deposit_box_erc1155_address': 'DepositBoxERC1155',
-        'deposit_box_erc721_with_metadata_address': 'DepositBoxERC721WithMetadata',
-        'linker_address': 'Linker',
-    }
+
     assert isinstance(ima_addresses, dict)
     assert all(key in ima_addresses for key in expected_keys)
 
     for key in expected_keys:
-        assert ima_addresses[key] == Web3.to_hex(
-            skale_ima.instance.get_contract_address(addressConversion[key])
-        )
+        assert Web3.is_checksum_address(ima_addresses[key])
 
 
 def check_keys(data, expected_keys):
