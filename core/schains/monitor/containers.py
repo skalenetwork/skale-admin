@@ -37,7 +37,7 @@ from core.schains.runner import (
 from core.schains.ima import get_ima_time_frame, ImaData
 from core.schains.ssl import update_ssl_change_date
 
-from tools.configs import SYNC_NODE
+from tools.configs import SYNC_NODE, SKALE_NETWORK_TYPE
 from tools.configs.containers import MAX_SCHAIN_RESTART_COUNT, SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.docker_utils import DockerUtils
 
@@ -110,7 +110,7 @@ def monitor_schain_container(
 def monitor_ima_container(
     schain: dict, ima_data: ImaData, migration_ts: int = 0, dutils: DockerUtils = None
 ) -> None:
-    if SYNC_NODE:
+    if SYNC_NODE or SKALE_NETWORK_TYPE == 'mirage':
         return
 
     if not ima_data.linked:

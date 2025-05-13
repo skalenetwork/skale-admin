@@ -49,6 +49,7 @@ from tools.configs import (
     SKALE_DIR_HOST,
     SKALE_VOLUME_PATH,
     SCHAIN_CONFIG_DIR_SKALED,
+    SKALE_NETWORK_TYPE,
 )
 
 
@@ -197,8 +198,12 @@ def run_schain_container(
     schain_name = schain.name
     schain_type = get_schain_type(schain.part_of_node)
 
-    cpu_limit = None if sync_node else get_schain_limit(schain_type, MetricType.cpu_shares)
-    mem_limit = None if sync_node else get_schain_limit(schain_type, MetricType.mem)
+    if sync_node or SKALE_NETWORK_TYPE == 'mirage':
+        cpu_limit = None
+        mem_limit = None
+    else:
+        cpu_limit = get_schain_limit(schain_type, MetricType.cpu_shares)
+        mem_limit = get_schain_limit(schain_type, MetricType.mem)
 
     volume_config = get_schain_volume_config(
         schain_name, DATA_DIR_CONTAINER_PATH, mode=volume_mode, sync_node=sync_node
