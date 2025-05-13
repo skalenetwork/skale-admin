@@ -33,7 +33,7 @@ from jinja2 import Environment
 from skale import SkaleManager
 from skale.wallets import BaseWallet
 
-from tools.configs import INIT_LOCK_PATH
+from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
 from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS, STATE_FILEPATH, ZERO_ADDRESS
 
 
@@ -182,3 +182,7 @@ def is_address_contract(web3, address) -> bool:
 
 def no_hyphens(name: str) -> str:
     return name.replace('-', '_')
+
+
+def is_mirage() -> bool:
+    return SKALE_NETWORK_TYPE == 'mirage'

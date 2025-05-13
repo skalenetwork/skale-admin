@@ -49,9 +49,8 @@ from core.config.base_config import SChainConfig, MirageConfig, SChainBaseConfig
 
 from core.config.mirage.generator import generate_mirage_config_adapter
 
-from tools.configs import SKALE_NETWORK_TYPE
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
-from tools.helper import is_zero_address, is_address_contract
+from tools.helper import is_mirage, is_zero_address, is_address_contract
 from tools.node_options import NodeOptions
 
 
@@ -256,7 +255,7 @@ def generate_schain_config_with_skale(
     else:
         schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
 
-    if SKALE_NETWORK_TYPE == 'mirage':
+    if is_mirage():
         return generate_mirage_config_adapter(
             skale_node=node,
             node_id=NodeId(node_config.id),
