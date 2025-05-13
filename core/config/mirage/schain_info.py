@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from typing import Dict
 from skale.types.rotation import NodesGroup
 from core.config.mirage.mirage_schain_node import MirageChainNodeInfo
+from tools.configs import MIRAGE_CHAIN_NAME
 from tools.configs.schains import MAX_HISTORIC_STATE_DB_SIZE
 
 
@@ -37,6 +38,7 @@ class MirageChainInfo:
     def to_dict(self):
         data = {
             'schainID': self.schain_id,
+            'schainName': MIRAGE_CHAIN_NAME,
             'nodeGroups': self.node_groups,
             'multiTransactionMode': True,
             'nodes': self.nodes,
