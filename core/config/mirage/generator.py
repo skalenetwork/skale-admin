@@ -89,7 +89,7 @@ def generate_mirage_config_adapter(
 ):
     node = skale_node_to_mirage_node_adapter(skale_node, node_id)
     committee_nodes = [
-        skale_node_to_mirage_node_adapter(schain_node, node_id)
+        skale_node_to_mirage_node_adapter(schain_node, schain_node['id'])
         for schain_node in schain_nodes_with_schains
     ]
     return generate_mirage_config(
