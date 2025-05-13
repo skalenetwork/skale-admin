@@ -101,20 +101,20 @@ def generate_mirage_wallets_config(
     nodes_in_chain: int,
     common_bls_public_keys: list[str],
 ) -> dict:
-    wallets = {}
+    wallets = {'ima': {}}
     formatted_common_pk = {}
 
     for i, value in enumerate(common_bls_public_keys):
         name = 'commonBLSPublicKey' + str(i)
         formatted_common_pk[name] = str(value)
 
-    wallets.update({'n': nodes_in_chain, **formatted_common_pk})
+    wallets['ima'].update({'n': nodes_in_chain, **formatted_common_pk})
 
     if not sync_node:
         secret_key_share_filepath = get_secret_key_share_filepath(MIRAGE_CHAIN_NAME, group_index)
         secret_key_share_config = read_json(secret_key_share_filepath)
 
-        wallets.update(
+        wallets['ima'].update(
             {
                 'keyShareName': secret_key_share_config['key_share_name'],
                 't': secret_key_share_config['t'],
@@ -126,6 +126,6 @@ def generate_mirage_wallets_config(
         public_keys = secret_key_share_config['public_key']
         for i, value in enumerate(public_keys):
             name = 'BLSPublicKey' + str(i)
-            wallets[name] = str(value)
+            wallets['ima'][name] = str(value)
 
     return wallets
