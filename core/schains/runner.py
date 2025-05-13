@@ -33,6 +33,7 @@ from core.config.schain.helper import get_schain_env
 from core.schains.ima import get_ima_env
 from core.config.schain.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
+from tools.helper import is_mirage
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (
     CONTAINER_NAME_PREFIX,
@@ -49,7 +50,6 @@ from tools.configs import (
     SKALE_DIR_HOST,
     SKALE_VOLUME_PATH,
     SCHAIN_CONFIG_DIR_SKALED,
-    SKALE_NETWORK_TYPE,
 )
 
 
@@ -198,7 +198,7 @@ def run_schain_container(
     schain_name = schain.name
     schain_type = get_schain_type(schain.part_of_node)
 
-    if sync_node or SKALE_NETWORK_TYPE == 'mirage':
+    if sync_node or is_mirage():
         cpu_limit = None
         mem_limit = None
     else:
