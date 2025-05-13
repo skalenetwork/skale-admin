@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from eth_typing import HexStr
 from dataclasses import dataclass
 from skale.dataclasses.node_info import NodeInfo
 from skale.utils.helper import ip_from_bytes
@@ -32,6 +33,7 @@ class MirageChainNodeInfo(NodeInfo):
     owner: str
     committee_index: int
     ip: str
+    public_key: HexStr
 
     def to_dict(self):
         node_info = super().to_dict()
@@ -42,6 +44,7 @@ class MirageChainNodeInfo(NodeInfo):
                 'owner': self.owner,
                 'schainIndex': self.committee_index,
                 'ip': self.ip,
+                'publicKey': self.public_key,
             },
         }
 
@@ -65,6 +68,7 @@ def generate_mirage_chain_nodes(
             committee_index=i,
             ip=ip_from_bytes(node.ip),
             owner=node.address,
+            public_key=node.public_key,
         ).to_dict()
         chain_nodes.append(node_info)
 

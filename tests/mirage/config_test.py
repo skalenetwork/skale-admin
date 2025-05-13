@@ -59,6 +59,7 @@ def mirage_node():
         domain_name='0xNodeA.com',
         address=ChecksumAddress(ZERO_ADDRESS),
         port=Port(10000),
+        public_key=HexStr('0x' + 'a' * 128),
     )
 
 

@@ -71,6 +71,7 @@ def skale_node_to_mirage_node_adapter(skale_node: SkaleNode, node_id: NodeId) ->
         domain_name=skale_node['domain_name'],
         address=to_checksum_address(public_key_to_address(skale_node['publicKey'])),
         name=skale_node['name'],
+        public_key=skale_node['publicKey'],
     )
 
 
