@@ -1,7 +1,7 @@
 import os
 
-from core.schains.config.directory import schain_config_dir
-from core.schains.config.file_manager import ConfigFileManager
+from core.config.schain.directory import schain_config_dir
+from core.config.schain.file_manager import ConfigFileManager
 
 from tools.configs.schains import SCHAINS_DIR_PATH
 

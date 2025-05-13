@@ -4,7 +4,7 @@ from core.schains.status import (
     NodeCliStatus,
     SkaledStatus,
 )
-from core.schains.config.directory import skaled_status_filepath
+from core.config.schain.directory import skaled_status_filepath
 
 CURRENT_TS = 1594903080
 

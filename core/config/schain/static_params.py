@@ -18,10 +18,13 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from core.schains.types import SchainType
-from core.schains.config.helper import get_static_params
+from core.config.schain.helper import get_static_params, get_static_params_mirage
 from tools.configs import ENV_TYPE
 
-from typing import Optional
+
+def get_static_skaled_cmd_mirage(env_type: str = ENV_TYPE) -> list:
+    static_params = get_static_params_mirage(env_type)
+    return static_params['skaled_cmd']
 
 
 def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:
@@ -29,7 +32,12 @@ def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:
     return static_params['schain_cmd']
 
 
-def get_static_schain_info(schain_name: str, env_type: str = ENV_TYPE) -> Optional[dict]:
+def get_static_schain_info_mirage(env_type: str = ENV_TYPE) -> dict:
+    static_params = get_static_params_mirage(env_type)
+    return static_params['schain']
+
+
+def get_static_schain_info(schain_name: str, env_type: str = ENV_TYPE) -> dict:
     static_params = get_static_params(env_type)
     static_params_schain = static_params['schain']
     processed_params = {}
@@ -38,7 +46,7 @@ def get_static_schain_info(schain_name: str, env_type: str = ENV_TYPE) -> Option
     return processed_params
 
 
-def get_schain_static_param(static_param_schain: dict, schain_name: str) -> int:
+def get_schain_static_param(static_param_schain: dict, schain_name: str) -> int | None:
     if isinstance(static_param_schain, int):
         return static_param_schain
     elif isinstance(static_param_schain, dict) and schain_name in static_param_schain:
@@ -50,6 +58,11 @@ def get_schain_static_param(static_param_schain: dict, schain_name: str) -> int:
 def get_static_node_info(schain_type: SchainType, env_type: str = ENV_TYPE) -> dict:
     static_params = get_static_params(env_type)
     return {**static_params['node']['common'], **static_params['node'][schain_type.name]}
+
+
+def get_static_node_info_mirage(env_type: str = ENV_TYPE) -> dict:
+    static_params = get_static_params_mirage(env_type)
+    return static_params['node']
 
 
 def get_automatic_repair_option(env_type: str = ENV_TYPE) -> bool:

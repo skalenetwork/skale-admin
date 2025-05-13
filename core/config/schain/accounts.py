@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2021-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,27 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
-from dataclasses import dataclass
+
+from core.config.schain.helper import fix_address
 
 
-logger = logging.getLogger(__name__)
+def generate_account(balance, code=None, storage={}, nonce=0):
+    if code and not isinstance(code, str):
+        raise ValueError('Code must be a str or None')
+    if storage and not isinstance(storage, dict):
+        raise ValueError('Code must be a dict or None')
+    account = {'balance': str(balance)}
+    if code:
+        account['code'] = code
+        account['storage'] = storage
+        account['nonce'] = str(nonce)
+    return account
 
 
-@dataclass
-class ContractSettings:
-    """Dataclass that represents contractSettings key of the skaleConfig section"""
-
-    common: dict
-
-    def to_dict(self):
-        """Returns camel-case representation of the ContractSettings object"""
-        return {
-            'common': self.common,
-        }
-
-
-def generate_contract_settings() -> ContractSettings:
-    return ContractSettings(
-        common={'enableContractLogMessages': True},
-    )
+def add_to_accounts(accounts: dict, address: str, account: dict) -> None:
+    accounts[fix_address(address)] = account

@@ -85,6 +85,7 @@ SKALE_NETWORK_TYPE = os.environ.get('SKALE_NETWORK_TYPE')
 ALLOCATION_FILEPATH = os.path.join(CONFIG_FOLDER, 'schain_allocation.yml')
 
 STATIC_PARAMS_FILEPATH = os.path.join(CONFIG_FOLDER, 'static_params.yaml')
+MIRAGE_STATIC_PARAMS_FILEPATH = os.path.join(CONFIG_FOLDER, 'mirage_static_params.yaml')
 
 DEFAULT_POOL = 'transactions'
 

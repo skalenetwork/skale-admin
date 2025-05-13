@@ -25,7 +25,7 @@ from typing import Dict, Optional, Type
 from core.schains.monitor.base_monitor import IMonitor
 from core.schains.checks import SkaledChecks
 from core.schains.monitor.action import SkaledActionManager
-from core.schains.config.main import get_number_of_secret_shares
+from core.config.schain.main import get_number_of_secret_shares
 from core.schains.status import NodeCliStatus, SkaledStatus
 from core.schains.ssl import ssl_reload_needed
 from tools.configs import SYNC_NODE

@@ -23,7 +23,7 @@ from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.utils.helper import ip_from_bytes
 from skale.utils.web3_utils import public_key_to_address
 
-from core.schains.config.helper import parse_public_key_info, get_bls_public_keys
+from core.config.schain.helper import parse_public_key_info, get_bls_public_keys
 
 
 @dataclass
@@ -40,8 +40,6 @@ class SChainNodeInfo(NodeInfo):
     def to_dict(self):
         """Returns camel-case representation of the SChainNodeInfo object"""
         node_info = super().to_dict()
-        # dropping infoHttpRpcPort since skaled doesn't support this key in nodes section
-        node_info.pop('infoHttpRpcPort', None)
         return {
             **node_info,
             **parse_public_key_info(self.bls_public_key),

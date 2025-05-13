@@ -20,8 +20,8 @@ from skale.wallets import Web3Wallet
 from web3 import Web3
 
 from core.schains.cleaner import remove_config_dir, remove_schain_container, remove_schain_volume
-from core.schains.config.directory import skaled_status_filepath
-from core.schains.config.file_manager import ConfigFileManager
+from core.config.schain.directory import skaled_status_filepath
+from core.config.schain.file_manager import ConfigFileManager
 from core.schains.firewall.types import IHostFirewallController, IpRange
 from core.schains.firewall import SChainFirewallManager, SChainRuleController
 from core.schains.runner import (
@@ -350,7 +350,6 @@ def generate_schain_config(schain_name):
                 'httpsRpcPort': 10008,
                 'wsRpcPort': 10002,
                 'wssRpcPort': 10007,
-                'infoHttpRpcPort': 10008,
                 'bindIP': '0.0.0.0',
                 'ecdsaKeyName': 'NEK:518',
                 'imaMonitoringPort': 10006,
@@ -451,7 +450,6 @@ def generate_schain_config(schain_name):
                         'httpsRpcPort': 10008,
                         'wsRpcPort': 10002,
                         'wssRpcPort': 10007,
-                        'infoHttpRpcPort': 10008,
                         'schainIndex': 1,
                         'ip': '127.0.0.1',
                         'owner': '0x41',
@@ -465,7 +463,6 @@ def generate_schain_config(schain_name):
                         'httpsRpcPort': 10017,
                         'wsRpcPort': 10012,
                         'wssRpcPort': 10018,
-                        'infoHttpRpcPort': 10019,
                         'schainIndex': 1,
                         'ip': '127.0.0.2',
                         'owner': '0x42',

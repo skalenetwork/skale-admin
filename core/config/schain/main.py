@@ -25,9 +25,9 @@ from skale.types.rotation import Rotation
 
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
-from core.schains.config.directory import get_files_with_prefix, schain_config_dir
-from core.schains.config.file_manager import ConfigFileManager, SkaledConfigFilename
-from core.schains.config.generator import generate_schain_config_with_skale
+from core.config.schain.directory import get_files_with_prefix, schain_config_dir
+from core.config.schain.file_manager import ConfigFileManager, SkaledConfigFilename
+from core.config.schain.generator import generate_schain_config_with_skale
 
 from tools.configs import SCHAIN_CONFIG_DIR_SKALED
 from tools.str_formatters import arguments_list_string

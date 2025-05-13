@@ -21,6 +21,9 @@ import logging
 import os
 import sys
 
+from eth_typing import HexStr
+from eth_utils.hexadecimal import remove_0x_prefix
+
 from sgx import SgxClient
 from sgx.http import SgxUnreachableError
 from sgx.sgx_rpc_handler import DkgPolyStatus, SgxServerError
@@ -80,7 +83,7 @@ def convert_g2_array_to_hex(data):
 def convert_g2_point_to_hex(data):
     data_hexed = ''
     for coord in data:
-        temp = hex(int(coord))[2:]
+        temp = remove_0x_prefix(HexStr(hex(int(coord))))
         while len(temp) < 64:
             temp = '0' + temp
         data_hexed += temp
@@ -148,7 +151,7 @@ class DKGClient:
         self.t = t
         self.n = n
         self.eth_key_name = eth_key_name
-        group_index_str = str(int(skale.web3.to_hex(self.group_index)[2:], 16))
+        group_index_str = str(int(remove_0x_prefix(skale.web3.to_hex(self.group_index)), 16))
         self.poly_name = generate_poly_name(group_index_str, self.node_id_dkg, rotation_id)
         self.bls_name = generate_bls_key_name(group_index_str, self.node_id_dkg, rotation_id)
         self.rotation_id = rotation_id
@@ -451,7 +454,7 @@ class DKGClient:
 
     def fetch_all_broadcasted_data(self):
         dkg_filter = Filter(self.skale, self.schain_name, self.n)
-        events = dkg_filter.get_events(from_channel_started_block=True)
+        events = dkg_filter.get_events()
 
         for event in events:
             from_node = self.node_ids_contract[event.nodeIndex]
