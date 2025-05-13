@@ -52,7 +52,7 @@ NODE_CLI_STATUS_FILENAME = 'node_cli.status'
 
 STATIC_SCHAIN_DIR_NAME = 'schains'
 SCHAIN_STATE_PATH = os.path.join(SKALE_LIB_PATH, 'schains')
-SCHAIN_STATIC_PATH = os.path.join(SKALE_LIB_PATH, 'filestorage')
+FILESTORAGE_STATIC_PATH = os.path.join(SKALE_LIB_PATH, 'filestorage')
 
 DEFAULT_RPC_CHECK_TIMEOUT = 30
 RPC_CHECK_TIMEOUT_STEP = 10

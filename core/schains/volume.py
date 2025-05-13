@@ -19,12 +19,11 @@
 
 import logging
 import os
-import shutil
 
 from skale.contracts.manager.schains import SchainStructure
 from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
-from tools.configs.schains import SCHAIN_STATE_PATH, SCHAIN_STATIC_PATH
+from tools.configs.schains import SCHAIN_STATE_PATH, FILESTORAGE_STATIC_PATH
 from tools.configs.containers import SHARED_SPACE_VOLUME_NAME, SHARED_SPACE_CONTAINER_PATH
 
 from tools.docker_utils import DockerUtils
@@ -35,10 +34,13 @@ logger = logging.getLogger(__name__)
 
 def is_volume_exists(schain_name, sync_node=False, dutils=None):
     dutils = dutils or DockerUtils()
-    if sync_node or is_mirage():
-        schain_state = os.path.join(SCHAIN_STATE_PATH, schain_name)
-        schain_static_path = os.path.join(SCHAIN_STATIC_PATH, schain_name)
-        return os.path.isdir(schain_state) and os.path.islink(schain_static_path)
+
+    schain_state = os.path.join(SCHAIN_STATE_PATH, schain_name)
+    if sync_node:
+        filestorage_static_path_schain = os.path.join(FILESTORAGE_STATIC_PATH, schain_name)
+        return os.path.isdir(schain_state) and os.path.islink(filestorage_static_path_schain)
+    elif is_mirage():
+        return os.path.isdir(schain_state)
     else:
         return dutils.is_data_volume_exists(schain_name)
 
@@ -59,22 +61,17 @@ def init_data_volume(schain: SchainStructure, sync_node: bool = False, dutils: D
         dutils.create_data_volume(schain.name, disk_limit)
 
 
-def remove_data_dir(schain_name):
-    schain_state = os.path.join(SCHAIN_STATE_PATH, schain_name)
-    schain_static_path = os.path.join(SCHAIN_STATIC_PATH, schain_name)
-    os.remove(schain_static_path)
-    shutil.rmtree(schain_state)
-
-
 def ensure_data_dir_path(schain_name: str) -> None:
     schain_state = os.path.join(SCHAIN_STATE_PATH, schain_name)
     os.makedirs(schain_state, exist_ok=True)
     if not is_mirage():
         schain_filestorage_state = os.path.join(schain_state, 'filestorage')
-        schain_static_path = os.path.join(SCHAIN_STATIC_PATH, schain_name)
-        if os.path.islink(schain_static_path):
-            os.unlink(schain_static_path)
-        os.symlink(schain_filestorage_state, schain_static_path, target_is_directory=True)
+        filestorage_static_path_schain = os.path.join(FILESTORAGE_STATIC_PATH, schain_name)
+        if os.path.islink(filestorage_static_path_schain):
+            os.unlink(filestorage_static_path_schain)
+        os.symlink(
+            schain_filestorage_state, filestorage_static_path_schain, target_is_directory=True
+        )
 
 
 def get_schain_volume_config(name, mount_path, mode=None, sync_node=False):
