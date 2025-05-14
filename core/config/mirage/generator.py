@@ -35,6 +35,7 @@ from core.config.schain.static_params import (
     get_static_schain_info_mirage,
     get_static_node_info_mirage,
 )
+from core.config.schain.static_params import get_static_chain_id_mirage
 
 from tools.configs.schains import MIRAGE_BASE_SCHAIN_CONFIG_FILEPATH
 
@@ -56,10 +57,6 @@ class MirageSkaleConfig:
 def generate_mirage_config_with_manager() -> None:
     """Will be implemented in the future"""
     pass
-
-
-def get_mirage_chain_id() -> str:
-    return '0x3A6'  # TODO: Replace with actual logic to get the chain ID (or move to config file)
 
 
 def skale_node_to_mirage_node_adapter(skale_node: SkaleNode, node_id: NodeId) -> MirageNode:
@@ -119,7 +116,7 @@ def generate_mirage_config(
     logger.info('Generating Mirage config...')
     base_config = SChainBaseConfig(MIRAGE_BASE_SCHAIN_CONFIG_FILEPATH)
 
-    chain_id = get_mirage_chain_id()
+    chain_id = get_static_chain_id_mirage()
     chain_id_int = int(chain_id, 16)
 
     dynamic_params = {'chainID': chain_id}
