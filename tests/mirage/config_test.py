@@ -206,8 +206,9 @@ def test_generate_mirage_config_minimal_regular(mirage_secret_key_file, mirage_n
     assert node_info['nodeName'] == str(node_id)
     assert node_info['syncNode'] is False
     assert 'wallets' in node_info
-    assert 'keyShareName' in node_info['wallets']
-    assert node_info['wallets']['BLSPublicKey0'] == node_bls_keys_for_node_info[0]
+    assert 'ima' in node_info['wallets']
+    assert 'keyShareName' in node_info['wallets']['ima']
+    assert node_info['wallets']['ima']['BLSPublicKey0'] == node_bls_keys_for_node_info[0]
 
     schain_info = config_dict['skaleConfig']['sChain']
     assert schain_info['schainID'] == int('0x3A6', 16)
@@ -216,7 +217,7 @@ def test_generate_mirage_config_minimal_regular(mirage_secret_key_file, mirage_n
 
     node_list = schain_info['nodes']
     assert len(node_list) == 2
-    assert 'publicKey' not in node_list[0]
+    assert 'publicKey' in node_list[0]
     assert 'publicIP' not in node_list[0]
     assert node_list[0]['owner'].startswith('0x')
 
@@ -256,7 +257,7 @@ def test_generate_mirage_config_minimal_sync(mirage_secret_key_file, mirage_node
     assert node_info['syncNode'] is True
 
     assert 'wallets' in node_info
-    wallets = node_info['wallets']
+    wallets = node_info['wallets']['ima']
     assert wallets['n'] == len(common_bls_keys)
     assert 'keyShareName' not in wallets
     assert 't' not in wallets
