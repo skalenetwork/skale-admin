@@ -773,7 +773,7 @@ def test_generate_config_static_groups(
         )
 
 
-@mock.patch('core.config.schain.generator.SKALE_NETWORK_TYPE', 'mirage')
+@mock.patch('core.config.schain.generator.is_mirage', (lambda: True))
 @mock.patch('core.config.mirage.generator.generate_mirage_config')
 @mock.patch('core.config.schain.generator.generate_schain_config')
 def test_generate_schain_config_with_skale_calls_mirage(
