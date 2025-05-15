@@ -31,7 +31,7 @@ MIRAGE_TEST_SECRET_KEY = {
 @pytest.fixture
 def mirage_secret_key_file():
     """Creates a dummy secret_key_0.json specifically for mirage tests."""
-    schain_name = 'mirage'
+    schain_name = 'mirage-devnet'
     schain_dir = os.path.join(SCHAINS_DIR_PATH, schain_name)
     secret_key_path = os.path.join(schain_dir, 'secret_key_0.json')
 
@@ -160,7 +160,7 @@ def test_generate_mirage_config_adapter(mirage_secret_key_file, node_groups):
 
     assert isinstance(config, MirageConfig)
     config_dict = config.to_dict()
-    assert config_dict['params']['chainID'] == '0x3A6'
+    assert config_dict['params']['chainID'] == 936
 
 
 def test_generate_mirage_config_minimal_regular(mirage_secret_key_file, mirage_node, node_groups):
@@ -197,7 +197,7 @@ def test_generate_mirage_config_minimal_regular(mirage_secret_key_file, mirage_n
     assert isinstance(config, MirageConfig)
     config_dict = config.to_dict()
 
-    assert config_dict['params']['chainID'] == '0x3A6'
+    assert config_dict['params']['chainID'] == 936
     assert 'skaleConfig' in config_dict
     assert 'contractSettings' not in config_dict['skaleConfig']
 
@@ -211,7 +211,7 @@ def test_generate_mirage_config_minimal_regular(mirage_secret_key_file, mirage_n
     assert node_info['wallets']['ima']['BLSPublicKey0'] == node_bls_keys_for_node_info[0]
 
     schain_info = config_dict['skaleConfig']['sChain']
-    assert schain_info['schainID'] == int('0x3A6', 16)
+    assert schain_info['schainID'] == 936
     assert schain_info['multiTransactionMode'] is True
     assert 'nodes' in schain_info
 
