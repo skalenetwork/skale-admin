@@ -22,12 +22,12 @@ from core.config.schain.helper import get_static_params, get_static_params_mirag
 from tools.configs import ENV_TYPE
 
 
-def get_static_chain_id_mirage(env_type: str = ENV_TYPE) -> list:
+def get_static_chain_id_mirage(env_type: str = ENV_TYPE):
     static_params = get_static_params_mirage(env_type)
     return static_params['info']['chainId']
 
 
-def get_static_chain_name_mirage(env_type: str = ENV_TYPE) -> list:
+def get_static_chain_name_mirage(env_type: str = ENV_TYPE) -> str:
     static_params = get_static_params_mirage(env_type)
     return static_params['info']['chainName']
 
