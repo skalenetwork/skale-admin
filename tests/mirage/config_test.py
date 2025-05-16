@@ -2,6 +2,7 @@ import pytest
 import mock
 import os
 import json
+import contextlib
 from pathlib import Path
 from typing import Dict, cast
 
@@ -9,6 +10,7 @@ from eth_typing import BlockNumber, HexStr, ChecksumAddress
 
 from core.config.mirage.generator import generate_mirage_config, generate_mirage_config_adapter
 from core.config.base_config import MirageConfig
+from core.config.schain.helper import get_static_params_mirage as original_get_static_params_mirage
 
 from skale.types.rotation import Rotation, NodesGroup, RotationNodeData, NodesSwap
 from skale.types.node import Node, NodeId, NodeStatus, Port, MirageNode, NodeWithSchains
@@ -17,6 +19,7 @@ from skale.contracts.manager.schains import SchainStructure
 
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ZERO_ADDRESS
+from tools.configs import MIRAGE_STATIC_PARAMS_FILEPATH
 
 MIRAGE_TEST_SECRET_KEY = {
     'key_share_name': 'BLS_KEY:SCHAIN_ID:MIRAGE:NODE_ID:0:DKG_ID:0',
@@ -28,10 +31,34 @@ MIRAGE_TEST_SECRET_KEY = {
 }
 
 
+@contextlib.contextmanager
+def create_dynamic_secret_key_file(chain_name_for_path: str):
+    """Context manager to create and clean up a dummy secret_key_0.json."""
+    schain_dir = os.path.join(SCHAINS_DIR_PATH, chain_name_for_path)
+    secret_key_path = os.path.join(schain_dir, 'secret_key_0.json')
+
+    Path(schain_dir).mkdir(parents=True, exist_ok=True)
+    with open(secret_key_path, 'w') as f:
+        json.dump(MIRAGE_TEST_SECRET_KEY, f)
+    try:
+        yield secret_key_path
+    finally:
+        if os.path.exists(secret_key_path):
+            os.remove(secret_key_path)
+        try:
+            if not os.listdir(schain_dir):
+                os.rmdir(schain_dir)
+        except OSError:
+            pass
+
+
 @pytest.fixture
-def mirage_secret_key_file():
-    """Creates a dummy secret_key_0.json specifically for mirage tests."""
-    schain_name = 'mirage'
+def mirage_default_secret_key_file():
+    """
+    Creates a dummy secret_key_0.json specifically for mirage tests.
+    Assumes env is exported devnet.
+    """
+    schain_name = 'mirage-devnet'
     schain_dir = os.path.join(SCHAINS_DIR_PATH, schain_name)
     secret_key_path = os.path.join(schain_dir, 'secret_key_0.json')
 
@@ -78,7 +105,7 @@ def node_groups() -> Dict[int, NodesGroup]:
     }
 
 
-def test_generate_mirage_config_adapter(mirage_secret_key_file, node_groups):
+def test_generate_mirage_config_adapter(mirage_default_secret_key_file, node_groups):
     mock_schain = mock.MagicMock(spec=SchainStructure)
     mock_schain.name = 'mirage'
     mock_schain.part_of_node = 1
@@ -160,14 +187,12 @@ def test_generate_mirage_config_adapter(mirage_secret_key_file, node_groups):
 
     assert isinstance(config, MirageConfig)
     config_dict = config.to_dict()
-    assert config_dict['params']['chainID'] == '0x3A6'
+    assert config_dict['params']['chainID'] == '0x3A8'
 
 
-def test_generate_mirage_config_minimal_regular(mirage_secret_key_file, mirage_node, node_groups):
-    mock_schain = mock.MagicMock(spec=SchainStructure)
-    mock_schain.name = 'mirage'
-    mock_schain.part_of_node = 1
-
+def test_generate_mirage_config_minimal_regular(
+    mirage_default_secret_key_file, mirage_node, node_groups
+):
     mock_rotation = mock.MagicMock(spec=Rotation)
     mock_rotation.rotation_counter = 0
     mock_rotation.freeze_until = 1700000000
@@ -197,7 +222,7 @@ def test_generate_mirage_config_minimal_regular(mirage_secret_key_file, mirage_n
     assert isinstance(config, MirageConfig)
     config_dict = config.to_dict()
 
-    assert config_dict['params']['chainID'] == '0x3A6'
+    assert config_dict['params']['chainID'] == '0x3A8'
     assert 'skaleConfig' in config_dict
     assert 'contractSettings' not in config_dict['skaleConfig']
 
@@ -211,7 +236,7 @@ def test_generate_mirage_config_minimal_regular(mirage_secret_key_file, mirage_n
     assert node_info['wallets']['ima']['BLSPublicKey0'] == node_bls_keys_for_node_info[0]
 
     schain_info = config_dict['skaleConfig']['sChain']
-    assert schain_info['schainID'] == int('0x3A6', 16)
+    assert schain_info['schainID'] == 936
     assert schain_info['multiTransactionMode'] is True
     assert 'nodes' in schain_info
 
@@ -222,11 +247,9 @@ def test_generate_mirage_config_minimal_regular(mirage_secret_key_file, mirage_n
     assert node_list[0]['owner'].startswith('0x')
 
 
-def test_generate_mirage_config_minimal_sync(mirage_secret_key_file, mirage_node, node_groups):
-    mock_schain = mock.MagicMock(spec=SchainStructure)
-    mock_schain.name = 'mirage'
-    mock_schain.part_of_node = 1
-
+def test_generate_mirage_config_minimal_sync(
+    mirage_default_secret_key_file, mirage_node, node_groups
+):
     mock_rotation = mock.MagicMock(spec=Rotation)
     mock_rotation.rotation_counter = 0
     mock_rotation.freeze_until = 1700000000
@@ -262,3 +285,65 @@ def test_generate_mirage_config_minimal_sync(mirage_secret_key_file, mirage_node
     assert 'keyShareName' not in wallets
     assert 't' not in wallets
     assert 'BLSPublicKey0' not in wallets
+
+
+@pytest.mark.parametrize(
+    'current_env_type, expected_chain_id_hex, expected_chain_id_int, expected_chain_name',
+    [
+        ('mainnet', '0x3A6', 934, 'mirage'),
+        ('testnet', '0x3A7', 935, 'mirage-testnet'),
+        ('qanet', '0x3A9', 937, 'mirage-qa'),
+        ('devnet', '0x3A8', 936, 'mirage-devnet'),
+    ],
+)
+def test_generate_mirage_config_for_different_env_types(
+    current_env_type,
+    expected_chain_id_hex,
+    expected_chain_id_int,
+    expected_chain_name,
+    mirage_node,
+    node_groups,
+):
+    mock_rotation = mock.MagicMock(spec=Rotation)
+    mock_rotation.rotation_counter = 0
+    mock_rotation.freeze_until = 1700000000
+
+    common_bls_keys = ['0xA', '0xB']
+
+    committee_nodes = [
+        mirage_node,
+        mirage_node,
+    ]
+
+    def replacement_get_static_params_mirage(
+        env_type_arg_passed_by_caller, path_arg_passed_by_caller=MIRAGE_STATIC_PARAMS_FILEPATH
+    ):
+        return original_get_static_params_mirage(
+            env_type=current_env_type, path=path_arg_passed_by_caller
+        )
+
+    with create_dynamic_secret_key_file(expected_chain_name):
+        with mock.patch(
+            'core.config.schain.static_params.get_static_params_mirage',
+            new=replacement_get_static_params_mirage,
+        ):
+            config = generate_mirage_config(
+                node=mirage_node,
+                committee_nodes=committee_nodes,
+                node_groups=node_groups,
+                group_index=mock_rotation.rotation_counter,
+                ecdsa_key_name='NEK:SIMPLE_REGULAR',
+                common_bls_public_keys=common_bls_keys,
+                sync_node=False,
+                archive=False,
+                catchup=False,
+            )
+
+            assert isinstance(config, MirageConfig)
+            config_dict = config.to_dict()
+
+    assert config_dict['params']['chainID'] == expected_chain_id_hex
+
+    assert config_dict['skaleConfig']['sChain']['schainID'] == expected_chain_id_int
+
+    assert config_dict['skaleConfig']['sChain']['schainName'] == expected_chain_name

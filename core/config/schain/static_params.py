@@ -17,9 +17,21 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from eth_typing import HexStr
+
 from core.schains.types import SchainType
 from core.config.schain.helper import get_static_params, get_static_params_mirage
 from tools.configs import ENV_TYPE
+
+
+def get_static_chain_id_mirage(env_type: str = ENV_TYPE) -> HexStr:
+    static_params = get_static_params_mirage(env_type)
+    return static_params['info']['chain_id']
+
+
+def get_static_chain_name_mirage(env_type: str = ENV_TYPE) -> str:
+    static_params = get_static_params_mirage(env_type)
+    return static_params['info']['chain_name']
 
 
 def get_static_skaled_cmd_mirage(env_type: str = ENV_TYPE) -> list:

@@ -12,7 +12,7 @@ envs:
 
     package:
       iptables-persistent: 1.0.4
-      lvm2: 2.02.0
+      lvm2: disabled
       btrfs-progs: 4.15.1
       lsof: "4.89"
       psmisc: 23.1-1
@@ -27,9 +27,8 @@ envs:
       emptyBlockIntervalMs: 10000
       snapshotDownloadTimeout: 18000
       snapshotDownloadInactiveTimeout: 120
-      contractStorageLimit: 1000000000000000000
       dbStorageLimit: 1000000000000000000
-      maxConsensusStorageBytes: 1000000000000000000
+      maxConsensusStorageBytes: 759239973273
 
     skaled_cmd: ["-v 2", "--aa no"]
 
@@ -47,6 +46,10 @@ envs:
       transactionQueueLimitBytes: 69206016
       futureTransactionQueueLimitBytes: 140509184
       maxOpenLeveldbFiles: 1000
+
+    info:
+      chain_id: "0x3A6"
+      chain_name: mirage
 
   testnet:
     server:
@@ -58,7 +61,7 @@ envs:
 
     package:
       iptables-persistent: 1.0.4
-      lvm2: 2.02.0
+      lvm2: disabled
       btrfs-progs: 4.15.1
       lsof: "4.89"
       psmisc: 23.1-1
@@ -73,9 +76,8 @@ envs:
       emptyBlockIntervalMs: 10000
       snapshotDownloadTimeout: 18000
       snapshotDownloadInactiveTimeout: 120
-      contractStorageLimit: 1000000000000000000
       dbStorageLimit: 1000000000000000000
-      maxConsensusStorageBytes: 1000000000000000000
+      maxConsensusStorageBytes: 79919972352
 
     skaled_cmd: ["-v 2", "--aa no"]
 
@@ -93,6 +95,10 @@ envs:
       transactionQueueLimitBytes: 69206016
       futureTransactionQueueLimitBytes: 140509184
       maxOpenLeveldbFiles: 1000
+
+    info:
+      chain_id: "0x3A7"
+      chain_name: mirage-testnet
 
   qanet:
     server:
@@ -104,7 +110,7 @@ envs:
 
     package:
       iptables-persistent: 1.0.4
-      lvm2: 2.02.0
+      lvm2: disabled
       btrfs-progs: 4.15.1
       lsof: "4.89"
       psmisc: 23.1-1
@@ -119,9 +125,8 @@ envs:
       emptyBlockIntervalMs: 10000
       snapshotDownloadTimeout: 18000
       snapshotDownloadInactiveTimeout: 120
-      contractStorageLimit: 1000000000000000000
       dbStorageLimit: 1000000000000000000
-      maxConsensusStorageBytes: 1000000000000000000
+      maxConsensusStorageBytes: 79919972352
 
     skaled_cmd: ["-v 2", "--aa no"]
 
@@ -140,6 +145,10 @@ envs:
       futureTransactionQueueLimitBytes: 140509184
       maxOpenLeveldbFiles: 1000
 
+    info:
+      chain_id: "0x3A9"
+      chain_name: mirage-qa
+
   devnet:
     server:
       cpu_total: 1
@@ -150,7 +159,7 @@ envs:
 
     package:
       iptables-persistent: 1.0.4
-      lvm2: 2.02.0
+      lvm2: disabled
       btrfs-progs: 4.15.1
       lsof: "4.89"
       psmisc: 23.1-1
@@ -165,9 +174,8 @@ envs:
       emptyBlockIntervalMs: 10000
       snapshotDownloadTimeout: 18000
       snapshotDownloadInactiveTimeout: 120
-      contractStorageLimit: 1000000000000000000
       dbStorageLimit: 1000000000000000000
-      maxConsensusStorageBytes: 1000000000000000000
+      maxConsensusStorageBytes: 31967988940
 
     skaled_cmd:
       ["-v 3", "--web3-trace", "--enable-debug-behavior-apis", "--aa no"]
@@ -186,3 +194,7 @@ envs:
       transactionQueueLimitBytes: 69206016
       futureTransactionQueueLimitBytes: 140509184
       maxOpenLeveldbFiles: 1000
+
+    info:
+      chain_id: "0x3A8"
+      chain_name: mirage-devnet
