@@ -117,6 +117,7 @@ def generate_mirage_config(
     base_config = SChainBaseConfig(MIRAGE_BASE_SCHAIN_CONFIG_FILEPATH)
 
     chain_id = get_static_chain_id_mirage()
+    chain_id_int = int(chain_id, 16)
 
     dynamic_params = {'chainID': chain_id}
     accounts = {
@@ -133,7 +134,7 @@ def generate_mirage_config(
     )
 
     schain_info = MirageChainInfo(
-        schain_id=chain_id,
+        schain_id=chain_id_int,
         node_groups=node_groups,
         nodes=chain_nodes,
         static_schain_info=static_schain_info,
