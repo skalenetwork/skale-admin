@@ -101,7 +101,7 @@ def generate_wallets_config(
     rotation_id: int,
     sync_node: bool,
     nodes_in_schain: int,
-    common_bls_public_keys: str,
+    common_bls_public_keys: list[str],
 ) -> dict:
     wallets = {'ima': {}}
     formatted_common_pk = {}

@@ -1,8 +1,8 @@
 import json
 import pytest
 
-from core.schains.config.generator import SChainBaseConfig
-from core.schains.config.accounts import generate_dynamic_accounts
+from core.config.schain.generator import SChainBaseConfig
+from core.config.schain.accounts import generate_dynamic_accounts
 
 from tools.helper import read_json
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH

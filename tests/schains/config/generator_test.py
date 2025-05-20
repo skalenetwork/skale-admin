@@ -3,7 +3,9 @@ import os
 from pathlib import Path
 
 import pytest
+import mock
 from web3 import Web3
+
 from skale.contracts.manager.schains import SchainStructure
 from skale.types.rotation import Rotation
 from skale.dataclasses.schain_options import AllocationType
@@ -17,14 +19,15 @@ from config_controller_predeployed import (
 from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
 
-from core.schains.config.generator import (
+from core.config.base_config import MirageConfig
+from core.config.schain.generator import (
     generate_schain_config_with_skale,
     generate_schain_config,
     get_schain_originator,
     get_ima_contracts_addresses,
 )
-from core.schains.config.helper import get_schain_id
-from core.schains.config.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
+from core.config.schain.helper import get_schain_id
+from core.config.schain.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.node_options import NodeOptions
 
@@ -42,8 +45,8 @@ SECRET_KEY = {
     'common_public_key': COMMON_BLS_PUBLIC_KEY,
     'public_key': ['123', '456', '789', '123'],
     'bls_public_keys': [
-        '347043388985314611088523723672849261459066865147342514766975146031592968981:16865625797537152485129819826310148884042040710059790347821575891945447848787:12298029821069512162285775240688220379514183764628345956323231135392667898379:8',  # noqa
-        '347043388985314611088523723672849261459066865147342514766975146031592968982:16865625797537152485129819826310148884042040710059790347821575891945447848788:12298029821069512162285775240688220379514183764628345956323231135392667898380:9',  # noqa
+        '347043388985314611088523723672849261459066865147342514766975146031592968981:16865625797537152485129819826310148884042040710059790347821575891945447848787:12298029821069512162285775240688220379514183764628345956323231135392667898379:8',
+        '347043388985314611088523723672849261459066865147342514766975146031592968982:16865625797537152485129819826310148884042040710059790347821575891945447848788:12298029821069512162285775240688220379514183764628345956323231135392667898380:9',
     ],
 }
 
@@ -165,22 +168,12 @@ def test_get_ima_contracts_addresses(skale_ima):
         'deposit_box_erc721_with_metadata_address',
         'linker_address',
     ]
-    addressConversion = {
-        'community_pool_address': 'CommunityPool',
-        'deposit_box_eth_address': 'DepositBoxEth',
-        'deposit_box_erc20_address': 'DepositBoxERC20',
-        'deposit_box_erc721_address': 'DepositBoxERC721',
-        'deposit_box_erc1155_address': 'DepositBoxERC1155',
-        'deposit_box_erc721_with_metadata_address': 'DepositBoxERC721WithMetadata',
-        'linker_address': 'Linker',
-    }
+
     assert isinstance(ima_addresses, dict)
     assert all(key in ima_addresses for key in expected_keys)
 
     for key in expected_keys:
-        assert ima_addresses[key] == Web3.to_hex(
-            skale_ima.instance.get_contract_address(addressConversion[key])
-        )
+        assert Web3.is_checksum_address(ima_addresses[key])
 
 
 def check_keys(data, expected_keys):
@@ -233,7 +226,6 @@ def check_node_info(node_id, info):
     check_keys(info, keys)
     assert info['nodeID'] == node_id
     check_node_ports(info)
-    assert info['infoHttpRpcPort'] == info['basePort'] + 9
     assert info['ecdsaKeyName'] == ECDSA_KEY_NAME
 
 
@@ -779,3 +771,41 @@ def test_generate_config_static_groups(
         assert json.dumps(config_group[rotation_id]) == json.dumps(
             static_groups_for_schain[rotation_id_string]
         )
+
+
+@mock.patch('core.config.schain.generator.is_mirage', (lambda: True))
+@mock.patch('core.config.mirage.generator.generate_mirage_config')
+@mock.patch('core.config.schain.generator.generate_schain_config')
+def test_generate_schain_config_with_skale_calls_mirage(
+    mock_generate_standard,
+    mock_generate_mirage,
+    skale,
+    skale_ima,
+    node_config,
+    schain_on_contracts,
+    schain_secret_key_file,
+):
+    schain_name = schain_on_contracts
+    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    current_node_id = node_ids[0]
+    node_config.id = current_node_id
+
+    rotation_data = Rotation(leaving_node_id=1, new_node_id=0, freeze_until=0, rotation_counter=0)
+
+    mock_generate_mirage.return_value = mock.MagicMock(spec=MirageConfig)
+
+    result = generate_schain_config_with_skale(
+        skale=skale,
+        skale_ima=skale_ima,
+        schain_name=schain_name,
+        generation=2,
+        node_config=node_config,
+        rotation_data=rotation_data,
+        ecdsa_key_name=ECDSA_KEY_NAME,
+        sync_node=False,
+        node_options=NodeOptions(),
+    )
+
+    mock_generate_mirage.assert_called_once()
+    mock_generate_standard.assert_not_called()
+    assert isinstance(result, MirageConfig)

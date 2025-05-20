@@ -19,10 +19,10 @@
 
 from typing import Optional
 
-from core.schains.config.file_manager import ConfigFileManager
-from core.schains.config.helper import get_schain_ports_from_config
-from core.schains.config.main import get_skaled_container_config_path
-from core.schains.config.static_params import get_static_schain_cmd
+from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.helper import get_schain_ports_from_config
+from core.config.schain.main import get_skaled_container_config_path
+from core.config.schain.static_params import get_static_schain_cmd
 from core.schains.ssl import get_ssl_filepath
 
 from tools.configs import SGX_SERVER_URL

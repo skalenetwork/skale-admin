@@ -16,7 +16,7 @@ from skale.utils.web3_utils import to_checksum_address
 
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
-from core.schains.config.file_manager import ConfigFileManager
+from core.config.schain.file_manager import ConfigFileManager
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from web.routes.node import node_bp

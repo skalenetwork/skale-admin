@@ -13,9 +13,9 @@ from skale.schain_config.generator import get_schain_nodes_with_schains
 
 
 from core.schains.checks import SChainChecks, CheckRes
-from core.schains.config.file_manager import UpstreamConfigFilename
-from core.schains.config.directory import get_schain_check_filepath, schain_config_dir
-from core.schains.config.schain_node import generate_schain_nodes
+from core.config.schain.file_manager import UpstreamConfigFilename
+from core.config.schain.directory import get_schain_check_filepath, schain_config_dir
+from core.config.schain.schain_node import generate_schain_nodes
 from core.schains.runner import get_container_info, get_image_name, run_ima_container
 from core.schains.skaled_exit_codes import SkaledExitCodes
 

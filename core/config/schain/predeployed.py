@@ -48,8 +48,8 @@ from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminG
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS, generate_contracts
 from context_predeployed import ContextGenerator, CONTEXT_ADDRESS
 
-from core.schains.config.accounts import add_to_accounts, generate_account
-from core.schains.config.generation import Gen
+from core.config.schain.accounts import add_to_accounts, generate_account
+from core.config.schain.generation import Gen
 
 from core.schains.types import SchainType
 from core.schains.limits import get_fs_allocated_storage

@@ -18,80 +18,43 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from dataclasses import dataclass
 from typing import Dict
 
 from web3 import Web3
 from eth_typing import ChecksumAddress
 
-from etherbase_predeployed import ETHERBASE_ADDRESS
-from marionette_predeployed import MARIONETTE_ADDRESS
+from etherbase_predeployed.address import ETHERBASE_ADDRESS
+from marionette_predeployed.address import MARIONETTE_ADDRESS
 from skale import SkaleManager, SkaleIma
 from skale.contracts.manager.schains import SchainStructure
 from skale.schain_config.generator import get_schain_nodes_with_schains
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.schain_config.rotation_history import get_previous_schain_groups
 from skale.types.rotation import Rotation
+from skale.types.schain import SchainName
+from skale.types.node import NodeId
+
+from skale_contracts.projects.ima import MainnetImaContract
 
 from core.node_config import NodeConfig
-from core.schains.config.skale_section import SkaleConfig, generate_skale_section
-from core.schains.config.predeployed import generate_predeployed_accounts
-from core.schains.config.precompiled import generate_precompiled_accounts
-from core.schains.config.generation import Gen
-from core.schains.config.legacy_data import is_static_accounts, static_accounts, static_groups
-from core.schains.config.helper import get_chain_id, get_schain_id
+from core.config.schain.skale_section import generate_skale_section
+from core.config.schain.predeployed import generate_predeployed_accounts
+from core.config.precompiled import generate_precompiled_accounts
+from core.config.schain.generation import Gen
+from core.config.schain.legacy_data import is_static_accounts, static_accounts, static_groups
+from core.config.schain.helper import get_chain_id, get_schain_id
 from core.schains.dkg.utils import get_common_bls_public_key
 from core.schains.limits import get_schain_type
+from core.config.base_config import SChainConfig, MirageConfig, SChainBaseConfig
 
-from tools.helper import read_json
+from core.config.mirage.generator import generate_mirage_config_adapter
+
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
-from tools.helper import is_zero_address, is_address_contract
+from tools.helper import is_mirage, is_zero_address, is_address_contract
 from tools.node_options import NodeOptions
 
 
 logger = logging.getLogger(__name__)
-
-
-class NoBaseConfigError(Exception):
-    pass
-
-
-class SChainBaseConfig:
-    """Wrapper for the static part of sChain config"""
-
-    def __init__(self, base_config_path):
-        self._base_config_path = base_config_path
-        self.read()
-
-    def read(self):
-        logger.debug(f'Reading sChain base config: {self._base_config_path}')
-        try:
-            self.config = read_json(self._base_config_path)
-        except Exception as err:
-            raise NoBaseConfigError(err)
-
-
-@dataclass
-class SChainConfig:
-    """Dataclass that represents a full sChain configuration"""
-
-    seal_engine: str
-    params: dict
-    unddos: dict
-    genesis: dict
-    accounts: dict
-    skale_config: SkaleConfig
-
-    def to_dict(self):
-        """Returns camel-case representation of the SChainConfig object"""
-        return {
-            'sealEngine': self.seal_engine,
-            'params': self.params,
-            'unddos': self.unddos,
-            'genesis': self.genesis,
-            'accounts': self.accounts,
-            'skaleConfig': self.skale_config.to_dict(),
-        }
 
 
 def get_on_chain_owner(schain: SchainStructure, generation: int, is_owner_contract: bool) -> str:
@@ -104,6 +67,7 @@ def get_on_chain_owner(schain: SchainStructure, generation: int, is_owner_contra
         return MARIONETTE_ADDRESS
     if generation == Gen.ZERO:
         return schain.mainnet_owner
+    return MARIONETTE_ADDRESS
 
 
 def get_on_chain_etherbase(schain: SchainStructure, generation: int) -> str:
@@ -114,6 +78,7 @@ def get_on_chain_etherbase(schain: SchainStructure, generation: int) -> str:
         return ETHERBASE_ADDRESS
     if generation == Gen.ZERO:
         return schain.mainnet_owner
+    return ETHERBASE_ADDRESS
 
 
 def get_schain_id_for_chain(schain_name: str, generation: int) -> int:
@@ -124,6 +89,7 @@ def get_schain_id_for_chain(schain_name: str, generation: int) -> int:
         return get_schain_id(schain_name)
     if generation >= Gen.ZERO:
         return 1
+    return get_schain_id(schain_name)
 
 
 def get_schain_originator(schain: SchainStructure) -> str:
@@ -139,25 +105,27 @@ def get_ima_contracts_addresses(skale_ima: SkaleIma) -> Dict[str, ChecksumAddres
     """Gets core IMA contract addresses on mainnet from the SkaleIma instance."""
 
     return {
-        'community_pool_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('CommunityPool')
+        'community_pool_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.COMMUNITY_POOL)
         ),
-        'deposit_box_eth_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('DepositBoxEth')
+        'deposit_box_eth_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ETH)
         ),
-        'deposit_box_erc20_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('DepositBoxERC20')
+        'deposit_box_erc20_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC20)
         ),
-        'deposit_box_erc721_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('DepositBoxERC721')
+        'deposit_box_erc721_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC721)
         ),
-        'deposit_box_erc1155_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('DepositBoxERC1155')
+        'deposit_box_erc1155_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC1155)
         ),
-        'deposit_box_erc721_with_metadata_address': Web3.to_hex(
-            skale_ima.instance.get_contract_address('DepositBoxERC721WithMetadata')
+        'deposit_box_erc721_with_metadata_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC721_WITH_META)
         ),
-        'linker_address': Web3.to_hex(skale_ima.instance.get_contract_address('Linker')),
+        'linker_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.LINKER)
+        ),
     }
 
 
@@ -263,14 +231,14 @@ def generate_schain_config(
 def generate_schain_config_with_skale(
     skale: SkaleManager,
     skale_ima: SkaleIma,
-    schain_name: str,
+    schain_name: SchainName,
     generation: int,
     node_config: NodeConfig,
     rotation_data: Rotation,
     ecdsa_key_name: str,
     sync_node: bool = False,
     node_options: NodeOptions = NodeOptions(),
-) -> SChainConfig:
+) -> SChainConfig | MirageConfig:
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
     schains_on_node = skale.schains.get_schains_for_node(node_config.id)
     schain = skale.schains.get_by_name(schain_name)
@@ -286,6 +254,20 @@ def generate_schain_config_with_skale(
         schain_base_port = node_config.schain_base_port
     else:
         schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
+
+    if is_mirage():
+        return generate_mirage_config_adapter(
+            skale_node=node,
+            node_id=NodeId(node_config.id),
+            rotation_data=rotation_data,
+            ecdsa_key_name=ecdsa_key_name,
+            schain_nodes_with_schains=schain_nodes_with_schains,
+            node_groups=node_groups,
+            common_bls_public_keys=common_bls_public_keys,
+            sync_node=sync_node,
+            archive=node_options.archive,
+            catchup=node_options.catchup,
+        )
 
     mainnet_ima_addresses = get_ima_contracts_addresses(skale_ima)
 

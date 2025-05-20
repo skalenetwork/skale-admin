@@ -7,7 +7,7 @@ import freezegun
 import pytest
 
 from core.schains.checks import CheckRes, SkaledChecks
-from core.schains.config.directory import schain_config_dir
+from core.config.schain.directory import schain_config_dir
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.monitor.skaled_monitor import (
     BackupSkaledMonitor,

@@ -29,10 +29,11 @@ from core.schains.limits import get_schain_limit, get_ima_limit, get_schain_type
 from core.schains.types import MetricType, ContainerType
 from core.schains.skaled_exit_codes import SkaledExitCodes
 from core.schains.cmd import get_schain_container_cmd
-from core.schains.config.helper import get_schain_env
+from core.config.schain.helper import get_schain_env
 from core.schains.ima import get_ima_env
-from core.schains.config.directory import schain_config_dir_host
+from core.config.schain.directory import schain_config_dir_host
 from tools.docker_utils import DockerUtils
+from tools.helper import is_mirage
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (
     CONTAINER_NAME_PREFIX,
@@ -197,8 +198,12 @@ def run_schain_container(
     schain_name = schain.name
     schain_type = get_schain_type(schain.part_of_node)
 
-    cpu_limit = None if sync_node else get_schain_limit(schain_type, MetricType.cpu_shares)
-    mem_limit = None if sync_node else get_schain_limit(schain_type, MetricType.mem)
+    if sync_node or is_mirage():
+        cpu_limit = None
+        mem_limit = None
+    else:
+        cpu_limit = get_schain_limit(schain_type, MetricType.cpu_shares)
+        mem_limit = get_schain_limit(schain_type, MetricType.mem)
 
     volume_config = get_schain_volume_config(
         schain_name, DATA_DIR_CONTAINER_PATH, mode=volume_mode, sync_node=sync_node

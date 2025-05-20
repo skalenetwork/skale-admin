@@ -1,4 +1,4 @@
-from core.schains.config.precompiled import generate_precompiled_accounts
+from core.config.precompiled import generate_precompiled_accounts
 from marionette_predeployed import MARIONETTE_ADDRESS
 from filestorage_predeployed import FILESTORAGE_ADDRESS
 

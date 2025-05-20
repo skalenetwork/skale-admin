@@ -24,7 +24,7 @@ from json.decoder import JSONDecodeError
 from typing import Optional
 from abc import ABCMeta, abstractmethod
 
-from core.schains.config.directory import node_cli_status_filepath, skaled_status_filepath
+from core.config.schain.directory import node_cli_status_filepath, skaled_status_filepath
 from tools.config_utils import config_getter, log_broken_status_file
 from tools.helper import read_json
 

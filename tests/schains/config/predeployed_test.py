@@ -5,8 +5,8 @@ from etherbase_predeployed import ETHERBASE_ADDRESS
 from context_predeployed import CONTEXT_ADDRESS
 
 from core.schains.types import SchainType
-from core.schains.config.generator import get_ima_contracts_addresses
-from core.schains.config.predeployed import (
+from core.config.schain.generator import get_ima_contracts_addresses
+from core.config.schain.predeployed import (
     generate_v1_predeployed_contracts,
     generate_predeployed_accounts,
 )

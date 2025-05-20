@@ -27,7 +27,7 @@ from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import ClassVar, Dict, List, Optional, TypeVar
 
-from core.schains.config.directory import get_files_with_prefix
+from core.config.schain.directory import get_files_with_prefix
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import read_json, write_json
 

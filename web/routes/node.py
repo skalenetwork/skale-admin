@@ -79,7 +79,7 @@ def signature():
     logger.debug(request)
     validator_id = int(request.args.get('validator_id'))
     signature = g.skale.validator_service.get_link_node_signature(validator_id)
-    return construct_ok_response(data={'signature': signature})
+    return construct_ok_response(data={'signature': signature.hex()})
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-on'), methods=['POST'])

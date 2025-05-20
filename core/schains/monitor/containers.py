@@ -40,6 +40,7 @@ from core.schains.ssl import update_ssl_change_date
 from tools.configs import SYNC_NODE
 from tools.configs.containers import MAX_SCHAIN_RESTART_COUNT, SCHAIN_CONTAINER, IMA_CONTAINER
 from tools.docker_utils import DockerUtils
+from tools.helper import is_mirage
 
 
 logger = logging.getLogger(__name__)
@@ -110,7 +111,7 @@ def monitor_schain_container(
 def monitor_ima_container(
     schain: dict, ima_data: ImaData, migration_ts: int = 0, dutils: DockerUtils = None
 ) -> None:
-    if SYNC_NODE:
+    if SYNC_NODE or is_mirage():
         return
 
     if not ima_data.linked:

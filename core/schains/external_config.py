@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from core.schains.firewall.types import IpRange
-from core.schains.config.directory import schain_config_dir
+from core.config.schain.directory import schain_config_dir
 from tools.helper import read_json, write_json
 
 

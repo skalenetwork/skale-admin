@@ -81,9 +81,11 @@ META_FILEPATH = os.path.join(NODE_DATA_PATH, 'meta.json')
 ALLOWED_TIMESTAMP_DIFF = int(os.getenv('ALLOWED_TIMESTAMP_DIFF', 120))
 
 ENV_TYPE = os.environ.get('ENV_TYPE')
+SKALE_NETWORK_TYPE = os.environ.get('SKALE_NETWORK_TYPE')
 ALLOCATION_FILEPATH = os.path.join(CONFIG_FOLDER, 'schain_allocation.yml')
 
 STATIC_PARAMS_FILEPATH = os.path.join(CONFIG_FOLDER, 'static_params.yaml')
+MIRAGE_STATIC_PARAMS_FILEPATH = os.path.join(CONFIG_FOLDER, 'mirage_static_params.yaml')
 
 DEFAULT_POOL = 'transactions'
 

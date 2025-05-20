@@ -11,6 +11,8 @@ from concurrent.futures import Future, ThreadPoolExecutor as Executor
 from contextlib import contextmanager
 from enum import Enum
 
+from eth_utils.hexadecimal import remove_0x_prefix
+
 import mock
 import pytest
 import warnings
@@ -24,8 +26,8 @@ from core.schains.dkg.client import DkgError
 from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, run_dkg
 from core.schains.dkg.structures import DKGStatus, DKGStep
 from core.schains.dkg.utils import DKGKeyGenerationError, generate_bls_keys
-from core.schains.config import init_schain_config_dir
-from core.schains.config.generator import get_schain_nodes_with_schains
+from core.config.schain.directory import init_schain_config_dir
+from core.config.schain.generator import get_schain_nodes_with_schains
 
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.configs.schains import SCHAINS_DIR_PATH
@@ -169,7 +171,7 @@ def generate_broadcast_data(skale, schain_name, node_id):
     client.n, client.t = n, t
 
     group_index = skale.schains.name_to_group_id(schain_name)
-    group_index_str = str(int(skale.web3.to_hex(group_index)[2:], 16))
+    group_index_str = str(int(remove_0x_prefix(skale.web3.to_hex(group_index)), 16))
     rotation = skale.node_rotation.get_rotation(schain_name)
 
     rotation_id = rotation.rotation_counter
@@ -187,7 +189,7 @@ def generate_broadcast_data(skale, schain_name, node_id):
 
 
 def send_fake_broadcast(skale, schain_name, node_id, rotation_id=0):
-    group_index = skale.schains.name_to_group_id(schain_name).hex()
+    group_index = skale.schains.name_to_group_id(schain_name)
     verification_vector, _ = generate_broadcast_data(skale, schain_name, node_id)
     secret_key_contribution = [
         (
