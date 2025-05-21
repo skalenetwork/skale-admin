@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 class SChainFirewallManager(IFirewallManager):
-    def __init__(self, name: str, first_port: int, last_port: int) -> None:
-        self.name = name
+    def __init__(self, group: str, first_port: int, last_port: int) -> None:
+        self.group = group
         self.first_port = first_port
         self.last_port = last_port
         self._host_controller: Optional[IHostFirewallController] = None
@@ -91,7 +91,7 @@ class IptablesSChainFirewallManager(SChainFirewallManager):
 
 class NFTSchainFirewallManager(SChainFirewallManager):
     def create_host_controller(self) -> NFTablesController:
-        nc_controller = NFTablesController(chain=self.name)
+        nc_controller = NFTablesController(chain=self.group)
         nc_controller.create_table()
         nc_controller.create_chain(self.first_port, self.last_port)
         return nc_controller
