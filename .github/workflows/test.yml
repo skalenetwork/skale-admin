@@ -4,6 +4,7 @@ env:
   ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
   MANAGER_TAG: "1.12.0-develop.21"
+  MIRAGE_TAG: "0.0.1-develop.17"
   IMA_TAG: "2.3.0-beta.3"
   SGX_WALLET_TAG: "1.10.0-develop.3"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -14,6 +15,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test_mirage:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install python dependencies
+        run: |
+          source ../.venv/bin/activate
+          uv pip install -r requirements.txt --prerelease=allow
+          uv pip install -r requirements-dev.txt
+
+      - name: Checking formatting with ruff
+        run: uv run ruff check
+      
+      - name: Deploy manager
+        run: |
+          bash ./helper-scripts/deploy_manager.sh
+          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
+
+      # - name: Deploy mirage
+      #   run: |
+      #     bash ./helper-scripts/deploy_mirage.sh
+      #     docker rmi -f skalenetwork/professional:${{ env.MIRAGE_TAG }}
+
+
   test_core:
     runs-on: self-hosted
     env:
