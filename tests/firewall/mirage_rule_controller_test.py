@@ -1,14 +1,15 @@
 import os
 import mock
-import concurrent.futures
 
 import pytest
 
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
-from core.schains.firewall import NFTablesController
-from core.schains.firewall.utils import get_default_rule_controller, get_mirage_committee_scope_rule_controller, get_mirage_network_scope_rule_controller
-from core.schains.firewall.types import Action, SChainRule, IpRange, SkaledPorts
+from core.schains.firewall.utils import (
+    get_mirage_committee_scope_rule_controller,
+    get_mirage_network_scope_rule_controller
+)
+from core.schains.firewall.types import Action, SChainRule
 
 from tools.helper import run_cmd
 
@@ -55,9 +56,9 @@ def test_network_scope_rule_controller(nft_chain_folder):
         SChainRule(first_ip='4.4.4.4', first_port=10004, action=Action.ACCEPT),
     ]
 
-    mirage_network_expected_chain = 'chain skale-mirage-network {\n\ttype filter hook input priority filter; policy accept;\n\ttcp dport 10008 counter accept\n\ttcp dport 10007 counter accept\n\tip saddr 4.4.4.4 tcp dport 10005 counter accept\n\tip saddr 2.2.2.2 tcp dport 10005 counter accept\n\tip saddr 1.1.1.1 tcp dport 10005 counter accept\n\ttcp dport 10003 counter accept\n\ttcp dport 10002 counter accept\n\tip saddr 4.4.4.4 tcp dport 10001 counter accept\n\tip saddr 2.2.2.2 tcp dport 10001 counter accept\n\tip saddr 1.1.1.1 tcp dport 10001 counter accept\n\ttcp dport 10001 iifname != "lo" counter drop\n\ttcp dport 10005 iifname != "lo" counter drop\n}\n'
+    mirage_network_expected_chain = 'chain skale-mirage-network {\n\ttype filter hook input priority filter; policy accept;\n\ttcp dport 10008 counter accept\n\ttcp dport 10007 counter accept\n\tip saddr 4.4.4.4 tcp dport 10005 counter accept\n\tip saddr 2.2.2.2 tcp dport 10005 counter accept\n\tip saddr 1.1.1.1 tcp dport 10005 counter accept\n\ttcp dport 10003 counter accept\n\ttcp dport 10002 counter accept\n\tip saddr 4.4.4.4 tcp dport 10001 counter accept\n\tip saddr 2.2.2.2 tcp dport 10001 counter accept\n\tip saddr 1.1.1.1 tcp dport 10001 counter accept\n\ttcp dport 10001 iifname != "lo" counter drop\n\ttcp dport 10005 iifname != "lo" counter drop\n}\n'  # noqa
 
-    mirage_committee_expected_chain = 'chain skale-mirage-committee {\n\ttype filter hook input priority filter; policy accept;\n\tip saddr 4.4.4.4 tcp dport 10004 counter accept\n\tip saddr 2.2.2.2 tcp dport 10004 counter accept\n\tip saddr 1.1.1.1 tcp dport 10004 counter accept\n\tip saddr 4.4.4.4 tcp dport 10000 counter accept\n\tip saddr 2.2.2.2 tcp dport 10000 counter accept\n\tip saddr 1.1.1.1 tcp dport 10000 counter accept\n\ttcp dport 10000 iifname != "lo" counter drop\n\ttcp dport 10004 iifname != "lo" counter drop\n}\n'
+    mirage_committee_expected_chain = 'chain skale-mirage-committee {\n\ttype filter hook input priority filter; policy accept;\n\tip saddr 4.4.4.4 tcp dport 10004 counter accept\n\tip saddr 2.2.2.2 tcp dport 10004 counter accept\n\tip saddr 1.1.1.1 tcp dport 10004 counter accept\n\tip saddr 4.4.4.4 tcp dport 10000 counter accept\n\tip saddr 2.2.2.2 tcp dport 10000 counter accept\n\tip saddr 1.1.1.1 tcp dport 10000 counter accept\n\ttcp dport 10000 iifname != "lo" counter drop\n\ttcp dport 10004 iifname != "lo" counter drop\n}\n'  # noqa
 
     for rc_create, expected_rules, expected_chain in zip(
         (
