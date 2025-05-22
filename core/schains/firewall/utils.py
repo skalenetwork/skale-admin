@@ -26,8 +26,12 @@ from skale import SkaleManager
 
 from .types import IpRange
 from .nftables import NFTablesController
-from .rule_controller import IptablesSChainRuleController, NFTSchainRuleController
-
+from .rule_controller import (
+    IptablesSChainRuleController,
+    MirageCommitteeController,
+    MirageNetworkScopeController,
+    NFTSchainRuleController
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,13 +42,39 @@ def get_default_rule_controller(
     own_ip: Optional[str] = None,
     node_ips: List[str] = [],
     sync_agent_ranges: Optional[List[IpRange]] = [],
-) -> IptablesSChainRuleController:
+)-> NFTSchainRuleController:
     return get_nftables_rule_controller(
         name=name,
         base_port=base_port,
         own_ip=own_ip,
         node_ips=node_ips,
         sync_agent_ranges=sync_agent_ranges,
+    )
+
+
+def get_mirage_network_scope_rule_controller(
+    base_port: Optional[int] = None,
+    own_ip: Optional[str] = None,
+    node_ips: List[str] = [],
+):
+    return MirageNetworkScopeController(
+        controller_name='mirage-network',
+        base_port=base_port,
+        own_ip=own_ip,
+        node_ips=node_ips
+    )
+
+
+def get_mirage_committee_scope_rule_controller(
+    base_port: Optional[int] = None,
+    own_ip: Optional[str] = None,
+    node_ips: List[str] = [],
+):
+    return MirageCommitteeController(
+        controller_name='mirage-committee',
+        base_port=base_port,
+        own_ip=own_ip,
+        node_ips=node_ips
     )
 
 

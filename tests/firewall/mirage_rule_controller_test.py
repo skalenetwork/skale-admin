@@ -1,0 +1,111 @@
+import os
+import mock
+import concurrent.futures
+
+import pytest
+
+from skale.schain_config import PORTS_PER_SCHAIN  # noqa
+
+from core.schains.firewall import NFTablesController
+from core.schains.firewall.utils import get_default_rule_controller, get_mirage_committee_scope_rule_controller, get_mirage_network_scope_rule_controller
+from core.schains.firewall.types import Action, SChainRule, IpRange, SkaledPorts
+
+from tools.helper import run_cmd
+
+
+@pytest.fixture
+def refresh():
+    run_cmd(['nft', 'flush', 'ruleset'])
+    try:
+        yield
+    finally:
+        run_cmd(['nft', 'flush', 'ruleset'])
+
+
+def test_network_scope_rule_controller(nft_chain_folder):
+    own_ip = '3.3.3.3'
+    node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4']
+    base_port = 10000
+    mirage_network_expected_rules = []
+    mirage_committee_expected_rules = []
+
+    mirage_network_expected_rules = [
+        SChainRule(first_port=10001, action=Action.DROP, interface_exception='lo'),
+        SChainRule(first_port=10005, action=Action.DROP, interface_exception='lo'),
+        SChainRule(first_ip='1.1.1.1', first_port=10001, action=Action.ACCEPT),
+        SChainRule(first_ip='2.2.2.2', first_port=10001, action=Action.ACCEPT),
+        SChainRule(first_ip='4.4.4.4', first_port=10001, action=Action.ACCEPT),
+        SChainRule(first_port=10002, action=Action.ACCEPT),
+        SChainRule(first_port=10003, action=Action.ACCEPT),
+        SChainRule(first_ip='1.1.1.1', first_port=10005, action=Action.ACCEPT),
+        SChainRule(first_ip='2.2.2.2', first_port=10005, action=Action.ACCEPT),
+        SChainRule(first_ip='4.4.4.4', first_port=10005, action=Action.ACCEPT),
+        SChainRule(first_port=10007, action=Action.ACCEPT),
+        SChainRule(first_port=10008, action=Action.ACCEPT),
+    ]
+
+    mirage_committee_expected_rules = [
+        SChainRule(first_port=10000, action=Action.DROP, interface_exception='lo'),
+        SChainRule(first_port=10004, action=Action.DROP, interface_exception='lo'),
+        SChainRule(first_ip='1.1.1.1', first_port=10000, action=Action.ACCEPT),
+        SChainRule(first_ip='2.2.2.2', first_port=10000, action=Action.ACCEPT),
+        SChainRule(first_ip='4.4.4.4', first_port=10000, action=Action.ACCEPT),
+        SChainRule(first_ip='1.1.1.1', first_port=10004, action=Action.ACCEPT),
+        SChainRule(first_ip='2.2.2.2', first_port=10004, action=Action.ACCEPT),
+        SChainRule(first_ip='4.4.4.4', first_port=10004, action=Action.ACCEPT),
+    ]
+
+    mirage_network_expected_chain = 'chain skale-mirage-network {\n\ttype filter hook input priority filter; policy accept;\n\ttcp dport 10008 counter accept\n\ttcp dport 10007 counter accept\n\tip saddr 4.4.4.4 tcp dport 10005 counter accept\n\tip saddr 2.2.2.2 tcp dport 10005 counter accept\n\tip saddr 1.1.1.1 tcp dport 10005 counter accept\n\ttcp dport 10003 counter accept\n\ttcp dport 10002 counter accept\n\tip saddr 4.4.4.4 tcp dport 10001 counter accept\n\tip saddr 2.2.2.2 tcp dport 10001 counter accept\n\tip saddr 1.1.1.1 tcp dport 10001 counter accept\n\ttcp dport 10001 iifname != "lo" counter drop\n\ttcp dport 10005 iifname != "lo" counter drop\n}\n'
+
+    mirage_committee_expected_chain = 'chain skale-mirage-committee {\n\ttype filter hook input priority filter; policy accept;\n\tip saddr 4.4.4.4 tcp dport 10004 counter accept\n\tip saddr 2.2.2.2 tcp dport 10004 counter accept\n\tip saddr 1.1.1.1 tcp dport 10004 counter accept\n\tip saddr 4.4.4.4 tcp dport 10000 counter accept\n\tip saddr 2.2.2.2 tcp dport 10000 counter accept\n\tip saddr 1.1.1.1 tcp dport 10000 counter accept\n\ttcp dport 10000 iifname != "lo" counter drop\n\ttcp dport 10004 iifname != "lo" counter drop\n}\n'
+
+    for rc_create, expected_rules, expected_chain in zip(
+        (
+            get_mirage_network_scope_rule_controller,
+            get_mirage_committee_scope_rule_controller
+        ),
+        (
+            mirage_network_expected_rules,
+            mirage_committee_expected_rules
+        ),
+        (
+            mirage_network_expected_chain,
+            mirage_committee_expected_chain
+        )
+    ):
+        rc = rc_create(base_port, own_ip, node_ips)
+        # Will create host controller and apply base config as a side effect
+        assert rc.is_inited()
+
+        chain_filepath = f'/etc/nft.conf.d/skale/chains/skale-{rc.name}.conf'
+        assert os.path.isfile(chain_filepath)
+        with open(chain_filepath) as chain_file:
+            chain = chain_file.read()
+            assert chain == 'chain skale-' + rc.name + ' {\n\ttype filter hook input priority filter; policy accept;\n}\n'  # noqa
+
+        assert rc.is_persistent()
+        assert rc.actual_rules() == []
+        rc.sync()
+
+        chain_filepath = f'/etc/nft.conf.d/skale/chains/skale-{rc.name}.conf'
+        assert os.path.isfile(chain_filepath)
+        with open(chain_filepath) as chain_file:
+            chain = chain_file.read()
+            assert chain == expected_chain
+
+        assert rc.expected_rules() == rc.actual_rules()
+        rules = rc.actual_rules()
+        assert rules == expected_rules
+
+        hm = rc._firewall_manager.host_controller
+        hm.add_rule = mock.Mock()
+        hm.remove_rule = mock.Mock()
+        rc._firewall_manager.update_rules(rules)
+
+        assert hm.add_rule.call_count == 0
+        assert hm.remove_rule.call_count == 0
+
+        rc.cleanup()
+        # assert rules == []
+        assert not rc.is_inited()
+        assert not rc.is_persistent()

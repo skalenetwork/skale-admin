@@ -258,7 +258,7 @@ class NFTSchainRuleController(SChainRuleController):
         self.firewall_manager.cleanup()
 
 
-class NFTMirageNetworkScopeController(IRuleController):
+class MirageController(IRuleController):
     def __init__(
         self,
         controller_name: str,
@@ -313,6 +313,30 @@ class NFTMirageNetworkScopeController(IRuleController):
     def actual_rules(self) -> Iterable[SChainRule]:
         return sorted(self._firewall_manager.rules)
 
+    @configured_only
+    @abstractmethod
+    def expected_rules(self) -> Iterable[SChainRule]:
+        pass
+
+    def sync(self) -> None:
+        erules = self.expected_rules()
+        logger.info('Syncing firewall rules')
+        logger.debug('Syncing firewall rules with %s', erules)
+        self._firewall_manager.update_rules(erules)
+
+    @configured_only
+    def is_persistent(self) -> bool:
+        return self._firewall_manager.rules_saved()
+
+    @configured_only
+    def is_inited(self) -> bool:
+        return self._firewall_manager.base_config_applied()
+
+    def cleanup(self) -> None:
+        self._firewall_manager.cleanup()
+
+
+class MirageNetworkScopeController(MirageController):
     @property
     def public_ports(self) -> Iterable[int]:
         return (
@@ -335,10 +359,20 @@ class NFTMirageNetworkScopeController(IRuleController):
             self.base_port + offset.value
             for offset in (
                 self.port_allocation.CATCHUP,
-                self.port_allocation.ZMQ_BROADCAST,
-                self.port_allocation.IMA_RPC
+                self.port_allocation.ZMQ_BROADCAST
             )
         )
+
+    @property
+    def drop_rules(self) -> Iterable[SChainRule]:
+        return [
+            SChainRule(
+                first_port=port,
+                action=Action.DROP,
+                interface_exception=LOOPBACK_INTERFACE,
+            )
+            for port in self.network_scope_ports
+        ]
 
     @property
     @configured_only
@@ -352,106 +386,17 @@ class NFTMirageNetworkScopeController(IRuleController):
     def expected_rules(self) -> Iterable[SChainRule]:
         return sorted(
             itertools.chain.from_iterable(
-                (self.public_rules, self.network_scope_rules)
+                (self.public_rules, self.network_scope_rules, self.drop_rules)
             )
         )
 
-    def sync(self) -> None:
-        erules = self.expected_rules()
-        logger.info('Syncing firewall rules')
-        logger.debug('Syncing firewall rules with %s', erules)
-        self._firewall_manager.update_rules(erules)
 
-    @configured_only
-    def is_persistent(self) -> bool:
-        return self._firewall_manager.rules_saved()
-
-    @configured_only
-    def is_inited(self) -> bool:
-        return self._firewall_manager.base_config_applied()
-
-    def cleanup(self) -> None:
-        self._firewall_manager.cleanup()
-
-
-class NFTMirageCommitteeController(IRuleController):
-    def __init__(
-        self,
-        controller_name: str,
-        base_port: Optional[int] = None,
-        own_ip: Optional[str] = None,
-        node_ips: List[str] = [],
-        port_allocation: Any = SkaledPorts,  # TODO: better typing for enum
-        ports_per_schain: int = PORTS_PER_SCHAIN,
-    ) -> None:
-        self.name = controller_name
-        self.base_port = base_port
-        self.own_ip = own_ip
-        self.node_ips = node_ips
-        self.port_allocation = port_allocation
-        self.ports_per_schain = ports_per_schain
-        self._firewall_manager = NFTSchainFirewallManager(
-            group=controller_name,
-            first_port=self.base_port,  # type: ignore
-            last_port=self.base_port + self.ports_per_schain - 1,  # type: ignore
-        )
-
-    def is_configured(self) -> bool:
-        return all((self.base_port, self.node_ips))
-
-    def configure(
-         self,
-         base_port: Optional[int] = None,
-         own_ip: Optional[str] = None,
-         node_ips: Optional[List[str]] = None,
-         sync_ip_ranges: Optional[List[IpRange]] = None,
-         port_allocation: Any = SkaledPorts,
-    ) -> None:
-         self.base_port = base_port or self.base_port
-         self.own_ip = own_ip or self.own_ip
-         self.node_ips = node_ips or self.node_ips
-         self.sync_ip_ranges = sync_ip_ranges or self.sync_ip_ranges
-         self.port_allocation = port_allocation or self.port_allocation
-
-    @configured_only
-    def is_rules_synced(self) -> bool:
-        actual = set(self.actual_rules())
-        expected = set(self.expected_rules())
-        logger.debug('Rules status: actual %s, expected %s', actual, expected)
-        logger.info(
-            'Rules status: missing rules %d, redundant rules: %d',
-            len(expected - actual),
-            len(actual - expected),
-        )
-        return actual == expected
-
-    @configured_only
-    def actual_rules(self) -> Iterable[SChainRule]:
-        return sorted(self._firewall_manager.rules)
-
-    @property
-    def public_ports(self) -> Iterable[int]:
-        return (
-            self.base_port + offset.value
-            for offset in (
-                self.port_allocation.HTTP_JSON,
-                self.port_allocation.HTTPS_JSON,
-                self.port_allocation.WS_JSON,
-                self.port_allocation.WSS_JSON
-            )
-        )
-
-    @property
-    def public_rules(self) -> Iterable[SChainRule]:
-        return (SChainRule(first_port=port) for port in self.public_ports)
-
+class MirageCommitteeController(MirageController):
     @property
     def committee_scope_ports(self) -> Iterable[int]:
         return (
             self.base_port + offset.value
             for offset in (
-                self.port_allocation.CATCHUP,
-                self.port_allocation.ZMQ_BROADCAST,
                 self.port_allocation.PROPOSAL,
                 self.port_allocation.BINARY_CONSENSUS,
             )
@@ -459,15 +404,13 @@ class NFTMirageCommitteeController(IRuleController):
 
     @property
     def drop_rules(self) -> Iterable[SChainRule]:
-        first_port = self.base_port
-        last_port = self.base_port + self.ports_per_schain - 1
         return [
             SChainRule(
-                first_port=first_port,
-                last_port=last_port,
+                first_port=port,
                 action=Action.DROP,
                 interface_exception=LOOPBACK_INTERFACE,
             )
+            for port in self.committee_scope_ports
         ]
 
     @property
@@ -485,20 +428,3 @@ class NFTMirageCommitteeController(IRuleController):
                 (self.committee_scope_rules, self.drop_rules)
             )
         )
-
-    def sync(self) -> None:
-        erules = self.expected_rules()
-        logger.info('Syncing firewall rules')
-        logger.debug('Syncing firewall rules with %s', erules)
-        self._firewall_manager.update_rules(erules)
-
-    @configured_only
-    def is_persistent(self) -> bool:
-        return self._firewall_manager.rules_saved()
-
-    @configured_only
-    def is_inited(self) -> bool:
-        return self._firewall_manager.base_config_applied()
-
-    def cleanup(self) -> None:
-        self._firewall_manager.cleanup()
