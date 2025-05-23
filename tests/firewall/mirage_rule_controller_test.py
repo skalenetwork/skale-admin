@@ -86,6 +86,7 @@ def test_network_scope_rule_controller(nft_chain_folder):
 
         assert rc.is_persistent()
         assert rc.actual_rules() == []
+        assert not rc.is_rules_synced()
         rc.sync()
 
         chain_filepath = f'/etc/nft.conf.d/skale/chains/skale-{rc.name}.conf'
@@ -95,6 +96,7 @@ def test_network_scope_rule_controller(nft_chain_folder):
             assert chain == expected_chain
 
         assert rc.expected_rules() == rc.actual_rules()
+        assert rc.is_rules_synced()
         rules = rc.actual_rules()
         assert rules == expected_rules
 
