@@ -8,7 +8,7 @@ from unittest import mock
 
 import pytest
 
-from core.schains.firewall.types import IpRange
+from core.schains.firewall import IpRange
 from core.schains.firewall.utils import get_sync_agent_ranges
 from core.schains.process import ProcessReport
 from core.schains.monitor.main import ConfigTask, SkaledTask

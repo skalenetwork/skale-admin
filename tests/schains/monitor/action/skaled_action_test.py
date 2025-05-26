@@ -11,7 +11,7 @@ from core.schains.checks import SkaledChecks
 from core.schains.cleaner import remove_ima_container
 from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import UpstreamConfigFilename
-from core.schains.firewall.types import Action, SChainRule, LOOPBACK_INTERFACE
+from core.schains.firewall import Action, SChainRule, LOOPBACK_INTERFACE
 from core.schains.monitor.action import SkaledActionManager
 from core.schains.runner import get_container_info
 from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
