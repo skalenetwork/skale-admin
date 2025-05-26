@@ -24,14 +24,10 @@ from typing import List, Optional, Tuple
 
 from skale import SkaleManager
 
-from .types import IpRange
-from .nftables import NFTablesController
-from .rule_controller import (
-    IptablesSChainRuleController,
-    MirageCommitteeController,
-    MirageNetworkScopeController,
-    NFTSchainRuleController
-)
+from .base.types import IpRange
+from .base.nftables import NFTablesController
+from .mirage.rule_controller import MirageCommitteeController, MirageNetworkScopeController
+from .schain.rule_controller import NFTSchainRuleController
 
 logger = logging.getLogger(__name__)
 
@@ -75,25 +71,6 @@ def get_mirage_committee_scope_rule_controller(
         base_port=base_port,
         own_ip=own_ip,
         node_ips=node_ips
-    )
-
-
-def get_iptables_rule_controller(
-    name: str,
-    base_port: Optional[int] = None,
-    own_ip: Optional[str] = None,
-    node_ips: List[str] = [],
-    sync_agent_ranges: Optional[List[IpRange]] = [],
-) -> IptablesSChainRuleController:
-    sync_agent_ranges = sync_agent_ranges or []
-    logger.info('Creating rule controller for %s', name)
-    logger.debug('Rule controller ranges for %s: %s', name, sync_agent_ranges)
-    return IptablesSChainRuleController(
-        name=name,
-        base_port=base_port,
-        own_ip=own_ip,
-        node_ips=node_ips,
-        sync_ip_ranges=sync_agent_ranges,
     )
 
 

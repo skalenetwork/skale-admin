@@ -17,9 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .firewall_manager import SChainFirewallManager  # noqa
-from .iptables import IptablesController  # noqa
-from .nftables import NFTablesController  # noqa
-from .rule_controller import SChainRuleController  # noqa
-from .types import IRuleController  # noqa
-from .utils import get_default_rule_controller  # noqa
+from .base.firewall_manager import SChainFirewallManager  # noqa
+from .schain.iptables import IptablesController  # noqa
+from .schain.nftables import NFTablesController  # noqa
+from .base.rule_controller import SChainRuleController  # noqa
+from .base.types import IRuleController  # noqa
+from .base.utils import get_default_rule_controller  # noqa

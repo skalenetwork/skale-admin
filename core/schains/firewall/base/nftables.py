@@ -24,7 +24,7 @@ import multiprocessing
 import os
 from typing import Iterable
 
-from core.schains.firewall.types import Action, IHostFirewallController, SChainRule
+from .types import Action, IHostFirewallController, SChainRule
 
 from tools.configs import NFT_CHAIN_BASE_PATH
 

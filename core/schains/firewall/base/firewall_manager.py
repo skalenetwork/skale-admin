@@ -21,9 +21,8 @@ import logging
 from abc import abstractmethod
 from typing import Iterable, Optional
 
-from core.schains.firewall.iptables import IptablesController
-from core.schains.firewall.nftables import NFTablesController
-from core.schains.firewall.types import IFirewallManager, IHostFirewallController, SChainRule
+from .nftables import NFTablesController
+from .types import IFirewallManager, IHostFirewallController, SChainRule
 
 
 logger = logging.getLogger(__name__)
