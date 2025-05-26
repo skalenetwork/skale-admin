@@ -23,7 +23,7 @@ from .schain.rule_controller import SChainRuleController  # noqa
 from .mirage.rule_controller import MirageController  # noqa
 from .base.types import IpRange, IRuleController  # noqa
 from .utils import (
-    get_default_rule_controller,
-    get_mirage_committee_scope_rule_controller,
-    get_mirage_network_scope_rule_controller
-)  # noqa
+    get_default_rule_controller,  # noqa
+    get_mirage_committee_scope_rule_controller,  # noqa
+    get_mirage_network_scope_rule_controller  # noqa
+)

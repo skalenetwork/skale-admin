@@ -21,12 +21,11 @@ import itertools
 import logging
 from abc import abstractmethod
 from functools import wraps
-from typing import Any, Callable, cast, Dict, Iterable, List, Optional, TypeVar
+from typing import Any, Callable, cast, Iterable, List, Optional, TypeVar
 
 from ..base.firewall_manager import NFTSchainFirewallManager
 from ..base.types import (
     Action,
-    IFirewallManager,
     IpRange,
     IRuleController,
     PORTS_PER_SCHAIN,

@@ -1,1 +1,1 @@
-from .rule_controller import NFTSchainRuleController
+from .rule_controller import NFTSchainRuleController  # noqa
