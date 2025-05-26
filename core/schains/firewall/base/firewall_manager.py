@@ -80,14 +80,6 @@ class SChainFirewallManager(IFirewallManager):
             self.host_controller.remove_rule(rule)
 
 
-class IptablesSChainFirewallManager(SChainFirewallManager):
-    def create_host_controller(self) -> IptablesController:
-        return IptablesController()
-
-    def cleanup(self) -> None:
-        self.remove_rules(self.rules)
-
-
 class NFTSchainFirewallManager(SChainFirewallManager):
     def create_host_controller(self) -> NFTablesController:
         nc_controller = NFTablesController(chain=self.group)

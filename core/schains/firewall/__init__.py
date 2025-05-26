@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .base.firewall_manager import SChainFirewallManager  # noqa
-from .schain.iptables import IptablesController  # noqa
 from .schain.nftables import NFTablesController  # noqa
 from .base.rule_controller import SChainRuleController  # noqa
 from .base.types import IRuleController  # noqa
