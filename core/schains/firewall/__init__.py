@@ -18,12 +18,15 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .base.firewall_manager import SChainFirewallManager  # noqa
-from .base.nftables import NFTablesController  # noqa
+from .base.nftables import NFTablesController, NFT_CHAIN_BASE_PATH  # noqa
 from .schain.rule_controller import SChainRuleController  # noqa
 from .mirage.rule_controller import MirageController  # noqa
-from .base.types import IpRange, IRuleController  # noqa
+from .base.types import Action, IpRange, IRuleController, LOOPBACK_INTERFACE, SChainRule, SkaledPorts  # noqa
 from .utils import (
+    cleanup_firewall_for_schain,
     get_default_rule_controller,  # noqa
     get_mirage_committee_scope_rule_controller,  # noqa
-    get_mirage_network_scope_rule_controller  # noqa
+    get_mirage_network_scope_rule_controller,  # noqa
+    cleanup_firewall_for_schain,  # noqa
+
 )

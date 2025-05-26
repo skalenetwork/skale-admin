@@ -6,10 +6,11 @@ import pytest
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
 from core.schains.firewall import (
+    Action,
     get_mirage_committee_scope_rule_controller,
-    get_mirage_network_scope_rule_controller
+    get_mirage_network_scope_rule_controller,
+    SChainRule
 )
-from core.schains.firewall.base.types import Action, SChainRule
 
 from tools.helper import run_cmd
 
