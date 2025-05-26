@@ -40,7 +40,7 @@ from core.schains.dkg import (
 from core.schains.cleaner import remove_ima_container, remove_schain_container, remove_schain_volume
 from core.schains.ima import get_migration_ts as get_ima_migration_ts, ImaData
 from core.schains.status import NodeCliStatus
-from core.schains.firewall.types import IRuleController
+from core.schains.firewall import IRuleController
 from core.schains.volume import init_data_volume
 from core.schains.exit_scheduler import ExitScheduleFileManager
 from core.schains.limits import get_schain_type
