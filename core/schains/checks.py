@@ -39,7 +39,7 @@ from core.config.schain.main import (
     get_upstream_config_rotation_ids,
 )
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from core.schains.firewall.types import IRuleController
+from core.schains.firewall import IRuleController
 from core.schains.ima import get_ima_time_frame, get_migration_ts as get_ima_migration_ts
 from core.schains.rpc import (
     check_endpoint_alive,

@@ -23,8 +23,8 @@ from abc import abstractmethod
 from functools import wraps
 from typing import Any, Callable, cast, Dict, Iterable, List, Optional, TypeVar
 
-from .firewall_manager import NFTSchainFirewallManager
-from .types import (
+from ..base.firewall_manager import NFTSchainFirewallManager
+from ..base.types import (
     Action,
     IFirewallManager,
     IpRange,

@@ -22,8 +22,9 @@ from web3 import Web3
 from core.schains.cleaner import remove_config_dir, remove_schain_container, remove_schain_volume
 from core.config.schain.directory import skaled_status_filepath
 from core.config.schain.file_manager import ConfigFileManager
-from core.schains.firewall.types import IHostFirewallController, IpRange
-from core.schains.firewall import SChainFirewallManager, SChainRuleController
+from core.schains.firewall.base.firewall_manager import SChainFirewallManager
+from core.schains.firewall.schain.rule_controller import SChainRuleController
+from core.schains.firewall.base.types import IHostFirewallController, IpRange
 from core.schains.runner import (
     get_image_name,
     run_schain_container,
