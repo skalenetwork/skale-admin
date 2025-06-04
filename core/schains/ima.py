@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ImaData:
     linked: bool
-    chain_id: int
+    chain_id: int | None
 
 
 @dataclass
@@ -146,7 +146,7 @@ def schain_index_to_node_number(node):
     return int(node['schainIndex']) - 1
 
 
-def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> ImaEnv:
+def get_ima_env(schain_name: str, mainnet_chain_id: int | None, time_frame: int) -> ImaEnv:
     schain_config = ConfigFileManager(schain_name).skaled_config
     node_info = schain_config['skaleConfig']['nodeInfo']
     bls_key_name = node_info['wallets']['ima']['keyShareName']

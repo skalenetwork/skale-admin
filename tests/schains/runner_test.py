@@ -1,7 +1,7 @@
 import mock
 
 from core.schains.process_manager import get_leaving_schains_for_node
-from core.schains.runner import is_exited
+from core.chain.runner import is_exited
 
 
 def test_is_exited(dutils):

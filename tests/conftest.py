@@ -6,6 +6,7 @@ import shutil
 import string
 import subprocess
 from pathlib import Path
+from typing import cast
 
 import docker
 import pytest
@@ -27,20 +28,21 @@ from skale.utils.contracts_provision.main import (
     setup_validator,
 )
 from skale.utils.web3_utils import init_web3
+from skale.types.schain import SchainName
 
 from core.node import get_current_nodes
 from core.node_config import NodeConfig
-from core.schains.checks import SChainChecks
+from core.checks.schain import SChainChecks
 from core.config.schain.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
 from core.config.schain.directory import schain_config_dir, skaled_status_filepath
-from core.schains.cleaner import remove_schain_container, remove_schain_volume
+from core.schains.cleaner import remove_skaled_container, remove_schain_volume
 from core.schains.ima import ImaData
 from core.schains.external_config import ExternalConfig, ExternalState
-from core.schains.status import (
+from core.chain.status import (
     init_node_cli_status,
     init_skaled_status,
     node_cli_status_filepath,
@@ -223,9 +225,9 @@ SECRET_KEY = {
 
 
 @pytest.fixture
-def _schain_name():
+def _schain_name() -> SchainName:
     """Generates default schain name"""
-    return get_random_string()
+    return cast(SchainName, get_random_string())
 
 
 @pytest.fixture
@@ -431,7 +433,7 @@ def cleanup_container(schain_config, dutils):
 
 
 def cleanup_schain_container(schain_name: str, dutils: DockerUtils):
-    remove_schain_container(schain_name, dutils)
+    remove_skaled_container(schain_name, dutils)
     remove_schain_volume(schain_name, dutils)
 
 

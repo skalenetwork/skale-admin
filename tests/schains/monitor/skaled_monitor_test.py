@@ -6,10 +6,10 @@ from unittest import mock
 import freezegun
 import pytest
 
-from core.schains.checks import CheckRes, SkaledChecks
+from core.checks.schain import CheckRes, SkaledChecks
 from core.config.schain.directory import schain_config_dir
-from core.schains.monitor.action import SkaledActionManager
-from core.schains.monitor.skaled_monitor import (
+from core.monitor.schain.action_skaled import SkaledActionManager
+from core.monitor.schain.monitor_skaled import (
     BackupSkaledMonitor,
     get_skaled_monitor,
     ReloadGroupSkaledMonitor,
@@ -23,8 +23,8 @@ from core.schains.monitor.skaled_monitor import (
 )
 from core.schains.external_config import ExternalConfig
 from core.schains.exit_scheduler import ExitScheduleFileManager
-from core.schains.runner import get_container_info
-from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from core.chain.runner import get_container_info
+from tools.configs.containers import SKALED_CONTAINER, IMA_CONTAINER
 from web.models.schain import SChainRecord
 
 from tests.utils import CURRENT_TS
@@ -44,7 +44,7 @@ def run_ima_container_mock(schain: dict, mainnet_chain_id: int, dutils=None):
     )
 
 
-def monitor_schain_container_mock(
+def monitor_skaled_container_mock(
     schain,
     schain_record,
     skaled_status,
@@ -54,7 +54,7 @@ def monitor_schain_container_mock(
     sync_node=False,
     historic_state=False,
 ):
-    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, schain.name)
+    image_name, container_name, _, _ = get_container_info(SKALED_CONTAINER, schain.name)
     dutils.safe_rm(container_name)
     dutils.run_container(
         image_name=image_name,
@@ -479,7 +479,7 @@ def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dut
     ts = time.time()
     esfm = ExitScheduleFileManager(mon.am.name)
     with mock.patch(
-        'core.schains.monitor.action.get_finish_ts_from_latest_upstream', return_value=ts
+        'core.monitor.schain.action.get_finish_ts_from_latest_upstream', return_value=ts
     ):
         mon.run()
         assert esfm.exit_ts == ts
@@ -493,7 +493,7 @@ def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dut
 def test_group_reload_skaled_monitor_failed_skaled(skaled_am, skaled_checks, clean_docker, dutils):
     mon = ReloadGroupSkaledMonitor(skaled_am, skaled_checks)
     with mock.patch(
-        'core.schains.monitor.containers.run_schain_container'
+        'core.monitor.schain.containers.run_skaled_container'
     ) as run_skaled_container_mock:
         mon.run()
         assert skaled_am.rc.is_rules_synced

@@ -21,6 +21,7 @@ import functools
 import logging
 import time
 from datetime import datetime
+from typing import cast
 
 from peewee import (
     CharField,
@@ -274,7 +275,7 @@ def set_schains_need_reload():
     query.execute()
 
 
-def upsert_schain_record(name):
+def upsert_schain_record(name) -> SChainRecord:
     if not SChainRecord.added(name):
         logger.debug(f'Could not find sChain record: {name}, going to add')
         schain_record, _ = SChainRecord.add(name)
@@ -285,7 +286,7 @@ def upsert_schain_record(name):
     if not schain_record:
         logger.error(f'schain_record is None for {name}')
 
-    return schain_record
+    return cast(SChainRecord, schain_record)
 
 
 def mark_schain_deleted(name):

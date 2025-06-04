@@ -6,7 +6,7 @@ from flask import Flask, appcontext_pushed, g
 from sgx import SgxClient
 
 from core.node_config import NodeConfig
-from core.schains.checks import SChainChecks
+from core.checks.schain import SChainChecks
 
 from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 

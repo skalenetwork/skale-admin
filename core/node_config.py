@@ -56,11 +56,11 @@ class NodeConfig(JsonObject):
         return self._set('name', node_name)
 
     @property
-    def sgx_key_name(self) -> int:
+    def sgx_key_name(self) -> str:
         return self._get('sgx_key_name')
 
     @sgx_key_name.setter
-    def sgx_key_name(self, sgx_key_name: int) -> None:
+    def sgx_key_name(self, sgx_key_name: str) -> None:
         return self._set('sgx_key_name', sgx_key_name)
 
     @property

@@ -51,7 +51,7 @@ SKALED_STATUS_FILENAME = 'skaled.status'
 NODE_CLI_STATUS_FILENAME = 'node_cli.status'
 
 STATIC_SCHAIN_DIR_NAME = 'schains'
-SCHAIN_STATE_PATH = os.path.join(SKALE_LIB_PATH, 'schains')
+CHAIN_STATE_PATH = os.path.join(SKALE_LIB_PATH, 'schains')
 FILESTORAGE_STATIC_PATH = os.path.join(SKALE_LIB_PATH, 'filestorage')
 
 DEFAULT_RPC_CHECK_TIMEOUT = 30

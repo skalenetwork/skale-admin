@@ -19,7 +19,7 @@ from config_controller_predeployed import (
 from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
 
-from core.config.base_config import MirageConfig
+from core.config.base import MirageConfig
 from core.config.schain.generator import (
     generate_schain_config_with_skale,
     generate_schain_config,

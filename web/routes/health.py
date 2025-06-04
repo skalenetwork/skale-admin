@@ -25,9 +25,9 @@ from flask import Blueprint, g, request
 
 from core.node import get_skale_node_version
 from core.node import get_current_nodes
-from core.schains.checks import SChainChecks
+from core.checks.schain import SChainChecks
 from core.schains.external_config import ExternalState
-from core.schains.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
+from core.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
 from core.schains.ima import get_ima_log_checks
 from core.schains.process import is_process_healthy
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT

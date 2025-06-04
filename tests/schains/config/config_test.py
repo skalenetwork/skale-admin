@@ -11,7 +11,7 @@ from core.config.schain.helper import (
 from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.main import get_latest_finish_ts, get_rotation_ids_from_config
-from core.schains.volume import get_schain_volume_config
+from core.chain.volume import get_schain_volume_config
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 
 

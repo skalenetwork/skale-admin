@@ -9,7 +9,7 @@ from typing import Dict, cast
 from eth_typing import BlockNumber, HexStr, ChecksumAddress
 
 from core.config.mirage.generator import generate_mirage_config, generate_mirage_config_adapter
-from core.config.base_config import MirageConfig
+from core.config.base import MirageConfig
 from core.config.schain.helper import get_static_params_mirage as original_get_static_params_mirage
 
 from skale.types.rotation import Rotation, NodesGroup, RotationNodeData, NodesSwap

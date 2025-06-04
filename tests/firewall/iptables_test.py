@@ -4,8 +4,8 @@ import concurrent.futures
 
 import pytest
 
-from core.schains.firewall.iptables import IptablesController
-from core.schains.firewall.types import SChainRule
+from core.firewall.iptables import IptablesController
+from core.firewall.types import SChainRule
 from tools.helper import run_cmd
 
 

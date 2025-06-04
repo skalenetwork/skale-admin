@@ -19,21 +19,21 @@ from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.wallets import Web3Wallet
 from web3 import Web3
 
-from core.schains.cleaner import remove_config_dir, remove_schain_container, remove_schain_volume
+from core.schains.cleaner import remove_config_dir, remove_skaled_container, remove_schain_volume
 from core.config.schain.directory import skaled_status_filepath
 from core.config.schain.file_manager import ConfigFileManager
-from core.schains.firewall.types import IHostFirewallController, IpRange
-from core.schains.firewall import SChainFirewallManager, SChainRuleController
-from core.schains.runner import (
+from core.firewall.types import IHostFirewallController, IpRange
+from core.firewall import SChainFirewallManager, SChainRuleController
+from core.chain.runner import (
     get_image_name,
-    run_schain_container,
+    run_skaled_container,
     run_ima_container,
     get_container_info,
 )
 
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd, write_json
-from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
+from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import MANAGER_CONTRACTS
 
@@ -148,13 +148,13 @@ def get_schain_struct(schain_name: str = 'test_chain') -> SchainStructureWithSta
 
 
 def run_simple_schain_container(schain_data: dict, dutils: DockerUtils):
-    run_schain_container(schain_data, dutils=dutils)
+    run_skaled_container(schain_data, dutils=dutils)
 
 
 def run_simple_schain_container_in_sync_mode(schain_data: dict, dutils: DockerUtils):
     public_key = '1:1:1:1'
     timestamp = int(time.time())
-    run_schain_container(schain_data, public_key, timestamp, dutils=dutils)
+    run_skaled_container(schain_data, public_key, timestamp, dutils=dutils)
 
 
 def run_simple_ima_container(schain: dict, dutils: DockerUtils):
@@ -274,14 +274,14 @@ def no_schain_artifacts(schain_name, dutils):
     try:
         yield
     finally:
-        remove_schain_container(schain_name, dutils=dutils)
+        remove_skaled_container(schain_name, dutils=dutils)
         time.sleep(10)
         remove_schain_volume(schain_name, dutils=dutils)
         remove_config_dir(schain_name)
 
 
 def run_custom_schain_container(dutils, schain_name, entrypoint):
-    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, schain_name)
+    image_name, container_name, _, _ = get_container_info(SKALED_CONTAINER, schain_name)
     return dutils.run_container(image_name=image_name, name=container_name, entrypoint=entrypoint)
 
 

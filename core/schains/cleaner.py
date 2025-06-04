@@ -27,21 +27,22 @@ from typing import Optional
 
 from sgx import SgxClient
 from skale import SkaleManager
+from skale.types.schain import SchainName
 
 from core.node import get_current_nodes, get_skale_node_version
-from core.schains.checks import SChainChecks
+from core.checks.schain import SChainChecks
 from core.config.schain.directory import schain_config_dir
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from core.schains.firewall.utils import cleanup_firewall_for_schain, get_default_rule_controller
+from core.firewall.utils import cleanup_firewall_for_schain, get_default_rule_controller
 from core.schains.process import ProcessReport, terminate_process
-from core.schains.runner import get_container_name, is_exited
+from core.chain.runner import get_container_name, is_exited
 from core.schains.external_config import ExternalConfig
 from core.schains.types import ContainerType
-from core.schains.firewall.utils import get_sync_agent_ranges
+from core.firewall.utils import get_sync_agent_ranges
 
 from tools.configs import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER, SYNC_NODE
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
+from tools.configs.containers import SKALED_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
 from tools.docker_utils import DockerUtils
 from tools.helper import merged_unique, read_json, is_node_part_of_chain
 from tools.sgx_utils import SGX_SERVER_URL
@@ -75,10 +76,10 @@ def remove_schain_volume(schain_name: str, dutils: DockerUtils = None) -> None:
     dutils.rm_vol(schain_name)
 
 
-def remove_schain_container(schain_name: str, dutils: DockerUtils = None):
+def remove_skaled_container(schain_name: str, dutils: DockerUtils = None):
     dutils = dutils or DockerUtils()
     log_remove('container', schain_name)
-    schain_container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    schain_container_name = get_container_name(SKALED_CONTAINER, schain_name)
     return dutils.safe_rm(schain_container_name, v=True, force=True, timeout=SCHAIN_STOP_TIMEOUT)
 
 
@@ -238,7 +239,7 @@ def remove_schain(
 
 def cleanup_schain(
     node_id: int,
-    schain_name: str,
+    schain_name: SchainName,
     sync_agent_ranges: list,
     rotation_id: int,
     last_dkg_successful: bool,
@@ -268,7 +269,7 @@ def cleanup_schain(
     if check_status['skaled_container'] or is_exited(
         schain_name, container_type=ContainerType.schain, dutils=dutils
     ):
-        remove_schain_container(schain_name, dutils=dutils)
+        remove_skaled_container(schain_name, dutils=dutils)
     if check_status['volume']:
         remove_schain_volume(schain_name, dutils=dutils)
     if any(checks.firewall_rules.data):

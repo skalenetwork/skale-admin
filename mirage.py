@@ -24,11 +24,14 @@ from skale import MirageManager
 from filelock import FileLock
 
 from core.node_config import NodeConfig
-from core.mirage.process_manager import start_tasks
-from core.monitoring import update_monitoring_services
+
+from core.monitor.mirage.main import start_tasks
+from core.redis.migrations import run_redis_migrations
 
 from tools.configs import INIT_LOCK_PATH
+
 from tools.configs.web3 import ENDPOINT, MIRAGE_CONTRACTS
+
 from tools.logger import init_admin_logger
 from tools.sgx_utils import generate_sgx_key
 from tools.wallet_utils import init_wallet
@@ -62,7 +65,8 @@ def worker() -> None:
     wallet = init_wallet(node_config=node_config)
     mirage = MirageManager(ENDPOINT, MIRAGE_CONTRACTS, wallet)
 
-    update_monitoring_services(node_config.ip, node_config.id, mirage.committee.address)
+    # TODOD: uncomment
+    # update_monitoring_services(node_config.ip, node_config.id, mirage.committee.address)
     monitor(mirage, node_config)
 
 
@@ -71,6 +75,7 @@ def main():
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:
         generate_sgx_key(node_config)
+        run_redis_migrations()
     worker()
 
 

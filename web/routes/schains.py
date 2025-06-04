@@ -28,8 +28,8 @@ from core.config.schain.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
-from core.schains.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
-from core.schains.status import init_skaled_status
+from core.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
+from core.chain.status import init_skaled_status
 from core.schains.ima import get_ima_version_after_migration
 from core.schains.info import get_schain_info_by_name, get_skaled_version
 from core.schains.cleaner import get_schains_on_node

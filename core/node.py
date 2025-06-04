@@ -47,10 +47,7 @@ logger = logging.getLogger(__name__)
 try:
     from sh import lsmod
 except ImportError:
-    logging.warning('Could not import lsmod from sh package')
-
-
-logger = logging.getLogger(__name__)
+    logger.warning('Could not import lsmod from sh package')
 
 
 class NodeStatus(Enum):
