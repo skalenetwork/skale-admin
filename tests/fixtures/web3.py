@@ -42,14 +42,14 @@ def eth_per_node() -> int:
     return ETH_AMOUNT_PER_NODE
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def endpoint() -> str:
     if not ENDPOINT:
         raise ValueError('Set ENDPOINT environment variable to use endpoint fixture')
     return ENDPOINT
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def manager_contracts() -> str:
     if not MANAGER_CONTRACTS:
         raise ValueError(
@@ -58,14 +58,14 @@ def manager_contracts() -> str:
     return MANAGER_CONTRACTS
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def ima_contracts() -> str:
     if not IMA_CONTRACTS:
         raise ValueError('Set IMA_CONTRACTS environment variable to use ima_contracts fixture')
     return IMA_CONTRACTS
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def mirage_contracts() -> str:
     if not MIRAGE_CONTRACTS:
         raise ValueError(
@@ -74,7 +74,7 @@ def mirage_contracts() -> str:
     return MIRAGE_CONTRACTS
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def private_key() -> HexStr:
     if not ETH_PRIVATE_KEY:
         raise ValueError('Set ETH_PRIVATE_KEY environment variable to use private_key fixture')
@@ -86,7 +86,7 @@ def web3(endpoint):
     return init_web3(endpoint)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def wallet(web3, private_key):
     return Web3Wallet(private_key, web3)
 

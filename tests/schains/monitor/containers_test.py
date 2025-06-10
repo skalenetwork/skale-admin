@@ -17,7 +17,7 @@ def test_monitor_skaled_container(
     monitor_skaled_container(schain.name, schain_record, skaled_status, dutils=dutils)
     assert not is_container_exists(schain_db, dutils=dutils)
 
-    with mock.patch('core.monitor.schain.containers.is_volume_exists', return_value=True):
+    with mock.patch('core.chain.containers.is_volume_exists', return_value=True):
         monitor_skaled_container(schain.name, schain_record, skaled_status, dutils=dutils)
         assert is_container_exists(schain_db, dutils=dutils)
 
@@ -33,7 +33,7 @@ def test_monitor_skaled_container_exit_time_reached(
     schain_record = upsert_schain_record(schain_db)
     schain = get_schain_struct(_test_schain_name=schain_db)
 
-    with mock.patch('core.monitor.schain.containers.is_volume_exists', return_value=True):
+    with mock.patch('core.chain.containers.is_volume_exists', return_value=True):
         schain_record.set_failed_rpc_count(100)
         schain_record.set_restart_count(100)
         monitor_skaled_container(
@@ -64,7 +64,7 @@ def test_monitor_skaled_container_ec(
     run_custom_schain_container(dutils, schain.name, entrypoint=['sh', 'exit', '1'])
     # To make sure container initializaed
     time.sleep(2)
-    with mock.patch('core.monitor.schain.containers.is_volume_exists', return_value=True):
+    with mock.patch('core.chain.containers.is_volume_exists', return_value=True):
         schain_record.set_failed_rpc_count(100)
         schain_record.set_restart_count(0)
         monitor_skaled_container(schain, schain_record, skaled_status, dutils=dutils)

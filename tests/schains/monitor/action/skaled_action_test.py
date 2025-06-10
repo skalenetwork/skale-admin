@@ -296,7 +296,7 @@ def test_ima_container_action_time_frame_migration(
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
     with freezegun.freeze_time(dt):
         with mock.patch(
-            'core.monitor.schain.containers.get_image_name',
+            'core.chain.containers.get_image_name',
             return_value='skalenetwork/ima:2.0.0-beta.9',
         ):
             skaled_am.ima_container()
@@ -312,7 +312,7 @@ def test_ima_container_action_time_frame_migration(
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS + 5)
     with freezegun.freeze_time(dt):
         with mock.patch(
-            'core.monitor.schain.containers.get_image_name',
+            'core.chain.containers.get_image_name',
             return_value='skalenetwork/ima:2.0.0-beta.9',
         ):
             skaled_am.ima_container()

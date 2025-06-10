@@ -492,9 +492,7 @@ def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dut
 @pytest.mark.skip
 def test_group_reload_skaled_monitor_failed_skaled(skaled_am, skaled_checks, clean_docker, dutils):
     mon = ReloadGroupSkaledMonitor(skaled_am, skaled_checks)
-    with mock.patch(
-        'core.monitor.schain.containers.run_skaled_container'
-    ) as run_skaled_container_mock:
+    with mock.patch('core.chain.containers.run_skaled_container') as run_skaled_container_mock:
         mon.run()
         assert skaled_am.rc.is_rules_synced
         assert run_skaled_container_mock.assert_not_called()
