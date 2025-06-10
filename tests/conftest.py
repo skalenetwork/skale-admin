@@ -39,7 +39,6 @@ from tests.utils import (
     ALLOWED_RANGES,
     CONFIG_STREAM,
     CURRENT_TS,
-    STATIC_NODE_GROUPS,
     generate_cert,
     generate_schain_config,
     get_test_rule_controller,

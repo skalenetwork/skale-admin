@@ -6,8 +6,7 @@ import json
 import pathlib
 import random
 from typing import cast
-from eth_typing import ChecksumAddress, HexAddress, HexStr
-import pytest
+from eth_typing import ChecksumAddress, HexAddress
 import requests
 import string
 import time
@@ -18,12 +17,11 @@ from web3.types import Wei
 
 from mock import Mock, MagicMock
 
-from skale import SkaleManager, SkaleIma
 from skale.utils.web3_utils import init_web3
 from skale.contracts.manager.schains import SchainStructureWithStatus
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.wallets import Web3Wallet
-from skale.types.schain import SchainName, SchainHash
+from skale.types.schain import SchainHash
 
 from core.schains.cleaner import remove_config_dir, remove_skaled_container, remove_schain_volume
 from core.config.schain.directory import skaled_status_filepath
@@ -41,6 +39,7 @@ from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd, write_json
 from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.web3 import ENDPOINT
 
 from web.models.schain import upsert_schain_record
 
