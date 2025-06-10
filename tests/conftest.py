@@ -47,7 +47,7 @@ from tests.utils import (
 )
 
 
-pytest_plugins = ['tests.fixtures.web3', 'tests.fixtures.schains', 'tests.fixtures.containers']
+pytest_plugins = ['tests.fixtures.web3', 'tests.fixtures.schain', 'tests.fixtures.containers']
 
 
 @pytest.fixture
