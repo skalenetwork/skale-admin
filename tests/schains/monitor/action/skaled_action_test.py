@@ -381,8 +381,8 @@ def test_upd_chain_record(skaled_am, skaled_checks):
     r = SChainRecord.get_by_name(skaled_am.name)
 
     assert not r.first_run
-    r.restart_count == 0
-    r.failed_rpc_count == 0
+    assert r.restart_count == 0
+    assert r.failed_rpc_count == 0
 
 
 def test_update_config(skaled_am, skaled_checks):

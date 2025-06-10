@@ -91,7 +91,7 @@ class SkaledActionManager(BaseSkaledActionManager):
         self.ncli_status = ncli_status
 
     @property
-    def schain_record(self) -> SChainRecord:
+    def chain_record(self) -> SChainRecord:
         return upsert_schain_record(self.name)
 
     @BaseActionManager.monitor_block

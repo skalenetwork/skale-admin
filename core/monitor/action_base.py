@@ -59,7 +59,7 @@ SCHAIN_CLEANUP_TIMEOUT = 10
 
 
 class BaseActionManager:
-    def __init__(self, name: str):
+    def __init__(self, name: ChainName):
         self.name = name
         self.executed_blocks: Dict = {}
 

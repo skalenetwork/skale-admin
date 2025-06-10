@@ -14,7 +14,6 @@ from core.chain.runner import (
     get_container_info,
 )
 from tests.utils import (
-    get_schain_struct,
     run_simple_skaled_container,
     run_simple_skaled_container_in_sync_mode,
 )
@@ -91,9 +90,8 @@ def test_run_skaled_container(
     get_image, dutils, schain_config, cleanup_container, cert_key_pair, skaled_mock_image
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
     # Run schain container
-    run_simple_skaled_container(schain_data, dutils)
+    run_simple_skaled_container(schain_name, dutils)
 
     # Perform container checks
     check_schain_container(schain_name, dutils)
@@ -134,9 +132,8 @@ def test_run_skaled_container_in_sync_mode(
     get_image, dutils, schain_config, cleanup_container, cert_key_pair, skaled_mock_image
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
     # Run schain container
-    run_simple_skaled_container_in_sync_mode(schain_data, dutils)
+    run_simple_skaled_container_in_sync_mode(schain_name, dutils)
 
     # Perform container checks
     check_schain_container(schain_name, dutils)
@@ -262,9 +259,8 @@ def test_get_container_image_name(
     get_image, dutils, schain_config, cleanup_container, cert_key_pair, skaled_mock_image
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
     # Run schain container
-    run_simple_skaled_container(schain_data, dutils)
+    run_simple_skaled_container(schain_name, dutils)
 
     # Get container image
     container_name = get_container_name(SKALED_CONTAINER, schain_name)

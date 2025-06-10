@@ -21,7 +21,7 @@ from skale.utils.web3_utils import init_web3
 from skale.contracts.manager.schains import SchainStructureWithStatus
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.wallets import Web3Wallet
-from skale.types.schain import SchainHash
+from skale.types.schain import SchainHash, SchainName
 
 from core.schains.cleaner import remove_config_dir, remove_skaled_container, remove_schain_volume
 from core.config.schain.directory import skaled_status_filepath
@@ -157,11 +157,11 @@ def get_schain_struct(_test_schain_name) -> SchainStructureWithStatus:
     )
 
 
-def run_simple_skaled_container(_test_schain_name, dutils: DockerUtils):
+def run_simple_skaled_container(_test_schain_name: SchainName, dutils: DockerUtils):
     run_skaled_container(_test_schain_name, dutils=dutils)
 
 
-def run_simple_skaled_container_in_sync_mode(_test_schain_name, dutils: DockerUtils):
+def run_simple_skaled_container_in_sync_mode(_test_schain_name: SchainName, dutils: DockerUtils):
     public_key = '1:1:1:1'
     timestamp = int(time.time())
     run_skaled_container(_test_schain_name, public_key, timestamp, dutils=dutils)

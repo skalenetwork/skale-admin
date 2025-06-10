@@ -82,12 +82,13 @@ class ConfigActionManager(BaseActionManager):
         self.estate = estate
         self.econfig = econfig or ExternalConfig(name=schain.name)
         self.node_options = node_options or NodeOptions()
-        self.cfm: ConfigFileManager = ConfigFileManager(schain_name=self.schain.name)
+        self.cfm: ConfigFileManager = ConfigFileManager(chain_name=self.schain.name)
         self.statsd_client = get_statsd_client()
         super().__init__(name=schain.name)
+        self.name = schain.name
 
     @property
-    def schain_record(self) -> SChainRecord:
+    def chain_record(self) -> SChainRecord:
         return upsert_schain_record(self.name)
 
     @BaseActionManager.monitor_block

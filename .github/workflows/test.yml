@@ -24,7 +24,6 @@ jobs:
 
       - name: Install python dependencies
         run: |
-          source ../.venv/bin/activate
           uv pip install -r requirements.txt --prerelease=allow
           uv pip install -r requirements-dev.txt
 
