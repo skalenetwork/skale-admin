@@ -28,7 +28,7 @@ from tools.configs.schains import SCHAINS_DIR_PATH
 from web.models.schain import SChainRecord, mark_schain_deleted, upsert_schain_record
 
 
-from tests.utils import get_schain_struct, run_simple_schain_container, run_simple_ima_container
+from tests.utils import get_schain_struct, run_simple_skaled_container, run_simple_ima_container
 
 SKALED_CONTAINER_NAME_TEMPLATE = 'skale_schain_{}'
 IMA_CONTAINER_NAME_TEMPLATE = 'skale_ima_{}'
@@ -112,7 +112,7 @@ def schain_container(schain_config, ssl_folder, dutils):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_struct(schain_name)
     try:
-        run_simple_schain_container(schain_data, dutils)
+        run_simple_skaled_container(schain_data, dutils)
         yield schain_name
     finally:
         schain_name = schain_config['skaleConfig']['sChain']['schainName']
@@ -123,7 +123,7 @@ def schain_container(schain_config, ssl_folder, dutils):
 def test_remove_skaled_container(dutils, schain_config, cleanup_container, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     schain_data = get_schain_struct(schain_name)
-    run_simple_schain_container(schain_data, dutils)
+    run_simple_skaled_container(schain_data, dutils)
     container_name = SKALED_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert is_container_running(dutils, container_name)
     remove_skaled_container(schain_name, dutils=dutils)

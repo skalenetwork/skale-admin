@@ -96,9 +96,9 @@ def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils)
 
     def get_schains_for_node_mock(self, node_id):
         return [
-            get_schain_struct(schain_name=schain_name),
-            get_schain_struct(schain_name='test-schain'),
-            get_schain_struct(schain_name=''),
+            get_schain_struct(_test_schain_name=schain_name),
+            get_schain_struct(_test_schain_name='test-schain'),
+            get_schain_struct(_test_schain_name=''),
         ]
 
     with mock.patch('web.routes.health.SChainChecks', SChainChecksMock):

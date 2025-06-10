@@ -12,7 +12,7 @@ from core.chain.rpc import check_endpoint_blocks
 from tools.configs.containers import SKALED_CONTAINER, MAX_SKALED_RESTART_COUNT
 from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
 from web.models.schain import SChainRecord
-from tests.utils import generate_schain_skaled_status_file
+from tests.utils import generate_skaled_status_file
 
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
@@ -155,7 +155,7 @@ def test_handle_failed_skaled_rpc_stuck(
     assert schain_record.restart_count == 0
 
     # Make sure restart is not executed with Rpc: False in status file
-    generate_schain_skaled_status_file(schain_db, rpc=False)
+    generate_skaled_status_file(schain_db, rpc=False)
     handle_failed_skaled_rpc(
         chain_name=schain_db,
         chain_record=schain_record,
@@ -170,7 +170,7 @@ def test_handle_failed_skaled_rpc_stuck(
     finished_at = container_info['stats']['State']['FinishedAt']
 
     # With Rpc: True restart should be executed
-    generate_schain_skaled_status_file(schain_db, rpc=True)
+    generate_skaled_status_file(schain_db, rpc=True)
     schain_record.set_failed_rpc_count(100)
 
     assert schain_record.restart_count == 0

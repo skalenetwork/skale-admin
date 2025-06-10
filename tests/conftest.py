@@ -1,52 +1,26 @@
-import json
 import os
+import json
 import pathlib
-import random
 import shutil
-import string
 import subprocess
 from pathlib import Path
-from typing import cast
 
-import docker
-import pytest
 import yaml
-
-from skale import SkaleManager
-from skale.wallets import Web3Wallet
-from skale.utils.account_tools import generate_account, send_eth
-from skale.utils.contracts_provision.fake_multisig_contract import deploy_fake_multisig_contract
-from skale.utils.contracts_provision.main import (
-    add_test_permissions,
-    add_test2_schain_type,
-    add_test4_schain_type,
-    cleanup_nodes,
-    cleanup_nodes_schains,
-    create_nodes,
-    create_schain,
-    link_nodes_to_validator,
-    setup_validator,
-)
-from skale.utils.web3_utils import init_web3
-from skale.types.schain import SchainName
+import pytest
 
 from core.node import get_current_nodes
 from core.node_config import NodeConfig
-from core.checks.schain import SChainChecks
 from core.config.schain.helper import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
-from core.config.schain.directory import schain_config_dir, skaled_status_filepath
-from core.schains.cleaner import remove_skaled_container, remove_schain_volume
+from core.config.schain.directory import schain_config_dir
 from core.schains.ima import ImaData
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.chain.status import (
     init_node_cli_status,
-    init_skaled_status,
     node_cli_status_filepath,
-    SkaledStatus,
 )
 
 from tools.configs import (
@@ -54,12 +28,9 @@ from tools.configs import (
     ENV_TYPE,
     META_FILEPATH,
     SSL_CERTIFICATES_FILEPATH,
-    STATIC_GROUPS_FOLDER,
 )
-from tools.configs.containers import CONTAINERS_FILEPATH
+
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.web3 import MANAGER_CONTRACTS
-from tools.docker_utils import DockerUtils
 from tools.helper import write_json
 
 from web.models.schain import create_tables, SChainRecord
@@ -68,97 +39,16 @@ from tests.utils import (
     ALLOWED_RANGES,
     CONFIG_STREAM,
     CURRENT_TS,
-    ENDPOINT,
-    ETH_AMOUNT_PER_NODE,
-    ETH_PRIVATE_KEY,
     STATIC_NODE_GROUPS,
     generate_cert,
     generate_schain_config,
     get_test_rule_controller,
     IMA_MIGRATION_TS,
-    init_skale_from_wallet,
-    init_skale_ima,
     upsert_schain_record_with_config,
-    generate_schain_skaled_status_file,
 )
 
-NUMBER_OF_NODES = 2
 
-
-@pytest.fixture(scope='session')
-def images():
-    dclient = docker.from_env()
-    cinfo = {}
-    with open(CONTAINERS_FILEPATH, 'r') as cf:
-        json.load(cinfo, cf)
-    schain_image = '{}/{}'.format(cinfo['schain']['name'], cinfo['schain']['version'])
-    ima_image = '{}/{}'.format(cinfo['ima']['name'], cinfo['ima']['version'])
-    dclient.images.pull(schain_image)
-    dclient.images.pull(ima_image)
-
-
-@pytest.fixture(scope='session')
-def web3():
-    """Returns a SKALE Manager instance with provider from config"""
-    w3 = init_web3(ENDPOINT)
-    return w3
-
-
-@pytest.fixture(scope='session')
-def skale(web3):
-    """Returns a SKALE Manager instance with provider from config"""
-    wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    skale_obj = init_skale_from_wallet(wallet)
-    add_test_permissions(skale_obj)
-    add_test2_schain_type(skale_obj)
-    add_test4_schain_type(skale_obj)
-    if skale_obj.constants_holder.get_launch_timestamp() != 0:
-        skale_obj.constants_holder.set_launch_timestamp(0)
-    deploy_fake_multisig_contract(skale_obj.web3, skale_obj.wallet)
-    return skale_obj
-
-
-@pytest.fixture(scope='session')
-def validator(skale):
-    return setup_validator(skale)
-
-
-@pytest.fixture
-def node_wallets(skale):
-    wallets = []
-    for i in range(NUMBER_OF_NODES):
-        acc = generate_account(skale.web3)
-        pk = acc['private_key']
-        wallet = Web3Wallet(pk, skale.web3)
-        send_eth(
-            web3=skale.web3,
-            wallet=skale.wallet,
-            receiver_address=wallet.address,
-            amount=ETH_AMOUNT_PER_NODE,
-        )
-        wallets.append(wallet)
-    return wallets
-
-
-@pytest.fixture
-def node_skales(skale, node_wallets):
-    return [SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet) for wallet in node_wallets]
-
-
-@pytest.fixture
-def nodes(skale, node_skales, validator):
-    cleanup_nodes(skale, skale.nodes.get_active_node_ids())
-    link_nodes_to_validator(skale, validator, node_skales)
-    ids = create_nodes(node_skales)
-    try:
-        yield ids
-    finally:
-        cleanup_nodes(skale, ids)
-
-
-@pytest.fixture
-def skale_ima():
-    return init_skale_ima()
+pytest_plugins = ['tests.fixtures.web3', 'tests.fixtures.schains', 'tests.fixtures.containers']
 
 
 @pytest.fixture
@@ -180,11 +70,6 @@ def cert_key_pair(ssl_folder):
     finally:
         pathlib.Path(cert_path).unlink(missing_ok=True)
         pathlib.Path(key_path).unlink(missing_ok=True)
-
-
-def get_random_string(length=8):
-    letters = string.ascii_lowercase
-    return ''.join(random.choice(letters) for i in range(length))
 
 
 SECRET_KEY = {
@@ -222,12 +107,6 @@ SECRET_KEY = {
     'n': 16,
     'key_share_name': 'BLS_KEY:SCHAIN_ID:33333333333333333333333333333333333333333333333333333333333333333333333333333:NODE_ID:0:DKG_ID:0',  # noqa
 }
-
-
-@pytest.fixture
-def _schain_name() -> SchainName:
-    """Generates default schain name"""
-    return cast(SchainName, get_random_string())
 
 
 @pytest.fixture
@@ -280,64 +159,6 @@ def rm_schain_dir(schain_name):
 
 
 @pytest.fixture
-def skaled_status(_schain_name):
-    generate_schain_skaled_status_file(_schain_name)
-    try:
-        yield init_skaled_status(_schain_name)
-    finally:
-        rm_schain_dir(_schain_name)
-
-
-@pytest.fixture
-def skaled_status_downloading_snapshot(_schain_name):
-    generate_schain_skaled_status_file(_schain_name, snapshot_downloader=True)
-    try:
-        yield init_skaled_status(_schain_name)
-    finally:
-        rm_schain_dir(_schain_name)
-
-
-@pytest.fixture
-def skaled_status_exit_time_reached(_schain_name):
-    generate_schain_skaled_status_file(_schain_name, exit_time_reached=True)
-    try:
-        yield init_skaled_status(_schain_name)
-    finally:
-        rm_schain_dir(_schain_name)
-
-
-@pytest.fixture
-def skaled_status_repair(_schain_name):
-    generate_schain_skaled_status_file(_schain_name, clear_data_dir=True, start_from_snapshot=True)
-    try:
-        yield init_skaled_status(_schain_name)
-    finally:
-        rm_schain_dir(_schain_name)
-
-
-@pytest.fixture
-def skaled_status_reload(_schain_name):
-    generate_schain_skaled_status_file(_schain_name, start_again=True)
-    try:
-        yield init_skaled_status(_schain_name)
-    finally:
-        rm_schain_dir(_schain_name)
-
-
-@pytest.fixture
-def skaled_status_broken_file(_schain_name):
-    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
-    pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
-    status_filepath = skaled_status_filepath(_schain_name)
-    with open(status_filepath, 'w') as text_file:
-        text_file.write('abcd')
-    try:
-        yield SkaledStatus(status_filepath)
-    finally:
-        rm_schain_dir(_schain_name)
-
-
-@pytest.fixture
 def db():
     create_tables()
     try:
@@ -365,107 +186,10 @@ def meta_file():
 
 
 @pytest.fixture
-def schain_on_contracts(skale, nodes, _schain_name):
-    try:
-        yield create_schain(
-            skale,
-            schain_type=1,  # test2 should have 1 index
-            schain_name=_schain_name,
-        )
-    finally:
-        cleanup_nodes_schains(skale)
-
-
-@pytest.fixture
-def dutils():
-    return DockerUtils(volume_driver='local', host='unix://var/run/docker.sock')
-
-
-@pytest.fixture
-def skaled_mock_image(scope='module'):
-    dutils = DockerUtils(volume_driver='local', host='unix://var/run/docker.sock')
-    name = 'skaled-mock'
-    dutils.client.images.build(tag=name, rm=True, nocache=True, path='tests/skaled-mock')
-    yield name
-    dutils.client.images.remove(name, force=True)
-
-
-@pytest.fixture
-def cleanup_schain_dirs_before():
-    shutil.rmtree(SCHAINS_DIR_PATH, ignore_errors=True)
-    pathlib.Path(SCHAINS_DIR_PATH).mkdir(parents=True, exist_ok=True)
-    return
-
-
-@pytest.fixture
-def clean_docker(dutils, cleanup_schain_containers, cleanup_ima_containers):
-    pass
-
-
-@pytest.fixture
-def cleanup_schain_containers(dutils):
-    try:
-        yield
-    finally:
-        containers = dutils.get_all_schain_containers(all=True)
-        for container in containers:
-            dutils.safe_rm(container.name, force=True)
-            dutils.safe_rm(container.name.replace('schain', 'ima'), force=True)
-
-
-@pytest.fixture
-def cleanup_ima_containers(dutils):
-    try:
-        yield
-    finally:
-        containers = dutils.get_all_ima_containers(all=True)
-        for container in containers:
-            dutils.safe_rm(container.name, force=True)
-
-
-@pytest.fixture
-def cleanup_container(schain_config, dutils):
-    try:
-        yield
-    finally:
-        schain_name = schain_config['skaleConfig']['sChain']['schainName']
-        cleanup_schain_container(schain_name, dutils)
-
-
-def cleanup_schain_container(schain_name: str, dutils: DockerUtils):
-    remove_skaled_container(schain_name, dutils)
-    remove_schain_volume(schain_name, dutils)
-
-
-@pytest.fixture
 def node_config(skale, nodes):
     node_config = NodeConfig()
     node_config.id = nodes[0]
     return node_config
-
-
-@pytest.fixture
-def schain_checks(schain_config, schain_db, current_nodes, rule_controller, estate, dutils):
-    schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_record = SChainRecord.get_by_name(schain_name)
-    node_id = schain_config['skaleConfig']['sChain']['nodes'][0]['nodeID']
-    return SChainChecks(
-        schain_name,
-        node_id,
-        schain_record=schain_record,
-        rule_controller=rule_controller,
-        stream_version=CONFIG_STREAM,
-        current_nodes=current_nodes,
-        last_dkg_successful=True,
-        estate=estate,
-        dutils=dutils,
-    )
-
-
-@pytest.fixture
-def schain_struct(schain_config):
-    schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    return {'name': schain_name, 'partOfNode': 0, 'generation': 0}
 
 
 @pytest.fixture
@@ -556,20 +280,6 @@ def ima_migration_schedule(schain_db):
         yield migration_schedule_path
     finally:
         os.remove(migration_schedule_path)
-
-
-@pytest.fixture
-def static_groups_for_schain(_schain_name):
-    parent_folder = os.path.join(STATIC_GROUPS_FOLDER, ENV_TYPE)
-    os.makedirs(parent_folder)
-    static_groups_env_path = os.path.join(
-        parent_folder, os.path.join(f'schain-{_schain_name}.json')
-    )
-    try:
-        write_json(static_groups_env_path, STATIC_NODE_GROUPS)
-        yield STATIC_NODE_GROUPS
-    finally:
-        shutil.rmtree(STATIC_GROUPS_FOLDER, ignore_errors=True)
 
 
 NCLI_STATUS_DICT = {'repair_ts': CURRENT_TS, 'snapshot_from': '127.0.0.1'}

@@ -4,7 +4,7 @@ import mock
 import pytest
 
 from skale import SkaleManager
-from skale.utils.account_tools import generate_account, send_eth
+from skale.utils.account_tools import generate_account
 from skale.utils.contracts_provision.main import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.utils.helper import ip_from_bytes
@@ -19,12 +19,10 @@ from core.node import (
 )
 from core.node_config import NodeConfig
 from tools.configs import NODE_DATA_PATH
-from tools.configs.web3 import MANAGER_CONTRACTS
 from skale.utils.contracts_provision.main import (
     cleanup_nodes,
     link_nodes_to_validator,
 )
-from tests.utils import ENDPOINT, ETH_AMOUNT_PER_NODE
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -41,27 +39,15 @@ def node(node_skales, skale, nodes):
 
 
 @pytest.fixture
-def new_node_wallet(skale):
-    acc = generate_account(skale.web3)
-    pk = acc['private_key']
-    wallet = Web3Wallet(pk, skale.web3)
-    send_eth(
-        web3=skale.web3,
-        wallet=skale.wallet,
-        receiver_address=wallet.address,
-        amount=ETH_AMOUNT_PER_NODE,
-    )
-    return wallet
+def new_node_skale(
+    endpoint: str, manager_contracts: str, new_node_wallet: Web3Wallet
+) -> SkaleManager:
+    return SkaleManager(endpoint, manager_contracts, new_node_wallet)
 
 
 @pytest.fixture
-def new_node_skale(skale, new_node_wallet):
-    return SkaleManager(ENDPOINT, MANAGER_CONTRACTS, new_node_wallet)
-
-
-@pytest.fixture
-def unregistered_node(skale, new_node_skale, validator):
-    link_nodes_to_validator(skale, validator, [new_node_skale])
+def unregistered_node(skale, new_node_skale: SkaleManager, validator):
+    link_nodes_to_validator(skale, validator, (new_node_skale,))
     config = NodeConfig()
     try:
         node = Node(new_node_skale, config)
