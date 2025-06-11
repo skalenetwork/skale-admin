@@ -85,7 +85,7 @@ def remove_skaled_container(schain_name, client):
     client.rm_vol(schain_name)
 
 
-@mock.patch('core.schains.runner.get_image_name', return_value='skaled-mock')
+@mock.patch('core.chain.runner.get_image_name', return_value='skaled-mock')
 def test_run_skaled_container(
     get_image, dutils, schain_config, cleanup_container, cert_key_pair, skaled_mock_image
 ):
@@ -97,7 +97,7 @@ def test_run_skaled_container(
     check_schain_container(schain_name, dutils)
 
 
-@mock.patch('core.schains.runner.get_container_name', return_value='skaled-mock')
+@mock.patch('core.chain.runner.get_container_name', return_value='skaled-mock')
 def test_run_skaled_container_sync(
     mocked_dutils_run_container, schain_config, cleanup_container, cert_key_pair
 ):
@@ -127,7 +127,7 @@ def test_get_image_name_sync():
     assert '-historic' in image_name
 
 
-@mock.patch('core.schains.runner.get_image_name', return_value='skaled-mock')
+@mock.patch('core.chain.runner.get_image_name', return_value='skaled-mock')
 def test_run_skaled_container_in_sync_mode(
     get_image, dutils, schain_config, cleanup_container, cert_key_pair, skaled_mock_image
 ):
@@ -254,7 +254,7 @@ def test_images(dutils):
         dutils.client.images.remove(f'{TEST_IMAGE}:3.17')
 
 
-@mock.patch('core.schains.runner.get_image_name', return_value='skaled-mock')
+@mock.patch('core.chain.runner.get_image_name', return_value='skaled-mock')
 def test_get_container_image_name(
     get_image, dutils, schain_config, cleanup_container, cert_key_pair, skaled_mock_image
 ):

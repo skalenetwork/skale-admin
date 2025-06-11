@@ -203,10 +203,9 @@ def run_skaled_container(
     historic_state=False,
     part_of_node: Optional[int] = None,
 ):
-    if sync_node or is_mirage():
-        cpu_limit = None
-        mem_limit = None
-    elif part_of_node:
+    cpu_limit = None
+    mem_limit = None
+    if part_of_node:
         schain_type = get_schain_type(part_of_node)
         cpu_limit = get_schain_limit(schain_type, MetricType.cpu_shares)
         mem_limit = get_schain_limit(schain_type, MetricType.mem)

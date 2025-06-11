@@ -162,9 +162,8 @@ def run_simple_skaled_container(_test_schain_name: SchainName, dutils: DockerUti
 
 
 def run_simple_skaled_container_in_sync_mode(_test_schain_name: SchainName, dutils: DockerUtils):
-    public_key = '1:1:1:1'
     timestamp = int(time.time())
-    run_skaled_container(_test_schain_name, public_key, timestamp, dutils=dutils)
+    run_skaled_container(_test_schain_name, start_ts=timestamp, dutils=dutils)
 
 
 def run_simple_ima_container(_test_schain_name, dutils: DockerUtils):
