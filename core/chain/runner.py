@@ -33,7 +33,6 @@ from core.schains.ima import get_ima_env
 from core.config.schain.directory import schain_config_dir_host
 from core.types.chain import ChainName
 from tools.docker_utils import DockerUtils
-from tools.helper import is_mirage
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (
     CONTAINER_NAME_PREFIX,
