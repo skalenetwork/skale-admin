@@ -35,6 +35,8 @@ from skale.transactions.exceptions import TransactionLogicError
 from skale.utils.exceptions import InvalidNodeIdError
 from skale.utils.helper import ip_from_bytes
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
+from skale.types.schain import SchainName
+from skale.types.node import NodeWithId
 
 from core.monitoring import update_monitoring_services
 from tools.configs import WATCHDOG_PORT, CHANGE_IP_DELAY, CHECK_REPORT_PATH, META_FILEPATH
@@ -356,10 +358,10 @@ class ExtendedManagerNodeInfo(ManagerNodeInfo):
     ip_change_ts: int
 
 
-def get_current_nodes(skale: SkaleManager, name: str) -> List[ExtendedManagerNodeInfo]:
+def get_current_nodes(skale: SkaleManager, name: SchainName) -> List[ExtendedManagerNodeInfo]:
     if not skale.schains_internal.is_schain_exist(name):
         return []
-    current_nodes: ManagerNodeInfo = get_nodes_for_schain(skale, name)
+    current_nodes: list[NodeWithId] = get_nodes_for_schain(skale, name)
     for node in current_nodes:
         node['ip_change_ts'] = skale.nodes.get_last_change_ip_time(node['id'])
         node['ip'] = ip_from_bytes(node['ip'])

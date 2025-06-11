@@ -50,7 +50,7 @@ def test_get_schain_volume_config():
 
 def test_get_schain_upstream_config(schain_db, upstreams):
     name = schain_db
-    cfm = ConfigFileManager(schain_name=name)
+    cfm = ConfigFileManager(chain_name=name)
     upstream_config = cfm.latest_upstream_path
     config_folder = schain_config_dir(name)
     expected = os.path.join(config_folder, f'schain_{name}_11_1687183339.json')

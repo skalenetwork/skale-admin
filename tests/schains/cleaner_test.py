@@ -110,9 +110,8 @@ def test_remove_schain_volume(dutils, schain_config):
 def schain_container(schain_config, ssl_folder, dutils):
     """Creates and removes schain container"""
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
     try:
-        run_simple_skaled_container(schain_data, dutils)
+        run_simple_skaled_container(schain_name, dutils)
         yield schain_name
     finally:
         schain_name = schain_config['skaleConfig']['sChain']['schainName']
@@ -122,8 +121,7 @@ def schain_container(schain_config, ssl_folder, dutils):
 
 def test_remove_skaled_container(dutils, schain_config, cleanup_container, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
-    run_simple_skaled_container(schain_data, dutils)
+    run_simple_skaled_container(schain_name, dutils)
     container_name = SKALED_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert is_container_running(dutils, container_name)
     remove_skaled_container(schain_name, dutils=dutils)

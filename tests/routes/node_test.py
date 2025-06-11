@@ -255,7 +255,7 @@ def test_exit_maintenance(skale_bp, node_config_in_maintenance):
         get_api_url(BLUEPRINT_NAME, 'exit/start'),
     )
     assert data['status'] == 'error'
-    data['payload'] == {}
+    assert data['payload'] == {}
 
 
 def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale_bp):

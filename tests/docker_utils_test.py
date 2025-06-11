@@ -103,16 +103,17 @@ def test_run_skaled_container_sync(
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
 
-    run_skaled_container(
-        schain_name,
-        dutils=mocked_dutils_run_container,
-    )
+    run_skaled_container(schain_name, dutils=mocked_dutils_run_container, part_of_node=16)
     assert '-historic' not in mocked_dutils_run_container.run_container.call_args[0][0]
     assert mocked_dutils_run_container.run_container.call_args[1].get('cpu_shares')
     assert mocked_dutils_run_container.run_container.call_args[1].get('mem_limit')
 
     run_skaled_container(
-        schain_name, dutils=mocked_dutils_run_container, sync_node=True, historic_state=True
+        schain_name,
+        dutils=mocked_dutils_run_container,
+        sync_node=True,
+        historic_state=True,
+        part_of_node=16,
     )
     assert '-historic' in mocked_dutils_run_container.run_container.call_args[0][0]
     assert not mocked_dutils_run_container.run_container.call_args[1].get('cpu_shares')

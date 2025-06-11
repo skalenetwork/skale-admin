@@ -82,7 +82,7 @@ def test_config_task(skale, skale_ima, schain_db, schain_on_contracts, node_conf
         result.__name__ = 'TestConfigMonitor'
         return result
 
-    with mock.patch('core.monitor.schain.main.RegularConfigMonitor', get_monitor_mock):
+    with mock.patch('core.monitor.schain.monitor_config.RegularConfigMonitor', get_monitor_mock):
         config_task.run()
 
 
@@ -90,7 +90,7 @@ def test_skaled_task(skale, schain_db, schain_on_contracts, node_config, dutils)
     record = upsert_schain_record(schain_on_contracts)
     stream_version = '2.3.0'
     skaled_task = SkaledTask(
-        schain_name=schain_on_contracts,
+        chain_name=schain_on_contracts,
         skale=skale,
         node_config=node_config,
         stream_version=stream_version,
@@ -109,7 +109,7 @@ def test_skaled_task(skale, schain_db, schain_on_contracts, node_config, dutils)
         result.__name__ = 'TestSkaledMonitor'
         return result
 
-    with mock.patch('core.monitor.schain.main.get_skaled_monitor', get_monitor_mock):
+    with mock.patch('core.monitor.schain.monitor_skaled.get_skaled_monitor', get_monitor_mock):
         with mock.patch('core.monitor.schain.main.notify_checks'):
             skaled_task.run()
 
