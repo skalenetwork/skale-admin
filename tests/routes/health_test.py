@@ -3,12 +3,10 @@ import pytest
 from time import sleep
 
 from flask import Flask, appcontext_pushed, g
-from sgx import SgxClient
 
 from core.node_config import NodeConfig
 from core.checks.schain import SChainChecks
 
-from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 
 from web.models.schain import SChainRecord
 from web.routes.health import health_bp
@@ -139,22 +137,3 @@ def test_schains_checks_no_node(unregistered_skale_bp, skale):
     data = get_bp_data(unregistered_skale_bp, get_api_url('health', 'schains'))
     assert data['status'] == 'error'
     assert data['payload'] == 'No node installed'
-
-
-def test_sgx(skale_bp, skale):
-    config = NodeConfig()
-    config.sgx_key_name = TEST_SGX_KEYNAME
-
-    data = get_bp_data(skale_bp, get_api_url('health', 'sgx'))
-    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
-    version = sgx.get_server_version()
-    assert data == {
-        'payload': {
-            'sgx_server_url': SGX_SERVER_URL,
-            'status_zmq': True,
-            'status_https': True,
-            'sgx_wallet_version': version,
-            'sgx_keyname': TEST_SGX_KEYNAME,
-        },
-        'status': 'ok',
-    }

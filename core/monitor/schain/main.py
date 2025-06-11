@@ -121,6 +121,7 @@ def run_skaled_pipeline(
 
 class SkaledTask(BaseTask):
     NAME = 'skaled'
+    STUCK_TIMEOUT_SECONDS = 60 * 60 * 1
 
     def __init__(
         self,
@@ -137,6 +138,10 @@ class SkaledTask(BaseTask):
             node_config=node_config,
             stream_version=stream_version,
         )
+
+    @property
+    def stuck_timeout(self) -> int:
+        return self.STUCK_TIMEOUT_SECONDS
 
     @property
     def needed(self) -> bool:

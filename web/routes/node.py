@@ -19,11 +19,14 @@
 
 import logging
 from http import HTTPStatus
+import time
 
 from flask import Blueprint, abort, g, request
+import requests
 
 from core.node import Node, NodeStatus
 
+from core.updates import update_unsafe_for_schains
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
 from web.helper import construct_err_response, construct_ok_response, get_api_url, g_skale
@@ -150,3 +153,26 @@ def set_domain_name():
     if res['status'] != 'ok':
         return construct_err_response(msg=res['errors'])
     return construct_ok_response()
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'public-ip'), methods=['GET'])
+def public_ip():
+    logger.debug(request)
+    for _ in range(GET_IP_ATTEMPTS):
+        try:
+            response = requests.get(IPIFY_URL)
+            ip = response.json()['ip']
+            return construct_ok_response({'public_ip': ip})
+        except Exception:
+            logger.exception('Ip request failed')
+            time.sleep(1)
+    return construct_err_response(msg='Public ip request failed')
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'update-safe'), methods=['GET'])
+@g_skale
+def update_safe():
+    logger.debug(request)
+    unsafe_chains = update_unsafe_for_schains(g.skale, g.docker_utils)
+    safe = len(unsafe_chains) == 0
+    return construct_ok_response(data={'update_safe': safe, 'unsafe_chains': unsafe_chains})

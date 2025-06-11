@@ -24,11 +24,12 @@ jobs:
 
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          activate-environment: true
 
       - name: Install python dependencies
         run: |
-          uv venv venv -p ${{ env.PYTHON_VERSION }}
-          source venv/bin/activate
           uv pip install -r requirements.txt --prerelease=allow
           uv pip install -r requirements-dev.txt
 

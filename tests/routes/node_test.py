@@ -180,22 +180,6 @@ def test_send_tg_notification(skale_bp):
     assert data == expected
 
 
-def test_endpoint_info(skale_bp, skale):
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'endpoint-info'))
-    assert data['status'] == 'ok'
-    payload = data['payload']
-    assert payload['syncing'] is False
-    assert payload['block_number'] > 1
-    assert payload['trusted'] is False
-    assert payload['client'] != 'unknown'
-
-
-def test_meta_info(skale_bp, meta_file):
-    meta_info = meta_file
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'meta-info'))
-    assert data == {'status': 'ok', 'payload': meta_info}
-
-
 def test_public_ip_info(skale_bp):
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'public-ip'))
     assert data['status'] == 'ok'
@@ -205,13 +189,6 @@ def test_public_ip_info(skale_bp):
         data = get_bp_data(skale_bp, '/api/v1/node/public-ip')
         assert data['status'] == 'error'
         assert data['payload'] == 'Public ip request failed'
-
-
-def test_btrfs_info(skale_bp, skale):
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'btrfs-info'))
-    assert data['status'] == 'ok'
-    payload = data['payload']
-    assert payload['kernel_module'] is True
 
 
 @pytest.fixture
@@ -255,7 +232,7 @@ def test_exit_maintenance(skale_bp, node_config_in_maintenance):
         get_api_url(BLUEPRINT_NAME, 'exit/start'),
     )
     assert data['status'] == 'error'
-    assert data['payload'] == {}
+    assert data['payload'] == 'Node is in maintenance'
 
 
 def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale_bp):

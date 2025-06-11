@@ -554,7 +554,7 @@ def test_get_schain_originator():
     originator = get_schain_originator(get_schain_struct_no_originator())
     assert originator == TEST_MAINNET_OWNER_ADDRESS
 
-    originator = get_schain_originator(get_schain_struct())
+    originator = get_schain_originator(get_schain_struct(_test_schain_name='test_schain'))
     assert originator == TEST_ORIGINATOR_ADDRESS
 
 
