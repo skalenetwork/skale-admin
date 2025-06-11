@@ -14,26 +14,14 @@ from core.config.schain.file_manager import UpstreamConfigFilename
 from core.firewall.types import Action, SChainRule, LOOPBACK_INTERFACE
 from core.monitor.schain.action_skaled import SkaledActionManager
 from core.chain.runner import get_container_info
-from tools.configs.containers import SKALED_CONTAINER, IMA_CONTAINER
+from tools.configs.containers import SKALED_CONTAINER
+from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
 
 from tests.utils import IMA_MIGRATION_TS
 
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
-
-
-def run_ima_container_mock(
-    schain: dict, mainnet_chain_id: int, image: str, time_frame: int, dutils=None
-):
-    image_name, container_name, _, _ = get_container_info(IMA_CONTAINER, schain.name)
-    image = image or image_name
-    dutils.safe_rm(container_name)
-    dutils.run_container(
-        image_name=image,
-        name=container_name,
-        entrypoint='bash -c "while true; do foo; sleep 2; done"',
-    )
 
 
 def monitor_skaled_container_mock(
@@ -44,10 +32,12 @@ def monitor_skaled_container_mock(
     snapshot_from='',
     start_ts=None,
     abort_on_exit=True,
-    dutils=None,
+    dutils: DockerUtils | None = None,
     sync_node=False,
     historic_state=False,
 ):
+    if dutils is None:
+        dutils = DockerUtils()
     image_name, container_name, _, _ = get_container_info(SKALED_CONTAINER, schain.name)
     dutils.safe_rm(container_name)
     if not skaled_status.exit_time_reached or not abort_on_exit:
@@ -111,7 +101,7 @@ def test_volume_action(skaled_am, skaled_checks):
 def test_skaled_container_action(skaled_am, skaled_checks):
     try:
         with mock.patch(
-            'core.monitor.schain.action.monitor_skaled_container', monitor_skaled_container_mock
+            'core.chain.containers.monitor_skaled_container', monitor_skaled_container_mock
         ):
             skaled_am.volume()
             assert not skaled_checks.skaled_container
@@ -125,7 +115,7 @@ def test_skaled_container_with_snapshot_action(skaled_am):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.monitor.schain.action.monitor_skaled_container', new=mock.Mock()
+            'core.chain.containers.monitor_skaled_container', new=mock.Mock()
         ) as monitor_schain_mock:
             skaled_am.skaled_container(download_snapshot=True)
 
@@ -151,7 +141,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.monitor.schain.action.monitor_skaled_container', new=mock.Mock()
+            'core.chain.containers.monitor_skaled_container', new=mock.Mock()
         ) as monitor_schain_mock:
             skaled_am.skaled_container(download_snapshot=True, start_ts=ts)
 
@@ -176,7 +166,7 @@ def test_restart_skaled_container_action(skaled_am, skaled_checks):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.monitor.schain.action.monitor_skaled_container', monitor_skaled_container_mock
+            'core.chain.containers.monitor_skaled_container', monitor_skaled_container_mock
         ):
             assert not skaled_checks.skaled_container
             skaled_am.restart_skaled_container()
@@ -197,7 +187,7 @@ def test_restart_skaled_container_action_exit_reached(
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.monitor.schain.action.monitor_skaled_container', monitor_skaled_container_mock
+            'core.chain.containers.monitor_skaled_container', monitor_skaled_container_mock
         ):
             assert not skaled_checks.skaled_container
             skaled_am.reloaded_skaled_container()
@@ -358,7 +348,7 @@ def test_display_skaled_logs(skale, skaled_am, _schain_name):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.monitor.schain.action.monitor_skaled_container', monitor_skaled_container_mock
+            'core.chain.containers.monitor_skaled_container', monitor_skaled_container_mock
         ):
             skaled_am.skaled_container()
     finally:

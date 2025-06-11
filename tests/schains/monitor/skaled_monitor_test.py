@@ -24,7 +24,8 @@ from core.monitor.schain.monitor_skaled import (
 from core.schains.external_config import ExternalConfig
 from core.schains.exit_scheduler import ExitScheduleFileManager
 from core.chain.runner import get_container_info
-from tools.configs.containers import SKALED_CONTAINER, IMA_CONTAINER
+from tools.configs.containers import SKALED_CONTAINER
+from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
 
 from tests.utils import CURRENT_TS
@@ -34,26 +35,18 @@ CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 
 
-def run_ima_container_mock(schain: dict, mainnet_chain_id: int, dutils=None):
-    image_name, container_name, _, _ = get_container_info(IMA_CONTAINER, schain.name)
-    dutils.safe_rm(container_name)
-    dutils.run_container(
-        image_name=image_name,
-        name=container_name,
-        entrypoint='bash -c "while true; do foo; sleep 2; done"',
-    )
-
-
 def monitor_skaled_container_mock(
     schain,
     schain_record,
     skaled_status,
     download_snapshot=False,
     start_ts=None,
-    dutils=None,
+    dutils: DockerUtils | None = None,
     sync_node=False,
     historic_state=False,
 ):
+    if dutils is None:
+        dutils = DockerUtils()
     image_name, container_name, _, _ = get_container_info(SKALED_CONTAINER, schain.name)
     dutils.safe_rm(container_name)
     dutils.run_container(
@@ -478,9 +471,7 @@ def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dut
     mon = ReloadGroupSkaledMonitor(skaled_am, skaled_checks)
     ts = time.time()
     esfm = ExitScheduleFileManager(mon.am.name)
-    with mock.patch(
-        'core.monitor.schain.action.get_finish_ts_from_latest_upstream', return_value=ts
-    ):
+    with mock.patch('core.monitor.action_base.get_finish_ts_from_latest_upstream', return_value=ts):
         mon.run()
         assert esfm.exit_ts == ts
     assert skaled_am.rc.is_rules_synced
@@ -498,7 +489,9 @@ def test_group_reload_skaled_monitor_failed_skaled(skaled_am, skaled_checks, cle
         assert run_skaled_container_mock.assert_not_called()
 
 
-def test_recreate_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
+def test_recreate_skaled_monitor(
+    skaled_am: SkaledActionManager, skaled_checks, clean_docker, dutils
+):
     mon = RecreateSkaledMonitor(skaled_am, skaled_checks)
     ts_before = time.time()
     time.sleep(1)
@@ -521,7 +514,9 @@ def test_update_config_skaled_monitor(
     schain_container = dutils.safe_get_container(f'skale_schain_{name}')
     assert schain_container
     assert dutils.get_container_created_ts(schain_container.id) > ts_before
-    os.stat(os.path.join(schain_config_dir(name), f'schain_{name}.json')).st_mtime > ts_before
+    assert (
+        os.stat(os.path.join(schain_config_dir(name), f'schain_{name}.json')).st_mtime > ts_before
+    )
 
 
 def test_no_config_monitor(skaled_am, skaled_checks, clean_docker, dutils):

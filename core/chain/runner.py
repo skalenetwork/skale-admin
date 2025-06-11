@@ -249,6 +249,9 @@ def run_ima_container(
     dutils = dutils or DockerUtils()
     env = get_ima_env(chain_name, mainnet_chain_id, time_frame)
 
+    cpu_limit = None
+    mem_limit = None
+
     if part_of_node:
         schain_type = get_schain_type(part_of_node)
         cpu_limit = get_ima_limit(schain_type, MetricType.cpu_shares)
