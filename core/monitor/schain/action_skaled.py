@@ -18,11 +18,13 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 from typing import Optional
 
 from skale.types.schain import Schain
 
 from core.monitor.action_base import (
+    CONTAINER_POST_RUN_DELAY,
     BaseActionManager,
     BaseSkaledActionManager,
 )
@@ -35,7 +37,7 @@ from core.chain.status import NodeCliStatus
 from core.firewall.types import IRuleController
 from core.chain.volume import init_data_volume
 from core.schains.limits import get_schain_type
-from core.chain.containers import monitor_ima_container
+from core.chain.containers import monitor_ima_container, monitor_skaled_container
 from core.chain.runner import (
     is_container_exists,
     pull_new_image,
@@ -93,6 +95,34 @@ class SkaledActionManager(BaseSkaledActionManager):
     @property
     def chain_record(self) -> SChainRecord:
         return upsert_schain_record(self.name)
+
+    @BaseActionManager.monitor_block
+    def skaled_container(
+        self,
+        download_snapshot: bool = False,
+        start_ts: Optional[int] = None,
+        abort_on_exit: bool = True,
+    ) -> bool:
+        logger.info(
+            'Starting skaled container watchman snapshot: %s, start_ts: %s',
+            download_snapshot,
+            start_ts,
+        )
+        snapshot_from = self.ncli_status.snapshot_from if self.ncli_status else None
+        monitor_skaled_container(
+            self.chain_name,
+            chain_record=self.chain_record,
+            skaled_status=self.skaled_status,
+            download_snapshot=download_snapshot,
+            snapshot_from=snapshot_from,
+            start_ts=start_ts,
+            abort_on_exit=abort_on_exit,
+            dutils=self.dutils,
+            sync_node=SYNC_NODE,
+            historic_state=self.node_options.historic_state,
+        )
+        time.sleep(CONTAINER_POST_RUN_DELAY)
+        return True
 
     @BaseActionManager.monitor_block
     def volume(self) -> bool:

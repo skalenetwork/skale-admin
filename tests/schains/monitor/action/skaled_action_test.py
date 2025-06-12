@@ -104,7 +104,8 @@ def test_volume_action(skaled_am, skaled_checks):
 def test_skaled_container_action(skaled_am, skaled_checks):
     try:
         with mock.patch(
-            'core.monitor.action_base.monitor_skaled_container', monitor_skaled_container_mock
+            'core.monitor.schain.action_skaled.monitor_skaled_container',
+            monitor_skaled_container_mock,
         ):
             skaled_am.volume()
             assert not skaled_checks.skaled_container
@@ -118,13 +119,13 @@ def test_skaled_container_with_snapshot_action(skaled_am: SkaledActionManager):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.monitor.action_base.monitor_skaled_container', new=mock.Mock()
-        ) as monitor_schain_mock:
+            'core.monitor.schain.action_skaled.monitor_skaled_container', new=mock.Mock()
+        ) as monitor_skaled_container_mock:
             skaled_am.skaled_container(download_snapshot=True)
 
-        monitor_schain_mock.assert_called_with(
-            skaled_am.schain,
-            schain_record=skaled_am.chain_record,
+        monitor_skaled_container_mock.assert_called_with(
+            skaled_am.schain.name,
+            chain_record=skaled_am.chain_record,
             skaled_status=skaled_am.skaled_status,
             download_snapshot=True,
             snapshot_from='127.0.0.1',
@@ -134,33 +135,33 @@ def test_skaled_container_with_snapshot_action(skaled_am: SkaledActionManager):
             sync_node=False,
             historic_state=False,
         )
-        assert monitor_schain_mock.call_count == 1
+        assert monitor_skaled_container_mock.call_count == 1
     finally:
         skaled_am.cleanup_schain_docker_entity()
 
 
-def test_skaled_container_snapshot_delay_start_action(skaled_am):
+def test_skaled_container_snapshot_delay_start_action(skaled_am: SkaledActionManager):
     ts = int(time.time())
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.monitor.action_base.monitor_skaled_container', new=mock.Mock()
-        ) as monitor_schain_mock:
+            'core.monitor.schain.action_skaled.monitor_skaled_container', new=mock.Mock()
+        ) as monitor_skaled_container_mock:
             skaled_am.skaled_container(download_snapshot=True, start_ts=ts)
 
-        monitor_schain_mock.assert_called_with(
-            skaled_am.schain,
-            schain_record=skaled_am.schain_record,
+        monitor_skaled_container_mock.assert_called_with(
+            skaled_am.schain.name,
+            chain_record=skaled_am.chain_record,
             skaled_status=skaled_am.skaled_status,
             download_snapshot=True,
+            snapshot_from='127.0.0.1',
             start_ts=ts,
             abort_on_exit=True,
             dutils=skaled_am.dutils,
-            snapshot_from='127.0.0.1',
             sync_node=False,
             historic_state=False,
         )
-        assert monitor_schain_mock.call_count == 1
+        assert monitor_skaled_container_mock.call_count == 1
     finally:
         skaled_am.cleanup_schain_docker_entity()
 
@@ -169,7 +170,8 @@ def test_restart_skaled_container_action(skaled_am, skaled_checks):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.monitor.action_base.monitor_skaled_container', monitor_skaled_container_mock
+            'core.monitor.schain.action_skaled.monitor_skaled_container',
+            monitor_skaled_container_mock,
         ):
             assert not skaled_checks.skaled_container
             skaled_am.restart_skaled_container()
@@ -190,7 +192,8 @@ def test_restart_skaled_container_action_exit_reached(
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.monitor.action_base.monitor_skaled_container', monitor_skaled_container_mock
+            'core.monitor.schain.action_skaled.monitor_skaled_container',
+            monitor_skaled_container_mock,
         ):
             assert not skaled_checks.skaled_container
             skaled_am.reloaded_skaled_container()
@@ -351,7 +354,8 @@ def test_display_skaled_logs(skale, skaled_am, _schain_name):
     try:
         skaled_am.volume()
         with mock.patch(
-            'core.monitor.action_base.monitor_skaled_container', monitor_skaled_container_mock
+            'core.monitor.schain.action_skaled.monitor_skaled_container',
+            monitor_skaled_container_mock,
         ):
             skaled_am.skaled_container()
     finally:

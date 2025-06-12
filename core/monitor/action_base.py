@@ -151,31 +151,14 @@ class BaseSkaledActionManager(BaseActionManager):
         """Restart skaled from scratch"""
 
     @BaseActionManager.monitor_block
+    @abc.abstractmethod
     def skaled_container(
         self,
         download_snapshot: bool = False,
         start_ts: Optional[int] = None,
         abort_on_exit: bool = True,
     ) -> bool:
-        logger.info(
-            'Starting skaled container watchman snapshot: %s, start_ts: %s',
-            download_snapshot,
-            start_ts,
-        )
-        monitor_skaled_container(
-            self.chain_name,
-            chain_record=self.chain_record,
-            skaled_status=self.skaled_status,
-            download_snapshot=download_snapshot,
-            snapshot_from=self.chain_record.snapshot_from,
-            start_ts=start_ts,
-            abort_on_exit=abort_on_exit,
-            dutils=self.dutils,
-            sync_node=SYNC_NODE,
-            historic_state=self.node_options.historic_state,
-        )
-        time.sleep(CONTAINER_POST_RUN_DELAY)
-        return True
+        """Run monitor_skaled_container"""
 
     @BaseActionManager.monitor_block
     def restart_skaled_container(self) -> bool:

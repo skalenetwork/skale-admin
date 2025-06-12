@@ -18,9 +18,13 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
+from typing import Optional
 
+from core.chain.containers import monitor_skaled_container
 from core.chain.runner import is_container_exists
 from core.monitor.action_base import (
+    CONTAINER_POST_RUN_DELAY,
     BaseActionManager,
     BaseSkaledActionManager,
 )
@@ -38,6 +42,7 @@ from core.config.schain.helper import (
 )
 
 from core.types.chain import MirageChainName
+from tools.configs import SYNC_NODE
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import no_hyphens
@@ -66,6 +71,33 @@ class MirageSkaledActionManager(BaseSkaledActionManager):
             node_options=node_options,
         )
         self.chain_name = chain_name
+
+    @BaseActionManager.monitor_block
+    def skaled_container(
+        self,
+        download_snapshot: bool = False,
+        start_ts: Optional[int] = None,
+        abort_on_exit: bool = True,
+    ) -> bool:
+        logger.info(
+            'Starting skaled container watchman snapshot: %s, start_ts: %s',
+            download_snapshot,
+            start_ts,
+        )
+        monitor_skaled_container(
+            self.chain_name,
+            chain_record=self.chain_record,
+            skaled_status=self.skaled_status,
+            download_snapshot=download_snapshot,
+            snapshot_from=self.chain_record.snapshot_from,
+            start_ts=start_ts,
+            abort_on_exit=abort_on_exit,
+            dutils=self.dutils,
+            sync_node=SYNC_NODE,
+            historic_state=self.node_options.historic_state,
+        )
+        time.sleep(CONTAINER_POST_RUN_DELAY)
+        return True
 
     @BaseActionManager.monitor_block
     def volume(self) -> bool:

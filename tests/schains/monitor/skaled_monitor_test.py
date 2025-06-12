@@ -23,9 +23,6 @@ from core.monitor.schain.monitor_skaled import (
 )
 from core.schains.external_config import ExternalConfig
 from core.schains.exit_scheduler import ExitScheduleFileManager
-from core.chain.runner import get_container_info
-from tools.configs.containers import SKALED_CONTAINER
-from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
 
 from tests.utils import CURRENT_TS
@@ -33,27 +30,6 @@ from tests.utils import CURRENT_TS
 
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
-
-
-def monitor_skaled_container_mock(
-    schain,
-    schain_record,
-    skaled_status,
-    download_snapshot=False,
-    start_ts=None,
-    dutils: DockerUtils | None = None,
-    sync_node=False,
-    historic_state=False,
-):
-    if dutils is None:
-        dutils = DockerUtils()
-    image_name, container_name, _, _ = get_container_info(SKALED_CONTAINER, schain.name)
-    dutils.safe_rm(container_name)
-    dutils.run_container(
-        image_name=image_name,
-        name=container_name,
-        entrypoint='bash -c "while true; do foo; sleep 2; done"',
-    )
 
 
 @pytest.fixture
