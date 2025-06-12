@@ -24,7 +24,6 @@ from datetime import datetime
 from functools import wraps
 from typing import Dict, Optional
 
-from core.chain.containers import monitor_skaled_container
 from core.chain.rpc import handle_failed_skaled_rpc
 from core.chain.runner import get_container_name, is_container_exists, restart_container
 from core.chain.status import init_skaled_status
@@ -41,7 +40,6 @@ from core.schains.cleaner import remove_schain_volume, remove_skaled_container
 from core.schains.exit_scheduler import ExitScheduleFileManager
 from core.schains.ssl import update_ssl_change_date
 from core.types.chain import ChainName
-from tools.configs import SYNC_NODE
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.node_options import NodeOptions
