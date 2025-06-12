@@ -20,7 +20,7 @@
 import socket
 import logging
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, TypedDict
 
 from skale.types.rotation import NodesGroup, Rotation
 from skale.types.node import Node as SkaleNode, NodeWithSchains, MirageNode, NodeId
@@ -29,7 +29,7 @@ from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 from core.config.base_config import MirageConfig, SChainBaseConfig
 from core.config.mirage.schain_info import MirageChainInfo
 from core.config.mirage.node_info import MirageCurrentNodeInfo, generate_mirage_current_node_info
-from core.config.mirage.mirage_schain_node import generate_mirage_chain_nodes
+from core.config.mirage.committee import CommitteeInfoFromManager, generate_committee_info
 from core.config.precompiled import get_precompiled_contracts_mirage
 from core.config.schain.static_params import (
     get_static_schain_info_mirage,
@@ -89,9 +89,16 @@ def generate_mirage_config_adapter(
         skale_node_to_mirage_node_adapter(schain_node, schain_node['id'])
         for schain_node in schain_nodes_with_schains
     ]
+    import time
+
+    ts = int(time.time())
+    committee_info_from_manager: CommitteeInfoFromManager = {
+        0: {'ts': ts - 1, 'group': committee_nodes},
+        1: {'ts': ts, 'group': committee_nodes},
+    }
     return generate_mirage_config(
         node=node,
-        committee_nodes=committee_nodes,
+        committee_info_from_manager=committee_info_from_manager,
         node_groups=node_groups,
         group_index=rotation_data.rotation_counter,
         ecdsa_key_name=ecdsa_key_name,
@@ -104,7 +111,7 @@ def generate_mirage_config_adapter(
 
 def generate_mirage_config(
     node: MirageNode,
-    committee_nodes: list[MirageNode],
+    committee_info_from_manager: CommitteeInfoFromManager,
     node_groups: Dict[int, NodesGroup],
     group_index: int,
     ecdsa_key_name: str,
@@ -126,22 +133,21 @@ def generate_mirage_config(
     }
 
     static_schain_info = get_static_schain_info_mirage()
+    committee_info = {}
 
-    chain_nodes = generate_mirage_chain_nodes(
-        committee_nodes=committee_nodes,
-        rotation_id=group_index,
+    committee_info = generate_committee_info(
+        committee_info_from_manager=committee_info_from_manager,
         sync_node=False,
     )
 
     schain_info = MirageChainInfo(
         schain_id=chain_id_int,
         node_groups=node_groups,
-        nodes=chain_nodes,
+        nodes=committee_info,
         static_schain_info=static_schain_info,
     )
 
     static_node_info = get_static_node_info_mirage()
-    nodes_in_chain = len(committee_nodes)
 
     current_node_info = generate_mirage_current_node_info(
         node_id=node.id,
@@ -149,7 +155,6 @@ def generate_mirage_config(
         static_node_info=static_node_info,
         group_index=group_index,
         port=node.port,
-        nodes_in_chain=nodes_in_chain,
         common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
         archive=archive,

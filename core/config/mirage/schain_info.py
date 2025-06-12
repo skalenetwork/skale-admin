@@ -20,7 +20,7 @@
 from dataclasses import dataclass
 from typing import Dict
 from skale.types.rotation import NodesGroup
-from core.config.mirage.mirage_schain_node import MirageChainNodeInfo
+from core.config.mirage.committee import CommitteeInfo
 from core.config.schain.static_params import get_static_chain_name_mirage
 from tools.configs.schains import MAX_HISTORIC_STATE_DB_SIZE
 
@@ -30,7 +30,7 @@ class MirageChainInfo:
     schain_id: int
 
     node_groups: Dict[int, NodesGroup]
-    nodes: list[MirageChainNodeInfo]
+    nodes: dict[int, CommitteeInfo]
     static_schain_info: dict
 
     max_historic_state_db_size: int | None = None
@@ -41,9 +41,12 @@ class MirageChainInfo:
             'schainName': get_static_chain_name_mirage(),
             'nodeGroups': self.node_groups,
             'multiTransactionMode': True,
-            'nodes': self.nodes,
-            **self.static_schain_info,
         }
+        nodes_with_str_key = {
+            str(ts): committee_info.to_dict() for ts, committee_info in self.nodes.items()
+        }
+        data.update({'nodes': nodes_with_str_key})
+        data.update(**self.static_schain_info)
         if self.max_historic_state_db_size:
             data.update({'maxHistoricStateDbSize': self.max_historic_state_db_size})
         return data

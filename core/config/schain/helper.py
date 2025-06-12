@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import time
 import logging
 from typing import Dict, List, Optional, Tuple
 
@@ -59,11 +60,30 @@ def get_schain_id(schain_name: str) -> int:
     return int(get_chain_id(schain_name), 16)
 
 
-def get_node_ips_from_config(config: Dict) -> List[str]:
+def get_current_group(config: Dict) -> List[dict]:
     if config is None:
         return []
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
-    return [node_data['ip'] for node_data in schain_nodes_config]
+
+    current_timestamp = int(time.time())
+
+    timestamps = schain_nodes_config.keys()
+    needed_timestamp = None
+    for timestamp in sorted(timestamps, key=int):
+        if int(timestamp) > current_timestamp:
+            needed_timestamp = timestamp
+            break
+
+    if needed_timestamp is None:
+        needed_timestamp = max(timestamps)
+    return schain_nodes_config[needed_timestamp]['group']
+
+
+def get_node_ips_from_config(config: Dict) -> List[str]:
+    group_data = get_current_group(config)
+    if len(group_data) == 0:
+        return []
+    return [node_data['ip'] for node_data in group_data]
 
 
 def get_base_port_from_config(config: Dict) -> int:
@@ -71,9 +91,9 @@ def get_base_port_from_config(config: Dict) -> int:
 
 
 def get_own_ip_from_config(config: Dict) -> Optional[str]:
-    schain_nodes_config = config['skaleConfig']['sChain']['nodes']
+    group_data = get_current_group(config)
     own_id = config['skaleConfig']['nodeInfo']['nodeID']
-    for node_data in schain_nodes_config:
+    for node_data in group_data:
         if node_data['nodeID'] == own_id:
             return node_data['ip']
     return None
