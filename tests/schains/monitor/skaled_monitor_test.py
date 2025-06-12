@@ -156,7 +156,7 @@ def test_get_skaled_monitor_regular_and_backup(
     skaled_am, skaled_checks, skaled_status, schain_db, ncli_status
 ):
     name = schain_db
-    schain_record = SChainRecord.get_by_name(name)
+    schain_record: SChainRecord = SChainRecord.get_by_name(name)
     mon = get_skaled_monitor(
         skaled_am, skaled_checks.get_all(), schain_record, skaled_status, ncli_status
     )
@@ -166,19 +166,13 @@ def test_get_skaled_monitor_regular_and_backup(
     mon = get_skaled_monitor(
         skaled_am, skaled_checks.get_all(), schain_record, skaled_status, ncli_status
     )
-    assert mon == RegularSkaledMonitor
-
-    schain_record.set_first_run(False)
-    mon = get_skaled_monitor(
-        skaled_am, skaled_checks.get_all(), schain_record, skaled_status, ncli_status
-    )
-    assert mon == RegularSkaledMonitor
-
-    schain_record.set_new_schain(False)
-    mon = get_skaled_monitor(
-        skaled_am, skaled_checks.get_all(), schain_record, skaled_status, ncli_status
-    )
     assert mon == BackupSkaledMonitor
+
+    schain_record.set_backup_run(False)
+    mon = get_skaled_monitor(
+        skaled_am, skaled_checks.get_all(), schain_record, skaled_status, ncli_status
+    )
+    assert mon == RegularSkaledMonitor
 
 
 def test_get_skaled_monitor_repair(skaled_am, skaled_checks, skaled_status, schain_db, ncli_status):
@@ -502,7 +496,13 @@ def test_recreate_skaled_monitor(
 
 
 def test_update_config_skaled_monitor(
-    skaled_am, skaled_checks, dutils, clean_docker, upstreams, skaled_status_exit_time_reached
+    skaled_am,
+    skaled_checks: SkaledChecks,
+    dutils,
+    clean_docker,
+    upstreams,
+    skaled_status_exit_time_reached,
+    remove_schain_config_file,
 ):
     name = skaled_checks.name
     ts_before = time.time()

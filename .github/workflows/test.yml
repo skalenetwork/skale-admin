@@ -9,6 +9,8 @@ env:
   SGX_WALLET_TAG: "1.10.0-develop.3"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   PYTHON_VERSION: 3.11
+  ENDPOINT: http://127.0.0.1:8545
+  RUN_ANVIL: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -50,11 +52,8 @@ jobs:
   test_core:
     runs-on: self-hosted
     env:
-      # ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
-      ENDPOINT: http://127.0.0.1:8545
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-      RUN_ANVIL: true
     steps:
       - uses: actions/checkout@v4
         with:

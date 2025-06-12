@@ -151,6 +151,14 @@ def schain_config(_schain_name, secret_key):
         rm_schain_dir(_schain_name)
 
 
+@pytest.fixture
+def remove_schain_config_file(_schain_name):
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
+    config_path = os.path.join(schain_dir_path, f'schain_{_schain_name}.json')
+    if os.path.exists(config_path):
+        os.remove(config_path)
+
+
 def rm_schain_dir(schain_name):
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
     # fix permission denied after schain container running

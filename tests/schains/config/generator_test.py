@@ -711,7 +711,7 @@ def test_generate_sync_node_config_static_accounts(schain_secret_key_file_defaul
     assert config['accounts'].get('0x1111111')
     assert config['accounts']['0x1111111']['balance'] == '1000000000000000000000000000000'
 
-    schain = get_schain_struct(_test_schain_name=schain.name)
+    schain = get_schain_struct(_test_schain_name='other_schain')
 
     schain_config = generate_schain_config(
         schain=schain,

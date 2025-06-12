@@ -335,7 +335,9 @@ class DockerUtils:
     def get_vol_created_ts(self, name: str) -> int:
         vol = self.get_vol(name)
         if vol:
-            iso_time = vol.attrs['CreatedAt'][:-1]
+            iso_time = vol.attrs['CreatedAt']
+            if iso_time.endswith('Z'):
+                iso_time = iso_time[:-1] + '+00:00'
             return int(datetime.fromisoformat(iso_time).timestamp())
         else:
             return 0
