@@ -20,7 +20,7 @@
 import socket
 import logging
 from dataclasses import dataclass
-from typing import Dict, TypedDict
+from typing import Dict
 
 from skale.types.rotation import NodesGroup, Rotation
 from skale.types.node import Node as SkaleNode, NodeWithSchains, MirageNode, NodeId
