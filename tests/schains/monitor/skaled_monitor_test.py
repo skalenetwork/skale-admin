@@ -441,7 +441,9 @@ def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dut
     mon = ReloadGroupSkaledMonitor(skaled_am, skaled_checks)
     ts = time.time()
     esfm = ExitScheduleFileManager(mon.am.name)
-    with mock.patch('core.monitor.action_base.get_finish_ts_from_latest_upstream', return_value=ts):
+    with mock.patch(
+        'core.monitor.schain.action_skaled.get_finish_ts_from_latest_upstream', return_value=ts
+    ):
         mon.run()
         assert esfm.exit_ts == ts
     assert skaled_am.rc.is_rules_synced
