@@ -217,7 +217,7 @@ class NewNodeSkaledMonitor(BaseSChainSkaledMonitor):
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
         if not self.checks.skaled_container:
-            self.am.skaled_container(download_snapshot=True, start_ts=self.am.finish_ts)
+            self.am.skaled_container(download_snapshot=True, start_ts=self.am.upstream_finish_ts)
         else:
             self.am.reset_restart_counter()
         if not self.checks.ima_container:

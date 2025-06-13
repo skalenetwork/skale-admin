@@ -29,10 +29,6 @@ from core.chain.runner import get_container_name, is_container_exists, restart_c
 from core.chain.status import init_skaled_status
 from core.checks.base import BaseSkaledChecks
 from core.config.schain.file_manager import ConfigFileManager
-from core.config.schain.main import (
-    get_finish_ts_from_latest_upstream,
-    get_finish_ts_from_skaled_config,
-)
 from core.firewall.types import IRuleController
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
@@ -56,7 +52,7 @@ CONTAINER_POST_RUN_DELAY = 20
 SCHAIN_CLEANUP_TIMEOUT = 10
 
 
-class BaseActionManager:
+class BaseActionManager(abc.ABC):
     def __init__(self, name: ChainName):
         self.name = name
         self.executed_blocks: Dict = {}
@@ -219,37 +215,9 @@ class BaseSkaledActionManager(BaseActionManager):
         logger.info('Syncing skaled config with upstream')
         return self.cfm.sync_skaled_config_with_upstream()
 
-    @BaseActionManager.monitor_block
-    def schedule_skaled_exit(self, exit_ts: int) -> None:
-        if self.skaled_status.exit_time_reached or self.esfm.exists():
-            logger.info('Exit time has been already set')
-            return
-        if exit_ts is not None:
-            logger.info('Scheduling skaled exit time %d', exit_ts)
-            self.esfm.exit_ts = exit_ts
-
-    @BaseActionManager.monitor_block
-    def reset_exit_schedule(self) -> None:
-        logger.info('Resetting exit schedule')
-        if self.esfm.exists():
-            self.esfm.rm()
-
-    @BaseActionManager.monitor_block
-    def disable_backup_run(self) -> None:
-        logger.debug('Turning off backup mode')
-        self.chain_record.set_backup_run(False)
-
     @property
     def upstream_config_path(self) -> Optional[str]:
         return self.cfm.latest_upstream_path
-
-    @property
-    def upstream_finish_ts(self) -> Optional[int]:
-        return get_finish_ts_from_latest_upstream(self.cfm)
-
-    @property
-    def finish_ts(self) -> Optional[int]:
-        return get_finish_ts_from_skaled_config(self.cfm)
 
     def display_skaled_logs(self) -> None:
         if is_container_exists(self.name, dutils=self.dutils):

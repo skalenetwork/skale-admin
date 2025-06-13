@@ -23,6 +23,10 @@ from typing import Optional
 
 from skale.types.schain import Schain
 
+from core.config.schain.main import (
+    get_finish_ts_from_latest_upstream,
+    get_finish_ts_from_skaled_config,
+)
 from core.monitor.action_base import (
     CONTAINER_POST_RUN_DELAY,
     BaseActionManager,
@@ -203,3 +207,31 @@ class SkaledActionManager(BaseSkaledActionManager):
         else:
             logger.info('ima_container - ok')
         return initial_status
+
+    @BaseActionManager.monitor_block
+    def schedule_skaled_exit(self, exit_ts: int) -> None:
+        if self.skaled_status.exit_time_reached or self.esfm.exists():
+            logger.info('Exit time has been already set')
+            return
+        if exit_ts is not None:
+            logger.info('Scheduling skaled exit time %d', exit_ts)
+            self.esfm.exit_ts = exit_ts
+
+    @BaseActionManager.monitor_block
+    def reset_exit_schedule(self) -> None:
+        logger.info('Resetting exit schedule')
+        if self.esfm.exists():
+            self.esfm.rm()
+
+    @BaseActionManager.monitor_block
+    def disable_backup_run(self) -> None:
+        logger.debug('Turning off backup mode')
+        self.chain_record.set_backup_run(False)
+
+    @property
+    def upstream_finish_ts(self) -> Optional[int]:
+        return get_finish_ts_from_latest_upstream(self.cfm)
+
+    @property
+    def finish_ts(self) -> Optional[int]:
+        return get_finish_ts_from_skaled_config(self.cfm)

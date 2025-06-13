@@ -73,8 +73,6 @@ class FlatRedisRecord:
     def _get_field(self, field_name: str):
         key = self._get_field_key(field_name)
         value = rs.get(key)
-        if value is None:
-            raise ValueError(f"Field '{field_name}' not found in record '{self.name}'")
         return self._deserialize_field(value, self._record_fields()[field_name].type)
 
     def _set_field(self, field_name: str, value) -> None:
