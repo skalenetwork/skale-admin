@@ -11,7 +11,7 @@ from core.config.schain.helper import (
 from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.main import get_latest_finish_ts, get_rotation_ids_from_config
-from core.schains.volume import get_schain_volume_config
+from core.chain.volume import get_schain_volume_config
 from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 
 
@@ -50,7 +50,7 @@ def test_get_schain_volume_config():
 
 def test_get_schain_upstream_config(schain_db, upstreams):
     name = schain_db
-    cfm = ConfigFileManager(schain_name=name)
+    cfm = ConfigFileManager(chain_name=name)
     upstream_config = cfm.latest_upstream_path
     config_folder = schain_config_dir(name)
     expected = os.path.join(config_folder, f'schain_{name}_11_1687183339.json')

@@ -15,17 +15,18 @@ export_test_env () {
     export FLASK_APP_HOST=0.0.0.0
     export FLASK_APP_PORT=3008
     export FLASK_DEBUG_MODE=True
-    export REDIS_URI="redis://@127.0.0.1:6381"
+    export REDIS_URI="redis://@127.0.0.1:6379"
     export TG_CHAT_ID=-1231232
     export TG_API_KEY=123
     export ENV_TYPE=devnet
     export ENV=test
     export ALLOWED_TS_DIFF=9000000
     export SCHAIN_STOP_TIMEOUT=1
-    SM_ABI_FILEPATH=${ABI_FILEPATH:="$PWD/helper-scripts/contracts_data/manager.json"}
-    export MANAGER_CONTRACTS=$(jq -r '.skale_manager_address' "$SM_ABI_FILEPATH")
-    IMA_ABI_FILEPATH=${IMA_ABI_FILEPATH:="$PWD/helper-scripts/contracts_data/ima.json"}
-    export IMA_CONTRACTS=$(jq -r '.message_proxy_mainnet_address' "$IMA_ABI_FILEPATH")
+
+    export MANAGER_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh manager_address)
+    export IMA_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh ima_address)
+    export MIRAGE_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh mirage_address)
+    
     export DEFAULT_GAS_PRICE_WEI=1000000000
 
     export ETH_PRIVATE_KEY=$(cat $PWD/helper-scripts/private_key.txt)

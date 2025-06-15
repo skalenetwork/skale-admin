@@ -59,18 +59,22 @@ def get_schain_id(schain_name: str) -> int:
     return int(get_chain_id(schain_name), 16)
 
 
-def get_node_ips_from_config(config: Dict) -> List[str]:
+def get_node_ips_from_config(config: Dict | None) -> List[str]:
     if config is None:
         return []
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
     return [node_data['ip'] for node_data in schain_nodes_config]
 
 
-def get_base_port_from_config(config: Dict) -> int:
+def get_base_port_from_config(config: Dict | None) -> int:
+    if config is None:
+        return 0
     return config['skaleConfig']['nodeInfo']['basePort']
 
 
-def get_own_ip_from_config(config: Dict) -> Optional[str]:
+def get_own_ip_from_config(config: Dict | None) -> Optional[str]:
+    if config is None:
+        return None
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
     own_id = config['skaleConfig']['nodeInfo']['nodeID']
     for node_data in schain_nodes_config:

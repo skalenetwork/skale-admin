@@ -59,7 +59,7 @@ def wait_for_process_report(process_report):
 
 
 def test_run_pm_schain(tmp_dir, skale, skale_ima, node_config, _schain_name):
-    schain = get_schain_struct(schain_name=_schain_name)
+    schain = get_schain_struct(_test_schain_name=_schain_name)
 
     timeout = 7
 
@@ -109,7 +109,7 @@ def test_run_pm_schain(tmp_dir, skale, skale_ima, node_config, _schain_name):
 
 
 def test_cleanup_schains_pids(tmp_dir, skale, skale_ima, node_config, _schain_name):
-    schain = get_schain_struct(schain_name=_schain_name)
+    schain = get_schain_struct(_test_schain_name=_schain_name)
 
     process_report = ProcessReport(schain.name)
     assert not process_report.exists()

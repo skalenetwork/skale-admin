@@ -29,6 +29,7 @@ from core.schains.cleaner import run_cleaner
 from core.schains.process import cleanup_schains_pids
 from core.updates import update_node_config_file
 from core.monitoring import update_monitoring_services
+from core.redis.migrations import run_redis_migrations
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
 from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS, STATE_FILEPATH
@@ -79,7 +80,7 @@ def worker():
     skale_ima = SkaleIma(ENDPOINT, IMA_CONTRACTS, wallet)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
-    update_monitoring_services(node_config.ip, node_config.id, skale)
+    update_monitoring_services(node_config.ip, node_config.id, skale.manager.address)
     monitor(skale, skale_ima, node_config)
 
 
@@ -92,6 +93,7 @@ def init():
         update_node_config_file(skale, node_config)
         create_tables()
         migrate()
+        run_redis_migrations()
         set_schains_first_run()
         cleanup_schains_pids()
         if BACKUP_RUN:

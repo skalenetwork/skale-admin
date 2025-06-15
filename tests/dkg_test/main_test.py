@@ -21,6 +21,7 @@ from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.wallets import SgxWallet
 from skale.utils.account_tools import send_eth
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
+from skale.types.schain import SchainName
 
 from core.schains.dkg.client import DkgError
 from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, run_dkg
@@ -36,7 +37,6 @@ from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
     generate_random_node_data,
     generate_random_schain_data,
-    init_skale_from_wallet,
     set_automine,
     set_interval_mining,
 )
@@ -66,6 +66,8 @@ class DKGRunType(int, Enum):
 
 
 def generate_sgx_wallets(skale, n_of_keys):
+    if not SGX_SERVER_URL:
+        raise DkgTestError('SGX_SERVER_URL is not set')
     logger.info(f'Generating {n_of_keys} test wallets')
     return [
         SgxWallet(SGX_SERVER_URL, skale.web3, path_to_cert=SGX_CERTIFICATES_FOLDER)
@@ -248,7 +250,7 @@ def dkg_test_client(
 
 def run_node_dkg(
     skale: SkaleManager,
-    schain_name: str,
+    schain_name: SchainName,
     index: int,
     node_id: int,
     runs: tuple[DKGRunType] = (DKGRunType.NORMAL,),
@@ -323,8 +325,8 @@ class TestDKG:
         return wallets
 
     @pytest.fixture(scope='class')
-    def skale_sgx_instances(self, skale, sgx_wallets):
-        return [init_skale_from_wallet(w) for w in sgx_wallets]
+    def skale_sgx_instances(self, skale, endpoint, manager_contracts, sgx_wallets):
+        return [SkaleManager(endpoint, manager_contracts, w) for w in sgx_wallets]
 
     @pytest.fixture(scope='class')
     def other_maintenance(self, skale):
