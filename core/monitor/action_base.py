@@ -29,7 +29,7 @@ from core.chain.runner import get_container_name, is_container_exists, restart_c
 from core.chain.status import init_skaled_status
 from core.checks.base import BaseSkaledChecks
 from core.config.schain.file_manager import ConfigFileManager
-from core.firewall.types import IRuleController
+from core.firewall import IRuleController
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.schains.cleaner import remove_schain_volume, remove_skaled_container

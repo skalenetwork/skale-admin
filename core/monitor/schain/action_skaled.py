@@ -38,7 +38,7 @@ from core.checks.schain import SkaledChecks
 from core.schains.cleaner import remove_ima_container, remove_skaled_container
 from core.schains.ima import get_migration_ts as get_ima_migration_ts, ImaData
 from core.chain.status import NodeCliStatus
-from core.firewall.types import IRuleController
+from core.firewall import IRuleController
 from core.chain.volume import init_data_volume
 from core.schains.limits import get_schain_type
 from core.chain.containers import monitor_ima_container, monitor_skaled_container

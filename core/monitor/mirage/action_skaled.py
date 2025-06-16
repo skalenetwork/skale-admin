@@ -31,7 +31,7 @@ from core.monitor.action_base import (
 from core.node_config import NodeConfig
 from core.checks.mirage import SkaledChecks
 
-from core.firewall.types import IRuleController
+from core.firewall import IRuleController
 from core.chain.volume import init_mirage_volume
 from core.schains.cleaner import remove_skaled_container
 

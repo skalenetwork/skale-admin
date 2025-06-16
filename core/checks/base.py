@@ -34,7 +34,7 @@ from core.config.schain.main import (
     get_upstream_config_rotation_ids,
 )
 from core.redis.chain_record import ChainRecord
-from core.firewall.types import IRuleController
+from core.firewall import IRuleController
 from core.chain.rpc import (
     check_endpoint_alive,
     check_endpoint_blocks,
