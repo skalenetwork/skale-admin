@@ -19,7 +19,7 @@ from config_controller_predeployed import (
 from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
 
-from core.config.base_config import MirageConfig
+from core.config.base import MirageConfig
 from core.config.schain.generator import (
     generate_schain_config_with_skale,
     generate_schain_config,
@@ -103,18 +103,18 @@ TEST_NODE = {'id': 1, 'name': 'test', 'publicKey': '0x5556', 'port': 10000}
 
 
 def get_schain_struct_no_originator() -> SchainStructure:
-    schain = get_schain_struct(schain_name='test_schain')
+    schain = get_schain_struct(_test_schain_name='test_schain')
     schain.originator = '0x0000000000000000000000000000000000000000'
     return schain
 
 
 def get_schain_struct_static_account() -> SchainStructure:
-    schain = get_schain_struct(schain_name='static_chain')
+    schain = get_schain_struct(_test_schain_name='static_chain')
     return schain
 
 
 def get_schain_node_with_schains(schain_name: str) -> list:
-    schain = get_schain_struct(schain_name=schain_name)
+    schain = get_schain_struct(_test_schain_name=schain_name)
     return [
         {
             'name': 'test',
@@ -317,7 +317,7 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
-        schain=get_schain_struct(schain_name='test_schain'),
+        schain=get_schain_struct(_test_schain_name='test_schain'),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -343,7 +343,7 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
-        schain=get_schain_struct(schain_name='test_schain'),
+        schain=get_schain_struct(_test_schain_name='test_schain'),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -479,7 +479,7 @@ def test_generate_schain_config_allocation_type(schain_secret_key_file_default_c
     ecdsa_key_name = 'test'
     node_groups = {}
 
-    schain = get_schain_struct(schain_name='test_schain')
+    schain = get_schain_struct(_test_schain_name='test_schain')
     schain.options.allocation_type = AllocationType.NO_FILESTORAGE
 
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
@@ -503,7 +503,7 @@ def test_generate_schain_config_allocation_type(schain_secret_key_file_default_c
     assert config['skaleConfig']['sChain']['maxSkaledLeveldbStorageBytes'] == 94904996659
     assert config['skaleConfig']['sChain']['maxFileStorageBytes'] == 0
 
-    schain = get_schain_struct(schain_name='test_schain')
+    schain = get_schain_struct(_test_schain_name='test_schain')
     schain.options.allocation_type = AllocationType.MAX_CONSENSUS_DB
 
     schain_config = generate_schain_config(
@@ -554,7 +554,7 @@ def test_get_schain_originator():
     originator = get_schain_originator(get_schain_struct_no_originator())
     assert originator == TEST_MAINNET_OWNER_ADDRESS
 
-    originator = get_schain_originator(get_schain_struct())
+    originator = get_schain_originator(get_schain_struct(_test_schain_name='test_schain'))
     assert originator == TEST_ORIGINATOR_ADDRESS
 
 
@@ -690,9 +690,10 @@ def test_generate_sync_node_config_static_accounts(schain_secret_key_file_defaul
     node_groups = {}
 
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
+    schain = get_schain_struct_static_account()
 
     schain_config = generate_schain_config(
-        schain=get_schain_struct_static_account(),
+        schain=schain,
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
@@ -710,7 +711,7 @@ def test_generate_sync_node_config_static_accounts(schain_secret_key_file_defaul
     assert config['accounts'].get('0x1111111')
     assert config['accounts']['0x1111111']['balance'] == '1000000000000000000000000000000'
 
-    schain = get_schain_struct()
+    schain = get_schain_struct(_test_schain_name='other_schain')
 
     schain_config = generate_schain_config(
         schain=schain,
@@ -740,7 +741,7 @@ def test_generate_config_static_groups(
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
 
-    schain = get_schain_struct(schain_name=_schain_name)
+    schain = get_schain_struct(_test_schain_name=_schain_name)
     schain.mainnet_owner = TEST_MAINNET_OWNER_ADDRESS
     schain.originator = TEST_ORIGINATOR_ADDRESS
     schain.options.multitransaction_mode = True

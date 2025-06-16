@@ -1,4 +1,4 @@
-from core.schains.status import (
+from core.chain.status import (
     get_node_cli_status,
     node_cli_status_filepath,
     NodeCliStatus,

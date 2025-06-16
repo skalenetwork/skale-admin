@@ -8,11 +8,11 @@ from unittest import mock
 
 import pytest
 
-from core.schains.firewall import IpRange
-from core.schains.firewall.utils import get_sync_agent_ranges
+from core.firewall import IpRange
+from core.firewall.utils import get_sync_agent_ranges
 from core.schains.process import ProcessReport
-from core.schains.monitor.main import ConfigTask, SkaledTask
-from core.schains.monitor.tasks import execute_tasks, ITask
+from core.monitor.schain.main import ConfigTask, SkaledTask
+from core.monitor.tasks import execute_tasks, ITask
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import is_node_part_of_chain
 from web.models.schain import upsert_schain_record
@@ -82,7 +82,7 @@ def test_config_task(skale, skale_ima, schain_db, schain_on_contracts, node_conf
         result.__name__ = 'TestConfigMonitor'
         return result
 
-    with mock.patch('core.schains.monitor.main.RegularConfigMonitor', get_monitor_mock):
+    with mock.patch('core.monitor.schain.monitor_config.RegularConfigMonitor', get_monitor_mock):
         config_task.run()
 
 
@@ -90,7 +90,7 @@ def test_skaled_task(skale, schain_db, schain_on_contracts, node_config, dutils)
     record = upsert_schain_record(schain_on_contracts)
     stream_version = '2.3.0'
     skaled_task = SkaledTask(
-        schain_name=schain_on_contracts,
+        chain_name=schain_on_contracts,
         skale=skale,
         node_config=node_config,
         stream_version=stream_version,
@@ -109,8 +109,8 @@ def test_skaled_task(skale, schain_db, schain_on_contracts, node_config, dutils)
         result.__name__ = 'TestSkaledMonitor'
         return result
 
-    with mock.patch('core.schains.monitor.main.get_skaled_monitor', get_monitor_mock):
-        with mock.patch('core.schains.monitor.main.notify_checks'):
+    with mock.patch('core.monitor.schain.monitor_skaled.get_skaled_monitor', get_monitor_mock):
+        with mock.patch('core.monitor.schain.main.notify_checks'):
             skaled_task.run()
 
 

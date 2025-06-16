@@ -98,7 +98,7 @@ class DockerUtils:
         self.volume_driver = volume_driver
 
     def init_docker_client(self, host: str = DEFAULT_DOCKER_HOST) -> DockerClient:
-        logger.debug('Initing docker client with host %s', host)
+        logger.debug('Initializing docker client with host %s', host)
         return docker.DockerClient(base_url=host)
 
     def init_docker_cli(self, host: str = DEFAULT_DOCKER_HOST) -> APIClient:
@@ -254,8 +254,8 @@ class DockerUtils:
         return head_lines, tail_lines
 
     def display_container_logs(
-        self, container_name: Container, head: int = 100, tail: int = 200, to_logger: bool = True
-    ) -> str:
+        self, container_name: str, head: int = 100, tail: int = 200, to_logger: bool = True
+    ) -> str | None:
         container = self.safe_get_container(container_name)
         if not container:
             return
@@ -335,7 +335,9 @@ class DockerUtils:
     def get_vol_created_ts(self, name: str) -> int:
         vol = self.get_vol(name)
         if vol:
-            iso_time = vol.attrs['CreatedAt'][:-1]
+            iso_time = vol.attrs['CreatedAt']
+            if iso_time.endswith('Z'):
+                iso_time = iso_time[:-1] + '+00:00'
             return int(datetime.fromisoformat(iso_time).timestamp())
         else:
             return 0

@@ -1,4 +1,4 @@
-peewee==3.9.5
+peewee==3.18.1
 Flask==2.3.3
 Werkzeug==3.0.3
 gunicorn==22.0.0
@@ -31,3 +31,5 @@ pyOpenSSL==23.1.1
 python-dateutil==2.8.2
 python-telegram-bot==12.8
 sh==1.14.1
+
+redis-om==1.0.2b0

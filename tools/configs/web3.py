@@ -26,6 +26,7 @@ ENDPOINT = os.environ['ENDPOINT']
 
 UNTRUSTED_PROVIDERS = ['infura.io', 'gateway.pokt.network']
 MANAGER_CONTRACTS = os.getenv('MANAGER_CONTRACTS')
+MIRAGE_CONTRACTS = os.getenv('MIRAGE_CONTRACTS')
 STATE_FILENAME = os.getenv('STATE_FILENAME')
 STATE_BASE_PATH = os.path.join(NODE_DATA_PATH, 'eth-state')
 STATE_FILEPATH = None if not STATE_FILENAME else os.path.join(STATE_BASE_PATH, STATE_FILENAME)

@@ -5,38 +5,42 @@ import os
 import json
 import pathlib
 import random
+from typing import cast
+from eth_typing import ChecksumAddress, HexAddress
 import requests
 import string
 import time
 from contextlib import contextmanager
 
+from web3 import Web3
+from web3.types import Wei
+
 from mock import Mock, MagicMock
 
-from skale import SkaleManager, SkaleIma
 from skale.utils.web3_utils import init_web3
 from skale.contracts.manager.schains import SchainStructureWithStatus
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.wallets import Web3Wallet
-from web3 import Web3
+from skale.types.schain import SchainHash, SchainName
 
-from core.schains.cleaner import remove_config_dir, remove_schain_container, remove_schain_volume
+from core.schains.cleaner import remove_config_dir, remove_skaled_container, remove_schain_volume
 from core.config.schain.directory import skaled_status_filepath
 from core.config.schain.file_manager import ConfigFileManager
-from core.schains.firewall.base.firewall_manager import SChainFirewallManager
-from core.schains.firewall.schain.rule_controller import SChainRuleController
-from core.schains.firewall.base.types import IHostFirewallController, IpRange
-from core.schains.runner import (
+from core.firewall.base.firewall_manager import SChainFirewallManager
+from core.firewall.schain.rule_controller import SChainRuleController
+from core.firewall.base.types import IHostFirewallController, IpRange
+from core.chain.runner import (
     get_image_name,
-    run_schain_container,
+    run_skaled_container,
     run_ima_container,
     get_container_info,
 )
 
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd, write_json
-from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
+from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.web3 import MANAGER_CONTRACTS
+from tools.configs.web3 import ENDPOINT
 
 from web.models.schain import upsert_schain_record
 
@@ -44,12 +48,9 @@ CURRENT_TS = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TS)
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-ENDPOINT = os.getenv('ENDPOINT')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
-IMA_CONTRACTS = os.getenv('IMA_CONTRACTS')
 
 
-ETH_AMOUNT_PER_NODE = 1
 CONFIG_STREAM = '1.0.0-testnet'
 
 
@@ -57,12 +58,21 @@ ALLOWED_RANGES = [IpRange('1.1.1.1', '2.2.2.2'), IpRange('3.3.3.3', '4.4.4.4')]
 
 IMA_MIGRATION_TS = 1688388551
 
-TEST_ORIGINATOR_ADDRESS = '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34'
-TEST_MAINNET_OWNER_ADDRESS = '0x30E1C96277735B03E59B3098204fd04FD0e78a46'
+TEST_ORIGINATOR_ADDRESS = ChecksumAddress(
+    cast(HexAddress, '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34')
+)
+TEST_MAINNET_OWNER_ADDRESS = ChecksumAddress(
+    cast(HexAddress, '0x30E1C96277735B03E59B3098204fd04FD0e78a46')
+)
 
 
 class FailedAPICall(Exception):
     pass
+
+
+def get_random_string(length=8):
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for i in range(length))
 
 
 def generate_random_ip():
@@ -129,9 +139,9 @@ def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
     return json.loads(data.decode('utf-8'))
 
 
-def get_schain_struct(schain_name: str = 'test_chain') -> SchainStructureWithStatus:
+def get_schain_struct(_test_schain_name) -> SchainStructureWithStatus:
     return SchainStructureWithStatus(
-        name=schain_name,
+        name=_test_schain_name,
         part_of_node=0,
         generation=1,
         mainnet_owner=TEST_MAINNET_OWNER_ADDRESS,
@@ -141,45 +151,32 @@ def get_schain_struct(schain_name: str = 'test_chain') -> SchainStructureWithSta
         lifetime=3600,
         start_date=100000000,
         start_block=1000,
-        deposit=0,
+        deposit=Wei(0),
         index=1,
-        chain_id=1,
+        chain_id=SchainHash(b'1'),
         active=True,
     )
 
 
-def run_simple_schain_container(schain_data: dict, dutils: DockerUtils):
-    run_schain_container(schain_data, dutils=dutils)
+def run_simple_skaled_container(_test_schain_name: SchainName, dutils: DockerUtils):
+    run_skaled_container(_test_schain_name, dutils=dutils)
 
 
-def run_simple_schain_container_in_sync_mode(schain_data: dict, dutils: DockerUtils):
-    public_key = '1:1:1:1'
+def run_simple_skaled_container_in_sync_mode(_test_schain_name: SchainName, dutils: DockerUtils):
     timestamp = int(time.time())
-    run_schain_container(schain_data, public_key, timestamp, dutils=dutils)
+    run_skaled_container(_test_schain_name, start_ts=timestamp, dutils=dutils)
 
 
-def run_simple_ima_container(schain: dict, dutils: DockerUtils):
+def run_simple_ima_container(_test_schain_name, dutils: DockerUtils):
     image = get_image_name(image_type=IMA_CONTAINER)
-    run_ima_container(schain, mainnet_chain_id=1, image=image, dutils=dutils)
-
-
-def init_web3_skale() -> SkaleManager:
-    web3 = init_web3(ENDPOINT)
-    wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    return init_skale_from_wallet(wallet)
-
-
-def init_skale_from_wallet(wallet) -> SkaleManager:
-    return SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet)
-
-
-def init_skale_ima():
-    web3 = init_web3(ENDPOINT)
-    wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
-    return SkaleIma(ENDPOINT, IMA_CONTRACTS, wallet)
+    run_ima_container(
+        _test_schain_name, mainnet_chain_id=1, time_frame=1, image=image, dutils=dutils
+    )
 
 
 def init_web3_wallet() -> Web3Wallet:
+    if not ENDPOINT or not ETH_PRIVATE_KEY:
+        raise ValueError('ENDPOINT and ETH_PRIVATE_KEY environment variables must be set')
     web3 = init_web3(ENDPOINT)
     return Web3Wallet(ETH_PRIVATE_KEY, web3)
 
@@ -275,14 +272,14 @@ def no_schain_artifacts(schain_name, dutils):
     try:
         yield
     finally:
-        remove_schain_container(schain_name, dutils=dutils)
+        remove_skaled_container(schain_name, dutils=dutils)
         time.sleep(10)
         remove_schain_volume(schain_name, dutils=dutils)
         remove_config_dir(schain_name)
 
 
 def run_custom_schain_container(dutils, schain_name, entrypoint):
-    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, schain_name)
+    image_name, container_name, _, _ = get_container_info(SKALED_CONTAINER, schain_name)
     return dutils.run_container(image_name=image_name, name=container_name, entrypoint=entrypoint)
 
 
@@ -532,7 +529,7 @@ def get_skaled_status_dict(
     }
 
 
-def generate_schain_skaled_status_file(_schain_name, **kwargs):
+def generate_skaled_status_file(_schain_name, **kwargs):
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, _schain_name)
     pathlib.Path(schain_dir_path).mkdir(parents=True, exist_ok=True)
     status_filepath = skaled_status_filepath(_schain_name)

@@ -5,7 +5,7 @@ import pytest
 
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
-from core.schains.firewall import (
+from core.firewall import (
     Action,
     get_default_rule_controller,
     IpRange,

@@ -14,6 +14,7 @@ docker run -v "$DIR/../tests/skale-data/node_data":"/skale_node_data" \
     -e DB_PASSWORD="pass" \
     -e DB_ROOT_PASSWORD="root-test-pass" \
     -e DB_PORT=3307 \
+    -e ENV_TYPE=devnet \
     -e SKALE_DIR_HOST=/skale_dir_host \
     --cap-add=NET_ADMIN --cap-add=NET_RAW \
-    --name test-firewall test-firewall pytest --cov core.schains.firewall tests/firewall/mirage_rule_controller_test.py $@
+    --name test-firewall test-firewall pytest --cov core.firewall tests/firewall/ $@
