@@ -5,11 +5,11 @@ import pytest
 
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
-from core.schains.firewall import (
+from core.firewall import (
     Action,
     get_mirage_committee_scope_rule_controller,
     get_mirage_network_scope_rule_controller,
-    SChainRule
+    SChainRule,
 )
 
 from tools.helper import run_cmd
@@ -62,18 +62,9 @@ def test_network_scope_rule_controller(nft_chain_folder):
     mirage_committee_expected_chain = 'chain skale-mirage-committee {\n\ttype filter hook input priority filter; policy accept;\n\tip saddr 4.4.4.4 tcp dport 10004 counter accept\n\tip saddr 2.2.2.2 tcp dport 10004 counter accept\n\tip saddr 1.1.1.1 tcp dport 10004 counter accept\n\tip saddr 4.4.4.4 tcp dport 10000 counter accept\n\tip saddr 2.2.2.2 tcp dport 10000 counter accept\n\tip saddr 1.1.1.1 tcp dport 10000 counter accept\n\ttcp dport 10000 iifname != "lo" counter drop\n\ttcp dport 10004 iifname != "lo" counter drop\n}\n'  # noqa
 
     for rc_create, expected_rules, expected_chain in zip(
-        (
-            get_mirage_network_scope_rule_controller,
-            get_mirage_committee_scope_rule_controller
-        ),
-        (
-            mirage_network_expected_rules,
-            mirage_committee_expected_rules
-        ),
-        (
-            mirage_network_expected_chain,
-            mirage_committee_expected_chain
-        )
+        (get_mirage_network_scope_rule_controller, get_mirage_committee_scope_rule_controller),
+        (mirage_network_expected_rules, mirage_committee_expected_rules),
+        (mirage_network_expected_chain, mirage_committee_expected_chain),
     ):
         rc = rc_create(base_port, own_ip, node_ips)
         # Will create host controller and apply base config as a side effect
@@ -83,7 +74,12 @@ def test_network_scope_rule_controller(nft_chain_folder):
         assert os.path.isfile(chain_filepath)
         with open(chain_filepath) as chain_file:
             chain = chain_file.read()
-            assert chain == 'chain skale-' + rc.name + ' {\n\ttype filter hook input priority filter; policy accept;\n}\n'  # noqa
+            assert (
+                chain
+                == 'chain skale-'
+                + rc.name
+                + ' {\n\ttype filter hook input priority filter; policy accept;\n}\n'
+            )  # noqa
 
         assert rc.is_persistent()
         assert rc.actual_rules() == []
