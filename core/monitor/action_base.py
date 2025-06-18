@@ -112,7 +112,7 @@ class BaseSkaledActionManager(BaseActionManager):
         self.chain_name = chain_name
         self.checks = checks
         self.node_config = node_config
-        self.rc = rule_controller
+        self.rule_controller = rule_controller
 
         self.skaled_status = init_skaled_status(chain_name)
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=self.chain_name)

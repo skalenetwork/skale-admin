@@ -154,14 +154,14 @@ class SkaledActionManager(BaseSkaledActionManager):
             ranges = self.econfig.ranges
             logger.info('Adding ranges %s', ranges)
             with self.statsd_client.timer(f'admin.action.firewall.{no_hyphens(self.name)}'):
-                self.rc.configure(
+                self.rule_controller.configure(
                     base_port=base_port, own_ip=own_ip, node_ips=node_ips, sync_ip_ranges=ranges
                 )
                 self.statsd_client.gauge(
                     f'admin.action.expected_rules.{no_hyphens(self.name)}',
-                    len(self.rc.expected_rules()),
+                    len(self.rule_controller.expected_rules()),
                 )
-                self.rc.sync()
+                self.rule_controller.sync()
         return initial_status
 
     @BaseActionManager.monitor_block

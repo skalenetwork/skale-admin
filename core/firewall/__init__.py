@@ -27,6 +27,6 @@ from .utils import (
     get_default_rule_controller,  # noqa
     get_mirage_committee_scope_rule_controller,  # noqa
     get_mirage_network_scope_rule_controller,  # noqa
+    get_network_scope_node_ips,  # noqa
     cleanup_firewall_for_schain,  # noqa
-
 )

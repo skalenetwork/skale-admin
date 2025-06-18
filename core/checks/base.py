@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import abc
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -151,7 +150,7 @@ class BaseSkaledChecks(IChecks):
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SKALED_CONTAINER, self.name)
         self.sync_node = sync_node
-        self.rc = rule_controller
+        self.rule_controller = rule_controller
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=chain_name)
         self.statsd_client = get_statsd_client()
 
@@ -189,11 +188,6 @@ class BaseSkaledChecks(IChecks):
         """Checks that sChain volume exists"""
 
         return CheckRes(is_volume_exists(self.name, sync_node=self.sync_node, dutils=self.dutils))
-
-    @property
-    @abc.abstractmethod
-    def firewall_rules(self) -> CheckRes:
-        """Checks that firewall rules are set correctly"""
 
     @property
     def skaled_container(self) -> CheckRes:

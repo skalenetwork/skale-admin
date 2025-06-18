@@ -20,14 +20,12 @@
 import logging
 from typing import Type
 
-from core.firewall.utils import get_mirage_network_scope_rule_controller
+from core.firewall.utils import get_mirage_committee_scope_rule_controller
 from core.monitor.monitor_base import BaseSkaledMonitor
 from core.node_config import NodeConfig
 from core.checks.mirage import SkaledChecks
 from core.checks.base import get_api_checks_status, TG_ALLOWED_CHECKS
-from core.config.schain.file_manager import ConfigFileManager
 from core.redis.chain_record import ChainRecord
-from core.firewall import get_default_rule_controller
 
 from core.monitor.mirage.action_skaled import MirageSkaledActionManager
 
@@ -56,18 +54,12 @@ def run_skaled_pipeline(
 
     dutils = dutils or DockerUtils()
 
-    config_file_manager = ConfigFileManager(chain_name=chain_name)
-    conf = config_file_manager.latest_upstream_config if upstream else self.cfm.skaled_config
-    rc = get_mirage_committee_scope_rule_controller(
-        base_port=base_port,
-        own_ip=own_ip,
-        node_ips=node_ips
-    )
+    rule_controller = get_mirage_committee_scope_rule_controller()
     logger.info('Initializing skaled checks')
     skaled_checks = SkaledChecks(
         chain_name=chain_name,
         chain_record=chain_record,
-        rule_controller=None,
+        rule_controller=rule_controller,
         dutils=dutils,
         sync_node=SYNC_NODE,
     )
@@ -78,7 +70,7 @@ def run_skaled_pipeline(
     logger.info('Initializing skaled action manager')
     skaled_am = MirageSkaledActionManager(
         chain_name=chain_name,
-        rule_controller=rc,
+        rule_controller=rule_controller,
         checks=skaled_checks,
         node_config=node_config,
         dutils=dutils,

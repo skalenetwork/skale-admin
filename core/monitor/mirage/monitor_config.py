@@ -53,8 +53,9 @@ def run_config_pipeline(
 
     logger.info('Initializing config checks')
     config_checks = MirageConfigChecks(
+        mirage=mirage,
+        node_config=node_config,
         chain_name=chain_name,
-        node_id=node_config.id,
         stream_version=stream_version,
         group_index=group_index,
         chain_record=chain_record,
