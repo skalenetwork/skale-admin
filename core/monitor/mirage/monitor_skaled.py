@@ -20,10 +20,12 @@
 import logging
 from typing import Type
 
+from core.firewall.utils import get_mirage_network_scope_rule_controller
 from core.monitor.monitor_base import BaseSkaledMonitor
 from core.node_config import NodeConfig
 from core.checks.mirage import SkaledChecks
 from core.checks.base import get_api_checks_status, TG_ALLOWED_CHECKS
+from core.config.schain.file_manager import ConfigFileManager
 from core.redis.chain_record import ChainRecord
 from core.firewall import get_default_rule_controller
 
@@ -37,7 +39,6 @@ from tools.configs import SYNC_NODE
 from tools.notifications.messages import notify_checks
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
-
 
 logger = logging.getLogger(__name__)
 
@@ -55,12 +56,18 @@ def run_skaled_pipeline(
 
     dutils = dutils or DockerUtils()
 
-    rc = get_default_rule_controller(name=chain_name)
+    config_file_manager = ConfigFileManager(chain_name=chain_name)
+    conf = config_file_manager.latest_upstream_config if upstream else self.cfm.skaled_config
+    rc = get_mirage_committee_scope_rule_controller(
+        base_port=base_port,
+        own_ip=own_ip,
+        node_ips=node_ips
+    )
     logger.info('Initializing skaled checks')
     skaled_checks = SkaledChecks(
         chain_name=chain_name,
         chain_record=chain_record,
-        rule_controller=rc,
+        rule_controller=None,
         dutils=dutils,
         sync_node=SYNC_NODE,
     )

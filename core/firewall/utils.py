@@ -26,7 +26,7 @@ from skale import SkaleManager
 
 from .base.types import IpRange
 from .base.nftables import NFTablesController
-from .mirage.rule_controller import MirageCommitteeController, MirageNetworkScopeController
+from .mirage.rule_controller import MirageCommitteeScopeRuleController, MirageNetworkScopeRuleController
 from .schain.rule_controller import NFTSchainRuleController
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ def get_mirage_network_scope_rule_controller(
     own_ip: Optional[str] = None,
     node_ips: List[str] = [],
 ):
-    return MirageNetworkScopeController(
+    return MirageNetworkScopeRuleController(
         controller_name='mirage-network',
         base_port=base_port,
         own_ip=own_ip,
@@ -66,7 +66,7 @@ def get_mirage_committee_scope_rule_controller(
     own_ip: Optional[str] = None,
     node_ips: List[str] = [],
 ):
-    return MirageCommitteeController(
+    return MirageCommitteeScopeRuleController(
         controller_name='mirage-committee',
         base_port=base_port,
         own_ip=own_ip,

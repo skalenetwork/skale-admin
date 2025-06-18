@@ -1,1 +1,1 @@
-from .rule_controller import MirageCommitteeController, MirageNetworkScopeController  # noqa
+from .rule_controller import MirageCommitteeScopeRuleController, MirageNetworkScopeRuleController  # noqa

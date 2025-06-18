@@ -31,7 +31,7 @@ from core.monitor.action_base import (
 from core.node_config import NodeConfig
 from core.checks.mirage import SkaledChecks
 
-from core.firewall import IRuleController
+from core.firewall import MirageCommitteeScopeRuleController
 from core.chain.volume import init_mirage_volume
 from core.schains.cleaner import remove_skaled_container
 
@@ -56,7 +56,7 @@ class MirageSkaledActionManager(BaseSkaledActionManager):
     def __init__(
         self,
         chain_name: MirageChainName,
-        rule_controller: IRuleController,
+        rule_controller: MirageCommitteeScopeRuleController,
         checks: SkaledChecks,
         node_config: NodeConfig,
         dutils: DockerUtils | None = None,
@@ -141,4 +141,12 @@ class MirageSkaledActionManager(BaseSkaledActionManager):
         self.chain_record.set_restart_count(0)
         self.chain_record.set_failed_rpc_count(0)
         self.skaled_container(abort_on_exit=abort_on_exit)
+        return initial_status
+
+    @BaseActionManager.monitor_block
+    def committee_firewall_rules(self) -> bool:
+        initial_status = self.checks.committee_firewall_rules.status
+        if not initial_status:
+            logger.info('Configuring committee firewall rules')
+            self.rc.sync()
         return initial_status

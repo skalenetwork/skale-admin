@@ -135,7 +135,7 @@ class MirageController(IRuleController):
         self._firewall_manager.cleanup()
 
 
-class MirageNetworkScopeController(MirageController):
+class MirageNetworkScopeRuleController(MirageController):
     @property
     def public_ports(self) -> Iterable[int]:
         return (
@@ -190,7 +190,7 @@ class MirageNetworkScopeController(MirageController):
         )
 
 
-class MirageCommitteeController(MirageController):
+class MirageCommitteeScopeRuleController(MirageController):
     @property
     def committee_scope_ports(self) -> Iterable[int]:
         return (
