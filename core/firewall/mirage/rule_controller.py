@@ -73,28 +73,38 @@ class MirageController(IRuleController):
         self.node_ips = node_ips
         self.port_allocation = port_allocation
         self.ports_per_schain = ports_per_schain
-        self._firewall_manager = NFTSchainFirewallManager(
-            group=controller_name,
-            first_port=self.base_port,  # type: ignore
-            last_port=self.base_port + self.ports_per_schain - 1,  # type: ignore
-        )
+        self._firewall_mirage = None
 
     def is_configured(self) -> bool:
         return all((self.base_port, self.node_ips))
 
+    @property
+    def firewall_manager(self):
+        if not self._firewall_manager:
+            self._firewall_manager = self.create_firewall_manager()
+        return self._firewall_manager
+
+    @configured_only
+    def create_firewall_manager(self) -> NFTSchainFirewallManager:
+        return NFTSchainFirewallManager(
+            self.name,
+            self.base_port,  # type: ignore
+            self.base_port + self.ports_per_schain - 1,  # type: ignore
+        )
+
     def configure(
-         self,
-         base_port: Optional[int] = None,
-         own_ip: Optional[str] = None,
-         node_ips: Optional[List[str]] = None,
-         sync_ip_ranges: Optional[List[IpRange]] = None,
-         port_allocation: Any = SkaledPorts,
+        self,
+        base_port: Optional[int] = None,
+        own_ip: Optional[str] = None,
+        node_ips: Optional[List[str]] = None,
+        sync_ip_ranges: Optional[List[IpRange]] = None,
+        port_allocation: Any = SkaledPorts,
     ) -> None:
-         self.base_port = base_port or self.base_port
-         self.own_ip = own_ip or self.own_ip
-         self.node_ips = node_ips or self.node_ips
-         self.sync_ip_ranges = sync_ip_ranges or self.sync_ip_ranges
-         self.port_allocation = port_allocation or self.port_allocation
+        self.base_port = base_port or self.base_port
+        self.own_ip = own_ip or self.own_ip
+        self.node_ips = node_ips or self.node_ips
+        self.sync_ip_ranges = sync_ip_ranges or self.sync_ip_ranges
+        self.port_allocation = port_allocation or self.port_allocation
 
     @configured_only
     def is_rules_synced(self) -> bool:
@@ -144,7 +154,7 @@ class MirageNetworkScopeRuleController(MirageController):
                 self.port_allocation.HTTP_JSON,
                 self.port_allocation.HTTPS_JSON,
                 self.port_allocation.WS_JSON,
-                self.port_allocation.WSS_JSON
+                self.port_allocation.WSS_JSON,
             )
         )
 
@@ -156,10 +166,7 @@ class MirageNetworkScopeRuleController(MirageController):
     def network_scope_ports(self) -> Iterable[int]:
         return (
             self.base_port + offset.value
-            for offset in (
-                self.port_allocation.CATCHUP,
-                self.port_allocation.ZMQ_BROADCAST
-            )
+            for offset in (self.port_allocation.CATCHUP, self.port_allocation.ZMQ_BROADCAST)
         )
 
     @property
@@ -222,8 +229,4 @@ class MirageCommitteeScopeRuleController(MirageController):
 
     @configured_only
     def expected_rules(self) -> Iterable[SChainRule]:
-        return sorted(
-            itertools.chain.from_iterable(
-                (self.committee_scope_rules, self.drop_rules)
-            )
-        )
+        return sorted(itertools.chain.from_iterable((self.committee_scope_rules, self.drop_rules)))
