@@ -1,0 +1,4 @@
+import os
+
+NFT_NETWORK_SCOPE_CHAIN = os.getenv('NFTABLES_NETWORK_SCOPE_CHAIN', 'mirage-network')
+NFT_COMMITTEE_SCOPE_CHAIN = os.getenv('NFTABLES_COMMITTEE_SCOPE_CHAIN', 'mirage-committee')

@@ -31,6 +31,7 @@ from .mirage.rule_controller import (
     MirageNetworkScopeRuleController,
 )
 from .schain.rule_controller import NFTSchainRuleController
+from tools.configs.mirage import NFT_NETWORK_SCOPE_CHAIN, NFT_COMMITTEE_SCOPE_CHAIN
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,10 @@ def get_mirage_network_scope_rule_controller(
     node_ips: List[str] = [],
 ):
     return MirageNetworkScopeRuleController(
-        controller_name='mirage-network', base_port=base_port, own_ip=own_ip, node_ips=node_ips
+        controller_name=NFT_NETWORK_SCOPE_CHAIN,
+        base_port=base_port,
+        own_ip=own_ip,
+        node_ips=node_ips,
     )
 
 
@@ -67,7 +71,10 @@ def get_mirage_committee_scope_rule_controller(
     node_ips: List[str] = [],
 ):
     return MirageCommitteeScopeRuleController(
-        controller_name='mirage-committee', base_port=base_port, own_ip=own_ip, node_ips=node_ips
+        controller_name=NFT_COMMITTEE_SCOPE_CHAIN,
+        base_port=base_port,
+        own_ip=own_ip,
+        node_ips=node_ips,
     )
 
 

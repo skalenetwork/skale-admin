@@ -1,6 +1,6 @@
 FROM python:3.11-bookworm
 
-RUN apt-get update && apt-get install -y wget git libxslt-dev kmod swig nftables
+RUN apt-get update && apt-get install -y wget git libxslt-dev kmod swig nftables python3-nftables
 
 RUN mkdir /usr/src/admin
 WORKDIR /usr/src/admin
