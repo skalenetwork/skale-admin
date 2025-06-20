@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2025-Present SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,24 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-from tools.configs import SCHAIN_CONFIG_DIR_SKALED
+
+def _get_chain_rpc_ports_from_config(config: dict) -> tuple[int, int]:
+    node_info = config['skaleConfig']['nodeInfo']
+    return int(node_info['httpRpcPort']), int(node_info['wsRpcPort'])
 
 
-IMA_CONTRACTS = os.getenv('IMA_CONTRACTS')
-SCHAIN_IMA_CONTRACTS = 'predeployed'
-
-IMA_NETWORK_BROWSER_FILENAME = 'ima_network_browser_data.json'
-IMA_NETWORK_BROWSER_FILEPATH = os.path.join(SCHAIN_CONFIG_DIR_SKALED, IMA_NETWORK_BROWSER_FILENAME)
-
-IMA_STATE_PATH = 'ima_state.json'
-IMA_STATE_CONTAINER_PATH = os.path.join(SCHAIN_CONFIG_DIR_SKALED, IMA_STATE_PATH)
-
-
-DEFAULT_TIME_FRAME = 1800  # 30 min
-
-
-def ima_contracts() -> str:
-    if not IMA_CONTRACTS:
-        raise ValueError('IMA_CONTRACTS is not set.')
-    return IMA_CONTRACTS
+def get_local_chain_http_endpoint_from_config(config: dict) -> str:
+    http_port, _ = _get_chain_rpc_ports_from_config(config)
+    return f'http://127.0.0.1:{http_port}'

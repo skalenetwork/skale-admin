@@ -24,7 +24,7 @@ from skale.utils.helper import ip_from_bytes
 from skale.types.node import MirageNode
 
 from core.config.schain.helper import parse_public_key_info, get_bls_public_keys
-from core.config.schain.static_params import get_static_chain_name_mirage
+from core.config.schain.static_params import get_mirage_chain_name
 
 
 @dataclass
@@ -57,7 +57,7 @@ def generate_mirage_chain_nodes(
     if sync_node:
         bls_public_keys = ['0:0:1:0'] * len(committee_nodes)
     else:
-        bls_public_keys = get_bls_public_keys(get_static_chain_name_mirage(), rotation_id)
+        bls_public_keys = get_bls_public_keys(get_mirage_chain_name(), rotation_id)
 
     for i, node in enumerate(committee_nodes, 1):
         node_info = MirageChainNodeInfo(

@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from Crypto.Hash import keccak
 from web3 import Web3
@@ -100,21 +100,6 @@ def get_schain_env(ulimit_check=True):
     if not ulimit_check:
         env.update({'NO_ULIMIT_CHECK': 1})
     return env
-
-
-def get_schain_rpc_ports_from_config(config: Dict) -> Tuple[int, int]:
-    node_info = config['skaleConfig']['nodeInfo']
-    return int(node_info['httpRpcPort']), int(node_info['wsRpcPort'])
-
-
-def get_local_schain_http_endpoint_from_config(config: Dict) -> str:
-    http_port, _ = get_schain_rpc_ports_from_config(config)
-    return f'http://127.0.0.1:{http_port}'
-
-
-def get_schain_ssl_rpc_ports_from_config(config: Dict) -> Tuple[int, int]:
-    node_info = config['skaleConfig']['nodeInfo']
-    return int(node_info['httpsRpcPort']), int(node_info['wssRpcPort'])
 
 
 def parse_public_key_info(bls_public_key):

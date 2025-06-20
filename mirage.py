@@ -20,7 +20,6 @@
 import time
 import logging
 
-from skale import MirageManager
 from filelock import FileLock
 
 from core.node_config import NodeConfig
@@ -30,11 +29,8 @@ from core.redis.migrations import run_redis_migrations
 
 from tools.configs import INIT_LOCK_PATH
 
-from tools.configs.web3 import ENDPOINT, MIRAGE_CONTRACTS
-
 from tools.logger import init_admin_logger
 from tools.sgx_utils import generate_sgx_key
-from tools.wallet_utils import init_wallet
 
 init_admin_logger()
 logger = logging.getLogger(__name__)
@@ -42,10 +38,10 @@ logger = logging.getLogger(__name__)
 SLEEP_INTERVAL = 90
 
 
-def monitor(mirage: MirageManager, node_config: NodeConfig) -> None:
+def monitor(node_config: NodeConfig) -> None:
     while True:
         try:
-            start_tasks(mirage, node_config)
+            start_tasks(node_config)
         except Exception:
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
@@ -58,16 +54,9 @@ def worker() -> None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
-    if MIRAGE_CONTRACTS is None:
-        logger.error('MIRAGE_CONTRACTS is not set. Exiting.')
-        return
-
-    wallet = init_wallet(node_config=node_config)
-    mirage = MirageManager(ENDPOINT, MIRAGE_CONTRACTS, wallet)
-
     # TODOD: uncomment
     # update_monitoring_services(node_config.ip, node_config.id, mirage.committee.address)
-    monitor(mirage, node_config)
+    monitor(node_config)
 
 
 def main():

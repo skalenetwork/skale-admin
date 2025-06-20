@@ -22,15 +22,14 @@ import time
 import logging
 from typing import Optional, cast
 
-from skale import MirageManager
-
+from core.monitor.mirage.utils import init_mirage_manager
 from core.node import get_skale_node_version
 from core.monitor.mirage.monitor_config import run_config_pipeline
 from core.monitor.mirage.monitor_skaled import run_skaled_pipeline
 
 from core.monitor.tasks import BaseTask, execute_tasks
 from core.node_config import NodeConfig
-from core.config.schain.static_params import get_static_chain_name_mirage
+from core.config.schain.static_params import get_mirage_chain_name
 
 
 from core.redis.chain_record import ChainRecord
@@ -49,11 +48,10 @@ class ConfigTask(BaseTask):
     def __init__(
         self,
         chain_name: MirageChainName,
-        mirage: MirageManager,
         node_config: NodeConfig,
         stream_version: str,
     ) -> None:
-        self.mirage = mirage
+        self.mirage = init_mirage_manager(node_config=node_config)
         super().__init__(
             chain_name=chain_name,
             node_config=node_config,
@@ -88,12 +86,10 @@ class SkaledTask(BaseTask):
     def __init__(
         self,
         chain_name: MirageChainName,
-        mirage: MirageManager,
         node_config: NodeConfig,
         stream_version: str,
         dutils: Optional[DockerUtils] = None,
     ) -> None:
-        self.mirage = mirage
         self.dutils = dutils
         super().__init__(
             chain_name=chain_name,
@@ -120,13 +116,12 @@ class SkaledTask(BaseTask):
 
 
 def start_tasks(
-    mirage: MirageManager,
     node_config: NodeConfig,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
     logger.info('Starting tasks for node_id: %s', node_config.id)
     stream_version = get_skale_node_version()
-    mirage_chain_name = get_static_chain_name_mirage()
+    mirage_chain_name = get_mirage_chain_name()
 
     init_ts, pid = int(time.time()), os.getpid()
     process_report = ProcessReport(mirage_chain_name)
@@ -135,13 +130,11 @@ def start_tasks(
     tasks = [
         ConfigTask(
             chain_name=mirage_chain_name,
-            mirage=mirage,
             node_config=node_config,
             stream_version=stream_version,
         ),
         SkaledTask(
             chain_name=mirage_chain_name,
-            mirage=mirage,
             node_config=node_config,
             stream_version=stream_version,
             dutils=dutils,
