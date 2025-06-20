@@ -404,7 +404,7 @@ def test_get_skaled_monitor_recreate(
 def test_regular_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = RegularSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
-    assert skaled_am.rc.is_rules_synced
+    assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
     assert dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
     assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
