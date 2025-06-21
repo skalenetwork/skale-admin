@@ -156,13 +156,12 @@ class MirageConfigActionManager(BaseActionManager):
         self.chain_record.set_sync_config_run(False)
         return True
 
-
     @BaseActionManager.monitor_block
     def network_scope_firewall_rules(self) -> bool:
         initial_status = self.checks.network_scope_firewall_rules.status
         if not initial_status:
             logger.info('Configuring network scope firewall rules')
-            base_port = self.node_config.schain_base_port
+            base_port = self.mirage.nodes.get(self.node_config.id + 1).port
             own_ip = self.node_config.ip
             node_ips = get_network_scope_node_ips(self.mirage)
 

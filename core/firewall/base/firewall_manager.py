@@ -22,25 +22,25 @@ from abc import abstractmethod
 from typing import Iterable, Optional
 
 from .nftables import NFTablesController
-from .types import IFirewallManager, IHostFirewallController, SChainRule
+from .types import IFirewallManager, SChainRule
 
 
 logger = logging.getLogger(__name__)
 
 
-class SChainFirewallManager(IFirewallManager):
+class ChainFirewallManager(IFirewallManager):
     def __init__(self, group: str, first_port: int, last_port: int) -> None:
         self.group = group
         self.first_port = first_port
         self.last_port = last_port
-        self._host_controller: Optional[IHostFirewallController] = None
+        self._host_controller: Optional[NFTablesController] = None
 
     @abstractmethod
-    def create_host_controller(self) -> IHostFirewallController:  # pragma: no cover
+    def create_host_controller(self) -> NFTablesController:  # pragma: no cover
         pass
 
     @property
-    def host_controller(self) -> IHostFirewallController:
+    def host_controller(self) -> NFTablesController:
         if not self._host_controller:
             self._host_controller = self.create_host_controller()
         return self._host_controller
@@ -80,7 +80,7 @@ class SChainFirewallManager(IFirewallManager):
             self.host_controller.remove_rule(rule)
 
 
-class NFTSchainFirewallManager(SChainFirewallManager):
+class NFTChainFirewallManager(ChainFirewallManager):
     def create_host_controller(self) -> NFTablesController:
         nc_controller = NFTablesController(chain=self.group)
         nc_controller.create_table()

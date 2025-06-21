@@ -1,47 +1,43 @@
 """SKALE test utilities"""
 
 import datetime
-import os
 import json
+import os
 import pathlib
 import random
-from typing import cast
-from eth_typing import ChecksumAddress, HexAddress
-import requests
 import string
 import time
 from contextlib import contextmanager
+from typing import cast
 
+import requests
+from eth_typing import ChecksumAddress, HexAddress
+from mock import MagicMock, Mock
+from skale.contracts.manager.schains import SchainStructureWithStatus
+from skale.dataclasses.schain_options import AllocationType, SchainOptions
+from skale.types.schain import SchainHash, SchainName
+from skale.utils.web3_utils import init_web3
+from skale.wallets import Web3Wallet
 from web3 import Web3
 from web3.types import Wei
 
-from mock import Mock, MagicMock
-
-from skale.utils.web3_utils import init_web3
-from skale.contracts.manager.schains import SchainStructureWithStatus
-from skale.dataclasses.schain_options import AllocationType, SchainOptions
-from skale.wallets import Web3Wallet
-from skale.types.schain import SchainHash, SchainName
-
-from core.schains.cleaner import remove_config_dir, remove_skaled_container, remove_schain_volume
+from core.chain.runner import (
+    get_container_info,
+    get_image_name,
+    run_ima_container,
+    run_skaled_container,
+)
 from core.config.schain.directory import skaled_status_filepath
 from core.config.schain.file_manager import ConfigFileManager
-from core.firewall.base.firewall_manager import SChainFirewallManager
+from core.firewall.base.firewall_manager import ChainFirewallManager
+from core.firewall.base.types import IFirewallManager, IHostFirewallController, IpRange
 from core.firewall.schain.rule_controller import SChainRuleController
-from core.firewall.base.types import IHostFirewallController, IpRange
-from core.chain.runner import (
-    get_image_name,
-    run_skaled_container,
-    run_ima_container,
-    get_container_info,
-)
-
-from tools.docker_utils import DockerUtils
-from tools.helper import run_cmd, write_json
+from core.schains.cleaner import remove_config_dir, remove_schain_volume, remove_skaled_container
 from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ENDPOINT
-
+from tools.docker_utils import DockerUtils
+from tools.helper import run_cmd, write_json
 from web.models.schain import upsert_schain_record
 
 CURRENT_TS = 1594903080
@@ -232,7 +228,7 @@ class HostTestFirewallController(IHostFirewallController):
         pass
 
 
-class SChainTestFirewallManager(SChainFirewallManager):
+class SChainTestFirewallManager(ChainFirewallManager):
     def create_host_controller(self):
         return HostTestFirewallController()
 
@@ -241,10 +237,16 @@ class SChainTestFirewallManager(SChainFirewallManager):
 
 
 class SChainTestRuleController(SChainRuleController):
-    def create_firewall_manager(self):
+    def create_firewall_manager(self) -> IFirewallManager:
         return SChainTestFirewallManager(
             self.name, self.base_port, self.base_port + self.ports_per_schain
         )
+
+    @property
+    def firewall_manager(self) -> IFirewallManager:
+        if self._firewall_manager is None:
+            self._firewall_manager = self.create_firewall_manager()
+        return self._firewall_manager
 
     def is_persistent(self) -> bool:
         return True

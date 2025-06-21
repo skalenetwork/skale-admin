@@ -98,7 +98,33 @@ def run_skaled_pipeline(
     statsd_client = get_statsd_client()
     statsd_client.incr(f'admin.skaled_pipeline.{mon.__name__}.{no_hyphens(chain_name)}')
     with statsd_client.timer(f'admin.skaled_pipeline.duration.{no_hyphens(chain_name)}'):
-        mon(skaled_am, skaled_checks).run()
+        mon(action_manager=skaled_am).run()
+
+
+class RegularSkaledMonitor(BaseSkaledMonitor):
+    def __init__(self, action_manager: MirageSkaledActionManager) -> None:
+        self._am: MirageSkaledActionManager = action_manager
+        self._checks = action_manager.checks
+
+    @property
+    def am(self) -> MirageSkaledActionManager:
+        return self._am
+
+    @property
+    def checks(self) -> SkaledChecks:
+        return self._checks
+
+    def execute(self) -> None:
+        if not self._checks.committee_scope_firewall_rules:
+            self._am.committee_scope_firewall_rules()
+        if not self.checks.volume:
+            self._am.volume()
+        if not self.checks.skaled_container:
+            self._am.skaled_container()
+        else:
+            self._am.reset_restart_counter()
+        if not self.checks.rpc:
+            self._am.skaled_rpc()
 
 
 def get_skaled_monitor(
@@ -106,7 +132,7 @@ def get_skaled_monitor(
     check_status: dict,
     chain_record: ChainRecord,
     skaled_status: SkaledStatus | None,
-) -> Type[BaseSkaledMonitor]:
+) -> Type[RegularSkaledMonitor]:
     logger.info('Choosing skaled monitor')
     if skaled_status:
         skaled_status.log()
@@ -136,17 +162,3 @@ def get_skaled_monitor(
     # elif is_reload_ip_mode(check_status, action_manager.econfig.reload_ts):
     #     mon_type = ReloadIpSkaledMonitor
     return mon_type
-
-
-class RegularSkaledMonitor(BaseSkaledMonitor):
-    def execute(self) -> None:
-        if not self.checks.firewall_rules:
-            self.am.firewall_rules()
-        if not self.checks.volume:
-            self.am.volume()
-        if not self.checks.skaled_container:
-            self.am.skaled_container()
-        else:
-            self.am.reset_restart_counter()
-        if not self.checks.rpc:
-            self.am.skaled_rpc()

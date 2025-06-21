@@ -19,6 +19,7 @@
 
 import json
 import logging
+import socket
 
 from typing import List, Optional, Tuple
 
@@ -123,7 +124,7 @@ def cleanup_firewall_for_schain(schain_name: str) -> None:
 
 def get_network_scope_node_ips(mirage: MirageManager) -> List[str]:
     passive_node_ids = mirage.nodes.get_passive_node_ids()
-    active_node_ids = mirage.nodes.get_passive_node_ids()
+    active_node_ids = mirage.nodes.get_active_node_ids()
     node_ids = [*passive_node_ids, *active_node_ids]
-    node_ips = [mirage.nodes.get(node_id).ip for node_id in node_ids]
-    return node_ips
+    node_ips_raw = [mirage.nodes.get(node_id).ip for node_id in node_ids]
+    return [socket.inet_ntoa(raw_ip) for raw_ip in node_ips_raw]

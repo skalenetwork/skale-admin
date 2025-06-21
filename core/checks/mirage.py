@@ -18,25 +18,30 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import os
 import logging
+import os
+from typing import cast
 
 from skale.mirage_manager import MirageManager
+from skale.types.node import NodeId
 
 from core.checks.base import BaseSkaledChecks, CheckRes, IChecks
-from core.config.schain.file_manager import ConfigFileManager
 from core.config.mirage.firewall import (
     get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
+from core.config.schain.file_manager import ConfigFileManager
 from core.firewall import get_mirage_network_scope_rule_controller, get_network_scope_node_ips
+from core.firewall.mirage import (
+    MirageCommitteeScopeRuleController,
+    MirageNetworkScopeRuleController,
+)
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.types.chain import MirageChainName
 from tools.resources import get_statsd_client
-
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +64,9 @@ class MirageConfigChecks(IChecks):
         self.stream_version = stream_version
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=chain_name)
         self.statsd_client = get_statsd_client()
-        self.rule_controller = get_mirage_network_scope_rule_controller()
+        base_port = mirage.nodes.get(cast(NodeId, node_config.id + 1)).port
+        self.rule_controller: MirageNetworkScopeRuleController = \
+            get_mirage_network_scope_rule_controller(base_port=base_port)
 
     def get_name(self) -> str:
         return self.name
@@ -106,15 +113,18 @@ class MirageConfigChecks(IChecks):
             'rules': False,
             'persistent': False,
         }
-        base_port = self.node_config.schain_base_port
+        base_port = self.mirage.nodes.get(cast(NodeId, self.node_config.id + 1)).port
         own_ip = self.node_config.ip
         node_ips = get_network_scope_node_ips(self.mirage)
+
         self.rule_controller.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
         if not self.rule_controller.is_inited():
             logger.debug('Network scope firewall rules are not initialized')
             return CheckRes(status=False, data=data)
         else:
-            logger.debug('Network scope check expected rules %s', self.rc.expected_rules())
+            logger.debug(
+                'Network scope check expected rules %s', self.rule_controller.expected_rules()
+            )
             data.update(
                 {
                     'inited': self.rule_controller.is_inited(),
@@ -141,7 +151,8 @@ class SkaledChecks(BaseSkaledChecks):
             base_port = get_base_port_from_config(conf)
             node_ips = get_node_ips_from_config(conf)
             own_ip = get_own_ip_from_config(conf)
-            self.rule_controller.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
+            mirage_rule_controller = cast(MirageCommitteeScopeRuleController, self.rule_controller)
+            mirage_rule_controller.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
             logger.debug(
                 'Committee scope check expected rules %s', self.rule_controller.expected_rules()
             )

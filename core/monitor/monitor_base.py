@@ -38,10 +38,15 @@ class IMonitor(ABC):
 
 
 class BaseSkaledMonitor(IMonitor):
-    def __init__(self, action_manager: BaseSkaledActionManager, checks: BaseSkaledChecks) -> None:
-        self.am = action_manager
-        self.checks = checks
-        self.statsd_client = get_statsd_client()
+    @property
+    @abstractmethod
+    def am(self) -> BaseSkaledActionManager:
+        pass
+
+    @property
+    @abstractmethod
+    def checks(self) -> BaseSkaledChecks:
+        pass
 
     @abstractmethod
     def execute(self) -> None:

@@ -121,7 +121,7 @@ class MirageSkaledActionManager(BaseSkaledActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def committee_scope_firewall_rules(self, upstream: bool) -> bool:
+    def committee_scope_firewall_rules(self, upstream: bool = False) -> bool:
         initial_status = self.checks.committee_scope_firewall_rules.status
         if not initial_status:
             logger.info('Configuring committee scope firewall rules')

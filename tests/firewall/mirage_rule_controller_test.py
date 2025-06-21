@@ -57,9 +57,9 @@ def test_network_scope_rule_controller(nft_chain_folder):
         SChainRule(first_ip='4.4.4.4', first_port=10004, action=Action.ACCEPT),
     ]
 
-    mirage_network_expected_chain = 'chain skale-mirage-network {\n\ttype filter hook input priority filter; policy accept;\n\ttcp dport 10008 counter accept\n\ttcp dport 10007 counter accept\n\tip saddr 4.4.4.4 tcp dport 10005 counter accept\n\tip saddr 2.2.2.2 tcp dport 10005 counter accept\n\tip saddr 1.1.1.1 tcp dport 10005 counter accept\n\ttcp dport 10003 counter accept\n\ttcp dport 10002 counter accept\n\tip saddr 4.4.4.4 tcp dport 10001 counter accept\n\tip saddr 2.2.2.2 tcp dport 10001 counter accept\n\tip saddr 1.1.1.1 tcp dport 10001 counter accept\n\ttcp dport 10001 iifname != "lo" counter drop\n\ttcp dport 10005 iifname != "lo" counter drop\n}\n'  # noqa
+    mirage_network_expected_chain = 'chain mirage-network {\n\ttype filter hook input priority filter; policy accept;\n\ttcp dport 10008 counter accept\n\ttcp dport 10007 counter accept\n\tip saddr 4.4.4.4 tcp dport 10005 counter accept\n\tip saddr 2.2.2.2 tcp dport 10005 counter accept\n\tip saddr 1.1.1.1 tcp dport 10005 counter accept\n\ttcp dport 10003 counter accept\n\ttcp dport 10002 counter accept\n\tip saddr 4.4.4.4 tcp dport 10001 counter accept\n\tip saddr 2.2.2.2 tcp dport 10001 counter accept\n\tip saddr 1.1.1.1 tcp dport 10001 counter accept\n\ttcp dport 10001 iifname != "lo" counter drop\n\ttcp dport 10005 iifname != "lo" counter drop\n}\n'  # noqa
 
-    mirage_committee_expected_chain = 'chain skale-mirage-committee {\n\ttype filter hook input priority filter; policy accept;\n\tip saddr 4.4.4.4 tcp dport 10004 counter accept\n\tip saddr 2.2.2.2 tcp dport 10004 counter accept\n\tip saddr 1.1.1.1 tcp dport 10004 counter accept\n\tip saddr 4.4.4.4 tcp dport 10000 counter accept\n\tip saddr 2.2.2.2 tcp dport 10000 counter accept\n\tip saddr 1.1.1.1 tcp dport 10000 counter accept\n\ttcp dport 10000 iifname != "lo" counter drop\n\ttcp dport 10004 iifname != "lo" counter drop\n}\n'  # noqa
+    mirage_committee_expected_chain = 'chain mirage-committee {\n\ttype filter hook input priority filter; policy accept;\n\tip saddr 4.4.4.4 tcp dport 10004 counter accept\n\tip saddr 2.2.2.2 tcp dport 10004 counter accept\n\tip saddr 1.1.1.1 tcp dport 10004 counter accept\n\tip saddr 4.4.4.4 tcp dport 10000 counter accept\n\tip saddr 2.2.2.2 tcp dport 10000 counter accept\n\tip saddr 1.1.1.1 tcp dport 10000 counter accept\n\ttcp dport 10000 iifname != "lo" counter drop\n\ttcp dport 10004 iifname != "lo" counter drop\n}\n'  # noqa
 
     for rc_create, expected_rules, expected_chain in zip(
         (get_mirage_network_scope_rule_controller, get_mirage_committee_scope_rule_controller),
@@ -70,13 +70,13 @@ def test_network_scope_rule_controller(nft_chain_folder):
         # Will create host controller and apply base config as a side effect
         assert rc.is_inited()
 
-        chain_filepath = f'/etc/nft.conf.d/skale/chains/skale-{rc.name}.conf'
+        chain_filepath = f'/etc/nft.conf.d/skale/chains/mirage-{rc.name}.conf'
         assert os.path.isfile(chain_filepath)
         with open(chain_filepath) as chain_file:
             chain = chain_file.read()
             assert (
                 chain
-                == 'chain skale-'
+                == 'chain mirage-'
                 + rc.name
                 + ' {\n\ttype filter hook input priority filter; policy accept;\n}\n'
             )  # noqa
@@ -86,7 +86,7 @@ def test_network_scope_rule_controller(nft_chain_folder):
         assert not rc.is_rules_synced()
         rc.sync()
 
-        chain_filepath = f'/etc/nft.conf.d/skale/chains/skale-{rc.name}.conf'
+        chain_filepath = f'/etc/nft.conf.d/skale/chains/mirage-{rc.name}.conf'
         assert os.path.isfile(chain_filepath)
         with open(chain_filepath) as chain_file:
             chain = chain_file.read()
@@ -97,15 +97,14 @@ def test_network_scope_rule_controller(nft_chain_folder):
         rules = rc.actual_rules()
         assert rules == expected_rules
 
-        hm = rc._firewall_manager.host_controller
+        hm = rc.firewall_manager.host_controller
         hm.add_rule = mock.Mock()
         hm.remove_rule = mock.Mock()
-        rc._firewall_manager.update_rules(rules)
+        rc.firewall_manager.update_rules(rules)
 
         assert hm.add_rule.call_count == 0
         assert hm.remove_rule.call_count == 0
 
         rc.cleanup()
-        # assert rules == []
         assert not rc.is_inited()
         assert not rc.is_persistent()

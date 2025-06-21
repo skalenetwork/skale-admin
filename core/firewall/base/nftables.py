@@ -33,10 +33,18 @@ logger = logging.getLogger(__name__)
 
 
 TABLE = 'firewall'
-CHAIN = 'skale'
+PREFIX = 'skale'
 
 
-class NFTablesCmdFailedError(Exception):
+class NFTablesError(Exception):
+    pass
+
+
+class NFTablesCmdFailedError(NFTablesError):
+    pass
+
+
+class ConversionFromExprFailedError(NFTablesError):
     pass
 
 
@@ -44,9 +52,9 @@ class NFTablesController(IHostFirewallController):
     plock = multiprocessing.Lock()
     FAMILY = 'inet'
 
-    def __init__(self, chain: str, table: str = TABLE) -> None:
+    def __init__(self, chain: str, table: str = TABLE, prefix: str = PREFIX) -> None:
         self.table = table
-        self.chain = f'skale-{chain}'
+        self.chain = f'{prefix}-{chain}'
         self._nftables = importlib.import_module('nftables')
         self.nft = self._nftables.Nftables()
         self.nft.set_json_output(True)
@@ -118,8 +126,9 @@ class NFTablesController(IHostFirewallController):
         return expr
 
     @classmethod
-    def expr_to_rule(self, expr: list) -> SChainRule:
+    def expr_to_rule(cls, expr: list) -> SChainRule:
         first_port, last_port, first_ip, last_ip = None, None, None, None
+        action = Action.ACCEPT
         interface_exception = None
         for item in expr:
             if 'match' in item:
@@ -153,7 +162,8 @@ class NFTablesController(IHostFirewallController):
             if 'drop' in item:
                 action = Action.DROP
 
-        if any([first_port, last_port, first_ip, last_ip]):
+        if first_port:
+            last_port = last_port or first_port
             return SChainRule(
                 first_port=first_port,
                 last_port=last_port,
@@ -162,6 +172,8 @@ class NFTablesController(IHostFirewallController):
                 interface_exception=interface_exception,
                 action=action,
             )
+        else:
+            raise ConversionFromExprFailedError('No valid rule found in expression')
 
     def _compose_json(self, commands: list[dict]) -> dict:
         json_cmd = {'nftables': commands}
@@ -170,7 +182,7 @@ class NFTablesController(IHostFirewallController):
 
     def create_table(self) -> None:
         if not self.has_table(self.table):
-            return self.run_cmd(f'add table inet {self.table}')
+            self.run_cmd(f'add table inet {self.table}')
 
     def has_drop_rule(self, first_port: int, last_port: int) -> bool:
         expr = [

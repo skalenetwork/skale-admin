@@ -21,12 +21,11 @@ import itertools
 import logging
 from abc import abstractmethod
 from functools import wraps
-from typing import Any, Callable, cast, Iterable, List, Optional, TypeVar
+from typing import Any, Callable, cast, Dict, Iterable, List, Optional, TypeVar
 
-from ..base.firewall_manager import NFTSchainFirewallManager
+from .firewall_manager import NFTMirageChainFirewallManager
 from ..base.types import (
     Action,
-    IpRange,
     IRuleController,
     PORTS_PER_SCHAIN,
     SChainRule,
@@ -73,20 +72,30 @@ class MirageController(IRuleController):
         self.node_ips = node_ips
         self.port_allocation = port_allocation
         self.ports_per_schain = ports_per_schain
-        self._firewall_mirage = None
+        self._firewall_manager = None
 
     def is_configured(self) -> bool:
         return all((self.base_port, self.node_ips))
 
+    def get_missing(self) -> Dict['str', Any]:
+        missing: Dict['str', Any] = {}
+        if not self.base_port:
+            missing.update({'base_port': self.base_port})
+        if not self.own_ip:
+            missing.update({'own_ip': self.own_ip})
+        if not self.node_ips:
+            missing.update({'node_ips': self.node_ips})
+        return missing
+
     @property
-    def firewall_manager(self):
+    def firewall_manager(self) -> NFTMirageChainFirewallManager:
         if not self._firewall_manager:
             self._firewall_manager = self.create_firewall_manager()
         return self._firewall_manager
 
     @configured_only
-    def create_firewall_manager(self) -> NFTSchainFirewallManager:
-        return NFTSchainFirewallManager(
+    def create_firewall_manager(self) -> NFTMirageChainFirewallManager:
+        return NFTMirageChainFirewallManager(
             self.name,
             self.base_port,  # type: ignore
             self.base_port + self.ports_per_schain - 1,  # type: ignore
@@ -97,13 +106,11 @@ class MirageController(IRuleController):
         base_port: Optional[int] = None,
         own_ip: Optional[str] = None,
         node_ips: Optional[List[str]] = None,
-        sync_ip_ranges: Optional[List[IpRange]] = None,
         port_allocation: Any = SkaledPorts,
     ) -> None:
         self.base_port = base_port or self.base_port
         self.own_ip = own_ip or self.own_ip
         self.node_ips = node_ips or self.node_ips
-        self.sync_ip_ranges = sync_ip_ranges or self.sync_ip_ranges
         self.port_allocation = port_allocation or self.port_allocation
 
     @configured_only
@@ -120,7 +127,7 @@ class MirageController(IRuleController):
 
     @configured_only
     def actual_rules(self) -> Iterable[SChainRule]:
-        return sorted(self._firewall_manager.rules)
+        return sorted(self.firewall_manager.rules)
 
     @configured_only
     @abstractmethod
@@ -131,18 +138,18 @@ class MirageController(IRuleController):
         erules = self.expected_rules()
         logger.info('Syncing firewall rules')
         logger.debug('Syncing firewall rules with %s', erules)
-        self._firewall_manager.update_rules(erules)
+        self.firewall_manager.update_rules(erules)
 
     @configured_only
     def is_persistent(self) -> bool:
-        return self._firewall_manager.rules_saved()
+        return self.firewall_manager.rules_saved()
 
     @configured_only
     def is_inited(self) -> bool:
-        return self._firewall_manager.base_config_applied()
+        return self.firewall_manager.base_config_applied()
 
     def cleanup(self) -> None:
-        self._firewall_manager.cleanup()
+        self.firewall_manager.cleanup()
 
 
 class MirageNetworkScopeRuleController(MirageController):
@@ -190,10 +197,10 @@ class MirageNetworkScopeRuleController(MirageController):
 
     @configured_only
     def expected_rules(self) -> Iterable[SChainRule]:
+
         return sorted(
             itertools.chain.from_iterable(
-                (self.public_rules, self.network_scope_rules, self.drop_rules)
-            )
+                (self.public_rules, self.network_scope_rules , self.drop_rules))
         )
 
 
@@ -229,4 +236,6 @@ class MirageCommitteeScopeRuleController(MirageController):
 
     @configured_only
     def expected_rules(self) -> Iterable[SChainRule]:
-        return sorted(itertools.chain.from_iterable((self.committee_scope_rules, self.drop_rules)))
+        return sorted(
+            itertools.chain.from_iterable(
+                (self.committee_scope_rules, [], self.drop_rules)))

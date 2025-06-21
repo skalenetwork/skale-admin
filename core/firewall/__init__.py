@@ -17,11 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .base.firewall_manager import SChainFirewallManager  # noqa
+from .base.firewall_manager import ChainFirewallManager  # noqa
 from .base.nftables import NFTablesController, NFT_CHAIN_BASE_PATH  # noqa
 from .schain.rule_controller import SChainRuleController  # noqa
-from .mirage.rule_controller import MirageController, MirageCommitteeScopeRuleController, MirageNetworkScopeRuleController # noqa
-from .base.types import Action, IpRange, IRuleController, LOOPBACK_INTERFACE, SChainRule, SkaledPorts  # noqa
+from .mirage.rule_controller import (
+    MirageController,
+    MirageCommitteeScopeRuleController,
+    MirageNetworkScopeRuleController,
+)  # noqa
+from .base.types import (
+    Action,
+    IpRange,
+    IRuleController,
+    LOOPBACK_INTERFACE,
+    SChainRule,
+    SkaledPorts,
+)  # noqa
 from .utils import (
     cleanup_firewall_for_schain,
     get_default_rule_controller,  # noqa

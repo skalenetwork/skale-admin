@@ -125,6 +125,8 @@ class RegularConfigMonitor(BaseConfigMonitor):
             self.am.dkg()
         if not self.checks.upstream_config:
             self.am.upstream_config()
+        if not self.checks.network_scope_firewall_rules:
+            self.am.network_scope_firewall_rules()
         self.am.reset_config_record()
 
 

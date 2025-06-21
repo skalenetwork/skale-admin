@@ -136,11 +136,6 @@ class BaseSkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     @abc.abstractmethod
-    def firewall_rules(self, upstream: bool = False) -> bool:
-        """Ensure firewall rules for the chain"""
-
-    @BaseActionManager.monitor_block
-    @abc.abstractmethod
     def recreated_schain_containers(self, abort_on_exit: bool = True) -> bool:
         """Restart skaled from scratch"""
 
