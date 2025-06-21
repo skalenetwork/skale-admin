@@ -22,7 +22,6 @@ from abc import ABC, abstractmethod
 
 from core.checks.base import BaseSkaledChecks
 from core.monitor.action_base import BaseSkaledActionManager
-from tools.resources import get_statsd_client
 
 logger = logging.getLogger(__name__)
 
