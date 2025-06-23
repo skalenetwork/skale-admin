@@ -51,7 +51,6 @@ class ConfigTask(BaseTask):
         node_config: NodeConfig,
         stream_version: str,
     ) -> None:
-        self.mirage = init_mirage_manager(node_config=node_config)
         super().__init__(
             chain_name=chain_name,
             node_config=node_config,
@@ -70,9 +69,10 @@ class ConfigTask(BaseTask):
 
     def run(self) -> None:
         try:
+            mirage = init_mirage_manager(node_config=self.node_config)
             run_config_pipeline(
                 chain_name=cast(MirageChainName, self.chain_name),
-                mirage=self.mirage,
+                mirage=mirage,
                 node_config=self.node_config,
                 stream_version=self.stream_version,
             )
