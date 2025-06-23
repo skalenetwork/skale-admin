@@ -21,6 +21,7 @@ import os
 from eth_typing import HexAddress, HexStr
 
 from tools.configs import NODE_DATA_PATH
+from tools.exceptions import MissingEnvVariable
 
 ENDPOINT = os.getenv('ENDPOINT')
 BOOT_ENDPOINT = os.getenv('BOOT_ENDPOINT')
@@ -39,23 +40,23 @@ ZERO_ADDRESS = HexAddress(HexStr('0x0000000000000000000000000000000000000000'))
 
 def endpoint() -> str:
     if not ENDPOINT:
-        raise ValueError('ENDPOINT is not set.')
+        raise MissingEnvVariable('ENDPOINT is not set.')
     return ENDPOINT
 
 
 def boot_endpoint() -> str:
     if not BOOT_ENDPOINT:
-        raise ValueError('BOOT_ENDPOINT is not set.')
+        raise MissingEnvVariable('BOOT_ENDPOINT is not set.')
     return BOOT_ENDPOINT
 
 
 def manager_contracts() -> str:
     if not MANAGER_CONTRACTS:
-        raise ValueError('MANAGER_CONTRACTS environment variable is not set.')
+        raise MissingEnvVariable('MANAGER_CONTRACTS environment variable is not set.')
     return MANAGER_CONTRACTS
 
 
 def mirage_contracts() -> str:
     if not MIRAGE_CONTRACTS:
-        raise ValueError('MIRAGE_CONTRACTS environment variable is not set.')
+        raise MissingEnvVariable('MIRAGE_CONTRACTS environment variable is not set.')
     return MIRAGE_CONTRACTS
