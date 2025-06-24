@@ -25,11 +25,11 @@ from core.chain.containers import monitor_skaled_container
 from core.chain.runner import is_container_exists
 from core.chain.volume import init_mirage_volume
 from core.checks.mirage import SkaledChecks
+from core.config.endpoint import get_base_port_from_config
 from core.config.mirage.firewall import (
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
-from core.config.utils import get_base_port_from_config
 from core.firewall import MirageCommitteeScopeRuleController
 from core.monitor.action_base import (
     CONTAINER_POST_RUN_DELAY,

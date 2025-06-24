@@ -38,12 +38,12 @@ from core.checks.base import (
     log_checks_dict,
     save_checks_dict,
 )
+from core.config.endpoint import get_base_port_from_config
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
-from core.config.utils import get_base_port_from_config
 from core.firewall import IRuleController
 from core.node import ExtendedManagerNodeInfo, get_current_ips
 from core.schains.dkg.utils import get_secret_key_share_filepath

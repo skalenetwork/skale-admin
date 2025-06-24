@@ -26,11 +26,11 @@ from flask import g
 from skale.dataclasses.skaled_ports import SkaledPorts
 from websocket import create_connection
 
+from core.config.endpoint import get_chain_ports_from_config
 from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.helper import get_chain_id, get_static_params
 from core.config.schain.node_info import CurrentNodeInfo
-from core.config.utils import get_chain_ports_from_config
 from tools.configs import ENV_TYPE, SGX_SERVER_URL, SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
 from tools.configs.containers import CONTAINERS_INFO, IMA_MIGRATION_PATH
 from tools.configs.db import REDIS_URI

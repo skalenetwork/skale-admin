@@ -26,12 +26,12 @@ from skale.mirage_manager import MirageManager
 from skale.types.node import NodeId
 
 from core.checks.base import BaseSkaledChecks, CheckRes, IChecks
+from core.config.endpoint import get_base_port_from_config
 from core.config.mirage.firewall import (
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
 from core.config.schain.file_manager import ConfigFileManager
-from core.config.utils import get_base_port_from_config
 from core.firewall import get_mirage_network_scope_rule_controller, get_network_scope_node_ips
 from core.firewall.mirage import (
     MirageCommitteeScopeRuleController,

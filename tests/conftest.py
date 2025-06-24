@@ -12,12 +12,12 @@ from core.chain.status import (
     init_node_cli_status,
     node_cli_status_filepath,
 )
+from core.config.endpoint import get_base_port_from_config
 from core.config.schain.directory import schain_config_dir
 from core.config.schain.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
-from core.config.utils import get_base_port_from_config
 from core.node import get_current_nodes
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig, ExternalState
