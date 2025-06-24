@@ -31,6 +31,7 @@ from tools.configs.containers import (
     SHARED_SPACE_CONTAINER_PATH,
 )
 from tools.configs.web3 import ENDPOINT
+from tools.helper import is_mirage
 
 
 def get_skaled_container_cmd(
@@ -75,8 +76,10 @@ def get_schain_container_base_opts(
         f'--https-port {ports["https"]}',
         f'--ws-port {ports["ws"]}',
         f'--wss-port {ports["wss"]}',
-        f'--main-net-url {ENDPOINT}',
     ]
+
+    if not is_mirage():
+        cmd.append(f'--main-net-url {ENDPOINT}')
 
     if not sync_node:
         cmd.extend(

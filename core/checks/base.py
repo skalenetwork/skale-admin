@@ -27,7 +27,7 @@ import statsd
 from core.config.schain.directory import get_schain_check_filepath
 
 from core.config.schain.file_manager import ConfigFileManager
-from core.config.schain.helper import get_local_schain_http_endpoint_from_config
+from core.config.utils import get_local_chain_http_endpoint_from_config
 from core.config.schain.main import (
     get_skaled_config_rotations_ids,
     get_upstream_config_rotation_ids,
@@ -212,7 +212,7 @@ class BaseSkaledChecks(IChecks):
                     f'Config for sChain {self.name} is not found. '
                     'Please check if the chain is initialized.'
                 )
-            http_endpoint = get_local_schain_http_endpoint_from_config(config)
+            http_endpoint = get_local_chain_http_endpoint_from_config(config)
             timeout = get_endpoint_alive_check_timeout(self.chain_record.failed_rpc_count)
             res = check_endpoint_alive(http_endpoint, timeout=timeout)
         return CheckRes(res)
@@ -227,7 +227,7 @@ class BaseSkaledChecks(IChecks):
                     f'Config for sChain {self.name} is not found. '
                     'Please check if the chain is initialized.'
                 )
-            http_endpoint = get_local_schain_http_endpoint_from_config(config)
+            http_endpoint = get_local_chain_http_endpoint_from_config(config)
             return CheckRes(check_endpoint_blocks(http_endpoint))
         return CheckRes(False)
 
