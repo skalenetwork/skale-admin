@@ -18,5 +18,5 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-class MissingEnvVariable(Exception):
+class MissingEnvVariableError(Exception):
     pass

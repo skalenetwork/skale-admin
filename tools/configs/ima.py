@@ -19,7 +19,7 @@
 
 import os
 from tools.configs import SCHAIN_CONFIG_DIR_SKALED
-from tools.exceptions import MissingEnvVariable
+from tools.exceptions import MissingEnvVariableError
 
 
 IMA_CONTRACTS = os.getenv('IMA_CONTRACTS')
@@ -37,5 +37,5 @@ DEFAULT_TIME_FRAME = 1800  # 30 min
 
 def ima_contracts() -> str:
     if not IMA_CONTRACTS:
-        raise MissingEnvVariable('IMA_CONTRACTS is not set.')
+        raise MissingEnvVariableError('IMA_CONTRACTS is not set.')
     return IMA_CONTRACTS
