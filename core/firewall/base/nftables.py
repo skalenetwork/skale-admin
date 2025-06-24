@@ -24,10 +24,9 @@ import multiprocessing
 import os
 from typing import Iterable
 
-from .types import Action, IHostFirewallController, SChainRule
-
 from tools.configs import NFT_CHAIN_BASE_PATH
 
+from .types import Action, IHostFirewallController, SChainRule
 
 logger = logging.getLogger(__name__)
 

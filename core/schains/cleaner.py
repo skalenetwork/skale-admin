@@ -142,12 +142,13 @@ def get_schains_firewall_configs() -> list:
     return list(
         filter(
             lambda name: name not in MIRAGE_NFT_CHAIN_NAMES,
-            (lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)),
+            map(lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)),
         )
     )
 
 
 def get_schains_on_node(dutils=None):
+    logger.info('HEREC firewall configs to clean %s', list(get_schains_firewall_configs()))
     dutils = dutils or DockerUtils()
     schains_with_dirs = os.listdir(SCHAINS_DIR_PATH)
     schains_with_container = get_schains_with_containers(dutils)
