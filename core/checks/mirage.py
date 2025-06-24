@@ -27,11 +27,11 @@ from skale.types.node import NodeId
 
 from core.checks.base import BaseSkaledChecks, CheckRes, IChecks
 from core.config.mirage.firewall import (
-    get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
 from core.config.schain.file_manager import ConfigFileManager
+from core.config.utils import get_base_port_from_config
 from core.firewall import get_mirage_network_scope_rule_controller, get_network_scope_node_ips
 from core.firewall.mirage import (
     MirageCommitteeScopeRuleController,
@@ -65,8 +65,9 @@ class MirageConfigChecks(IChecks):
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=chain_name)
         self.statsd_client = get_statsd_client()
         base_port = mirage.nodes.get(cast(NodeId, node_config.id + 1)).port
-        self.rule_controller: MirageNetworkScopeRuleController = \
+        self.rule_controller: MirageNetworkScopeRuleController = (
             get_mirage_network_scope_rule_controller(base_port=base_port)
+        )
 
     def get_name(self) -> str:
         return self.name

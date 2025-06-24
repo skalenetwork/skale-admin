@@ -17,6 +17,26 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Dict
+
+
+def get_base_port_from_config(config: Dict | None) -> int:
+    if config is None:
+        return 0
+    return config['skaleConfig']['nodeInfo']['basePort']
+
+
+def get_chain_ports_from_config(config: Dict | None):
+    if config is None:
+        return {}
+    node_info = config['skaleConfig']['nodeInfo']
+    return {
+        'http': int(node_info['httpRpcPort']),
+        'ws': int(node_info['wsRpcPort']),
+        'https': int(node_info['httpsRpcPort']),
+        'wss': int(node_info['wssRpcPort']),
+    }
+
 
 def _get_chain_rpc_ports_from_config(config: dict) -> tuple[int, int]:
     node_info = config['skaleConfig']['nodeInfo']

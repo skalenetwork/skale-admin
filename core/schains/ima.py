@@ -28,22 +28,22 @@ from websocket import create_connection
 
 from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.helper import get_chain_id, get_static_params
 from core.config.schain.node_info import CurrentNodeInfo
-from core.config.schain.helper import get_chain_id, get_schain_ports_from_config, get_static_params
-from tools.configs import ENV_TYPE, SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH, SGX_SERVER_URL
-from tools.configs.containers import IMA_MIGRATION_PATH, CONTAINERS_INFO
+from core.config.utils import get_chain_ports_from_config
+from tools.configs import ENV_TYPE, SGX_SERVER_URL, SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
+from tools.configs.containers import CONTAINERS_INFO, IMA_MIGRATION_PATH
 from tools.configs.db import REDIS_URI
 from tools.configs.ima import (
-    IMA_CONTRACTS,
-    SCHAIN_IMA_CONTRACTS,
-    IMA_STATE_CONTAINER_PATH,
-    IMA_NETWORK_BROWSER_FILEPATH,
     DEFAULT_TIME_FRAME,
+    IMA_CONTRACTS,
+    IMA_NETWORK_BROWSER_FILEPATH,
+    IMA_STATE_CONTAINER_PATH,
+    SCHAIN_IMA_CONTRACTS,
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS
 from tools.helper import safe_load_yml
-from tools.configs.web3 import MANAGER_CONTRACTS, ENDPOINT
-
 
 logger = logging.getLogger(__name__)
 
@@ -126,19 +126,19 @@ def get_current_node_from_nodes(node_id, schain_nodes):
 
 def get_localhost_http_endpoint(schain_name):
     config = ConfigFileManager(schain_name).skaled_config
-    ports = get_schain_ports_from_config(config)
+    ports = get_chain_ports_from_config(config)
     return f'http://127.0.0.1:{ports["http"]}'
 
 
 def get_public_http_endpoint(public_node_info, schain_name):
     config = ConfigFileManager(schain_name).skaled_config
-    ports = get_schain_ports_from_config(config)
+    ports = get_chain_ports_from_config(config)
     return f'http://{public_node_info["ip"]}:{ports["http"]}'
 
 
 def get_local_http_endpoint(node_info, schain_name):
     config = ConfigFileManager(schain_name).skaled_config
-    ports = get_schain_ports_from_config(config)
+    ports = get_chain_ports_from_config(config)
     return f'http://{node_info["bindIP"]}:{ports["http"]}'
 
 

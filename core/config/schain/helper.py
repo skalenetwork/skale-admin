@@ -24,11 +24,8 @@ from Crypto.Hash import keccak
 from web3 import Web3
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
-
-from tools.helper import read_json
-from tools.configs import STATIC_PARAMS_FILEPATH, MIRAGE_STATIC_PARAMS_FILEPATH, ENV_TYPE
-from tools.helper import safe_load_yml
-
+from tools.configs import ENV_TYPE, MIRAGE_STATIC_PARAMS_FILEPATH, STATIC_PARAMS_FILEPATH
+from tools.helper import read_json, safe_load_yml
 
 logger = logging.getLogger(__name__)
 
@@ -66,12 +63,6 @@ def get_node_ips_from_config(config: Dict | None) -> List[str]:
     return [node_data['ip'] for node_data in schain_nodes_config]
 
 
-def get_base_port_from_config(config: Dict | None) -> int:
-    if config is None:
-        return 0
-    return config['skaleConfig']['nodeInfo']['basePort']
-
-
 def get_own_ip_from_config(config: Dict | None) -> Optional[str]:
     if config is None:
         return None
@@ -81,18 +72,6 @@ def get_own_ip_from_config(config: Dict | None) -> Optional[str]:
         if node_data['nodeID'] == own_id:
             return node_data['ip']
     return None
-
-
-def get_schain_ports_from_config(config: Dict):
-    if config is None:
-        return {}
-    node_info = config['skaleConfig']['nodeInfo']
-    return {
-        'http': int(node_info['httpRpcPort']),
-        'ws': int(node_info['wsRpcPort']),
-        'https': int(node_info['httpsRpcPort']),
-        'wss': int(node_info['wssRpcPort']),
-    }
 
 
 def get_schain_env(ulimit_check=True):

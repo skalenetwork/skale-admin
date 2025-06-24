@@ -27,12 +27,6 @@ def get_node_ips_from_config(config: Dict | None) -> List[str]:
     return [node_data['ip'] for node_data in chain_nodes_config]
 
 
-def get_base_port_from_config(config: Dict | None) -> int:
-    if config is None:
-        return 0
-    return config['skaleConfig']['nodeInfo']['basePort']
-
-
 def get_own_ip_from_config(config: Dict | None) -> str | None:
     if config is None:
         return None
@@ -42,15 +36,3 @@ def get_own_ip_from_config(config: Dict | None) -> str | None:
         if node_data['nodeID'] == own_id:
             return node_data['ip']
     return None
-
-
-def get_chain_ports_from_config(config: Dict):
-    if config is None:
-        return {}
-    node_info = config['skaleConfig']['nodeInfo']
-    return {
-        'http': int(node_info['httpRpcPort']),
-        'ws': int(node_info['wsRpcPort']),
-        'https': int(node_info['httpsRpcPort']),
-        'wss': int(node_info['wssRpcPort']),
-    }

@@ -1,51 +1,46 @@
-import os
 import json
+import os
 import pathlib
 import shutil
 import subprocess
 from pathlib import Path
 
-import yaml
 import pytest
+import yaml
 
-from core.node import get_current_nodes
-from core.node_config import NodeConfig
-from core.config.schain.helper import (
-    get_base_port_from_config,
-    get_node_ips_from_config,
-    get_own_ip_from_config,
-)
-from core.config.schain.directory import schain_config_dir
-from core.schains.ima import ImaData
-from core.schains.external_config import ExternalConfig, ExternalState
 from core.chain.status import (
     init_node_cli_status,
     node_cli_status_filepath,
 )
-
+from core.config.schain.directory import schain_config_dir
+from core.config.schain.helper import (
+    get_node_ips_from_config,
+    get_own_ip_from_config,
+)
+from core.config.utils import get_base_port_from_config
+from core.node import get_current_nodes
+from core.node_config import NodeConfig
+from core.schains.external_config import ExternalConfig, ExternalState
+from core.schains.ima import ImaData
+from tests.utils import (
+    ALLOWED_RANGES,
+    CONFIG_STREAM,
+    CURRENT_TS,
+    IMA_MIGRATION_TS,
+    generate_cert,
+    generate_schain_config,
+    get_test_rule_controller,
+    upsert_schain_record_with_config,
+)
 from tools.configs import (
     CONFIG_FOLDER,
     ENV_TYPE,
     META_FILEPATH,
     SSL_CERTIFICATES_FILEPATH,
 )
-
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import write_json
-
-from web.models.schain import create_tables, SChainRecord
-
-from tests.utils import (
-    ALLOWED_RANGES,
-    CONFIG_STREAM,
-    CURRENT_TS,
-    generate_cert,
-    generate_schain_config,
-    get_test_rule_controller,
-    IMA_MIGRATION_TS,
-    upsert_schain_record_with_config,
-)
-
+from web.models.schain import SChainRecord, create_tables
 
 pytest_plugins = ['tests.fixtures.web3', 'tests.fixtures.schain', 'tests.fixtures.containers']
 
