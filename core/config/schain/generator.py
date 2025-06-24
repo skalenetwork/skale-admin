@@ -45,7 +45,7 @@ from core.config.schain.legacy_data import is_static_accounts, static_accounts, 
 from core.config.schain.helper import get_chain_id, get_schain_id
 from core.schains.dkg.utils import get_common_bls_public_key
 from core.schains.limits import get_schain_type
-from core.config.base_config import SChainConfig, MirageConfig, SChainBaseConfig
+from core.config.base import SChainConfig, MirageConfig, SChainBaseConfig
 
 from core.config.mirage.generator import generate_mirage_config_adapter
 

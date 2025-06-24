@@ -26,7 +26,7 @@ from skale import SkaleManager, SkaleIma
 from skale.contracts.manager.schains import SchainStructure
 
 from core.node_config import NodeConfig
-from core.schains.monitor.main import start_tasks
+from core.monitor.schain.main import start_tasks
 from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process import (
     get_schain_process_info,

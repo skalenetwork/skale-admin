@@ -20,6 +20,8 @@
 import logging
 from typing import Optional
 
+from eth_typing import ChecksumAddress
+
 from tools.helper import process_template
 from tools.docker_utils import DockerUtils, get_docker_group_id
 
@@ -44,9 +46,10 @@ class TelegrafNotConfiguredError(Exception):
     pass
 
 
-def update_filebeat_service(node_ip, node_id, skale, dutils: Optional[DockerUtils] = None):
+def update_filebeat_service(
+    node_ip, node_id, contract_address: ChecksumAddress, dutils: Optional[DockerUtils] = None
+):
     dutils = dutils or DockerUtils()
-    contract_address = skale.manager.address
     template_data = {'ip': node_ip, 'id': node_id, 'contract_address': contract_address}
 
     logger.info('Configuring filebeat %s', template_data)
@@ -110,7 +113,9 @@ def telegraf_config_processed() -> bool:
         return 'id: ' in f.read()
 
 
-def update_monitoring_services(node_ip, node_id, skale, dutils: Optional[DockerUtils] = None):
-    update_filebeat_service(node_ip, node_id, skale, dutils=dutils)
+def update_monitoring_services(
+    node_ip, node_id, contract_address: ChecksumAddress, dutils: Optional[DockerUtils] = None
+):
+    update_filebeat_service(node_ip, node_id, contract_address, dutils=dutils)
     if TELEGRAF:
         update_telegraf_service(node_ip, node_id, dutils=dutils)

@@ -1,0 +1,136 @@
+#   -*- coding: utf-8 -*-
+#
+#   This file is part of SKALE Admin
+#
+#   Copyright (C) 2025 SKALE Labs
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Affero General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Affero General Public License for more details.
+#
+#   You should have received a copy of the GNU Affero General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+import logging
+from abc import abstractmethod
+
+from skale import MirageManager
+
+from core.checks.mirage import MirageConfigChecks
+from core.monitor.mirage.action_config import MirageConfigActionManager
+from core.monitor.monitor_base import IMonitor
+from core.node_config import NodeConfig
+from core.redis.chain_record import ChainRecord
+from core.types.chain import MirageChainName
+
+from tools.configs import SYNC_NODE
+from tools.helper import no_hyphens
+from tools.resources import get_statsd_client
+
+logger = logging.getLogger(__name__)
+
+
+def run_config_pipeline(
+    chain_name: MirageChainName,
+    mirage: MirageManager,
+    node_config: NodeConfig,
+    stream_version: str,
+) -> None:
+    logger.info('Running config pipeline for %s', chain_name)
+
+    # todod: get current group index from mirage
+    group_index = 0
+
+    chain_record = ChainRecord(chain_name)
+    logger.info('Chain record: %s', chain_record)
+
+    logger.info('Initializing config checks')
+    config_checks = MirageConfigChecks(
+        chain_name=chain_name,
+        node_id=node_config.id,
+        stream_version=stream_version,
+        group_index=group_index,
+        chain_record=chain_record,
+    )
+
+    logger.info('Initializing config action manager')
+    config_am = MirageConfigActionManager(
+        mirage=mirage,
+        chain_name=chain_name,
+        group_index=group_index,
+        node_config=node_config,
+        stream_version=stream_version,
+        checks=config_checks,
+    )
+
+    logger.info('Gathering config status')
+    status = config_checks.get_all(log=False, expose=True)
+    logger.info('Config status: %s', status)
+
+    if SYNC_NODE:
+        logger.info('Sync node mode, running sync config monitor')
+        mon = SyncConfigMonitor(config_am, config_checks)
+    else:
+        logger.info('Regular node mode, running config monitor')
+        mon = RegularConfigMonitor(config_am, config_checks)
+    statsd_client = get_statsd_client()
+
+    statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(chain_name)}')
+    statsd_client.gauge(
+        f'admin.config_pipeline.rotation_id.{no_hyphens(chain_name)}',
+        group_index,
+    )
+    with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(chain_name)}'):
+        mon.run()
+
+
+class BaseConfigMonitor(IMonitor):
+    def __init__(
+        self, action_manager: MirageConfigActionManager, checks: MirageConfigChecks
+    ) -> None:
+        self.am = action_manager
+        self.checks = checks
+
+    @abstractmethod
+    def execute(self) -> None:
+        pass
+
+    def run(self):
+        typename = type(self).__name__
+        logger.info('Config monitor type starting %s', typename)
+        try:
+            self.am._upd_last_seen()
+            self.execute()
+            self.am.log_executed_blocks()
+            self.am._upd_last_seen()
+        except Exception as e:
+            logger.info('Config monitor type failed %s', typename, exc_info=e)
+        finally:
+            logger.info('Config monitor type finished %s', typename)
+
+
+class RegularConfigMonitor(BaseConfigMonitor):
+    def execute(self) -> None:
+        if not self.checks.config_dir:
+            self.am.config_dir()
+        if not self.checks.dkg:
+            self.am.dkg()
+        if not self.checks.upstream_config:
+            self.am.upstream_config()
+        self.am.reset_config_record()
+
+
+class SyncConfigMonitor(BaseConfigMonitor):
+    def execute(self) -> None:
+        if not self.checks.config_dir:
+            self.am.config_dir()
+        if not self.checks.upstream_config:
+            self.am.upstream_config()
+        self.am.reset_config_record()

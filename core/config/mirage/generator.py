@@ -22,11 +22,12 @@ import logging
 from dataclasses import dataclass
 from typing import Dict
 
+from skale import MirageManager
 from skale.types.rotation import NodesGroup, Rotation
 from skale.types.node import Node as SkaleNode, NodeWithSchains, MirageNode, NodeId
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
-from core.config.base_config import MirageConfig, SChainBaseConfig
+from core.config.base import MirageConfig, SChainBaseConfig
 from core.config.mirage.schain_info import MirageChainInfo
 from core.config.mirage.node_info import MirageCurrentNodeInfo, generate_mirage_current_node_info
 from core.config.mirage.committee import CommitteeInfoFromManager, generate_committee_info
@@ -54,9 +55,33 @@ class MirageSkaleConfig:
         }
 
 
-def generate_mirage_config_with_manager() -> None:
-    """Will be implemented in the future"""
-    pass
+def generate_mirage_config_with_manager(
+    mirage: MirageManager,
+    node_id: NodeId,
+    group_index: int,
+    ecdsa_key_name: str,
+    sync_node: bool,
+    archive: bool,
+    catchup: bool,
+) -> MirageConfig:
+    node = mirage.nodes.get(node_id)
+
+    # todod: get info from mirage_manager
+    committee_nodes = []
+    node_groups = {}
+    common_bls_public_keys = []
+
+    return generate_mirage_config(
+        node=node,
+        committee_nodes=committee_nodes,
+        node_groups=node_groups,
+        group_index=group_index,
+        ecdsa_key_name=ecdsa_key_name,
+        common_bls_public_keys=common_bls_public_keys,
+        sync_node=sync_node,
+        archive=archive,
+        catchup=catchup,
+    )
 
 
 def skale_node_to_mirage_node_adapter(skale_node: SkaleNode, node_id: NodeId) -> MirageNode:

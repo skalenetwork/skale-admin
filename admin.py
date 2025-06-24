@@ -29,10 +29,11 @@ from core.schains.cleaner import run_cleaner
 from core.schains.process import cleanup_schains_pids
 from core.updates import update_node_config_file
 from core.monitoring import update_monitoring_services
+from core.redis.migrations import run_redis_migrations
 
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
-from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS, STATE_FILEPATH
-from tools.configs.ima import IMA_CONTRACTS
+from tools.configs.web3 import STATE_FILEPATH, endpoint, manager_contracts
+from tools.configs.ima import ima_contracts
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 from tools.sgx_utils import generate_sgx_key
@@ -74,17 +75,17 @@ def worker():
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
-    wallet = init_wallet(node_config=node_config)
-    skale = SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet, state_path=STATE_FILEPATH)
-    skale_ima = SkaleIma(ENDPOINT, IMA_CONTRACTS, wallet)
+    wallet = init_wallet(node_config=node_config, endpoint=endpoint())
+    skale = SkaleManager(endpoint(), manager_contracts(), wallet, state_path=STATE_FILEPATH)
+    skale_ima = SkaleIma(endpoint(), ima_contracts(), wallet)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
-    update_monitoring_services(node_config.ip, node_config.id, skale)
+    update_monitoring_services(node_config.ip, node_config.id, skale.manager.address)
     monitor(skale, skale_ima, node_config)
 
 
 def init():
-    skale = SkaleManager(ENDPOINT, MANAGER_CONTRACTS, state_path=STATE_FILEPATH)
+    skale = SkaleManager(endpoint(), manager_contracts(), state_path=STATE_FILEPATH)
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:
@@ -92,6 +93,7 @@ def init():
         update_node_config_file(skale, node_config)
         create_tables()
         migrate()
+        run_redis_migrations()
         set_schains_first_run()
         cleanup_schains_pids()
         if BACKUP_RUN:

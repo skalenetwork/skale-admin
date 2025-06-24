@@ -21,6 +21,7 @@ from eth_typing import HexStr
 
 from core.schains.types import SchainType
 from core.config.schain.helper import get_static_params, get_static_params_mirage
+from core.types.chain import MirageChainName
 from tools.configs import ENV_TYPE
 
 
@@ -29,7 +30,7 @@ def get_static_chain_id_mirage(env_type: str = ENV_TYPE) -> HexStr:
     return static_params['info']['chain_id']
 
 
-def get_static_chain_name_mirage(env_type: str = ENV_TYPE) -> str:
+def get_mirage_chain_name(env_type: str = ENV_TYPE) -> MirageChainName:
     static_params = get_static_params_mirage(env_type)
     return static_params['info']['chain_name']
 
