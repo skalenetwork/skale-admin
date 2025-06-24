@@ -30,7 +30,7 @@ from skale.utils.web3_utils import init_web3
 from core.node_config import NodeConfig
 from tools.helper import init_skale, init_mirage
 from tools.wallet_utils import init_wallet
-from tools.configs.web3 import ENDPOINT
+from tools.configs.web3 import endpoint
 
 from web import API_VERSION_PREFIX
 
@@ -65,19 +65,19 @@ def get_api_url(blueprint_name, method_name):
 
 
 def init_skale_from_node_config(node_config: NodeConfig) -> SkaleManager:
-    wallet = init_wallet(node_config)
+    wallet = init_wallet(node_config, endpoint=endpoint())
     return init_skale(wallet)
 
 
 def init_mirage_from_node_config(node_config: NodeConfig) -> MirageManager:
-    wallet = init_wallet(node_config)
+    wallet = init_wallet(node_config, endpoint=endpoint())
     return init_mirage(wallet)
 
 
 def g_web3(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        g.web3 = init_web3(ENDPOINT)
+        g.web3 = init_web3(endpoint())
         return func(*args, **kwargs)
 
     return wrapper
