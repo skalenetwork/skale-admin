@@ -46,6 +46,11 @@ from tools.resources import get_statsd_client
 logger = logging.getLogger(__name__)
 
 
+def get_base_port_from_mirage_manager(mirage: MirageManager, node_config: NodeConfig) -> int:
+    # todod: Should be changed after corresponding changes are made in mirage manager.
+    return mirage.nodes.get(cast(NodeId, node_config.id + 1)).port
+
+
 class MirageConfigChecks(IChecks):
     def __init__(
         self,
@@ -64,10 +69,9 @@ class MirageConfigChecks(IChecks):
         self.stream_version = stream_version
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=chain_name)
         self.statsd_client = get_statsd_client()
-        base_port = mirage.nodes.get(cast(NodeId, node_config.id + 1)).port
-        self.rule_controller: MirageNetworkScopeRuleController = (
-            get_mirage_network_scope_rule_controller(base_port=base_port)
-        )
+
+        self.rule_controller: MirageNetworkScopeRuleController = \
+            get_mirage_network_scope_rule_controller()
 
     def get_name(self) -> str:
         return self.name
@@ -114,7 +118,7 @@ class MirageConfigChecks(IChecks):
             'rules': False,
             'persistent': False,
         }
-        base_port = self.mirage.nodes.get(cast(NodeId, self.node_config.id + 1)).port
+        base_port = get_base_port_from_mirage_manager(self.mirage, self.node_config)
         own_ip = self.node_config.ip
         node_ips = get_network_scope_node_ips(self.mirage)
 
