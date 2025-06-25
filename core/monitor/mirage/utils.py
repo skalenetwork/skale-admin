@@ -21,9 +21,10 @@ import logging
 
 from skale import MirageManager
 from skale.utils.web3_utils import get_endpoint
+
+from core.config.endpoint import get_local_chain_http_endpoint_from_config
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_mirage_chain_name
-from core.config.utils import get_local_chain_http_endpoint_from_config
 from core.node_config import NodeConfig
 from tools.configs.web3 import boot_endpoint, mirage_contracts
 from tools.wallet_utils import init_wallet

@@ -23,8 +23,8 @@ from abc import abstractmethod
 from functools import wraps
 from typing import Any, Callable, cast, Dict, Iterable, List, Optional, TypeVar
 
-from .firewall_manager import IptablesSChainFirewallManager, NFTSchainFirewallManager
-from .types import (
+from .firewall_manager import NFTSkaleChainFirewallManager
+from ..base.types import (
     Action,
     IFirewallManager,
     IpRange,
@@ -62,7 +62,7 @@ class SChainRuleController(IRuleController):
     def __init__(
         self,
         name: str,
-        base_port: Optional[int] = None,
+        base_port: int = -1,
         own_ip: Optional[str] = None,
         node_ips: List[str] = [],
         port_allocation: Any = SkaledPorts,  # TODO: better typing for enum
@@ -76,7 +76,7 @@ class SChainRuleController(IRuleController):
         self.sync_ip_ranges = sync_ip_ranges or []
         self.port_allocation = port_allocation
         self.ports_per_schain = ports_per_schain
-        self._firewall_manager = None
+        self._firewall_manager: IFirewallManager | None  =  None
 
     def get_missing(self) -> Dict['str', Any]:
         missing: Dict['str', Any] = {}
@@ -125,10 +125,9 @@ class SChainRuleController(IRuleController):
         pass
 
     @property
-    def firewall_manager(self):
-        if not self._firewall_manager:
-            self._firewall_manager = self.create_firewall_manager()
-        return self._firewall_manager
+    @abstractmethod
+    def firewall_manager(self) -> IFirewallManager:
+        pass
 
     @property  # type: ignore
     @configured_only
@@ -215,36 +214,21 @@ class SChainRuleController(IRuleController):
         self.firewall_manager.update_rules(erules)
 
 
-class IptablesSChainRuleController(SChainRuleController):
-    @configured_only
-    def create_firewall_manager(self) -> IptablesSChainFirewallManager:
-        return IptablesSChainFirewallManager(
-            self.name,
-            self.base_port,  # type: ignore
-            self.base_port + self.ports_per_schain - 1,  # type: ignore
-        )
-
-    @configured_only
-    def is_persistent(self) -> bool:
-        return True
-
-    @configured_only
-    def is_inited(self) -> bool:
-        return True
-
-    @configured_only
-    def cleanup(self) -> None:
-        self.firewall_manager.cleanup()
-
-
 class NFTSchainRuleController(SChainRuleController):
     @configured_only
-    def create_firewall_manager(self) -> NFTSchainFirewallManager:
-        return NFTSchainFirewallManager(
+    def create_firewall_manager(self) -> NFTSkaleChainFirewallManager:
+        return NFTSkaleChainFirewallManager(
             self.name,
             self.base_port,  # type: ignore
             self.base_port + self.ports_per_schain - 1,  # type: ignore
         )
+
+
+    @property
+    def firewall_manager(self) -> NFTSkaleChainFirewallManager:
+        if self._firewall_manager is None:
+            self._firewall_manager = self.create_firewall_manager()
+        return cast(NFTSkaleChainFirewallManager, self._firewall_manager)
 
     @configured_only
     def is_persistent(self) -> bool:

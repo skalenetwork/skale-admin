@@ -23,31 +23,26 @@ from typing import Optional
 
 from core.chain.containers import monitor_skaled_container
 from core.chain.runner import is_container_exists
+from core.chain.volume import init_mirage_volume
+from core.checks.mirage import SkaledChecks
+from core.config.endpoint import get_base_port_from_config
+from core.config.mirage.firewall import (
+    get_node_ips_from_config,
+    get_own_ip_from_config,
+)
+from core.firewall import MirageCommitteeScopeRuleController
 from core.monitor.action_base import (
     CONTAINER_POST_RUN_DELAY,
     BaseActionManager,
     BaseSkaledActionManager,
 )
 from core.node_config import NodeConfig
-from core.checks.mirage import SkaledChecks
-
-from core.firewall.types import IRuleController
-from core.chain.volume import init_mirage_volume
 from core.schains.cleaner import remove_skaled_container
-
-from core.config.schain.helper import (
-    get_base_port_from_config,
-    get_node_ips_from_config,
-    get_own_ip_from_config,
-)
-
 from core.types.chain import MirageChainName
 from tools.configs import SYNC_NODE
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import no_hyphens
 from tools.node_options import NodeOptions
-
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +51,7 @@ class MirageSkaledActionManager(BaseSkaledActionManager):
     def __init__(
         self,
         chain_name: MirageChainName,
-        rule_controller: IRuleController,
+        rule_controller: MirageCommitteeScopeRuleController,
         checks: SkaledChecks,
         node_config: NodeConfig,
         dutils: DockerUtils | None = None,
@@ -110,28 +105,6 @@ class MirageSkaledActionManager(BaseSkaledActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def firewall_rules(self, upstream: bool = False) -> bool:
-        initial_status = self.checks.firewall_rules.status
-        # todod: use new approach for firewall rules (only internal ports)
-        if not initial_status:
-            logger.info('Configuring firewall rules')
-
-            conf = self.cfm.latest_upstream_config if upstream else self.cfm.skaled_config
-            base_port = get_base_port_from_config(conf)
-            node_ips = get_node_ips_from_config(conf)
-            own_ip = get_own_ip_from_config(conf)
-
-            logger.debug('Base port %d', base_port)
-            with self.statsd_client.timer(f'admin.action.firewall.{no_hyphens(self.name)}'):
-                self.rc.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
-                self.statsd_client.gauge(
-                    f'admin.action.expected_rules.{no_hyphens(self.name)}',
-                    len(self.rc.expected_rules()),
-                )
-                self.rc.sync()
-        return initial_status
-
-    @BaseActionManager.monitor_block
     def recreated_schain_containers(self, abort_on_exit: bool = True) -> bool:
         logger.info('Restart skaled from scratch')
         initial_status = True
@@ -141,4 +114,19 @@ class MirageSkaledActionManager(BaseSkaledActionManager):
         self.chain_record.set_restart_count(0)
         self.chain_record.set_failed_rpc_count(0)
         self.skaled_container(abort_on_exit=abort_on_exit)
+        return initial_status
+
+    @BaseActionManager.monitor_block
+    def committee_scope_firewall_rules(self, upstream: bool = False) -> bool:
+        initial_status = self.checks.committee_scope_firewall_rules.status
+        if not initial_status:
+            logger.info('Configuring committee scope firewall rules')
+
+            conf = self.cfm.latest_upstream_config if upstream else self.cfm.skaled_config
+            base_port = get_base_port_from_config(conf)
+            node_ips = get_node_ips_from_config(conf)
+            own_ip = get_own_ip_from_config(conf)
+
+            self.rule_controller.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
+            self.rule_controller.sync()
         return initial_status

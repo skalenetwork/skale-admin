@@ -37,9 +37,17 @@ logger = logging.getLogger(__name__)
 
 class BaseSChainSkaledMonitor(BaseSkaledMonitor):
     def __init__(self, action_manager: SkaledActionManager, checks: SkaledChecks) -> None:
-        self.am = action_manager
-        self.checks = checks
+        self._am = action_manager
+        self._checks = checks
         self.statsd_client = get_statsd_client()
+
+    @property
+    def am(self) -> SkaledActionManager:
+        return self._am
+
+    @property
+    def checks(self) -> SkaledChecks:
+        return self._checks
 
 
 class RegularSkaledMonitor(BaseSChainSkaledMonitor):

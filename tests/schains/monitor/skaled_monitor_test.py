@@ -404,7 +404,7 @@ def test_get_skaled_monitor_recreate(
 def test_regular_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = RegularSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
-    assert skaled_am.rc.is_rules_synced
+    assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
     assert dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
     assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
@@ -413,7 +413,7 @@ def test_regular_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
 def test_backup_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = BackupSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
-    assert skaled_am.rc.is_rules_synced
+    assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
     schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
     assert schain_container
@@ -426,7 +426,7 @@ def test_repair_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     ts_before = time.time()
     mon.run()
     time.sleep(1)
-    assert skaled_am.rc.is_rules_synced
+    assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
 
     assert dutils.get_vol_created_ts(skaled_am.name) > ts_before
@@ -446,7 +446,7 @@ def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dut
     ):
         mon.run()
         assert esfm.exit_ts == ts
-    assert skaled_am.rc.is_rules_synced
+    assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
     assert dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
     assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
@@ -457,7 +457,7 @@ def test_group_reload_skaled_monitor_failed_skaled(skaled_am, skaled_checks, cle
     mon = ReloadGroupSkaledMonitor(skaled_am, skaled_checks)
     with mock.patch('core.chain.containers.run_skaled_container') as run_skaled_container_mock:
         mon.run()
-        assert skaled_am.rc.is_rules_synced
+        assert skaled_am.rule_controller.is_rules_synced
         assert run_skaled_container_mock.assert_not_called()
 
 
@@ -508,7 +508,7 @@ def test_no_config_monitor(skaled_am, skaled_checks, clean_docker, dutils):
 def test_new_node_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = NewNodeSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
-    assert skaled_am.rc.is_rules_synced
+    assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
     schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
     assert schain_container

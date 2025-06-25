@@ -22,26 +22,25 @@ from dataclasses import asdict
 
 from flask import Blueprint, g, request
 
+from core.chain.status import init_skaled_status
+from core.config.endpoint import get_base_port_from_config
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.helper import (
-    get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
 from core.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
-from core.chain.status import init_skaled_status
+from core.schains.cleaner import get_schains_on_node
 from core.schains.ima import get_ima_version_after_migration
 from core.schains.info import get_schain_info_by_name, get_skaled_version
-from core.schains.cleaner import get_schains_on_node
-from web.models.schain import get_schains_statuses
 from web.helper import (
-    construct_ok_response,
     construct_err_response,
     construct_key_error_response,
-    get_api_url,
+    construct_ok_response,
     g_skale,
+    get_api_url,
 )
-
+from web.models.schain import get_schains_statuses
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'schains'
