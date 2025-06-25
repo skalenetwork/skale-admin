@@ -23,37 +23,36 @@ from typing import Optional
 
 from skale.types.schain import Schain
 
-from core.config.schain.main import (
-    get_finish_ts_from_latest_upstream,
-    get_finish_ts_from_skaled_config,
-)
-from core.monitor.action_base import (
-    CONTAINER_POST_RUN_DELAY,
-    BaseActionManager,
-    BaseSkaledActionManager,
-)
-from core.node_config import NodeConfig
-from core.checks.schain import SkaledChecks
-
-from core.schains.cleaner import remove_ima_container, remove_skaled_container
-from core.schains.ima import get_migration_ts as get_ima_migration_ts, ImaData
-from core.chain.status import NodeCliStatus
-from core.firewall.types import IRuleController
-from core.chain.volume import init_data_volume
-from core.schains.limits import get_schain_type
 from core.chain.containers import monitor_ima_container, monitor_skaled_container
 from core.chain.runner import (
     is_container_exists,
     pull_new_image,
     restart_container,
 )
+from core.chain.status import NodeCliStatus
+from core.chain.volume import init_data_volume
+from core.checks.schain import SkaledChecks
+from core.config.endpoint import get_base_port_from_config
 from core.config.schain.helper import (
-    get_base_port_from_config,
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
+from core.config.schain.main import (
+    get_finish_ts_from_latest_upstream,
+    get_finish_ts_from_skaled_config,
+)
+from core.firewall import IRuleController
+from core.monitor.action_base import (
+    CONTAINER_POST_RUN_DELAY,
+    BaseActionManager,
+    BaseSkaledActionManager,
+)
+from core.node_config import NodeConfig
+from core.schains.cleaner import remove_ima_container, remove_skaled_container
 from core.schains.external_config import ExternalConfig
-
+from core.schains.ima import ImaData
+from core.schains.ima import get_migration_ts as get_ima_migration_ts
+from core.schains.limits import get_schain_type
 from tools.configs import SYNC_NODE
 from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
@@ -61,7 +60,6 @@ from tools.helper import no_hyphens
 from tools.node_options import NodeOptions
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord, upsert_schain_record
-
 
 logger = logging.getLogger(__name__)
 
@@ -154,14 +152,14 @@ class SkaledActionManager(BaseSkaledActionManager):
             ranges = self.econfig.ranges
             logger.info('Adding ranges %s', ranges)
             with self.statsd_client.timer(f'admin.action.firewall.{no_hyphens(self.name)}'):
-                self.rc.configure(
+                self.rule_controller.configure(
                     base_port=base_port, own_ip=own_ip, node_ips=node_ips, sync_ip_ranges=ranges
                 )
                 self.statsd_client.gauge(
                     f'admin.action.expected_rules.{no_hyphens(self.name)}',
-                    len(self.rc.expected_rules()),
+                    len(self.rule_controller.expected_rules()),
                 )
-                self.rc.sync()
+                self.rule_controller.sync()
         return initial_status
 
     @BaseActionManager.monitor_block

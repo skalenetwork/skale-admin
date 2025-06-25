@@ -29,7 +29,7 @@ from core.chain.runner import get_container_name, is_container_exists, restart_c
 from core.chain.status import init_skaled_status
 from core.checks.base import BaseSkaledChecks
 from core.config.schain.file_manager import ConfigFileManager
-from core.firewall.types import IRuleController
+from core.firewall import IRuleController
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.schains.cleaner import remove_schain_volume, remove_skaled_container
@@ -112,7 +112,7 @@ class BaseSkaledActionManager(BaseActionManager):
         self.chain_name = chain_name
         self.checks = checks
         self.node_config = node_config
-        self.rc = rule_controller
+        self.rule_controller = rule_controller
 
         self.skaled_status = init_skaled_status(chain_name)
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=self.chain_name)
@@ -133,11 +133,6 @@ class BaseSkaledActionManager(BaseActionManager):
     @abc.abstractmethod
     def volume(self) -> bool:
         """Create or check volume for the chain"""
-
-    @BaseActionManager.monitor_block
-    @abc.abstractmethod
-    def firewall_rules(self, upstream: bool = False) -> bool:
-        """Ensure firewall rules for the chain"""
 
     @BaseActionManager.monitor_block
     @abc.abstractmethod

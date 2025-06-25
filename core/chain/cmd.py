@@ -19,12 +19,11 @@
 
 from typing import Optional
 
+from core.config.endpoint import get_chain_ports_from_config
 from core.config.schain.file_manager import ConfigFileManager
-from core.config.schain.helper import get_schain_ports_from_config
 from core.config.schain.main import get_skaled_container_config_path
 from core.config.schain.static_params import get_static_schain_cmd
 from core.schains.ssl import get_ssl_filepath
-
 from tools.configs import SGX_SERVER_URL
 from tools.configs.containers import (
     DATA_DIR_CONTAINER_PATH,
@@ -65,7 +64,7 @@ def get_schain_container_base_opts(
     config_filepath = get_skaled_container_config_path(chain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
     config = ConfigFileManager(chain_name=chain_name).skaled_config
-    ports = get_schain_ports_from_config(config)
+    ports = get_chain_ports_from_config(config)
     static_schain_cmd = get_static_schain_cmd()
 
     cmd = [

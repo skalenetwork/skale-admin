@@ -25,7 +25,9 @@ from core.config.mirage.generator import generate_mirage_config_with_manager
 from core.monitor.action_base import BaseActionManager
 from core.node_config import NodeConfig
 from core.checks.mirage import MirageConfigChecks
+from core.firewall import get_mirage_network_scope_rule_controller, get_network_scope_node_ips
 from core.redis.chain_record import ChainRecord
+
 
 from core.config.schain.directory import init_schain_config_dir
 from core.config.schain.main import update_schain_config_version
@@ -58,6 +60,7 @@ class MirageConfigActionManager(BaseActionManager):
         self.stream_version = stream_version
         self.chain_name = chain_name
         self.group_index = group_index
+        self.rule_controller = get_mirage_network_scope_rule_controller()
 
         self.node_options = node_options or NodeOptions()
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=self.chain_name)
@@ -152,3 +155,16 @@ class MirageConfigActionManager(BaseActionManager):
         update_schain_config_version(self.name, chain_record=self.chain_record)
         self.chain_record.set_sync_config_run(False)
         return True
+
+    @BaseActionManager.monitor_block
+    def network_scope_firewall_rules(self) -> bool:
+        initial_status = self.checks.network_scope_firewall_rules.status
+        if not initial_status:
+            logger.info('Configuring network scope firewall rules')
+            base_port = self.mirage.nodes.get(self.node_config.id + 1).port
+            own_ip = self.node_config.ip
+            node_ips = get_network_scope_node_ips(self.mirage)
+
+            self.rule_controller.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
+            self.rule_controller.sync()
+        return initial_status

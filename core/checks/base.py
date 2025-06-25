@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import abc
 import logging
 import time
 from abc import ABC, abstractmethod
@@ -25,16 +24,6 @@ from typing import Dict, List, Optional
 
 import statsd
 
-from core.config.schain.directory import get_schain_check_filepath
-
-from core.config.schain.file_manager import ConfigFileManager
-from core.config.utils import get_local_chain_http_endpoint_from_config
-from core.config.schain.main import (
-    get_skaled_config_rotations_ids,
-    get_upstream_config_rotation_ids,
-)
-from core.redis.chain_record import ChainRecord
-from core.firewall.types import IRuleController
 from core.chain.rpc import (
     check_endpoint_alive,
     check_endpoint_blocks,
@@ -43,6 +32,15 @@ from core.chain.rpc import (
 from core.chain.runner import get_container_name
 from core.chain.skaled_exit_codes import SkaledExitCodes
 from core.chain.volume import is_volume_exists
+from core.config.endpoint import get_local_chain_http_endpoint_from_config
+from core.config.schain.directory import get_schain_check_filepath
+from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.main import (
+    get_skaled_config_rotations_ids,
+    get_upstream_config_rotation_ids,
+)
+from core.firewall import IRuleController
+from core.redis.chain_record import ChainRecord
 from core.types.chain import ChainName
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
@@ -50,7 +48,6 @@ from tools.helper import no_hyphens, write_json
 from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 from web.models.schain import SChainRecord
-
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +148,7 @@ class BaseSkaledChecks(IChecks):
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SKALED_CONTAINER, self.name)
         self.sync_node = sync_node
-        self.rc = rule_controller
+        self.rule_controller = rule_controller
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=chain_name)
         self.statsd_client = get_statsd_client()
 
@@ -189,11 +186,6 @@ class BaseSkaledChecks(IChecks):
         """Checks that sChain volume exists"""
 
         return CheckRes(is_volume_exists(self.name, sync_node=self.sync_node, dutils=self.dutils))
-
-    @property
-    @abc.abstractmethod
-    def firewall_rules(self) -> CheckRes:
-        """Checks that firewall rules are set correctly"""
 
     @property
     def skaled_container(self) -> CheckRes:

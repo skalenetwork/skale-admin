@@ -29,30 +29,33 @@ from sgx import SgxClient
 from skale import SkaleManager
 from skale.types.schain import SchainName
 
-from core.node import get_current_nodes, get_skale_node_version
+from core.chain.runner import get_container_name, is_exited
 from core.checks.schain import SChainChecks
 from core.config.schain.directory import schain_config_dir
+from core.firewall.utils import (
+    cleanup_firewall_for_schain,
+    get_default_rule_controller,
+    get_sync_agent_ranges,
+)
+from core.node import get_current_nodes, get_skale_node_version
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from core.firewall.utils import cleanup_firewall_for_schain, get_default_rule_controller
-from core.schains.process import ProcessReport, terminate_process
-from core.chain.runner import get_container_name, is_exited
 from core.schains.external_config import ExternalConfig
+from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType
-from core.firewall.utils import get_sync_agent_ranges
-
 from tools.configs import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER, SYNC_NODE
+from tools.configs.containers import IMA_CONTAINER, SCHAIN_STOP_TIMEOUT, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.containers import SKALED_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
 from tools.docker_utils import DockerUtils
-from tools.helper import merged_unique, read_json, is_node_part_of_chain
+from tools.helper import is_node_part_of_chain, merged_unique, read_json
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
 from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
 
-
 logger = logging.getLogger(__name__)
 
 JOIN_TIMEOUT = 1800
+
+MIRAGE_NFT_CHAIN_NAMES = ['mirage-network', 'mirage-committee']
 
 
 def run_cleaner(skale, node_config):
@@ -136,10 +139,16 @@ def get_schains_with_containers(dutils=None):
 
 
 def get_schains_firewall_configs() -> list:
-    return list(map(lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)))
+    return list(
+        filter(
+            lambda name: name not in MIRAGE_NFT_CHAIN_NAMES,
+            map(lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)),
+        )
+    )
 
 
 def get_schains_on_node(dutils=None):
+    logger.info('HEREC firewall configs to clean %s', list(get_schains_firewall_configs()))
     dutils = dutils or DockerUtils()
     schains_with_dirs = os.listdir(SCHAINS_DIR_PATH)
     schains_with_container = get_schains_with_containers(dutils)
