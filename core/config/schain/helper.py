@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import time
 import logging
 from typing import Dict, List, Optional
 
@@ -25,11 +24,8 @@ from Crypto.Hash import keccak
 from web3 import Web3
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
-
-from tools.helper import read_json
-from tools.configs import STATIC_PARAMS_FILEPATH, MIRAGE_STATIC_PARAMS_FILEPATH, ENV_TYPE
-from tools.helper import safe_load_yml
-
+from tools.configs import ENV_TYPE, MIRAGE_STATIC_PARAMS_FILEPATH, STATIC_PARAMS_FILEPATH
+from tools.helper import read_json, safe_load_yml
 
 logger = logging.getLogger(__name__)
 
@@ -60,27 +56,12 @@ def get_schain_id(schain_name: str) -> int:
     return int(get_chain_id(schain_name), 16)
 
 
-def get_current_group(config: Dict) -> List[dict]:
-    if config is None:
-        return []
-    schain_nodes_config = config['skaleConfig']['sChain']['nodes']
-
-    current_timestamp = int(time.time())
-
-    timestamps = schain_nodes_config.keys()
-    needed_timestamp = None
-    for timestamp in sorted(timestamps, key=int):
-        if int(timestamp) > current_timestamp:
-            needed_timestamp = timestamp
-            break
-
-    if needed_timestamp is None:
-        needed_timestamp = max(timestamps)
-    return schain_nodes_config[needed_timestamp]['group']
+def get_current_nodes(config: Dict) -> List[dict]:
+    return config['skaleConfig']['sChain']['nodes']
 
 
 def get_node_ips_from_config(config: Dict) -> List[str]:
-    group_data = get_current_group(config)
+    group_data = get_current_nodes(config)
     if len(group_data) == 0:
         return []
     return [node_data['ip'] for node_data in group_data]
@@ -93,9 +74,9 @@ def get_base_port_from_config(config: Dict | None) -> int:
 
 
 def get_own_ip_from_config(config: Dict) -> Optional[str]:
-    group_data = get_current_group(config)
+    current_nodes = get_current_nodes(config)
     own_id = config['skaleConfig']['nodeInfo']['nodeID']
-    for node_data in group_data:
+    for node_data in current_nodes:
         if node_data['nodeID'] == own_id:
             return node_data['ip']
     return None

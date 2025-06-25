@@ -17,27 +17,29 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import socket
+
 import logging
+import socket
+import time
 from dataclasses import dataclass
 from typing import Dict
 
 from skale import MirageManager
+from skale.types.node import MirageNode, NodeId, NodeWithSchains
+from skale.types.node import Node as SkaleNode
 from skale.types.rotation import NodesGroup, Rotation
-from skale.types.node import Node as SkaleNode, NodeWithSchains, MirageNode, NodeId
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.config.base import MirageConfig, SChainBaseConfig
-from core.config.mirage.schain_info import MirageChainInfo
-from core.config.mirage.node_info import MirageCurrentNodeInfo, generate_mirage_current_node_info
 from core.config.mirage.committee import CommitteeInfoFromManager, generate_committee_info
+from core.config.mirage.node_info import MirageCurrentNodeInfo, generate_mirage_current_node_info
+from core.config.mirage.schain_info import MirageChainInfo
 from core.config.precompiled import get_precompiled_contracts_mirage
 from core.config.schain.static_params import (
-    get_static_schain_info_mirage,
+    get_static_chain_id_mirage,
     get_static_node_info_mirage,
+    get_static_schain_info_mirage,
 )
-from core.config.schain.static_params import get_static_chain_id_mirage
-
 from tools.configs.schains import MIRAGE_BASE_SCHAIN_CONFIG_FILEPATH
 
 logger = logging.getLogger(__name__)
@@ -71,9 +73,14 @@ def generate_mirage_config_with_manager(
     node_groups = {}
     common_bls_public_keys = []
 
+    ts = int(time.time())
+    committee_info_from_manager: CommitteeInfoFromManager = {
+        0: {'ts': ts - 1, 'group': committee_nodes},
+        1: {'ts': ts, 'group': committee_nodes},
+    }
     return generate_mirage_config(
         node=node,
-        committee_nodes=committee_nodes,
+        committee_info_from_manager=committee_info_from_manager,
         node_groups=node_groups,
         group_index=group_index,
         ecdsa_key_name=ecdsa_key_name,
@@ -114,7 +121,6 @@ def generate_mirage_config_adapter(
         skale_node_to_mirage_node_adapter(schain_node, schain_node['id'])
         for schain_node in schain_nodes_with_schains
     ]
-    import time
 
     ts = int(time.time())
     committee_info_from_manager: CommitteeInfoFromManager = {

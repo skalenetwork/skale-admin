@@ -23,31 +23,27 @@ from typing import Optional
 
 from core.chain.containers import monitor_skaled_container
 from core.chain.runner import is_container_exists
+from core.chain.volume import init_mirage_volume
+from core.checks.mirage import SkaledChecks
+from core.config.mirage import get_node_ips_from_config
+from core.config.schain.helper import (
+    get_base_port_from_config,
+    get_own_ip_from_config,
+)
+from core.firewall.types import IRuleController
 from core.monitor.action_base import (
     CONTAINER_POST_RUN_DELAY,
     BaseActionManager,
     BaseSkaledActionManager,
 )
 from core.node_config import NodeConfig
-from core.checks.mirage import SkaledChecks
-
-from core.firewall.types import IRuleController
-from core.chain.volume import init_mirage_volume
 from core.schains.cleaner import remove_skaled_container
-
-from core.config.schain.helper import (
-    get_base_port_from_config,
-    get_node_ips_from_config,
-    get_own_ip_from_config,
-)
-
 from core.types.chain import MirageChainName
 from tools.configs import SYNC_NODE
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import no_hyphens
 from tools.node_options import NodeOptions
-
 
 logger = logging.getLogger(__name__)
 

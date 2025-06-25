@@ -22,12 +22,11 @@ from typing import Dict, TypedDict
 
 from skale.types.node import MirageNode
 
-from core.config.schain.static_params import get_static_chain_name_mirage
 from core.config.mirage.mirage_chain_node import MirageChainNodeInfo, generate_mirage_chain_nodes
+from core.config.schain.static_params import get_mirage_chain_name
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
+from tools.configs import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
 from tools.helper import read_json
-
 
 CommitteeInfoFromManager = Dict[
     int, TypedDict('CommitteeGroupForTs', {'ts': int, 'group': list[MirageNode]})
@@ -76,7 +75,7 @@ class CommitteeInfo:
 
 def generate_committee_bls_key(committee_index: int) -> BlsKey:
     secret_key_share_filepath = get_secret_key_share_filepath(
-        get_static_chain_name_mirage(), committee_index
+        get_mirage_chain_name(), committee_index
     )
     secret_key_share_config = read_json(secret_key_share_filepath)
 
