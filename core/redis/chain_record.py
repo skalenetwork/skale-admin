@@ -27,7 +27,7 @@ from core.schains.dkg.structures import DKGStatus
 logger = logging.getLogger(__name__)
 
 
-CHAIN_RECORD_FIELDS: dict[str, FieldInfo] = {
+RECORD_FIELDS: dict[str, FieldInfo] = {
     'name': FieldInfo('name', str, None),
     'config_version': FieldInfo('config_version', str, '0.0.0'),
     'sync_config_run': FieldInfo('sync_config_run', bool, False),
@@ -46,7 +46,7 @@ CHAIN_RECORD_FIELDS: dict[str, FieldInfo] = {
 
 class ChainRecord(FlatRedisRecord):
     def _record_fields(self) -> dict[str, FieldInfo]:
-        return CHAIN_RECORD_FIELDS
+        return RECORD_FIELDS
 
     @property
     def config_version(self) -> str:

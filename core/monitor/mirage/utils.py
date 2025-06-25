@@ -31,14 +31,22 @@ from tools.wallet_utils import init_wallet
 logger = logging.getLogger(__name__)
 
 
-def get_mirage_endpoints() -> list[str]:
-    endpoints = [boot_endpoint()]
+def get_local_skaled_endpoint_mirage() -> str | None:
     chain_name = get_mirage_chain_name()
     cfm = ConfigFileManager(chain_name=chain_name)
     if cfm.skaled_config:
-        logger.info(f'Found skaled config for {chain_name}, adding local endpoint')
         local_endpoint = get_local_chain_http_endpoint_from_config(cfm.skaled_config)
+        logger.info(f'Found local skaled endpoint: {local_endpoint}')
+        return local_endpoint
+    return None
+
+
+def get_mirage_endpoints() -> list[str]:
+    endpoints = [boot_endpoint()]
+    local_endpoint = get_local_skaled_endpoint_mirage()
+    if local_endpoint:
         endpoints.insert(0, local_endpoint)
+    logger.info(f'Using endpoints for Mirage: {endpoints}')
     return endpoints
 
 

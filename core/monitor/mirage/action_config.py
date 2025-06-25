@@ -23,6 +23,7 @@ from skale import MirageManager
 
 from core.config.mirage.generator import generate_mirage_config_with_manager
 from core.monitor.action_base import BaseActionManager
+from core.monitor.mirage.utils import get_local_skaled_endpoint_mirage
 from core.node_config import NodeConfig
 from core.checks.mirage import MirageConfigChecks
 from core.redis.chain_record import ChainRecord
@@ -31,6 +32,7 @@ from core.config.schain.directory import init_schain_config_dir
 from core.config.schain.main import update_schain_config_version
 from core.config.schain.file_manager import ConfigFileManager
 
+from core.redis.node_config_mirage import NodeConfigMirage
 from core.types.chain import MirageChainName
 from tools.configs import SYNC_NODE
 from tools.helper import no_hyphens
@@ -144,8 +146,17 @@ class MirageConfigActionManager(BaseActionManager):
             else:
                 logger.info('Generated config is the same as latest upstream')
 
+            self.update_local_skaled_endpoint()
             update_schain_config_version(self.name, chain_record=self.chain_record)
             return result
+
+    def update_local_skaled_endpoint(self) -> None:
+        local_endpoint = get_local_skaled_endpoint_mirage()
+        if local_endpoint:
+            node_config_mirage = NodeConfigMirage()
+            node_config_mirage.set_local_endpoint(local_endpoint)
+        else:
+            logger.info('Local skaled endpoint is not set, skipping node_config_mirage update')
 
     @BaseActionManager.monitor_block
     def reset_config_record(self) -> bool:
