@@ -27,7 +27,6 @@ from skale.types.rotation import NodesGroup, Rotation
 from skale.types.node import Node as SkaleNode, NodeWithSchains, MirageNode, NodeId
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
-from core.checks.mirage import cast_manager_to_mirage_node_id
 from core.config.base import MirageConfig, SChainBaseConfig
 from core.config.mirage.schain_info import MirageChainInfo
 from core.config.mirage.node_info import MirageCurrentNodeInfo, generate_mirage_current_node_info
@@ -40,6 +39,7 @@ from core.config.schain.static_params import (
 from core.config.schain.static_params import get_static_chain_id_mirage
 
 from tools.configs.schains import MIRAGE_BASE_SCHAIN_CONFIG_FILEPATH
+from tools.helper import cast_manager_to_mirage_node_id
 
 logger = logging.getLogger(__name__)
 
