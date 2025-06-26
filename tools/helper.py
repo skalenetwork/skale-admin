@@ -25,12 +25,14 @@ import psutil
 import subprocess
 import time
 from subprocess import PIPE
+from typing import cast
 
 import requests
 import yaml
 from filelock import FileLock
 from jinja2 import Environment
 from skale import SkaleManager, MirageManager
+from skale.types.node import NodeId
 from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
@@ -200,3 +202,7 @@ def no_hyphens(name: str) -> str:
 
 def is_mirage() -> bool:
     return SKALE_NETWORK_TYPE == 'mirage'
+
+
+def cast_manager_to_mirage_node_id(manager_node_id: int) -> NodeId:
+    return cast(NodeId, manager_node_id + 1)
