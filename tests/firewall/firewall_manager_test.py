@@ -1,6 +1,6 @@
 import mock
 
-from core.firewall.types import SChainRule
+from core.firewall import SChainRule
 
 from tests.utils import SChainTestFirewallManager
 

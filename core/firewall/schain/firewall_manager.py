@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2025-Present SKALE Labs
+#   Copyright (C) 2025 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,12 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from ..base.firewall_manager import NFTChainFirewallManager
+from ..base.nftables import NFTablesController
 
-def _get_chain_rpc_ports_from_config(config: dict) -> tuple[int, int]:
-    node_info = config['skaleConfig']['nodeInfo']
-    return int(node_info['httpRpcPort']), int(node_info['wsRpcPort'])
-
-
-def get_local_chain_http_endpoint_from_config(config: dict) -> str:
-    http_port, _ = _get_chain_rpc_ports_from_config(config)
-    return f'http://127.0.0.1:{http_port}'
+class NFTSkaleChainFirewallManager(NFTChainFirewallManager):
+    def create_host_controller(self) -> NFTablesController:
+        nc_controller = NFTablesController(chain=self.group, prefix='skale')
+        nc_controller.create_table()
+        nc_controller.create_chain(self.first_port, self.last_port)
+        return nc_controller

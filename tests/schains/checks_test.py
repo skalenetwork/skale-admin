@@ -165,7 +165,7 @@ def test_volume_check(schain_checks, sample_false_checks, dutils):
 
 
 def test_firewall_rules_check(schain_checks, rules_unsynced_checks):
-    schain_checks.rc.sync()
+    schain_checks.rule_controller.sync()
     res = schain_checks.firewall_rules
     print(res.data)
     assert schain_checks.firewall_rules

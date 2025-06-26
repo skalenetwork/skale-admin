@@ -66,7 +66,7 @@ def generate_mirage_config_with_manager(
     archive: bool,
     catchup: bool,
 ) -> MirageConfig:
-    node = mirage.nodes.get(node_id)
+    node = mirage.nodes.get(node_id + 1)
 
     # todod: get info from mirage_manager
     committee_nodes = []

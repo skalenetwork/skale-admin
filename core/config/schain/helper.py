@@ -82,18 +82,6 @@ def get_own_ip_from_config(config: Dict) -> Optional[str]:
     return None
 
 
-def get_schain_ports_from_config(config: Dict):
-    if config is None:
-        return {}
-    node_info = config['skaleConfig']['nodeInfo']
-    return {
-        'http': int(node_info['httpRpcPort']),
-        'ws': int(node_info['wsRpcPort']),
-        'https': int(node_info['httpsRpcPort']),
-        'wss': int(node_info['wssRpcPort']),
-    }
-
-
 def get_schain_env(ulimit_check=True):
     env = {'SEGFAULT_SIGNALS': 'all'}
     if not ulimit_check:

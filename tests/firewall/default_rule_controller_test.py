@@ -5,9 +5,13 @@ import pytest
 
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
-from core.firewall import NFTablesController
-from core.firewall.utils import get_default_rule_controller
-from core.firewall.types import Action, IpRange, SkaledPorts
+from core.firewall import (
+    Action,
+    get_default_rule_controller,
+    IpRange,
+    NFTablesController,
+    SkaledPorts,
+)
 
 from tools.helper import run_cmd
 

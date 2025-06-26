@@ -54,7 +54,6 @@ DOCKER_DEFAULT_STOP_TIMEOUT = 20
 SCHAIN_STOP_TIMEOUT = int(os.getenv('SCHAIN_STOP_TIMEOUT', 300))
 
 DEFAULT_DOCKER_HOST = 'unix:///var/run/skale/docker.sock'
-# DEFAULT_DOCKER_HOST = 'unix:///var/run/docker.sock'
 
 MAX_SKALED_RESTART_COUNT = int(os.getenv('MAX_SKALED_RESTART_COUNT', 5))
 

@@ -20,10 +20,10 @@
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from functools import total_ordering
-from typing import Any, Iterable, List, Optional
 from dataclasses import dataclass
-
+from typing import Iterable, Optional
 from collections import namedtuple
+
 from skale.dataclasses.skaled_ports import SkaledPorts  # noqa
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
@@ -37,12 +37,16 @@ class Action(IntEnum):
     ACCEPT = 1
 
 
+class SChainRuleError(Exception):
+    pass
+
+
 @total_ordering
-@dataclass
+@dataclass(kw_only=True)
 class SChainRule:
+    first_port: int
+    last_port: int = -1
     name: Optional[str] = None
-    first_port: Optional[int] = None
-    last_port: Optional[int] = None
     first_ip: Optional[str] = None
     last_ip: Optional[str] = None
     action: Action = Action.ACCEPT
@@ -51,7 +55,7 @@ class SChainRule:
     def __post_init__(self):
         if self.first_ip is not None and self.last_ip is None:
             self.last_ip = self.first_ip
-        if self.first_port is not None and self.last_port is None:
+        if self.first_port is not None and self.last_port == -1:
             self.last_port = self.first_port
         if all(
             val is None
@@ -63,7 +67,7 @@ class SChainRule:
                 self.interface_exception,
             )
         ):
-            raise ValueError('Rule has no meaningful fields')
+            raise SChainRuleError('Rule has no meaningful fields')
 
     @classmethod
     def _to_tuple(cls, rule) -> tuple:
@@ -197,17 +201,6 @@ class IFirewallManager(ABC):
 
 class IRuleController(ABC):
     @abstractmethod
-    def configure(  # pragma : no cover
-        self,
-        base_port: Optional[int] = None,
-        own_ip: Optional[str] = None,
-        node_ips: Optional[List[str]] = None,
-        sync_ip_ranges: Optional[List[IpRange]] = None,
-        port_allocation: Any = SkaledPorts,
-    ) -> None:
-        pass
-
-    @abstractmethod
     def is_configured(self) -> bool:  # pragma: no cover
         pass
 
@@ -232,5 +225,5 @@ class IRuleController(ABC):
         pass
 
     @abstractmethod
-    def expected_rules(self) -> list:  # pragma: no cover
+    def expected_rules(self) -> Iterable:  # pragma: no cover
         pass
