@@ -27,6 +27,7 @@ from skale.types.rotation import NodesGroup, Rotation
 from skale.types.node import Node as SkaleNode, NodeWithSchains, MirageNode, NodeId
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
+from core.checks.mirage import cast_manager_to_mirage_node_id
 from core.config.base import MirageConfig, SChainBaseConfig
 from core.config.mirage.schain_info import MirageChainInfo
 from core.config.mirage.node_info import MirageCurrentNodeInfo, generate_mirage_current_node_info
@@ -64,7 +65,7 @@ def generate_mirage_config_with_manager(
     archive: bool,
     catchup: bool,
 ) -> MirageConfig:
-    node = mirage.nodes.get(node_id + 1)
+    node = mirage.nodes.get(cast_manager_to_mirage_node_id(node_id))
 
     # todod: get info from mirage_manager
     committee_nodes = []
