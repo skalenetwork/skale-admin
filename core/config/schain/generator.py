@@ -20,39 +20,34 @@
 import logging
 from typing import Dict
 
-from web3 import Web3
 from eth_typing import ChecksumAddress
-
 from etherbase_predeployed.address import ETHERBASE_ADDRESS
 from marionette_predeployed.address import MARIONETTE_ADDRESS
-from skale import SkaleManager, SkaleIma
+from skale import SkaleIma, SkaleManager
 from skale.contracts.manager.schains import SchainStructure
 from skale.schain_config.generator import get_schain_nodes_with_schains
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.schain_config.rotation_history import get_previous_schain_groups
+from skale.types.node import NodeId
 from skale.types.rotation import Rotation
 from skale.types.schain import SchainName
-from skale.types.node import NodeId
-
 from skale_contracts.projects.ima import MainnetImaContract
+from web3 import Web3
 
-from core.node_config import NodeConfig
-from core.config.schain.skale_section import generate_skale_section
-from core.config.schain.predeployed import generate_predeployed_accounts
+from core.config.base import MirageConfig, SChainBaseConfig, SChainConfig
+from core.config.mirage.generator import generate_mirage_config_adapter
 from core.config.precompiled import generate_precompiled_accounts
 from core.config.schain.generation import Gen
-from core.config.schain.legacy_data import is_static_accounts, static_accounts, static_groups
 from core.config.schain.helper import get_chain_id, get_schain_id
+from core.config.schain.legacy_data import is_static_accounts, static_accounts, static_groups
+from core.config.schain.predeployed import generate_predeployed_accounts
+from core.config.schain.skale_section import generate_skale_section
+from core.node_config import NodeConfig
 from core.schains.dkg.utils import get_common_bls_public_key
 from core.schains.limits import get_schain_type
-from core.config.base import SChainConfig, MirageConfig, SChainBaseConfig
-
-from core.config.mirage.generator import generate_mirage_config_adapter
-
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
-from tools.helper import is_mirage, is_zero_address, is_address_contract
+from tools.helper import is_address_contract, is_mirage, is_zero_address
 from tools.node_options import NodeOptions
-
 
 logger = logging.getLogger(__name__)
 

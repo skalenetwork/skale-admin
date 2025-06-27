@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from typing import Dict
 
 from skale import MirageManager
+from skale.mirage_config.committee_history import get_node_groups
 from skale.types.node import MirageNode, NodeId, NodeWithSchains
 from skale.types.node import Node as SkaleNode
 from skale.types.rotation import NodesGroup, Rotation
@@ -69,14 +70,15 @@ def generate_mirage_config_with_manager(
     node = mirage.nodes.get(node_id + 1)
 
     # todod: get info from mirage_manager
-    committee_nodes = []
-    node_groups = {}
+    committee_nodes_in_scope = get_nodes_from_two_last_committee(mirage)
+    node_groups = get_node_groups(mirage=mirage)
+    logger.info('HERES NODE GROUPS %s', node_groups)
     common_bls_public_keys = []
 
     ts = int(time.time())
     committee_info_from_manager: CommitteeInfoFromManager = {
-        0: {'ts': ts - 1, 'group': committee_nodes},
-        1: {'ts': ts, 'group': committee_nodes},
+        0: {'ts': ts - 1, 'group': []},
+        1: {'ts': ts, 'group': []},
     }
     return generate_mirage_config(
         node=node,
