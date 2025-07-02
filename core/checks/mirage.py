@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 def get_base_port_from_mirage_manager(mirage: MirageManager, node_config: NodeConfig) -> int:
     # todod: Should be changed after corresponding changes are made in mirage manager.
-    return mirage.nodes.get(cast(NodeId, node_config.id + 1)).port
+    return mirage.nodes.get(cast(NodeId, node_config.id)).port
 
 
 class MirageConfigChecks(IChecks):
@@ -70,8 +70,9 @@ class MirageConfigChecks(IChecks):
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=chain_name)
         self.statsd_client = get_statsd_client()
 
-        self.rule_controller: MirageNetworkScopeRuleController = \
+        self.rule_controller: MirageNetworkScopeRuleController = (
             get_mirage_network_scope_rule_controller()
+        )
 
     def get_name(self) -> str:
         return self.name

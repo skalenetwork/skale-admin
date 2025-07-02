@@ -1,29 +1,25 @@
-import pytest
-import mock
-import os
-import json
 import contextlib
+import json
+import os
 from pathlib import Path
 from typing import Dict, cast
 
-from eth_typing import BlockNumber, HexStr, ChecksumAddress
+import mock
+import pytest
+from eth_typing import BlockNumber, ChecksumAddress, HexStr
+from skale.contracts.manager.schains import SchainStructure
+from skale.types.node import MirageNode, Node, NodeId, NodeStatus, NodeWithSchains, Port
+from skale.types.rotation import NodesGroup, NodesSwap, Rotation, RotationNodeData
+from skale.types.validator import ValidatorId
 
+from core.config.base import MirageConfig
 from core.config.mirage.committee import CommitteeInfoFromManager
 from core.config.mirage.generator import generate_mirage_config, generate_mirage_config_adapter
-from core.config.base import MirageConfig
 from core.config.schain.helper import get_static_params_mirage as original_get_static_params_mirage
-
-from skale.types.rotation import Rotation, NodesGroup, RotationNodeData, NodesSwap
-from skale.types.node import Node, NodeId, NodeStatus, Port, MirageNode, NodeWithSchains
-from skale.types.validator import ValidatorId
-from skale.contracts.manager.schains import SchainStructure
-
+from tests.utils import CURRENT_TS
+from tools.configs import MIRAGE_STATIC_PARAMS_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ZERO_ADDRESS
-from tools.configs import MIRAGE_STATIC_PARAMS_FILEPATH
-
-from tests.utils import CURRENT_TS
-
 
 MIRAGE_TEST_SECRET_KEY = {
     'key_share_name': 'BLS_KEY:SCHAIN_ID:MIRAGE:NODE_ID:0:DKG_ID:0',
@@ -34,13 +30,15 @@ MIRAGE_TEST_SECRET_KEY = {
     'bls_public_keys': ['0xNodeA:1:2:3', '0xNodeB:4:5:6'],
 }
 
+
 @pytest.fixture
 def committee_info_from_mirage_manager(mirage_node):
     committee_info_from_manager: CommitteeInfoFromManager = {
-        0: {'ts': CURRENT_TS - 1, 'group': [mirage_node, mirage_node]},
+        0: {'ts': 0, 'group': [mirage_node, mirage_node]},
         1: {'ts': CURRENT_TS, 'group': [mirage_node, mirage_node]},
     }
     return committee_info_from_manager
+
 
 @contextlib.contextmanager
 def create_dynamic_secret_key_file(chain_name_for_path: str):
@@ -186,6 +184,7 @@ def test_generate_mirage_config_adapter(mirage_default_secret_key_file, node_gro
     config = generate_mirage_config_adapter(
         skale_node=node,
         node_id=node_id,
+        schain_start_ts=CURRENT_TS,
         schain_nodes_with_schains=cast(list[NodeWithSchains], schain_nodes_with_schains),
         node_groups=node_groups,
         rotation_data=mock_rotation,
@@ -202,10 +201,7 @@ def test_generate_mirage_config_adapter(mirage_default_secret_key_file, node_gro
 
 
 def test_generate_mirage_config_minimal_regular(
-    mirage_default_secret_key_file,
-    mirage_node,
-    node_groups,
-    committee_info_from_mirage_manager
+    mirage_default_secret_key_file, mirage_node, node_groups, committee_info_from_mirage_manager
 ):
     mock_rotation = mock.MagicMock(spec=Rotation)
     mock_rotation.rotation_counter = 0
@@ -248,10 +244,7 @@ def test_generate_mirage_config_minimal_regular(
 
 
 def test_generate_mirage_config_minimal_sync(
-    committee_info_from_mirage_manager,
-    mirage_default_secret_key_file,
-    mirage_node,
-    node_groups
+    committee_info_from_mirage_manager, mirage_default_secret_key_file, mirage_node, node_groups
 ):
     mock_rotation = mock.MagicMock(spec=Rotation)
     mock_rotation.rotation_counter = 0

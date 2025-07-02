@@ -20,12 +20,11 @@
 
 import logging
 import socket
-import time
 from dataclasses import dataclass
 from typing import Dict
 
 from skale import MirageManager
-from skale.mirage_config.committee_history import get_node_groups
+from skale.mirage_config import generate_committee_history, get_nodes_from_last_two_committees
 from skale.types.node import MirageNode, NodeId, NodeWithSchains
 from skale.types.node import Node as SkaleNode
 from skale.types.rotation import NodesGroup, Rotation
@@ -67,19 +66,14 @@ def generate_mirage_config_with_manager(
     archive: bool,
     catchup: bool,
 ) -> MirageConfig:
-    node = mirage.nodes.get(node_id + 1)
+    node = mirage.nodes.get(node_id)
 
     # todod: get info from mirage_manager
-    committee_nodes_in_scope = get_nodes_from_two_last_committee(mirage)
-    node_groups = get_node_groups(mirage=mirage)
-    logger.info('HERES NODE GROUPS %s', node_groups)
+    committee_nodes_in_scope = get_nodes_from_last_two_committees(mirage)
+    node_groups = generate_committee_history(mirage=mirage)
     common_bls_public_keys = []
 
-    ts = int(time.time())
-    committee_info_from_manager: CommitteeInfoFromManager = {
-        0: {'ts': ts - 1, 'group': []},
-        1: {'ts': ts, 'group': []},
-    }
+    committee_info_from_manager: CommitteeInfoFromManager = committee_nodes_in_scope
     return generate_mirage_config(
         node=node,
         committee_info_from_manager=committee_info_from_manager,
@@ -109,6 +103,7 @@ def skale_node_to_mirage_node_adapter(skale_node: SkaleNode, node_id: NodeId) ->
 def generate_mirage_config_adapter(
     skale_node: SkaleNode,
     node_id: NodeId,
+    schain_start_ts: int,
     schain_nodes_with_schains: list[NodeWithSchains],
     node_groups: Dict[int, NodesGroup],
     rotation_data: Rotation,
@@ -124,10 +119,9 @@ def generate_mirage_config_adapter(
         for schain_node in schain_nodes_with_schains
     ]
 
-    ts = int(time.time())
     committee_info_from_manager: CommitteeInfoFromManager = {
-        0: {'ts': ts - 1, 'group': committee_nodes},
-        1: {'ts': ts, 'group': committee_nodes},
+        0: {'ts': 0, 'group': committee_nodes},
+        1: {'ts': schain_start_ts, 'group': committee_nodes},
     }
     return generate_mirage_config(
         node=node,

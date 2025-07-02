@@ -254,6 +254,7 @@ def generate_schain_config_with_skale(
         return generate_mirage_config_adapter(
             skale_node=node,
             node_id=NodeId(node_config.id),
+            schain_start_ts=schain.start_date,
             rotation_data=rotation_data,
             ecdsa_key_name=ecdsa_key_name,
             schain_nodes_with_schains=schain_nodes_with_schains,
