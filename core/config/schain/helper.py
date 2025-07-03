@@ -18,17 +18,14 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from Crypto.Hash import keccak
 from web3 import Web3
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
-
-from tools.helper import read_json
-from tools.configs import STATIC_PARAMS_FILEPATH, MIRAGE_STATIC_PARAMS_FILEPATH, ENV_TYPE
-from tools.helper import safe_load_yml
-
+from tools.configs import ENV_TYPE, MIRAGE_STATIC_PARAMS_FILEPATH, STATIC_PARAMS_FILEPATH
+from tools.helper import read_json, safe_load_yml
 
 logger = logging.getLogger(__name__)
 
@@ -59,18 +56,16 @@ def get_schain_id(schain_name: str) -> int:
     return int(get_chain_id(schain_name), 16)
 
 
-def get_node_ips_from_config(config: Dict) -> List[str]:
+def get_node_ips_from_config(config: Dict | None) -> List[str]:
     if config is None:
         return []
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
     return [node_data['ip'] for node_data in schain_nodes_config]
 
 
-def get_base_port_from_config(config: Dict) -> int:
-    return config['skaleConfig']['nodeInfo']['basePort']
-
-
-def get_own_ip_from_config(config: Dict) -> Optional[str]:
+def get_own_ip_from_config(config: Dict | None) -> Optional[str]:
+    if config is None:
+        return None
     schain_nodes_config = config['skaleConfig']['sChain']['nodes']
     own_id = config['skaleConfig']['nodeInfo']['nodeID']
     for node_data in schain_nodes_config:
@@ -79,38 +74,11 @@ def get_own_ip_from_config(config: Dict) -> Optional[str]:
     return None
 
 
-def get_schain_ports_from_config(config: Dict):
-    if config is None:
-        return {}
-    node_info = config['skaleConfig']['nodeInfo']
-    return {
-        'http': int(node_info['httpRpcPort']),
-        'ws': int(node_info['wsRpcPort']),
-        'https': int(node_info['httpsRpcPort']),
-        'wss': int(node_info['wssRpcPort']),
-    }
-
-
 def get_schain_env(ulimit_check=True):
     env = {'SEGFAULT_SIGNALS': 'all'}
     if not ulimit_check:
         env.update({'NO_ULIMIT_CHECK': 1})
     return env
-
-
-def get_schain_rpc_ports_from_config(config: Dict) -> Tuple[int, int]:
-    node_info = config['skaleConfig']['nodeInfo']
-    return int(node_info['httpRpcPort']), int(node_info['wsRpcPort'])
-
-
-def get_local_schain_http_endpoint_from_config(config: Dict) -> str:
-    http_port, _ = get_schain_rpc_ports_from_config(config)
-    return f'http://127.0.0.1:{http_port}'
-
-
-def get_schain_ssl_rpc_ports_from_config(config: Dict) -> Tuple[int, int]:
-    node_info = config['skaleConfig']['nodeInfo']
-    return int(node_info['httpsRpcPort']), int(node_info['wssRpcPort'])
 
 
 def parse_public_key_info(bls_public_key):

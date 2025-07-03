@@ -51,7 +51,7 @@ def update_unsafe_for_schains(skale: SkaleManager, dutils: DockerUtils) -> list[
     schains_on_node = get_schains_on_node(dutils=dutils)
     unsafe_chains = []
     for schain_name in schains_on_node:
-        cfm = ConfigFileManager(schain_name=schain_name)
+        cfm = ConfigFileManager(chain_name=schain_name)
         if skale.node_rotation.is_rotation_active(schain_name):
             logger.info('Rotation is in progress for %s', schain_name)
             unsafe_chains.append(schain_name)

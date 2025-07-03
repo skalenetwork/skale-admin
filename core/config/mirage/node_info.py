@@ -24,7 +24,7 @@ from skale.types.node import NodeId, Port
 from skale.dataclasses.node_info import NodeInfo
 
 from core.schains.dkg.utils import get_secret_key_share_filepath
-from core.config.schain.static_params import get_static_chain_name_mirage
+from core.config.schain.static_params import get_mirage_chain_name
 
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
 from tools.helper import read_json
@@ -113,7 +113,7 @@ def generate_mirage_wallets_config(
 
     if not sync_node:
         secret_key_share_filepath = get_secret_key_share_filepath(
-            get_static_chain_name_mirage(), group_index
+            get_mirage_chain_name(), group_index
         )
         secret_key_share_config = read_json(secret_key_share_filepath)
 

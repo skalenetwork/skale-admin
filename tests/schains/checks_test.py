@@ -12,14 +12,14 @@ import pytest
 from skale.schain_config.generator import get_schain_nodes_with_schains
 
 
-from core.schains.checks import SChainChecks, CheckRes
+from core.checks.schain import SChainChecks, CheckRes
 from core.config.schain.file_manager import UpstreamConfigFilename
 from core.config.schain.directory import get_schain_check_filepath, schain_config_dir
 from core.config.schain.schain_node import generate_schain_nodes
-from core.schains.runner import get_container_info, get_image_name, run_ima_container
-from core.schains.skaled_exit_codes import SkaledExitCodes
+from core.chain.runner import get_container_info, get_image_name, run_ima_container
+from core.chain.skaled_exit_codes import SkaledExitCodes
 
-from tools.configs.containers import IMA_CONTAINER, SCHAIN_CONTAINER
+from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.helper import read_json
 
 from web.models.schain import upsert_schain_record, SChainRecord
@@ -34,7 +34,7 @@ from tests.utils import (
 
 
 NOT_EXISTS_SCHAIN_NAME = 'qwerty123'
-SCHAIN_CONTAINER_NAME = 'skale_schain_test'
+SKALED_CONTAINER_NAME = 'skale_schain_test'
 TEST_NODE_ID = 0
 REMOVING_CONTAINER_WAITING_INTERVAL = 2
 
@@ -165,7 +165,7 @@ def test_volume_check(schain_checks, sample_false_checks, dutils):
 
 
 def test_firewall_rules_check(schain_checks, rules_unsynced_checks):
-    schain_checks.rc.sync()
+    schain_checks.rule_controller.sync()
     res = schain_checks.firewall_rules
     print(res.data)
     assert schain_checks.firewall_rules
@@ -173,24 +173,24 @@ def test_firewall_rules_check(schain_checks, rules_unsynced_checks):
 
 
 def test_container_check(schain_checks, sample_false_checks):
-    with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
+    with mock.patch('core.checks.schain.DockerUtils.get_info', return_value=CONTAINER_INFO_OK):
         assert schain_checks.skaled_container.status
-    with mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_ERROR):
+    with mock.patch('core.checks.schain.DockerUtils.get_info', return_value=CONTAINER_INFO_ERROR):
         assert not sample_false_checks.skaled_container.status
 
 
 def test_exit_code_ok_check(schain_checks, sample_false_checks):
     with (
-        mock.patch('core.schains.checks.DockerUtils.container_exit_code', return_value=0),
-        mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK),
+        mock.patch('core.checks.schain.DockerUtils.container_exit_code', return_value=0),
+        mock.patch('core.checks.schain.DockerUtils.get_info', return_value=CONTAINER_INFO_OK),
     ):
         assert schain_checks.exit_code_ok.status
     with (
         mock.patch(
-            'core.schains.checks.DockerUtils.container_exit_code',
+            'core.checks.schain.DockerUtils.container_exit_code',
             return_value=SkaledExitCodes.EC_STATE_ROOT_MISMATCH,
         ),
-        mock.patch('core.schains.checks.DockerUtils.get_info', return_value=CONTAINER_INFO_OK),
+        mock.patch('core.checks.schain.DockerUtils.get_info', return_value=CONTAINER_INFO_OK),
     ):
         assert not sample_false_checks.exit_code_ok.status
 
@@ -209,7 +209,7 @@ def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
 
     # assert not schain_checks.ima_container.status
 
-    # with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
+    # with mock.patch('core.checks.schain.get_ima_migration_ts', return_value=mts):
     #     run_ima_container(schain, mainnet_chain_id=1,
     #                       image=image, dutils=dutils)
 
@@ -222,7 +222,7 @@ def test_ima_container_check(schain_checks, cleanup_ima_containers, dutils):
     # remove_ima_container(name, dutils)
 
     mts = ts - 3600
-    with mock.patch('core.schains.checks.get_ima_migration_ts', return_value=mts):
+    with mock.patch('core.checks.schain.get_ima_migration_ts', return_value=mts):
         assert not schain_checks.ima_container.status
         image = get_image_name(image_type=IMA_CONTAINER, new=True)
         run_ima_container(schain, mainnet_chain_id=1, time_frame=900, image=image, dutils=dutils)
@@ -289,7 +289,7 @@ def test_init_checks(skale, schain_db, current_nodes, uninited_rule_controller, 
 
 def test_exit_code(skale, rule_controller, schain_db, current_nodes, estate, dutils):
     test_schain_name = schain_db
-    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, test_schain_name)
+    image_name, container_name, _, _ = get_container_info(SKALED_CONTAINER, test_schain_name)
 
     schain_record = SChainRecord.get_by_name(test_schain_name)
     dutils.safe_rm(container_name)

@@ -18,19 +18,19 @@ from core.schains.cleaner import (
     get_schains_on_node,
     remove_config_dir,
     remove_schain_volume,
-    remove_schain_container,
+    remove_skaled_container,
     remove_ima_container,
 )
 from core.config.schain.directory import init_schain_config_dir
-from core.schains.runner import get_container_name
-from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER
+from core.chain.runner import get_container_name
+from tools.configs.containers import SKALED_CONTAINER, IMA_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from web.models.schain import SChainRecord, mark_schain_deleted, upsert_schain_record
 
 
-from tests.utils import get_schain_struct, run_simple_schain_container, run_simple_ima_container
+from tests.utils import get_schain_struct, run_simple_skaled_container, run_simple_ima_container
 
-SCHAIN_CONTAINER_NAME_TEMPLATE = 'skale_schain_{}'
+SKALED_CONTAINER_NAME_TEMPLATE = 'skale_schain_{}'
 IMA_CONTAINER_NAME_TEMPLATE = 'skale_ima_{}'
 
 TEST_SCHAIN_NAME_1 = 'schain_cleaner_test1'
@@ -110,23 +110,21 @@ def test_remove_schain_volume(dutils, schain_config):
 def schain_container(schain_config, ssl_folder, dutils):
     """Creates and removes schain container"""
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
     try:
-        run_simple_schain_container(schain_data, dutils)
+        run_simple_skaled_container(schain_name, dutils)
         yield schain_name
     finally:
         schain_name = schain_config['skaleConfig']['sChain']['schainName']
-        dutils.safe_rm(get_container_name(SCHAIN_CONTAINER, schain_name), force=True)
+        dutils.safe_rm(get_container_name(SKALED_CONTAINER, schain_name), force=True)
         dutils.safe_rm(get_container_name(IMA_CONTAINER, schain_name), force=True)
 
 
-def test_remove_schain_container(dutils, schain_config, cleanup_container, cert_key_pair):
+def test_remove_skaled_container(dutils, schain_config, cleanup_container, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
-    run_simple_schain_container(schain_data, dutils)
-    container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
+    run_simple_skaled_container(schain_name, dutils)
+    container_name = SKALED_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert is_container_running(dutils, container_name)
-    remove_schain_container(schain_name, dutils=dutils)
+    remove_skaled_container(schain_name, dutils=dutils)
     assert not is_container_running(dutils, container_name)
 
 
@@ -134,7 +132,7 @@ def test_remove_schain_container(dutils, schain_config, cleanup_container, cert_
 def test_remove_ima_container(dutils, schain_container):
     schain_name = schain_container
     schain_data = get_schain_struct(schain_name)
-    with mock.patch('core.schains.runner.get_ima_env', return_value=ImaEnv(schain_dir='/')):
+    with mock.patch('core.chain.runner.get_ima_env', return_value=ImaEnv(schain_dir='/')):
         run_simple_ima_container(schain_data, dutils)
     container_name = IMA_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert dutils.is_container_found(container_name)
@@ -210,7 +208,7 @@ def test_get_schains_on_node(
 def test_remove_schain(cleanup_firewall_for_schain, skale, schain_db, node_config, dutils):
     schain_name = schain_db
     remove_schain(skale, node_config.id, schain_name, msg='Test remove_schain', dutils=dutils)
-    container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
+    container_name = SKALED_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert not is_container_running(dutils, container_name)
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
     assert not os.path.isdir(schain_dir_path)
@@ -243,7 +241,7 @@ def test_cleanup_schain(
         dutils=dutils,
     )
 
-    container_name = SCHAIN_CONTAINER_NAME_TEMPLATE.format(schain_name)
+    container_name = SKALED_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert not is_container_running(dutils, container_name)
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
     assert not os.path.isdir(schain_dir_path)

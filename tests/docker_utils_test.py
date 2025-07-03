@@ -1,24 +1,23 @@
 import os
 from functools import partial
 
-import docker
+from docker.errors import APIError
 import pytest
 from mock import Mock, MagicMock
 
 from types import SimpleNamespace
 
-from core.schains.runner import (
-    run_schain_container,
+from core.chain.runner import (
+    run_skaled_container,
     get_container_name,
     get_image_name,
     get_container_info,
 )
 from tests.utils import (
-    get_schain_struct,
-    run_simple_schain_container,
-    run_simple_schain_container_in_sync_mode,
+    run_simple_skaled_container,
+    run_simple_skaled_container_in_sync_mode,
 )
-from tools.configs.containers import SCHAIN_CONTAINER
+from tools.configs.containers import SKALED_CONTAINER
 from tools.configs import NODE_DATA_PATH
 from tools.docker_utils import DockerUtils
 
@@ -75,10 +74,10 @@ def cleanup_container(schain_config, dutils):
         yield
     finally:
         schain_name = schain_config['skaleConfig']['sChain']['schainName']
-        dutils.safe_rm(get_container_name(SCHAIN_CONTAINER, schain_name), force=True)
+        dutils.safe_rm(get_container_name(SKALED_CONTAINER, schain_name), force=True)
 
 
-def remove_schain_container(schain_name, client):
+def remove_skaled_container(schain_name, client):
     containers = client.get_all_schain_containers()
     if containers:
         name = containers[0].name
@@ -86,36 +85,35 @@ def remove_schain_container(schain_name, client):
     client.rm_vol(schain_name)
 
 
-@mock.patch('core.schains.runner.get_image_name', return_value='skaled-mock')
-def test_run_schain_container(
+@mock.patch('core.chain.runner.get_image_name', return_value='skaled-mock')
+def test_run_skaled_container(
     get_image, dutils, schain_config, cleanup_container, cert_key_pair, skaled_mock_image
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
     # Run schain container
-    run_simple_schain_container(schain_data, dutils)
+    run_simple_skaled_container(schain_name, dutils)
 
     # Perform container checks
     check_schain_container(schain_name, dutils)
 
 
-@mock.patch('core.schains.runner.get_container_name', return_value='skaled-mock')
-def test_run_schain_container_sync(
+@mock.patch('core.chain.runner.get_container_name', return_value='skaled-mock')
+def test_run_skaled_container_sync(
     mocked_dutils_run_container, schain_config, cleanup_container, cert_key_pair
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
 
-    run_schain_container(
-        schain_data,
-        dutils=mocked_dutils_run_container,
-    )
+    run_skaled_container(schain_name, dutils=mocked_dutils_run_container, part_of_node=16)
     assert '-historic' not in mocked_dutils_run_container.run_container.call_args[0][0]
     assert mocked_dutils_run_container.run_container.call_args[1].get('cpu_shares')
     assert mocked_dutils_run_container.run_container.call_args[1].get('mem_limit')
 
-    run_schain_container(
-        schain_data, dutils=mocked_dutils_run_container, sync_node=True, historic_state=True
+    run_skaled_container(
+        schain_name,
+        dutils=mocked_dutils_run_container,
+        sync_node=True,
+        historic_state=True,
+        part_of_node=16,
     )
     assert '-historic' in mocked_dutils_run_container.run_container.call_args[0][0]
     assert not mocked_dutils_run_container.run_container.call_args[1].get('cpu_shares')
@@ -123,21 +121,20 @@ def test_run_schain_container_sync(
 
 
 def test_get_image_name_sync():
-    image_name = get_image_name(image_type=SCHAIN_CONTAINER)
+    image_name = get_image_name(image_type=SKALED_CONTAINER)
     assert '-historic' not in image_name
 
-    image_name = get_image_name(image_type=SCHAIN_CONTAINER, historic_state=True)
+    image_name = get_image_name(image_type=SKALED_CONTAINER, historic_state=True)
     assert '-historic' in image_name
 
 
-@mock.patch('core.schains.runner.get_image_name', return_value='skaled-mock')
-def test_run_schain_container_in_sync_mode(
+@mock.patch('core.chain.runner.get_image_name', return_value='skaled-mock')
+def test_run_skaled_container_in_sync_mode(
     get_image, dutils, schain_config, cleanup_container, cert_key_pair, skaled_mock_image
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
     # Run schain container
-    run_simple_schain_container_in_sync_mode(schain_data, dutils)
+    run_simple_skaled_container_in_sync_mode(schain_name, dutils)
 
     # Perform container checks
     check_schain_container(schain_name, dutils)
@@ -158,9 +155,9 @@ def test_not_existed_docker_objects(dutils):
 
 def test_restart_all_schains(mocked_dutils):
     schain_names = ['test1', 'test2', 'test3']
-    schain_image = get_image_name(image_type=SCHAIN_CONTAINER)
+    schain_image = get_image_name(image_type=SKALED_CONTAINER)
     cont_names = [
-        get_container_name(image_type=SCHAIN_CONTAINER, schain_name=name) for name in schain_names
+        get_container_name(image_type=SKALED_CONTAINER, schain_name=name) for name in schain_names
     ]
     start_time = {}
 
@@ -206,7 +203,7 @@ def test_get_logs_backup_filepath(dutils):
 
 def run_test_schain_container(dutils):
     test_schain_name = 'test_container'
-    image_name, container_name, _, _ = get_container_info(SCHAIN_CONTAINER, test_schain_name)
+    image_name, container_name, _, _ = get_container_info(SKALED_CONTAINER, test_schain_name)
     container = dutils.safe_get_container(container_name)
     if container:
         container.remove(v=True, force=True)
@@ -226,7 +223,7 @@ def test_remove_volume(dutils):
     name = 'test'
     dutils.client.volumes.create(name=name)
     dutils.rm_vol(name)
-    with pytest.raises(docker.errors.APIError):
+    with pytest.raises(APIError):
         dutils.client.volumes.get(name)
 
 
@@ -234,9 +231,9 @@ def test_remove_volume_error(dutils):
     name = 'test'
     dutils.client.volumes.create(name=name)
     volume_mock = Mock()
-    volume_mock.remove = Mock(side_effect=docker.errors.APIError('test error'))
+    volume_mock.remove = Mock(side_effect=APIError('test error'))
     dutils.get_vol = Mock(return_value=volume_mock)
-    with pytest.raises(docker.errors.APIError):
+    with pytest.raises(APIError):
         dutils.rm_vol(name, retry_lvmpy_error=False)
 
 
@@ -258,16 +255,15 @@ def test_images(dutils):
         dutils.client.images.remove(f'{TEST_IMAGE}:3.17')
 
 
-@mock.patch('core.schains.runner.get_image_name', return_value='skaled-mock')
+@mock.patch('core.chain.runner.get_image_name', return_value='skaled-mock')
 def test_get_container_image_name(
     get_image, dutils, schain_config, cleanup_container, cert_key_pair, skaled_mock_image
 ):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    schain_data = get_schain_struct(schain_name)
     # Run schain container
-    run_simple_schain_container(schain_data, dutils)
+    run_simple_skaled_container(schain_name, dutils)
 
     # Get container image
-    container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    container_name = get_container_name(SKALED_CONTAINER, schain_name)
     image = dutils.get_container_image_name(container_name)
     assert image == 'skaled-mock'

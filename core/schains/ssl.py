@@ -21,6 +21,7 @@ import os
 import logging
 from datetime import datetime
 
+from core.redis.chain_record import ChainRecord
 from web.models.schain import SChainRecord
 from tools.configs import SSL_CERTIFICATES_FILEPATH, SSL_CERT_PATH
 
@@ -41,14 +42,14 @@ def get_ssl_filepath():
         )
 
 
-def get_ssl_files_change_date() -> datetime:
+def get_ssl_files_change_date() -> datetime | None:
     if is_ssl_folder_empty():
         return
     ssl_changed_ts = os.path.getmtime(SSL_CERT_PATH)
     return datetime.utcfromtimestamp(ssl_changed_ts)
 
 
-def update_ssl_change_date(schain_record: SChainRecord) -> bool:
+def update_ssl_change_date(schain_record: SChainRecord | ChainRecord) -> bool:
     ssl_files_change_date = get_ssl_files_change_date()
     if not ssl_files_change_date:
         logger.warning(

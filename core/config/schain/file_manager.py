@@ -104,10 +104,10 @@ class SkaledConfigFilename(IConfigFilename):
 class ConfigFileManager:
     CFM_LOCK: ClassVar[threading.RLock] = threading.RLock()
 
-    def __init__(self, schain_name: str) -> None:
-        self.schain_name: str = schain_name
-        self.dirname: str = os.path.join(SCHAINS_DIR_PATH, schain_name)
-        self.upstream_prefix = f'schain_{schain_name}_'
+    def __init__(self, chain_name: str) -> None:
+        self.chain_name: str = chain_name
+        self.dirname: str = os.path.join(SCHAINS_DIR_PATH, chain_name)
+        self.upstream_prefix = f'schain_{chain_name}_'
 
     def get_upstream_configs(self) -> List[UpstreamConfigFilename]:
         pattern = re.compile(rf'{self.upstream_prefix}\d+_\d+.json')
@@ -126,7 +126,7 @@ class ConfigFileManager:
 
     @property
     def skaled_config_path(self) -> str:
-        return SkaledConfigFilename(self.schain_name).abspath(self.dirname)
+        return SkaledConfigFilename(self.chain_name).abspath(self.dirname)
 
     def upstream_config_exists(self) -> bool:
         with ConfigFileManager.CFM_LOCK:
@@ -134,7 +134,7 @@ class ConfigFileManager:
             return path is not None and os.path.isfile(path)
 
     def skaled_config_exists(self) -> bool:
-        path = SkaledConfigFilename(self.schain_name).abspath(self.dirname)
+        path = SkaledConfigFilename(self.chain_name).abspath(self.dirname)
         with ConfigFileManager.CFM_LOCK:
             return os.path.isfile(path)
 
@@ -146,7 +146,7 @@ class ConfigFileManager:
             return read_json(self.latest_upstream_path)
 
     @property
-    def skaled_config(self):
+    def skaled_config(self) -> Dict | None:
         with ConfigFileManager.CFM_LOCK:
             if not self.skaled_config_exists():
                 return None
@@ -162,7 +162,7 @@ class ConfigFileManager:
 
     def get_new_upstream_filepath(self, rotation_id: int) -> str:
         ts = int(time.time())
-        filename = UpstreamConfigFilename(self.schain_name, rotation_id=rotation_id, ts=ts)
+        filename = UpstreamConfigFilename(self.chain_name, rotation_id=rotation_id, ts=ts)
         return filename.abspath(self.dirname)
 
     def save_new_upstream(self, rotation_id: int, config: Dict) -> None:
