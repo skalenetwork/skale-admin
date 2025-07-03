@@ -41,6 +41,7 @@ from core.config.schain.static_params import (
     get_static_schain_info_mirage,
 )
 from tools.configs.schains import MIRAGE_BASE_SCHAIN_CONFIG_FILEPATH
+from tools.helper import cast_manager_to_mirage_node_id
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ def generate_mirage_config_with_manager(
     archive: bool,
     catchup: bool,
 ) -> MirageConfig:
-    node = mirage.nodes.get(node_id)
+    node = mirage.nodes.get(cast_manager_to_mirage_node_id(node_id))
 
     # todod: get info from mirage_manager
     committee_nodes_in_scope = get_nodes_from_last_two_committees(mirage)

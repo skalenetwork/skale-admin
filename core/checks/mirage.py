@@ -23,7 +23,6 @@ import os
 from typing import cast
 
 from skale.mirage_manager import MirageManager
-from skale.types.node import NodeId
 
 from core.checks.base import BaseSkaledChecks, CheckRes, IChecks
 from core.config.endpoint import get_base_port_from_config
@@ -42,13 +41,15 @@ from core.redis.chain_record import ChainRecord
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.types.chain import MirageChainName
 from tools.resources import get_statsd_client
+from tools.helper import cast_manager_to_mirage_node_id
 
 logger = logging.getLogger(__name__)
 
 
 def get_base_port_from_mirage_manager(mirage: MirageManager, node_config: NodeConfig) -> int:
     # todod: Should be changed after corresponding changes are made in mirage manager.
-    return mirage.nodes.get(cast(NodeId, node_config.id)).port
+    node_id = cast_manager_to_mirage_node_id(node_config.id)
+    return mirage.nodes.get(node_id).port
 
 
 class MirageConfigChecks(IChecks):
