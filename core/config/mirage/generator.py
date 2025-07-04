@@ -25,13 +25,14 @@ from typing import Dict
 
 from skale import MirageManager
 from skale.mirage_config import generate_committee_history, get_nodes_from_last_two_committees
+from skale.types.committee import CommitteeGroup
 from skale.types.node import MirageNode, NodeId, NodeWithSchains
 from skale.types.node import Node as SkaleNode
-from skale.types.rotation import NodesGroup, Rotation
+from skale.types.rotation import NodesGroup
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.config.base import MirageConfig, SChainBaseConfig
-from core.config.mirage.committee import CommitteeInfoFromManager, generate_committee_info
+from core.config.mirage.committee import generate_committee_info
 from core.config.mirage.node_info import MirageCurrentNodeInfo, generate_mirage_current_node_info
 from core.config.mirage.schain_info import MirageChainInfo
 from core.config.precompiled import get_precompiled_contracts_mirage
@@ -69,19 +70,14 @@ def generate_mirage_config_with_manager(
 ) -> MirageConfig:
     node = mirage.nodes.get(cast_manager_to_mirage_node_id(node_id))
 
-    # todod: get info from mirage_manager
     committee_nodes_in_scope = get_nodes_from_last_two_committees(mirage)
     node_groups = generate_committee_history(mirage=mirage)
-    common_bls_public_keys = []
 
-    committee_info_from_manager: CommitteeInfoFromManager = committee_nodes_in_scope
     return generate_mirage_config(
         node=node,
-        committee_info_from_manager=committee_info_from_manager,
+        committee_info_from_manager=committee_nodes_in_scope,
         node_groups=node_groups,
-        group_index=group_index,
         ecdsa_key_name=ecdsa_key_name,
-        common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
         archive=archive,
         catchup=catchup,
@@ -104,12 +100,10 @@ def skale_node_to_mirage_node_adapter(skale_node: SkaleNode, node_id: NodeId) ->
 def generate_mirage_config_adapter(
     skale_node: SkaleNode,
     node_id: NodeId,
-    schain_start_ts: int,
+    chain_start_ts: int,
     schain_nodes_with_schains: list[NodeWithSchains],
     node_groups: Dict[int, NodesGroup],
-    rotation_data: Rotation,
     ecdsa_key_name: str,
-    common_bls_public_keys: list[str],
     sync_node: bool = False,
     archive: bool = False,
     catchup: bool = False,
@@ -120,17 +114,15 @@ def generate_mirage_config_adapter(
         for schain_node in schain_nodes_with_schains
     ]
 
-    committee_info_from_manager: CommitteeInfoFromManager = {
-        0: {'ts': 0, 'group': committee_nodes},
-        1: {'ts': schain_start_ts, 'group': committee_nodes},
-    }
+    committee_info_from_manager: list[CommitteeGroup] = [
+        {'ts': 0, 'index': 0, 'group': committee_nodes},
+        {'ts': chain_start_ts, 'index': 0, 'group': committee_nodes},
+    ]
     return generate_mirage_config(
         node=node,
         committee_info_from_manager=committee_info_from_manager,
         node_groups=node_groups,
-        group_index=rotation_data.rotation_counter,
         ecdsa_key_name=ecdsa_key_name,
-        common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
         archive=archive,
         catchup=catchup,
@@ -139,11 +131,9 @@ def generate_mirage_config_adapter(
 
 def generate_mirage_config(
     node: MirageNode,
-    committee_info_from_manager: CommitteeInfoFromManager,
+    committee_info_from_manager: list[CommitteeGroup],
     node_groups: Dict[int, NodesGroup],
-    group_index: int,
     ecdsa_key_name: str,
-    common_bls_public_keys: list[str],
     sync_node: bool = False,
     archive: bool = False,
     catchup: bool = False,
@@ -165,7 +155,7 @@ def generate_mirage_config(
 
     committee_info = generate_committee_info(
         committee_info_from_manager=committee_info_from_manager,
-        sync_node=False,
+        sync_node=sync_node,
     )
 
     schain_info = MirageChainInfo(
@@ -181,9 +171,7 @@ def generate_mirage_config(
         node_id=node.id,
         ecdsa_key_name=ecdsa_key_name,
         static_node_info=static_node_info,
-        group_index=group_index,
         port=node.port,
-        common_bls_public_keys=common_bls_public_keys,
         sync_node=sync_node,
         archive=archive,
         catchup=catchup,

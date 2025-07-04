@@ -254,12 +254,10 @@ def generate_schain_config_with_skale(
         return generate_mirage_config_adapter(
             skale_node=node,
             node_id=NodeId(node_config.id),
-            schain_start_ts=schain.start_date,
-            rotation_data=rotation_data,
+            chain_start_ts=schain.start_date,
             ecdsa_key_name=ecdsa_key_name,
             schain_nodes_with_schains=schain_nodes_with_schains,
             node_groups=node_groups,
-            common_bls_public_keys=common_bls_public_keys,
             sync_node=sync_node,
             archive=node_options.archive,
             catchup=node_options.catchup,

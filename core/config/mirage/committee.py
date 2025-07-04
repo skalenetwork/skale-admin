@@ -18,19 +18,15 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from typing import Dict, TypedDict
+from typing import Dict
 
-from skale.types.node import MirageNode
+from skale.types.committee import CommitteeGroup
 
 from core.config.mirage.mirage_chain_node import MirageChainNodeInfo, generate_mirage_chain_nodes
 from core.config.schain.static_params import get_mirage_chain_name
 from core.schains.dkg.utils import get_secret_key_share_filepath
 from tools.configs import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
 from tools.helper import read_json
-
-CommitteeInfoFromManager = Dict[
-    int, TypedDict('CommitteeGroupForTs', {'ts': int, 'group': list[MirageNode]})
-]
 
 
 @dataclass
@@ -91,19 +87,16 @@ def generate_committee_bls_key(committee_index: int) -> BlsKey:
 
 
 def generate_committee_info(
-    committee_info_from_manager: CommitteeInfoFromManager,
+    committee_info_from_manager: list[CommitteeGroup],
     sync_node: bool = False,
 ) -> Dict[int, CommitteeInfo]:
     committee_info = {}
-    for committee_index, committee_group_for_ts in committee_info_from_manager.items():
-        # TODO: remove this once bootstrap phase is completed
-        committee_index = 0
-        ts = committee_group_for_ts['ts']
-        committee_group = committee_group_for_ts['group']
-        bls_key = generate_committee_bls_key(committee_index)
-        mirage_chain_nodes = generate_mirage_chain_nodes(
-            committee_group, committee_index, sync_node
-        )
+    for committee in committee_info_from_manager:
+        ts = committee['ts']
+        committee_group = committee['group']
+        index = committee['index']
+        bls_key = generate_committee_bls_key(index)
+        mirage_chain_nodes = generate_mirage_chain_nodes(committee_group, index, sync_node)
         committee_info[ts] = CommitteeInfo(bls_key=bls_key, group=mirage_chain_nodes)
 
     return committee_info

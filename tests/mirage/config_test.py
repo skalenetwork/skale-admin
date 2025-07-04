@@ -13,7 +13,6 @@ from skale.types.rotation import NodesGroup, NodesSwap, Rotation, RotationNodeDa
 from skale.types.validator import ValidatorId
 
 from core.config.base import MirageConfig
-from core.config.mirage.committee import CommitteeInfoFromManager
 from core.config.mirage.generator import generate_mirage_config, generate_mirage_config_adapter
 from core.config.schain.helper import get_static_params_mirage as original_get_static_params_mirage
 from tests.utils import CURRENT_TS
@@ -33,10 +32,10 @@ MIRAGE_TEST_SECRET_KEY = {
 
 @pytest.fixture
 def committee_info_from_mirage_manager(mirage_node):
-    committee_info_from_manager: CommitteeInfoFromManager = {
-        0: {'ts': 0, 'group': [mirage_node, mirage_node]},
-        1: {'ts': CURRENT_TS, 'group': [mirage_node, mirage_node]},
-    }
+    committee_info_from_manager = [
+        {'ts': 0, 'index': 0, 'group': [mirage_node, mirage_node]},
+        {'ts': CURRENT_TS, 'index': 1, 'group': [mirage_node, mirage_node]},
+    ]
     return committee_info_from_manager
 
 
@@ -138,7 +137,6 @@ def test_generate_mirage_config_adapter(mirage_default_secret_key_file, node_gro
     )
 
     node_id = NodeId(1)
-    common_bls_keys = ['0xA', '0xB']
 
     node_bls_keys_for_node_info = ['0xNodeA', '0xNodeB']
 
@@ -184,12 +182,10 @@ def test_generate_mirage_config_adapter(mirage_default_secret_key_file, node_gro
     config = generate_mirage_config_adapter(
         skale_node=node,
         node_id=node_id,
-        schain_start_ts=CURRENT_TS,
+        chain_start_ts=CURRENT_TS,
         schain_nodes_with_schains=cast(list[NodeWithSchains], schain_nodes_with_schains),
         node_groups=node_groups,
-        rotation_data=mock_rotation,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        common_bls_public_keys=common_bls_keys,
         sync_node=False,
         archive=False,
         catchup=False,
@@ -208,7 +204,6 @@ def test_generate_mirage_config_minimal_regular(
     mock_rotation.freeze_until = 1700000000
 
     node_id = 1
-    common_bls_keys = ['0xA', '0xB']
 
     config = generate_mirage_config(
         node=mirage_node,
@@ -216,7 +211,6 @@ def test_generate_mirage_config_minimal_regular(
         node_groups=node_groups,
         group_index=mock_rotation.rotation_counter,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        common_bls_public_keys=common_bls_keys,
         sync_node=False,
         archive=False,
         catchup=False,
@@ -250,15 +244,12 @@ def test_generate_mirage_config_minimal_sync(
     mock_rotation.rotation_counter = 0
     mock_rotation.freeze_until = 1700000000
 
-    common_bls_keys = ['0xA', '0xB']
-
     config = generate_mirage_config(
         node=mirage_node,
         committee_info_from_manager=committee_info_from_mirage_manager,
         node_groups=node_groups,
         group_index=mock_rotation.rotation_counter,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        common_bls_public_keys=common_bls_keys,
         sync_node=True,
         archive=False,
         catchup=False,
@@ -293,8 +284,6 @@ def test_generate_mirage_config_for_different_env_types(
     mock_rotation.rotation_counter = 0
     mock_rotation.freeze_until = 1700000000
 
-    common_bls_keys = ['0xA', '0xB']
-
     def replacement_get_static_params_mirage(
         env_type_arg_passed_by_caller, path_arg_passed_by_caller=MIRAGE_STATIC_PARAMS_FILEPATH
     ):
@@ -313,7 +302,6 @@ def test_generate_mirage_config_for_different_env_types(
                 node_groups=node_groups,
                 group_index=mock_rotation.rotation_counter,
                 ecdsa_key_name='NEK:SIMPLE_REGULAR',
-                common_bls_public_keys=common_bls_keys,
                 sync_node=False,
                 archive=False,
                 catchup=False,

@@ -20,9 +20,8 @@
 import logging
 from dataclasses import dataclass
 
-from skale.types.node import NodeId, Port
 from skale.dataclasses.node_info import NodeInfo
-
+from skale.types.node import NodeId, Port
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +57,7 @@ def generate_mirage_current_node_info(
     node_id: NodeId,
     ecdsa_key_name: str,
     static_node_info: dict,
-    group_index: int,
     port: Port,
-    common_bls_public_keys: list[str],
     sync_node: bool = False,
     archive: bool = False,
     catchup: bool = False,
@@ -78,4 +75,3 @@ def generate_mirage_current_node_info(
         catchup=catchup,
         static_node_info=static_node_info,
     )
-
