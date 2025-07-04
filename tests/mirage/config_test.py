@@ -34,7 +34,7 @@ MIRAGE_TEST_SECRET_KEY = {
 def committee_info_from_mirage_manager(mirage_node):
     committee_info_from_manager = [
         {'ts': 0, 'index': 0, 'group': [mirage_node, mirage_node]},
-        {'ts': CURRENT_TS, 'index': 1, 'group': [mirage_node, mirage_node]},
+        {'ts': CURRENT_TS, 'index': 0, 'group': [mirage_node, mirage_node]},
     ]
     return committee_info_from_manager
 
@@ -209,7 +209,6 @@ def test_generate_mirage_config_minimal_regular(
         node=mirage_node,
         committee_info_from_manager=committee_info_from_mirage_manager,
         node_groups=node_groups,
-        group_index=mock_rotation.rotation_counter,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
         sync_node=False,
         archive=False,
@@ -248,7 +247,6 @@ def test_generate_mirage_config_minimal_sync(
         node=mirage_node,
         committee_info_from_manager=committee_info_from_mirage_manager,
         node_groups=node_groups,
-        group_index=mock_rotation.rotation_counter,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
         sync_node=True,
         archive=False,
@@ -300,7 +298,6 @@ def test_generate_mirage_config_for_different_env_types(
                 node=mirage_node,
                 committee_info_from_manager=committee_info_from_mirage_manager,
                 node_groups=node_groups,
-                group_index=mock_rotation.rotation_counter,
                 ecdsa_key_name='NEK:SIMPLE_REGULAR',
                 sync_node=False,
                 archive=False,
