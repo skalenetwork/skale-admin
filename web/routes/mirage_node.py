@@ -21,13 +21,11 @@ import logging
 from http import HTTPStatus
 
 from flask import Blueprint, abort, g, request
-
 from skale import MirageManager
 from skale.transactions.exceptions import TransactionError
 
 from core.node_config import NodeConfig
-
-from web.helper import construct_err_response, construct_ok_response, get_api_url, g_mirage
+from web.helper import construct_err_response, construct_ok_response, g_mirage, get_api_url
 
 logger = logging.getLogger(__name__)
 
@@ -61,14 +59,14 @@ def register():
 
     mirage: MirageManager = g.mirage
     try:
-        mirage.nodes.register(ip, port)
+        mirage.nodes.register_active(ip, port)
     except TransactionError as e:
         logger.error(f'Error registering node: {e}')
         return construct_err_response(
             msg=f'Error registering node: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
     node = mirage.nodes.get_by_address(mirage.wallet.address)
-    return construct_ok_response({'node': node})
+    return construct_ok_response({'node': str(node)})
 
 
 @mirage_node_bp.route(get_api_url(BLUEPRINT_NAME, 'set-domain-name'), methods=['POST'])

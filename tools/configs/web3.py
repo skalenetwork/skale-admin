@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+
 from eth_typing import HexAddress, HexStr
 
 from tools.configs import NODE_DATA_PATH
