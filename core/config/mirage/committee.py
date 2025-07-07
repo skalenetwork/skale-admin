@@ -34,8 +34,8 @@ class BlsKey:
     key_share_name: str
     t: int
     n: int
-    cert_file: str
-    key_file: str
+    cert_file: str | None
+    key_file: str | None
     common_bls_public_key: list[str]
     bls_public_key: list[str]
 
@@ -88,7 +88,7 @@ def generate_committee_bls_key(committee_index: int) -> BlsKey:
 
 def generate_committee_info(
     committee_info_from_manager: list[CommitteeGroup],
-    sync_node: bool = False,
+    is_committee_node: bool,
 ) -> Dict[int, CommitteeInfo]:
     committee_info = {}
     for committee in committee_info_from_manager:
@@ -96,7 +96,7 @@ def generate_committee_info(
         committee_group = committee['group']
         index = committee['index']
         bls_key = generate_committee_bls_key(index)
-        mirage_chain_nodes = generate_mirage_chain_nodes(committee_group, index, sync_node)
+        mirage_chain_nodes = generate_mirage_chain_nodes(committee_group, index, is_committee_node)
         committee_info[ts] = CommitteeInfo(bls_key=bls_key, group=mirage_chain_nodes)
 
     return committee_info
