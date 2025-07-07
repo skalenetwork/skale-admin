@@ -21,6 +21,7 @@ import logging
 
 from skale import MirageManager
 from skale.utils.web3_utils import get_endpoint
+from skale.wallets import BaseWallet
 
 from core.config.endpoint import get_local_chain_http_endpoint_from_config
 from core.config.schain.file_manager import ConfigFileManager
@@ -51,10 +52,11 @@ def get_mirage_endpoints() -> list[str]:
     return endpoints
 
 
-def init_mirage_manager(node_config: NodeConfig | None = None) -> MirageManager:
+def init_mirage_manager(
+    node_config: NodeConfig | None = None, wallet: BaseWallet | None = None
+) -> MirageManager:
     endpoints = get_mirage_endpoints()
     endpoint = get_endpoint(endpoints)
-    wallet = None
     if node_config:
         wallet = init_wallet(node_config=node_config, endpoint=endpoint)
     return MirageManager(endpoints, mirage_contracts(), wallet=wallet)

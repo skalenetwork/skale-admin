@@ -28,6 +28,7 @@ from skale import MirageManager, SkaleManager
 from skale.utils.web3_utils import init_web3
 
 from core.node_config import NodeConfig
+from core.utils.mirage import init_mirage_manager
 from tools.configs.web3 import boot_endpoint, endpoint
 from tools.helper import init_mirage, init_skale
 from tools.wallet_utils import init_wallet
@@ -98,10 +99,10 @@ def g_mirage(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if getattr(g, 'wallet', None) is None:
-            g.mirage = init_mirage_from_node_config(g.config)
+            g.mirage = init_mirage_manager(node_config=g.config)
             g.wallet = g.mirage.wallet
         else:
-            g.mirage = init_mirage(g.wallet)
+            g.mirage = init_mirage_manager(wallet=g.wallet)
         return func(*args, **kwargs)
 
     return wrapper
