@@ -29,7 +29,7 @@ from core.monitor.action_base import BaseActionManager
 from core.node_config import NodeConfig
 from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
 from core.checks.schain import ConfigChecks
-from core.schains.dkg import (
+from core.dkg.schain import (
     DkgError,
     get_dkg_client,
     get_secret_key_share_filepath,

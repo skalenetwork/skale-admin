@@ -1,7 +1,7 @@
 import mock
 import pytest
 
-from core.schains.dkg.broadcast_filter import Filter
+from core.dkg.schain.broadcast_filter import Filter
 
 SCHAIN_NAME = 'test'
 N = 16

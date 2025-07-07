@@ -23,10 +23,10 @@ from skale.utils.account_tools import send_eth
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.types.schain import SchainName
 
-from core.schains.dkg.client import DkgError
-from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, run_dkg
-from core.schains.dkg.structures import DKGStatus, DKGStep
-from core.schains.dkg.utils import DKGKeyGenerationError, generate_bls_keys
+from core.dkg.schain.client import DkgError
+from core.dkg.schain.main import get_dkg_client, is_last_dkg_finished, run_dkg
+from core.dkg.schain.structures import DKGStatus, DKGStep
+from core.dkg.schain.utils import DKGKeyGenerationError, generate_bls_keys
 from core.config.schain.directory import init_schain_config_dir
 from core.config.schain.generator import get_schain_nodes_with_schains
 

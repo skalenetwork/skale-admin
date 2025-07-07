@@ -24,7 +24,7 @@ from skale.dataclasses.node_info import NodeInfo
 
 from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
 
-from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.dkg.schain.utils import get_secret_key_share_filepath
 from tools.helper import read_json
 
 

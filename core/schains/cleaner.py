@@ -38,7 +38,7 @@ from core.firewall.utils import (
     get_sync_agent_ranges,
 )
 from core.node import get_current_nodes, get_skale_node_version
-from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.dkg.schain.utils import get_secret_key_share_filepath
 from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType
