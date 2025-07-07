@@ -71,8 +71,9 @@ class MirageConfigChecks(IChecks):
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=chain_name)
         self.statsd_client = get_statsd_client()
 
-        self.rule_controller: MirageNetworkScopeRuleController = \
+        self.rule_controller: MirageNetworkScopeRuleController = (
             get_mirage_network_scope_rule_controller()
+        )
 
     def get_name(self) -> str:
         return self.name

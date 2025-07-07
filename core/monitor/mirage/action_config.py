@@ -21,26 +21,22 @@ import logging
 
 from skale import MirageManager
 
+from core.checks.mirage import MirageConfigChecks
 from core.config.mirage.generator import generate_mirage_config_with_manager
+from core.config.schain.directory import init_schain_config_dir
+from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.main import update_schain_config_version
+from core.firewall import get_mirage_network_scope_rule_controller, get_network_scope_node_ips
 from core.monitor.action_base import BaseActionManager
 from core.monitor.mirage.utils import get_local_skaled_endpoint_mirage
 from core.node_config import NodeConfig
-from core.checks.mirage import MirageConfigChecks
-from core.firewall import get_mirage_network_scope_rule_controller, get_network_scope_node_ips
 from core.redis.chain_record import ChainRecord
-
-
-from core.config.schain.directory import init_schain_config_dir
-from core.config.schain.main import update_schain_config_version
-from core.config.schain.file_manager import ConfigFileManager
-
 from core.redis.node_config_mirage import NodeConfigMirage
 from core.types.chain import MirageChainName
 from tools.configs import SYNC_NODE
 from tools.helper import no_hyphens
 from tools.node_options import NodeOptions
 from tools.resources import get_statsd_client
-
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +168,7 @@ class MirageConfigActionManager(BaseActionManager):
         initial_status = self.checks.network_scope_firewall_rules.status
         if not initial_status:
             logger.info('Configuring network scope firewall rules')
-            base_port = self.mirage.nodes.get(self.node_config.id + 1).port
+            base_port = self.mirage.nodes.get(self.node_config.id).port
             own_ip = self.node_config.ip
             node_ips = get_network_scope_node_ips(self.mirage)
 
