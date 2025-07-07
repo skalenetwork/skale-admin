@@ -28,11 +28,11 @@ from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.main import update_schain_config_version
 from core.firewall import get_mirage_network_scope_rule_controller, get_network_scope_node_ips
 from core.monitor.action_base import BaseActionManager
-from core.monitor.mirage.utils import get_local_skaled_endpoint_mirage
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.redis.node_config_mirage import NodeConfigMirage
 from core.types.chain import MirageChainName
+from core.utils.mirage import get_local_skaled_endpoint_mirage
 from tools.configs import SYNC_NODE
 from tools.helper import no_hyphens
 from tools.node_options import NodeOptions

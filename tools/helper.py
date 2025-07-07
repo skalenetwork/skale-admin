@@ -37,6 +37,7 @@ from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
 from tools.configs.web3 import (
+    BOOT_ENDPOINT,
     ENDPOINT,
     MANAGER_CONTRACTS,
     MIRAGE_CONTRACTS,
@@ -140,7 +141,7 @@ def init_skale(wallet: BaseWallet) -> SkaleManager:
 def init_mirage(wallet: BaseWallet) -> MirageManager:
     if MIRAGE_CONTRACTS is None:
         raise ValueError('MIRAGE_CONTRACTS is not set')
-    return MirageManager(ENDPOINT, MIRAGE_CONTRACTS, wallet, state_path=STATE_FILEPATH)
+    return MirageManager(BOOT_ENDPOINT, MIRAGE_CONTRACTS, wallet, state_path=STATE_FILEPATH)
 
 
 def safe_load_yml(filepath):
