@@ -17,26 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 import time
-import logging
 from typing import Optional, cast
 
-from core.monitor.mirage.utils import init_mirage_manager
-from core.node import get_skale_node_version
+from core.config.schain.static_params import get_mirage_chain_name
 from core.monitor.mirage.monitor_config import run_config_pipeline
 from core.monitor.mirage.monitor_skaled import run_skaled_pipeline
-
 from core.monitor.tasks import BaseTask, execute_tasks
+from core.node import get_skale_node_version
 from core.node_config import NodeConfig
-from core.config.schain.static_params import get_mirage_chain_name
-
-
 from core.redis.chain_record import ChainRecord
 from core.schains.process import ProcessReport
 from core.types.chain import MirageChainName
+from core.utils.mirage import init_mirage_manager
 from tools.docker_utils import DockerUtils
-
 
 logger = logging.getLogger(__name__)
 
