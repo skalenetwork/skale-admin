@@ -210,7 +210,7 @@ def test_generate_mirage_config_minimal_regular(
         committee_info_from_manager=committee_info_from_mirage_manager,
         node_groups=node_groups,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        sync_node=False,
+        is_committee_node=True,
         archive=False,
         catchup=False,
     )
@@ -248,7 +248,7 @@ def test_generate_mirage_config_minimal_sync(
         committee_info_from_manager=committee_info_from_mirage_manager,
         node_groups=node_groups,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        sync_node=True,
+        is_committee_node=False,
         archive=False,
         catchup=False,
     )
@@ -299,7 +299,7 @@ def test_generate_mirage_config_for_different_env_types(
                 committee_info_from_manager=committee_info_from_mirage_manager,
                 node_groups=node_groups,
                 ecdsa_key_name='NEK:SIMPLE_REGULAR',
-                sync_node=False,
+                is_committee_node=True,
                 archive=False,
                 catchup=False,
             )

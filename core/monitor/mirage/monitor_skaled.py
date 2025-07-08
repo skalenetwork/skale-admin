@@ -167,8 +167,9 @@ class ActiveSkaledMonitor(BaseSkaledMonitor):
         if not self.checks.volume:
             self._am.volume()
         if not self.checks.skaled_container:
-            # TODOD: handle download snapshot logic better
-            self._am.skaled_container(download_snapshot=True)
+            # TODOD: handle download snapshot - skaled should be fixed
+            # self._am.skaled_container(download_snapshot=True)
+            self._am.skaled_container(download_snapshot=False)
         else:
             self._am.reset_restart_counter()
         if not self.checks.rpc:

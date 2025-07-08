@@ -29,7 +29,9 @@ from skale.types.committee import CommitteeGroup
 from skale.types.node import MirageNode, NodeId, NodeWithSchains
 from skale.types.node import Node as SkaleNode
 from skale.types.rotation import NodesGroup
-from skale.types.committee import CommitteeIndex, TimeStamp
+from skale.types.committee import CommitteeIndex, TimeStamp, Committee
+from skale.types.dkg import G2Point, DkgId, Fp2Point
+
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.config.base import MirageConfig, SChainBaseConfig
@@ -73,6 +75,21 @@ def generate_mirage_config_with_manager(
     committee_nodes_in_scope = get_nodes_from_last_two_committees(mirage)
     node_groups = generate_committee_history(mirage=mirage)
 
+    # todod: fix for indexes!
+    # node_groups['0']['nodes'][3] = (
+    #     0,
+    #     3,
+    #     '0x5955e93caeab3fe22b1ab79f4eed4ebcadda9a65410dced97388b4e99c1f718fa915295c620d81ed875ff164253a2c5e0672ae2946d66f323ef4f6a03b3e8fdf',
+    # )
+    # node_groups['0']['nodes'][2] = (
+    #     1,
+    #     2,
+    #     '0xd80a0c19d3daf562faee0aaed89c19d0f28178db423f3dd6af386b9a95827a688b6bc2df60d69be8d644fb2675881b76c8068cd105fd0c50eaa42eb772b60b20',
+    # )
+
+    # committee_nodes_in_scope[0]['group'].reverse()
+    # committee_nodes_in_scope[1]['group'].reverse()
+
     return generate_mirage_config(
         node=node,
         committee_info_from_manager=committee_nodes_in_scope,
@@ -115,8 +132,28 @@ def generate_mirage_config_adapter(
     ]
 
     committee_info_from_manager: list[CommitteeGroup] = [
-        {'ts': TimeStamp(0), 'index': CommitteeIndex(0), 'group': committee_nodes},
-        {'ts': TimeStamp(chain_start_ts), 'index': CommitteeIndex(0), 'group': committee_nodes},
+        {
+            'ts': TimeStamp(0),
+            'index': CommitteeIndex(0),
+            'group': committee_nodes,
+            'committee': Committee(
+                node_ids=[node.id for node in committee_nodes],
+                dkg_id=DkgId(0),
+                common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
+                starting_timestamp=TimeStamp(0),
+            ),
+        },
+        {
+            'ts': TimeStamp(chain_start_ts),
+            'index': CommitteeIndex(0),
+            'group': committee_nodes,
+            'committee': Committee(
+                node_ids=[node.id for node in committee_nodes],
+                dkg_id=DkgId(0),
+                common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
+                starting_timestamp=TimeStamp(0),
+            ),
+        },
     ]
     return generate_mirage_config(
         node=node,

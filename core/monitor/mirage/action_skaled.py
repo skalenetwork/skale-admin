@@ -88,7 +88,8 @@ class MirageSkaledActionManager(BaseSkaledActionManager):
             start_ts=start_ts,
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,
-            sync_node=SYNC_NODE,
+            # sync_node=SYNC_NODE,
+            sync_node=True,  # todod: tmp, handle it later - skaled should be fixed
             historic_state=self.node_options.historic_state,
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)
