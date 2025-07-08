@@ -39,7 +39,6 @@ from core.monitor.action_base import (
 from core.node_config import NodeConfig
 from core.schains.cleaner import remove_skaled_container
 from core.types.chain import MirageChainName
-from tools.configs import SYNC_NODE
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.node_options import NodeOptions
