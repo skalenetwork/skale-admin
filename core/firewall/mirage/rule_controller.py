@@ -197,10 +197,10 @@ class MirageNetworkScopeRuleController(MirageController):
 
     @configured_only
     def expected_rules(self) -> Iterable[SChainRule]:
-
         return sorted(
             itertools.chain.from_iterable(
-                (self.public_rules, self.network_scope_rules , self.drop_rules))
+                (self.public_rules, self.network_scope_rules, self.drop_rules)
+            )
         )
 
 
@@ -237,5 +237,5 @@ class MirageCommitteeScopeRuleController(MirageController):
     @configured_only
     def expected_rules(self) -> Iterable[SChainRule]:
         return sorted(
-            itertools.chain.from_iterable(
-                (self.committee_scope_rules, [], self.drop_rules)))
+            itertools.chain.from_iterable((self.committee_scope_rules, [], self.drop_rules))
+        )

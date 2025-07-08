@@ -20,6 +20,7 @@
 from ..base.firewall_manager import NFTChainFirewallManager
 from ..base.nftables import NFTablesController
 
+
 class NFTSkaleChainFirewallManager(NFTChainFirewallManager):
     def create_host_controller(self) -> NFTablesController:
         nc_controller = NFTablesController(chain=self.group, prefix='skale')

@@ -24,7 +24,6 @@ from abc import abstractmethod
 from skale import MirageManager
 
 from core.checks.mirage import MirageConfigChecks
-from core.config.mirage import committee
 from core.monitor.mirage.action_config import MirageConfigActionManager
 from core.monitor.monitor_base import IMonitor
 from core.node_config import NodeConfig

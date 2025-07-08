@@ -118,7 +118,8 @@ class MirageConfigActionManager(BaseActionManager):
     def upstream_config(self, is_committee_node: bool) -> bool:
         with self.statsd_client.timer(f'admin.action.upstream_config.{no_hyphens(self.name)}'):
             logger.info(
-                'Generating new upstream_config committee_index: %s, stream: %s, is_committee_node: %s',
+                'Generating new upstream_config committee_index: \
+%s, stream: %s, is_committee_node: %s',
                 self.committee_index,
                 self.stream_version,
                 is_committee_node,
