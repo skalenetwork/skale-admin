@@ -20,6 +20,7 @@
 import logging
 from typing import Type
 
+from core.config.mirage.firewall import get_own_ip_from_config
 from core.firewall.utils import get_mirage_committee_scope_rule_controller
 from core.monitor.monitor_base import BaseSkaledMonitor
 from core.node_config import NodeConfig
@@ -127,23 +128,81 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
             self._am.skaled_rpc()
 
 
+class NoConfigSkaledMonitor(BaseSkaledMonitor):
+    # todod: optimize this part: move init and am to the base class
+    def __init__(self, action_manager: MirageSkaledActionManager) -> None:
+        self._am: MirageSkaledActionManager = action_manager
+        self._checks = action_manager.checks
+
+    @property
+    def am(self) -> MirageSkaledActionManager:
+        return self._am
+
+    @property
+    def checks(self) -> SkaledChecks:
+        return self._checks
+
+    def execute(self):
+        if self.checks.upstream_exists:
+            logger.info('Creating skaled config')
+            self.am.update_config()
+        else:
+            logger.debug('Waiting for upstream config')
+
+
+class ActiveSkaledMonitor(BaseSkaledMonitor):
+    def __init__(self, action_manager: MirageSkaledActionManager) -> None:
+        self._am: MirageSkaledActionManager = action_manager
+        self._checks = action_manager.checks
+
+    @property
+    def am(self) -> MirageSkaledActionManager:
+        return self._am
+
+    @property
+    def checks(self) -> SkaledChecks:
+        return self._checks
+
+    def execute(self) -> None:
+        if not self.checks.volume:
+            self._am.volume()
+        if not self.checks.skaled_container:
+            # TODOD: handle download snapshot logic better
+            self._am.skaled_container(download_snapshot=True)
+        else:
+            self._am.reset_restart_counter()
+        if not self.checks.rpc:
+            self._am.skaled_rpc()
+
+
 def get_skaled_monitor(
     action_manager: MirageSkaledActionManager,
     check_status: dict,
     chain_record: ChainRecord,
     skaled_status: SkaledStatus | None,
-) -> Type[RegularSkaledMonitor]:
+) -> Type[BaseSkaledMonitor]:
     logger.info('Choosing skaled monitor')
     if skaled_status:
         skaled_status.log()
 
     mon_type: Type[BaseSkaledMonitor] = RegularSkaledMonitor
 
-    if SYNC_NODE:
-        # todod: implement sync node monitors
-        return mon_type
+    # todod: check if the node of a part of the CURRENT committee
+    # optimize this logic
+    config = action_manager.cfm.skaled_config
+    own_ip = get_own_ip_from_config(config)
+    in_current_committee = own_ip is not None
 
-    # todod: implement regualr node monitors
+    if not check_status['config']:
+        mon_type = NoConfigSkaledMonitor
+    elif not in_current_committee:
+        mon_type = ActiveSkaledMonitor
+
+    # if SYNC_NODE:
+    #     # todod: implement sync node monitors
+    #     return mon_type
+
+    # todod: implement regular node monitors
 
     # if not check_status['config']:
     #     mon_type = NoConfigSkaledMonitor

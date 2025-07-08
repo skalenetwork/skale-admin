@@ -155,7 +155,7 @@ def generate_mirage_config(
 
     committee_info = generate_committee_info(
         committee_info_from_manager=committee_info_from_manager,
-        is_committee_node=is_committee_node,
+        node_id=node.id,
     )
 
     schain_info = MirageChainInfo(

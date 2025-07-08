@@ -82,11 +82,11 @@ def run_config_pipeline(
     logger.info('Config status: %s', status)
 
     if is_committee_node:
-        logger.info('Sync node mode, running sync config monitor')
-        mon = ActiveConfigMonitor(config_am, config_checks)
-    else:
         logger.info('Committee node mode, running config monitor')
         mon = CommitteeConfigMonitor(config_am, config_checks)
+    else:
+        logger.info('Active node mode, running sync config monitor')
+        mon = ActiveConfigMonitor(config_am, config_checks)
     statsd_client = get_statsd_client()
 
     statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(chain_name)}')

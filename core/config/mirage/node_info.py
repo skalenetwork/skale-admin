@@ -47,9 +47,10 @@ class MirageCurrentNodeInfo(NodeInfo):
                 **self.static_node_info,
             },
         }
-        if not self.is_committee_node:
-            node_info['archiveMode'] = self.archive
-            node_info['syncFromCatchup'] = self.catchup
+        # todod: handle later
+        # if not self.is_committee_node:
+        #     node_info['archiveMode'] = self.archive
+        #     node_info['syncFromCatchup'] = self.catchup
         return node_info
 
 

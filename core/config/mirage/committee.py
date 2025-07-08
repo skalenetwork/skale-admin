@@ -21,6 +21,8 @@ from dataclasses import dataclass
 from typing import Dict
 
 from skale.types.committee import CommitteeGroup
+from skale.types.node import NodeId
+from skale.types.dkg import G2Point
 
 from core.config.mirage.mirage_chain_node import MirageChainNodeInfo, generate_mirage_chain_nodes
 from core.config.schain.static_params import get_mirage_chain_name
@@ -31,21 +33,18 @@ from tools.helper import read_json
 
 @dataclass
 class BlsKey:
-    key_share_name: str
-    t: int
     n: int
-    cert_file: str | None
-    key_file: str | None
     common_bls_public_key: list[str]
     bls_public_key: list[str]
 
+    key_share_name: str | None
+    t: int | None
+    cert_file: str | None
+    key_file: str | None
+
     def to_dict(self):
-        result = {
-            'keyShareName': self.key_share_name,
-            't': self.t,
+        result: dict = {
             'n': self.n,
-            'certFile': self.cert_file,
-            'keyFile': self.key_file,
         }
 
         for i, key in enumerate(self.common_bls_public_key):
@@ -53,6 +52,15 @@ class BlsKey:
 
         for i, key in enumerate(self.bls_public_key):
             result[f'BLSPublicKey{i}'] = key
+
+        if self.key_share_name is not None:
+            result['keyShareName'] = self.key_share_name
+        if self.t is not None:
+            result['t'] = self.t
+        if self.cert_file is not None:
+            result['certFile'] = self.cert_file
+        if self.key_file is not None:
+            result['keyFile'] = self.key_file
 
         return result
 
@@ -69,7 +77,24 @@ class CommitteeInfo:
         }
 
 
-def generate_committee_bls_key(committee_index: int) -> BlsKey:
+def generate_committee_bls_key(
+    committee_index: int,
+    is_committee_node: bool,
+    n: int,
+    common_bls_public_key: list[str],
+) -> BlsKey:
+    # todod: handle the case for passive nodes
+    if not is_committee_node:
+        return BlsKey(
+            key_share_name='',  # todod
+            t=1,  # todod
+            n=n,
+            cert_file=SGX_SSL_CERT_FILEPATH,
+            key_file=SGX_SSL_KEY_FILEPATH,
+            common_bls_public_key=common_bls_public_key,
+            bls_public_key=['0', '0', '1', '0'],
+        )
+
     secret_key_share_filepath = get_secret_key_share_filepath(
         get_mirage_chain_name(), committee_index
     )
@@ -86,16 +111,31 @@ def generate_committee_bls_key(committee_index: int) -> BlsKey:
     )
 
 
+# todod: move from here
+def get_common_bls_public_key(common_bls_public_key: G2Point) -> list[str]:
+    return [elem for coord in common_bls_public_key for elem in coord]
+
+
 def generate_committee_info(
     committee_info_from_manager: list[CommitteeGroup],
-    is_committee_node: bool,
+    node_id: NodeId,
 ) -> Dict[int, CommitteeInfo]:
     committee_info = {}
     for committee in committee_info_from_manager:
         ts = committee['ts']
         committee_group = committee['group']
         index = committee['index']
-        bls_key = generate_committee_bls_key(index)
+
+        is_committee_node = any(node.id == node_id for node in committee_group)
+        common_bls_public_key = committee['committee'].common_public_key
+
+        bls_key = generate_committee_bls_key(
+            index,
+            is_committee_node,
+            len(committee_group),
+            get_common_bls_public_key(common_bls_public_key),
+        )
+
         mirage_chain_nodes = generate_mirage_chain_nodes(committee_group, index, is_committee_node)
         committee_info[ts] = CommitteeInfo(bls_key=bls_key, group=mirage_chain_nodes)
 
