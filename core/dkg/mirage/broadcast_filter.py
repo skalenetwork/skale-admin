@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
 import logging
 
 from eth_utils.hexadecimal import remove_0x_prefix
@@ -50,7 +49,7 @@ class MirageFilter(BaseFilter):
             logger.info(f'Receipt {receipt} does not have field "topics"')
             return False
         if len(topics) != 2:
-            logger.info(f'Must be exactly 2 topics')
+            logger.info('Must be exactly 2 topics')
             return False
         if topics[0].hex() != self.event_hash:
             logger.info('Wrong event hash')

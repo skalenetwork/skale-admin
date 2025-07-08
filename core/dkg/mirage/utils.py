@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import os
 import time
 
 from skale.mirage_config.committee_nodes import get_committee_nodes
@@ -153,4 +152,4 @@ def check_dkg_id_with_exception(dkg_client: MirageDKGClient):
     """Check if the DKG ID matches the current committee ID."""
     if not dkg_client.check_round_id():
         logger.info('Restarting DKG: round id mismatch.')
-        raise DkgError(f'Restarting DKG: round id mismatch.')
+        raise DkgError('Restarting DKG: round id mismatch.')

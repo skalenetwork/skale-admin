@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import os
 from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
@@ -26,7 +25,9 @@ from skale.schain_config.generator import get_nodes_for_schain
 from core.dkg.schain.structures import ComplaintReason, DKGStep
 from core.dkg.client import DkgError, DkgTransactionError
 from core.dkg.schain.client import SchainDKGClient
-from core.dkg.utils import BroadcastResult, DkgFailedError, UINT_CONSTANT, BROADCAST_DATA_SEARCH_SLEEP, sync_broadcast_data
+from core.dkg.utils import ( BroadcastResult, DkgFailedError, UINT_CONSTANT,
+                            BROADCAST_DATA_SEARCH_SLEEP, sync_broadcast_data
+)
 
 from sgx.http import SgxUnreachableError
 

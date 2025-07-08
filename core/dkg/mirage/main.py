@@ -49,9 +49,6 @@ def get_dkg_client(node_id, skale, sgx_key_name, rotation_id):
 
 
 def init_bls(dkg_client):
-    skale = dkg_client.skale
-    n = dkg_client.n
-
     check_dkg_id_with_exception(dkg_client)
 
     if not broadcast_and_check_data(dkg_client):
@@ -60,7 +57,7 @@ def init_bls(dkg_client):
             logger.info('Waiting for the next DKG round to start')
             sleep(BROADCAST_DATA_SEARCH_SLEEP)
 
-    logger.info(f'All broadcasted data is correct - sending alright ...')
+    logger.info('All broadcasted data is correct - sending alright ...')
     send_alright_and_wait_for_others(dkg_client)
 
     logger.info('DKG completed successfuly')    
@@ -81,7 +78,7 @@ def run_dkg(skale, dkg_client) -> DKGResult:
             status = DKGStatus.IN_PROGRESS
             init_bls(dkg_client)
     except DkgError as e:
-        logger.info('DKG procedure failed with {e}')
+        logger.info(f'DKG procedure failed with {e}')
         status = DKGStatus.FAILED
 
     if not dkg_client:
