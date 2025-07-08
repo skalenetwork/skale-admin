@@ -38,7 +38,7 @@ from core.firewall.mirage import (
 )
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
-from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.dkg.utils import get_secret_key_share_filepath
 from core.types.chain import MirageChainName
 from tools.resources import get_statsd_client
 from tools.helper import cast_manager_to_mirage_node_id

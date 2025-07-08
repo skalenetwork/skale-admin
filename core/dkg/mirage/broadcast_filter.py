@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2020 SKALE Labs
+#   Copyright (C) 2025 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -28,54 +28,47 @@ from core.dkg.broadcast_filter import BaseFilter, DKGEvent
 logger = logging.getLogger(__name__)
 
 
-class SchainFilter(BaseFilter):
-    def __init__(self, skale, schain_name, n):
+class MirageFilter(BaseFilter):
+    def __init__(self, skale, committee_id, n):
         self.skale = skale
-        self.group_index = skale.web3.keccak(text=schain_name)
-        self.group_index_str = remove_0x_prefix(self.skale.web3.to_hex(self.group_index))
         self.first_unseen_block = -1
         self.dkg_contract = skale.dkg.contract
         self.dkg_contract_address = skale.dkg.address
         self.event_hash = '47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d'
+        self.committee_id = committee_id
         super().__init__(n)
 
     def check_event(self, receipt):
         logs = receipt.get('logs')
         if not logs:
-            logger.info(
-                f'sChain {self.group_index_str}: receipt {receipt} does not have field "logs"'
-            )
+            logger.info(f'Receipt {receipt} does not have field "logs"')
             return False
         if len(logs) == 0:
             return False
         topics = logs[0].get('topics')
         if not topics:
-            logger.info(
-                f'sChain {self.group_index_str}: receipt {receipt} does not have field "topics"'
-            )
+            logger.info(f'Receipt {receipt} does not have field "topics"')
             return False
-        if len(topics) < 2:
-            logger.info(f'sChain {self.group_index_str}: topics is less than 2')
+        if len(topics) != 2:
+            logger.info(f'Must be exactly 2 topics')
             return False
         if topics[0].hex() != self.event_hash:
-            logger.info(f'sChain {self.group_index_str}: Event hash is not equal')
-            return False
-        if topics[1].hex() != self.group_index_str:
-            logger.info(f'sChain {self.group_index_str}: Group index is not equal')
+            logger.info('Wrong event hash')
             return False
         data = logs[0].get('data')
         if not data:
-            logger.info(
-                f'sChain {self.group_index_str}: receipt {receipt} does not have field "data"'
-            )
+            logger.info(f'Receipt {receipt} does not have field "data"')
             return False
         return True
-
+    
     def parse_event(self, receipt):
         event_data = remove_0x_prefix(receipt['logs'][0]['data'].hex())
-        node_index = int(remove_0x_prefix(receipt['logs'][0]['topics'][2].hex()), 16)
-        vv = event_data[192 : 192 + self.t * 256]
-        skc = event_data[192 + 64 + self.t * 256 : 192 + 64 + self.t * 256 + 192 * self.n]
+        dkg_id = event_data[:64]
+        if dkg_id != self.committee_id:
+            return None  # event for another committee
+        node_index = int(remove_0x_prefix(receipt['logs'][0]['topics'][0].hex()), 16)
+        vv = event_data[64 + 192 : 64 + 192 + self.t * 256]
+        skc = event_data[64 + 192 + 64 + self.t * 256 : 64 + 192 + 64 + self.t * 256 + 192 * self.n]
         return DKGEvent(
             **{'nodeIndex': node_index, 'secretKeyContribution': skc, 'verificationVector': vv}
         )
@@ -85,14 +78,13 @@ class SchainFilter(BaseFilter):
         try:
             if self.first_unseen_block == -1 or from_channel_started_block:
                 start_block = self.dkg_contract.functions.getChannelStartedBlock(
-                    self.group_index
-                ).call()
+                    self.committee_id
+                    ).call()
             else:
                 start_block = self.first_unseen_block
             current_block = self.skale.web3.eth.get_block('latest')['number']
             logger.info(
-                f'sChain {self.group_index_str}: Parsing broadcast events '
-                f'from {start_block} block to {current_block} block'
+                f'Parsing broadcast events from {start_block} block to {current_block} block'
             )
             for block_number in range(start_block, current_block + 1):
                 block = self.skale.web3.eth.get_block(block_number, full_transactions=True)
@@ -106,21 +98,19 @@ class SchainFilter(BaseFilter):
                         if hash:
                             receipt = self.skale.web3.eth.get_transaction_receipt(hash)
                         else:
-                            logger.info(
-                                f'sChain {self.group_index_str}: tx {tx} does not have field "hash"'
-                            )
+                            logger.info(f'Tx {tx} does not have field "hash"')
                             continue
 
                         if not self.check_event(receipt):
                             continue
                         else:
-                            events.append(self.parse_event(receipt))
+                            dkg_event = self.parse_event(receipt)
+                            if dkg_event:
+                                events.append()
                     except TransactionNotFound:
                         pass
                 self.first_unseen_block = block_number + 1
             return events
         except (ValueError, Web3Exception) as e:
-            logger.info(
-                f'sChain {self.group_index_str}: error during collecting broadcast events: {e}'
-            )
+            logger.info(f'Error during collecting broadcast events: {e}')
             return events

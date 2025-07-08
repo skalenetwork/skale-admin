@@ -18,11 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from dataclasses import dataclass
 from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
 
+from core.dkg.structures import DKGResult
 from core.dkg.schain.structures import ComplaintReason, DKGStatus, DKGStep
 from core.dkg.schain.utils import (
     init_dkg_client,
@@ -37,7 +37,6 @@ from core.dkg.schain.utils import (
     wait_for_fail,
     broadcast_and_check_data,
 )
-from tools.helper import write_json
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,7 @@ def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
     return dkg_client
 
 
-def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
+def init_bls(dkg_client, rotation_id=0):
     skale, schain_name = dkg_client.skale, dkg_client.schain_name
     n = dkg_client.n
 
@@ -146,18 +145,6 @@ def is_last_dkg_finished(skale, schain_name):
     schain_index = skale.schains.name_to_group_id(schain_name)
     num_of_nodes = len(get_nodes_for_schain(skale, schain_name))
     return skale.dkg.get_number_of_completed(schain_index) == num_of_nodes
-
-
-def save_dkg_results(dkg_results, filepath):
-    """Save DKG results to the JSON file on disk"""
-    write_json(filepath, dkg_results)
-
-
-@dataclass
-class DKGResult:
-    status: DKGStatus
-    step: DKGStep
-    keys_data: dict
 
 
 def run_dkg(skale, dkg_client, schain_name, node_id, sgx_key_name, rotation_id) -> DKGResult:
