@@ -22,8 +22,8 @@ from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
 
-from core.dkg.structures import DKGResult
-from core.dkg.schain.structures import ComplaintReason, DKGStatus, DKGStep
+from core.dkg.structures import DKGResult, DKGStatus, DKGStep
+from core.dkg.schain.structures import ComplaintReason
 from core.dkg.schain.utils import (
     init_dkg_client,
     send_complaint,
