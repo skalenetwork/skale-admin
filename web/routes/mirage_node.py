@@ -65,7 +65,11 @@ def register():
         return construct_err_response(
             msg=f'Error registering node: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
+    node_config: NodeConfig = NodeConfig()
     node = mirage.nodes.get_by_address(mirage.wallet.address)
+    node_config.id = node.id
+    node_config.ip = ip
+    node_config.schain_base_port = port
     return construct_ok_response({'node': str(node)})
 
 
