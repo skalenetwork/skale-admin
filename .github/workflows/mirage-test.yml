@@ -10,7 +10,6 @@ env:
   SKALED_TAG: 4.1.0-develop.24-mirage
   PYTHON_VERSION: 3.11
   ENDPOINT: http://127.0.0.1:1234
-  RUN_ANVIL: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
