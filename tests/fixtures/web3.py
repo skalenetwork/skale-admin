@@ -2,29 +2,29 @@ from typing import cast
 
 import pytest
 from eth_typing import HexStr
-
 from skale import MirageManager, SkaleIma, SkaleManager
-from skale.wallets import Web3Wallet
-from skale.utils.web3_utils import init_web3
-
+from skale.utils.account_tools import generate_account, send_eth
+from skale.utils.contracts_provision.fake_multisig_contract import deploy_fake_multisig_contract
 from skale.utils.contracts_provision.main import (
-    add_test_permissions,
     add_test2_schain_type,
     add_test4_schain_type,
-    create_schain,
-    cleanup_nodes_schains,
+    add_test_permissions,
     cleanup_nodes,
-    setup_validator,
-    link_nodes_to_validator,
+    cleanup_nodes_schains,
     create_nodes,
+    create_schain,
+    create_validator,
+    enable_validator,
+    link_nodes_to_validator,
+    set_test_msr,
+    validator_exist,
 )
-from skale.utils.contracts_provision.fake_multisig_contract import deploy_fake_multisig_contract
-from skale.utils.account_tools import generate_account, send_eth
+from skale.utils.web3_utils import init_web3
+from skale.wallets import Web3Wallet
 
+from tests.utils import ETH_PRIVATE_KEY
 from tools.configs.ima import IMA_CONTRACTS
 from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS, MIRAGE_CONTRACTS
-from tests.utils import ETH_PRIVATE_KEY
-
 
 ETH_AMOUNT_PER_NODE = 1
 NUMBER_OF_NODES = 2
@@ -130,7 +130,12 @@ def schain_on_contracts(skale, nodes, _schain_name):
 
 @pytest.fixture(scope='session')
 def validator(skale):
-    return setup_validator(skale)
+    set_test_msr(skale, 0)
+    if not validator_exist(skale):
+        create_validator(skale)
+    validator_id = skale.validator_service.validator_id_by_address(skale.wallet.address)
+    if not skale.validator_service.get(validator_id)['trusted']:
+        enable_validator(skale, validator_id)
 
 
 @pytest.fixture
