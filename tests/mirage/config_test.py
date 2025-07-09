@@ -1,25 +1,26 @@
-import pytest
-import mock
-import os
-import json
 import contextlib
+import json
+import os
 from pathlib import Path
 from typing import Dict, cast
 
-from eth_typing import BlockNumber, HexStr, ChecksumAddress
-
-from core.config.mirage.generator import generate_mirage_config, generate_mirage_config_adapter
-from core.config.base import MirageConfig
-from core.config.schain.helper import get_static_params_mirage as original_get_static_params_mirage
-
-from skale.types.rotation import Rotation, NodesGroup, RotationNodeData, NodesSwap
-from skale.types.node import Node, NodeId, NodeStatus, Port, MirageNode, NodeWithSchains
-from skale.types.validator import ValidatorId
+import mock
+import pytest
+from eth_typing import BlockNumber, ChecksumAddress, HexStr
 from skale.contracts.manager.schains import SchainStructure
+from skale.types.node import MirageNode, Node, NodeId, NodeStatus, NodeWithSchains, Port
+from skale.types.rotation import NodesGroup, NodesSwap, Rotation, RotationNodeData
+from skale.types.validator import ValidatorId
+from skale.types.committee import TimeStamp, Committee
+from skale.types.dkg import G2Point, DkgId, Fp2Point
 
+from core.config.base import MirageConfig
+from core.config.mirage.generator import generate_mirage_config, generate_mirage_config_adapter
+from core.config.schain.helper import get_static_params_mirage as original_get_static_params_mirage
+from tests.utils import CURRENT_TS
+from tools.configs import MIRAGE_STATIC_PARAMS_FILEPATH
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.web3 import ZERO_ADDRESS
-from tools.configs import MIRAGE_STATIC_PARAMS_FILEPATH
 
 MIRAGE_TEST_SECRET_KEY = {
     'key_share_name': 'BLS_KEY:SCHAIN_ID:MIRAGE:NODE_ID:0:DKG_ID:0',
@@ -29,6 +30,35 @@ MIRAGE_TEST_SECRET_KEY = {
     'public_key': ['0xNodeA', '0xNodeB'],
     'bls_public_keys': ['0xNodeA:1:2:3', '0xNodeB:4:5:6'],
 }
+
+
+@pytest.fixture
+def committee_info_from_mirage_manager(mirage_node):
+    committee_info_from_manager = [
+        {
+            'ts': 0,
+            'index': 0,
+            'group': [mirage_node, mirage_node],
+            'committee': Committee(
+                node_ids=[mirage_node.id, mirage_node.id],
+                dkg_id=DkgId(0),
+                common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
+                starting_timestamp=TimeStamp(0),
+            ),
+        },
+        {
+            'ts': CURRENT_TS,
+            'index': 0,
+            'group': [mirage_node, mirage_node],
+            'committee': Committee(
+                node_ids=[mirage_node.id, mirage_node.id],
+                dkg_id=DkgId(0),
+                common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
+                starting_timestamp=TimeStamp(0),
+            ),
+        },
+    ]
+    return committee_info_from_manager
 
 
 @contextlib.contextmanager
@@ -129,7 +159,6 @@ def test_generate_mirage_config_adapter(mirage_default_secret_key_file, node_gro
     )
 
     node_id = NodeId(1)
-    common_bls_keys = ['0xA', '0xB']
 
     node_bls_keys_for_node_info = ['0xNodeA', '0xNodeB']
 
@@ -175,11 +204,10 @@ def test_generate_mirage_config_adapter(mirage_default_secret_key_file, node_gro
     config = generate_mirage_config_adapter(
         skale_node=node,
         node_id=node_id,
+        chain_start_ts=CURRENT_TS,
         schain_nodes_with_schains=cast(list[NodeWithSchains], schain_nodes_with_schains),
         node_groups=node_groups,
-        rotation_data=mock_rotation,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        common_bls_public_keys=common_bls_keys,
         sync_node=False,
         archive=False,
         catchup=False,
@@ -191,30 +219,20 @@ def test_generate_mirage_config_adapter(mirage_default_secret_key_file, node_gro
 
 
 def test_generate_mirage_config_minimal_regular(
-    mirage_default_secret_key_file, mirage_node, node_groups
+    mirage_default_secret_key_file, mirage_node, node_groups, committee_info_from_mirage_manager
 ):
     mock_rotation = mock.MagicMock(spec=Rotation)
     mock_rotation.rotation_counter = 0
     mock_rotation.freeze_until = 1700000000
 
     node_id = 1
-    common_bls_keys = ['0xA', '0xB']
-
-    node_bls_keys_for_node_info = ['0xNodeA', '0xNodeB']
-
-    committee_nodes = [
-        mirage_node,
-        mirage_node,
-    ]
 
     config = generate_mirage_config(
         node=mirage_node,
-        committee_nodes=committee_nodes,
+        committee_info_from_manager=committee_info_from_mirage_manager,
         node_groups=node_groups,
-        group_index=mock_rotation.rotation_counter,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        common_bls_public_keys=common_bls_keys,
-        sync_node=False,
+        is_committee_node=True,
         archive=False,
         catchup=False,
     )
@@ -230,10 +248,6 @@ def test_generate_mirage_config_minimal_regular(
     assert node_info['nodeID'] == node_id
     assert node_info['nodeName'] == str(node_id)
     assert node_info['syncNode'] is False
-    assert 'wallets' in node_info
-    assert 'ima' in node_info['wallets']
-    assert 'keyShareName' in node_info['wallets']['ima']
-    assert node_info['wallets']['ima']['BLSPublicKey0'] == node_bls_keys_for_node_info[0]
 
     schain_info = config_dict['skaleConfig']['sChain']
     assert schain_info['schainID'] == 936
@@ -242,33 +256,21 @@ def test_generate_mirage_config_minimal_regular(
 
     node_list = schain_info['nodes']
     assert len(node_list) == 2
-    assert 'publicKey' in node_list[0]
-    assert 'publicIP' not in node_list[0]
-    assert node_list[0]['owner'].startswith('0x')
 
 
 def test_generate_mirage_config_minimal_sync(
-    mirage_default_secret_key_file, mirage_node, node_groups
+    committee_info_from_mirage_manager, mirage_default_secret_key_file, mirage_node, node_groups
 ):
     mock_rotation = mock.MagicMock(spec=Rotation)
     mock_rotation.rotation_counter = 0
     mock_rotation.freeze_until = 1700000000
 
-    common_bls_keys = ['0xA', '0xB']
-
-    committee_nodes = [
-        mirage_node,
-        mirage_node,
-    ]
-
     config = generate_mirage_config(
         node=mirage_node,
-        committee_nodes=committee_nodes,
+        committee_info_from_manager=committee_info_from_mirage_manager,
         node_groups=node_groups,
-        group_index=mock_rotation.rotation_counter,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        common_bls_public_keys=common_bls_keys,
-        sync_node=True,
+        is_committee_node=False,
         archive=False,
         catchup=False,
     )
@@ -278,13 +280,6 @@ def test_generate_mirage_config_minimal_sync(
 
     node_info = config_dict['skaleConfig']['nodeInfo']
     assert node_info['syncNode'] is True
-
-    assert 'wallets' in node_info
-    wallets = node_info['wallets']['ima']
-    assert wallets['n'] == len(common_bls_keys)
-    assert 'keyShareName' not in wallets
-    assert 't' not in wallets
-    assert 'BLSPublicKey0' not in wallets
 
 
 @pytest.mark.parametrize(
@@ -302,18 +297,12 @@ def test_generate_mirage_config_for_different_env_types(
     expected_chain_id_int,
     expected_chain_name,
     mirage_node,
+    committee_info_from_mirage_manager,
     node_groups,
 ):
     mock_rotation = mock.MagicMock(spec=Rotation)
     mock_rotation.rotation_counter = 0
     mock_rotation.freeze_until = 1700000000
-
-    common_bls_keys = ['0xA', '0xB']
-
-    committee_nodes = [
-        mirage_node,
-        mirage_node,
-    ]
 
     def replacement_get_static_params_mirage(
         env_type_arg_passed_by_caller, path_arg_passed_by_caller=MIRAGE_STATIC_PARAMS_FILEPATH
@@ -329,12 +318,10 @@ def test_generate_mirage_config_for_different_env_types(
         ):
             config = generate_mirage_config(
                 node=mirage_node,
-                committee_nodes=committee_nodes,
+                committee_info_from_manager=committee_info_from_mirage_manager,
                 node_groups=node_groups,
-                group_index=mock_rotation.rotation_counter,
                 ecdsa_key_name='NEK:SIMPLE_REGULAR',
-                common_bls_public_keys=common_bls_keys,
-                sync_node=False,
+                is_committee_node=True,
                 archive=False,
                 catchup=False,
             )

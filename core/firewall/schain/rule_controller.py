@@ -76,7 +76,7 @@ class SChainRuleController(IRuleController):
         self.sync_ip_ranges = sync_ip_ranges or []
         self.port_allocation = port_allocation
         self.ports_per_schain = ports_per_schain
-        self._firewall_manager: IFirewallManager | None  =  None
+        self._firewall_manager: IFirewallManager | None = None
 
     def get_missing(self) -> Dict['str', Any]:
         missing: Dict['str', Any] = {}
@@ -222,7 +222,6 @@ class NFTSchainRuleController(SChainRuleController):
             self.base_port,  # type: ignore
             self.base_port + self.ports_per_schain - 1,  # type: ignore
         )
-
 
     @property
     def firewall_manager(self) -> NFTSkaleChainFirewallManager:

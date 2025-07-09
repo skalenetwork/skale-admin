@@ -30,6 +30,7 @@ from core.config.mirage.firewall import (
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
+from core.config.mirage.helper import is_node_in_current_config_group
 from core.firewall import MirageCommitteeScopeRuleController
 from core.monitor.action_base import (
     CONTAINER_POST_RUN_DELAY,
@@ -39,7 +40,6 @@ from core.monitor.action_base import (
 from core.node_config import NodeConfig
 from core.schains.cleaner import remove_skaled_container
 from core.types.chain import MirageChainName
-from tools.configs import SYNC_NODE
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.node_options import NodeOptions
@@ -79,6 +79,12 @@ class MirageSkaledActionManager(BaseSkaledActionManager):
             download_snapshot,
             start_ts,
         )
+
+        node_in_current_config = is_node_in_current_config_group(
+            self.cfm.skaled_config, self.node_config.id
+        )
+        sync_node = not node_in_current_config  # todod: tmp, handle it later
+
         monitor_skaled_container(
             self.chain_name,
             chain_record=self.chain_record,
@@ -88,7 +94,7 @@ class MirageSkaledActionManager(BaseSkaledActionManager):
             start_ts=start_ts,
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,
-            sync_node=SYNC_NODE,
+            sync_node=sync_node,  # todod: tmp, handle it later - skaled should be fixed
             historic_state=self.node_options.historic_state,
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)

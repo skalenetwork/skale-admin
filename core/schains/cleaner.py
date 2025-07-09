@@ -148,7 +148,6 @@ def get_schains_firewall_configs() -> list:
 
 
 def get_schains_on_node(dutils=None):
-    logger.info('HEREC firewall configs to clean %s', list(get_schains_firewall_configs()))
     dutils = dutils or DockerUtils()
     schains_with_dirs = os.listdir(SCHAINS_DIR_PATH)
     schains_with_container = get_schains_with_containers(dutils)

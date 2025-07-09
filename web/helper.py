@@ -17,23 +17,22 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import logging
 import json
+import logging
+import os
 from functools import wraps
 from http import HTTPStatus
 
-from flask import g, Response
-from skale import SkaleManager, MirageManager
+from flask import Response, g
+from skale import MirageManager, SkaleManager
 from skale.utils.web3_utils import init_web3
 
 from core.node_config import NodeConfig
-from tools.helper import init_skale, init_mirage
+from core.utils.mirage import init_mirage_manager
+from tools.configs.web3 import boot_endpoint, endpoint
+from tools.helper import init_mirage, init_skale
 from tools.wallet_utils import init_wallet
-from tools.configs.web3 import endpoint
-
 from web import API_VERSION_PREFIX
-
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +69,7 @@ def init_skale_from_node_config(node_config: NodeConfig) -> SkaleManager:
 
 
 def init_mirage_from_node_config(node_config: NodeConfig) -> MirageManager:
-    wallet = init_wallet(node_config, endpoint=endpoint())
+    wallet = init_wallet(node_config, endpoint=boot_endpoint())
     return init_mirage(wallet)
 
 
@@ -100,10 +99,10 @@ def g_mirage(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if getattr(g, 'wallet', None) is None:
-            g.mirage = init_mirage_from_node_config(g.config)
+            g.mirage = init_mirage_manager(node_config=g.config)
             g.wallet = g.mirage.wallet
         else:
-            g.mirage = init_mirage(g.wallet)
+            g.mirage = init_mirage_manager(wallet=g.wallet)
         return func(*args, **kwargs)
 
     return wrapper

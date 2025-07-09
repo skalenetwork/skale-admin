@@ -23,6 +23,7 @@ import os
 from typing import cast
 
 from skale.mirage_manager import MirageManager
+from skale.types.committee import CommitteeIndex
 
 from core.checks.base import BaseSkaledChecks, CheckRes, IChecks
 from core.config.endpoint import get_base_port_from_config
@@ -58,7 +59,7 @@ class MirageConfigChecks(IChecks):
         mirage: MirageManager,
         node_config: NodeConfig,
         chain_name: MirageChainName,
-        group_index: int,
+        committee_index: CommitteeIndex,
         stream_version: str,
         chain_record: ChainRecord,
     ) -> None:
@@ -66,13 +67,14 @@ class MirageConfigChecks(IChecks):
         self.node_config = node_config
         self.mirage = mirage
         self.chain_record = chain_record
-        self.group_index = group_index
+        self.committee_index = committee_index
         self.stream_version = stream_version
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=chain_name)
         self.statsd_client = get_statsd_client()
 
-        self.rule_controller: MirageNetworkScopeRuleController = \
+        self.rule_controller: MirageNetworkScopeRuleController = (
             get_mirage_network_scope_rule_controller()
+        )
 
     def get_name(self) -> str:
         return self.name
@@ -86,7 +88,7 @@ class MirageConfigChecks(IChecks):
     @property
     def dkg(self) -> CheckRes:
         """Checks that DKG procedure is completed"""
-        secret_key_share_filepath = get_secret_key_share_filepath(self.name, self.group_index)
+        secret_key_share_filepath = get_secret_key_share_filepath(self.name, self.committee_index)
         return CheckRes(os.path.isfile(secret_key_share_filepath))
 
     @property
@@ -97,14 +99,14 @@ class MirageConfigChecks(IChecks):
         and config regeneration was not triggered manually.
         Returns False otherwise.
         """
-        exists = self.cfm.upstream_exist_for_rotation_id(self.group_index)
+        exists = self.cfm.upstream_exist_for_rotation_id(self.committee_index)
         logger.debug('Upstream configs status for %s: %s', self.name, exists)
         stream_updated = self.chain_record.config_version == self.stream_version
         triggered = self.chain_record.sync_config_run
 
         logger.info(
-            'Upstream config status, group_index %s: exist: %s,stream: %s, triggered: %s',
-            self.group_index,
+            'Upstream config status, committee_index %s: exist: %s,stream: %s, triggered: %s',
+            self.committee_index,
             exists,
             stream_updated,
             triggered,

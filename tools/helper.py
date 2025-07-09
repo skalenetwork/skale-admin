@@ -17,33 +17,33 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import itertools
 import json
 import logging
-import psutil
+import os
 import subprocess
 import time
 from subprocess import PIPE
 from typing import cast
 
+import psutil
 import requests
 import yaml
 from filelock import FileLock
 from jinja2 import Environment
-from skale import SkaleManager, MirageManager
+from skale import MirageManager, SkaleManager
 from skale.types.node import NodeId
 from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
 from tools.configs.web3 import (
+    BOOT_ENDPOINT,
     ENDPOINT,
     MANAGER_CONTRACTS,
     MIRAGE_CONTRACTS,
     STATE_FILEPATH,
     ZERO_ADDRESS,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ def init_skale(wallet: BaseWallet) -> SkaleManager:
 def init_mirage(wallet: BaseWallet) -> MirageManager:
     if MIRAGE_CONTRACTS is None:
         raise ValueError('MIRAGE_CONTRACTS is not set')
-    return MirageManager(ENDPOINT, MIRAGE_CONTRACTS, wallet, state_path=STATE_FILEPATH)
+    return MirageManager(BOOT_ENDPOINT, MIRAGE_CONTRACTS, wallet, state_path=STATE_FILEPATH)
 
 
 def safe_load_yml(filepath):
@@ -205,4 +205,4 @@ def is_mirage() -> bool:
 
 
 def cast_manager_to_mirage_node_id(manager_node_id: int) -> NodeId:
-    return cast(NodeId, manager_node_id + 1)
+    return cast(NodeId, manager_node_id)

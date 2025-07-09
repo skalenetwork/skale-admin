@@ -20,27 +20,23 @@
 import logging
 
 from skale import MirageManager
+from skale.types.committee import CommitteeIndex
 
-from core.config.mirage.generator import generate_mirage_config_with_manager
-from core.monitor.action_base import BaseActionManager
-from core.monitor.mirage.utils import get_local_skaled_endpoint_mirage
-from core.node_config import NodeConfig
 from core.checks.mirage import MirageConfigChecks
-from core.firewall import get_mirage_network_scope_rule_controller, get_network_scope_node_ips
-from core.redis.chain_record import ChainRecord
-
-
+from core.config.mirage.generator import generate_mirage_config_with_manager
 from core.config.schain.directory import init_schain_config_dir
-from core.config.schain.main import update_schain_config_version
 from core.config.schain.file_manager import ConfigFileManager
-
+from core.config.schain.main import update_schain_config_version
+from core.firewall import get_mirage_network_scope_rule_controller, get_network_scope_node_ips
+from core.monitor.action_base import BaseActionManager
+from core.node_config import NodeConfig
+from core.redis.chain_record import ChainRecord
 from core.redis.node_config_mirage import NodeConfigMirage
 from core.types.chain import MirageChainName
-from tools.configs import SYNC_NODE
+from core.utils.mirage import get_local_skaled_endpoint_mirage
 from tools.helper import no_hyphens
 from tools.node_options import NodeOptions
 from tools.resources import get_statsd_client
-
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +46,7 @@ class MirageConfigActionManager(BaseActionManager):
         self,
         mirage: MirageManager,
         chain_name: MirageChainName,
-        group_index: int,
+        committee_index: CommitteeIndex,
         node_config: NodeConfig,
         stream_version: str,
         checks: MirageConfigChecks,
@@ -61,7 +57,7 @@ class MirageConfigActionManager(BaseActionManager):
         self.checks = checks
         self.stream_version = stream_version
         self.chain_name = chain_name
-        self.group_index = group_index
+        self.committee_index = committee_index
         self.rule_controller = get_mirage_network_scope_rule_controller()
 
         self.node_options = node_options or NodeOptions()
@@ -119,20 +115,21 @@ class MirageConfigActionManager(BaseActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def upstream_config(self) -> bool:
+    def upstream_config(self, is_committee_node: bool) -> bool:
         with self.statsd_client.timer(f'admin.action.upstream_config.{no_hyphens(self.name)}'):
             logger.info(
-                'Generating new upstream_config group_index: %s, stream: %s',
-                self.group_index,
+                'Generating new upstream_config committee_index: \
+%s, stream: %s, is_committee_node: %s',
+                self.committee_index,
                 self.stream_version,
+                is_committee_node,
             )
 
             new_config = generate_mirage_config_with_manager(
                 mirage=self.mirage,
                 node_id=self.node_config.id,
-                group_index=self.group_index,
                 ecdsa_key_name=self.node_config.sgx_key_name,
-                sync_node=SYNC_NODE,
+                is_committee_node=is_committee_node,
                 archive=self.node_options.archive,
                 catchup=self.node_options.catchup,
             ).to_dict()
@@ -143,8 +140,8 @@ class MirageConfigActionManager(BaseActionManager):
                 or new_config != self.cfm.latest_upstream_config
             ):
                 logger.info('Saving new config')
-                logger.info('Saving new upstream config group_index: %d', self.group_index)
-                self.cfm.save_new_upstream(self.group_index, new_config)
+                logger.info('Saving new upstream config committee_index: %d', self.committee_index)
+                self.cfm.save_new_upstream(self.committee_index, new_config)
                 result = True
             else:
                 logger.info('Generated config is the same as latest upstream')
@@ -172,7 +169,7 @@ class MirageConfigActionManager(BaseActionManager):
         initial_status = self.checks.network_scope_firewall_rules.status
         if not initial_status:
             logger.info('Configuring network scope firewall rules')
-            base_port = self.mirage.nodes.get(self.node_config.id + 1).port
+            base_port = self.mirage.nodes.get(self.node_config.id).port
             own_ip = self.node_config.ip
             node_ips = get_network_scope_node_ips(self.mirage)
 
