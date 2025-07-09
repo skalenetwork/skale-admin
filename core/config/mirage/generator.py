@@ -29,6 +29,9 @@ from skale.types.committee import CommitteeGroup
 from skale.types.node import MirageNode, NodeId, NodeWithSchains
 from skale.types.node import Node as SkaleNode
 from skale.types.rotation import NodesGroup
+from skale.types.committee import CommitteeIndex, TimeStamp, Committee
+from skale.types.dkg import G2Point, DkgId, Fp2Point
+
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.config.base import MirageConfig, SChainBaseConfig
@@ -62,9 +65,8 @@ class MirageSkaleConfig:
 def generate_mirage_config_with_manager(
     mirage: MirageManager,
     node_id: NodeId,
-    group_index: int,
     ecdsa_key_name: str,
-    sync_node: bool,
+    is_committee_node: bool,
     archive: bool,
     catchup: bool,
 ) -> MirageConfig:
@@ -78,7 +80,7 @@ def generate_mirage_config_with_manager(
         committee_info_from_manager=committee_nodes_in_scope,
         node_groups=node_groups,
         ecdsa_key_name=ecdsa_key_name,
-        sync_node=sync_node,
+        is_committee_node=is_committee_node,
         archive=archive,
         catchup=catchup,
     )
@@ -115,15 +117,35 @@ def generate_mirage_config_adapter(
     ]
 
     committee_info_from_manager: list[CommitteeGroup] = [
-        {'ts': 0, 'index': 0, 'group': committee_nodes},
-        {'ts': chain_start_ts, 'index': 0, 'group': committee_nodes},
+        {
+            'ts': TimeStamp(0),
+            'index': CommitteeIndex(0),
+            'group': committee_nodes,
+            'committee': Committee(
+                node_ids=[node.id for node in committee_nodes],
+                dkg_id=DkgId(0),
+                common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
+                starting_timestamp=TimeStamp(0),
+            ),
+        },
+        {
+            'ts': TimeStamp(chain_start_ts),
+            'index': CommitteeIndex(0),
+            'group': committee_nodes,
+            'committee': Committee(
+                node_ids=[node.id for node in committee_nodes],
+                dkg_id=DkgId(0),
+                common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
+                starting_timestamp=TimeStamp(0),
+            ),
+        },
     ]
     return generate_mirage_config(
         node=node,
         committee_info_from_manager=committee_info_from_manager,
         node_groups=node_groups,
         ecdsa_key_name=ecdsa_key_name,
-        sync_node=sync_node,
+        is_committee_node=True,
         archive=archive,
         catchup=catchup,
     )
@@ -134,7 +156,7 @@ def generate_mirage_config(
     committee_info_from_manager: list[CommitteeGroup],
     node_groups: Dict[int, NodesGroup],
     ecdsa_key_name: str,
-    sync_node: bool = False,
+    is_committee_node: bool,
     archive: bool = False,
     catchup: bool = False,
 ) -> MirageConfig:
@@ -155,7 +177,7 @@ def generate_mirage_config(
 
     committee_info = generate_committee_info(
         committee_info_from_manager=committee_info_from_manager,
-        sync_node=sync_node,
+        node_id=node.id,
     )
 
     schain_info = MirageChainInfo(
@@ -172,7 +194,7 @@ def generate_mirage_config(
         ecdsa_key_name=ecdsa_key_name,
         static_node_info=static_node_info,
         port=node.port,
-        sync_node=sync_node,
+        is_committee_node=is_committee_node,
         archive=archive,
         catchup=catchup,
     )

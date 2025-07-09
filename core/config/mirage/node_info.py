@@ -32,7 +32,7 @@ class MirageCurrentNodeInfo(NodeInfo):
 
     ecdsa_key_name: str
     static_node_info: dict
-    sync_node: bool
+    is_committee_node: bool
     catchup: bool
     archive: bool
 
@@ -42,14 +42,15 @@ class MirageCurrentNodeInfo(NodeInfo):
             **super().to_dict(),
             **{
                 'ecdsaKeyName': self.ecdsa_key_name,
-                'syncNode': self.sync_node,
+                'syncNode': not self.is_committee_node,
                 'info-acceptors': 1,
                 **self.static_node_info,
             },
         }
-        if self.sync_node:
-            node_info['archiveMode'] = self.archive
-            node_info['syncFromCatchup'] = self.catchup
+        # todod: handle later
+        # if not self.is_committee_node:
+        #     node_info['archiveMode'] = self.archive
+        #     node_info['syncFromCatchup'] = self.catchup
         return node_info
 
 
@@ -58,7 +59,7 @@ def generate_mirage_current_node_info(
     ecdsa_key_name: str,
     static_node_info: dict,
     port: Port,
-    sync_node: bool = False,
+    is_committee_node: bool,
     archive: bool = False,
     catchup: bool = False,
 ) -> MirageCurrentNodeInfo:
@@ -70,7 +71,7 @@ def generate_mirage_current_node_info(
         name=str(node_id),
         base_port=port,
         ecdsa_key_name=ecdsa_key_name,
-        sync_node=sync_node,
+        is_committee_node=is_committee_node,
         archive=archive,
         catchup=catchup,
         static_node_info=static_node_info,
