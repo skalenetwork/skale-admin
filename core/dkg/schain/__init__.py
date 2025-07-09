@@ -19,6 +19,7 @@
 
 # ruff: noqa: F401
 
-from core.dkg.schain.main import get_dkg_client, run_dkg, save_dkg_results
+from core.dkg.client import DkgError
+from core.dkg.schain.main import get_dkg_client, run_dkg
 from core.dkg.structures import DKGStatus, DKGStep
-from core.dkg.utils import DkgError, get_secret_key_share_filepath
+from core.dkg.utils import get_secret_key_share_filepath, save_dkg_results
