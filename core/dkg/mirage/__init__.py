@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2021 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,13 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import Enum
+# ruff: noqa: F401
 
-
-class ComplaintReason(int, Enum):
-    """Index of complaint reason"""
-
-    NO_BROADCAST = 0
-    BAD_DATA = 1
-    NO_ALRIGHT = 2
-    NO_RESPONSE = 3
+from core.dkg.schain.main import get_dkg_client, run_dkg, save_dkg_results
+from core.dkg.schain.utils import DkgError, get_secret_key_share_filepath
+from core.dkg.structures import DKGStatus, DKGStep
