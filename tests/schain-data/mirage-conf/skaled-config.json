@@ -1,0 +1,237 @@
+{
+  "sealEngine": "Ethash",
+  "params": {
+    "accountStartNonce": "0x00",
+    "homesteadForkBlock": "0x0",
+    "daoHardforkBlock": "0x0",
+    "EIP150ForkBlock": "0x00",
+    "EIP158ForkBlock": "0x00",
+    "byzantiumForkBlock": "0x0",
+    "constantinopleForkBlock": "0x0",
+    "istanbulForkBlock": "0x0",
+    "networkID": "12313219",
+    "chainID": "0x2f8d4b0d3abc9",
+    "maximumExtraDataSize": "0x20",
+    "tieBreakingGas": false,
+    "minGasLimit": "0xFFFFFFF",
+    "maxGasLimit": "7fffffffffffffff",
+    "gasLimitBoundDivisor": "0x0400",
+    "minimumDifficulty": "0x0",
+    "difficultyBoundDivisor": "0x0800",
+    "durationLimit": "0x0d",
+    "blockReward": "0x4563918244F40000",
+    "externalGasDifficulty": "0x01",
+    "skaleDisableChainIdCheck": true
+  },
+  "unddos": {
+    "origins": [
+      {
+        "origin": ["*"],
+        "ban_lengthy": 30,
+        "ban_peak": 10,
+        "max_calls_per_minute": 60000,
+        "max_calls_per_second": 1000,
+        "max_ws_conn": 20000
+      }
+    ],
+    "global": {
+      "ban_lengthy": 30,
+      "ban_peak": 10,
+      "max_calls_per_minute": 300000,
+      "max_calls_per_second": 5000,
+      "max_ws_conn": 20000
+    }
+  },
+  "genesis": {
+    "nonce": "0x0000000000000042",
+    "difficulty": "0x0",
+    "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "author": "0x0000000000000000000000000000000000000000",
+    "timestamp": "0x00",
+    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "extraData": "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
+    "gasLimit": "0xFFFFFFF"
+  },
+  "accounts": {
+    "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266": {
+      "balance": "1000000000000000000000000000000"
+    },
+    "0xffffffffffffffffffffffffffffffffffffffff": {
+      "balance": "1000000000000000000000000000000"
+    },
+    "0x0000000000000000000000000000000000000001": {
+      "precompiled": {
+        "name": "ecrecover",
+        "linear": {
+          "base": 3000,
+          "word": 0
+        }
+      }
+    },
+    "0x0000000000000000000000000000000000000002": {
+      "precompiled": {
+        "name": "sha256",
+        "linear": {
+          "base": 60,
+          "word": 12
+        }
+      }
+    },
+    "0x0000000000000000000000000000000000000003": {
+      "precompiled": {
+        "name": "ripemd160",
+        "linear": {
+          "base": 600,
+          "word": 120
+        }
+      }
+    },
+    "0x0000000000000000000000000000000000000004": {
+      "precompiled": {
+        "name": "identity",
+        "linear": {
+          "base": 15,
+          "word": 3
+        }
+      }
+    },
+    "0x0000000000000000000000000000000000000005": {
+      "precompiled": {
+        "name": "modexp"
+      }
+    },
+    "0x0000000000000000000000000000000000000006": {
+      "precompiled": {
+        "name": "alt_bn128_G1_add",
+        "linear": {
+          "base": 500,
+          "word": 0
+        }
+      }
+    },
+    "0x0000000000000000000000000000000000000007": {
+      "precompiled": {
+        "name": "alt_bn128_G1_mul",
+        "linear": {
+          "base": 40000,
+          "word": 0
+        }
+      }
+    },
+    "0x0000000000000000000000000000000000000008": {
+      "precompiled": {
+        "name": "alt_bn128_pairing_product"
+      }
+    },
+    "0x0000000000000000000000000000000000000012": {
+      "precompiled": {
+        "name": "logTextMessage",
+        "linear": {
+          "base": 15,
+          "word": 0
+        },
+        "startingBlock": "0x0"
+      }
+    },
+    "0x0000000000000000000000000000000000000016": {
+      "precompiled": {
+        "name": "fnReserved0x16",
+        "linear": {
+          "base": 15,
+          "word": 0
+        },
+        "startingBlock": "0x0"
+      }
+    },
+    "0x0000000000000000000000000000000000000018": {
+      "precompiled": {
+        "name": "getBlockRandom",
+        "linear": {
+          "base": 15,
+          "word": 0
+        },
+        "startingBlock": "0x0"
+      }
+    },
+    "0x0000000000000000000000000000000000000019": {
+      "precompiled": {
+        "name": "getIMABLSPublicKey",
+        "linear": {
+          "base": 15,
+          "word": 0
+        },
+        "startingBlock": "0x0"
+      }
+    }
+  },
+  "skaleConfig": {
+    "nodeInfo": {
+      "nodeID": 1,
+      "nodeName": "TestNode",
+      "basePort": 1231,
+      "httpRpcPort": 1234,
+      "httpsRpcPort": 1239,
+      "wsRpcPort": 1233,
+      "wssRpcPort": 1238,
+      "infoHttpRpcPort": 1240,
+      "info-acceptors": 1,
+      "bindIP": "0.0.0.0",
+      "logLevel": "info",
+      "logLevelConfig": "info",
+      "pg-threads": 10,
+      "pg-threads-limit": 10,
+      "minCacheSize": 8000000,
+      "maxCacheSize": 16000000,
+      "collectionQueueSize": 20,
+      "collectionDuration": 60,
+      "transactionQueueSize": 1000,
+      "maxOpenLeveldbFiles": 1000,
+      "testSignatures": true
+    },
+    "sChain": {
+      "schainID": 1,
+      "schainName": "TestSchain",
+      "blockAuthor": "0xa68f946090c600eda6f139783077ee802afeb990",
+      "dbStorageLimit": 12653999554,
+      "maxConsensusStorageBytes": 63269997772,
+      "maxSkaledLeveldbStorageBytes": 63269997772,
+      "maxReservedStorageBytes": 21089999257,
+      "multiTransactionMode": true,
+      "nodeGroups": {
+        "0": {
+          "nodes": {
+            "8": [
+              1,
+              8,
+              "0xf925c203a30ec6cad5a263db3efab7ed4c1fd74c8688167e10a5a22e15ab5018d8553df0ac54ea105a3d21845e5660bc3d4e7c82e7af1daa3baad393b1521467"
+            ]
+          },
+          "finish_ts": null,
+          "bls_public_key": {
+            "blsPublicKey0": "15959969554621958245201075983340071881770733084910870228938077786643587385029",
+            "blsPublicKey1": "7970122607051572307517094692346020360016825923464107614135327251488152616550",
+            "blsPublicKey2": "3371162264373897025322009434717052197952692496405149486989861571246537813591",
+            "blsPublicKey3": "13678625751515504401110635369790787716744686498431213713911601759809559919693"
+          }
+        }
+      },
+      "nodes": [
+        {
+          "nodeID": 1,
+          "nodeName": "TestNode",
+          "basePort": 1231,
+          "httpRpcPort": 1234,
+          "httpsRpcPort": 1239,
+          "wsRpcPort": 1233,
+          "wssRpcPort": 1238,
+          "publicKey": "1ba2bfbd7f4c9251c4cd88ce31fbef66f0d6855a98fafff8fbfe3b6bcb37d26bdbf31adba8030b56264e4336824023badb4861cd15293b7d124168ddd15763aa",
+          "owner": "0x0E7d7F1D34a502bD609542576941C3FCc087c588",
+          "schainIndex": 1,
+          "ip": "127.0.0.1",
+          "publicIP": "127.0.0.1"
+        }
+      ],
+      "emptyBlockIntervalMs": 1000
+    }
+  }
+}

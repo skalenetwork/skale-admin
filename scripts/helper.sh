@@ -8,7 +8,7 @@ export_test_env () {
     export ENV=dev
     export SGX_CERTIFICATES_FOLDER=$PWD/tests/skale-data/node_data/sgx_certs
     export SGX_SERVER_URL=https://localhost:1026
-    export ENDPOINT=http://localhost:1234
+    export ENDPOINT=${ENDPOINT}
     export DB_USER=user
     export DB_PASSWORD=pass
     export DB_PORT=3307
@@ -45,7 +45,7 @@ tests_cleanup () {
 }
 
 sgx_cleanup () {
-    export_test_env
+    export_test_env 
     docker rm -f sgx-simulator || true
     mkdir -p $SGX_CERTIFICATES_FOLDER || true
     rm -rf $SGX_CERTIFICATES_FOLDER/sgx.* || true
