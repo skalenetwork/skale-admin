@@ -25,12 +25,13 @@ from eth_utils.hexadecimal import remove_0x_prefix
 from skale.contracts.manager.dkg import G2Point
 from skale.transactions.result import TransactionFailedError
 
+from core.dkg.client import BaseDKGClient
 from core.dkg.schain.broadcast_filter import SchainFilter
-from core.dkg.schain.client import BaseDKGClient, DkgTransactionError
 from core.dkg.schain.structures import ComplaintReason
 from core.dkg.schain.utils import (
     generate_schain_bls_key_name,
     generate_schain_poly_name,
+    DkgTransactionError
 )
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
