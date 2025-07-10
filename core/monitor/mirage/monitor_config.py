@@ -20,11 +20,13 @@
 
 import logging
 from abc import abstractmethod
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from skale import MirageManager
 
 from core.checks.mirage import MirageConfigChecks
 from core.monitor.mirage.action_config import MirageConfigActionManager
+from core.monitor.mirage.healthcheck import handle_healthcheck_job
 from core.monitor.monitor_base import IMonitor
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
@@ -41,8 +43,13 @@ def run_config_pipeline(
     mirage: MirageManager,
     node_config: NodeConfig,
     stream_version: str,
+    scheduler: BackgroundScheduler,
 ) -> None:
     logger.info('Running config pipeline for %s', chain_name)
+
+    is_healthy = mirage.status.is_healthy(node_id=node_config.id)
+    logger.info('Node health status: %s', is_healthy)
+    handle_healthcheck_job(scheduler)
 
     committee_index = mirage.committee.get_active_committee_index()
     is_committee_node = mirage.committee.is_node_in_current_or_next_committee(node_config.id)

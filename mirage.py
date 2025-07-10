@@ -21,6 +21,7 @@ import time
 import logging
 
 from filelock import FileLock
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from core.node_config import NodeConfig
 
@@ -39,9 +40,10 @@ SLEEP_INTERVAL = 90
 
 
 def monitor(node_config: NodeConfig) -> None:
+    scheduler = BackgroundScheduler()
     while True:
         try:
-            start_tasks(node_config)
+            start_tasks(node_config, scheduler=scheduler)
         except Exception:
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')

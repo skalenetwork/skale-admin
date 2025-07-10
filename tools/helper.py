@@ -31,19 +31,12 @@ import requests
 import yaml
 from filelock import FileLock
 from jinja2 import Environment
-from skale import MirageManager, SkaleManager
+from skale import SkaleManager
 from skale.types.node import NodeId
 from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
-from tools.configs.web3 import (
-    BOOT_ENDPOINT,
-    ENDPOINT,
-    MANAGER_CONTRACTS,
-    MIRAGE_CONTRACTS,
-    STATE_FILEPATH,
-    ZERO_ADDRESS,
-)
+from tools.configs.web3 import STATE_FILEPATH, ZERO_ADDRESS, endpoint, manager_contracts
 
 logger = logging.getLogger(__name__)
 
@@ -133,15 +126,7 @@ def wait_until_admin_inited():
 
 
 def init_skale(wallet: BaseWallet) -> SkaleManager:
-    if MANAGER_CONTRACTS is None:
-        raise ValueError('MANAGER_CONTRACTS is not set')
-    return SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet, state_path=STATE_FILEPATH)
-
-
-def init_mirage(wallet: BaseWallet) -> MirageManager:
-    if MIRAGE_CONTRACTS is None:
-        raise ValueError('MIRAGE_CONTRACTS is not set')
-    return MirageManager(BOOT_ENDPOINT, MIRAGE_CONTRACTS, wallet, state_path=STATE_FILEPATH)
+    return SkaleManager(endpoint(), manager_contracts(), wallet, state_path=STATE_FILEPATH)
 
 
 def safe_load_yml(filepath):

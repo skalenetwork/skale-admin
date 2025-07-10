@@ -60,3 +60,14 @@ def init_mirage_manager(
     if node_config:
         wallet = init_wallet(node_config=node_config, endpoint=endpoint)
     return MirageManager(endpoints, mirage_contracts(), wallet=wallet)
+
+
+def init_local_mirage(
+    node_config: NodeConfig | None = None, wallet: BaseWallet | None = None
+) -> MirageManager:
+    local_endpoint = get_local_skaled_endpoint_mirage()
+    if not local_endpoint:
+        raise ValueError('Local skaled endpoint is not found, cannot initialize MirageManager')
+    if node_config:
+        wallet = init_wallet(node_config=node_config, endpoint=local_endpoint)
+    return MirageManager(local_endpoint, mirage_contracts(), wallet=wallet)
