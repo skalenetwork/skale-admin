@@ -1,10 +1,22 @@
+import functools
+import logging
+import time
+from contextlib import contextmanager
+from unittest import mock
+
 import pytest
 from skale import MirageManager, SkaleManager
 from skale.types.node import NodeStatus
+from skale.types.schain import SchainName
 from skale.wallets.web3_wallet import generate_wallet
 
+from core.config.schain.directory import init_schain_config_dir
+from core.schains.dkg.main import DKGResult
 from tests.dkg_test.main_test import (
     DKG_TIMEOUT,
+    DKGRunType,
+    DKGStatus,
+    DKGStep,
     cleanup_schain_config,
     create_schain,
     exec_dkg_runners,
@@ -22,6 +34,8 @@ from tests.utils import ETH_PRIVATE_KEY
 from tools.helper import read_json, run_cmd
 
 N_OF_NODES = 2
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope='session')
@@ -135,6 +149,73 @@ def mirage(skale_dkg, mirage_contracts, endpoint, skale):
     return MirageManager(endpoint, mirage_contracts, skale.wallet)
 
 
-def test_committee_rotation(mirage):
-    assert mirage.nodes.get_active_node_ids() == []
-    assert True
+@pytest.fixture
+def mirage_sgx_instances(sgx_wallets, mirage_contracts, endpoint):
+    return [MirageManager(endpoint, mirage_contracts, w) for w in sgx_wallets]
+
+
+@contextmanager
+def mirage_dkg_test_client(*args, **kwargs):
+    # todod: initialize the client properly
+    dkg_client = mock.Mock()
+    yield dkg_client
+
+
+def run_mirage_dkg(*args, **kwargs) -> DKGResult:
+    # todod: fill in the actual DKG logic
+    return DKGResult(status=DKGStatus.DONE, step=DKGStep.KEY_GENERATION, keys_data={})
+
+
+def run_node_mirage_dkg(
+    mirage: MirageManager,
+    schain_name: SchainName,
+    index: int,
+    node_id: int,
+    runs: tuple[DKGRunType] = (DKGRunType.NORMAL,),
+):
+    init_schain_config_dir(schain_name)
+    sgx_key_name = mirage.wallet._key_name
+    committee_id = mirage.committee.get_active_committee_index()
+
+    timeout = index * 5  # diversify start time for all nodes
+    logger.info('Node %d going to sleep %d seconds %s', node_id, timeout, type(runs))
+    time.sleep(timeout)
+    logger.info('Starting runs %s, %d', runs, len(runs))
+    dkg_result = None
+    for run_type in runs:
+        logger.info('Running %s dkg', run_type)
+        with mirage_dkg_test_client() as dkg_client:
+            logger.info('ID mirage %d', id(dkg_client.mirage))
+            try:
+                dkg_result = run_mirage_dkg(
+                    mirage, dkg_client, schain_name, node_id, sgx_key_name, committee_id
+                )
+            except Exception:
+                logger.exception('Mirage DKG run failed')
+            else:
+                if dkg_result.status == DKGStatus.DONE:
+                    logger.info('Mirage DKG completed')
+                    break
+        logger.info('Finished run %s', run_type)
+
+    logger.info('Completed runs %s', runs)
+    return dkg_result
+
+
+def get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name):
+    runners = []
+    for i, (node_mirage, node_data) in enumerate(zip(mirage_sgx_instances, nodes)):
+        runners.append(
+            functools.partial(
+                run_node_mirage_dkg, node_mirage, chain_name, i, node_data['node_id']
+            )
+        )
+    return runners
+
+
+def test_committee_rotation(mirage, nodes, mirage_sgx_instances):
+    assert mirage.nodes.get_active_node_ids() == [nodes]
+    mirage.committee.select()
+    chain_name = mirage.committee.chain_name
+    runners = get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name)
+    exec_dkg_runners(runners)
