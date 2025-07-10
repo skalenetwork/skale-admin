@@ -122,7 +122,7 @@ def skale_dkg(skale, schain, schain_creation_data, nodes, skale_sgx_instances, d
 
 
 @pytest.fixture
-def mirage_contracts(schain_creation_data, endpoint, manager_contracts):
+def mirage_contracts(schain_creation_data, skale_dkg, endpoint, manager_contracts):
     chain_name = schain_creation_data[0]
 
     env = {
