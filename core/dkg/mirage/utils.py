@@ -23,10 +23,11 @@ import time
 from skale.mirage_config.committee_nodes import get_committee_nodes
 from skale.types.dkg import Status
 
-from core.dkg.client import DkgError
 from core.dkg.mirage.client import MirageDKGClient
 from core.dkg.structures import DKGStep
-from core.dkg.utils import BroadcastResult, BROADCAST_DATA_SEARCH_SLEEP, sync_broadcast_data
+from core.dkg.utils import ( DkgError, BroadcastResult, BROADCAST_DATA_SEARCH_SLEEP,
+                            sync_broadcast_data
+)
 
 logger = logging.getLogger(__name__)
 
