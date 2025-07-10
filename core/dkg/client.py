@@ -30,8 +30,6 @@ from core.dkg.utils import (
     convert_key_share_to_str,
     convert_str_to_key_share,
     to_verify,
-    DkgError,
-    DkgTransactionError,
     DkgVerificationError,
     SgxDkgPolynomGenerationError
 )
