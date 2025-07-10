@@ -141,14 +141,6 @@ def get_latest_block_timestamp(skale):
     return skale.web3.eth.get_block('latest')['timestamp']
 
 
-def generate_mirage_poly_name(node_id, committee_id):
-    return f'MIRAGE_POLY:NODE_ID:{str(node_id)}:DKG_ID:{str(committee_id)}'
-
-
-def generate_mirage_bls_key_name(node_id, committee_id):
-    return f'MIRAGE_BLS_KEY:NODE_ID:{str(node_id)}:DKG_ID:{str(committee_id)}'
-
-
 def check_dkg_id_with_exception(dkg_client: MirageDKGClient):
     """Check if the DKG ID matches the current committee ID."""
     if not dkg_client.check_round_id():

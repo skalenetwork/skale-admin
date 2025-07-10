@@ -28,15 +28,11 @@ from skale.transactions.result import TransactionFailedError
 from core.dkg.client import BaseDKGClient
 from core.dkg.schain.broadcast_filter import SchainFilter
 from core.dkg.schain.structures import ComplaintReason
-from core.dkg.schain.utils import (
-    generate_schain_bls_key_name,
-    generate_schain_poly_name,
-    DkgTransactionError
-)
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
     convert_g2_points_to_array,
     convert_str_to_key_share,
+    DkgTransactionError
 )
 from tools.configs import NODE_DATA_PATH
 from tools.sgx_utils import sgx_unreachable_retry
@@ -44,6 +40,14 @@ from tools.sgx_utils import sgx_unreachable_retry
 sys.path.insert(0, NODE_DATA_PATH)
 
 logger = logging.getLogger(__name__)
+
+
+def generate_schain_poly_name(group_index_str, node_id, dkg_id):
+    return f'POLY:SCHAIN_ID:{group_index_str}:NODE_ID:{str(node_id)}:DKG_ID:{str(dkg_id)}'
+
+
+def generate_schain_bls_key_name(group_index_str, node_id, dkg_id):
+    return f'BLS_KEY:SCHAIN_ID:{group_index_str}:NODE_ID:{str(node_id)}:DKG_ID:{str(dkg_id)}'
 
 
 class SchainDKGClient(BaseDKGClient):

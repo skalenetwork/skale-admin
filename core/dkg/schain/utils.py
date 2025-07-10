@@ -233,10 +233,7 @@ def get_latest_block_timestamp(skale):
     return skale.web3.eth.get_block('latest')['timestamp']
 
 
-def generate_schain_poly_name(group_index_str, node_id, dkg_id):
-    return f'POLY:SCHAIN_ID:{group_index_str}:NODE_ID:{str(node_id)}:DKG_ID:{str(dkg_id)}'
-
-
-def generate_schain_bls_key_name(group_index_str, node_id, dkg_id):
-    return f'BLS_KEY:SCHAIN_ID:{group_index_str}:NODE_ID:{str(node_id)}:DKG_ID:{str(dkg_id)}'
+def get_common_bls_public_key(skale, group_index: str) -> list[str]:
+    raw_common_public_key = skale.key_storage.get_common_public_key(group_index)
+    return [elem for coord in raw_common_public_key for elem in coord]
 

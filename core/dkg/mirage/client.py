@@ -24,16 +24,21 @@ from skale.types.dkg import DkgId, Status
 
 from core.dkg.mirage.broadcast_filter import MirageFilter
 from core.dkg.client import BaseDKGClient
-from core.dkg.mirage.utils import (
-    generate_mirage_bls_key_name,
-    generate_mirage_poly_name,
-)
 from core.dkg.utils import convert_g2_points_to_array
 from tools.configs import NODE_DATA_PATH
 
 sys.path.insert(0, NODE_DATA_PATH)
 
 logger = logging.getLogger(__name__)
+
+
+def generate_mirage_poly_name(node_id, committee_id):
+    return f'MIRAGE_POLY:NODE_ID:{str(node_id)}:DKG_ID:{str(committee_id)}'
+
+
+def generate_mirage_bls_key_name(node_id, committee_id):
+    return f'MIRAGE_BLS_KEY:NODE_ID:{str(node_id)}:DKG_ID:{str(committee_id)}'
+
 
 class MirageDKGClient(BaseDKGClient):
     def __init__(
