@@ -30,6 +30,10 @@ from core.dkg.utils import (
     convert_key_share_to_str,
     convert_str_to_key_share,
     to_verify,
+    DkgError,
+    DkgTransactionError,
+    DkgVerificationError,
+    SgxDkgPolynomGenerationError
 )
 
 from sgx import SgxClient
@@ -45,21 +49,6 @@ from typing import ClassVar
 logger = logging.getLogger(__name__)
 
 ALRIGHT_GAS_LIMIT = 1000000
-
-class DkgError(Exception):
-    pass
-
-
-class DkgTransactionError(DkgError):
-    pass
-
-
-class DkgVerificationError(DkgError):
-    pass
-
-
-class SgxDkgPolynomGenerationError(DkgError):
-    pass
 
 
 class BaseDKGClient(ABC):

@@ -27,7 +27,6 @@ from eth_utils.hexadecimal import remove_0x_prefix
 from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.utils.helper import split_public_key
 
-from core.dkg.client import DkgError, DkgVerificationError
 from core.dkg.structures import DKGStep
 
 from tools.configs import NODE_DATA_PATH
@@ -37,6 +36,22 @@ logger = logging.getLogger(__name__)
 
 UINT_CONSTANT = 2**256 - 1
 BROADCAST_DATA_SEARCH_SLEEP = 30
+
+
+class DkgError(Exception):
+    pass
+
+
+class DkgTransactionError(DkgError):
+    pass
+
+
+class DkgVerificationError(DkgError):
+    pass
+
+
+class SgxDkgPolynomGenerationError(DkgError):
+    pass
 
 
 class DkgFailedError(DkgError):
