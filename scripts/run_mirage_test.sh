@@ -10,7 +10,7 @@ source $DIR/../helper-scripts/helper.sh
 tests_cleanup
 export_test_env
 
-# run_sgx_simulator $SGX_WALLET_TAG
+run_sgx_simulator $SGX_WALLET_TAG
 bash scripts/run_redis.sh
 
 python -m py.test tests/mirage/dkg_test.py $@
