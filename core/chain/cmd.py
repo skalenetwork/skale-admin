@@ -22,7 +22,7 @@ from typing import Optional
 from core.config.endpoint import get_chain_ports_from_config
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.main import get_skaled_container_config_path
-from core.config.schain.static_params import get_static_schain_cmd
+from core.config.schain.static_params import get_static_schain_cmd, get_static_skaled_cmd_mirage
 from core.schains.ssl import get_ssl_filepath
 from tools.configs import SGX_SERVER_URL
 from tools.configs.containers import (
@@ -34,15 +34,15 @@ from tools.helper import is_mirage
 
 
 def get_skaled_container_cmd(
-    schain_name: str,
+    chain_name: str,
     start_ts: int | None = None,
     download_snapshot: bool = False,
     enable_ssl: bool = True,
     sync_node: bool = False,
     snapshot_from: Optional[str] = None,
 ) -> str:
-    """Returns parameters that will be passed to skaled binary in the sChain container"""
-    opts = get_schain_container_base_opts(schain_name, enable_ssl=enable_ssl, sync_node=sync_node)
+    """Returns parameters that will be passed to skaled binary in the Chain container"""
+    opts = get_chain_container_base_opts(chain_name, enable_ssl=enable_ssl, sync_node=sync_node)
     if snapshot_from:
         opts.extend(['--no-snapshot-majority', snapshot_from])
     if download_snapshot:
@@ -58,14 +58,19 @@ def get_snapshot_opts(start_ts: int | None = None) -> list:
     return snapshot_opts
 
 
-def get_schain_container_base_opts(
+def get_chain_container_base_opts(
     chain_name: str, enable_ssl: bool = True, sync_node: bool = False
 ) -> list:
     config_filepath = get_skaled_container_config_path(chain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
     config = ConfigFileManager(chain_name=chain_name).skaled_config
     ports = get_chain_ports_from_config(config)
-    static_schain_cmd = get_static_schain_cmd()
+
+    static_chain_cmd = None
+    if is_mirage():
+        static_chain_cmd = get_static_skaled_cmd_mirage()
+    else:
+        static_chain_cmd = get_static_schain_cmd()
 
     cmd = [
         f'--config {config_filepath}',
@@ -88,8 +93,8 @@ def get_schain_container_base_opts(
             ]
         )
 
-    if static_schain_cmd:
-        cmd.extend(static_schain_cmd)
+    if static_chain_cmd:
+        cmd.extend(static_chain_cmd)
 
     if enable_ssl:
         cmd.extend([f'--ssl-key {ssl_key}', f'--ssl-cert {ssl_cert}'])

@@ -172,14 +172,6 @@ def get_schains_on_node(dutils=None):
     )
 
 
-def schain_names_to_ids(skale, schain_names):
-    ids = []
-    for name in schain_names:
-        id_ = skale.schains.name_to_id(name)
-        ids.append(bytes.fromhex(id_))
-    return ids
-
-
 def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
     dutils = dutils or DockerUtils()
     is_schain_exist = skale.schains_internal.is_schain_exist(schain_name)

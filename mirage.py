@@ -30,10 +30,10 @@ from core.redis.migrations import run_redis_migrations
 
 from tools.configs import INIT_LOCK_PATH
 
-from tools.logger import init_admin_logger
+from tools.logger import init_mirage_logger
 from tools.sgx_utils import generate_sgx_key
 
-init_admin_logger()
+init_mirage_logger()
 logger = logging.getLogger(__name__)
 
 SLEEP_INTERVAL = 90

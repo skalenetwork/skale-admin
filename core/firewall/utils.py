@@ -21,7 +21,7 @@ import json
 import logging
 import socket
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from skale import SkaleManager, MirageManager
 
