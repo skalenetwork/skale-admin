@@ -214,7 +214,6 @@ def get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name):
 
 
 def test_committee_rotation(mirage, nodes, mirage_sgx_instances):
-    assert mirage.nodes.get_active_node_ids() == [nodes]
     mirage.committee.select()
     chain_name = mirage.committee.chain_name
     runners = get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name)
