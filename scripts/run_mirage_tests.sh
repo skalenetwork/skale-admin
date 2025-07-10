@@ -13,6 +13,6 @@ export_test_env
 # run_sgx_simulator $SGX_WALLET_TAG
 bash scripts/run_redis.sh
 
-python -m py.test tests/mirage/committee_rotation_test.py $@
+python -m py.test tests/mirage/dkg_test.py $@
 tests_cleanup
 sgx_cleanup

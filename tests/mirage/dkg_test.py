@@ -1,8 +1,7 @@
 import pytest
 from skale import MirageManager, SkaleManager
-from skale.utils.exceptions import InvalidNodeIdError
+from skale.types.node import NodeStatus
 from skale.wallets.web3_wallet import generate_wallet
-from web3.exceptions import Web3RPCError
 
 from tests.dkg_test.main_test import (
     DKG_TIMEOUT,
@@ -27,13 +26,14 @@ N_OF_NODES = 2
 
 @pytest.fixture(scope='session')
 def no_zero_node(validator, skale, manager_contracts, endpoint):
-    try:
-        skale.nodes.get(0)
-    except (Web3RPCError, InvalidNodeIdError):
+    if skale.nodes.get_nodes_number() == 0 or skale.nodes.get(0)['status'] != NodeStatus.LEFT:
         wallet = generate_wallet(skale.web3)
         link_addresses_to_validator(skale, [wallet])
         transfer_eth_to_wallets(skale, [wallet])
         register_nodes([SkaleManager(endpoint, manager_contracts, wallet)])
+        if skale.nodes.get(0)['status'] != NodeStatus.ACTIVE:
+            skale.manager.remove_node_from_in_maintenance(0)
+        skale.nodes.init_exit(0)
         skale.manager.node_exit(0)
 
 
