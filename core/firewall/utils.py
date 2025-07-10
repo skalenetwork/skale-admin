@@ -112,10 +112,6 @@ def save_sync_ranges(sync_agent_ranges: List[IpRange], path: str) -> None:
         json.dump(output, out_file)
 
 
-def ranges_from_plain_tuples(plain_ranges: List[Tuple]) -> List[IpRange]:
-    return list(sorted(map(lambda r: IpRange(*r), plain_ranges)))
-
-
 def cleanup_firewall_for_schain(schain_name: str) -> None:
     nft = NFTablesController(chain=schain_name)
     nft.cleanup()
