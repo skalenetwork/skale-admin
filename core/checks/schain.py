@@ -46,7 +46,7 @@ from core.config.schain.helper import (
 )
 from core.firewall import IRuleController
 from core.node import ExtendedManagerNodeInfo, get_current_ips
-from core.dkg.schain.utils import get_secret_key_share_filepath
+from core.dkg.utils import get_secret_key_share_filepath
 from core.schains.external_config import ExternalConfig, ExternalState
 from core.schains.ima import get_ima_time_frame
 from core.schains.ima import get_migration_ts as get_ima_migration_ts
