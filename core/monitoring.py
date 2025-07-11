@@ -20,8 +20,6 @@
 import logging
 from typing import Optional
 
-from eth_typing import ChecksumAddress
-
 from tools.helper import process_template
 from tools.docker_utils import DockerUtils, get_docker_group_id
 
