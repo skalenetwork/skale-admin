@@ -1,7 +1,7 @@
-name: Test
+name: Mirage Test
 on: [push]
  workflow_run:
-    workflows: ["tests"]
+    workflows: ["Test"]
     types:
       - completed
 env:
