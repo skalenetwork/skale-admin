@@ -70,6 +70,11 @@ class MirageDKGClient(BaseDKGClient):
         return self.skale.dkg.is_node_broadcasted(
             DkgId(self.committee_id), self.node_id_dkg
         )
+    
+    def is_node_sent_alright(self) -> bool:
+        return self.skale.dkg.is_node_sent_alright(
+            DkgId(self.committee_id), self.node_id_dkg
+        )
 
     def _send_broadcast_transaction(self):
         verification_vector = self.verification_vector()
@@ -105,4 +110,6 @@ class MirageDKGClient(BaseDKGClient):
     def is_alright_possible(self) -> bool:
         """Check if the 'alright' transaction can be sent."""
         round_status = self.get_round_status()
-        return round_status == Status.ALRIGHT and self.check_round_id()
+        return not self.is_node_sent_alright() and round_status == Status.ALRIGHT \
+                and self.check_round_id()
+

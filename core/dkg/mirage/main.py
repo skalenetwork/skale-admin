@@ -60,7 +60,7 @@ def init_bls(dkg_client):
     logger.info('All broadcasted data is correct - sending alright ...')
     send_alright_and_wait_for_others(dkg_client)
 
-    logger.info('DKG completed successfuly')    
+    logger.info('DKG completed successfully')
 
 
 def is_last_dkg_finished(skale):

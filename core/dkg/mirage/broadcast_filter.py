@@ -19,6 +19,8 @@
 
 import logging
 
+from skale.types.dkg import DkgId
+
 from eth_utils.hexadecimal import remove_0x_prefix
 from web3.exceptions import Web3Exception, TransactionNotFound
 
@@ -76,9 +78,7 @@ class MirageFilter(BaseFilter):
         events = []
         try:
             if self.first_unseen_block == -1 or from_channel_started_block:
-                start_block = self.dkg_contract.functions.getChannelStartedBlock(
-                    self.committee_id
-                    ).call()
+                start_block = self.skale.dkg.get_starting_block_number(DkgId(self.committee_id))
             else:
                 start_block = self.first_unseen_block
             current_block = self.skale.web3.eth.get_block('latest')['number']
