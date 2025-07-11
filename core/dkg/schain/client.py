@@ -66,16 +66,6 @@ class SchainDKGClient(BaseDKGClient):
         rotation_id,
         step: DKGStep = DKGStep.NONE,
     ):
-        self.schain_name = schain_name
-        self.group_index = skale.schains.name_to_group_id(schain_name)
-        group_index_str = str(int(remove_0x_prefix(skale.web3.to_hex(self.group_index)), 16))
-        self.poly_name = generate_schain_poly_name(group_index_str, self.node_id_dkg, rotation_id)
-        self.bls_name = generate_schain_bls_key_name(group_index_str, self.node_id_dkg, rotation_id)
-        self.dkg_contract_functions = self.skale.dkg.contract.functions
-        self.dkg_timeout = self.skale.constants_holder.get_dkg_timeout()
-        self.complaint_error_event_hash = self.skale.web3.to_hex(
-            self.skale.web3.keccak(text='ComplaintError(string)')
-        )
         super().__init__(
             node_id_dkg,
             node_id_contract,
@@ -87,6 +77,16 @@ class SchainDKGClient(BaseDKGClient):
             node_ids_contract,
             eth_key_name,
             rotation_id,
+        )
+        self.schain_name = schain_name
+        self.group_index = skale.schains.name_to_group_id(schain_name)
+        group_index_str = str(int(remove_0x_prefix(skale.web3.to_hex(self.group_index)), 16))
+        self.poly_name = generate_schain_poly_name(group_index_str, self.node_id_dkg, rotation_id)
+        self.bls_name = generate_schain_bls_key_name(group_index_str, self.node_id_dkg, rotation_id)
+        self.dkg_contract_functions = self.skale.dkg.contract.functions
+        self.dkg_timeout = self.skale.constants_holder.get_dkg_timeout()
+        self.complaint_error_event_hash = self.skale.web3.to_hex(
+            self.skale.web3.keccak(text='ComplaintError(string)')
         )
         logger.info(f'sChain: {self.schain_name}. DKG timeout is {self.dkg_timeout}')
 
