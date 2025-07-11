@@ -224,32 +224,32 @@ def mirage_nodes(mirage, nodes):
 
 @pytest.fixture
 def new_wallet(mirage):
-    wallet = generate_sgx_wallets(mirage, 1)
+    wallet = generate_sgx_wallets(mirage, 1)[0]
+    print('Address', mirage.wallet.address, mirage.web3.eth.get_balance(mirage.wallet.address))
     send_eth(
         web3=mirage.web3,
         wallet=mirage.wallet,
         receiver_address=wallet.address,
-        amount=mirage.web3.to_wei(0.1, 'ether'),
+        amount=0.1
     )
     return wallet
 
 
 @pytest.fixture
 def new_mirage_instance(new_wallet, mirage_contracts, endpoint):
-    return MirageManager(endpoint, mirage_contracts)
+    return MirageManager(endpoint, mirage_contracts, new_wallet)
 
 
 @pytest.fixture
 def mirage_new_node(mirage, new_mirage_instance):
     ip, _, port, _ = generate_random_node_data()
-    new_mirage_instance.node.register_active(ip, port)
-    return new_mirage_instance.node.get_by_address(new_mirage_instance.wallet.address)
+    new_mirage_instance.nodes.register_active(ip, port)
+    return new_mirage_instance.nodes.get_by_address(new_mirage_instance.wallet.address)
 
 
 
 def test_committee_rotation(mirage, mirage_nodes, mirage_sgx_instances, mirage_new_node):
-    pass
-    # mirage.committee.select()
+    mirage.committee.generate([node.id for node in mirage_nodes])
     # chain_name = mirage.committee.chain_name
     # runners = get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name)
     # exec_dkg_runners(runners)
