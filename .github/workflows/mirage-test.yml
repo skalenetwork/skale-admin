@@ -59,7 +59,7 @@ jobs:
         if: always()
         run: |
           docker rm -f $(docker ps -aq)
-          sudo rm -r tests/schain-data/.artifacts/skaled-datadir
+          rm -r tests/schain-data/.artifacts/skaled-datadir
 
       - name: Show stats after core tests
         if: always()
