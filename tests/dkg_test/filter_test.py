@@ -1,7 +1,7 @@
 import mock
 import pytest
 
-from core.dkg.schain.broadcast_filter import Filter
+from core.dkg.schain.broadcast_filter import SchainFilter
 
 SCHAIN_NAME = 'test'
 N = 16
@@ -9,7 +9,7 @@ N = 16
 
 @pytest.fixture
 def filter_mock(skale):
-    filter = Filter(skale, SCHAIN_NAME, N)
+    filter = SchainFilter(skale, SCHAIN_NAME, N)
     filter.first_unseen_block = skale.web3.eth.get_block('latest')['number'] - 100
     return filter
 
