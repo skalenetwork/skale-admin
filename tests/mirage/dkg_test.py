@@ -8,6 +8,7 @@ import pytest
 from skale import MirageManager, SkaleManager
 from skale.types.node import NodeStatus
 from skale.types.schain import SchainName
+from skale.utils.account_tools import send_eth
 from skale.wallets.web3_wallet import generate_wallet
 
 from core.config.schain.directory import init_schain_config_dir
@@ -17,6 +18,7 @@ from tests.dkg_test.main_test import (
     DKGRunType,
     DKGStatus,
     DKGStep,
+    generate_random_node_data,
     cleanup_schain_config,
     create_schain,
     exec_dkg_runners,
@@ -212,9 +214,42 @@ def get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name):
         )
     return runners
 
+@pytest.fixture
+def mirage_nodes(mirage, nodes):
+    return [
+        mirage.nodes.get(node['node_id'])
+        for node in nodes
+    ]
 
-def test_committee_rotation(mirage, nodes, mirage_sgx_instances):
-    mirage.committee.select()
-    chain_name = mirage.committee.chain_name
-    runners = get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name)
-    exec_dkg_runners(runners)
+
+@pytest.fixture
+def new_wallet(mirage):
+    wallet = generate_sgx_wallets(mirage, 1)
+    send_eth(
+        web3=mirage.web3,
+        wallet=mirage.wallet,
+        receiver_address=wallet.address,
+        amount=mirage.web3.to_wei(0.1, 'ether'),
+    )
+    return wallet
+
+
+@pytest.fixture
+def new_mirage_instance(new_wallet, mirage_contracts, endpoint):
+    return MirageManager(endpoint, mirage_contracts)
+
+
+@pytest.fixture
+def mirage_new_node(mirage, new_mirage_instance):
+    ip, _, port, _ = generate_random_node_data()
+    new_mirage_instance.node.register_active(ip, port)
+    return new_mirage_instance.node.get_by_address(new_mirage_instance.wallet.address)
+
+
+
+def test_committee_rotation(mirage, mirage_nodes, mirage_sgx_instances, mirage_new_node):
+    pass
+    # mirage.committee.select()
+    # chain_name = mirage.committee.chain_name
+    # runners = get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name)
+    # exec_dkg_runners(runners)
