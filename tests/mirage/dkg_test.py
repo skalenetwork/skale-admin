@@ -249,7 +249,7 @@ def mirage_new_node(mirage, new_mirage_instance):
 
 
 def test_committee_rotation(mirage, mirage_nodes, mirage_sgx_instances, mirage_new_node):
-    mirage.committee.generate([node.id for node in mirage_nodes])
+    mirage.dkg.generate([node.id for node in mirage_nodes])
     # chain_name = mirage.committee.chain_name
     # runners = get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name)
     # exec_dkg_runners(runners)
