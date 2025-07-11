@@ -204,12 +204,12 @@ def run_node_mirage_dkg(
     return dkg_result
 
 
-def get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name):
+def get_mirage_dkg_runners(mirage_nodes, mirage_sgx_instances, chain_name):
     runners = []
-    for i, (node_mirage, node_data) in enumerate(zip(mirage_sgx_instances, nodes)):
+    for i, (node_mirage, node) in enumerate(zip(mirage_sgx_instances, mirage_nodes)):
         runners.append(
             functools.partial(
-                run_node_mirage_dkg, node_mirage, chain_name, i, node_data['node_id']
+                run_node_mirage_dkg, node_mirage, chain_name, i, node.id
             )
         )
     return runners
@@ -248,8 +248,8 @@ def mirage_new_node(mirage, new_mirage_instance):
 
 
 
-def test_committee_rotation(mirage, mirage_nodes, mirage_sgx_instances, mirage_new_node):
+def test_committee_rotation(mirage, mirage_nodes, mirage_sgx_instances, schain_creation_data):
     mirage.dkg.generate([node.id for node in mirage_nodes])
-    # chain_name = mirage.committee.chain_name
-    # runners = get_mirage_dkg_runners(nodes, mirage_sgx_instances, chain_name)
-    # exec_dkg_runners(runners)
+    chain_name, _ = schain_creation_data
+    runners = get_mirage_dkg_runners(mirage_nodes, mirage_sgx_instances, chain_name)
+    exec_dkg_runners(runners)
