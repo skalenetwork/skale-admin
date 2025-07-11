@@ -234,10 +234,12 @@ def new_wallet(mirage):
     return wallet
 
 
+@pytest.fixture
 def new_mirage_instance(new_wallet, mirage_contracts, endpoint):
     return MirageManager(endpoint, mirage_contracts)
 
 
+@pytest.fixture
 def mirage_new_node(mirage, new_mirage_instance):
     ip, _, port, _ = generate_random_node_data()
     new_mirage_instance.node.register_active(ip, port)
