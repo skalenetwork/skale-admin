@@ -146,7 +146,7 @@ def is_last_dkg_finished(skale, schain_name):
     return skale.dkg.get_number_of_completed(schain_index) == num_of_nodes
 
 
-def run_dkg(skale, dkg_client, schain_name, node_id, sgx_key_name, rotation_id) -> DKGResult:
+def run_dkg(skale, dkg_client, schain_name, rotation_id) -> DKGResult:
     keys_data, status = None, None
     try:
         if is_last_dkg_finished(skale, schain_name):
@@ -156,7 +156,7 @@ def run_dkg(skale, dkg_client, schain_name, node_id, sgx_key_name, rotation_id) 
             logger.info(f'Starting dkg procedure for {schain_name}')
             if skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
                 status = DKGStatus.IN_PROGRESS
-                init_bls(dkg_client, node_id, sgx_key_name, rotation_id)
+                init_bls(dkg_client, rotation_id)
             else:
                 status = DKGStatus.FAILED
     except DkgError as e:

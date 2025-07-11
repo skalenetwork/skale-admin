@@ -205,7 +205,7 @@ class BaseDKGClient(ABC):
         return self.sgx.calculate_all_bls_public_keys(self.incoming_verification_vector)
 
     def fetch_all_broadcasted_data(self):
-        dkg_filter = self._get_broadcast_filter()
+        dkg_filter = self.get_broadcast_filter()
         events = dkg_filter.get_events()
 
         for event in events:

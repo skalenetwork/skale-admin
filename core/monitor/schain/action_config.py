@@ -115,8 +115,6 @@ class ConfigActionManager(BaseActionManager):
                     dkg_client=dkg_client,
                     skale=self.skale,
                     schain_name=self.name,
-                    node_id=self.node_config.id,
-                    sgx_key_name=self.node_config.sgx_key_name,
                     rotation_id=self.rotation_id,
                 )
                 logger.info('DKG finished with %s', dkg_result)
