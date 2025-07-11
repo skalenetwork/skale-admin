@@ -17,38 +17,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test_mirage:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-
-      - name: Install the latest version of uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          activate-environment: true
-
-      - name: Install python dependencies
-        run: |
-          uv pip install -r requirements.txt --prerelease=allow
-          uv pip install -r requirements-dev.txt
-
-      - name: Checking formatting with ruff
-        run: uv run ruff check
-      
-      - name: Deploy manager
-        run: |
-          bash ./helper-scripts/deploy_manager.sh
-          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
-
-      # - name: Deploy mirage
-      #   run: |
-      #     bash ./helper-scripts/deploy_mirage.sh
-      #     docker rmi -f skalenetwork/professional:${{ env.MIRAGE_TAG }}
-
-
   test_core:
     runs-on: self-hosted
     env:
