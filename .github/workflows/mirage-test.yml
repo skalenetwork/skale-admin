@@ -8,7 +8,7 @@ env:
   ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
   MANAGER_TAG: "1.12.0-develop.21"
-  MIRAGE_TAG: "0.0.1-develop.21"
+  MIRAGE_TAG: "0.0.1-develop.25"
   SGX_WALLET_TAG: "1.10.0-develop.3"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   SKALED_TAG: 4.1.0-develop.24-mirage
