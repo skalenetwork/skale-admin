@@ -1,9 +1,6 @@
 name: Mirage Test
 on: [push]
- workflow_run:
-    workflows: ["Test"]
-    types:
-      - completed
+
 env:
   ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
