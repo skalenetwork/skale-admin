@@ -112,4 +112,3 @@ class MirageDKGClient(BaseDKGClient):
         round_status = self.get_round_status()
         return not self.is_node_sent_alright() and round_status == Status.ALRIGHT \
                 and self.check_round_id()
-

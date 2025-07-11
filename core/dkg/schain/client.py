@@ -77,6 +77,7 @@ class SchainDKGClient(BaseDKGClient):
             node_ids_contract,
             eth_key_name,
             rotation_id,
+            step
         )
         self.schain_name = schain_name
         self.group_index = skale.schains.name_to_group_id(schain_name)
