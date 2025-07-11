@@ -47,10 +47,10 @@ class TelegrafNotConfiguredError(Exception):
 
 
 def update_filebeat_service(
-    node_ip, node_id, contract_address: ChecksumAddress, dutils: Optional[DockerUtils] = None
+    node_ip, node_id, contract_alias_or_address: str, dutils: Optional[DockerUtils] = None
 ):
     dutils = dutils or DockerUtils()
-    template_data = {'ip': node_ip, 'id': node_id, 'contract_address': contract_address}
+    template_data = {'ip': node_ip, 'id': node_id, 'contract_address': contract_alias_or_address}
 
     logger.info('Configuring filebeat %s', template_data)
     process_template(FILEBEAT_TEMPLATE_PATH, FILEBEAT_CONFIG_PATH, template_data)
@@ -114,8 +114,8 @@ def telegraf_config_processed() -> bool:
 
 
 def update_monitoring_services(
-    node_ip, node_id, contract_address: ChecksumAddress, dutils: Optional[DockerUtils] = None
+    node_ip, node_id, contract_alias_or_address: str, dutils: Optional[DockerUtils] = None
 ):
-    update_filebeat_service(node_ip, node_id, contract_address, dutils=dutils)
+    update_filebeat_service(node_ip, node_id, contract_alias_or_address, dutils=dutils)
     if TELEGRAF:
         update_telegraf_service(node_ip, node_id, dutils=dutils)
