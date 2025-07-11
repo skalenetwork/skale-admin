@@ -24,13 +24,13 @@ from functools import wraps
 from http import HTTPStatus
 
 from flask import Response, g
-from skale import MirageManager, SkaleManager
+from skale import SkaleManager
 from skale.utils.web3_utils import init_web3
 
 from core.node_config import NodeConfig
 from core.utils.mirage import init_mirage_manager
-from tools.configs.web3 import boot_endpoint, endpoint
-from tools.helper import init_mirage, init_skale
+from tools.configs.web3 import endpoint
+from tools.helper import init_skale
 from tools.wallet_utils import init_wallet
 from web import API_VERSION_PREFIX
 
@@ -66,11 +66,6 @@ def get_api_url(blueprint_name, method_name):
 def init_skale_from_node_config(node_config: NodeConfig) -> SkaleManager:
     wallet = init_wallet(node_config, endpoint=endpoint())
     return init_skale(wallet)
-
-
-def init_mirage_from_node_config(node_config: NodeConfig) -> MirageManager:
-    wallet = init_wallet(node_config, endpoint=boot_endpoint())
-    return init_mirage(wallet)
 
 
 def g_web3(func):

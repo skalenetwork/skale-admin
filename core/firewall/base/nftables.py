@@ -183,22 +183,6 @@ class NFTablesController(IHostFirewallController):
         if not self.has_table(self.table):
             self.run_cmd(f'add table inet {self.table}')
 
-    def has_drop_rule(self, first_port: int, last_port: int) -> bool:
-        expr = [
-            {'match': {'op': '!=', 'left': {'meta': {'key': 'iifname'}}, 'right': 'lo'}},
-            {
-                'match': {
-                    'op': '==',
-                    'left': {'payload': {'protocol': 'tcp', 'field': 'dport'}},
-                    'right': {'range': [first_port, last_port]},
-                }
-            },
-            {'counter': None},
-            {'drop': None},
-        ]
-
-        return self.expr_to_rule(expr) in self.get_rules_by_policy(policy='drop')
-
     def create_chain(self, first_port: int, last_port: int) -> None:
         if not self.has_chain(self.chain):
             logger.info('Creating chain %s', self.chain)

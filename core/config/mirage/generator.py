@@ -29,7 +29,7 @@ from skale.types.committee import CommitteeGroup
 from skale.types.node import MirageNode, NodeId, NodeWithSchains
 from skale.types.node import Node as SkaleNode
 from skale.types.rotation import NodesGroup
-from skale.types.committee import CommitteeIndex, TimeStamp, Committee
+from skale.types.committee import CommitteeIndex, Timestamp, Committee
 from skale.types.dkg import G2Point, DkgId, Fp2Point
 
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
@@ -118,25 +118,25 @@ def generate_mirage_config_adapter(
 
     committee_info_from_manager: list[CommitteeGroup] = [
         {
-            'ts': TimeStamp(0),
+            'ts': Timestamp(0),
             'index': CommitteeIndex(0),
             'group': committee_nodes,
             'committee': Committee(
                 node_ids=[node.id for node in committee_nodes],
                 dkg_id=DkgId(0),
                 common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
-                starting_timestamp=TimeStamp(0),
+                starting_timestamp=Timestamp(0),
             ),
         },
         {
-            'ts': TimeStamp(chain_start_ts),
+            'ts': Timestamp(chain_start_ts),
             'index': CommitteeIndex(0),
             'group': committee_nodes,
             'committee': Committee(
                 node_ids=[node.id for node in committee_nodes],
                 dkg_id=DkgId(0),
                 common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
-                starting_timestamp=TimeStamp(0),
+                starting_timestamp=Timestamp(0),
             ),
         },
     ]

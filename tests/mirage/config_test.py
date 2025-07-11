@@ -11,7 +11,7 @@ from skale.contracts.manager.schains import SchainStructure
 from skale.types.node import MirageNode, Node, NodeId, NodeStatus, NodeWithSchains, Port
 from skale.types.rotation import NodesGroup, NodesSwap, Rotation, RotationNodeData
 from skale.types.validator import ValidatorId
-from skale.types.committee import TimeStamp, Committee
+from skale.types.committee import Timestamp, Committee
 from skale.types.dkg import G2Point, DkgId, Fp2Point
 
 from core.config.base import MirageConfig
@@ -43,7 +43,7 @@ def committee_info_from_mirage_manager(mirage_node):
                 node_ids=[mirage_node.id, mirage_node.id],
                 dkg_id=DkgId(0),
                 common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
-                starting_timestamp=TimeStamp(0),
+                starting_timestamp=Timestamp(0),
             ),
         },
         {
@@ -54,7 +54,7 @@ def committee_info_from_mirage_manager(mirage_node):
                 node_ids=[mirage_node.id, mirage_node.id],
                 dkg_id=DkgId(0),
                 common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
-                starting_timestamp=TimeStamp(0),
+                starting_timestamp=Timestamp(0),
             ),
         },
     ]
