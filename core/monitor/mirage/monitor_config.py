@@ -49,7 +49,7 @@ def run_config_pipeline(
 
     is_healthy = mirage.status.is_healthy(node_id=node_config.id)
     logger.info('Node health status: %s', is_healthy)
-    handle_healthcheck_job(scheduler)
+    handle_healthcheck_job(scheduler, node_config)
 
     committee_index = mirage.committee.get_active_committee_index()
     is_committee_node = mirage.committee.is_node_in_current_or_next_committee(node_config.id)
