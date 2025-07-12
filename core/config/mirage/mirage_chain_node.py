@@ -50,14 +50,14 @@ class MirageChainNodeInfo(NodeInfo):
 
 
 def generate_mirage_chain_nodes(
-    committee_nodes: list[MirageNode], committee_id: int, sync_node: bool = False
+    committee_nodes: list[MirageNode], committee_id: int, is_committee_node: bool
 ) -> list[MirageChainNodeInfo]:
     chain_nodes = []
 
-    if sync_node:
-        bls_public_keys = ['0:0:1:0'] * len(committee_nodes)
-    else:
+    if is_committee_node:
         bls_public_keys = get_bls_public_keys(get_mirage_chain_name(), committee_id)
+    else:
+        bls_public_keys = ['0:0:1:0'] * len(committee_nodes)
 
     for i, node in enumerate(committee_nodes, 1):
         node_info = MirageChainNodeInfo(

@@ -216,7 +216,7 @@ class NoConfigSkaledMonitor(BaseSChainSkaledMonitor):
 class NewNodeSkaledMonitor(BaseSChainSkaledMonitor):
     """
     When finish_ts is in the future and there is only one secret key share -
-    download snapshot and shedule start after finish_ts
+    download snapshot and schedule start after finish_ts
     """
 
     def execute(self):

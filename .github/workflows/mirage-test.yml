@@ -1,0 +1,72 @@
+name: Mirage Test
+on: [push]
+ workflow_run:
+    workflows: ["Test"]
+    types:
+      - completed
+env:
+  ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
+  SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
+  MANAGER_TAG: "1.12.0-develop.21"
+  MIRAGE_TAG: "0.0.1-develop.25"
+  SGX_WALLET_TAG: "1.10.0-develop.3"
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  SKALED_TAG: 4.1.0-develop.24-mirage
+  PYTHON_VERSION: 3.11
+  ENDPOINT: http://127.0.0.1:1234
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test_mirage:
+    runs-on: self-hosted
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install python dependencies
+        run: |
+          source ../.venv/bin/activate
+          uv pip install -r requirements.txt --prerelease=allow
+          uv pip install -r requirements-dev.txt
+
+      - name: Checking formatting with ruff
+        run: uv run ruff check
+
+      - name: Deploy skaled
+        run: |
+          bash ./scripts/run_skaled.sh
+
+      - name: Deploy manager
+        run: |
+          bash ./helper-scripts/deploy_manager.sh
+          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
+
+      - name: Show stats before tests
+        if: always()
+        run: |
+          lsblk -f
+          free -h
+
+      - name: Run core tests
+        run: |
+          source ../.venv/bin/activate
+          bash ./scripts/run_mirage_test.sh
+
+      - name: Cleanup docker artifacts
+        if: always()
+        run: |
+          docker rm -f $(docker ps -aq)
+          rm -r tests/schain-data/.artifacts/skaled-datadir
+
+      - name: Show stats after core tests
+        if: always()
+        run: |
+          lsblk -f
+          free -h

@@ -23,13 +23,13 @@ from .schain.rule_controller import SChainRuleController  # noqa
 from .mirage.rule_controller import (
     MirageController,  # noqa
     MirageCommitteeScopeRuleController,  # noqa
-    MirageNetworkScopeRuleController, # noqa
+    MirageNetworkScopeRuleController,  # noqa
 )  # noqa
 from .base.types import (
     Action,  # noqa
     IpRange,  # noqa
     IRuleController,  # noqa
-    LOOPBACK_INTERFACE, # noqa
+    LOOPBACK_INTERFACE,  # noqa
     SChainRule,  # noqa
     SkaledPorts,  # noqa
 )  # noqa

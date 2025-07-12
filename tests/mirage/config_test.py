@@ -11,6 +11,8 @@ from skale.contracts.manager.schains import SchainStructure
 from skale.types.node import MirageNode, Node, NodeId, NodeStatus, NodeWithSchains, Port
 from skale.types.rotation import NodesGroup, NodesSwap, Rotation, RotationNodeData
 from skale.types.validator import ValidatorId
+from skale.types.committee import TimeStamp, Committee
+from skale.types.dkg import G2Point, DkgId, Fp2Point
 
 from core.config.base import MirageConfig
 from core.config.mirage.generator import generate_mirage_config, generate_mirage_config_adapter
@@ -33,8 +35,28 @@ MIRAGE_TEST_SECRET_KEY = {
 @pytest.fixture
 def committee_info_from_mirage_manager(mirage_node):
     committee_info_from_manager = [
-        {'ts': 0, 'index': 0, 'group': [mirage_node, mirage_node]},
-        {'ts': CURRENT_TS, 'index': 0, 'group': [mirage_node, mirage_node]},
+        {
+            'ts': 0,
+            'index': 0,
+            'group': [mirage_node, mirage_node],
+            'committee': Committee(
+                node_ids=[mirage_node.id, mirage_node.id],
+                dkg_id=DkgId(0),
+                common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
+                starting_timestamp=TimeStamp(0),
+            ),
+        },
+        {
+            'ts': CURRENT_TS,
+            'index': 0,
+            'group': [mirage_node, mirage_node],
+            'committee': Committee(
+                node_ids=[mirage_node.id, mirage_node.id],
+                dkg_id=DkgId(0),
+                common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
+                starting_timestamp=TimeStamp(0),
+            ),
+        },
     ]
     return committee_info_from_manager
 
@@ -210,7 +232,7 @@ def test_generate_mirage_config_minimal_regular(
         committee_info_from_manager=committee_info_from_mirage_manager,
         node_groups=node_groups,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        sync_node=False,
+        is_committee_node=True,
         archive=False,
         catchup=False,
     )
@@ -248,7 +270,7 @@ def test_generate_mirage_config_minimal_sync(
         committee_info_from_manager=committee_info_from_mirage_manager,
         node_groups=node_groups,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        sync_node=True,
+        is_committee_node=False,
         archive=False,
         catchup=False,
     )
@@ -299,7 +321,7 @@ def test_generate_mirage_config_for_different_env_types(
                 committee_info_from_manager=committee_info_from_mirage_manager,
                 node_groups=node_groups,
                 ecdsa_key_name='NEK:SIMPLE_REGULAR',
-                sync_node=False,
+                is_committee_node=True,
                 archive=False,
                 catchup=False,
             )
