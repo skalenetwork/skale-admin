@@ -51,12 +51,14 @@ def run_config_pipeline(
     logger.info('Node health status: %s', is_healthy)
     handle_healthcheck_job(scheduler, node_config)
 
-    committee_index = mirage.committee.get_active_committee_index()
+    active_committee_index = mirage.committee.get_active_committee_index()
+    last_committee_index = mirage.committee.last_committee_index()
     is_committee_node = mirage.committee.is_node_in_current_or_next_committee(node_config.id)
 
     logger.info(
-        'Running config pipeline, committee index: %s, is committee node: %s',
-        committee_index,
+        'Running config pipeline, active committee: %s, last committee: %s, is committee node: %s',
+        active_committee_index,
+        last_committee_index,
         is_committee_node,
     )
 
@@ -69,7 +71,7 @@ def run_config_pipeline(
         node_config=node_config,
         chain_name=chain_name,
         stream_version=stream_version,
-        committee_index=committee_index,
+        committee_index=last_committee_index,
         chain_record=chain_record,
     )
 
@@ -77,7 +79,7 @@ def run_config_pipeline(
     config_am = MirageConfigActionManager(
         mirage=mirage,
         chain_name=chain_name,
-        committee_index=committee_index,
+        committee_index=last_committee_index,
         node_config=node_config,
         stream_version=stream_version,
         checks=config_checks,
@@ -98,7 +100,7 @@ def run_config_pipeline(
     statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(chain_name)}')
     statsd_client.gauge(
         f'admin.config_pipeline.rotation_id.{no_hyphens(chain_name)}',
-        committee_index,
+        last_committee_index,
     )
     with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(chain_name)}'):
         mon.run()
