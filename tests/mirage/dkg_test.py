@@ -247,7 +247,6 @@ def mirage_new_node(mirage, new_mirage_instance):
     return new_mirage_instance.nodes.get_by_address(new_mirage_instance.wallet.address)
 
 
-
 def test_committee_rotation(mirage, mirage_nodes, mirage_sgx_instances, schain_creation_data):
     mirage.dkg.generate([node.id for node in mirage_nodes])
     chain_name, _ = schain_creation_data

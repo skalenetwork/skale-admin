@@ -45,8 +45,8 @@ tests_cleanup () {
 }
 
 sgx_cleanup () {
-    export_test_env 
+    export_test_env
     docker rm -f sgx-simulator
     mkdir -p $SGX_CERTIFICATES_FOLDER
-    rm -rf $SGX_CERTIFICATES_FOLDER/sgx.* 
+    rm -rf $SGX_CERTIFICATES_FOLDER/sgx.*
 }
