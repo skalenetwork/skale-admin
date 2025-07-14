@@ -57,61 +57,8 @@ def no_zero_node(validator, skale, manager_contracts, endpoint):
 
 
 @pytest.fixture
-def schain_creation_data():
-    _, lifetime_seconds, name = generate_random_schain_data()
-    return name, lifetime_seconds
-
-
-@pytest.fixture(scope='class')
-def sgx_wallets(skale, no_zero_node):
-    wallets = generate_sgx_wallets(skale, N_OF_NODES)
-    transfer_eth_to_wallets(skale, wallets)
-    link_addresses_to_validator(skale, wallets)
-    return wallets
-
-
-@pytest.fixture(scope='class')
-def skale_sgx_instances(skale, endpoint, manager_contracts, sgx_wallets):
-    return [SkaleManager(endpoint, manager_contracts, w) for w in sgx_wallets]
-
-
-@pytest.fixture(scope='class')
-def other_maintenance(self, skale):
-    nodes = skale.nodes.get_active_node_ids()
-    if N_OF_NODES > len(nodes):
-        for i in range(N_OF_NODES, len(nodes)):
-            skale.nodes.set_node_in_maintenance(nodes[i])
-    try:
-        yield
-    finally:
-        for i in range(N_OF_NODES, len(nodes)):
-            skale.nodes.set_node_in_maintenance(nodes[i])
-
-
-@pytest.fixture(scope='class')
-def nodes(skale, validator, skale_sgx_instances):
-    nodes = register_nodes(skale_sgx_instances)
-    try:
-        yield nodes
-    finally:
-        nids = [node['node_id'] for node in nodes]
-        remove_nodes(skale, nids)
-
-
-@pytest.fixture
 def dkg_timeout(skale):
     skale.constants_holder.set_complaint_timelimit(DKG_TIMEOUT)
-
-
-@pytest.fixture
-def schain(schain_creation_data, skale, nodes):
-    schain_name, lifetime = schain_creation_data
-    create_schain(skale, schain_name, lifetime)
-    try:
-        yield schain_name
-    finally:
-        remove_schain(skale, schain_name)
-        cleanup_schain_config(schain_name)
 
 
 @pytest.fixture
@@ -124,39 +71,6 @@ def skale_dkg(skale, schain, schain_creation_data, nodes, skale_sgx_instances, d
     results = exec_dkg_runners(runners)
     assert len(results) == N_OF_NODES
     assert is_last_dkg_finished(skale, schain_name)
-
-
-@pytest.fixture
-def mirage_contracts(schain_creation_data, skale_dkg, endpoint, manager_contracts):
-    chain_name = schain_creation_data[0]
-
-    env = {
-        'MAINNET_ENDPOINT': endpoint,
-        'TARGET': manager_contracts,
-        'PRIVATE_KEY': ETH_PRIVATE_KEY,
-        'DOCKER_NETWORK': 'host',
-        'CHAIN_NAME': chain_name,
-    }
-    run_cmd(['helper-scripts/deploy_mirage.sh'], env=env)
-
-    return read_json('helper-scripts/contracts_data/mirage.json')['Committee']
-
-
-@pytest.fixture
-def mirage(skale_dkg, mirage_contracts, endpoint, skale):
-    """Generate all mirage preconditions:
-    1. Deploy skale manager contracts
-    2. Create 2 nodes
-    3. Create a skale chain
-    4. Deploy mirage manager
-    """
-    # using the same endpoint as for skale manager
-    return MirageManager(endpoint, mirage_contracts, skale.wallet)
-
-
-@pytest.fixture
-def mirage_sgx_instances(sgx_wallets, mirage_contracts, endpoint):
-    return [MirageManager(endpoint, mirage_contracts, w) for w in sgx_wallets]
 
 
 @contextmanager
@@ -298,40 +212,121 @@ def mirage_new_node(mirage, new_mirage_instance):
     new_mirage_instance.nodes.register_active(ip, port)
     return new_mirage_instance.nodes.get_by_address(new_mirage_instance.wallet.address)
 
+class TestDKGMirage:
+    @pytest.fixture
+    def schain_creation_data():
+        _, lifetime_seconds, name = generate_random_schain_data()
+        return name, lifetime_seconds
 
-def test_dkg_procedure_normal(
-        self, skale, schain_creation_data, mirage_sgx_instances, nodes, schain
-    ):
-        schain_name, _ = schain_creation_data
-        assert skale.dkg.get_round(skale.dkg.get_last_dkg_id()).status == Status.BROADCAST
-        nodes.sort(key=lambda x: x['node_id'])
-        runners = get_mirage_dkg_runners(skale, mirage_sgx_instances, nodes)
-        results = exec_dkg_runners(runners)
-        assert len(results) == N_OF_NODES
+    @pytest.fixture(scope='class')
+    def sgx_wallets(skale, no_zero_node):
+        wallets = generate_sgx_wallets(skale, N_OF_NODES)
+        transfer_eth_to_wallets(skale, wallets)
+        link_addresses_to_validator(skale, wallets)
+        return wallets
 
-        for node_data, result in zip(nodes, results):
-            assert result.status.is_done()
-            assert result.step == DKGStep.KEY_GENERATION
-            keys_data = result.keys_data
-            assert keys_data is not None
-        assert skale.dkg.get_round(skale.dkg.get_last_dkg_id()).status == Status.SUCCESS
-
-        regular_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
-        time.sleep(3)
-        # Rerun dkg to emulate restoring keys
-
-        nodes.sort(key=lambda x: x['node_id'])
-        runners = get_mirage_dkg_runners(skale, mirage_sgx_instances, nodes)
-        results = exec_dkg_runners(runners)
-        assert all([r.status.is_done() for r in results])
-        assert skale.dkg.get_round(skale.dkg.get_last_dkg_id()).status == Status.SUCCESS
-
-        restore_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
-        assert regular_dkg_keys_data == restore_dkg_keys_data
+    @pytest.fixture(scope='class')
+    def skale_sgx_instances(skale, endpoint, manager_contracts, sgx_wallets):
+        return [SkaleManager(endpoint, manager_contracts, w) for w in sgx_wallets]
 
 
-def test_committee_rotation(mirage, mirage_nodes, mirage_sgx_instances, schain_creation_data):
-    mirage.dkg.generate([node.id for node in mirage_nodes])
-    chain_name, _ = schain_creation_data
-    runners = get_mirage_dkg_runners(mirage_nodes, mirage_sgx_instances, chain_name)
-    exec_dkg_runners(runners)
+    @pytest.fixture(scope='class')
+    def other_maintenance(self, skale):
+        nodes = skale.nodes.get_active_node_ids()
+        if N_OF_NODES > len(nodes):
+            for i in range(N_OF_NODES, len(nodes)):
+                skale.nodes.set_node_in_maintenance(nodes[i])
+        try:
+            yield
+        finally:
+            for i in range(N_OF_NODES, len(nodes)):
+                skale.nodes.set_node_in_maintenance(nodes[i])
+
+
+    @pytest.fixture(scope='class')
+    def nodes(skale, validator, skale_sgx_instances):
+        nodes = register_nodes(skale_sgx_instances)
+        try:
+            yield nodes
+        finally:
+            nids = [node['node_id'] for node in nodes]
+            remove_nodes(skale, nids)
+
+    @pytest.fixture
+    def schain(schain_creation_data, skale, nodes):
+        schain_name, lifetime = schain_creation_data
+        create_schain(skale, schain_name, lifetime)
+        try:
+            yield schain_name
+        finally:
+            remove_schain(skale, schain_name)
+            cleanup_schain_config(schain_name)
+
+    @pytest.fixture
+    def mirage_contracts(schain_creation_data, skale_dkg, endpoint, manager_contracts):
+        chain_name = schain_creation_data[0]
+
+        env = {
+            'MAINNET_ENDPOINT': endpoint,
+            'TARGET': manager_contracts,
+            'PRIVATE_KEY': ETH_PRIVATE_KEY,
+            'DOCKER_NETWORK': 'host',
+            'CHAIN_NAME': chain_name,
+        }
+        run_cmd(['helper-scripts/deploy_mirage.sh'], env=env)
+
+        return read_json('helper-scripts/contracts_data/mirage.json')['Committee']
+
+
+    @pytest.fixture
+    def mirage(skale_dkg, mirage_contracts, endpoint, skale):
+        """Generate all mirage preconditions:
+        1. Deploy skale manager contracts
+        2. Create 2 nodes
+        3. Create a skale chain
+        4. Deploy mirage manager
+        """
+        # using the same endpoint as for skale manager
+        return MirageManager(endpoint, mirage_contracts, skale.wallet)
+
+
+    @pytest.fixture
+    def mirage_sgx_instances(sgx_wallets, mirage_contracts, endpoint):
+        return [MirageManager(endpoint, mirage_contracts, w) for w in sgx_wallets]
+
+    def test_dkg_procedure_normal(
+            self, skale, schain_creation_data, mirage_sgx_instances, nodes, schain
+        ):
+            schain_name, _ = schain_creation_data
+            assert skale.dkg.get_round(skale.dkg.get_last_dkg_id()).status == Status.BROADCAST
+            nodes.sort(key=lambda x: x['node_id'])
+            runners = get_mirage_dkg_runners(skale, mirage_sgx_instances, nodes)
+            results = exec_dkg_runners(runners)
+            assert len(results) == N_OF_NODES
+
+            for node_data, result in zip(nodes, results):
+                assert result.status.is_done()
+                assert result.step == DKGStep.KEY_GENERATION
+                keys_data = result.keys_data
+                assert keys_data is not None
+            assert skale.dkg.get_round(skale.dkg.get_last_dkg_id()).status == Status.SUCCESS
+
+            regular_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
+            time.sleep(3)
+            # Rerun dkg to emulate restoring keys
+
+            nodes.sort(key=lambda x: x['node_id'])
+            runners = get_mirage_dkg_runners(skale, mirage_sgx_instances, nodes)
+            results = exec_dkg_runners(runners)
+            assert all([r.status.is_done() for r in results])
+            assert skale.dkg.get_round(skale.dkg.get_last_dkg_id()).status == Status.SUCCESS
+
+            restore_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
+            assert regular_dkg_keys_data == restore_dkg_keys_data
+
+
+    def test_committee_rotation(mirage, mirage_nodes, mirage_sgx_instances, schain_creation_data):
+        mirage.dkg.generate([node.id for node in mirage_nodes])
+        chain_name, _ = schain_creation_data
+        runners = get_mirage_dkg_runners(mirage_nodes, mirage_sgx_instances, chain_name)
+        exec_dkg_runners(runners)
