@@ -22,6 +22,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from skale import MirageManager
 from skale.transactions.exceptions import TransactionError
+from tools.exceptions import LocalEndpointUnreachableError
 
 from core.node_config import NodeConfig
 from core.utils.mirage import init_local_mirage
@@ -29,7 +30,7 @@ from core.utils.mirage import init_local_mirage
 
 logger = logging.getLogger(__name__)
 BACKGROUND_JOB_NAME = 'mirage_healthcheck'
-INTERVAL_BUFFER = 20
+INTERVAL_BUFFER = 30
 
 
 def healthcheck_job(
@@ -47,22 +48,25 @@ def handle_healthcheck_job(
     scheduler: BackgroundScheduler,
     node_config: NodeConfig,
 ) -> None:
-    job = scheduler.get_job(BACKGROUND_JOB_NAME)
-    if job is None:
-        logger.info('Adding healthcheck job to the scheduler')
-        local_mirage = init_local_mirage(node_config)
-        heartbeat_interval = local_mirage.status.heartbeat_interval()
-        safe_heartbeat_interval = heartbeat_interval - INTERVAL_BUFFER
-        logger.info(f'Healthcheck job will run every {heartbeat_interval} seconds')
-        scheduler.add_job(
-            func=healthcheck_job,
-            args=[local_mirage],
-            trigger='interval',
-            seconds=safe_heartbeat_interval,
-            id=BACKGROUND_JOB_NAME,
-            name='Mirage Healthcheck Job',
-        )
-        scheduler.start()
-        logger.info('Healthcheck scheduler started - jobs will now execute')
-    else:
-        logger.info('Healthcheck job already exists in the scheduler, skipping')
+    try:
+        job = scheduler.get_job(BACKGROUND_JOB_NAME)
+        if job is None:
+            logger.info('Adding healthcheck job to the scheduler')
+            local_mirage = init_local_mirage(node_config)
+            heartbeat_interval = local_mirage.status.heartbeat_interval()
+            safe_heartbeat_interval = heartbeat_interval - INTERVAL_BUFFER
+            logger.info(f'Healthcheck job will run every {heartbeat_interval} seconds')
+            scheduler.add_job(
+                func=healthcheck_job,
+                args=[local_mirage],
+                trigger='interval',
+                seconds=safe_heartbeat_interval,
+                id=BACKGROUND_JOB_NAME,
+                name='Mirage Healthcheck Job',
+            )
+            scheduler.start()
+            logger.info('Healthcheck scheduler started - jobs will now execute')
+        else:
+            logger.info('Healthcheck job already exists in the scheduler, skipping')
+    except LocalEndpointUnreachableError as e:
+        logger.exception(f'Local endpoint unreachable: {e}, cannot start healthcheck job')
