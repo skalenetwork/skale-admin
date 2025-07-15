@@ -20,6 +20,7 @@
 
 import logging
 import os
+import time
 from typing import cast
 
 from skale.mirage_manager import MirageManager
@@ -157,8 +158,9 @@ class SkaledChecks(BaseSkaledChecks):
         if self.config:
             conf = self.cfm.skaled_config
             base_port = get_base_port_from_config(conf)
-            node_ips = get_node_ips_from_config(conf)
-            own_ip = get_own_ip_from_config(conf)
+            current_ts = int(time.time())
+            node_ips = get_node_ips_from_config(conf, current_ts)
+            own_ip = get_own_ip_from_config(conf, current_ts)
             mirage_rule_controller = cast(MirageCommitteeScopeRuleController, self.rule_controller)
             mirage_rule_controller.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
             logger.debug(

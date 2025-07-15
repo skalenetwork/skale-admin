@@ -14,9 +14,8 @@ class NoFutureGroupError(CommitteeNodesConfigError):
     pass
 
 
-def pick_active_group_from_committee_nodes(committee_nodes_in_scope: dict) -> dict:
+def pick_active_group_from_committee_nodes(committee_nodes_in_scope: dict, current_ts: int) -> list:
     timestamps = sorted(map(lambda str_ts_repr: int(str_ts_repr), committee_nodes_in_scope))
-    current_ts = time.time()
     ts_index = bisect.bisect_right(timestamps, current_ts)
     ts = timestamps[ts_index - 1]
     if ts > current_ts:
@@ -24,7 +23,7 @@ def pick_active_group_from_committee_nodes(committee_nodes_in_scope: dict) -> di
     return committee_nodes_in_scope[str(ts)]['group']
 
 
-def pick_future_group_from_committee_nodes(committee_nodes_in_scope: dict) -> dict:
+def pick_future_group_from_committee_nodes(committee_nodes_in_scope: dict) -> list:
     timestamps = sorted(
         map(lambda str_ts_repr: int(str_ts_repr), committee_nodes_in_scope.values())
     )

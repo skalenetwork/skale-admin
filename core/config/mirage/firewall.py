@@ -20,25 +20,38 @@
 import logging
 from typing import Dict, List
 
-from .committee_nodes import pick_active_group_from_committee_nodes
-
 logger = logging.getLogger(__name__)
 
 
-def get_node_ips_from_config(config: Dict | None) -> List[str]:
+def get_node_ips_from_config(config: Dict | None, current_ts: int) -> List[str]:
     if config is None:
         return []
     committee_nodes_in_scope = config['skaleConfig']['sChain']['nodes']
-    current_group = pick_active_group_from_committee_nodes(committee_nodes_in_scope)
-    return [node_data['ip'] for node_data in current_group]
+    ts_a, ts_b = sorted(map(int, committee_nodes_in_scope.keys()))
+    group_a = committee_nodes_in_scope[str(ts_a)]['group']
+    group_b = committee_nodes_in_scope[str(ts_b)]['group']
+    if current_ts <= ts_b:
+        return [
+            *(node_data['ip'] for node_data in group_a),
+            *(node_data['ip'] for node_data in group_b),
+        ]
+    else:
+        return [node_data['ip'] for node_data in group_b]
 
 
-def get_own_ip_from_config(config: Dict | None) -> str | None:
+def get_own_ip_from_config(config: Dict | None, current_ts: int) -> str | None:
     if config is None:
         return None
     own_id = config['skaleConfig']['nodeInfo']['nodeID']
     committee_nodes_in_scope = config['skaleConfig']['sChain']['nodes']
-    current_group = pick_active_group_from_committee_nodes(committee_nodes_in_scope)
+    ts_a, ts_b = sorted(map(int, committee_nodes_in_scope.keys()))
+    group_a = committee_nodes_in_scope[str(ts_a)]['group']
+    group_b = committee_nodes_in_scope[str(ts_b)]['group']
+    if current_ts <= ts_b:
+        current_group = group_a
+    else:
+        current_group = group_b
+
     for node_data in current_group:
         if node_data['nodeID'] == own_id:
             return node_data['ip']
