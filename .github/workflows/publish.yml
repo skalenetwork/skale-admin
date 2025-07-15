@@ -8,8 +8,8 @@ on:
       - beta
       - stable
       - 'v*.*.*'
-      - 'mirage'
-      - 'mirage-*'
+      - 'fair'
+      - 'fair-*'
 
 jobs:
   build:

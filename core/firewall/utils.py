@@ -23,16 +23,16 @@ import socket
 
 from typing import List, Optional
 
-from skale import SkaleManager, MirageManager
+from skale import SkaleManager, FairManager
 
 from .base.types import IpRange
 from .base.nftables import NFTablesController
-from .mirage.rule_controller import (
-    MirageCommitteeScopeRuleController,
-    MirageNetworkScopeRuleController,
+from .fair.rule_controller import (
+    FairCommitteeScopeRuleController,
+    FairNetworkScopeRuleController,
 )
 from .schain.rule_controller import NFTSchainRuleController
-from tools.configs.mirage import NFT_NETWORK_SCOPE_CHAIN, NFT_COMMITTEE_SCOPE_CHAIN
+from tools.configs.fair import NFT_NETWORK_SCOPE_CHAIN, NFT_COMMITTEE_SCOPE_CHAIN
 
 logger = logging.getLogger(__name__)
 
@@ -53,12 +53,12 @@ def get_default_rule_controller(
     )
 
 
-def get_mirage_network_scope_rule_controller(
+def get_fair_network_scope_rule_controller(
     base_port: Optional[int] = None,
     own_ip: Optional[str] = None,
     node_ips: List[str] = [],
 ):
-    return MirageNetworkScopeRuleController(
+    return FairNetworkScopeRuleController(
         controller_name=NFT_NETWORK_SCOPE_CHAIN,
         base_port=base_port,
         own_ip=own_ip,
@@ -66,12 +66,12 @@ def get_mirage_network_scope_rule_controller(
     )
 
 
-def get_mirage_committee_scope_rule_controller(
+def get_fair_committee_scope_rule_controller(
     base_port: Optional[int] = None,
     own_ip: Optional[str] = None,
     node_ips: List[str] = [],
 ):
-    return MirageCommitteeScopeRuleController(
+    return FairCommitteeScopeRuleController(
         controller_name=NFT_COMMITTEE_SCOPE_CHAIN,
         base_port=base_port,
         own_ip=own_ip,
@@ -118,9 +118,9 @@ def cleanup_firewall_for_schain(schain_name: str) -> None:
     nft.remove_saved_rules()
 
 
-def get_network_scope_node_ips(mirage: MirageManager) -> List[str]:
-    passive_node_ids = mirage.nodes.get_passive_node_ids()
-    active_node_ids = mirage.nodes.get_active_node_ids()
+def get_network_scope_node_ips(fair: FairManager) -> List[str]:
+    passive_node_ids = fair.nodes.get_passive_node_ids()
+    active_node_ids = fair.nodes.get_active_node_ids()
     node_ids = [*passive_node_ids, *active_node_ids]
-    node_ips_raw = [mirage.nodes.get(node_id).ip for node_id in node_ids]
+    node_ips_raw = [fair.nodes.get(node_id).ip for node_id in node_ids]
     return [socket.inet_ntoa(raw_ip) for raw_ip in node_ips_raw]

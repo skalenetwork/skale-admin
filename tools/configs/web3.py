@@ -29,7 +29,7 @@ BOOT_ENDPOINT = os.getenv('BOOT_ENDPOINT')
 
 UNTRUSTED_PROVIDERS = ['infura.io', 'gateway.pokt.network']
 MANAGER_CONTRACTS = os.getenv('MANAGER_CONTRACTS')
-MIRAGE_CONTRACTS = os.getenv('MIRAGE_CONTRACTS')
+FAIR_CONTRACTS = os.getenv('FAIR_CONTRACTS')
 STATE_FILENAME = os.getenv('STATE_FILENAME')
 STATE_BASE_PATH = os.path.join(NODE_DATA_PATH, 'eth-state')
 STATE_FILEPATH = None if not STATE_FILENAME else os.path.join(STATE_BASE_PATH, STATE_FILENAME)
@@ -57,7 +57,7 @@ def manager_contracts() -> str:
     return MANAGER_CONTRACTS
 
 
-def mirage_contracts() -> str:
-    if not MIRAGE_CONTRACTS:
-        raise MissingEnvVariableError('MIRAGE_CONTRACTS environment variable is not set.')
-    return MIRAGE_CONTRACTS
+def fair_contracts() -> str:
+    if not FAIR_CONTRACTS:
+        raise MissingEnvVariableError('FAIR_CONTRACTS environment variable is not set.')
+    return FAIR_CONTRACTS

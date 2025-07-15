@@ -75,7 +75,7 @@ def files(path):
 
 def run_cmd(cmd, env={}, shell=False):
     logger.info(f'Running: {cmd}')
-    res = subprocess.run(cmd, shell=shell, stdout=PIPE, stderr=PIPE, env={**env, **os.environ})
+    res = subprocess.run(cmd, shell=shell, stdout=PIPE, stderr=PIPE, env={**os.environ, **env})
     if res.returncode:
         logger.error('Error during shell execution:')
         logger.error(res.stderr.decode('UTF-8').rstrip())
@@ -177,9 +177,9 @@ def no_hyphens(name: str) -> str:
     return name.replace('-', '_')
 
 
-def is_mirage() -> bool:
-    return SKALE_NETWORK_TYPE == 'mirage'
+def is_fair() -> bool:
+    return SKALE_NETWORK_TYPE == 'fair'
 
 
-def cast_manager_to_mirage_node_id(manager_node_id: int) -> NodeId:
+def cast_manager_to_fair_node_id(manager_node_id: int) -> NodeId:
     return cast(NodeId, manager_node_id)

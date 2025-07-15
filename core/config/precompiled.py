@@ -21,7 +21,7 @@ from filestorage_predeployed import FILESTORAGE_ADDRESS
 
 from core.config.schain.accounts import add_to_accounts
 from tools.configs.schains import (
-    MIRAGE_PRECOMPILED_CONTRACTS_FILEPATH,
+    FAIR_PRECOMPILED_CONTRACTS_FILEPATH,
     PRECOMPILED_CONTRACTS_FILEPATH,
 )
 from tools.helper import read_json
@@ -57,5 +57,5 @@ def _get_precompiled_contracts():
     return read_json(PRECOMPILED_CONTRACTS_FILEPATH)
 
 
-def get_precompiled_contracts_mirage() -> dict:
-    return read_json(MIRAGE_PRECOMPILED_CONTRACTS_FILEPATH)
+def get_precompiled_contracts_fair() -> dict:
+    return read_json(FAIR_PRECOMPILED_CONTRACTS_FILEPATH)
