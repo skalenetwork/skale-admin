@@ -75,3 +75,6 @@ temp_*
 .coverage*
 
 .env
+
+tests/schain-data/.artifacts
+tests/schain-data/mirage-conf/skaled.status

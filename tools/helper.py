@@ -75,7 +75,7 @@ def files(path):
 
 def run_cmd(cmd, env={}, shell=False):
     logger.info(f'Running: {cmd}')
-    res = subprocess.run(cmd, shell=shell, stdout=PIPE, stderr=PIPE, env={**env, **os.environ})
+    res = subprocess.run(cmd, shell=shell, stdout=PIPE, stderr=PIPE, env={**os.environ, **env})
     if res.returncode:
         logger.error('Error during shell execution:')
         logger.error(res.stderr.decode('UTF-8').rstrip())

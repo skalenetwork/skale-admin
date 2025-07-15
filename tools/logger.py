@@ -40,11 +40,18 @@ from tools.configs.logs import (
 )
 from tools.configs.web3 import ENDPOINT
 
+LOCAL_IPS = ['127.0.0.1', 'localhost']
+
 
 def compose_hiding_patterns():
     sgx_ip = urlparse(SGX_SERVER_URL).hostname
     eth_ip = urlparse(ENDPOINT).hostname
-    return {rf'{sgx_ip}': '[SGX_IP]', rf'{eth_ip}': '[ETH_IP]', r'NEK\:\w+': '[SGX_KEY]'}
+    patterns = {r'NEK\:\w+': '[SGX_KEY]'}
+    if sgx_ip not in LOCAL_IPS:
+        patterns.update({rf'{sgx_ip}': '[SGX_IP]'})
+    if eth_ip not in LOCAL_IPS:
+        patterns.update({rf'{eth_ip}': '[ETH_IP]'})
+    return patterns
 
 
 class RequestFormatter(logging.Formatter):
