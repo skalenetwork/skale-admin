@@ -29,14 +29,11 @@ from core.dkg.utils import (
     convert_g2_points_to_array,
     convert_key_share_to_str,
     convert_str_to_key_share,
-    to_verify,
-    DkgVerificationError,
-    SgxDkgPolynomGenerationError
+    to_verify
 )
 
 from sgx import SgxClient
-from sgx.http import SgxUnreachableError
-from sgx.sgx_rpc_handler import DkgPolyStatus, SgxServerError
+from sgx.sgx_rpc_handler import SgxServerError
 
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.helper import no_hyphens
@@ -92,9 +89,9 @@ class BaseDKGClient(ABC):
 
     @last_completed_step.setter
     def last_completed_step(self, step: DKGStep):
-        self.statsd_client.gauge(
-            f'admin.schains.dkg.last_completed_step.{no_hyphens(self.schain_name)}', step.value
-        )
+        # self.statsd_client.gauge(
+        #     f'admin.schains.dkg.last_completed_step.{no_hyphens(self.schain_name)}', step.value
+        # )
         self._last_completed_step = step
 
     def store_broadcasted_data(self, data, from_node):
@@ -130,30 +127,6 @@ class BaseDKGClient(ABC):
         ]
         return convert_str_to_key_share(self.sent_secret_key_contribution, self.n)
 
-    def receive_from_node(self, from_node, broadcasted_data):
-        self.store_broadcasted_data(broadcasted_data, from_node)
-        if from_node == self.node_id_dkg:
-            return
-
-        try:
-            if not self.verification(from_node):
-                raise DkgVerificationError(
-                    f'sChain: {self.schain_name}. '
-                    f'Fatal error : user {str(from_node + 1)} '
-                    f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
-                )
-            logger.info(
-                f'sChain: {self.schain_name}. All data from {from_node} was received and verified'
-            )
-        except SgxUnreachableError as e:
-            raise SgxUnreachableError(
-                f'sChain: {self.schain_name}. '
-                f'Fatal error : user {str(from_node + 1)} '
-                f"hasn't passed verification by user {str(self.node_id_dkg + 1)}"
-                f'with SgxUnreachableError: ',
-                e,
-            )
-
     @sgx_unreachable_retry
     def verification(self, from_node):
         return self.sgx.verify_secret_share_v2(
@@ -175,25 +148,6 @@ class BaseDKGClient(ABC):
         return True
 
     @sgx_unreachable_retry
-    def generate_bls_key(self):
-        received_secret_key_contribution = ''.join(
-            to_verify(self.incoming_secret_key_contribution[j]) for j in range(self.sgx.n)
-        )
-        logger.info(
-            f'sChain: {self.schain_name}. '
-            f'DKGClient is going to create BLS private key with name {self.bls_name}'
-        )
-        bls_private_key = self.sgx.create_bls_private_key_v2(
-            self.poly_name, self.bls_name, self.eth_key_name, received_secret_key_contribution
-        )
-        logger.info(
-            f'sChain: {self.schain_name}. '
-            'DKGClient is going to fetch BLS public key with name {self.bls_name}'
-        )
-        self.public_key = self.sgx.get_bls_public_key(self.bls_name)
-        return bls_private_key
-
-    @sgx_unreachable_retry
     def fetch_bls_public_key(self):
         self.public_key = self.sgx.get_bls_public_key(self.bls_name)
 
@@ -204,40 +158,11 @@ class BaseDKGClient(ABC):
         )
         return self.sgx.calculate_all_bls_public_keys(self.incoming_verification_vector)
 
-    def fetch_all_broadcasted_data(self):
-        dkg_filter = self.get_broadcast_filter()
-        events = dkg_filter.get_events()
-
-        for event in events:
-            from_node = self.node_ids_contract[event.nodeIndex]
-            broadcasted_data = [event.verificationVector, event.secretKeyContribution]
-            self.store_broadcasted_data(broadcasted_data, from_node)
-            logger.info(
-                f'sChain: {self.schain_name}. Received by {self.node_id_dkg} from {from_node}'
-            )
-
-    def broadcast(self):
-        poly_success = self.generate_polynomial(self.poly_name)
-        if poly_success == DkgPolyStatus.FAIL:
-            raise SgxDkgPolynomGenerationError(
-                f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
-            )
-
-        if not self.is_broadcast_possible():
-            return
-
-        self._send_broadcast_transaction()
-        logger.info('Everything is sent from %d node', self.node_id_dkg)
-        self.last_completed_step = DKGStep.BROADCAST
-
     def alright(self):
-        logger.info(f'sChain {self.schain_name} sending alright transaction')
-        
         if not self.is_alright_possible():
             return
 
         self._send_alright_transaction()
-        logger.info(f'sChain: {self.schain_name}. {self.node_id_dkg} node sent an alright note')
         self.last_completed_step = DKGStep.ALRIGHT
 
     @abstractmethod

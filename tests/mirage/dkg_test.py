@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 from skale import MirageManager, SkaleManager
 from skale.types.dkg import Status
-from skale.types.node import NodeStatus
+from skale.types.node import NodeStatus, NodeId
 from skale.types.schain import SchainName
 from skale.utils.account_tools import send_eth
 from skale.wallets.web3_wallet import generate_wallet
@@ -143,7 +143,7 @@ def run_node_mirage_dkg(
 ):
     init_schain_config_dir("mirage")
     sgx_key_name = mirage.wallet._key_name
-    committee_id = mirage.committee.get_active_committee_index()
+    committee_id = mirage.dkg.get_last_dkg_id()
 
     timeout = index * 5  # diversify start time for all nodes
     logger.info('Node %d going to sleep %d seconds %s', node_id, timeout, type(runs))
@@ -152,65 +152,31 @@ def run_node_mirage_dkg(
     dkg_result = None
     for run_type in runs:
         logger.info('Running %s dkg', run_type)
-        with mirage_dkg_test_client() as dkg_client:
-            logger.info('ID mirage %d', id(dkg_client.mirage))
-            try:
-                dkg_result = run_mirage_dkg(
-                    mirage, dkg_client, node_id, sgx_key_name, committee_id
-                )
-            except Exception:
-                logger.exception('Mirage DKG run failed')
-            else:
-                if dkg_result.status == DKGStatus.DONE:
-                    logger.info('Mirage DKG completed')
-                    break
+        logger.info('ID mirage %d', id(mirage))
+        try:
+            dkg_result = run_mirage_dkg( mirage, index, node_id, [run_type] )
+        except Exception:
+            logger.exception('Mirage DKG run failed')
+        else:
+            if dkg_result.status == DKGStatus.DONE:
+                logger.info('Mirage DKG completed')
+                break
         logger.info('Finished run %s', run_type)
 
     logger.info('Completed runs %s', runs)
     return dkg_result
 
 
-def get_mirage_dkg_runners(mirage_nodes, mirage_sgx_instances, chain_name):
+def get_mirage_dkg_runners(mirage_sgx_instances, mirage_nodes, chain_name):
     runners = []
     for i, (node_mirage, node) in enumerate(zip(mirage_sgx_instances, mirage_nodes)):
         runners.append(
             functools.partial(
-                run_node_mirage_dkg, node_mirage, chain_name, i, node.id
+                run_node_mirage_dkg, node_mirage, i, node.id
             )
         )
     return runners
 
-@pytest.fixture
-def mirage_nodes(mirage, nodes):
-    return [
-        mirage.nodes.get(node['node_id'])
-        for node in nodes
-    ]
-
-
-@pytest.fixture
-def new_wallet(mirage):
-    wallet = generate_sgx_wallets(mirage, 1)[0]
-    print('Address', mirage.wallet.address, mirage.web3.eth.get_balance(mirage.wallet.address))
-    send_eth(
-        web3=mirage.web3,
-        wallet=mirage.wallet,
-        receiver_address=wallet.address,
-        amount=0.1
-    )
-    return wallet
-
-
-@pytest.fixture
-def new_mirage_instance(new_wallet, mirage_contracts, endpoint):
-    return MirageManager(endpoint, mirage_contracts, new_wallet)
-
-
-@pytest.fixture
-def mirage_new_node(mirage, new_mirage_instance):
-    ip, _, port, _ = generate_random_node_data()
-    new_mirage_instance.nodes.register_active(ip, port)
-    return new_mirage_instance.nodes.get_by_address(new_mirage_instance.wallet.address)
 
 class TestDKGMirage:
     @pytest.fixture
@@ -298,32 +264,68 @@ class TestDKGMirage:
     def mirage_sgx_instances(self, sgx_wallets, mirage_contracts, endpoint):
         return [MirageManager(endpoint, mirage_contracts, w) for w in sgx_wallets]
 
+
+    @pytest.fixture
+    def new_wallet(self, mirage):
+        wallet = generate_sgx_wallets(mirage, 1)[0]
+        print('Address', mirage.wallet.address, mirage.web3.eth.get_balance(mirage.wallet.address))
+        send_eth(
+            web3=mirage.web3,
+            wallet=mirage.wallet,
+            receiver_address=wallet.address,
+            amount=0.1
+        )
+        return wallet
+
+
+    @pytest.fixture
+    def new_mirage_instance(self, new_wallet, mirage_contracts, endpoint):
+        return MirageManager(endpoint, mirage_contracts, new_wallet)
+
+
+    @pytest.fixture
+    def mirage_new_node(self, mirage, new_mirage_instance):
+        ip, _, port, _ = generate_random_node_data()
+        new_mirage_instance.nodes.register_active(ip, port)
+        return new_mirage_instance.nodes.get_by_address(new_mirage_instance.wallet.address)
+
+
+    @pytest.fixture
+    def mirage_nodes(self, mirage, nodes):
+        return [
+            mirage.nodes.get(node['node_id'])
+            for node in nodes
+        ]
+
+
     def test_dkg_procedure_normal(
-            self, skale, schain_creation_data, mirage_sgx_instances, nodes, schain, mirage
+            self, skale, schain_creation_data, mirage_sgx_instances, mirage_nodes, schain, mirage
         ):
+            mirage.dkg.generate([NodeId(node.id) for node in mirage_nodes])
+            new_dkg_id = mirage.dkg.get_last_dkg_id()
             schain_name, _ = schain_creation_data
-            assert mirage.dkg.get_round(mirage.dkg.get_last_dkg_id()).status == Status.BROADCAST
-            nodes.sort(key=lambda x: x['node_id'])
-            runners = get_mirage_dkg_runners(mirage, mirage_sgx_instances, nodes)
+            assert mirage.dkg.get_round(new_dkg_id).status == Status.BROADCAST
+            mirage_nodes.sort(key=lambda x: x.id)
+            runners = get_mirage_dkg_runners(mirage_sgx_instances, mirage_nodes, "mirage")
             results = exec_dkg_runners(runners)
             assert len(results) == N_OF_NODES
 
-            for node_data, result in zip(nodes, results):
+            for node_data, result in zip(mirage_nodes, results):
                 assert result.status.is_done()
                 assert result.step == DKGStep.KEY_GENERATION
                 keys_data = result.keys_data
                 assert keys_data is not None
-            assert mirage.dkg.get_round(mirage.dkg.get_last_dkg_id()).status == Status.SUCCESS
+            assert mirage.dkg.get_round(new_dkg_id).status == Status.SUCCESS
 
             regular_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
             time.sleep(3)
             # Rerun dkg to emulate restoring keys
 
-            nodes.sort(key=lambda x: x['node_id'])
-            runners = get_mirage_dkg_runners(mirage, mirage_sgx_instances, nodes)
+            mirage_nodes.sort(key=lambda x: x['node_id'])
+            runners = get_mirage_dkg_runners(mirage_sgx_instances, mirage_nodes, "mirage")
             results = exec_dkg_runners(runners)
             assert all([r.status.is_done() for r in results])
-            assert mirage.dkg.get_round(mirage.dkg.get_last_dkg_id()).status == Status.SUCCESS
+            assert mirage.dkg.get_round(new_dkg_id).status == Status.SUCCESS
 
             restore_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
             assert regular_dkg_keys_data == restore_dkg_keys_data

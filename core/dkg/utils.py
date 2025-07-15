@@ -143,8 +143,6 @@ def sync_broadcast_data(dkg_client, dkg_filter, is_received, is_correct, broadca
             is_received[from_node] = True
         broadcasted_data = [event.verificationVector, event.secretKeyContribution]
         is_received[from_node] = True
-        if from_node != dkg_client.node_id_dkg:
-            logger.info(f'sChain {dkg_client.schain_name}: receiving from node {from_node}')
         try:
             dkg_client.receive_from_node(from_node, broadcasted_data)
             is_correct[from_node] = True
@@ -152,14 +150,6 @@ def sync_broadcast_data(dkg_client, dkg_filter, is_received, is_correct, broadca
         except DkgVerificationError as e:
             logger.error(e)
             continue
-        logger.info(
-            f'sChain: {dkg_client.schain_name}. Received by {dkg_client.node_id_dkg} from '
-            f'{from_node}'
-        )
-    logger.info(
-        f'sChain {dkg_client.schain_name}: total received {len(broadcasts_found)} '
-        f'broadcasts from nodes {broadcasts_found}'
-    )
     return (is_received, is_correct, broadcasts_found)
 
 def generate_bls_keys(dkg_client):

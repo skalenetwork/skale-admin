@@ -35,7 +35,7 @@ class MirageFilter(BaseFilter):
         self.first_unseen_block = -1
         self.dkg_contract = skale.dkg.contract
         self.dkg_contract_address = skale.dkg.address
-        self.event_hash = '47e57a213b52c1c14550e5456a6dcdbf44bb6e87c0832fdde78d996977e6904d'
+        self.event_hash = '872d904ad1d22cfbb2e356201dfd506fbd656000b48d420afb030a90e5d16f8f'
         self.committee_id = committee_id
         super().__init__(n)
 
@@ -54,6 +54,7 @@ class MirageFilter(BaseFilter):
             logger.info('Must be exactly 2 topics')
             return False
         if topics[0].hex() != self.event_hash:
+            print(f'Event hash {topics[0].hex()} is not equal to expected {self.event_hash}')
             logger.info('Wrong event hash')
             return False
         data = logs[0].get('data')
@@ -64,10 +65,10 @@ class MirageFilter(BaseFilter):
     
     def parse_event(self, receipt):
         event_data = remove_0x_prefix(receipt['logs'][0]['data'].hex())
-        dkg_id = event_data[:64]
+        dkg_id = int(event_data[:64], 16)
         if dkg_id != self.committee_id:
             return None  # event for another committee
-        node_index = int(remove_0x_prefix(receipt['logs'][0]['topics'][0].hex()), 16)
+        node_index = int(remove_0x_prefix(receipt['logs'][0]['topics'][1].hex()), 16)
         vv = event_data[64 + 192 : 64 + 192 + self.t * 256]
         skc = event_data[64 + 192 + 64 + self.t * 256 : 64 + 192 + 64 + self.t * 256 + 192 * self.n]
         return DKGEvent(
@@ -78,7 +79,7 @@ class MirageFilter(BaseFilter):
         events = []
         try:
             if self.first_unseen_block == -1 or from_channel_started_block:
-                start_block = self.skale.dkg.get_starting_block_number(DkgId(self.committee_id))
+                start_block = self.skale.dkg.get_round(DkgId(self.committee_id)).startingBlockNumber
             else:
                 start_block = self.first_unseen_block
             current_block = self.skale.web3.eth.get_block('latest')['number']
@@ -100,12 +101,10 @@ class MirageFilter(BaseFilter):
                             logger.info(f'Tx {tx} does not have field "hash"')
                             continue
 
-                        if not self.check_event(receipt):
-                            continue
-                        else:
+                        if self.check_event(receipt):
                             dkg_event = self.parse_event(receipt)
                             if dkg_event:
-                                events.append()
+                                events.append( dkg_event )
                     except TransactionNotFound:
                         pass
                 self.first_unseen_block = block_number + 1

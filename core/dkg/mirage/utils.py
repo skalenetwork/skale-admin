@@ -20,7 +20,6 @@
 import logging
 import time
 
-from skale.mirage_config.committee_nodes import get_committee_nodes
 from skale.types.dkg import Status
 
 from core.dkg.mirage.client import MirageDKGClient
@@ -34,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 def init_dkg_client(node_id, skale, sgx_eth_key_name, committee_id):
     logger.info('Initializing dkg client')
-    schain_nodes = get_committee_nodes(skale, committee_id)
+    schain_nodes = skale.dkg.get_participants(committee_id)
     n = len(schain_nodes)
     t = (2 * n + 1) // 3
 
@@ -42,15 +41,15 @@ def init_dkg_client(node_id, skale, sgx_eth_key_name, committee_id):
     public_keys = [0] * n
     node_ids_contract = {}
     node_ids_dkg = {}
-    for i, node in enumerate(schain_nodes):
-        if not len(node):
+    for i, node_id_contract in enumerate(schain_nodes):
+        if node_id_contract is None:
             raise DkgError('Initialization failed, node info is empty.')
-        if node['id'] == node_id:
+        if node_id_contract == node_id:
             node_id_dkg = i
 
-        node_ids_contract[node['id']] = i
-        node_ids_dkg[i] = node['id']
-        public_keys[i] = node['publicKey']
+        node_ids_contract[node_id_contract] = i
+        node_ids_dkg[i] = node_id_contract
+        public_keys[i] = skale.nodes.get(node_id_contract).public_key
 
     logger.info('Nodes in chain: %s', node_ids_dkg)
 
@@ -93,7 +92,7 @@ def receive_broadcast_data(dkg_client: MirageDKGClient) -> BroadcastResult:
     logger.info('Fetching broadcasted data')
 
     while False in is_received:
-        time_gone = get_latest_block_timestamp(dkg_client.skale) - start_time
+        time_gone = max(start_time, get_latest_block_timestamp(dkg_client.skale)) - start_time
         logger.info(
             f'Has been trying to receive broadcasted data for {time_gone} seconds'
         )

@@ -109,6 +109,10 @@ def receive_broadcast_data(dkg_client: SchainDKGClient) -> BroadcastResult:
         is_received, is_correct, broadcasts_found = sync_broadcast_data(
             dkg_client, dkg_filter, is_received, is_correct, broadcasts_found
         )
+        logger.info(
+            f'sChain {dkg_client.schain_name}: total received {len(broadcasts_found)} '
+            f'broadcasts from nodes {broadcasts_found}'
+        )
         if time_gone > dkg_client.dkg_timeout:
             break
 
