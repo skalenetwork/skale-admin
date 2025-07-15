@@ -21,7 +21,7 @@ jobs:
     env:
       ENDPOINT: http://127.0.0.1:1234
       FAIR_TAG: "0.0.1-develop.25"
-      SKALED_TAG: 4.1.0-develop.24-fair
+      SKALED_TAG: 4.1.0-develop.24-mirage
 
     steps:
       - uses: actions/checkout@v4
