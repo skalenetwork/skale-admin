@@ -18,26 +18,24 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from dataclasses import dataclass
 from time import sleep
 
 from skale.schain_config.generator import get_nodes_for_schain
 
-from core.schains.dkg.structures import ComplaintReason, DKGStatus, DKGStep
-from core.schains.dkg.utils import (
+from core.dkg.schain.structures import ComplaintReason
+from core.dkg.schain.utils import (
     init_dkg_client,
     send_complaint,
     get_latest_block_timestamp,
     DkgError,
-    DKGKeyGenerationError,
-    generate_bls_keys,
     check_response,
     check_no_complaints,
     check_failed_dkg,
     wait_for_fail,
     broadcast_and_check_data,
 )
-from tools.helper import write_json
+from core.dkg.structures import DKGResult, DKGStatus, DKGStep
+from core.dkg.utils import DKGKeyGenerationError, generate_bls_keys
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +56,7 @@ def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
     return dkg_client
 
 
-def init_bls(dkg_client, node_id, sgx_key_name, rotation_id=0):
+def init_bls(dkg_client, rotation_id=0):
     skale, schain_name = dkg_client.skale, dkg_client.schain_name
     n = dkg_client.n
 
@@ -148,19 +146,7 @@ def is_last_dkg_finished(skale, schain_name):
     return skale.dkg.get_number_of_completed(schain_index) == num_of_nodes
 
 
-def save_dkg_results(dkg_results, filepath):
-    """Save DKG results to the JSON file on disk"""
-    write_json(filepath, dkg_results)
-
-
-@dataclass
-class DKGResult:
-    status: DKGStatus
-    step: DKGStep
-    keys_data: dict
-
-
-def run_dkg(skale, dkg_client, schain_name, node_id, sgx_key_name, rotation_id) -> DKGResult:
+def run_dkg(skale, dkg_client, schain_name, rotation_id) -> DKGResult:
     keys_data, status = None, None
     try:
         if is_last_dkg_finished(skale, schain_name):
@@ -170,7 +156,7 @@ def run_dkg(skale, dkg_client, schain_name, node_id, sgx_key_name, rotation_id) 
             logger.info(f'Starting dkg procedure for {schain_name}')
             if skale.dkg.is_channel_opened(skale.schains.name_to_group_id(schain_name)):
                 status = DKGStatus.IN_PROGRESS
-                init_bls(dkg_client, node_id, sgx_key_name, rotation_id)
+                init_bls(dkg_client, rotation_id)
             else:
                 status = DKGStatus.FAILED
     except DkgError as e:

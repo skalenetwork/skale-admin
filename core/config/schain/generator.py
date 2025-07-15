@@ -43,7 +43,7 @@ from core.config.schain.legacy_data import is_static_accounts, static_accounts, 
 from core.config.schain.predeployed import generate_predeployed_accounts
 from core.config.schain.skale_section import generate_skale_section
 from core.node_config import NodeConfig
-from core.schains.dkg.utils import get_common_bls_public_key
+from core.dkg.schain.utils import get_common_bls_public_key
 from core.schains.limits import get_schain_type
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
 from tools.helper import is_address_contract, is_mirage, is_zero_address

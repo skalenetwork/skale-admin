@@ -26,7 +26,7 @@ from skale.types.dkg import G2Point
 
 from core.config.mirage.mirage_chain_node import MirageChainNodeInfo, generate_mirage_chain_nodes
 from core.config.schain.static_params import get_mirage_chain_name
-from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.dkg.utils import get_secret_key_share_filepath
 from tools.configs import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
 from tools.helper import read_json
 

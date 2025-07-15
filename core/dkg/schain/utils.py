@@ -18,36 +18,26 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import os
 from time import sleep
-from typing import NamedTuple
 
 from skale.schain_config.generator import get_nodes_for_schain
 
-from tools.configs import NODE_DATA_PATH
-from core.schains.dkg.structures import ComplaintReason, DKGStep
-from core.schains.dkg.client import DKGClient, DkgError, DkgVerificationError, DkgTransactionError
-from core.schains.dkg.broadcast_filter import Filter
+from core.dkg.schain.client import SchainDKGClient
+from core.dkg.schain.structures import ComplaintReason
+from core.dkg.structures import DKGStep
+from core.dkg.utils import (
+    DkgError,
+    DkgTransactionError,
+    BroadcastResult,
+    DkgFailedError,
+    UINT_CONSTANT,
+    BROADCAST_DATA_SEARCH_SLEEP,
+    sync_broadcast_data,
+)
 
 from sgx.http import SgxUnreachableError
 
 logger = logging.getLogger(__name__)
-
-UINT_CONSTANT = 2**256 - 1
-BROADCAST_DATA_SEARCH_SLEEP = 30
-
-
-class DkgFailedError(DkgError):
-    pass
-
-
-class DKGKeyGenerationError(DkgError):
-    pass
-
-
-class BroadcastResult(NamedTuple):
-    received: list[bool]
-    correct: list[bool]
 
 
 def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
@@ -80,7 +70,7 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
     logger.info('Node index in group is %d. Node id on contracts - %d', node_id_dkg, node_id)
 
     logger.info('Creating DKGClient')
-    dkg_client = DKGClient(
+    dkg_client = SchainDKGClient(
         node_id_dkg,
         node_id,
         skale,
@@ -97,40 +87,7 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
     return dkg_client
 
 
-def sync_broadcast_data(dkg_client, dkg_filter, is_received, is_correct, broadcasts_found):
-    if dkg_client.is_everyone_broadcasted():
-        events = dkg_filter.get_events(from_channel_started_block=True)
-    else:
-        events = dkg_filter.get_events()
-    for event in events:
-        from_node = dkg_client.node_ids_contract[event.nodeIndex]
-        if is_received[from_node] and from_node != dkg_client.node_id_dkg:
-            continue
-        else:
-            is_received[from_node] = True
-        broadcasted_data = [event.verificationVector, event.secretKeyContribution]
-        is_received[from_node] = True
-        if from_node != dkg_client.node_id_dkg:
-            logger.info(f'sChain {dkg_client.schain_name}: receiving from node {from_node}')
-        try:
-            dkg_client.receive_from_node(from_node, broadcasted_data)
-            is_correct[from_node] = True
-            broadcasts_found.append(event.nodeIndex)
-        except DkgVerificationError as e:
-            logger.error(e)
-            continue
-        logger.info(
-            f'sChain: {dkg_client.schain_name}. Received by {dkg_client.node_id_dkg} from '
-            f'{from_node}'
-        )
-    logger.info(
-        f'sChain {dkg_client.schain_name}: total received {len(broadcasts_found)} '
-        f'broadcasts from nodes {broadcasts_found}'
-    )
-    return (is_received, is_correct, broadcasts_found)
-
-
-def receive_broadcast_data(dkg_client: DKGClient) -> BroadcastResult:
+def receive_broadcast_data(dkg_client: SchainDKGClient) -> BroadcastResult:
     n = dkg_client.n
     schain_name = dkg_client.schain_name
     skale = dkg_client.skale
@@ -143,7 +100,7 @@ def receive_broadcast_data(dkg_client: DKGClient) -> BroadcastResult:
 
     start_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
 
-    dkg_filter = Filter(skale, schain_name, n)
+    dkg_filter = dkg_client.get_broadcast_filter()
     broadcasts_found = []
 
     logger.info('Fetching broadcasted data')
@@ -156,6 +113,10 @@ def receive_broadcast_data(dkg_client: DKGClient) -> BroadcastResult:
         )
         is_received, is_correct, broadcasts_found = sync_broadcast_data(
             dkg_client, dkg_filter, is_received, is_correct, broadcasts_found
+        )
+        logger.info(
+            f'sChain {dkg_client.schain_name}: total received {len(broadcasts_found)} '
+            f'broadcasts from nodes {broadcasts_found}'
         )
         if time_gone > dkg_client.dkg_timeout:
             break
@@ -176,38 +137,7 @@ def broadcast_and_check_data(dkg_client):
     dkg_client.last_completed_step = DKGStep.BROADCAST_VERIFICATION
 
 
-def generate_bls_keys(dkg_client):
-    skale = dkg_client.skale
-    schain_name = dkg_client.schain_name
-    try:
-        if not dkg_client.is_bls_key_generated():
-            encrypted_bls_key = dkg_client.generate_bls_key()
-            logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
-        else:
-            logger.info(f'sChain: {schain_name}. BLS key exists. Fetching')
-            dkg_client.fetch_bls_public_key()
-
-        bls_public_keys = dkg_client.get_bls_public_keys()
-        common_public_key = get_common_bls_public_key(skale, dkg_client.group_index)
-    except Exception as err:
-        raise DKGKeyGenerationError(err)
-    dkg_client.last_completed_step = DKGStep.KEY_GENERATION
-    return {
-        'common_public_key': common_public_key,
-        'public_key': dkg_client.public_key,
-        'bls_public_keys': bls_public_keys,
-        't': dkg_client.t,
-        'n': dkg_client.n,
-        'key_share_name': dkg_client.bls_name,
-    }
-
-
-def get_common_bls_public_key(skale, group_index: str) -> list[str]:
-    raw_common_public_key = skale.key_storage.get_common_public_key(group_index)
-    return [elem for coord in raw_common_public_key for elem in coord]
-
-
-def send_complaint(dkg_client: DKGClient, index: int, reason: ComplaintReason):
+def send_complaint(dkg_client: SchainDKGClient, index: int, reason: ComplaintReason):
     channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
     reason_to_missing = {
         ComplaintReason.NO_ALRIGHT: 'alright',
@@ -312,5 +242,6 @@ def get_latest_block_timestamp(skale):
     return skale.web3.eth.get_block('latest')['timestamp']
 
 
-def get_secret_key_share_filepath(schain_name, rotation_id):
-    return os.path.join(NODE_DATA_PATH, 'schains', schain_name, f'secret_key_{rotation_id}.json')
+def get_common_bls_public_key(skale, group_index: str) -> list[str]:
+    raw_common_public_key = skale.key_storage.get_common_public_key(group_index)
+    return [elem for coord in raw_common_public_key for elem in coord]

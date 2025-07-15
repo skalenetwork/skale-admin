@@ -32,13 +32,13 @@ from skale.types.schain import SchainName
 from core.chain.runner import get_container_name, is_exited
 from core.checks.schain import SChainChecks
 from core.config.schain.directory import schain_config_dir
+from core.dkg.utils import get_secret_key_share_filepath
 from core.firewall.utils import (
     cleanup_firewall_for_schain,
     get_default_rule_controller,
     get_sync_agent_ranges,
 )
 from core.node import get_current_nodes, get_skale_node_version
-from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType

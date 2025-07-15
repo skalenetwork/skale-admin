@@ -22,7 +22,7 @@ from typing import cast
 from datetime import datetime
 
 from core.redis.flat_redis_record import FieldInfo, FlatRedisRecord
-from core.schains.dkg.structures import DKGStatus
+from core.dkg.structures import DKGStatus
 
 logger = logging.getLogger(__name__)
 

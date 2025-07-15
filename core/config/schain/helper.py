@@ -24,7 +24,7 @@ from Crypto.Hash import keccak
 from web3 import Web3
 
 from core.config.mirage.helper import get_current_nodes as get_mirage_current_nodes
-from core.schains.dkg.utils import get_secret_key_share_filepath
+from core.dkg.utils import get_secret_key_share_filepath
 from tools.configs import ENV_TYPE, MIRAGE_STATIC_PARAMS_FILEPATH, STATIC_PARAMS_FILEPATH
 from tools.helper import is_mirage, read_json, safe_load_yml
 
