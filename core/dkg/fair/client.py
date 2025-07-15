@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 
 def generate_fair_poly_name(node_id, rotation_id):
-    return f'POLY:SCHAIN_ID:42653616163153870673020210111455690314811246121842211213597906712792875697871:NODE_ID:{str(node_id)}:DKG_ID:{str(rotation_id)}'  # noqa
+    return f'POLY:SCHAIN_ID:42653616163153870673020210111455690314811246121842211213597906712792875697870:NODE_ID:{str(node_id)}:DKG_ID:{str(rotation_id)}'  # noqa
 
 
 def generate_fair_bls_key_name(node_id, rotation_id):

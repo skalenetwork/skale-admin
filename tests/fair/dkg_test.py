@@ -303,7 +303,7 @@ class TestDKGFair:
         time.sleep(3)
         # Rerun dkg to emulate restoring keys
 
-        fair_nodes.sort(key=lambda x: x['node_id'])
+        fair_nodes.sort(key=lambda x: x.id)
         runners = get_fair_dkg_runners(fair_sgx_instances, fair_nodes, 'fair')
         results = exec_dkg_runners(runners)
         assert all([r.status.is_done() for r in results])
