@@ -21,6 +21,7 @@ import logging
 import os
 import time
 from typing import Optional, cast
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from core.config.schain.static_params import get_mirage_chain_name
 from core.monitor.mirage.monitor_config import run_config_pipeline
@@ -46,18 +47,18 @@ class ConfigTask(BaseTask):
         chain_name: MirageChainName,
         node_config: NodeConfig,
         stream_version: str,
+        scheduler: BackgroundScheduler,
     ) -> None:
         super().__init__(
             chain_name=chain_name,
             node_config=node_config,
             stream_version=stream_version,
         )
+        self.scheduler = scheduler
 
     @property
     def stuck_timeout(self) -> int:
-        return 100000  # TODOD: implement - use new dkg timeout
-        # dkg_timeout = self.skale.constants_holder.get_dkg_timeout()
-        # return int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
+        return self.STUCK_TIMEOUT_SECONDS
 
     @property
     def needed(self) -> bool:
@@ -71,6 +72,7 @@ class ConfigTask(BaseTask):
                 mirage=mirage,
                 node_config=self.node_config,
                 stream_version=self.stream_version,
+                scheduler=self.scheduler,
             )
         except Exception:
             logger.exception('Task %s failed', self.name)
@@ -113,6 +115,7 @@ class SkaledTask(BaseTask):
 
 def start_tasks(
     node_config: NodeConfig,
+    scheduler: BackgroundScheduler,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
     logger.info('Starting tasks for node_id: %s', node_config.id)
@@ -128,6 +131,7 @@ def start_tasks(
             chain_name=mirage_chain_name,
             node_config=node_config,
             stream_version=stream_version,
+            scheduler=scheduler,
         ),
         SkaledTask(
             chain_name=mirage_chain_name,

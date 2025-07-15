@@ -20,3 +20,7 @@
 
 class MissingEnvVariableError(Exception):
     pass
+
+
+class LocalEndpointUnreachableError(Exception):
+    """Raised when local skaled endpoint is not found in config file."""

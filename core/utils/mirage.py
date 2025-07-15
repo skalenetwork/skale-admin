@@ -28,6 +28,7 @@ from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_mirage_chain_name
 from core.node_config import NodeConfig
 from tools.configs.web3 import boot_endpoint, mirage_contracts
+from tools.exceptions import LocalEndpointUnreachableError
 from tools.wallet_utils import init_wallet
 
 logger = logging.getLogger(__name__)
@@ -60,3 +61,16 @@ def init_mirage_manager(
     if node_config:
         wallet = init_wallet(node_config=node_config, endpoint=endpoint)
     return MirageManager(endpoints, mirage_contracts(), wallet=wallet)
+
+
+def init_local_mirage(
+    node_config: NodeConfig | None = None, wallet: BaseWallet | None = None
+) -> MirageManager:
+    local_endpoint = get_local_skaled_endpoint_mirage()
+    if not local_endpoint:
+        raise LocalEndpointUnreachableError(
+            'Local skaled endpoint is not found, cannot initialize MirageManager'
+        )
+    if node_config:
+        wallet = init_wallet(node_config=node_config, endpoint=local_endpoint)
+    return MirageManager(local_endpoint, mirage_contracts(), wallet=wallet)
