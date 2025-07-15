@@ -44,7 +44,7 @@ def info():
             msg='Node is not registered', status_code=HTTPStatus.BAD_REQUEST
         )
     node = mirage.nodes.get(node_config.id)
-    return construct_ok_response({'node': node})
+    return construct_ok_response({'node': node.to_dict()})
 
 
 @mirage_node_bp.route(get_api_url(BLUEPRINT_NAME, 'register'), methods=['POST'])
@@ -70,7 +70,7 @@ def register():
     node_config.id = node.id
     node_config.ip = ip
     node_config.schain_base_port = port
-    return construct_ok_response({'node': str(node)})
+    return construct_ok_response({'node': node.to_dict()})
 
 
 @mirage_node_bp.route(get_api_url(BLUEPRINT_NAME, 'set-domain-name'), methods=['POST'])

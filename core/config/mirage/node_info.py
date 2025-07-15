@@ -42,7 +42,7 @@ class MirageCurrentNodeInfo(NodeInfo):
             **super().to_dict(),
             **{
                 'ecdsaKeyName': self.ecdsa_key_name,
-                'syncNode': not self.is_committee_node,
+                # 'syncNode': not self.is_committee_node,
                 'info-acceptors': 1,
                 **self.static_node_info,
             },
