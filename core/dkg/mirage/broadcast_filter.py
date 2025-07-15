@@ -62,7 +62,7 @@ class MirageFilter(BaseFilter):
             logger.info(f'Receipt {receipt} does not have field "data"')
             return False
         return True
-    
+
     def parse_event(self, receipt):
         event_data = remove_0x_prefix(receipt['logs'][0]['data'].hex())
         dkg_id = int(event_data[:64], 16)
@@ -104,7 +104,7 @@ class MirageFilter(BaseFilter):
                         if self.check_event(receipt):
                             dkg_event = self.parse_event(receipt)
                             if dkg_event:
-                                events.append( dkg_event )
+                                events.append(dkg_event)
                     except TransactionNotFound:
                         pass
                 self.first_unseen_block = block_number + 1

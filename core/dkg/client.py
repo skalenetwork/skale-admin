@@ -29,14 +29,13 @@ from core.dkg.utils import (
     convert_g2_points_to_array,
     convert_key_share_to_str,
     convert_str_to_key_share,
-    to_verify
+    to_verify,
 )
 
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
 
 from tools.configs import SGX_CERTIFICATES_FOLDER
-from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
 from tools.sgx_utils import sgx_unreachable_retry
 from typing import ClassVar
@@ -50,10 +49,12 @@ class BaseDKGClient(ABC):
     """
     Abstract base class for DKG clients.
     """
+
     poly_name: ClassVar[str]
     bls_name: ClassVar[str]
 
-    def __init__(self,
+    def __init__(
+        self,
         node_id_dkg,
         node_id_contract,
         skale,
@@ -64,7 +65,8 @@ class BaseDKGClient(ABC):
         node_ids_contract,
         eth_key_name,
         rotation_id,
-        step):
+        step,
+    ):
         self.node_id_contract = node_id_contract
         self.node_id_dkg = node_id_dkg
         self.skale = skale

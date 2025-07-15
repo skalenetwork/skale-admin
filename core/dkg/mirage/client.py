@@ -39,11 +39,11 @@ logger = logging.getLogger(__name__)
 
 
 def generate_mirage_poly_name(node_id, rotation_id):
-    return f'POLY:SCHAIN_ID:42653616163153870673020210111455690314811246121842211213597906712792875697875:NODE_ID:{str(node_id)}:DKG_ID:{str(rotation_id)}'
+    return f'POLY:SCHAIN_ID:42653616163153870673020210111455690314811246121842211213597906712792875697875:NODE_ID:{str(node_id)}:DKG_ID:{str(rotation_id)}'  # noqa
 
 
 def generate_mirage_bls_key_name(node_id, rotation_id):
-    return f'BLS_KEY:SCHAIN_ID:42653616163153870673020210111455690314811246121842211213597906712792875697877:NODE_ID:{str(node_id)}:DKG_ID:{str(rotation_id)}'
+    return f'BLS_KEY:SCHAIN_ID:42653616163153870673020210111455690314811246121842211213597906712792875697877:NODE_ID:{str(node_id)}:DKG_ID:{str(rotation_id)}'  # noqa
 
 
 class MirageDKGClient(BaseDKGClient):
@@ -62,26 +62,31 @@ class MirageDKGClient(BaseDKGClient):
         step: DKGStep = DKGStep.NONE,
     ):
         super().__init__(
-            node_id_dkg, node_id_contract, skale, t, n, public_keys,
-            node_ids_dkg, node_ids_contract, eth_key_name, rotation_id, step
+            node_id_dkg,
+            node_id_contract,
+            skale,
+            t,
+            n,
+            public_keys,
+            node_ids_dkg,
+            node_ids_contract,
+            eth_key_name,
+            rotation_id,
+            step,
         )
         self.broadcast_filter = MirageFilter(self.skale, self.rotation_id, self.n)
         self.bls_name = generate_mirage_bls_key_name(self.node_id_dkg, rotation_id)
         self.poly_name = generate_mirage_poly_name(self.node_id_dkg, rotation_id)
-    
+
     def get_round_status(self) -> Status:
         """Get the status of the DKG round."""
         return self.skale.dkg.get_round(DkgId(self.rotation_id)).status
 
     def is_node_broadcasted(self) -> bool:
-        return self.skale.dkg.is_node_broadcasted(
-            DkgId(self.rotation_id), self.node_id_contract
-        )
-    
+        return self.skale.dkg.is_node_broadcasted(DkgId(self.rotation_id), self.node_id_contract)
+
     def is_node_sent_alright(self) -> bool:
-        return self.skale.dkg.is_node_sent_alright(
-            DkgId(self.rotation_id), self.node_id_dkg
-        )
+        return self.skale.dkg.is_node_sent_alright(DkgId(self.rotation_id), self.node_id_dkg)
 
     def receive_from_node(self, from_node, broadcasted_data):
         if from_node != self.node_id_dkg:
@@ -110,13 +115,11 @@ class MirageDKGClient(BaseDKGClient):
         secret_key_contribution = self.secret_key_contribution()
 
         logger.info(
-            f'DKGClient is going to broadcast with vv {verification_vector}, skc {secret_key_contribution}'
+            f'DKGClient is going to broadcast with vv {verification_vector}, skc {secret_key_contribution}'  # noqa
         )
 
         self.skale.dkg.broadcast(
-            DkgId(self.rotation_id),
-            verification_vector,
-            secret_key_contribution
+            DkgId(self.rotation_id), verification_vector, secret_key_contribution
         )
 
     def _send_alright_transaction(self):
@@ -124,28 +127,31 @@ class MirageDKGClient(BaseDKGClient):
 
     def get_broadcast_filter(self) -> MirageFilter:
         return self.broadcast_filter
-    
+
     def is_everyone_broadcasted(self) -> bool:
         round_status = self.get_round_status()
         return round_status != Status.BROADCAST
-    
+
     def get_common_bls_public_key(self) -> list[str]:
         raw_common_public_key = self.skale.dkg.get_round(DkgId(self.rotation_id)).publicKey
         return [elem for coord in raw_common_public_key for elem in coord]
-    
+
     def check_round_id(self) -> bool:
         """Check if the round ID matches the current rotation ID."""
         return self.rotation_id == self.skale.dkg.get_last_dkg_id()
-    
+
     def is_broadcast_possible(self) -> bool:
         return not self.is_node_broadcasted() and self.check_round_id()
-    
+
     def is_alright_possible(self) -> bool:
         """Check if the 'alright' transaction can be sent."""
         round_status = self.get_round_status()
-        return not self.is_node_sent_alright() and round_status == Status.ALRIGHT \
-                and self.check_round_id()
-    
+        return (
+            not self.is_node_sent_alright()
+            and round_status == Status.ALRIGHT
+            and self.check_round_id()
+        )
+
     @sgx_unreachable_retry
     def generate_bls_key(self):
         received_secret_key_contribution = ''.join(
@@ -164,7 +170,7 @@ class MirageDKGClient(BaseDKGClient):
         )
         self.public_key = self.sgx.get_bls_public_key(self.bls_name)
         return bls_private_key
-    
+
     def fetch_all_broadcasted_data(self):
         dkg_filter = self.get_broadcast_filter()
         events = dkg_filter.get_events()

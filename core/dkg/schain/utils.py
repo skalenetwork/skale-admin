@@ -25,9 +25,14 @@ from skale.schain_config.generator import get_nodes_for_schain
 from core.dkg.schain.client import SchainDKGClient
 from core.dkg.schain.structures import ComplaintReason
 from core.dkg.structures import DKGStep
-from core.dkg.utils import ( DkgError, DkgTransactionError, BroadcastResult,
-                            DkgFailedError, UINT_CONSTANT,
-                            BROADCAST_DATA_SEARCH_SLEEP, sync_broadcast_data
+from core.dkg.utils import (
+    DkgError,
+    DkgTransactionError,
+    BroadcastResult,
+    DkgFailedError,
+    UINT_CONSTANT,
+    BROADCAST_DATA_SEARCH_SLEEP,
+    sync_broadcast_data,
 )
 
 from sgx.http import SgxUnreachableError
@@ -240,4 +245,3 @@ def get_latest_block_timestamp(skale):
 def get_common_bls_public_key(skale, group_index: str) -> list[str]:
     raw_common_public_key = skale.key_storage.get_common_public_key(group_index)
     return [elem for coord in raw_common_public_key for elem in coord]
-

@@ -29,7 +29,7 @@ from core.dkg.mirage.utils import (
     broadcast_and_check_data,
     check_dkg_id_with_exception,
     BROADCAST_DATA_SEARCH_SLEEP,
-    send_alright_and_wait_for_others
+    send_alright_and_wait_for_others,
 )
 from core.dkg.structures import DKGResult, DKGStatus
 

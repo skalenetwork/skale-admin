@@ -37,7 +37,7 @@ class DKGEvent:
 class BaseFilter(ABC):
     event_hash: ClassVar[str]
     skale: ClassVar[SkaleBase]
-    
+
     def __init__(self, n):
         self.n = n
         self.t = (2 * n + 1) // 3

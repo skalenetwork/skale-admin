@@ -187,9 +187,7 @@ def test_exit_status_active_forzen(skale, node):
     assert node.info['status'] == NodeStatus.LEFT.value
 
     future_ts = int(time.time()) + 1000
-    node.skale.nodes.get_node_finish_time = mock.Mock(
-        return_value=future_ts
-    )
+    node.skale.nodes.get_node_finish_time = mock.Mock(return_value=future_ts)
     exit_status_data = node.get_exit_status()
     assert exit_status_data['status'] == NodeExitStatus.WAIT_FOR_ROTATIONS.name
     assert exit_status_data['exit_time'] != 0

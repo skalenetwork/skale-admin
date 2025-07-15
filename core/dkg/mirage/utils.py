@@ -24,8 +24,11 @@ from skale.types.dkg import Status
 
 from core.dkg.mirage.client import MirageDKGClient
 from core.dkg.structures import DKGStep
-from core.dkg.utils import ( DkgError, BroadcastResult, BROADCAST_DATA_SEARCH_SLEEP,
-                            sync_broadcast_data
+from core.dkg.utils import (
+    DkgError,
+    BroadcastResult,
+    BROADCAST_DATA_SEARCH_SLEEP,
+    sync_broadcast_data,
 )
 
 logger = logging.getLogger(__name__)
@@ -93,9 +96,7 @@ def receive_broadcast_data(dkg_client: MirageDKGClient) -> BroadcastResult:
 
     while False in is_received:
         time_gone = max(start_time, get_latest_block_timestamp(dkg_client.skale)) - start_time
-        logger.info(
-            f'Has been trying to receive broadcasted data for {time_gone} seconds'
-        )
+        logger.info(f'Has been trying to receive broadcasted data for {time_gone} seconds')
         is_received, is_correct, broadcasts_found = sync_broadcast_data(
             dkg_client, dkg_filter, is_received, is_correct, broadcasts_found
         )

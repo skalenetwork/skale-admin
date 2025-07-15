@@ -270,7 +270,7 @@ def run_node_dkg(
         ) as dkg_client:
             logger.info('ID skale %d', id(dkg_client.skale))
             try:
-                dkg_result = run_dkg( skale, dkg_client, schain_name, rotation_id )
+                dkg_result = run_dkg(skale, dkg_client, schain_name, rotation_id)
             except Exception:
                 logger.exception('DKG run failed')
             else:

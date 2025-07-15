@@ -70,6 +70,7 @@ class BroadcastResult(NamedTuple):
 def get_secret_key_share_filepath(schain_name, rotation_id):
     return os.path.join(NODE_DATA_PATH, 'schains', schain_name, f'secret_key_{rotation_id}.json')
 
+
 def save_dkg_results(dkg_results, filepath):
     """Save DKG results to the JSON file on disk"""
     write_json(filepath, dkg_results)
@@ -151,6 +152,7 @@ def sync_broadcast_data(dkg_client, dkg_filter, is_received, is_correct, broadca
             logger.error(e)
             continue
     return (is_received, is_correct, broadcasts_found)
+
 
 def generate_bls_keys(dkg_client):
     schain_name = dkg_client.schain_name

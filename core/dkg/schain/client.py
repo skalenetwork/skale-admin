@@ -35,7 +35,7 @@ from core.dkg.utils import (
     DkgTransactionError,
     DkgVerificationError,
     SgxDkgPolynomGenerationError,
-    to_verify
+    to_verify,
 )
 
 from sgx.http import SgxUnreachableError
@@ -84,7 +84,7 @@ class SchainDKGClient(BaseDKGClient):
             node_ids_contract,
             eth_key_name,
             rotation_id,
-            step
+            step,
         )
         self.schain_name = schain_name
         self.group_index = skale.schains.name_to_group_id(schain_name)
@@ -107,7 +107,7 @@ class SchainDKGClient(BaseDKGClient):
 
     def is_node_broadcasted(self) -> bool:
         return self.skale.dkg.is_node_broadcasted(self.group_index, self.node_id_contract)
-    
+
     def receive_from_node(self, from_node, broadcasted_data):
         if from_node != self.node_id_dkg:
             logger.info(f'sChain {self.schain_name}: receiving from node {from_node}')
@@ -252,7 +252,7 @@ class SchainDKGClient(BaseDKGClient):
 
     def get_broadcast_filter(self):
         return self.broadcast_filter
-    
+
     def _send_broadcast_transaction(self):
         verification_vector = self.verification_vector()
         secret_key_contribution = self.secret_key_contribution()
@@ -264,7 +264,7 @@ class SchainDKGClient(BaseDKGClient):
             secret_key_contribution,
             self.rotation_id,
         )
-    
+
     def _send_alright_transaction(self):
         logger.info(f'sChain {self.schain_name} sending alright transaction')
         self.skale.dkg.alright(
@@ -275,7 +275,7 @@ class SchainDKGClient(BaseDKGClient):
     def get_common_bls_public_key(self) -> list[str]:
         raw_common_public_key = self.skale.key_storage.get_common_public_key(self.group_index)
         return [elem for coord in raw_common_public_key for elem in coord]
-    
+
     def is_broadcast_possible(self) -> bool:
         is_broadcast_possible = self.skale.dkg.contract.functions.isBroadcastPossible(
             self.group_index, self.node_id_contract
@@ -288,7 +288,7 @@ class SchainDKGClient(BaseDKGClient):
             )
             return False
         return True
-    
+
     def is_alright_possible(self) -> bool:
         is_alright_possible = self.skale.dkg.is_alright_possible(
             self.group_index, self.node_id_contract, self.skale.wallet.address
@@ -301,7 +301,7 @@ class SchainDKGClient(BaseDKGClient):
             )
             return False
         return True
-    
+
     @sgx_unreachable_retry
     def generate_bls_key(self):
         received_secret_key_contribution = ''.join(
@@ -320,7 +320,7 @@ class SchainDKGClient(BaseDKGClient):
         )
         self.public_key = self.sgx.get_bls_public_key(self.bls_name)
         return bls_private_key
-    
+
     def fetch_all_broadcasted_data(self):
         dkg_filter = self.get_broadcast_filter()
         events = dkg_filter.get_events()
@@ -346,4 +346,3 @@ class SchainDKGClient(BaseDKGClient):
         self._send_broadcast_transaction()
         logger.info('Everything is sent from %d node', self.node_id_dkg)
         self.last_completed_step = DKGStep.BROADCAST
-
