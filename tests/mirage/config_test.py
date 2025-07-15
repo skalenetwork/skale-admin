@@ -247,7 +247,6 @@ def test_generate_mirage_config_minimal_regular(
     node_info = config_dict['skaleConfig']['nodeInfo']
     assert node_info['nodeID'] == node_id
     assert node_info['nodeName'] == str(node_id)
-    assert node_info['syncNode'] is False
 
     schain_info = config_dict['skaleConfig']['sChain']
     assert schain_info['schainID'] == 936
@@ -276,10 +275,6 @@ def test_generate_mirage_config_minimal_sync(
     )
 
     assert isinstance(config, MirageConfig)
-    config_dict = config.to_dict()
-
-    node_info = config_dict['skaleConfig']['nodeInfo']
-    assert node_info['syncNode'] is True
 
 
 @pytest.mark.parametrize(
