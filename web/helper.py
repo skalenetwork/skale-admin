@@ -28,7 +28,7 @@ from skale import SkaleManager
 from skale.utils.web3_utils import init_web3
 
 from core.node_config import NodeConfig
-from core.utils.mirage import init_mirage_manager
+from core.utils.fair import init_fair_manager
 from tools.configs.web3 import endpoint
 from tools.helper import init_skale
 from tools.wallet_utils import init_wallet
@@ -90,14 +90,14 @@ def g_skale(func):
     return wrapper
 
 
-def g_mirage(func):
+def g_fair(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         if getattr(g, 'wallet', None) is None:
-            g.mirage = init_mirage_manager(node_config=g.config)
-            g.wallet = g.mirage.wallet
+            g.fair = init_fair_manager(node_config=g.config)
+            g.wallet = g.fair.wallet
         else:
-            g.mirage = init_mirage_manager(wallet=g.wallet)
+            g.fair = init_fair_manager(wallet=g.wallet)
         return func(*args, **kwargs)
 
     return wrapper

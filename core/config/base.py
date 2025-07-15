@@ -26,7 +26,7 @@ from tools.helper import read_json
 
 if TYPE_CHECKING:
     from core.config.schain.skale_section import SkaleConfig
-    from core.config.mirage.generator import MirageSkaleConfig
+    from core.config.fair.generator import FairSkaleConfig
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class BaseConfig:
     unddos: Dict
     genesis: Dict
     accounts: Dict
-    skale_config: SkaleConfig | MirageSkaleConfig
+    skale_config: SkaleConfig | FairSkaleConfig
 
     def to_dict(self):
         return {
@@ -58,8 +58,8 @@ class SChainConfig(BaseConfig):
 
 
 @dataclass
-class MirageConfig(BaseConfig):
-    skale_config: MirageSkaleConfig
+class FairConfig(BaseConfig):
+    skale_config: FairSkaleConfig
 
 
 class NoBaseConfigError(Exception):

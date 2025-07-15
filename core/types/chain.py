@@ -20,5 +20,5 @@
 from typing import NewType, Union
 from skale.types.schain import SchainName
 
-MirageChainName = NewType('MirageChainName', str)
-ChainName = Union[SchainName, MirageChainName]
+FairChainName = NewType('FairChainName', str)
+ChainName = Union[SchainName, FairChainName]

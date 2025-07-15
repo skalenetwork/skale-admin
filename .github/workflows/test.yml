@@ -16,12 +16,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test_mirage:
+  test_fair:
     runs-on: self-hosted
     env:
       ENDPOINT: http://127.0.0.1:1234
-      MIRAGE_TAG: "0.0.1-develop.25"
-      SKALED_TAG: 4.1.0-develop.24-mirage
+      FAIR_TAG: "0.0.1-develop.25"
+      SKALED_TAG: 4.1.0-develop.24-fair
 
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
       - name: Run core tests
         run: |
           source ../.venv/bin/activate
-          bash ./scripts/run_mirage_test.sh
+          bash ./scripts/run_fair_test.sh
 
       - name: Cleanup build artifacts
         if: always()
@@ -71,7 +71,7 @@ jobs:
           free -h
 
   test_core:
-    needs: [test_mirage]
+    needs: [test_fair]
     runs-on: self-hosted
     env:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

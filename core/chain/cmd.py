@@ -22,7 +22,7 @@ from typing import Optional
 from core.config.endpoint import get_chain_ports_from_config
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.main import get_skaled_container_config_path
-from core.config.schain.static_params import get_static_schain_cmd, get_static_skaled_cmd_mirage
+from core.config.schain.static_params import get_static_schain_cmd, get_static_skaled_cmd_fair
 from core.schains.ssl import get_ssl_filepath
 from tools.configs import SGX_SERVER_URL
 from tools.configs.containers import (
@@ -30,7 +30,7 @@ from tools.configs.containers import (
     SHARED_SPACE_CONTAINER_PATH,
 )
 from tools.configs.web3 import ENDPOINT
-from tools.helper import is_mirage
+from tools.helper import is_fair
 
 
 def get_skaled_container_cmd(
@@ -67,8 +67,8 @@ def get_chain_container_base_opts(
     ports = get_chain_ports_from_config(config)
 
     static_chain_cmd = None
-    if is_mirage():
-        static_chain_cmd = get_static_skaled_cmd_mirage()
+    if is_fair():
+        static_chain_cmd = get_static_skaled_cmd_fair()
     else:
         static_chain_cmd = get_static_schain_cmd()
 
@@ -82,7 +82,7 @@ def get_chain_container_base_opts(
         f'--wss-port {ports["wss"]}',
     ]
 
-    if not is_mirage():
+    if not is_fair():
         cmd.append(f'--main-net-url {ENDPOINT}')
 
     if not sync_node:

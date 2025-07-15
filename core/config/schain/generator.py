@@ -34,8 +34,8 @@ from skale.types.schain import SchainName
 from skale_contracts.projects.ima import MainnetImaContract
 from web3 import Web3
 
-from core.config.base import MirageConfig, SChainBaseConfig, SChainConfig
-from core.config.mirage.generator import generate_mirage_config_adapter
+from core.config.base import FairConfig, SChainBaseConfig, SChainConfig
+from core.config.fair.generator import generate_fair_config_adapter
 from core.config.precompiled import generate_precompiled_accounts
 from core.config.schain.generation import Gen
 from core.config.schain.helper import get_chain_id, get_schain_id
@@ -46,7 +46,7 @@ from core.node_config import NodeConfig
 from core.dkg.schain.utils import get_common_bls_public_key
 from core.schains.limits import get_schain_type
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
-from tools.helper import is_address_contract, is_mirage, is_zero_address
+from tools.helper import is_address_contract, is_fair, is_zero_address
 from tools.node_options import NodeOptions
 
 logger = logging.getLogger(__name__)
@@ -233,7 +233,7 @@ def generate_schain_config_with_skale(
     ecdsa_key_name: str,
     sync_node: bool = False,
     node_options: NodeOptions = NodeOptions(),
-) -> SChainConfig | MirageConfig:
+) -> SChainConfig | FairConfig:
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
     schains_on_node = skale.schains.get_schains_for_node(node_config.id)
     schain = skale.schains.get_by_name(schain_name)
@@ -250,8 +250,8 @@ def generate_schain_config_with_skale(
     else:
         schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
 
-    if is_mirage():
-        return generate_mirage_config_adapter(
+    if is_fair():
+        return generate_fair_config_adapter(
             skale_node=node,
             node_id=NodeId(node_config.id),
             chain_start_ts=schain.start_date,
