@@ -21,7 +21,7 @@ import json
 import logging
 import socket
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from skale import SkaleManager, MirageManager
 
@@ -110,10 +110,6 @@ def save_sync_ranges(sync_agent_ranges: List[IpRange], path: str) -> None:
     output = {'ranges': [list(r) for r in sync_agent_ranges]}
     with open(path, 'w') as out_file:
         json.dump(output, out_file)
-
-
-def ranges_from_plain_tuples(plain_ranges: List[Tuple]) -> List[IpRange]:
-    return list(sorted(map(lambda r: IpRange(*r), plain_ranges)))
 
 
 def cleanup_firewall_for_schain(schain_name: str) -> None:

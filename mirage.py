@@ -21,7 +21,9 @@ import time
 import logging
 
 from filelock import FileLock
+from apscheduler.schedulers.background import BackgroundScheduler
 
+from core.monitoring import update_monitoring_services
 from core.node_config import NodeConfig
 
 from core.monitor.mirage.main import start_tasks
@@ -29,19 +31,21 @@ from core.redis.migrations import run_redis_migrations
 
 from tools.configs import INIT_LOCK_PATH
 
-from tools.logger import init_admin_logger
+from tools.logger import init_mirage_logger
+from tools.configs.web3 import mirage_contracts
 from tools.sgx_utils import generate_sgx_key
 
-init_admin_logger()
+init_mirage_logger()
 logger = logging.getLogger(__name__)
 
 SLEEP_INTERVAL = 90
 
 
 def monitor(node_config: NodeConfig) -> None:
+    scheduler = BackgroundScheduler()
     while True:
         try:
-            start_tasks(node_config)
+            start_tasks(node_config, scheduler=scheduler)
         except Exception:
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
@@ -54,8 +58,7 @@ def worker() -> None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
-    # TODOD: uncomment
-    # update_monitoring_services(node_config.ip, node_config.id, mirage.committee.address)
+    update_monitoring_services(node_config.ip, node_config.id, mirage_contracts())
     monitor(node_config)
 
 

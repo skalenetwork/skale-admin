@@ -125,7 +125,7 @@ def generate_mirage_config_adapter(
                 node_ids=[node.id for node in committee_nodes],
                 dkg_id=DkgId(0),
                 common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
-                starting_Timestamp=Timestamp(0),
+                starting_timestamp=Timestamp(0),
             ),
         },
         {
@@ -136,7 +136,7 @@ def generate_mirage_config_adapter(
                 node_ids=[node.id for node in committee_nodes],
                 dkg_id=DkgId(0),
                 common_public_key=G2Point(Fp2Point(a=1, b=2), Fp2Point(a=3, b=4)),
-                starting_Timestamp=Timestamp(0),
+                starting_timestamp=Timestamp(0),
             ),
         },
     ]
