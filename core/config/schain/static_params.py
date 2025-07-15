@@ -20,23 +20,23 @@
 from eth_typing import HexStr
 
 from core.schains.types import SchainType
-from core.config.schain.helper import get_static_params, get_static_params_mirage
-from core.types.chain import MirageChainName
+from core.config.schain.helper import get_static_params, get_static_params_fair
+from core.types.chain import FairChainName
 from tools.configs import ENV_TYPE
 
 
-def get_static_chain_id_mirage(env_type: str = ENV_TYPE) -> HexStr:
-    static_params = get_static_params_mirage(env_type)
+def get_static_chain_id_fair(env_type: str = ENV_TYPE) -> HexStr:
+    static_params = get_static_params_fair(env_type)
     return static_params['info']['chain_id']
 
 
-def get_mirage_chain_name(env_type: str = ENV_TYPE) -> MirageChainName:
-    static_params = get_static_params_mirage(env_type)
+def get_fair_chain_name(env_type: str = ENV_TYPE) -> FairChainName:
+    static_params = get_static_params_fair(env_type)
     return static_params['info']['chain_name']
 
 
-def get_static_skaled_cmd_mirage(env_type: str = ENV_TYPE) -> list:
-    static_params = get_static_params_mirage(env_type)
+def get_static_skaled_cmd_fair(env_type: str = ENV_TYPE) -> list:
+    static_params = get_static_params_fair(env_type)
     return static_params['skaled_cmd']
 
 
@@ -45,8 +45,8 @@ def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:
     return static_params['schain_cmd']
 
 
-def get_static_schain_info_mirage(env_type: str = ENV_TYPE) -> dict:
-    static_params = get_static_params_mirage(env_type)
+def get_static_schain_info_fair(env_type: str = ENV_TYPE) -> dict:
+    static_params = get_static_params_fair(env_type)
     return static_params['schain']
 
 
@@ -73,8 +73,8 @@ def get_static_node_info(schain_type: SchainType, env_type: str = ENV_TYPE) -> d
     return {**static_params['node']['common'], **static_params['node'][schain_type.name]}
 
 
-def get_static_node_info_mirage(env_type: str = ENV_TYPE) -> dict:
-    static_params = get_static_params_mirage(env_type)
+def get_static_node_info_fair(env_type: str = ENV_TYPE) -> dict:
+    static_params = get_static_params_fair(env_type)
     return static_params['node']
 
 

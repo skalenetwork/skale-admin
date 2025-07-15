@@ -25,7 +25,7 @@ export_test_env () {
 
     export MANAGER_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh manager_address)
     export IMA_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh ima_address)
-    export MIRAGE_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh mirage_address)
+    export FAIR_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh fair_address)
     
     export DEFAULT_GAS_PRICE_WEI=1000000000
 

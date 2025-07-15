@@ -2,7 +2,7 @@ from typing import cast
 
 import pytest
 from eth_typing import HexStr
-from skale import MirageManager, SkaleIma, SkaleManager
+from skale import FairManager, SkaleIma, SkaleManager
 from skale.utils.account_tools import generate_account, send_eth
 from skale.utils.contracts_provision.fake_multisig_contract import deploy_fake_multisig_contract
 from skale.utils.contracts_provision.main import (
@@ -24,7 +24,7 @@ from skale.wallets import Web3Wallet
 
 from tests.utils import ETH_PRIVATE_KEY
 from tools.configs.ima import IMA_CONTRACTS
-from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS, MIRAGE_CONTRACTS
+from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS, FAIR_CONTRACTS
 
 ETH_AMOUNT_PER_NODE = 1
 NUMBER_OF_NODES = 2
@@ -66,12 +66,12 @@ def ima_contracts() -> str:
 
 
 @pytest.fixture(scope='session')
-def mirage_contracts() -> str:
-    if not MIRAGE_CONTRACTS:
+def fair_contracts() -> str:
+    if not FAIR_CONTRACTS:
         raise ValueError(
-            'Set MIRAGE_CONTRACTS environment variable to use mirage_contracts fixture'
+            'Set FAIR_CONTRACTS environment variable to use fair_contracts fixture'
         )
-    return MIRAGE_CONTRACTS
+    return FAIR_CONTRACTS
 
 
 @pytest.fixture(scope='session')
@@ -109,8 +109,8 @@ def skale_ima(endpoint, ima_contracts, wallet):
 
 
 @pytest.fixture(scope='session')
-def mirage(endpoint, mirage_contracts, wallet):
-    return MirageManager(endpoint, mirage_contracts, wallet)
+def fair(endpoint, fair_contracts, wallet):
+    return FairManager(endpoint, fair_contracts, wallet)
 
 
 # skale
@@ -176,4 +176,4 @@ def nodes(skale, node_skales, validator):
         cleanup_nodes(skale, ids)
 
 
-# mirage
+# fair

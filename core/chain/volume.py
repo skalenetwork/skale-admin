@@ -23,12 +23,12 @@ import os
 from skale.types.schain import Schain
 from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
-from core.types.chain import ChainName, MirageChainName
+from core.types.chain import ChainName, FairChainName
 from tools.configs.schains import CHAIN_STATE_PATH, FILESTORAGE_STATIC_PATH
 from tools.configs.containers import SHARED_SPACE_VOLUME_NAME, SHARED_SPACE_CONTAINER_PATH
 
 from tools.docker_utils import DockerUtils
-from tools.helper import is_mirage
+from tools.helper import is_fair
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 def is_volume_exists(chain_name: ChainName, sync_node=False, dutils=None):
     dutils = dutils or DockerUtils()
     chain_state = os.path.join(CHAIN_STATE_PATH, chain_name)
-    if is_mirage():
+    if is_fair():
         return os.path.isdir(chain_state)
     elif sync_node:
         filestorage_static_path_schain = os.path.join(FILESTORAGE_STATIC_PATH, chain_name)
@@ -45,7 +45,7 @@ def is_volume_exists(chain_name: ChainName, sync_node=False, dutils=None):
         return dutils.is_data_volume_exists(chain_name)
 
 
-def init_mirage_volume(chain_name: MirageChainName, dutils: DockerUtils | None = None) -> None:
+def init_fair_volume(chain_name: FairChainName, dutils: DockerUtils | None = None) -> None:
     dutils = dutils or DockerUtils()
     chain_state = os.path.join(CHAIN_STATE_PATH, chain_name)
     if os.path.isdir(chain_state):
@@ -63,7 +63,7 @@ def init_data_volume(schain: Schain, sync_node: bool = False, dutils: DockerUtil
         return
 
     logger.info(f'Creating volume for schain: {schain.name}')
-    if sync_node or is_mirage():
+    if sync_node or is_fair():
         ensure_data_dir_path(schain.name)
     else:
         schain_type = get_schain_type(schain.part_of_node)
@@ -74,7 +74,7 @@ def init_data_volume(schain: Schain, sync_node: bool = False, dutils: DockerUtil
 def ensure_data_dir_path(chain_name: ChainName) -> None:
     chain_state = os.path.join(CHAIN_STATE_PATH, chain_name)
     os.makedirs(chain_state, exist_ok=True)
-    if not is_mirage():
+    if not is_fair():
         schain_filestorage_state = os.path.join(chain_state, 'filestorage')
         filestorage_static_path_schain = os.path.join(FILESTORAGE_STATIC_PATH, chain_name)
         if os.path.islink(filestorage_static_path_schain):
@@ -86,7 +86,7 @@ def ensure_data_dir_path(chain_name: ChainName) -> None:
 
 def get_schain_volume_config(name, mount_path, mode=None, sync_node=False):
     mode = mode or 'rw'
-    if sync_node or is_mirage():
+    if sync_node or is_fair():
         datadir_src = os.path.join(CHAIN_STATE_PATH, name)
         shared_space_src = os.path.join(CHAIN_STATE_PATH, SHARED_SPACE_VOLUME_NAME)
     else:

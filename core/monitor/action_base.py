@@ -198,7 +198,7 @@ class BaseSkaledActionManager(BaseActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def cleanup_schain_docker_entity(self) -> bool:  # todod: check how it works with mirage
+    def cleanup_schain_docker_entity(self) -> bool:  # todod: check how it works with fair
         logger.info('Removing skaled docker artifacts')
         remove_skaled_container(self.name, dutils=self.dutils)
         time.sleep(SCHAIN_CLEANUP_TIMEOUT)

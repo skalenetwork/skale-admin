@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 JOIN_TIMEOUT = 1800
 
-MIRAGE_NFT_CHAIN_NAMES = ['mirage-network', 'mirage-committee']
+FAIR_NFT_CHAIN_NAMES = ['fair-network', 'fair-committee']
 
 
 def run_cleaner(skale, node_config):
@@ -141,7 +141,7 @@ def get_schains_with_containers(dutils=None):
 def get_schains_firewall_configs() -> list:
     return list(
         filter(
-            lambda name: name not in MIRAGE_NFT_CHAIN_NAMES,
+            lambda name: name not in FAIR_NFT_CHAIN_NAMES,
             map(lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)),
         )
     )

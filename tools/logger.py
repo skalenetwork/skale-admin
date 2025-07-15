@@ -32,7 +32,7 @@ from tools.configs.logs import (
     ADMIN_LOG_PATH,
     API_LOG_FORMAT,
     API_LOG_PATH,
-    MIRAGE_LOG_FORMAT,
+    FAIR_LOG_FORMAT,
     SYNC_LOG_PATH,
     DEBUG_LOG_PATH,
     LOG_FILE_SIZE_BYTES,
@@ -122,8 +122,8 @@ def init_admin_logger():
     init_logger(ADMIN_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
 
 
-def init_mirage_logger():
-    init_logger(MIRAGE_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
+def init_fair_logger():
+    init_logger(FAIR_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
 
 
 def init_api_logger():

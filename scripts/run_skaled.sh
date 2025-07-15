@@ -14,7 +14,7 @@ docker run -d \
   --name skaled \
   --network host \
   -v "$DIR/../tests/schain-data/.artifacts/skaled-datadir":"/skaled/datadir" \
-  -v "$DIR/../tests/schain-data/mirage-conf":"/skaled/config" \
+  -v "$DIR/../tests/schain-data/fair-conf":"/skaled/config" \
   --ulimit nofile=65535:65535 \
   skalenetwork/schain:${SKALED_TAG} \
   --config config/skaled-config.json \
