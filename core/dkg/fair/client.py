@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 
 def generate_fair_poly_name(node_id, rotation_id):
-    return f'POLY:SCHAIN_ID:42653616163153870673020210111455690314811246121842211213597906712792875697875:NODE_ID:{str(node_id)}:DKG_ID:{str(rotation_id)}'  # noqa
+    return f'POLY:SCHAIN_ID:42653616163153870673020210111455690314811246121842211213597906712792875697871:NODE_ID:{str(node_id)}:DKG_ID:{str(rotation_id)}'  # noqa
 
 
 def generate_fair_bls_key_name(node_id, rotation_id):
@@ -123,7 +123,7 @@ class FairDKGClient(BaseDKGClient):
         )
 
     def _send_alright_transaction(self):
-        self.skale.dkg.alright(DkgId(self.rotation_id), self.node_id_contract)
+        self.skale.dkg.alright(DkgId(self.rotation_id))
 
     def get_broadcast_filter(self) -> FairFilter:
         return self.broadcast_filter
@@ -158,15 +158,13 @@ class FairDKGClient(BaseDKGClient):
             to_verify(self.incoming_secret_key_contribution[j]) for j in range(self.sgx.n)
         )
         logger.info(
-            f'sChain: {self.schain_name}. '
             f'DKGClient is going to create BLS private key with name {self.bls_name}'
         )
         bls_private_key = self.sgx.create_bls_private_key_v2(
             self.poly_name, self.bls_name, self.eth_key_name, received_secret_key_contribution
         )
         logger.info(
-            f'sChain: {self.schain_name}. '
-            'DKGClient is going to fetch BLS public key with name {self.bls_name}'
+            f'DKGClient is going to fetch BLS public key with name {self.bls_name}'
         )
         self.public_key = self.sgx.get_bls_public_key(self.bls_name)
         return bls_private_key
@@ -180,15 +178,13 @@ class FairDKGClient(BaseDKGClient):
             broadcasted_data = [event.verificationVector, event.secretKeyContribution]
             self.store_broadcasted_data(broadcasted_data, from_node)
             logger.info(
-                f'sChain: {self.schain_name}. Received by {self.node_id_dkg} from {from_node}'
+                f'Received by {self.node_id_dkg} from {from_node}'
             )
 
     def broadcast(self):
         poly_success = self.generate_polynomial(self.poly_name)
         if poly_success == DkgPolyStatus.FAIL:
-            raise SgxDkgPolynomGenerationError(
-                f'sChain: {self.schain_name}. Sgx dkg polynom generation failed'
-            )
+            raise SgxDkgPolynomGenerationError('Sgx dkg polynom generation failed')
 
         if not self.is_broadcast_possible():
             return

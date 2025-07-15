@@ -27,6 +27,7 @@ from core.dkg.schain.structures import ComplaintReason
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
     DkgError,
+    DKGKeyGenerationError,
     DkgTransactionError,
     BroadcastResult,
     DkgFailedError,
@@ -245,3 +246,28 @@ def get_latest_block_timestamp(skale):
 def get_common_bls_public_key(skale, group_index: str) -> list[str]:
     raw_common_public_key = skale.key_storage.get_common_public_key(group_index)
     return [elem for coord in raw_common_public_key for elem in coord]
+
+
+def generate_bls_keys(dkg_client):
+    schain_name = dkg_client.schain_name
+    try:
+        if not dkg_client.is_bls_key_generated():
+            encrypted_bls_key = dkg_client.generate_bls_key()
+            logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
+        else:
+            logger.info(f'sChain: {schain_name}. BLS key exists. Fetching')
+            dkg_client.fetch_bls_public_key()
+
+        bls_public_keys = dkg_client.get_bls_public_keys()
+        common_public_key = dkg_client.get_common_bls_public_key()
+    except Exception as err:
+        raise DKGKeyGenerationError(err)
+    dkg_client.last_completed_step = DKGStep.KEY_GENERATION
+    return {
+        'common_public_key': common_public_key,
+        'public_key': dkg_client.public_key,
+        'bls_public_keys': bls_public_keys,
+        't': dkg_client.t,
+        'n': dkg_client.n,
+        'key_share_name': dkg_client.bls_name,
+    }
