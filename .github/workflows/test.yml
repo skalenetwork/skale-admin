@@ -61,8 +61,8 @@ jobs:
         if: always()
         run: |
           docker rm -f $(docker ps -aq)
-          rm -r tests/schain-data/.artifacts/skaled-datadir
-          [ -e helper-scripts/private_key.txt ] && rm helper-scripts/private_key.txt 
+          rm -r tests/schain-data/.artifacts/skaled-datadir || true
+          rm helper-scripts/private_key.txt || true
 
       - name: Show stats after core tests
         if: always()
@@ -137,7 +137,7 @@ jobs:
         if: always()
         run: |
           docker rm -f $(docker ps -aq)
-          [ -e helper-scripts/private_key.txt ] && rm helper-scripts/private_key.txt 
+          rm helper-scripts/private_key.txt || true
 
       - name: Run codecov
         run: |
