@@ -26,7 +26,7 @@ export_test_env () {
     export MANAGER_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh manager_address)
     export IMA_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh ima_address)
     export FAIR_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh fair_address)
-    
+
     export DEFAULT_GAS_PRICE_WEI=1000000000
 
     if [ -z "${ETH_PRIVATE_KEY}" ]; then
@@ -46,7 +46,12 @@ tests_cleanup () {
 
 sgx_cleanup () {
     export_test_env
-    docker rm -f sgx-simulator
-    mkdir -p $SGX_CERTIFICATES_FOLDER
-    rm -rf $SGX_CERTIFICATES_FOLDER/sgx.*
+
+    if docker ps -a --format "table {{.Names}}" | grep -q "^sgx-simulator$"; then
+        docker rm -f sgx-simulator
+    fi
+
+    if ls $SGX_CERTIFICATES_FOLDER/sgx.* >/dev/null 2>&1; then
+        rm -rf $SGX_CERTIFICATES_FOLDER/sgx.*
+    fi
 }
