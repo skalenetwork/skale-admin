@@ -29,7 +29,7 @@ from core.monitor.action_base import BaseActionManager
 from core.node_config import NodeConfig
 from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
 from core.checks.schain import ConfigChecks
-from core.schains.dkg import (
+from core.dkg.schain import (
     DkgError,
     get_dkg_client,
     get_secret_key_share_filepath,
@@ -115,8 +115,6 @@ class ConfigActionManager(BaseActionManager):
                     dkg_client=dkg_client,
                     skale=self.skale,
                     schain_name=self.name,
-                    node_id=self.node_config.id,
-                    sgx_key_name=self.node_config.sgx_key_name,
                     rotation_id=self.rotation_id,
                 )
                 logger.info('DKG finished with %s', dkg_result)

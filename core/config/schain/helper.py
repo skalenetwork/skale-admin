@@ -23,10 +23,10 @@ from typing import Dict, List, Optional
 from Crypto.Hash import keccak
 from web3 import Web3
 
-from core.config.mirage.helper import get_current_nodes as get_mirage_current_nodes
-from core.schains.dkg.utils import get_secret_key_share_filepath
-from tools.configs import ENV_TYPE, MIRAGE_STATIC_PARAMS_FILEPATH, STATIC_PARAMS_FILEPATH
-from tools.helper import is_mirage, read_json, safe_load_yml
+from core.config.fair.helper import get_current_nodes as get_fair_current_nodes
+from core.dkg.utils import get_secret_key_share_filepath
+from tools.configs import ENV_TYPE, FAIR_STATIC_PARAMS_FILEPATH, STATIC_PARAMS_FILEPATH
+from tools.helper import is_fair, read_json, safe_load_yml
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ def get_static_params(env_type=ENV_TYPE, path=STATIC_PARAMS_FILEPATH):
     return ydata['envs'][env_type]
 
 
-def get_static_params_mirage(env_type=ENV_TYPE, path=MIRAGE_STATIC_PARAMS_FILEPATH):
+def get_static_params_fair(env_type=ENV_TYPE, path=FAIR_STATIC_PARAMS_FILEPATH):
     ydata = safe_load_yml(path)
     return ydata['envs'][env_type]
 
@@ -62,8 +62,8 @@ def get_schain_current_nodes(config: Dict) -> List[dict]:
 
 
 def get_node_ips_from_config(config: Dict) -> List[str]:
-    if is_mirage():
-        group_data = get_mirage_current_nodes(config)
+    if is_fair():
+        group_data = get_fair_current_nodes(config)
     else:
         group_data = get_schain_current_nodes(config)
     if len(group_data) == 0:
@@ -78,8 +78,8 @@ def get_base_port_from_config(config: Dict | None) -> int:
 
 
 def get_own_ip_from_config(config: Dict) -> Optional[str]:
-    if is_mirage():
-        current_nodes = get_mirage_current_nodes(config)
+    if is_fair():
+        current_nodes = get_fair_current_nodes(config)
     else:
         current_nodes = get_schain_current_nodes(config)
     own_id = config['skaleConfig']['nodeInfo']['nodeID']

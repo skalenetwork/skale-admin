@@ -32,7 +32,7 @@ from peewee import (
     OperationalError,
 )
 
-from core.schains.dkg.structures import DKGStatus
+from core.dkg.structures import DKGStatus
 from web.models.base import BaseModel
 
 logger = logging.getLogger(__name__)

@@ -20,10 +20,10 @@
 from .base.firewall_manager import ChainFirewallManager  # noqa
 from .base.nftables import NFTablesController, NFT_CHAIN_BASE_PATH  # noqa
 from .schain.rule_controller import SChainRuleController  # noqa
-from .mirage.rule_controller import (
-    MirageController,  # noqa
-    MirageCommitteeScopeRuleController,  # noqa
-    MirageNetworkScopeRuleController,  # noqa
+from .fair.rule_controller import (
+    FairController,  # noqa
+    FairCommitteeScopeRuleController,  # noqa
+    FairNetworkScopeRuleController,  # noqa
 )  # noqa
 from .base.types import (
     Action,  # noqa
@@ -36,8 +36,8 @@ from .base.types import (
 from .utils import (
     cleanup_firewall_for_schain,
     get_default_rule_controller,  # noqa
-    get_mirage_committee_scope_rule_controller,  # noqa
-    get_mirage_network_scope_rule_controller,  # noqa
+    get_fair_committee_scope_rule_controller,  # noqa
+    get_fair_network_scope_rule_controller,  # noqa
     get_network_scope_node_ips,  # noqa
     cleanup_firewall_for_schain,  # noqa
 )

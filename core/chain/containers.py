@@ -42,7 +42,7 @@ from core.types.chain import ChainName
 from tools.configs import SYNC_NODE
 from tools.configs.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER, IMA_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import is_mirage
+from tools.helper import is_fair
 
 from web.models.schain import SChainRecord
 
@@ -120,7 +120,7 @@ def monitor_ima_container(
 ) -> None:
     dutils = dutils or DockerUtils()
 
-    if SYNC_NODE or is_mirage():
+    if SYNC_NODE or is_fair():
         return
 
     if not ima_data.linked:

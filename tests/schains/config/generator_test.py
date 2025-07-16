@@ -19,7 +19,7 @@ from config_controller_predeployed import (
 from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
 
-from core.config.base import MirageConfig
+from core.config.base import FairConfig
 from core.config.schain.generator import (
     generate_schain_config_with_skale,
     generate_schain_config,
@@ -774,12 +774,12 @@ def test_generate_config_static_groups(
         )
 
 
-@mock.patch('core.config.schain.generator.is_mirage', (lambda: True))
-@mock.patch('core.config.mirage.generator.generate_mirage_config')
+@mock.patch('core.config.schain.generator.is_fair', (lambda: True))
+@mock.patch('core.config.fair.generator.generate_fair_config')
 @mock.patch('core.config.schain.generator.generate_schain_config')
-def test_generate_schain_config_with_skale_calls_mirage(
+def test_generate_schain_config_with_skale_calls_fair(
     mock_generate_standard,
-    mock_generate_mirage,
+    mock_generate_fair,
     skale,
     skale_ima,
     node_config,
@@ -793,7 +793,7 @@ def test_generate_schain_config_with_skale_calls_mirage(
 
     rotation_data = Rotation(leaving_node_id=1, new_node_id=0, freeze_until=0, rotation_counter=0)
 
-    mock_generate_mirage.return_value = mock.MagicMock(spec=MirageConfig)
+    mock_generate_fair.return_value = mock.MagicMock(spec=FairConfig)
 
     result = generate_schain_config_with_skale(
         skale=skale,
@@ -807,6 +807,6 @@ def test_generate_schain_config_with_skale_calls_mirage(
         node_options=NodeOptions(),
     )
 
-    mock_generate_mirage.assert_called_once()
+    mock_generate_fair.assert_called_once()
     mock_generate_standard.assert_not_called()
-    assert isinstance(result, MirageConfig)
+    assert isinstance(result, FairConfig)
