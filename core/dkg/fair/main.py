@@ -22,8 +22,9 @@ from time import sleep
 
 from skale.types.dkg import Status
 
-from core.dkg.utils import DKGKeyGenerationError, generate_bls_keys
+from core.dkg.utils import DKGKeyGenerationError
 from core.dkg.fair.utils import (
+    generate_bls_keys,
     init_dkg_client,
     DkgError,
     broadcast_and_check_data,

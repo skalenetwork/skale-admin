@@ -24,8 +24,9 @@ from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.types.schain import SchainName
 
 from core.dkg.schain.main import get_dkg_client, is_last_dkg_finished, run_dkg
+from core.dkg.schain.utils import generate_bls_keys
 from core.dkg.structures import DKGStatus, DKGStep
-from core.dkg.utils import DkgError, DKGKeyGenerationError, generate_bls_keys
+from core.dkg.utils import DkgError, DKGKeyGenerationError
 from core.config.schain.directory import init_schain_config_dir
 from core.config.schain.generator import get_schain_nodes_with_schains
 

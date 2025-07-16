@@ -35,7 +35,8 @@ from core.dkg.schain.utils import (
     broadcast_and_check_data,
 )
 from core.dkg.structures import DKGResult, DKGStatus, DKGStep
-from core.dkg.utils import DKGKeyGenerationError, generate_bls_keys
+from core.dkg.utils import DKGKeyGenerationError
+from core.dkg.schain.utils import generate_bls_keys
 
 logger = logging.getLogger(__name__)
 

@@ -23,11 +23,8 @@ from typing import NamedTuple
 
 from eth_typing import HexStr
 from eth_utils.hexadecimal import remove_0x_prefix
-
 from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.utils.helper import split_public_key
-
-from core.dkg.structures import DKGStep
 
 from tools.configs import NODE_DATA_PATH
 from tools.helper import write_json
@@ -152,28 +149,3 @@ def sync_broadcast_data(dkg_client, dkg_filter, is_received, is_correct, broadca
             logger.error(e)
             continue
     return (is_received, is_correct, broadcasts_found)
-
-
-def generate_bls_keys(dkg_client):
-    schain_name = dkg_client.schain_name
-    try:
-        if not dkg_client.is_bls_key_generated():
-            encrypted_bls_key = dkg_client.generate_bls_key()
-            logger.info(f'sChain: {schain_name}. Node`s encrypted bls key is: {encrypted_bls_key}')
-        else:
-            logger.info(f'sChain: {schain_name}. BLS key exists. Fetching')
-            dkg_client.fetch_bls_public_key()
-
-        bls_public_keys = dkg_client.get_bls_public_keys()
-        common_public_key = dkg_client.get_common_bls_public_key()
-    except Exception as err:
-        raise DKGKeyGenerationError(err)
-    dkg_client.last_completed_step = DKGStep.KEY_GENERATION
-    return {
-        'common_public_key': common_public_key,
-        'public_key': dkg_client.public_key,
-        'bls_public_keys': bls_public_keys,
-        't': dkg_client.t,
-        'n': dkg_client.n,
-        'key_share_name': dkg_client.bls_name,
-    }
