@@ -20,7 +20,7 @@
 import logging
 import time
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from core.chain.containers import monitor_skaled_container
@@ -145,8 +145,8 @@ class FairSkaledActionManager(BaseSkaledActionManager):
     def schedule_skaled_restart(self, last_group_start_timestamp: int) -> bool:
         logger.info('Scheduling skaled restart')
         # TODOD: add more robust way to ensure that skaled is always restarted:
-        time_now = datetime.now()
-        earliest_possible_restart_ts = int(time_now.timestamp())
+        # save to redis and read to ensure that skaled is always restarted
+        earliest_possible_restart_ts = int(time.time())
         latest_possible_restart_ts = last_group_start_timestamp - SKALED_RESTART_DELAY_SECONDS
         logger.info(
             'Scheduling skaled restart between %d and %d, last_group_start_timestamp: %d',
@@ -162,6 +162,6 @@ class FairSkaledActionManager(BaseSkaledActionManager):
         self.scheduler.add_job(
             func=self.recreated_schain_containers,
             trigger='date',
-            run_date=datetime.fromtimestamp(restart_ts),
+            run_date=datetime.fromtimestamp(restart_ts, tz=timezone.utc),
         )
         return True
