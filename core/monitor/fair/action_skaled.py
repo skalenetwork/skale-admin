@@ -20,6 +20,8 @@
 import logging
 import time
 from typing import Optional
+from datetime import datetime, timezone
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from core.chain.containers import monitor_skaled_container
 from core.chain.runner import is_container_exists
@@ -30,7 +32,7 @@ from core.config.fair.firewall import (
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
-from core.config.fair.helper import is_node_in_current_config_group
+from core.config.fair.helper import random_timestamp_between
 from core.firewall import FairCommitteeScopeRuleController
 from core.monitor.action_base import (
     CONTAINER_POST_RUN_DELAY,
@@ -40,7 +42,7 @@ from core.monitor.action_base import (
 from core.node_config import NodeConfig
 from core.schains.cleaner import remove_skaled_container
 from core.types.chain import FairChainName
-from tools.configs.containers import SKALED_CONTAINER
+from tools.configs.containers import SKALED_CONTAINER, SKALED_RESTART_DELAY_SECONDS
 from tools.docker_utils import DockerUtils
 from tools.node_options import NodeOptions
 
@@ -54,6 +56,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
         rule_controller: FairCommitteeScopeRuleController,
         checks: SkaledChecks,
         node_config: NodeConfig,
+        scheduler: BackgroundScheduler,
         dutils: DockerUtils | None = None,
         node_options: NodeOptions | None = None,
     ):
@@ -66,6 +69,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             node_options=node_options,
         )
         self.chain_name = chain_name
+        self.scheduler = scheduler
 
     @BaseActionManager.monitor_block
     def skaled_container(
@@ -80,10 +84,10 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             start_ts,
         )
 
-        node_in_current_config = is_node_in_current_config_group(
-            self.cfm.skaled_config, self.node_config.id
-        )
-        sync_node = not node_in_current_config  # todod: tmp, handle it later
+        # node_in_current_config = is_node_in_current_config_group(
+        #     self.cfm.skaled_config, self.node_config.id
+        # )
+        sync_node = False  # todod: tmp, handle it later
 
         monitor_skaled_container(
             self.chain_name,
@@ -136,3 +140,28 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             self.rule_controller.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
             self.rule_controller.sync()
         return initial_status
+
+    @BaseActionManager.monitor_block
+    def schedule_skaled_restart(self, last_group_start_timestamp: int) -> bool:
+        logger.info('Scheduling skaled restart')
+        # TODOD: add more robust way to ensure that skaled is always restarted:
+        # save to redis and read to ensure that skaled is always restarted
+        earliest_possible_restart_ts = int(time.time())
+        latest_possible_restart_ts = last_group_start_timestamp - SKALED_RESTART_DELAY_SECONDS
+        logger.info(
+            'Scheduling skaled restart between %d and %d, last_group_start_timestamp: %d',
+            earliest_possible_restart_ts,
+            latest_possible_restart_ts,
+            last_group_start_timestamp,
+        )
+        restart_ts = random_timestamp_between(
+            earliest_possible_restart_ts, latest_possible_restart_ts
+        )
+        self.chain_record.set_restart_ts(restart_ts)
+        logger.info('Scheduling skaled restart at %d', restart_ts)
+        self.scheduler.add_job(
+            func=self.recreated_schain_containers,
+            trigger='date',
+            run_date=datetime.fromtimestamp(restart_ts, tz=timezone.utc),
+        )
+        return True

@@ -53,7 +53,12 @@ def run_config_pipeline(
 
     active_committee_index = fair.committee.get_active_committee_index()
     last_committee_index = fair.committee.last_committee_index()
-    is_committee_node = fair.committee.is_node_in_current_or_next_committee(node_config.id)
+
+    last_committee = fair.committee.get_committee(last_committee_index)
+    is_committee_node = node_config.id in last_committee.node_ids
+
+    # is_committee_node = fair.committee.is_node_in_current_or_next_committee(node_config.id)
+    dkg_id = fair.dkg.get_last_dkg_id()
 
     logger.info(
         'Running config pipeline, active committee: %s, last committee: %s, is committee node: %s',
@@ -71,7 +76,7 @@ def run_config_pipeline(
         node_config=node_config,
         chain_name=chain_name,
         stream_version=stream_version,
-        committee_index=last_committee_index,
+        dkg_id=dkg_id,
         chain_record=chain_record,
     )
 
@@ -79,7 +84,7 @@ def run_config_pipeline(
     config_am = FairConfigActionManager(
         fair=fair,
         chain_name=chain_name,
-        committee_index=last_committee_index,
+        dkg_id=dkg_id,
         node_config=node_config,
         stream_version=stream_version,
         checks=config_checks,
@@ -100,16 +105,14 @@ def run_config_pipeline(
     statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(chain_name)}')
     statsd_client.gauge(
         f'admin.config_pipeline.rotation_id.{no_hyphens(chain_name)}',
-        last_committee_index,
+        dkg_id,
     )
     with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(chain_name)}'):
         mon.run()
 
 
 class BaseConfigMonitor(IMonitor):
-    def __init__(
-        self, action_manager: FairConfigActionManager, checks: FairConfigChecks
-    ) -> None:
+    def __init__(self, action_manager: FairConfigActionManager, checks: FairConfigChecks) -> None:
         self.am = action_manager
         self.checks = checks
 
@@ -146,9 +149,10 @@ class CommitteeConfigMonitor(BaseConfigMonitor):
 
 class ActiveConfigMonitor(BaseConfigMonitor):
     def execute(self) -> None:
+        last_dkg_successful = self.am.fair.dkg.is_last_dkg_successful()
         if not self.checks.config_dir:
             self.am.config_dir()
-        if not self.checks.upstream_config:
+        if not self.checks.upstream_config and last_dkg_successful:
             self.am.upstream_config(is_committee_node=False)
         if not self.checks.network_scope_firewall_rules:
             self.am.network_scope_firewall_rules()

@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import random
 import time
 from typing import Dict, List
 from skale.types.node import NodeId
@@ -55,3 +56,7 @@ def get_node_ips_from_config(config: Dict) -> List[str]:
     if len(group_data) == 0:
         return []
     return [node_data['ip'] for node_data in group_data]
+
+
+def random_timestamp_between(start: int, end: int) -> int:
+    return random.randint(min(start, end), max(start, end))

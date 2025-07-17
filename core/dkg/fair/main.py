@@ -20,8 +20,11 @@
 import logging
 from time import sleep
 
-from skale.types.dkg import Status
+from skale import FairManager
+from skale.types.dkg import Status, DkgId
+from skale.types.node import NodeId
 
+from core.dkg.fair.client import FairDKGClient
 from core.dkg.utils import DKGKeyGenerationError
 from core.dkg.fair.utils import (
     generate_bls_keys,
@@ -37,10 +40,12 @@ from core.dkg.structures import DKGResult, DKGStatus
 logger = logging.getLogger(__name__)
 
 
-def get_dkg_client(node_id, skale, sgx_key_name, rotation_id):
+def get_dkg_client(
+    node_id: NodeId, fair: FairManager, sgx_key_name: str, dkg_id: DkgId
+) -> FairDKGClient:
     dkg_client = None
     try:
-        dkg_client = init_dkg_client(node_id, skale, sgx_key_name, rotation_id)
+        dkg_client = init_dkg_client(node_id, fair, sgx_key_name, dkg_id)
     except DkgError as e:
         logger.exception(e)
         raise

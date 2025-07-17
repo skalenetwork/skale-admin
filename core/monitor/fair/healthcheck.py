@@ -51,8 +51,10 @@ def handle_healthcheck_job(
     try:
         job = scheduler.get_job(BACKGROUND_JOB_NAME)
         if job is None:
-            logger.info('Adding healthcheck job to the scheduler')
             local_fair = init_local_fair(node_config)
+            logger.info('Going to execute healthcheck job')
+            healthcheck_job(local_fair)
+            logger.info('Adding healthcheck job to the scheduler')
             heartbeat_interval = local_fair.status.heartbeat_interval()
             safe_heartbeat_interval = heartbeat_interval - INTERVAL_BUFFER
             logger.info(f'Healthcheck job will run every {heartbeat_interval} seconds')

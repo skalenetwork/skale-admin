@@ -23,6 +23,7 @@ import time
 from typing import Optional, cast
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_fair_chain_name
 from core.monitor.fair.monitor_config import run_config_pipeline
 from core.monitor.fair.monitor_skaled import run_skaled_pipeline
@@ -36,6 +37,8 @@ from core.utils.fair import init_fair_manager
 from tools.docker_utils import DockerUtils
 
 logger = logging.getLogger(__name__)
+
+FAIR_TASK_SLEEP_INTERVAL = 60
 
 
 class ConfigTask(BaseTask):
@@ -86,6 +89,7 @@ class SkaledTask(BaseTask):
         chain_name: FairChainName,
         node_config: NodeConfig,
         stream_version: str,
+        scheduler: BackgroundScheduler,
         dutils: Optional[DockerUtils] = None,
     ) -> None:
         self.dutils = dutils
@@ -94,6 +98,7 @@ class SkaledTask(BaseTask):
             node_config=node_config,
             stream_version=stream_version,
         )
+        self.scheduler = scheduler
 
     @property
     def needed(self) -> bool:
@@ -107,6 +112,7 @@ class SkaledTask(BaseTask):
             run_skaled_pipeline(
                 chain_name=cast(FairChainName, self.chain_name),
                 node_config=self.node_config,
+                scheduler=self.scheduler,
                 dutils=self.dutils,
             )
         except Exception:
@@ -120,25 +126,38 @@ def start_tasks(
 ) -> bool:
     logger.info('Starting tasks for node_id: %s', node_config.id)
     stream_version = get_skale_node_version()
-    fair_chain_name = get_fair_chain_name()
+    name = get_fair_chain_name()
 
     init_ts, pid = int(time.time()), os.getpid()
-    process_report = ProcessReport(fair_chain_name)
+    process_report = ProcessReport(name)
     process_report.update(pid, init_ts)
+
+    chain_record = ChainRecord(name)
+
+    if chain_record.config_version != stream_version or (
+        chain_record.sync_config_run and chain_record.first_run
+    ):
+        logger.info('Fetching upstream config requested. Removing the old skaled config')
+        ConfigFileManager(name).remove_skaled_config()
 
     tasks = [
         ConfigTask(
-            chain_name=fair_chain_name,
+            chain_name=name,
             node_config=node_config,
             stream_version=stream_version,
             scheduler=scheduler,
         ),
         SkaledTask(
-            chain_name=fair_chain_name,
+            chain_name=name,
             node_config=node_config,
             stream_version=stream_version,
+            scheduler=scheduler,
             dutils=dutils,
         ),
     ]
-    execute_tasks(tasks=tasks, process_report=process_report)
+    execute_tasks(
+        tasks=tasks,
+        process_report=process_report,
+        sleep_interval=FAIR_TASK_SLEEP_INTERVAL,
+    )
     return True
