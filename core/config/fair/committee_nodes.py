@@ -34,3 +34,14 @@ def pick_future_group_from_committee_nodes(committee_nodes_in_scope: dict) -> di
     if ts < current_ts:
         raise NoFutureGroupError('All groups are activated')
     return committee_nodes_in_scope[str(ts)]['group']
+
+
+def get_last_group_start_timestamp_from_config(config: dict | None) -> int:
+    if config is None:
+        return 0
+    committee_nodes_in_scope = config['skaleConfig']['sChain']['nodes']
+    return find_biggest_timestamp(committee_nodes_in_scope)
+
+
+def find_biggest_timestamp(nodes_dict: dict) -> int:
+    return max(int(key) for key in nodes_dict.keys())

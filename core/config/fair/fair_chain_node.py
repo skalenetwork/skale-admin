@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from skale.dataclasses.node_info import NodeInfo
 from skale.utils.helper import ip_from_bytes
 from skale.types.node import FairNode
+from skale.types.dkg import DkgId
 
 from core.config.schain.helper import parse_public_key_info, get_bls_public_keys
 from core.config.schain.static_params import get_fair_chain_name
@@ -50,12 +51,12 @@ class FairChainNodeInfo(NodeInfo):
 
 
 def generate_fair_chain_nodes(
-    committee_nodes: list[FairNode], committee_id: int, is_committee_node: bool
+    committee_nodes: list[FairNode], dkg_id: DkgId, is_committee_node: bool
 ) -> list[FairChainNodeInfo]:
     chain_nodes = []
 
     if is_committee_node:
-        bls_public_keys = get_bls_public_keys(get_fair_chain_name(), committee_id)
+        bls_public_keys = get_bls_public_keys(get_fair_chain_name(), dkg_id)
     else:
         bls_public_keys = ['0:0:1:0'] * len(committee_nodes)
 
