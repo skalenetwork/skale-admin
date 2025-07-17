@@ -32,13 +32,13 @@ from skale.types.schain import SchainName
 from core.chain.runner import get_container_name, is_exited
 from core.checks.schain import SChainChecks
 from core.config.schain.directory import schain_config_dir
+from core.dkg.utils import get_secret_key_share_filepath
 from core.firewall.utils import (
     cleanup_firewall_for_schain,
     get_default_rule_controller,
     get_sync_agent_ranges,
 )
 from core.node import get_current_nodes, get_skale_node_version
-from core.schains.dkg.utils import get_secret_key_share_filepath
 from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType
@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 JOIN_TIMEOUT = 1800
 
-MIRAGE_NFT_CHAIN_NAMES = ['mirage-network', 'mirage-committee']
+FAIR_NFT_CHAIN_NAMES = ['fair-network', 'fair-committee']
 
 
 def run_cleaner(skale, node_config):
@@ -141,7 +141,7 @@ def get_schains_with_containers(dutils=None):
 def get_schains_firewall_configs() -> list:
     return list(
         filter(
-            lambda name: name not in MIRAGE_NFT_CHAIN_NAMES,
+            lambda name: name not in FAIR_NFT_CHAIN_NAMES,
             map(lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)),
         )
     )
@@ -170,14 +170,6 @@ def get_schains_on_node(dutils=None):
             schains_firewall_configs,
         )
     )
-
-
-def schain_names_to_ids(skale, schain_names):
-    ids = []
-    for name in schain_names:
-        id_ = skale.schains.name_to_id(name)
-        ids.append(bytes.fromhex(id_))
-    return ids
 
 
 def ensure_schain_removed(skale, schain_name, node_id, dutils=None):

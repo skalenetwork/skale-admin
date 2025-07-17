@@ -33,7 +33,7 @@ from core.schains.ima import get_ima_env
 from core.config.schain.directory import schain_config_dir_host
 from core.types.chain import ChainName
 from tools.docker_utils import DockerUtils
-from tools.helper import is_mirage
+from tools.helper import is_fair
 from tools.str_formatters import arguments_list_string
 from tools.configs.containers import (
     CONTAINER_NAME_PREFIX,
@@ -205,7 +205,7 @@ def run_skaled_container(
 ):
     cpu_limit = None
     mem_limit = None
-    if part_of_node and not sync_node and not is_mirage():
+    if part_of_node and not sync_node and not is_fair():
         schain_type = get_schain_type(part_of_node)
         cpu_limit = get_schain_limit(schain_type, MetricType.cpu_shares)
         mem_limit = get_schain_limit(schain_type, MetricType.mem)

@@ -1,4 +1,5 @@
 import os
+import time
 
 import mock
 import pytest
@@ -181,15 +182,22 @@ def test_exit_status_active_forzen(skale, node):
     node.exit({})
     exit_status_data = node.get_exit_status()
     assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
+    assert exit_status_data['status'] == NodeExitStatus.COMPLETED.name
+    assert exit_status_data['exit_time'] != 0
+    assert node.info['status'] == NodeStatus.LEFT.value
+
+    future_ts = int(time.time()) + 1000
+    node.skale.nodes.get_node_finish_time = mock.Mock(return_value=future_ts)
+    exit_status_data = node.get_exit_status()
     assert exit_status_data['status'] == NodeExitStatus.WAIT_FOR_ROTATIONS.name
     assert exit_status_data['exit_time'] != 0
-    assert node.info['status'] == NodeStatus.FROZEN.value
 
 
 def test_exit_status_maintenance(skale, maintenance_node):
     node_data = maintenance_node.get_exit_status()
     assert list(node_data.keys()) == ['status', 'data', 'exit_time']
     assert node_data['status'] == NodeExitStatus.IN_MAINTENANCE.name
+
     assert node_data['exit_time'] == 0
 
 

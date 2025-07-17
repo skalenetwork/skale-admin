@@ -32,7 +32,7 @@ from tools.configs.logs import (
     ADMIN_LOG_PATH,
     API_LOG_FORMAT,
     API_LOG_PATH,
-    MIRAGE_LOG_FORMAT,
+    FAIR_LOG_FORMAT,
     SYNC_LOG_PATH,
     DEBUG_LOG_PATH,
     LOG_FILE_SIZE_BYTES,
@@ -40,11 +40,18 @@ from tools.configs.logs import (
 )
 from tools.configs.web3 import ENDPOINT
 
+LOCAL_IPS = ['127.0.0.1', 'localhost']
+
 
 def compose_hiding_patterns():
     sgx_ip = urlparse(SGX_SERVER_URL).hostname
     eth_ip = urlparse(ENDPOINT).hostname
-    return {rf'{sgx_ip}': '[SGX_IP]', rf'{eth_ip}': '[ETH_IP]', r'NEK\:\w+': '[SGX_KEY]'}
+    patterns = {r'NEK\:\w+': '[SGX_KEY]'}
+    if sgx_ip not in LOCAL_IPS:
+        patterns.update({rf'{sgx_ip}': '[SGX_IP]'})
+    if eth_ip not in LOCAL_IPS:
+        patterns.update({rf'{eth_ip}': '[ETH_IP]'})
+    return patterns
 
 
 class RequestFormatter(logging.Formatter):
@@ -115,8 +122,8 @@ def init_admin_logger():
     init_logger(ADMIN_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
 
 
-def init_mirage_logger():
-    init_logger(MIRAGE_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
+def init_fair_logger():
+    init_logger(FAIR_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
 
 
 def init_api_logger():

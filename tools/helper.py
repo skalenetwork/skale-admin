@@ -31,19 +31,12 @@ import requests
 import yaml
 from filelock import FileLock
 from jinja2 import Environment
-from skale import MirageManager, SkaleManager
+from skale import SkaleManager
 from skale.types.node import NodeId
 from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
-from tools.configs.web3 import (
-    BOOT_ENDPOINT,
-    ENDPOINT,
-    MANAGER_CONTRACTS,
-    MIRAGE_CONTRACTS,
-    STATE_FILEPATH,
-    ZERO_ADDRESS,
-)
+from tools.configs.web3 import STATE_FILEPATH, ZERO_ADDRESS, endpoint, manager_contracts
 
 logger = logging.getLogger(__name__)
 
@@ -80,17 +73,9 @@ def files(path):
             yield file
 
 
-def sanitize_filename(filename):
-    return ''.join(x for x in filename if x.isalnum() or x == '_')
-
-
-def namedtuple_to_dict(tuple):
-    return tuple._asdict()
-
-
 def run_cmd(cmd, env={}, shell=False):
     logger.info(f'Running: {cmd}')
-    res = subprocess.run(cmd, shell=shell, stdout=PIPE, stderr=PIPE, env={**env, **os.environ})
+    res = subprocess.run(cmd, shell=shell, stdout=PIPE, stderr=PIPE, env={**os.environ, **env})
     if res.returncode:
         logger.error('Error during shell execution:')
         logger.error(res.stderr.decode('UTF-8').rstrip())
@@ -133,15 +118,7 @@ def wait_until_admin_inited():
 
 
 def init_skale(wallet: BaseWallet) -> SkaleManager:
-    if MANAGER_CONTRACTS is None:
-        raise ValueError('MANAGER_CONTRACTS is not set')
-    return SkaleManager(ENDPOINT, MANAGER_CONTRACTS, wallet, state_path=STATE_FILEPATH)
-
-
-def init_mirage(wallet: BaseWallet) -> MirageManager:
-    if MIRAGE_CONTRACTS is None:
-        raise ValueError('MIRAGE_CONTRACTS is not set')
-    return MirageManager(BOOT_ENDPOINT, MIRAGE_CONTRACTS, wallet, state_path=STATE_FILEPATH)
+    return SkaleManager(endpoint(), manager_contracts(), wallet, state_path=STATE_FILEPATH)
 
 
 def safe_load_yml(filepath):
@@ -200,9 +177,9 @@ def no_hyphens(name: str) -> str:
     return name.replace('-', '_')
 
 
-def is_mirage() -> bool:
-    return SKALE_NETWORK_TYPE == 'mirage'
+def is_fair() -> bool:
+    return SKALE_NETWORK_TYPE == 'fair'
 
 
-def cast_manager_to_mirage_node_id(manager_node_id: int) -> NodeId:
+def cast_manager_to_fair_node_id(manager_node_id: int) -> NodeId:
     return cast(NodeId, manager_node_id)

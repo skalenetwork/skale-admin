@@ -23,10 +23,10 @@ from skale.utils.account_tools import send_eth
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.types.schain import SchainName
 
-from core.schains.dkg.client import DkgError
-from core.schains.dkg.main import get_dkg_client, is_last_dkg_finished, run_dkg
-from core.schains.dkg.structures import DKGStatus, DKGStep
-from core.schains.dkg.utils import DKGKeyGenerationError, generate_bls_keys
+from core.dkg.schain.main import get_dkg_client, is_last_dkg_finished, run_dkg
+from core.dkg.schain.utils import generate_bls_keys
+from core.dkg.structures import DKGStatus, DKGStep
+from core.dkg.utils import DkgError, DKGKeyGenerationError
 from core.config.schain.directory import init_schain_config_dir
 from core.config.schain.generator import get_schain_nodes_with_schains
 
@@ -271,9 +271,7 @@ def run_node_dkg(
         ) as dkg_client:
             logger.info('ID skale %d', id(dkg_client.skale))
             try:
-                dkg_result = run_dkg(
-                    skale, dkg_client, schain_name, node_id, sgx_key_name, rotation_id
-                )
+                dkg_result = run_dkg(skale, dkg_client, schain_name, rotation_id)
             except Exception:
                 logger.exception('DKG run failed')
             else:

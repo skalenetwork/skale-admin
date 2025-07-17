@@ -215,7 +215,7 @@ def start_tasks(
 
     name = schain.name
     init_ts, pid = int(time.time()), os.getpid()
-    logger.info('Initialazing process report %d %d', pid, init_ts)
+    logger.info('Initializing process report %d %d', pid, init_ts)
     process_report = ProcessReport(name)
     process_report.update(pid, init_ts)
 
