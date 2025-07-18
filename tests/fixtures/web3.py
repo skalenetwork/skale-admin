@@ -95,6 +95,7 @@ def wallet(web3, private_key):
 @pytest.fixture(scope='session')
 def sgx_cert_folder():
     try:
+        shutil.rmtree(SGX_CERTIFICATES_FOLDER, ignore_errors=True)
         pathlib.Path(SGX_CERTIFICATES_FOLDER).mkdir(parents=True, exist_ok=True)
         yield
     finally:
