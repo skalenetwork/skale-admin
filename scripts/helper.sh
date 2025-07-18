@@ -52,9 +52,9 @@ sgx_cleanup () {
     fi
 
     echo SGX CERTS FOLDER $SGX_CERTIFICATES_FOLDER
-    ls $SGX_CERTIFICATES_FOLDER/sgx.*
 
-    if ls $SGX_CERTIFICATES_FOLDER/sgx.* >/dev/null 2>&1; then
-        rm -rf $SGX_CERTIFICATES_FOLDER/sgx.*
+    if ls $SGX_CERTIFICATES_FOLDER >/dev/null 2>&1; then
+        rm -rf $SGX_CERTIFICATES_FOLDER/
     fi
+    mkdir -p $SGX_CERTIFICATES_FOLDER
 }
