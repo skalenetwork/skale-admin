@@ -7,32 +7,28 @@ import logging
 import os
 import subprocess
 import time
-from concurrent.futures import Future, ThreadPoolExecutor as Executor
+import warnings
+from concurrent.futures import Future
+from concurrent.futures import ThreadPoolExecutor as Executor
 from contextlib import contextmanager
 from enum import Enum
 
-from eth_utils.hexadecimal import remove_0x_prefix
-
 import mock
 import pytest
-import warnings
+from eth_utils.hexadecimal import remove_0x_prefix
 from skale import SkaleManager
 from skale.contracts.manager.dkg import G2Point, KeyShare
-from skale.wallets import SgxWallet
+from skale.types.schain import SchainName
 from skale.utils.account_tools import send_eth
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
-from skale.types.schain import SchainName
+from skale.wallets import SgxWallet
 
+from core.config.schain.directory import init_schain_config_dir
+from core.config.schain.generator import get_schain_nodes_with_schains
 from core.dkg.schain.main import get_dkg_client, is_last_dkg_finished, run_dkg
 from core.dkg.schain.utils import generate_bls_keys
 from core.dkg.structures import DKGStatus, DKGStep
 from core.dkg.utils import DkgError, DKGKeyGenerationError
-from core.config.schain.directory import init_schain_config_dir
-from core.config.schain.generator import get_schain_nodes_with_schains
-
-from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
-from tools.configs.schains import SCHAINS_DIR_PATH
-
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
     generate_random_node_data,
@@ -40,6 +36,8 @@ from tests.utils import (
     set_automine,
     set_interval_mining,
 )
+from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.configs.schains import SCHAINS_DIR_PATH
 
 warnings.filterwarnings('ignore')
 
@@ -68,10 +66,19 @@ class DKGRunType(int, Enum):
 def generate_sgx_wallets(skale, n_of_keys):
     if not SGX_SERVER_URL:
         raise DkgTestError('SGX_SERVER_URL is not set')
+
+    logger.info('Making sure cert folders exists')
+    for i in range(n_of_keys):
+        os.makedirs(os.path.join(SGX_CERTIFICATES_FOLDER, f'dkg-{i}'), exist_ok=True)
+
     logger.info(f'Generating {n_of_keys} test wallets')
     return [
-        SgxWallet(SGX_SERVER_URL, skale.web3, path_to_cert=SGX_CERTIFICATES_FOLDER)
-        for _ in range(n_of_keys)
+        SgxWallet(
+            SGX_SERVER_URL,
+            skale.web3,
+            path_to_cert=os.path.join(SGX_CERTIFICATES_FOLDER, f'dkg-{i}'),
+        )
+        for i in range(n_of_keys)
     ]
 
 
