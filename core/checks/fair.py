@@ -24,7 +24,7 @@ import time
 from typing import cast
 
 from skale.fair_manager import FairManager
-from skale.types.committee import CommitteeIndex
+from skale.types.dkg import DkgId
 
 from core.checks.base import BaseSkaledChecks, CheckRes, IChecks
 from core.config.endpoint import get_base_port_from_config
@@ -60,7 +60,7 @@ class FairConfigChecks(IChecks):
         fair: FairManager,
         node_config: NodeConfig,
         chain_name: FairChainName,
-        committee_index: CommitteeIndex,
+        dkg_id: DkgId,
         stream_version: str,
         chain_record: ChainRecord,
     ) -> None:
@@ -68,7 +68,7 @@ class FairConfigChecks(IChecks):
         self.node_config = node_config
         self.fair = fair
         self.chain_record = chain_record
-        self.committee_index = committee_index
+        self.dkg_id = dkg_id
         self.stream_version = stream_version
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=chain_name)
         self.statsd_client = get_statsd_client()
@@ -89,7 +89,7 @@ class FairConfigChecks(IChecks):
     @property
     def dkg(self) -> CheckRes:
         """Checks that DKG procedure is completed"""
-        secret_key_share_filepath = get_secret_key_share_filepath(self.name, self.committee_index)
+        secret_key_share_filepath = get_secret_key_share_filepath(self.name, self.dkg_id)
         return CheckRes(os.path.isfile(secret_key_share_filepath))
 
     @property
@@ -100,14 +100,14 @@ class FairConfigChecks(IChecks):
         and config regeneration was not triggered manually.
         Returns False otherwise.
         """
-        exists = self.cfm.upstream_exist_for_rotation_id(self.committee_index)
+        exists = self.cfm.upstream_exist_for_rotation_id(self.dkg_id)
         logger.debug('Upstream configs status for %s: %s', self.name, exists)
         stream_updated = self.chain_record.config_version == self.stream_version
         triggered = self.chain_record.sync_config_run
 
         logger.info(
-            'Upstream config status, committee_index %s: exist: %s,stream: %s, triggered: %s',
-            self.committee_index,
+            'Upstream config status, dkg_id %s: exist: %s,stream: %s, triggered: %s',
+            self.dkg_id,
             exists,
             stream_updated,
             triggered,

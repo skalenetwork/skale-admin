@@ -21,9 +21,12 @@ import logging
 import time
 from typing import Type
 
+from apscheduler.schedulers.background import BackgroundScheduler
+
 from core.chain.status import SkaledStatus, get_skaled_status
 from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
 from core.checks.fair import SkaledChecks
+from core.config.fair.committee_nodes import get_last_group_start_timestamp_from_config
 from core.config.fair.firewall import get_own_ip_from_config
 from core.firewall.utils import get_fair_committee_scope_rule_controller
 from core.monitor.fair.action_skaled import FairSkaledActionManager
@@ -43,6 +46,7 @@ logger = logging.getLogger(__name__)
 def run_skaled_pipeline(
     chain_name: FairChainName,
     node_config: NodeConfig,
+    scheduler: BackgroundScheduler,
     dutils: DockerUtils | None = None,
 ) -> None:
     logger.info('Initializing chain record')
@@ -72,6 +76,7 @@ def run_skaled_pipeline(
         rule_controller=rule_controller,
         checks=skaled_checks,
         node_config=node_config,
+        scheduler=scheduler,
         dutils=dutils,
     )
 
@@ -100,7 +105,7 @@ def run_skaled_pipeline(
         mon(action_manager=skaled_am).run()
 
 
-class RegularSkaledMonitor(BaseSkaledMonitor):
+class BaseFairSkaledMonitor(BaseSkaledMonitor):
     def __init__(self, action_manager: FairSkaledActionManager) -> None:
         self._am: FairSkaledActionManager = action_manager
         self._checks = action_manager.checks
@@ -113,6 +118,8 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
     def checks(self) -> SkaledChecks:
         return self._checks
 
+
+class RegularSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self) -> None:
         if not self._checks.committee_scope_firewall_rules:
             self._am.committee_scope_firewall_rules()
@@ -126,20 +133,7 @@ class RegularSkaledMonitor(BaseSkaledMonitor):
             self._am.skaled_rpc()
 
 
-class NoConfigSkaledMonitor(BaseSkaledMonitor):
-    # todod: optimize this part: move init and am to the base class
-    def __init__(self, action_manager: FairSkaledActionManager) -> None:
-        self._am: FairSkaledActionManager = action_manager
-        self._checks = action_manager.checks
-
-    @property
-    def am(self) -> FairSkaledActionManager:
-        return self._am
-
-    @property
-    def checks(self) -> SkaledChecks:
-        return self._checks
-
+class NoConfigSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self):
         if self.checks.upstream_exists:
             logger.info('Creating skaled config')
@@ -148,19 +142,7 @@ class NoConfigSkaledMonitor(BaseSkaledMonitor):
             logger.debug('Waiting for upstream config')
 
 
-class ActiveSkaledMonitor(BaseSkaledMonitor):
-    def __init__(self, action_manager: FairSkaledActionManager) -> None:
-        self._am: FairSkaledActionManager = action_manager
-        self._checks = action_manager.checks
-
-    @property
-    def am(self) -> FairSkaledActionManager:
-        return self._am
-
-    @property
-    def checks(self) -> SkaledChecks:
-        return self._checks
-
+class ActiveSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.volume:
             self._am.volume()
@@ -174,20 +156,29 @@ class ActiveSkaledMonitor(BaseSkaledMonitor):
             self._am.skaled_rpc()
 
 
+class UpdateConfigSkaledMonitor(BaseFairSkaledMonitor):
+    def execute(self) -> None:
+        if not self.checks.config_updated:
+            self.am.update_config()
+        last_group_start_timestamp = get_last_group_start_timestamp_from_config(
+            self.am.cfm.latest_upstream_config
+        )
+        self.am.schedule_skaled_restart(last_group_start_timestamp)
+
+
 def get_skaled_monitor(
     action_manager: FairSkaledActionManager,
     check_status: dict,
     chain_record: ChainRecord,
     skaled_status: SkaledStatus | None,
-) -> Type[BaseSkaledMonitor]:
+) -> Type[BaseFairSkaledMonitor]:
     logger.info('Choosing skaled monitor')
     if skaled_status:
         skaled_status.log()
 
-    mon_type: Type[BaseSkaledMonitor] = RegularSkaledMonitor
+    mon_type: Type[BaseFairSkaledMonitor] = RegularSkaledMonitor
 
-    # todod: check if the node of a part of the CURRENT committee
-    # optimize this logic
+    # todod: check if the node of a part of the CURRENT/NEXT committee - optimize
     config = action_manager.cfm.skaled_config
     current_ts = int(time.time())
     own_ip = get_own_ip_from_config(config, current_ts)
@@ -195,6 +186,8 @@ def get_skaled_monitor(
 
     if not check_status['config']:
         mon_type = NoConfigSkaledMonitor
+    elif not check_status['config_updated']:
+        mon_type = UpdateConfigSkaledMonitor
     elif not in_current_committee:
         mon_type = ActiveSkaledMonitor
 

@@ -41,6 +41,7 @@ RECORD_FIELDS: dict[str, FieldInfo] = {
     'dkg_status': FieldInfo('dkg_status', int, DKGStatus.NOT_STARTED.value),
     'repair_ts': FieldInfo('repair_ts', int, None),
     'snapshot_from': FieldInfo('snapshot_from', str, None),
+    'restart_ts': FieldInfo('restart_ts', int, None),
 }
 
 
@@ -86,7 +87,7 @@ class ChainRecord(FlatRedisRecord):
 
     @property
     def dkg_status(self) -> DKGStatus:
-        return cast(DKGStatus, self._get_field('dkg_status'))
+        return DKGStatus(self._get_field('dkg_status'))
 
     @property
     def snapshot_from(self) -> str | None:
@@ -95,6 +96,10 @@ class ChainRecord(FlatRedisRecord):
     @property
     def repair_ts(self) -> int | None:
         return cast(int | None, self._get_field('repair_ts'))
+
+    @property
+    def restart_ts(self) -> int | None:
+        return cast(int | None, self._get_field('restart_ts'))
 
     def set_config_version(self, version: str) -> None:
         self._set_field('config_version', version)
@@ -115,7 +120,7 @@ class ChainRecord(FlatRedisRecord):
         self._set_field('monitor_last_seen', last_seen)
 
     def set_dkg_status(self, status: DKGStatus) -> None:
-        self._set_field('dkg_status', status)
+        self._set_field('dkg_status', status.value)
 
     def set_ssl_change_date(self, date: datetime) -> None:
         self._set_field('ssl_change_date', date)
@@ -131,6 +136,9 @@ class ChainRecord(FlatRedisRecord):
 
     def set_repair_ts(self, value: int | None) -> None:
         self._set_field('repair_ts', value)
+
+    def set_restart_ts(self, value: int | None) -> None:
+        self._set_field('restart_ts', value)
 
     def reset_failed_counters(self) -> None:
         logger.info(f'Resetting failed counters for {self.name}')

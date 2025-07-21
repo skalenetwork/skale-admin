@@ -22,7 +22,7 @@ from typing import Dict
 
 from skale.types.committee import CommitteeGroup
 from skale.types.node import NodeId
-from skale.types.dkg import G2Point
+from skale.types.dkg import G2Point, DkgId
 
 from core.config.fair.fair_chain_node import FairChainNodeInfo, generate_fair_chain_nodes
 from core.config.schain.static_params import get_fair_chain_name
@@ -82,6 +82,7 @@ def generate_committee_bls_key(
     is_committee_node: bool,
     n: int,
     common_bls_public_key: list[str],
+    dkg_id: DkgId,
 ) -> BlsKey:
     # todod: handle the case for passive nodes
     if not is_committee_node:
@@ -95,9 +96,7 @@ def generate_committee_bls_key(
             bls_public_key=['0', '0', '1', '0'],
         )
 
-    secret_key_share_filepath = get_secret_key_share_filepath(
-        get_fair_chain_name(), committee_index
-    )
+    secret_key_share_filepath = get_secret_key_share_filepath(get_fair_chain_name(), dkg_id)
     secret_key_share_config = read_json(secret_key_share_filepath)
 
     return BlsKey(
@@ -125,6 +124,7 @@ def generate_committee_info(
         ts = committee['ts']
         committee_group = committee['group']
         index = committee['index']
+        dkg_id = committee['committee'].dkg_id
 
         is_committee_node = any(node.id == node_id for node in committee_group)
         common_bls_public_key = committee['committee'].common_public_key
@@ -134,9 +134,10 @@ def generate_committee_info(
             is_committee_node,
             len(committee_group),
             get_common_bls_public_key(common_bls_public_key),
+            dkg_id,
         )
 
-        fair_chain_nodes = generate_fair_chain_nodes(committee_group, index, is_committee_node)
+        fair_chain_nodes = generate_fair_chain_nodes(committee_group, dkg_id, is_committee_node)
         committee_info[ts] = CommitteeInfo(bls_key=bls_key, group=fair_chain_nodes)
 
     return committee_info

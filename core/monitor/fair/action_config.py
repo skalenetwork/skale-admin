@@ -20,13 +20,15 @@
 import logging
 
 from skale import FairManager
-from skale.types.committee import CommitteeIndex
+from skale.types.dkg import DkgId
 
 from core.checks.fair import FairConfigChecks
 from core.config.fair.generator import generate_fair_config_with_manager
 from core.config.schain.directory import init_schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.main import update_schain_config_version
+from core.dkg.fair.main import get_dkg_client, run_dkg
+from core.dkg.utils import DkgError, get_secret_key_share_filepath, save_dkg_results
 from core.firewall import get_fair_network_scope_rule_controller, get_network_scope_node_ips
 from core.monitor.action_base import BaseActionManager
 from core.node_config import NodeConfig
@@ -46,7 +48,7 @@ class FairConfigActionManager(BaseActionManager):
         self,
         fair: FairManager,
         chain_name: FairChainName,
-        committee_index: CommitteeIndex,
+        dkg_id: DkgId,
         node_config: NodeConfig,
         stream_version: str,
         checks: FairConfigChecks,
@@ -57,7 +59,7 @@ class FairConfigActionManager(BaseActionManager):
         self.checks = checks
         self.stream_version = stream_version
         self.chain_name = chain_name
-        self.committee_index = committee_index
+        self.dkg_id = dkg_id
         self.rule_controller = get_fair_network_scope_rule_controller()
 
         self.node_options = node_options or NodeOptions()
@@ -80,36 +82,24 @@ class FairConfigActionManager(BaseActionManager):
         initial_status = self.checks.dkg.status
         with self.statsd_client.timer(f'admin.action.dkg.{no_hyphens(self.name)}'):
             if not initial_status:
-                logger.info('Initializing dkg client')
-                # todod: get_fair_dkg_client
-
-                # dkg_client = get_dkg_client(
-                #     skale=self.skale,
-                #     node_id=self.node_config.id,
-                #     schain_name=self.name,
-                #     sgx_key_name=self.node_config.sgx_key_name,
-                #     rotation_id=self.rotation_id,
-                # )
+                logger.info('Initializing fair dkg client')
+                dkg_client = get_dkg_client(
+                    self.node_config.id,
+                    self.fair,
+                    self.node_config.sgx_key_name,
+                    dkg_id=self.dkg_id,
+                )
                 logger.info('Running run_dkg')
-                # todod: run_fair_dkg
-
-                # dkg_result = run_dkg(
-                #     dkg_client=dkg_client,
-                #     skale=self.skale,
-                #     schain_name=self.name,
-                #     node_id=self.node_config.id,
-                #     sgx_key_name=self.node_config.sgx_key_name,
-                #     rotation_id=self.rotation_id,
-                # )
-                # logger.info('DKG finished with %s', dkg_result)
-                # if dkg_result.status.is_done():
-                #     save_dkg_results(
-                #         dkg_result.keys_data,
-                #         get_secret_key_share_filepath(self.name, self.rotation_id),
-                #     )
-                # self.chain_record.set_dkg_status(dkg_result.status)
-                # if not dkg_result.status.is_done():
-                #     raise DkgError('DKG failed')
+                dkg_result = run_dkg(self.fair, dkg_client)
+                logger.info('DKG finished with %s', dkg_result)
+                if dkg_result.status.is_done():
+                    save_dkg_results(
+                        dkg_result.keys_data,
+                        get_secret_key_share_filepath(self.name, self.dkg_id),
+                    )
+                self.chain_record.set_dkg_status(dkg_result.status)
+                if not dkg_result.status.is_done():
+                    raise DkgError('DKG failed')
             else:
                 logger.info('Dkg - ok')
         return initial_status
@@ -118,9 +108,9 @@ class FairConfigActionManager(BaseActionManager):
     def upstream_config(self, is_committee_node: bool) -> bool:
         with self.statsd_client.timer(f'admin.action.upstream_config.{no_hyphens(self.name)}'):
             logger.info(
-                'Generating new upstream_config committee_index: \
+                'Generating new upstream_config dkg_id: \
 %s, stream: %s, is_committee_node: %s',
-                self.committee_index,
+                self.dkg_id,
                 self.stream_version,
                 is_committee_node,
             )
@@ -140,8 +130,8 @@ class FairConfigActionManager(BaseActionManager):
                 or new_config != self.cfm.latest_upstream_config
             ):
                 logger.info('Saving new config')
-                logger.info('Saving new upstream config committee_index: %d', self.committee_index)
-                self.cfm.save_new_upstream(self.committee_index, new_config)
+                logger.info('Saving new upstream config dkg_id: %d', self.dkg_id)
+                self.cfm.save_new_upstream(self.dkg_id, new_config)
                 result = True
             else:
                 logger.info('Generated config is the same as latest upstream')
