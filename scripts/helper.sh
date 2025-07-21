@@ -51,7 +51,10 @@ sgx_cleanup () {
         docker rm -f sgx-simulator
     fi
 
-    if ls $SGX_CERTIFICATES_FOLDER/sgx.* >/dev/null 2>&1; then
-        rm -rf $SGX_CERTIFICATES_FOLDER/sgx.*
+    echo SGX CERTS FOLDER $SGX_CERTIFICATES_FOLDER
+
+    if ls $SGX_CERTIFICATES_FOLDER >/dev/null 2>&1; then
+        rm -rf $SGX_CERTIFICATES_FOLDER/
     fi
+    mkdir -p $SGX_CERTIFICATES_FOLDER
 }

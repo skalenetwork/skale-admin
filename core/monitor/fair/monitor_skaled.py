@@ -18,27 +18,26 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 from typing import Type
+
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from core.chain.status import SkaledStatus, get_skaled_status
+from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
+from core.checks.fair import SkaledChecks
 from core.config.fair.committee_nodes import get_last_group_start_timestamp_from_config
 from core.config.fair.firewall import get_own_ip_from_config
 from core.firewall.utils import get_fair_committee_scope_rule_controller
+from core.monitor.fair.action_skaled import FairSkaledActionManager
 from core.monitor.monitor_base import BaseSkaledMonitor
 from core.node_config import NodeConfig
-from core.checks.fair import SkaledChecks
-from core.checks.base import get_api_checks_status, TG_ALLOWED_CHECKS
 from core.redis.chain_record import ChainRecord
-
-from core.monitor.fair.action_skaled import FairSkaledActionManager
-
-from core.chain.status import SkaledStatus, get_skaled_status
-
 from core.types.chain import FairChainName
-from tools.docker_utils import DockerUtils
 from tools.configs import SYNC_NODE
-from tools.notifications.messages import notify_checks
+from tools.docker_utils import DockerUtils
 from tools.helper import no_hyphens
+from tools.notifications.messages import notify_checks
 from tools.resources import get_statsd_client
 
 logger = logging.getLogger(__name__)
@@ -181,7 +180,8 @@ def get_skaled_monitor(
 
     # todod: check if the node of a part of the CURRENT/NEXT committee - optimize
     config = action_manager.cfm.skaled_config
-    own_ip = get_own_ip_from_config(config)
+    current_ts = int(time.time())
+    own_ip = get_own_ip_from_config(config, current_ts)
     in_current_committee = own_ip is not None
 
     if not check_status['config']:

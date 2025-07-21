@@ -134,8 +134,9 @@ class FairSkaledActionManager(BaseSkaledActionManager):
 
             conf = self.cfm.latest_upstream_config if upstream else self.cfm.skaled_config
             base_port = get_base_port_from_config(conf)
-            node_ips = get_node_ips_from_config(conf)
-            own_ip = get_own_ip_from_config(conf)
+            current_ts = int(time.time())
+            node_ips = get_node_ips_from_config(conf, current_ts)
+            own_ip = get_own_ip_from_config(conf, current_ts)
 
             self.rule_controller.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
             self.rule_controller.sync()
