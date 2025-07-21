@@ -19,8 +19,8 @@
 
 import logging
 import time
-from typing import Optional
 from datetime import datetime, timezone
+
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from core.chain.containers import monitor_skaled_container
@@ -74,28 +74,29 @@ class FairSkaledActionManager(BaseSkaledActionManager):
     @BaseActionManager.monitor_block
     def skaled_container(
         self,
-        download_snapshot: bool = False,
-        start_ts: Optional[int] = None,
         abort_on_exit: bool = True,
     ) -> bool:
-        logger.info(
-            'Starting skaled container watchman snapshot: %s, start_ts: %s',
-            download_snapshot,
-            start_ts,
-        )
-
-        # node_in_current_config = is_node_in_current_config_group(
-        #     self.cfm.skaled_config, self.node_config.id
-        # )
         sync_node = False  # todod: tmp, handle it later
+
+        download_snapshot = False
+        snapshot_from = None
+
+        if self.chain_record.snapshot_from:
+            logger.info(
+                'Skaled start mode: snapshot, snapshot_from: %s', self.chain_record.snapshot_from
+            )
+            download_snapshot = True
+            if self.chain_record.snapshot_from != 'any':
+                snapshot_from = self.chain_record.snapshot_from
+        else:
+            logger.info('Skaled start mode: regular')
 
         monitor_skaled_container(
             self.chain_name,
             chain_record=self.chain_record,
             skaled_status=self.skaled_status,
             download_snapshot=download_snapshot,
-            snapshot_from=self.chain_record.snapshot_from,
-            start_ts=start_ts,
+            snapshot_from=snapshot_from,
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,
             sync_node=sync_node,  # todod: tmp, handle it later - skaled should be fixed

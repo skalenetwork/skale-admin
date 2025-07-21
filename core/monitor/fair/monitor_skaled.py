@@ -149,7 +149,7 @@ class ActiveSkaledMonitor(BaseFairSkaledMonitor):
         if not self.checks.skaled_container:
             # TODOD: handle download snapshot - skaled should be fixed
             # self._am.skaled_container(download_snapshot=True)
-            self._am.skaled_container(download_snapshot=False)
+            self._am.skaled_container()
         else:
             self._am.reset_restart_counter()
         if not self.checks.rpc:
