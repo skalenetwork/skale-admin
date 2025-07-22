@@ -22,7 +22,7 @@ import logging
 import time
 from datetime import datetime
 from functools import wraps
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from core.chain.rpc import handle_failed_skaled_rpc
 from core.chain.runner import get_container_name, is_container_exists, restart_container
@@ -43,7 +43,6 @@ from tools.notifications.messages import notify_repair_mode
 from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 from web.models.schain import SChainRecord
-
 
 logger = logging.getLogger(__name__)
 
@@ -141,12 +140,7 @@ class BaseSkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     @abc.abstractmethod
-    def skaled_container(
-        self,
-        download_snapshot: bool = False,
-        start_ts: Optional[int] = None,
-        abort_on_exit: bool = True,
-    ) -> bool:
+    def skaled_container(self, *args: Any, **kwargs: Any) -> bool:
         """Run monitor_skaled_container"""
 
     @BaseActionManager.monitor_block

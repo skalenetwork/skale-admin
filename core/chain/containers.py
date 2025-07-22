@@ -110,6 +110,7 @@ def monitor_skaled_container(
             )
     else:
         chain_record.set_restart_count(0)
+        chain_record.set_snapshot_from('')
 
 
 def monitor_ima_container(
