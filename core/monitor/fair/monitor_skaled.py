@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import time
 from typing import Type, cast
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -27,7 +26,6 @@ from core.chain.status import SkaledStatus, get_skaled_status
 from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
 from core.checks.fair import SkaledChecks
 from core.config.fair.committee_nodes import get_last_group_start_timestamp_from_config
-from core.config.fair.firewall import get_own_ip_from_config
 from core.firewall.utils import get_fair_committee_scope_rule_controller
 from core.monitor.fair.action_skaled import FairSkaledActionManager
 from core.monitor.monitor_base import BaseSkaledMonitor
