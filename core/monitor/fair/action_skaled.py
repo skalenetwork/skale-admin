@@ -43,6 +43,7 @@ from core.node_config import NodeConfig
 from core.schains.cleaner import remove_skaled_container
 from core.types.chain import FairChainName
 from tools.configs.containers import SKALED_CONTAINER, SKALED_RESTART_DELAY_SECONDS
+from tools.configs.fair import SKALED_RESTART_JOB_NAME
 from tools.docker_utils import DockerUtils
 from tools.node_options import NodeOptions
 
@@ -50,6 +51,9 @@ logger = logging.getLogger(__name__)
 
 
 class FairSkaledActionManager(BaseSkaledActionManager):
+    checks: SkaledChecks
+    rule_controller: FairCommitteeScopeRuleController
+
     def __init__(
         self,
         chain_name: FairChainName,
@@ -74,13 +78,11 @@ class FairSkaledActionManager(BaseSkaledActionManager):
     @BaseActionManager.monitor_block
     def skaled_container(
         self,
+        download_snapshot: bool = False,
+        passive_node: bool = False,
         abort_on_exit: bool = True,
     ) -> bool:
-        sync_node = False  # todod: tmp, handle it later
-
-        download_snapshot = False
         snapshot_from = None
-
         if self.chain_record.snapshot_from:
             logger.info(
                 'Skaled start mode: snapshot, snapshot_from: %s', self.chain_record.snapshot_from
@@ -99,7 +101,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             snapshot_from=snapshot_from,
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,
-            sync_node=sync_node,  # todod: tmp, handle it later - skaled should be fixed
+            sync_node=passive_node,
             historic_state=self.node_options.historic_state,
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)
@@ -124,6 +126,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             remove_skaled_container(self.name, dutils=self.dutils)
         self.chain_record.set_restart_count(0)
         self.chain_record.set_failed_rpc_count(0)
+        self.chain_record.set_restart_ts(0)
         self.skaled_container(abort_on_exit=abort_on_exit)
         return initial_status
 
@@ -146,8 +149,6 @@ class FairSkaledActionManager(BaseSkaledActionManager):
     @BaseActionManager.monitor_block
     def schedule_skaled_restart(self, last_group_start_timestamp: int) -> bool:
         logger.info('Scheduling skaled restart')
-        # TODOD: add more robust way to ensure that skaled is always restarted:
-        # save to redis and read to ensure that skaled is always restarted
         earliest_possible_restart_ts = int(time.time())
         latest_possible_restart_ts = last_group_start_timestamp - SKALED_RESTART_DELAY_SECONDS
         logger.info(
@@ -160,10 +161,14 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             earliest_possible_restart_ts, latest_possible_restart_ts
         )
         self.chain_record.set_restart_ts(restart_ts)
-        logger.info('Scheduling skaled restart at %d', restart_ts)
+        logger.info(
+            'Scheduling skaled restart at %d, job id: %s', restart_ts, SKALED_RESTART_JOB_NAME
+        )
         self.scheduler.add_job(
             func=self.recreated_schain_containers,
             trigger='date',
             run_date=datetime.fromtimestamp(restart_ts, tz=timezone.utc),
+            id=SKALED_RESTART_JOB_NAME,
+            name='skaled restart job',
         )
         return True

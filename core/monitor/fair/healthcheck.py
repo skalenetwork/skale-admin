@@ -22,6 +22,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from skale import FairManager
 from skale.transactions.exceptions import TransactionError
+from tools.configs.fair import (
+    HEALTHCHECK_JOB_NAME,
+    SAFE_HEARTBEAT_BUFFER,
+)
 from tools.exceptions import LocalEndpointUnreachableError
 
 from core.node_config import NodeConfig
@@ -29,8 +33,6 @@ from core.utils.fair import init_local_fair
 
 
 logger = logging.getLogger(__name__)
-BACKGROUND_JOB_NAME = 'fair_healthcheck'
-INTERVAL_BUFFER = 30
 
 
 def healthcheck_job(
@@ -49,22 +51,27 @@ def handle_healthcheck_job(
     node_config: NodeConfig,
 ) -> None:
     try:
-        job = scheduler.get_job(BACKGROUND_JOB_NAME)
+        job = scheduler.get_job(HEALTHCHECK_JOB_NAME)
         if job is None:
             local_fair = init_local_fair(node_config)
             logger.info('Going to execute healthcheck job')
             healthcheck_job(local_fair)
             logger.info('Adding healthcheck job to the scheduler')
             heartbeat_interval = local_fair.status.heartbeat_interval()
-            safe_heartbeat_interval = heartbeat_interval - INTERVAL_BUFFER
+            safe_heartbeat_interval = heartbeat_interval - SAFE_HEARTBEAT_BUFFER
             logger.info(f'Healthcheck job will run every {heartbeat_interval} seconds')
+            logger.info(
+                'Scheduling healthcheck job, interval: %d seconds, job id: %s',
+                safe_heartbeat_interval,
+                HEALTHCHECK_JOB_NAME,
+            )
             scheduler.add_job(
                 func=healthcheck_job,
                 args=[local_fair],
                 trigger='interval',
                 seconds=safe_heartbeat_interval,
-                id=BACKGROUND_JOB_NAME,
-                name='Fair Healthcheck Job',
+                id=HEALTHCHECK_JOB_NAME,
+                name='fair healthcheck job',
             )
             scheduler.start()
             logger.info('Healthcheck scheduler started - jobs will now execute')
