@@ -23,10 +23,12 @@ import logging
 from filelock import FileLock
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from core.config.schain.static_params import get_fair_chain_name
 from core.monitoring import update_monitoring_services
 from core.node_config import NodeConfig
 
 from core.monitor.fair.main import start_tasks
+from core.redis.chain_record import ChainRecord
 from core.redis.migrations import run_redis_migrations
 
 from tools.configs import INIT_LOCK_PATH
@@ -52,6 +54,13 @@ def monitor(node_config: NodeConfig) -> None:
         time.sleep(SLEEP_INTERVAL)
 
 
+def update_chain_record() -> None:
+    logger.info('Updating chain record during fair admin startup')
+    chain_name = get_fair_chain_name()
+    chain_record = ChainRecord(chain_name)
+    chain_record.set_first_run(True)
+
+
 def worker() -> None:
     node_config = NodeConfig()
     while node_config.id is None:
@@ -59,6 +68,7 @@ def worker() -> None:
         time.sleep(SLEEP_INTERVAL)
 
     update_monitoring_services(node_config.ip, node_config.id, fair_contracts())
+    update_chain_record()
     monitor(node_config)
 
 
