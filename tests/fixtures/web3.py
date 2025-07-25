@@ -1,3 +1,5 @@
+import pathlib
+import shutil
 from typing import cast
 
 import pytest
@@ -23,8 +25,9 @@ from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
 from tests.utils import ETH_PRIVATE_KEY
+from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.ima import IMA_CONTRACTS
-from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS, FAIR_CONTRACTS
+from tools.configs.web3 import ENDPOINT, FAIR_CONTRACTS, MANAGER_CONTRACTS
 
 ETH_AMOUNT_PER_NODE = 1
 NUMBER_OF_NODES = 2
@@ -68,9 +71,7 @@ def ima_contracts() -> str:
 @pytest.fixture(scope='session')
 def fair_contracts() -> str:
     if not FAIR_CONTRACTS:
-        raise ValueError(
-            'Set FAIR_CONTRACTS environment variable to use fair_contracts fixture'
-        )
+        raise ValueError('Set FAIR_CONTRACTS environment variable to use fair_contracts fixture')
     return FAIR_CONTRACTS
 
 
@@ -92,7 +93,17 @@ def wallet(web3, private_key):
 
 
 @pytest.fixture(scope='session')
-def skale(endpoint, manager_contracts, wallet):
+def sgx_cert_folder():
+    try:
+        shutil.rmtree(SGX_CERTIFICATES_FOLDER, ignore_errors=True)
+        pathlib.Path(SGX_CERTIFICATES_FOLDER).mkdir(parents=True, exist_ok=True)
+        yield
+    finally:
+        shutil.rmtree(SGX_CERTIFICATES_FOLDER, ignore_errors=True)
+
+
+@pytest.fixture(scope='session')
+def skale(endpoint, manager_contracts, wallet, sgx_cert_folder):
     skale_obj = SkaleManager(endpoint, manager_contracts, wallet)
     add_test_permissions(skale_obj)
     add_test2_schain_type(skale_obj)
@@ -104,12 +115,12 @@ def skale(endpoint, manager_contracts, wallet):
 
 
 @pytest.fixture(scope='session')
-def skale_ima(endpoint, ima_contracts, wallet):
+def skale_ima(endpoint, ima_contracts, wallet, sgx_cert_folder):
     return SkaleIma(endpoint, ima_contracts, wallet)
 
 
 @pytest.fixture(scope='session')
-def fair(endpoint, fair_contracts, wallet):
+def fair(endpoint, fair_contracts, wallet, sgx_cert_folder):
     return FairManager(endpoint, fair_contracts, wallet)
 
 

@@ -20,6 +20,7 @@
 
 import logging
 import os
+import time
 from typing import cast
 
 from skale.fair_manager import FairManager
@@ -32,6 +33,7 @@ from core.config.fair.firewall import (
     get_own_ip_from_config,
 )
 from core.config.schain.file_manager import ConfigFileManager
+from core.dkg.utils import get_secret_key_share_filepath
 from core.firewall import get_fair_network_scope_rule_controller, get_network_scope_node_ips
 from core.firewall.fair import (
     FairCommitteeScopeRuleController,
@@ -39,10 +41,9 @@ from core.firewall.fair import (
 )
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
-from core.dkg.utils import get_secret_key_share_filepath
 from core.types.chain import FairChainName
-from tools.resources import get_statsd_client
 from tools.helper import cast_manager_to_fair_node_id
+from tools.resources import get_statsd_client
 
 logger = logging.getLogger(__name__)
 
@@ -157,10 +158,12 @@ class SkaledChecks(BaseSkaledChecks):
         if self.config:
             conf = self.cfm.skaled_config
             base_port = get_base_port_from_config(conf)
-            node_ips = get_node_ips_from_config(conf)
-            own_ip = get_own_ip_from_config(conf)
+            current_ts = int(time.time())
+            node_ips = get_node_ips_from_config(conf, current_ts)
+            own_ip = get_own_ip_from_config(conf, current_ts)
             fair_rule_controller = cast(FairCommitteeScopeRuleController, self.rule_controller)
             fair_rule_controller.configure(base_port=base_port, own_ip=own_ip, node_ips=node_ips)
+
             logger.debug(
                 'Committee scope check expected rules %s', self.rule_controller.expected_rules()
             )

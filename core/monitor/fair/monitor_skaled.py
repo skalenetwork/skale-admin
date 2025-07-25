@@ -18,27 +18,25 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from typing import Type
+from typing import Type, cast
+
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from core.chain.status import SkaledStatus, get_skaled_status
+from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
+from core.checks.fair import SkaledChecks
 from core.config.fair.committee_nodes import get_last_group_start_timestamp_from_config
-from core.config.fair.firewall import get_own_ip_from_config
 from core.firewall.utils import get_fair_committee_scope_rule_controller
+from core.monitor.fair.action_skaled import FairSkaledActionManager
 from core.monitor.monitor_base import BaseSkaledMonitor
 from core.node_config import NodeConfig
-from core.checks.fair import SkaledChecks
-from core.checks.base import get_api_checks_status, TG_ALLOWED_CHECKS
 from core.redis.chain_record import ChainRecord
-
-from core.monitor.fair.action_skaled import FairSkaledActionManager
-
-from core.chain.status import SkaledStatus, get_skaled_status
-
 from core.types.chain import FairChainName
-from tools.docker_utils import DockerUtils
 from tools.configs import SYNC_NODE
-from tools.notifications.messages import notify_checks
+from tools.configs.fair import SKALED_RESTART_JOB_NAME
+from tools.docker_utils import DockerUtils
 from tools.helper import no_hyphens
+from tools.notifications.messages import notify_checks
 from tools.resources import get_statsd_client
 
 logger = logging.getLogger(__name__)
@@ -90,8 +88,7 @@ def run_skaled_pipeline(
     notify_checks(chain_name, node_config.all(), api_status)
 
     logger.info('Skaled check status: %s', check_status)
-
-    logger.info('Upstream config %s', skaled_am.upstream_config_path)
+    logger.info('Upstream config: %s', skaled_am.upstream_config_path)
 
     mon = get_skaled_monitor(
         action_manager=skaled_am,
@@ -117,12 +114,12 @@ class BaseFairSkaledMonitor(BaseSkaledMonitor):
 
     @property
     def checks(self) -> SkaledChecks:
-        return self._checks
+        return cast(SkaledChecks, self._checks)
 
 
 class RegularSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self) -> None:
-        if not self._checks.committee_scope_firewall_rules:
+        if not self.checks.committee_scope_firewall_rules:
             self._am.committee_scope_firewall_rules()
         if not self.checks.volume:
             self._am.volume()
@@ -143,13 +140,13 @@ class NoConfigSkaledMonitor(BaseFairSkaledMonitor):
             logger.debug('Waiting for upstream config')
 
 
-class ActiveSkaledMonitor(BaseFairSkaledMonitor):
+class StartupSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self) -> None:
+        if not self.checks.committee_scope_firewall_rules:
+            self._am.committee_scope_firewall_rules()
         if not self.checks.volume:
             self._am.volume()
         if not self.checks.skaled_container:
-            # TODOD: handle download snapshot - skaled should be fixed
-            # self._am.skaled_container(download_snapshot=True)
             self._am.skaled_container(download_snapshot=False)
         else:
             self._am.reset_restart_counter()
@@ -161,6 +158,8 @@ class UpdateConfigSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.config_updated:
             self.am.update_config()
+        if not self.checks.committee_scope_firewall_rules:
+            self._am.committee_scope_firewall_rules()
         last_group_start_timestamp = get_last_group_start_timestamp_from_config(
             self.am.cfm.latest_upstream_config
         )
@@ -179,38 +178,15 @@ def get_skaled_monitor(
 
     mon_type: Type[BaseFairSkaledMonitor] = RegularSkaledMonitor
 
-    # todod: check if the node of a part of the CURRENT/NEXT committee - optimize
-    config = action_manager.cfm.skaled_config
-    own_ip = get_own_ip_from_config(config)
-    in_current_committee = own_ip is not None
+    if chain_record.restart_ts is not None and chain_record.restart_ts > 0 and \
+        not action_manager.scheduler.get_job(SKALED_RESTART_JOB_NAME):
+        logger.warning('Chain record restart timestamp is not zero and no restart job found')
+        mon_type = UpdateConfigSkaledMonitor
 
     if not check_status['config']:
         mon_type = NoConfigSkaledMonitor
+    elif not check_status['volume']:
+        mon_type = StartupSkaledMonitor
     elif not check_status['config_updated']:
         mon_type = UpdateConfigSkaledMonitor
-    elif not in_current_committee:
-        mon_type = ActiveSkaledMonitor
-
-    # if SYNC_NODE:
-    #     # todod: implement sync node monitors
-    #     return mon_type
-
-    # todod: implement regular node monitors
-
-    # if not check_status['config']:
-    #     mon_type = NoConfigSkaledMonitor
-    # elif is_backup_mode(schain_record):
-    #     mon_type = BackupSkaledMonitor
-    # elif is_repair_mode(schain_record, check_status, skaled_status, ncli_status, automatic_repair): # noqa: E501
-    #     mon_type = RepairSkaledMonitor
-    # elif is_recreate_mode(check_status, schain_record):
-    #     mon_type = RecreateSkaledMonitor
-    # elif is_new_node_mode(schain_record, action_manager.finish_ts):
-    #     mon_type = NewNodeSkaledMonitor
-    # elif is_config_update_time(check_status, skaled_status):
-    #     mon_type = UpdateConfigSkaledMonitor
-    # elif is_reload_group_mode(check_status, action_manager.upstream_finish_ts):
-    #     mon_type = ReloadGroupSkaledMonitor
-    # elif is_reload_ip_mode(check_status, action_manager.econfig.reload_ts):
-    #     mon_type = ReloadIpSkaledMonitor
     return mon_type
