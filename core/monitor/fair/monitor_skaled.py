@@ -142,10 +142,12 @@ class NoConfigSkaledMonitor(BaseFairSkaledMonitor):
 
 class StartupSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self) -> None:
+        if not self.checks.committee_scope_firewall_rules:
+            self._am.committee_scope_firewall_rules()
         if not self.checks.volume:
             self._am.volume()
         if not self.checks.skaled_container:
-            self._am.skaled_container(download_snapshot=True)
+            self._am.skaled_container(download_snapshot=False)
         else:
             self._am.reset_restart_counter()
         if not self.checks.rpc:
@@ -156,6 +158,8 @@ class UpdateConfigSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.config_updated:
             self.am.update_config()
+        if not self.checks.committee_scope_firewall_rules:
+            self._am.committee_scope_firewall_rules()
         last_group_start_timestamp = get_last_group_start_timestamp_from_config(
             self.am.cfm.latest_upstream_config
         )
@@ -174,9 +178,8 @@ def get_skaled_monitor(
 
     mon_type: Type[BaseFairSkaledMonitor] = RegularSkaledMonitor
 
-    if chain_record.restart_ts != 0 and not action_manager.scheduler.get_job(
-        SKALED_RESTART_JOB_NAME
-    ):
+    if chain_record.restart_ts is not None and chain_record.restart_ts > 0 and \
+        not action_manager.scheduler.get_job(SKALED_RESTART_JOB_NAME):
         logger.warning('Chain record restart timestamp is not zero and no restart job found')
         mon_type = UpdateConfigSkaledMonitor
 
