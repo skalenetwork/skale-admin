@@ -145,7 +145,7 @@ class StartupSkaledMonitor(BaseFairSkaledMonitor):
         if not self.checks.volume:
             self._am.volume()
         if not self.checks.skaled_container:
-            self._am.skaled_container(download_snapshot=True)
+            self._am.skaled_container(download_snapshot=False)
         else:
             self._am.reset_restart_counter()
         if not self.checks.rpc:
