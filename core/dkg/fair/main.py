@@ -36,16 +36,18 @@ from core.dkg.fair.utils import (
     send_alright_and_wait_for_others,
 )
 from core.dkg.structures import DKGResult, DKGStatus
+from core.types.chain import FairChainName
 
 logger = logging.getLogger(__name__)
 
 
 def get_dkg_client(
-    node_id: NodeId, fair: FairManager, sgx_key_name: str, dkg_id: DkgId
+    node_id: NodeId, fair: FairManager, sgx_key_name: str, dkg_id: DkgId,
+    chain_name: FairChainName
 ) -> FairDKGClient:
     dkg_client = None
     try:
-        dkg_client = init_dkg_client(node_id, fair, sgx_key_name, dkg_id)
+        dkg_client = init_dkg_client(node_id, fair, sgx_key_name, dkg_id, chain_name)
     except DkgError as e:
         logger.exception(e)
         raise

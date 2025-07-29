@@ -38,14 +38,6 @@ sys.path.insert(0, NODE_DATA_PATH)
 logger = logging.getLogger(__name__)
 
 
-def generate_fair_poly_name(node_id, rotation_id):
-    return f'POLY:SCHAIN_ID:42653616163153870673020210111455690314811246121842211213597906712792875697877:NODE_ID:{str(node_id)}:DKG_ID:{str(rotation_id)}'  # noqa
-
-
-def generate_fair_bls_key_name(node_id, rotation_id):
-    return f'BLS_KEY:SCHAIN_ID:42653616163153870673020210111455690314811246121842211213597906712792875697877:NODE_ID:{str(node_id)}:DKG_ID:{str(rotation_id)}'  # noqa
-
-
 class FairDKGClient(BaseDKGClient):
     def __init__(
         self,
@@ -59,6 +51,7 @@ class FairDKGClient(BaseDKGClient):
         node_ids_contract,
         eth_key_name,
         rotation_id,
+        chain_name,
         step: DKGStep = DKGStep.NONE,
     ):
         super().__init__(
@@ -72,11 +65,10 @@ class FairDKGClient(BaseDKGClient):
             node_ids_contract,
             eth_key_name,
             rotation_id,
+            chain_name,
             step,
         )
         self.broadcast_filter = FairFilter(self.skale, self.rotation_id, self.n)
-        self.bls_name = generate_fair_bls_key_name(self.node_id_dkg, rotation_id)
-        self.poly_name = generate_fair_poly_name(self.node_id_dkg, rotation_id)
 
     def get_round_status(self) -> Status:
         """Get the status of the DKG round."""

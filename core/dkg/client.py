@@ -21,6 +21,8 @@ from abc import ABC, abstractmethod
 import logging
 import os
 
+from eth_utils.hexadecimal import remove_0x_prefix
+
 from core.dkg.broadcast_filter import BaseFilter
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
@@ -29,6 +31,8 @@ from core.dkg.utils import (
     convert_g2_points_to_array,
     convert_key_share_to_str,
     convert_str_to_key_share,
+    generate_chain_poly_name,
+    generate_chain_bls_key_name,
     to_verify,
 )
 
@@ -36,9 +40,9 @@ from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
 
 from tools.configs import SGX_CERTIFICATES_FOLDER
+from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
 from tools.sgx_utils import sgx_unreachable_retry
-from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +53,6 @@ class BaseDKGClient(ABC):
     """
     Abstract base class for DKG clients.
     """
-
-    poly_name: ClassVar[str]
-    bls_name: ClassVar[str]
 
     def __init__(
         self,
@@ -65,6 +66,7 @@ class BaseDKGClient(ABC):
         node_ids_contract,
         eth_key_name,
         rotation_id,
+        chain_name,
         step,
     ):
         self.node_id_contract = node_id_contract
@@ -75,6 +77,7 @@ class BaseDKGClient(ABC):
         self.sgx = SgxClient(
             os.environ['SGX_SERVER_URL'], n=n, t=t, path_to_cert=SGX_CERTIFICATES_FOLDER
         )
+        self.chain_name = chain_name
         self.eth_key_name = eth_key_name
         self.rotation_id = rotation_id
         self.incoming_verification_vector = ['0' for _ in range(n)]
@@ -83,6 +86,10 @@ class BaseDKGClient(ABC):
         self.node_ids_dkg = node_ids_dkg
         self.node_ids_contract = node_ids_contract
         self.statsd_client = get_statsd_client()
+        self.group_index = self.skale.web3.keccak(text=self.chain_name)
+        group_index_str = str(int(remove_0x_prefix(skale.web3.to_hex(self.group_index)), 16))
+        self.poly_name = generate_chain_poly_name(group_index_str, self.node_id_dkg, rotation_id)
+        self.bls_name = generate_chain_bls_key_name(group_index_str, self.node_id_dkg, rotation_id)
         self._last_completed_step = step  # last step
 
     @property
@@ -91,9 +98,9 @@ class BaseDKGClient(ABC):
 
     @last_completed_step.setter
     def last_completed_step(self, step: DKGStep):
-        # self.statsd_client.gauge(
-        #     f'admin.schains.dkg.last_completed_step.{no_hyphens(self.schain_name)}', step.value
-        # )
+        self.statsd_client.gauge(
+            f'admin.schains.dkg.last_completed_step.{no_hyphens(self.chain_name)}', step.value
+        )
         self._last_completed_step = step
 
     def store_broadcasted_data(self, data, from_node):
