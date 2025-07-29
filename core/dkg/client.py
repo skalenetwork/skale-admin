@@ -99,7 +99,7 @@ class BaseDKGClient(ABC):
     @last_completed_step.setter
     def last_completed_step(self, step: DKGStep):
         self.statsd_client.gauge(
-            f'admin.schains.dkg.last_completed_step.{no_hyphens(self.schain_name)}', step.value
+            f'admin.schains.dkg.last_completed_step.{no_hyphens(self.chain_name)}', step.value
         )
         self._last_completed_step = step
 
