@@ -109,6 +109,7 @@ class ConfigActionManager(BaseActionManager):
                     schain_name=self.name,
                     sgx_key_name=self.node_config.sgx_key_name,
                     rotation_id=self.rotation_id,
+                    chain_name=self.name,
                 )
                 logger.info('Running run_dkg')
                 dkg_result = run_dkg(

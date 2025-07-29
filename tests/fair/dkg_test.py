@@ -78,9 +78,10 @@ def fair_dkg_test_client(
     node_id: int,
     sgx_key_name: str,
     rotation_id: int,
+    chain_name: str,
     run_type: DKGRunType = DKGRunType.NORMAL,
 ):
-    dkg_client = get_dkg_client(node_id, skale, sgx_key_name, rotation_id)
+    dkg_client = get_dkg_client(node_id, skale, sgx_key_name, rotation_id, chain_name)
     method, original = None, None
     if run_type == DKGRunType.BROADCAST_FAILED:
         effect = DkgError('Broadcast failed on purpose')
@@ -105,6 +106,7 @@ def run_fair_dkg(
     skale: FairManager,
     index: int,
     node_id: int,
+    chain_name: str,
     runs: tuple[DKGRunType] = (DKGRunType.NORMAL,),
 ) -> DKGResult:
     init_schain_config_dir('fair')
@@ -119,7 +121,7 @@ def run_fair_dkg(
     for run_type in runs:
         logger.info('Running %s dkg', run_type)
         with fair_dkg_test_client(
-            skale, node_id, sgx_key_name, committee_id, run_type
+            skale, node_id, sgx_key_name, committee_id, chain_name, run_type
         ) as dkg_client:
             logger.info('ID skale %d', id(dkg_client.skale))
             try:
@@ -140,6 +142,7 @@ def run_node_fair_dkg(
     fair: FairManager,
     index: int,
     node_id: int,
+    chain_name: str,
     runs: tuple[DKGRunType] = (DKGRunType.NORMAL,),
 ):
     init_schain_config_dir('fair')
@@ -155,7 +158,7 @@ def run_node_fair_dkg(
         logger.info('Running %s dkg', run_type)
         logger.info('ID fair %d', id(fair))
         try:
-            dkg_result = run_fair_dkg(fair, index, node_id, [run_type])
+            dkg_result = run_fair_dkg(fair, index, node_id, chain_name, [run_type])
         except Exception:
             logger.exception('Fair DKG run failed')
         else:
@@ -171,7 +174,7 @@ def run_node_fair_dkg(
 def get_fair_dkg_runners(fair_sgx_instances, fair_nodes, chain_name):
     runners = []
     for i, (node_fair, node) in enumerate(zip(fair_sgx_instances, fair_nodes)):
-        runners.append(functools.partial(run_node_fair_dkg, node_fair, i, node.id))
+        runners.append(functools.partial(run_node_fair_dkg, node_fair, i, node.id, chain_name))
     return runners
 
 

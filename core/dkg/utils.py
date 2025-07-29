@@ -64,6 +64,14 @@ class BroadcastResult(NamedTuple):
     correct: list[bool]
 
 
+def generate_chain_poly_name(group_index_str, node_id, dkg_id):
+    return f'POLY:SCHAIN_ID:{group_index_str}:NODE_ID:{str(node_id)}:DKG_ID:{str(dkg_id)}'
+
+
+def generate_chain_bls_key_name(group_index_str, node_id, dkg_id):
+    return f'BLS_KEY:SCHAIN_ID:{group_index_str}:NODE_ID:{str(node_id)}:DKG_ID:{str(dkg_id)}'
+
+
 def get_secret_key_share_filepath(schain_name, rotation_id):
     return os.path.join(NODE_DATA_PATH, 'schains', schain_name, f'secret_key_{rotation_id}.json')
 

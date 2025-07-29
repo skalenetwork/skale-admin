@@ -33,12 +33,14 @@ from core.dkg.utils import (
     BROADCAST_DATA_SEARCH_SLEEP,
     sync_broadcast_data,
 )
+from core.types.chain import FairChainName
 
 logger = logging.getLogger(__name__)
 
 
 def init_dkg_client(
-    node_id: NodeId, fair: FairManager, sgx_eth_key_name: str, committee_id: DkgId
+    node_id: NodeId, fair: FairManager, sgx_eth_key_name: str, committee_id: DkgId,
+    chain_name: FairChainName
 ) -> FairDKGClient:
     logger.info('Initializing dkg client')
     schain_nodes = fair.dkg.get_participants(committee_id)
@@ -78,6 +80,7 @@ def init_dkg_client(
         node_ids_contract,
         sgx_eth_key_name,
         committee_id,
+        chain_name,
     )
 
     return dkg_client
