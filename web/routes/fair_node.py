@@ -100,3 +100,32 @@ def set_domain_name():
             msg=f'Error setting domain name: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
     return construct_ok_response()
+
+
+@fair_node_bp.route(get_api_url(BLUEPRINT_NAME, 'change-ip'), methods=['POST'])
+@g_fair
+def change_ip():
+    logger.debug(request)
+    if not request.json:
+        abort(400)
+
+    ip = request.json.get('ip')
+    port = request.json.get('port')
+
+    fair: FairManager = g.fair
+    node_config: NodeConfig = g.config
+
+    if not node_config.id:
+        return construct_err_response(
+            msg='Node is not registered', status_code=HTTPStatus.BAD_REQUEST
+        )
+
+    try:
+        fair.nodes.set_ip_address(node_config.id, ip, port)
+    except TransactionError as e:
+        logger.error(f'Error setting IP address: {e}')
+        return construct_err_response(
+            msg=f'Error setting IP address: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+        )
+    node_config.ip = ip
+    return construct_ok_response()
