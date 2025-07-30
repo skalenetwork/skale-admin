@@ -22,7 +22,11 @@ import logging
 from dataclasses import dataclass
 from typing import Dict, TYPE_CHECKING
 
+from core.node import get_skale_node_version
+from core.redis.chain_record import ChainRecord
+from core.types.chain import ChainName
 from tools.helper import read_json
+from web.models.schain import SChainRecord
 
 if TYPE_CHECKING:
     from core.config.schain.skale_section import SkaleConfig
@@ -79,3 +83,25 @@ class SChainBaseConfig:
             self.config = read_json(self._base_config_path)
         except Exception as err:
             raise NoBaseConfigError(err)
+
+
+def update_chain_config_version(
+    chain_name: ChainName, chain_record: SChainRecord | ChainRecord
+) -> None:
+    new_config_version = get_skale_node_version()
+    logger.info(
+        f'Going to change config_version for {chain_name}: \
+{chain_record.config_version} -> {new_config_version}'
+    )
+    chain_record.set_config_version(new_config_version)
+
+
+def chain_config_version_match(
+    chain_name: ChainName, chain_record: SChainRecord | ChainRecord
+) -> bool:
+    skale_node_version = get_skale_node_version()
+    logger.info(
+        f'config check, chain: {chain_name}, config_version: \
+{chain_record.config_version}, skale_node_version: {skale_node_version}'
+    )
+    return chain_record.config_version == skale_node_version
