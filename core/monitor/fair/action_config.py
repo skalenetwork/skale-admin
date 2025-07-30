@@ -88,6 +88,7 @@ class FairConfigActionManager(BaseActionManager):
                     self.fair,
                     self.node_config.sgx_key_name,
                     dkg_id=self.dkg_id,
+                    chain_name=self.name,
                 )
                 logger.info('Running run_dkg')
                 dkg_result = run_dkg(self.fair, dkg_client)

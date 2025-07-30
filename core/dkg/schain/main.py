@@ -58,7 +58,7 @@ def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
 
 
 def init_bls(dkg_client, rotation_id=0):
-    skale, schain_name = dkg_client.skale, dkg_client.schain_name
+    skale, schain_name = dkg_client.skale, dkg_client.chain_name
     n = dkg_client.n
 
     channel_started_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
