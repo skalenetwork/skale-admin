@@ -42,6 +42,7 @@ RECORD_FIELDS: dict[str, FieldInfo] = {
     'repair_ts': FieldInfo('repair_ts', int, None),
     'snapshot_from': FieldInfo('snapshot_from', str, None),
     'restart_ts': FieldInfo('restart_ts', int, None),
+    'force_skaled_start': FieldInfo('force_skaled_start', bool, False),
 }
 
 
@@ -64,6 +65,10 @@ class ChainRecord(FlatRedisRecord):
     @property
     def backup_run(self) -> bool:
         return cast(bool, self._get_field('backup_run'))
+
+    @property
+    def force_skaled_start(self) -> bool:
+        return cast(bool, self._get_field('force_skaled_start'))
 
     @property
     def restart_count(self) -> int:
@@ -130,6 +135,9 @@ class ChainRecord(FlatRedisRecord):
 
     def set_backup_run(self, value: bool) -> None:
         self._set_field('backup_run', value)
+
+    def set_force_skaled_start(self, value: bool) -> None:
+        self._set_field('force_skaled_start', value)
 
     def set_snapshot_from(self, value: str | None) -> None:
         self._set_field('snapshot_from', value)

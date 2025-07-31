@@ -103,10 +103,10 @@ class SkaledTask(BaseTask):
 
     @property
     def needed(self) -> bool:
-        return True
         chain_record = ChainRecord(self.chain_name)
-        is_needed = chain_record.config_version == self.stream_version and (
-            not chain_record.sync_config_run or not chain_record.first_run
+        is_needed = chain_record.force_skaled_start or (
+            chain_record.config_version == self.stream_version
+            and (not chain_record.sync_config_run or not chain_record.first_run)
         )
         logger.info(
             arguments_list_string(
@@ -115,6 +115,7 @@ class SkaledTask(BaseTask):
                     'stream_version': self.stream_version,
                     'sync_config_run': chain_record.sync_config_run,
                     'first_run': chain_record.first_run,
+                    'force_skaled_start': chain_record.force_skaled_start,
                     'needed': is_needed,
                 },
                 'checking if skaled task is needed',
