@@ -88,6 +88,7 @@ def monitor_skaled_container(
         )
         update_ssl_change_date(chain_record)
         chain_record.reset_failed_counters()
+        chain_record.set_force_skaled_start(False)
         return
 
     if skaled_status.clear_data_dir and skaled_status.start_from_snapshot:

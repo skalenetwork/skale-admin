@@ -24,18 +24,14 @@ from skale import SkaleManager, SkaleIma
 from skale.types.rotation import Rotation
 from skale.types.schain import SchainName
 
-from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.config.schain.directory import get_files_with_prefix, schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager, SkaledConfigFilename
 from core.config.schain.generator import generate_schain_config_with_skale
 
-from core.redis.chain_record import ChainRecord
 from tools.configs import SCHAIN_CONFIG_DIR_SKALED
 from tools.str_formatters import arguments_list_string
 from tools.node_options import NodeOptions
-
-from web.models.schain import SChainRecord, upsert_schain_record
 
 
 logger = logging.getLogger(__name__)
@@ -71,28 +67,6 @@ def create_new_upstream_config(
         node_options=node_options,
     )
     return schain_config.to_dict()
-
-
-def update_schain_config_version(
-    schain_name, chain_record: SChainRecord | ChainRecord | None = None
-):
-    new_config_version = get_skale_node_version()
-    chain_record = chain_record or upsert_schain_record(schain_name)
-    logger.info(
-        f'Going to change config_version for {schain_name}: \
-{chain_record.config_version} -> {new_config_version}'
-    )
-    chain_record.set_config_version(new_config_version)
-
-
-def schain_config_version_match(schain_name, schain_record=None):
-    schain_record = schain_record or upsert_schain_record(schain_name)
-    skale_node_version = get_skale_node_version()
-    logger.info(
-        f'config check, schain: {schain_name}, config_version: \
-{schain_record.config_version}, skale_node_version: {skale_node_version}'
-    )
-    return schain_record.config_version == skale_node_version
 
 
 def get_node_groups_from_config(config: Dict) -> Dict:

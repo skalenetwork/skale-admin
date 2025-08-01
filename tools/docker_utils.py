@@ -254,7 +254,7 @@ class DockerUtils:
         return head_lines, tail_lines
 
     def display_container_logs(
-        self, container_name: str, head: int = 100, tail: int = 200, to_logger: bool = True
+        self, container_name: str, head: int = 50, tail: int = 100, to_logger: bool = True
     ) -> str | None:
         container = self.safe_get_container(container_name)
         if not container:

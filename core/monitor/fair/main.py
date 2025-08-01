@@ -35,6 +35,7 @@ from core.schains.process import ProcessReport
 from core.types.chain import FairChainName
 from core.utils.fair import init_fair_manager
 from tools.docker_utils import DockerUtils
+from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
 
@@ -103,9 +104,24 @@ class SkaledTask(BaseTask):
     @property
     def needed(self) -> bool:
         chain_record = ChainRecord(self.chain_name)
-        return chain_record.config_version == self.stream_version and (
-            not chain_record.sync_config_run or not chain_record.first_run
+        is_needed = chain_record.force_skaled_start or (
+            chain_record.config_version == self.stream_version
+            and (not chain_record.sync_config_run or not chain_record.first_run)
         )
+        logger.info(
+            arguments_list_string(
+                {
+                    'config_version': chain_record.config_version,
+                    'stream_version': self.stream_version,
+                    'sync_config_run': chain_record.sync_config_run,
+                    'first_run': chain_record.first_run,
+                    'force_skaled_start': chain_record.force_skaled_start,
+                    'needed': is_needed,
+                },
+                'checking if skaled task is needed',
+            )
+        )
+        return is_needed
 
     def run(self) -> None:
         try:

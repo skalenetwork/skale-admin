@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+from typing import Any, Dict, Literal, Optional
 import colorful as cf
 
 from tools.configs import LONG_LINE
@@ -29,21 +30,34 @@ cf.use_style('solarized')
 PALETTE = {'success': '#00c853', 'info': '#1976d2', 'error': '#d50000'}
 
 
-def arguments_list_string(args, title=None, type='info'):
-    s = f'\n{LONG_LINE}\n' if DISABLE_COLORS else cf.blue(f'\n{LONG_LINE}\n')
+def arguments_list_string(
+    args: Dict[str, Any],
+    title: Optional[str] = None,
+    type: Literal['info', 'success', 'error'] = 'info',
+) -> str:
+    components = []
+    border_line = f'\n{LONG_LINE}\n'
+    components.append(border_line if DISABLE_COLORS else str(cf.blue(border_line)))
+
     if title:
         if DISABLE_COLORS:
-            s += f'{title}\n'
+            components.append(f'{title}\n')
         else:
             with cf.with_palette(PALETTE) as c:
                 if type == 'error':
-                    s += f'{c.bold_error(title)}\n'
+                    components.append(str(c.bold_error(title)) + '\n')
                 elif type == 'success':
-                    s += f'{c.bold_success(title)}\n'
+                    components.append(str(c.bold_success(title)) + '\n')
                 else:
-                    s += f'{c.bold_info(title)}\n'
-    for k in args:
-        s += f'{k}: ' if DISABLE_COLORS else f'{cf.bold_violet(k)}: '
-        s += f'{args[k]}\n'
-    s += f'{LONG_LINE}\n' if DISABLE_COLORS else cf.blue(f'{LONG_LINE}\n')
-    return s
+                    components.append(str(c.bold_info(title)) + '\n')
+
+    for key, value in args.items():
+        if DISABLE_COLORS:
+            components.append(f'{key}: {value}\n')
+        else:
+            components.append(f'{str(cf.bold_violet(key))}: {value}\n')
+
+    bottom_border = f'{LONG_LINE}\n'
+    components.append(bottom_border if DISABLE_COLORS else str(cf.blue(bottom_border)))
+
+    return ''.join(components)
