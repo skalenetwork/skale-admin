@@ -104,6 +104,8 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             sync_node=passive_node,
             historic_state=self.node_options.historic_state,
         )
+        logger.debug('Skaled container started, setting force_skaled_start to False')
+        self.chain_record.set_force_skaled_start(False)
         time.sleep(CONTAINER_POST_RUN_DELAY)
         return True
 
