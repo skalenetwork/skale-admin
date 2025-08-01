@@ -221,6 +221,9 @@ class SChainRecord(BaseModel):
         self.ssl_change_date = value
         self.save()
 
+    def set_force_skaled_start(self, value: bool) -> None:
+        logger.warning(f'force_skaled_start is not implemented SChainRecord ({self.name})')
+
     def is_dkg_done(self) -> bool:
         return self.dkg_status == DKGStatus.DONE
 

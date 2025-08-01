@@ -23,10 +23,10 @@ from skale import FairManager
 from skale.types.dkg import DkgId
 
 from core.checks.fair import FairConfigChecks
+from core.config.base import update_chain_config_version
 from core.config.fair.generator import generate_fair_config_with_manager
 from core.config.schain.directory import init_schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager
-from core.config.schain.main import update_schain_config_version
 from core.dkg.fair.main import get_dkg_client, run_dkg
 from core.dkg.utils import DkgError, get_secret_key_share_filepath, save_dkg_results
 from core.firewall import get_fair_network_scope_rule_controller, get_network_scope_node_ips
@@ -138,7 +138,7 @@ class FairConfigActionManager(BaseActionManager):
                 logger.info('Generated config is the same as latest upstream')
 
             self.update_local_skaled_endpoint()
-            update_schain_config_version(self.name, chain_record=self.chain_record)
+            update_chain_config_version(self.name, self.chain_record)
             return result
 
     def update_local_skaled_endpoint(self) -> None:
@@ -151,7 +151,7 @@ class FairConfigActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     def reset_config_record(self) -> bool:
-        update_schain_config_version(self.name, chain_record=self.chain_record)
+        update_chain_config_version(self.name, self.chain_record)
         self.chain_record.set_sync_config_run(False)
         return True
 

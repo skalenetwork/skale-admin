@@ -25,6 +25,7 @@ from skale.types.rotation import Rotation
 from skale.types.schain import Schain
 
 from core.checks.base import CheckRes
+from core.config.base import update_chain_config_version
 from core.monitor.action_base import BaseActionManager
 from core.node_config import NodeConfig
 from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
@@ -38,7 +39,7 @@ from core.dkg.schain import (
 )
 
 from core.config.schain.directory import init_schain_config_dir
-from core.config.schain.main import create_new_upstream_config, update_schain_config_version
+from core.config.schain.main import create_new_upstream_config
 from core.config.schain.file_manager import ConfigFileManager
 
 from core.schains.external_config import ExternalConfig, ExternalState
@@ -168,12 +169,12 @@ class ConfigActionManager(BaseActionManager):
             else:
                 logger.info('Generated config is the same as latest upstream')
 
-            update_schain_config_version(self.name, chain_record=self.chain_record)
+            update_chain_config_version(self.name, chain_record=self.chain_record)
             return result
 
     @BaseActionManager.monitor_block
     def reset_config_record(self) -> bool:
-        update_schain_config_version(self.name, chain_record=self.chain_record)
+        update_chain_config_version(self.name, chain_record=self.chain_record)
         self.chain_record.set_sync_config_run(False)
         return True
 
