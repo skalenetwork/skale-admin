@@ -147,7 +147,7 @@ class StartupSkaledMonitor(BaseFairSkaledMonitor):
         if not self.checks.volume:
             self._am.volume()
         if not self.checks.skaled_container:
-            self._am.skaled_container(download_snapshot=False)
+            self._am.skaled_container(download_snapshot=True)
         else:
             self._am.reset_restart_counter()
         if not self.checks.rpc:
@@ -178,8 +178,11 @@ def get_skaled_monitor(
 
     mon_type: Type[BaseFairSkaledMonitor] = RegularSkaledMonitor
 
-    if chain_record.restart_ts is not None and chain_record.restart_ts > 0 and \
-        not action_manager.scheduler.get_job(SKALED_RESTART_JOB_NAME):
+    if (
+        chain_record.restart_ts is not None
+        and chain_record.restart_ts > 0
+        and not action_manager.scheduler.get_job(SKALED_RESTART_JOB_NAME)
+    ):
         logger.warning('Chain record restart timestamp is not zero and no restart job found')
         mon_type = UpdateConfigSkaledMonitor
 
