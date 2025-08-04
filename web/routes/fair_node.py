@@ -120,6 +120,11 @@ def change_ip():
             msg='Node is not registered', status_code=HTTPStatus.BAD_REQUEST
         )
 
+    if fair.committee.is_node_in_current_or_next_committee(node_config.id):
+        return construct_err_response(
+            msg='Node is in current or next committee', status_code=HTTPStatus.BAD_REQUEST
+        )
+
     try:
         fair.nodes.set_ip_address(node_config.id, ip, port)
     except TransactionError as e:
@@ -128,4 +133,32 @@ def change_ip():
             msg=f'Error setting IP address: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
     node_config.ip = ip
+    return construct_ok_response()
+
+
+@fair_node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit'), methods=['POST'])
+@g_fair
+def exit():
+    logger.debug(request)
+
+    fair: FairManager = g.fair
+    node_config: NodeConfig = g.config
+
+    if not node_config.id:
+        return construct_err_response(
+            msg='Node is not registered', status_code=HTTPStatus.BAD_REQUEST
+        )
+
+    if fair.committee.is_node_in_current_or_next_committee(node_config.id):
+        return construct_err_response(
+            msg='Node is in current or next committee', status_code=HTTPStatus.BAD_REQUEST
+        )
+
+    try:
+        fair.nodes.delete_node(node_config.id)
+    except TransactionError as e:
+        logger.error(f'Error deleting node: {e}')
+        return construct_err_response(
+            msg=f'Error deleting node: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+        )
     return construct_ok_response()
