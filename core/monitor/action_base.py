@@ -25,7 +25,7 @@ from functools import wraps
 from typing import Any, Dict, Optional
 
 from core.chain.rpc import handle_failed_skaled_rpc
-from core.chain.runner import get_container_name, is_container_exists, restart_container
+from core.chain.runner import get_container_name, is_container_exists
 from core.chain.status import init_skaled_status
 from core.checks.base import BaseSkaledChecks
 from core.config.schain.file_manager import ConfigFileManager
@@ -34,7 +34,6 @@ from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.schains.cleaner import remove_schain_volume, remove_skaled_container
 from core.schains.exit_scheduler import ExitScheduleFileManager
-from core.chain.ssl import update_ssl_change_date
 from core.types.chain import ChainName
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils

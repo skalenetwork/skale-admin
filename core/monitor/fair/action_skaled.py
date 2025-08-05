@@ -24,7 +24,6 @@ from datetime import datetime, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from core.chain.containers import monitor_skaled_container
-from core.chain.runner import is_container_exists
 from core.chain.volume import init_fair_volume
 from core.checks.fair import SkaledChecks
 from core.config.endpoint import get_base_port_from_config
@@ -40,9 +39,8 @@ from core.monitor.action_base import (
     BaseSkaledActionManager,
 )
 from core.node_config import NodeConfig
-from core.schains.cleaner import remove_skaled_container
 from core.types.chain import FairChainName
-from tools.configs.containers import SKALED_CONTAINER, SKALED_RESTART_DELAY_SECONDS
+from tools.configs.containers import SKALED_RESTART_DELAY_SECONDS
 from tools.configs.fair import SKALED_RESTART_JOB_NAME
 from tools.docker_utils import DockerUtils
 from tools.node_options import NodeOptions
