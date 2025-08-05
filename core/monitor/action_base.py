@@ -135,25 +135,8 @@ class BaseSkaledActionManager(BaseActionManager):
 
     @BaseActionManager.monitor_block
     @abc.abstractmethod
-    def recreated_schain_containers(self, abort_on_exit: bool = True) -> bool:
-        """Restart skaled from scratch"""
-
-    @BaseActionManager.monitor_block
-    @abc.abstractmethod
     def skaled_container(self, *args: Any, **kwargs: Any) -> bool:
         """Run monitor_skaled_container"""
-
-    @BaseActionManager.monitor_block
-    def restart_skaled_container(self) -> bool:
-        initial_status = True
-        if is_container_exists(self.name, dutils=self.dutils):
-            logger.info('Skaled container exists, restarting')
-            restart_container(SKALED_CONTAINER, self.chain_name, dutils=self.dutils)
-            update_ssl_change_date(self.chain_record)
-        else:
-            logger.info('Skaled container does not exists, running skaled watchman')
-            initial_status = self.skaled_container()
-        return initial_status
 
     @BaseActionManager.monitor_block
     def reset_restart_counter(self) -> bool:
@@ -161,7 +144,7 @@ class BaseSkaledActionManager(BaseActionManager):
         return True
 
     @BaseActionManager.monitor_block
-    def reloaded_skaled_container(self, abort_on_exit: bool = True) -> bool:
+    def recreated_skaled_container(self, abort_on_exit: bool = True) -> bool:
         logger.info('Starting skaled from scratch')
         initial_status = True
         if is_container_exists(self.name, dutils=self.dutils):
@@ -171,6 +154,7 @@ class BaseSkaledActionManager(BaseActionManager):
             logger.warning('Container does not exists')
         self.chain_record.set_restart_count(0)
         self.chain_record.set_failed_rpc_count(0)
+        self.chain_record.set_restart_ts(0)
         initial_status = self.skaled_container(abort_on_exit=abort_on_exit)
         return initial_status
 
@@ -192,7 +176,7 @@ class BaseSkaledActionManager(BaseActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def cleanup_schain_docker_entity(self) -> bool:  # todod: check how it works with fair
+    def cleanup_schain_docker_entity(self) -> bool:
         logger.info('Removing skaled docker artifacts')
         remove_skaled_container(self.name, dutils=self.dutils)
         time.sleep(SCHAIN_CLEANUP_TIMEOUT)

@@ -137,7 +137,7 @@ class RecreateSkaledMonitor(BaseSChainSkaledMonitor):
         logger.info('Reload requested. Recreating sChain container')
         if not self.checks.volume:
             self.am.volume()
-        self.am.reloaded_skaled_container()
+        self.am.recreated_skaled_container()
 
 
 class UpdateConfigSkaledMonitor(BaseSChainSkaledMonitor):
@@ -154,7 +154,7 @@ class UpdateConfigSkaledMonitor(BaseSChainSkaledMonitor):
         if not self.checks.volume:
             self.am.volume()
         self.am.reset_exit_schedule()
-        self.am.recreated_schain_containers(abort_on_exit=False)
+        self.am.recreated_chain_containers(abort_on_exit=False)
 
 
 class ReloadGroupSkaledMonitor(BaseSChainSkaledMonitor):
