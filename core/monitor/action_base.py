@@ -34,7 +34,7 @@ from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.schains.cleaner import remove_schain_volume, remove_skaled_container
 from core.schains.exit_scheduler import ExitScheduleFileManager
-from core.schains.ssl import update_ssl_change_date
+from core.chain.ssl import update_ssl_change_date
 from core.types.chain import ChainName
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils

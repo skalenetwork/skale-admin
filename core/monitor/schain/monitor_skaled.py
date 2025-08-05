@@ -26,7 +26,7 @@ from core.monitor.monitor_base import BaseSkaledMonitor
 from core.monitor.schain.action_skaled import SkaledActionManager
 from core.config.schain.main import get_number_of_secret_shares
 from core.chain.status import NodeCliStatus, SkaledStatus
-from core.schains.ssl import ssl_reload_needed
+from core.chain.ssl import ssl_reload_needed
 from tools.configs import SYNC_NODE
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord
