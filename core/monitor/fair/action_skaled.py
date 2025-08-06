@@ -24,7 +24,6 @@ from datetime import datetime, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from core.chain.containers import monitor_skaled_container
-from core.chain.runner import is_container_exists
 from core.chain.volume import init_fair_volume
 from core.checks.fair import SkaledChecks
 from core.config.endpoint import get_base_port_from_config
@@ -40,9 +39,8 @@ from core.monitor.action_base import (
     BaseSkaledActionManager,
 )
 from core.node_config import NodeConfig
-from core.schains.cleaner import remove_skaled_container
 from core.types.chain import FairChainName
-from tools.configs.containers import SKALED_CONTAINER, SKALED_RESTART_DELAY_SECONDS
+from tools.configs.containers import SKALED_RESTART_DELAY_SECONDS
 from tools.configs.fair import SKALED_RESTART_JOB_NAME
 from tools.docker_utils import DockerUtils
 from tools.node_options import NodeOptions
@@ -118,19 +116,6 @@ class FairSkaledActionManager(BaseSkaledActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def recreated_schain_containers(self, abort_on_exit: bool = True) -> bool:
-        logger.info('Restart skaled from scratch')
-        initial_status = True
-        if is_container_exists(self.name, container_type=SKALED_CONTAINER, dutils=self.dutils):
-            initial_status = False
-            remove_skaled_container(self.name, dutils=self.dutils)
-        self.chain_record.set_restart_count(0)
-        self.chain_record.set_failed_rpc_count(0)
-        self.chain_record.set_restart_ts(0)
-        self.skaled_container(abort_on_exit=abort_on_exit)
-        return initial_status
-
-    @BaseActionManager.monitor_block
     def committee_scope_firewall_rules(self, upstream: bool = False) -> bool:
         initial_status = self.checks.committee_scope_firewall_rules.status
         if not initial_status:
@@ -147,15 +132,15 @@ class FairSkaledActionManager(BaseSkaledActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def schedule_skaled_restart(self, last_group_start_timestamp: int) -> bool:
+    def schedule_skaled_restart(self, restart_deadline: int) -> bool:
         logger.info('Scheduling skaled restart')
         earliest_possible_restart_ts = int(time.time())
-        latest_possible_restart_ts = last_group_start_timestamp - SKALED_RESTART_DELAY_SECONDS
+        latest_possible_restart_ts = restart_deadline - SKALED_RESTART_DELAY_SECONDS
         logger.info(
-            'Scheduling skaled restart between %d and %d, last_group_start_timestamp: %d',
+            'Scheduling skaled restart between %d and %d, restart_deadline: %d',
             earliest_possible_restart_ts,
             latest_possible_restart_ts,
-            last_group_start_timestamp,
+            restart_deadline,
         )
         restart_ts = random_timestamp_between(
             earliest_possible_restart_ts, latest_possible_restart_ts
@@ -165,7 +150,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             'Scheduling skaled restart at %d, job id: %s', restart_ts, SKALED_RESTART_JOB_NAME
         )
         self.scheduler.add_job(
-            func=self.recreated_schain_containers,
+            func=self.recreated_skaled_container,
             trigger='date',
             run_date=datetime.fromtimestamp(restart_ts, tz=timezone.utc),
             id=SKALED_RESTART_JOB_NAME,

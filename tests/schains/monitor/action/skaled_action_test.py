@@ -166,27 +166,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am: SkaledActionMan
         skaled_am.cleanup_schain_docker_entity()
 
 
-def test_restart_skaled_container_action(skaled_am, skaled_checks):
-    try:
-        skaled_am.volume()
-        with mock.patch(
-            'core.monitor.schain.action_skaled.monitor_skaled_container',
-            monitor_skaled_container_mock,
-        ):
-            assert not skaled_checks.skaled_container
-            skaled_am.restart_skaled_container()
-            assert skaled_checks.skaled_container
-            skaled_am.restart_skaled_container()
-            assert skaled_checks.skaled_container
-            skaled_am.reloaded_skaled_container()
-            assert skaled_checks.skaled_container
-            skaled_am.reloaded_skaled_container()
-            assert skaled_checks.skaled_container
-    finally:
-        skaled_am.cleanup_schain_docker_entity()
-
-
-def test_restart_skaled_container_action_exit_reached(
+def test_recreated_skaled_container_action_exit_reached(
     skaled_am, skaled_checks, skaled_status_exit_time_reached
 ):
     try:
@@ -196,9 +176,9 @@ def test_restart_skaled_container_action_exit_reached(
             monitor_skaled_container_mock,
         ):
             assert not skaled_checks.skaled_container
-            skaled_am.reloaded_skaled_container()
+            skaled_am.recreated_skaled_container()
             assert not skaled_checks.skaled_container
-            skaled_am.reloaded_skaled_container(abort_on_exit=False)
+            skaled_am.recreated_skaled_container(abort_on_exit=False)
             assert skaled_checks.skaled_container
     finally:
         skaled_am.cleanup_schain_docker_entity()
@@ -219,13 +199,13 @@ def ima_linked(econfig):
     econfig.update(state)
 
 
-def test_recreated_schain_containers(
+def test_recreated_chain_containers(
     skaled_am, skaled_checks, ima_linked, cleanup_ima, schain_db, dutils
 ):
     name = schain_db
 
     skaled_am.volume()
-    skaled_am.recreated_schain_containers()
+    skaled_am.recreated_chain_containers()
     schain_container = f'skale_schain_{name}'
     ima_container = f'skale_ima_{name}'
     dutils.wait_for_container_creation(schain_container)
@@ -233,7 +213,7 @@ def test_recreated_schain_containers(
     skaled_created_ts = dutils.get_container_created_ts(schain_container)
     ima_created_ts = dutils.get_container_created_ts(ima_container)
 
-    skaled_am.recreated_schain_containers()
+    skaled_am.recreated_chain_containers()
     dutils.wait_for_container_creation(schain_container)
     dutils.wait_for_container_creation(ima_container)
 

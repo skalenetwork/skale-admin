@@ -34,6 +34,7 @@ from tools.logger import init_api_logger
 from web.helper import construct_err_response
 from web.routes.info import info_bp
 from web.routes.fair_node import fair_node_bp
+from web.routes.fair_chain import fair_chain_bp
 from web.routes.fair_wallet import wallet_bp
 
 REQ_ID_SIZE = 10
@@ -44,6 +45,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.register_blueprint(fair_node_bp)
+app.register_blueprint(fair_chain_bp)
 app.register_blueprint(info_bp)
 app.register_blueprint(wallet_bp)
 
