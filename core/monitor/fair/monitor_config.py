@@ -53,12 +53,10 @@ def run_config_pipeline(
 
     active_committee_index = fair.committee.get_active_committee_index()
     last_committee_index = fair.committee.last_committee_index()
-
     last_committee = fair.committee.get_committee(last_committee_index)
     is_committee_node = node_config.id in last_committee.node_ids
 
-    # is_committee_node = fair.committee.is_node_in_current_or_next_committee(node_config.id)
-    dkg_id = fair.dkg.get_last_dkg_id()
+    dkg_id = last_committee.dkg_id
 
     logger.info(
         'Running config pipeline, active committee: %s, last committee: %s, is committee node: %s',
