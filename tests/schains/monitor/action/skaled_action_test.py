@@ -36,7 +36,7 @@ def monitor_skaled_container_mock(
     snapshot_from: Optional[str] = None,
     abort_on_exit: bool = True,
     dutils: Optional[DockerUtils] = None,
-    sync_node: bool = False,
+    passive_node: bool = False,
     historic_state: bool = False,
 ):
     if dutils is None:
@@ -60,7 +60,7 @@ def skaled_checks(schain_db, skale, rule_controller, dutils):
         schain_record=schain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        sync_node=False,
+        passive_node=False,
     )
 
 
@@ -132,7 +132,7 @@ def test_skaled_container_with_snapshot_action(skaled_am: SkaledActionManager):
             start_ts=None,
             abort_on_exit=True,
             dutils=skaled_am.dutils,
-            sync_node=False,
+            passive_node=False,
             historic_state=False,
         )
         assert monitor_skaled_container_mock.call_count == 1
@@ -158,7 +158,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am: SkaledActionMan
             start_ts=ts,
             abort_on_exit=True,
             dutils=skaled_am.dutils,
-            sync_node=False,
+            passive_node=False,
             historic_state=False,
         )
         assert monitor_skaled_container_mock.call_count == 1

@@ -45,7 +45,7 @@ from core.schains.process import ProcessReport
 from core.chain.status import get_node_cli_status, get_skaled_status
 
 from tools.docker_utils import DockerUtils
-from tools.configs import SYNC_NODE
+from tools.configs import PASSIVE_NODE
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
 from tools.notifications.messages import notify_checks
 from tools.helper import is_node_part_of_chain, no_hyphens
@@ -74,7 +74,7 @@ def run_skaled_pipeline(
         schain_record=schain_record,
         rule_controller=rc,
         dutils=dutils,
-        sync_node=SYNC_NODE,
+        passive_node=PASSIVE_NODE,
     )
 
     logger.info('Initializing skaled status')
@@ -189,7 +189,9 @@ class ConfigTask(BaseTask):
 
     @property
     def needed(self) -> bool:
-        return SYNC_NODE or is_node_part_of_chain(self.skale, self.chain_name, self.node_config.id)
+        return PASSIVE_NODE or is_node_part_of_chain(
+            self.skale, self.chain_name, self.node_config.id
+        )
 
     def run(self) -> None:
         try:
@@ -224,7 +226,7 @@ def start_tasks(
 
     is_rotation_active = skale.node_rotation.is_rotation_active(name)
 
-    leaving_chain = not SYNC_NODE and not is_node_part_of_chain(skale, name, node_config.id)
+    leaving_chain = not PASSIVE_NODE and not is_node_part_of_chain(skale, name, node_config.id)
     if leaving_chain and not is_rotation_active:
         logger.info('Not on node (%d), finishing process', node_config.id)
         return True

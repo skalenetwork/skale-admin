@@ -42,7 +42,7 @@ from core.node import get_current_nodes, get_skale_node_version
 from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType
-from tools.configs import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER, SYNC_NODE
+from tools.configs import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER, PASSIVE_NODE
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_STOP_TIMEOUT, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
@@ -263,7 +263,7 @@ def cleanup_schain(
         estate=estate,
         last_dkg_successful=last_dkg_successful,
         dutils=dutils,
-        sync_node=SYNC_NODE,
+        passive_node=PASSIVE_NODE,
     )
     check_status = checks.get_all()
     if check_status['skaled_container'] or is_exited(

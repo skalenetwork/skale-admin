@@ -32,7 +32,7 @@ from core.monitor.monitor_base import BaseSkaledMonitor
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.types.chain import FairChainName
-from tools.configs import SYNC_NODE
+from tools.configs import PASSIVE_NODE
 from tools.configs.fair import SKALED_RESTART_JOB_NAME
 from tools.docker_utils import DockerUtils
 from tools.helper import no_hyphens
@@ -63,7 +63,7 @@ def run_skaled_pipeline(
         chain_record=chain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        sync_node=SYNC_NODE,
+        passive_node=PASSIVE_NODE,
     )
 
     logger.info('Initializing skaled status')

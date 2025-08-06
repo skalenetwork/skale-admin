@@ -46,7 +46,7 @@ def skaled_checks(schain_db, skale, rule_controller, dutils):
         schain_record=schain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        sync_node=False,
+        passive_node=False,
     )
 
 

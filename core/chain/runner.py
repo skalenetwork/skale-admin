@@ -199,19 +199,19 @@ def run_skaled_container(
     ulimit_check=True,
     enable_ssl=True,
     snapshot_from: Optional[str] = None,
-    sync_node=False,
+    passive_node=False,
     historic_state=False,
     part_of_node: Optional[int] = None,
 ):
     cpu_limit = None
     mem_limit = None
-    if part_of_node and not sync_node and not is_fair():
+    if part_of_node and not passive_node and not is_fair():
         schain_type = get_schain_type(part_of_node)
         cpu_limit = get_schain_limit(schain_type, MetricType.cpu_shares)
         mem_limit = get_schain_limit(schain_type, MetricType.mem)
 
     volume_config = get_schain_volume_config(
-        chain_name, DATA_DIR_CONTAINER_PATH, mode=volume_mode, sync_node=sync_node
+        chain_name, DATA_DIR_CONTAINER_PATH, mode=volume_mode, passive_node=passive_node
     )
     env = get_schain_env(ulimit_check=ulimit_check)
 
@@ -220,7 +220,7 @@ def run_skaled_container(
         start_ts,
         download_snapshot=download_snapshot,
         enable_ssl=enable_ssl,
-        sync_node=sync_node,
+        passive_node=passive_node,
         snapshot_from=snapshot_from,
     )
     run_container(

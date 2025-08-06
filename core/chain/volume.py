@@ -33,12 +33,12 @@ from tools.helper import is_fair
 logger = logging.getLogger(__name__)
 
 
-def is_volume_exists(chain_name: ChainName, sync_node=False, dutils=None):
+def is_volume_exists(chain_name: ChainName, passive_node=False, dutils=None):
     dutils = dutils or DockerUtils()
     chain_state = os.path.join(CHAIN_STATE_PATH, chain_name)
     if is_fair():
         return os.path.isdir(chain_state)
-    elif sync_node:
+    elif passive_node:
         filestorage_static_path_schain = os.path.join(FILESTORAGE_STATIC_PATH, chain_name)
         return os.path.isdir(chain_state) and os.path.islink(filestorage_static_path_schain)
     else:
@@ -55,15 +55,15 @@ def init_fair_volume(chain_name: FairChainName, dutils: DockerUtils | None = Non
         ensure_data_dir_path(chain_name)
 
 
-def init_data_volume(schain: Schain, sync_node: bool = False, dutils: DockerUtils | None = None):
+def init_data_volume(schain: Schain, passive_node: bool = False, dutils: DockerUtils | None = None):
     dutils = dutils or DockerUtils()
 
-    if is_volume_exists(schain.name, sync_node=sync_node, dutils=dutils):
+    if is_volume_exists(schain.name, passive_node=passive_node, dutils=dutils):
         logger.debug(f'Volume already exists: {schain.name}')
         return
 
     logger.info(f'Creating volume for schain: {schain.name}')
-    if sync_node or is_fair():
+    if passive_node or is_fair():
         ensure_data_dir_path(schain.name)
     else:
         schain_type = get_schain_type(schain.part_of_node)
@@ -84,9 +84,9 @@ def ensure_data_dir_path(chain_name: ChainName) -> None:
         )
 
 
-def get_schain_volume_config(name, mount_path, mode=None, sync_node=False):
+def get_schain_volume_config(name, mount_path, mode=None, passive_node=False):
     mode = mode or 'rw'
-    if sync_node or is_fair():
+    if passive_node or is_fair():
         datadir_src = os.path.join(CHAIN_STATE_PATH, name)
         shared_space_src = os.path.join(CHAIN_STATE_PATH, SHARED_SPACE_VOLUME_NAME)
     else:

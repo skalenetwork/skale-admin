@@ -69,7 +69,7 @@ class ConfigChecks(IChecks):
         current_nodes: list[ExtendedManagerNodeInfo],
         estate: ExternalState,
         last_dkg_successful: bool,
-        sync_node: bool = False,
+        passive_node: bool = False,
         econfig: Optional[ExternalConfig] = None,
     ) -> None:
         self.name = schain_name
@@ -80,7 +80,7 @@ class ConfigChecks(IChecks):
         self.current_nodes = current_nodes
         self.estate = estate
         self._last_dkg_successful = last_dkg_successful
-        self.sync_node = sync_node
+        self.passive_node = passive_node
         self.econfig = econfig or ExternalConfig(schain_name)
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=schain_name)
         self.statsd_client = get_statsd_client()
@@ -161,7 +161,7 @@ class SkaledChecks(BaseSkaledChecks):
         *,
         econfig: Optional[ExternalConfig] = None,
         dutils: Optional[DockerUtils] = None,
-        sync_node: bool = False,
+        passive_node: bool = False,
     ):
         self.econfig = econfig or ExternalConfig(name=schain_name)
         super().__init__(
@@ -169,7 +169,7 @@ class SkaledChecks(BaseSkaledChecks):
             chain_record=schain_record,
             rule_controller=rule_controller,
             dutils=dutils,
-            sync_node=sync_node,
+            passive_node=passive_node,
         )
 
     @property
@@ -259,7 +259,7 @@ class SChainChecks(IChecks):
         *,
         econfig: Optional[ExternalConfig] = None,
         dutils: DockerUtils | None = None,
-        sync_node: bool = False,
+        passive_node: bool = False,
     ):
         self._subjects = [
             ConfigChecks(
@@ -272,7 +272,7 @@ class SChainChecks(IChecks):
                 last_dkg_successful=last_dkg_successful,
                 estate=estate,
                 econfig=econfig,
-                sync_node=sync_node,
+                passive_node=passive_node,
             ),
             SkaledChecks(
                 schain_name=schain_name,
@@ -280,7 +280,7 @@ class SChainChecks(IChecks):
                 rule_controller=rule_controller,
                 econfig=econfig,
                 dutils=dutils,
-                sync_node=sync_node,
+                passive_node=passive_node,
             ),
         ]
 

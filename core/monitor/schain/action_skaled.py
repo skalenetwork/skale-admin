@@ -53,7 +53,7 @@ from core.schains.external_config import ExternalConfig
 from core.schains.ima import ImaData
 from core.schains.ima import get_migration_ts as get_ima_migration_ts
 from core.schains.limits import get_schain_type
-from tools.configs import SYNC_NODE
+from tools.configs import PASSIVE_NODE
 from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import no_hyphens
@@ -120,7 +120,7 @@ class SkaledActionManager(BaseSkaledActionManager):
             start_ts=start_ts,
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,
-            sync_node=SYNC_NODE,
+            passive_node=PASSIVE_NODE,
             historic_state=self.node_options.historic_state,
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)
@@ -131,7 +131,7 @@ class SkaledActionManager(BaseSkaledActionManager):
         initial_status = self.checks.volume.status
         if not initial_status:
             logger.info('Creating volume')
-            init_data_volume(self.schain, sync_node=SYNC_NODE, dutils=self.dutils)
+            init_data_volume(self.schain, passive_node=PASSIVE_NODE, dutils=self.dutils)
         else:
             logger.info('Volume - ok')
         return initial_status
