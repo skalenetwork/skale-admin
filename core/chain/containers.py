@@ -36,7 +36,7 @@ from core.chain.runner import (
     run_skaled_container,
 )
 from core.schains.ima import get_ima_time_frame, ImaData
-from core.schains.ssl import update_ssl_change_date
+from core.chain.ssl import update_ssl_change_date
 
 from core.types.chain import ChainName
 from tools.configs import PASSIVE_NODE

@@ -22,6 +22,7 @@ from typing import Type, cast
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from core.chain.ssl import ssl_reload_needed
 from core.chain.status import SkaledStatus, get_skaled_status
 from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
 from core.checks.fair import SkaledChecks
@@ -166,6 +167,15 @@ class UpdateConfigSkaledMonitor(BaseFairSkaledMonitor):
         self.am.schedule_skaled_restart(last_group_start_timestamp)
 
 
+class RecreateSkaledMonitor(BaseFairSkaledMonitor):
+    def execute(self) -> None:
+        if not self.checks.config_updated:
+            self.am.update_config()
+        if not self.checks.committee_scope_firewall_rules:
+            self._am.committee_scope_firewall_rules()
+        self.am.recreated_skaled_container()
+
+
 def get_skaled_monitor(
     action_manager: FairSkaledActionManager,
     check_status: dict,
@@ -188,6 +198,8 @@ def get_skaled_monitor(
 
     if not check_status['config']:
         mon_type = NoConfigSkaledMonitor
+    elif check_status['skaled_container'] and ssl_reload_needed(chain_record):
+        mon_type = RecreateSkaledMonitor
     elif not check_status['volume']:
         mon_type = StartupSkaledMonitor
     elif not check_status['config_updated']:

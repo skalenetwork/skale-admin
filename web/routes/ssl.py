@@ -27,7 +27,7 @@ from OpenSSL import crypto
 from flask import Blueprint, request
 
 from core.nginx import reload_nginx
-from core.schains.ssl import is_ssl_folder_empty
+from core.chain.ssl import is_ssl_folder_empty
 from web.models.schain import set_schains_need_reload
 from web.helper import construct_ok_response, construct_err_response, get_api_url
 from tools.configs import SSL_CERTIFICATES_FILEPATH
