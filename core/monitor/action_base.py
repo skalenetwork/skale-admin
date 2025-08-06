@@ -153,7 +153,8 @@ class BaseSkaledActionManager(BaseActionManager):
             logger.warning('Container does not exists')
         self.chain_record.set_restart_count(0)
         self.chain_record.set_failed_rpc_count(0)
-        self.chain_record.set_restart_ts(0)
+        if type(self.chain_record) is ChainRecord:  # todo: remove after migration to ChainRecord
+            self.chain_record.set_restart_ts(0)
         initial_status = self.skaled_container(abort_on_exit=abort_on_exit)
         return initial_status
 
