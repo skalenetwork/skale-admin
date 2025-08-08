@@ -21,8 +21,8 @@ from dataclasses import dataclass
 from typing import Dict
 
 from skale.types.committee import CommitteeGroup
+from skale.types.dkg import DkgId, G2Point
 from skale.types.node import NodeId
-from skale.types.dkg import G2Point, DkgId
 
 from core.config.fair.fair_chain_node import FairChainNodeInfo, generate_fair_chain_nodes
 from core.config.schain.static_params import get_fair_chain_name
@@ -68,11 +68,13 @@ class BlsKey:
 @dataclass
 class CommitteeInfo:
     bls_key: BlsKey
+    staking_contract_address: str
     group: list[FairChainNodeInfo]
 
     def to_dict(self) -> dict:
         return {
             'blsKey': self.bls_key.to_dict(),
+            'staking_contract_address': self.staking_contract_address,
             'group': [node.to_dict() for node in self.group],
         }
 
@@ -125,6 +127,7 @@ def generate_committee_info(
         committee_group = committee['group']
         index = committee['index']
         dkg_id = committee['committee'].dkg_id
+        staking_contract_address = committee['staking_contract_address']
 
         is_committee_node = any(node.id == node_id for node in committee_group)
         common_bls_public_key = committee['committee'].common_public_key
@@ -138,6 +141,10 @@ def generate_committee_info(
         )
 
         fair_chain_nodes = generate_fair_chain_nodes(committee_group, dkg_id, is_committee_node)
-        committee_info[ts] = CommitteeInfo(bls_key=bls_key, group=fair_chain_nodes)
+        committee_info[ts] = CommitteeInfo(
+            bls_key=bls_key,
+            group=fair_chain_nodes,
+            staking_contract_address=staking_contract_address,
+        )
 
     return committee_info
