@@ -23,7 +23,7 @@ from core.config.endpoint import get_chain_ports_from_config
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.main import get_skaled_container_config_path
 from core.config.schain.static_params import get_static_schain_cmd, get_static_skaled_cmd_fair
-from core.schains.ssl import get_ssl_filepath
+from core.chain.ssl import get_ssl_filepath
 from tools.configs import SGX_SERVER_URL
 from tools.configs.containers import (
     DATA_DIR_CONTAINER_PATH,

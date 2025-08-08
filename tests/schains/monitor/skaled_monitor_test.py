@@ -391,7 +391,7 @@ def test_get_skaled_monitor_recreate(
     status = skaled_checks.get_all()
 
     with mock.patch(
-        'core.schains.ssl.get_ssl_files_change_date', return_value=datetime.datetime.now()
+        'core.chain.ssl.get_ssl_files_change_date', return_value=datetime.datetime.now()
     ):
         status['skaled_container'] = False
         mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)

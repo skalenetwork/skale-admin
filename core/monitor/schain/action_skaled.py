@@ -174,7 +174,7 @@ class SkaledActionManager(BaseSkaledActionManager):
         return initial_status
 
     @BaseActionManager.monitor_block
-    def recreated_schain_containers(self, abort_on_exit: bool = True) -> bool:
+    def recreated_chain_containers(self, abort_on_exit: bool = True) -> bool:
         logger.info('Restart skaled and IMA from scratch')
         initial_status = True
         # Remove IMA -> skaled, start skaled -> IMA
