@@ -29,8 +29,8 @@ from skale.utils.web3_utils import init_web3
 
 from core.node_config import NodeConfig
 from core.utils.fair import init_fair_manager
-from tools.configs.web3 import endpoint
-from tools.helper import init_skale
+from tools.configs.web3 import boot_endpoint, endpoint
+from tools.helper import init_skale, is_fair
 from tools.wallet_utils import init_wallet
 from web import API_VERSION_PREFIX
 
@@ -71,7 +71,10 @@ def init_skale_from_node_config(node_config: NodeConfig) -> SkaleManager:
 def g_web3(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        g.web3 = init_web3(endpoint())
+        if is_fair():
+            g.web3 = init_web3(boot_endpoint())
+        else:
+            g.web3 = init_web3(endpoint())
         return func(*args, **kwargs)
 
     return wrapper
