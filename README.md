@@ -53,6 +53,7 @@ export VERSION=$(bash scripts/calculate_version.sh)
 bash scripts/build.sh
 ```
 
+
 ## License
 
 [![License](https://img.shields.io/github/license/skalenetwork/skale-admin.svg)](LICENSE)
