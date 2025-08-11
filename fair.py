@@ -31,7 +31,7 @@ from core.monitor.fair.main import start_tasks
 from core.redis.chain_record import ChainRecord
 from core.redis.migrations import run_redis_migrations
 
-from tools.configs import INIT_LOCK_PATH
+from tools.configs import INIT_LOCK_PATH, PASSIVE_NODE
 
 from tools.logger import init_fair_logger
 from tools.configs.web3 import fair_contracts
@@ -76,7 +76,8 @@ def main():
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:
-        generate_sgx_key(node_config)
+        if not PASSIVE_NODE:
+            generate_sgx_key(node_config)
         run_redis_migrations()
     worker()
 

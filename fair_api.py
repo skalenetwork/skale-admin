@@ -27,13 +27,14 @@ import werkzeug
 from flask import Flask, g
 
 from core.node_config import NodeConfig
-from tools.configs import FLASK_SECRET_KEY_FILE
+from tools.configs import FLASK_SECRET_KEY_FILE, PASSIVE_NODE
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
 from web.helper import construct_err_response
 from web.routes.info import info_bp
 from web.routes.fair_node import fair_node_bp
+from web.routes.fair_node_passive import fair_node_passive_bp
 from web.routes.fair_chain import fair_chain_bp
 from web.routes.fair_wallet import wallet_bp
 
@@ -44,10 +45,15 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-app.register_blueprint(fair_node_bp)
+
 app.register_blueprint(fair_chain_bp)
-app.register_blueprint(info_bp)
-app.register_blueprint(wallet_bp)
+
+if PASSIVE_NODE:
+    app.register_blueprint(fair_node_passive_bp)
+else:
+    app.register_blueprint(fair_node_bp)
+    app.register_blueprint(info_bp)
+    app.register_blueprint(wallet_bp)
 
 
 @app.before_request
