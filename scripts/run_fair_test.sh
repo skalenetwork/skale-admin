@@ -11,7 +11,9 @@ tests_cleanup
 sgx_cleanup
 export_test_env
 
-run_sgx_simulator $SGX_WALLET_TAG
+# run_sgx_simulator $SGX_WALLET_TAG
 bash scripts/run_redis.sh
 
 python -m py.test tests/fair/dkg_test.py $@
+sgx_cleanup
+
