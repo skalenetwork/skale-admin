@@ -93,6 +93,7 @@ def status():
         )
 
 
+# TODO: remove in the next version
 @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'upload'), methods=['POST'])
 def upload():
     request_json = json.loads(request.form['json'])

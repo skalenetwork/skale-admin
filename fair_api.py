@@ -36,6 +36,7 @@ from web.routes.info import info_bp
 from web.routes.fair_node import fair_node_bp
 from web.routes.fair_chain import fair_chain_bp
 from web.routes.fair_wallet import wallet_bp
+from web.routes.ssl import ssl_bp
 
 REQ_ID_SIZE = 10
 
@@ -48,6 +49,7 @@ app.register_blueprint(fair_node_bp)
 app.register_blueprint(fair_chain_bp)
 app.register_blueprint(info_bp)
 app.register_blueprint(wallet_bp)
+app.register_blueprint(ssl_bp)
 
 
 @app.before_request
