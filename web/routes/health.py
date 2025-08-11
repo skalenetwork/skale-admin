@@ -41,17 +41,6 @@ BLUEPRINT_NAME = 'health'
 health_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
 
-@health_bp.route(get_api_url(BLUEPRINT_NAME, 'containers'), methods=['GET'])
-def containers():
-    logger.debug(request)
-    all = request.args.get('all') == 'True'
-    name_filter = request.args.get('name_filter') or ''
-    containers_list = g.docker_utils.get_containers_info(
-        all=all, name_filter=name_filter, format=True
-    )
-    return construct_ok_response(containers_list)
-
-
 @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
 @g_skale
 def schains_checks():

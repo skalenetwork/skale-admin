@@ -1,5 +1,5 @@
 import pytest
-
+from time import sleep
 from flask import Flask, appcontext_pushed, g
 from sgx import SgxClient
 
@@ -11,7 +11,7 @@ from web.models.schain import SChainRecord
 from web.routes.info import info_bp
 from web.helper import get_api_url
 
-from tests.utils import get_bp_data
+from tests.utils import get_bp_data, run_custom_schain_container
 
 
 TEST_SGX_KEYNAME = 'test_keyname'
@@ -97,3 +97,31 @@ def test_btrfs_info(skale_bp, skale):
     assert data['status'] == 'ok'
     payload = data['payload']
     assert payload['kernel_module'] is True
+
+
+def test_containers(skale_bp, dutils):
+    data = get_bp_data(skale_bp, get_api_url('info', 'containers'))
+    expected = {
+        'status': 'ok',
+        'payload': dutils.get_containers_info(all=False, name_filter='', format=True),
+    }
+    assert data == expected
+    for container_info in data['payload']:
+        field_map = {'cpu_shares': 0, 'mem_limit': 0, 'swap_limit': 0, 'swappiness': None}
+        for field in field_map.keys():
+            assert field in container_info
+
+
+def test_containers_all(skale_bp, dutils, schain_db, cleanup_schain_containers):
+    run_custom_schain_container(dutils, schain_db, 'bash -c "exit 1"')
+    sleep(10)
+    data = get_bp_data(skale_bp, get_api_url('info', 'containers'), params={'all': True})
+    expected = {
+        'status': 'ok',
+        'payload': dutils.get_containers_info(all=True, name_filter='', format=True),
+    }
+    assert data == expected
+    for container_info in data['payload']:
+        field_map = {'cpu_shares': 0, 'mem_limit': 0, 'swap_limit': 0, 'swappiness': None}
+        for field in field_map.keys():
+            assert field in container_info

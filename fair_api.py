@@ -37,6 +37,7 @@ from web.routes.fair_node import fair_node_bp
 from web.routes.fair_node_passive import fair_node_passive_bp
 from web.routes.fair_chain import fair_chain_bp
 from web.routes.fair_wallet import wallet_bp
+from web.routes.ssl import ssl_bp
 
 REQ_ID_SIZE = 10
 
@@ -47,6 +48,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 app.register_blueprint(fair_chain_bp)
+app.register_blueprint(ssl_bp)
 
 if PASSIVE_NODE:
     app.register_blueprint(fair_node_passive_bp)
