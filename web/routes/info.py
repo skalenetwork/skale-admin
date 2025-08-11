@@ -25,8 +25,8 @@ from sgx import SgxClient
 from core.node import get_check_report
 from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info
 
-from tools.helper import get_endpoint_call_speed
-from tools.configs.web3 import ENDPOINT, UNTRUSTED_PROVIDERS
+from tools.helper import get_endpoint_call_speed, is_fair
+from tools.configs.web3 import BOOT_ENDPOINT, ENDPOINT, UNTRUSTED_PROVIDERS
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 
 from web.helper import construct_ok_response, get_api_url, g_web3
@@ -51,7 +51,8 @@ def endpoint_info():
     logger.debug(request)
     call_speed = get_endpoint_call_speed(g.web3)
     block_number = g.web3.eth.block_number
-    trusted = not any([untrusted in ENDPOINT for untrusted in UNTRUSTED_PROVIDERS])
+    endpoint = BOOT_ENDPOINT if is_fair() else ENDPOINT
+    trusted = not any([untrusted in endpoint for untrusted in UNTRUSTED_PROVIDERS])
     try:
         eth_client_version = g.web3.client_version
     except Exception:
@@ -128,3 +129,14 @@ def check_report():
     logger.debug(request)
     report = get_check_report()
     return construct_ok_response(data=report)
+
+
+@info_bp.route(get_api_url(BLUEPRINT_NAME, 'containers'), methods=['GET'])
+def containers():
+    logger.debug(request)
+    all = request.args.get('all') == 'True'
+    name_filter = request.args.get('name_filter') or ''
+    containers_list = g.docker_utils.get_containers_info(
+        all=all, name_filter=name_filter, format=True
+    )
+    return construct_ok_response(containers_list)
