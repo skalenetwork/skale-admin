@@ -37,6 +37,10 @@ jobs:
       - name: Checking formatting with ruff
         run: uv run ruff check
 
+      - name: Run sgx wallet sim
+        run: |
+          bash ./scripts/run_sgxwallet.sh
+
       - name: Deploy skaled
         run: |
           bash ./scripts/run_skaled.sh
@@ -91,6 +95,10 @@ jobs:
 
       - name: Checking formatting with ruff
         run: uv run ruff check
+
+      - name: Run sgx wallet sim
+        run: |
+          bash ./scripts/run_sgxwallet.sh
 
       - name: Deploy manager
         run: |
