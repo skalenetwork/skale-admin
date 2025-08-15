@@ -74,7 +74,7 @@ class CommitteeInfo:
     def to_dict(self) -> dict:
         return {
             'blsKey': self.bls_key.to_dict(),
-            'stakingContractAddress': self.staking_contract_address,
+            # 'stakingContractAddress': self.staking_contract_address, # todo: tmp fix
             'group': [node.to_dict() for node in self.group],
         }
 
