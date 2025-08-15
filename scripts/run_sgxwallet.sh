@@ -7,9 +7,6 @@ source $DIR/../helper-scripts/helper.sh
 
 : "${SGX_WALLET_TAG?Need to set SGX_WALLET_TAG}"
 
-tests_cleanup
-export_test_env
-
+sgx_cleanup
+run_sgx_simulator $SGX_WALLET_TAG
 bash scripts/run_redis.sh
-
-python -m py.test tests/fair/dkg_test.py $@
