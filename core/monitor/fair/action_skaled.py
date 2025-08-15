@@ -99,7 +99,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             snapshot_from=snapshot_from,
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,
-            sync_node=passive_node,
+            passive_node=passive_node,
             historic_state=self.node_options.historic_state,
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)

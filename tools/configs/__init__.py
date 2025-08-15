@@ -104,7 +104,7 @@ CHANGE_IP_DELAY = 300
 
 STATSD_HOST = '127.0.0.1'
 STATSD_PORT = 8125
-SYNC_NODE = os.getenv('SYNC_NODE') == 'True'
+PASSIVE_NODE = os.getenv('PASSIVE_NODE') == 'True'
 
 DOCKER_NODE_CONFIG_FILEPATH = os.path.join(NODE_DATA_PATH, 'docker.json')
 

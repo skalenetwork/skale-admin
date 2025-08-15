@@ -52,6 +52,7 @@ def handle_healthcheck_job(
 ) -> None:
     try:
         job = scheduler.get_job(HEALTHCHECK_JOB_NAME)
+        logger.info(f'Checking for existing healthcheck job: {job}')
         if job is None:
             local_fair = init_local_fair(node_config)
             logger.info('Going to execute healthcheck job')

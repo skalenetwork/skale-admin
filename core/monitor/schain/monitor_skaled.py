@@ -27,7 +27,7 @@ from core.monitor.schain.action_skaled import SkaledActionManager
 from core.config.schain.main import get_number_of_secret_shares
 from core.chain.status import NodeCliStatus, SkaledStatus
 from core.chain.ssl import ssl_reload_needed
-from tools.configs import SYNC_NODE
+from tools.configs import PASSIVE_NODE
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord
 
@@ -62,7 +62,7 @@ class RegularSkaledMonitor(BaseSChainSkaledMonitor):
             self.am.reset_restart_counter()
         if not self.checks.rpc:
             self.am.skaled_rpc()
-        if not self.checks.ima_container and not SYNC_NODE:
+        if not self.checks.ima_container and not PASSIVE_NODE:
             self.am.ima_container()
 
 
@@ -306,7 +306,7 @@ def get_skaled_monitor(
 
     mon_type: Type[BaseSkaledMonitor] = RegularSkaledMonitor
 
-    if SYNC_NODE:
+    if PASSIVE_NODE:
         if no_config(check_status):
             mon_type = NoConfigSkaledMonitor
         elif is_recreate_mode(check_status, schain_record):

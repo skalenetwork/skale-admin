@@ -30,7 +30,7 @@ from core.firewall.utils import get_fair_committee_scope_rule_controller
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
-from tools.configs import SYNC_NODE
+from tools.configs import PASSIVE_NODE
 from tools.docker_utils import DockerUtils
 from web.helper import construct_err_response, construct_ok_response, g_fair, get_api_url
 
@@ -96,7 +96,7 @@ def checks():
         chain_record=chain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        sync_node=SYNC_NODE,
+        passive_node=PASSIVE_NODE,
     )
     return construct_ok_response(
         {

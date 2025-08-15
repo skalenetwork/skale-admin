@@ -111,7 +111,7 @@ def test_run_skaled_container_sync(
     run_skaled_container(
         schain_name,
         dutils=mocked_dutils_run_container,
-        sync_node=True,
+        passive_node=True,
         historic_state=True,
         part_of_node=16,
     )

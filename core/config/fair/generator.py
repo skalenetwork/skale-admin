@@ -110,7 +110,7 @@ def generate_fair_config_adapter(
     schain_nodes_with_schains: list[NodeWithSchains],
     node_groups: Dict[int, NodesGroup],
     ecdsa_key_name: str,
-    sync_node: bool = False,
+    passive_node: bool = False,
     archive: bool = False,
     catchup: bool = False,
 ):

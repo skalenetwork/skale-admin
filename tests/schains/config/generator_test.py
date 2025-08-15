@@ -558,7 +558,7 @@ def test_get_schain_originator():
     assert originator == TEST_ORIGINATOR_ADDRESS
 
 
-def test_generate_sync_node_config(schain_secret_key_file_default_chain, skale_ima):
+def test_generate_passive_node_config(schain_secret_key_file_default_chain, skale_ima):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -577,7 +577,7 @@ def test_generate_sync_node_config(schain_secret_key_file_default_chain, skale_i
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        sync_node=True,
+        passive_node=True,
         mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
@@ -586,7 +586,9 @@ def test_generate_sync_node_config(schain_secret_key_file_default_chain, skale_i
     assert config['skaleConfig']['sChain']['dbStorageLimit'] == 12653999554
 
 
-def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_default_chain, skale_ima):
+def test_generate_passive_node_config_archive_catchup(
+    schain_secret_key_file_default_chain, skale_ima
+):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -605,7 +607,7 @@ def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_defaul
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        sync_node=True,
+        passive_node=True,
         mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
@@ -626,7 +628,7 @@ def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_defaul
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        sync_node=True,
+        passive_node=True,
         archive=False,
         catchup=True,
         mainnet_ima_addresses=contracts_addresses,
@@ -649,7 +651,7 @@ def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_defaul
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        sync_node=False,
+        passive_node=False,
         archive=False,
         catchup=True,
         mainnet_ima_addresses=contracts_addresses,
@@ -672,7 +674,7 @@ def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_defaul
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        sync_node=True,
+        passive_node=True,
         archive=True,
         catchup=True,
         mainnet_ima_addresses=contracts_addresses,
@@ -684,7 +686,9 @@ def test_generate_sync_node_config_archive_catchup(schain_secret_key_file_defaul
     assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') == 1000000000000000000
 
 
-def test_generate_sync_node_config_static_accounts(schain_secret_key_file_default_chain, skale_ima):
+def test_generate_passive_node_config_static_accounts(
+    schain_secret_key_file_default_chain, skale_ima
+):
     node_id, generation, rotation_id = 1, 1, 0
     ecdsa_key_name = 'test'
     node_groups = {}
@@ -704,7 +708,7 @@ def test_generate_sync_node_config_static_accounts(schain_secret_key_file_defaul
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        sync_node=True,
+        passive_node=True,
         mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
@@ -725,7 +729,7 @@ def test_generate_sync_node_config_static_accounts(schain_secret_key_file_defaul
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        sync_node=True,
+        passive_node=True,
         mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
@@ -760,7 +764,7 @@ def test_generate_config_static_groups(
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
         schain_base_port=10000,
-        sync_node=True,
+        passive_node=True,
         mainnet_ima_addresses=contracts_addresses,
     )
     config = schain_config.to_dict()
@@ -803,7 +807,7 @@ def test_generate_schain_config_with_skale_calls_fair(
         node_config=node_config,
         rotation_data=rotation_data,
         ecdsa_key_name=ECDSA_KEY_NAME,
-        sync_node=False,
+        passive_node=False,
         node_options=NodeOptions(),
     )
 
