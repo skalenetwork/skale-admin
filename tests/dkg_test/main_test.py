@@ -107,7 +107,7 @@ def register_node(skale):
     ip, public_ip, port, name = generate_random_node_data()
     port = 10000
     skale.manager.create_node(
-        ip=ip, port=port, name=name, public_ip=public_ip, domain_name=DEFAULT_DOMAIN_NAME
+        ip=ip, port=port, name=name, public_ip=public_ip, domain_name=f'{name}.com'
     )
     node_id = skale.nodes.node_name_to_index(name)
     logger.info(f'Registered node {name}, ID: {node_id}')
