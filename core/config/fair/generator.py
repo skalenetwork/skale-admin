@@ -27,7 +27,7 @@ from skale import FairManager
 from skale.fair_config import generate_committee_history, get_nodes_from_last_two_committees
 from skale.types.committee import Committee, CommitteeGroup, CommitteeIndex, Timestamp
 from skale.types.dkg import DkgId, Fp2Point, G2Point
-from skale.types.node import FairNode, FairNodeWithRewardWalletAddress, NodeId, NodeWithSchains
+from skale.types.node import FairNodeForChainConfig, NodeId, NodeWithSchains
 from skale.types.node import Node as SkaleNode
 from skale.types.rotation import NodesGroup
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
@@ -87,8 +87,8 @@ def generate_fair_config_with_manager(
 
 def skale_node_to_fair_node_adapter(
     skale_node: SkaleNode, node_id: NodeId
-) -> FairNodeWithRewardWalletAddress:
-    return FairNodeWithRewardWalletAddress(
+) -> FairNodeForChainConfig:
+    return FairNodeForChainConfig(
         id=node_id,
         ip=skale_node['ip'],
         ip_str=socket.inet_ntoa(skale_node['ip']),
@@ -158,7 +158,7 @@ def generate_fair_config_adapter(
 
 
 def generate_fair_config(
-    node: FairNode,
+    node: FairNodeForChainConfig,
     committee_info_from_manager: list[CommitteeGroup],
     node_groups: Dict[int, NodesGroup],
     ecdsa_key_name: str,

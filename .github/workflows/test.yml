@@ -20,7 +20,7 @@ jobs:
     runs-on: self-hosted
     env:
       ENDPOINT: http://127.0.0.1:1234
-      FAIR_TAG: "0.0.1-develop.31"
+      FAIR_TAG: "0.0.1-develop.50"
       SKALED_TAG: 4.1.0-develop.24-mirage
 
     steps:

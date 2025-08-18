@@ -21,16 +21,17 @@ import logging
 import time
 
 from skale import FairManager
-from skale.types.dkg import Status, DkgId
-from skale.types.node import NodeId
+from skale.types.dkg import DkgId, Status
+from skale.types.node import HexStr, NodeId
+from skale.utils.constants import ZERO_PUBLIC_KEY
 
 from core.dkg.fair.client import FairDKGClient
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
+    BROADCAST_DATA_SEARCH_SLEEP,
+    BroadcastResult,
     DkgError,
     DKGKeyGenerationError,
-    BroadcastResult,
-    BROADCAST_DATA_SEARCH_SLEEP,
     sync_broadcast_data,
 )
 from core.types.chain import FairChainName
@@ -39,8 +40,11 @@ logger = logging.getLogger(__name__)
 
 
 def init_dkg_client(
-    node_id: NodeId, fair: FairManager, sgx_eth_key_name: str, committee_id: DkgId,
-    chain_name: FairChainName
+    node_id: NodeId,
+    fair: FairManager,
+    sgx_eth_key_name: str,
+    committee_id: DkgId,
+    chain_name: FairChainName,
 ) -> FairDKGClient:
     logger.info('Initializing dkg client')
     schain_nodes = fair.dkg.get_participants(committee_id)
@@ -48,7 +52,7 @@ def init_dkg_client(
     t = (2 * n + 1) // 3
 
     node_id_dkg = -1
-    public_keys = [0] * n
+    public_keys = [HexStr(ZERO_PUBLIC_KEY)] * n
     node_ids_contract = {}
     node_ids_dkg = {}
     for i, node_id_contract in enumerate(schain_nodes):
@@ -59,7 +63,7 @@ def init_dkg_client(
 
         node_ids_contract[node_id_contract] = i
         node_ids_dkg[i] = node_id_contract
-        public_keys[i] = fair.nodes.get(node_id_contract).public_key
+        public_keys[i] = fair.nodes.get_public_key(node_id_contract)
 
     logger.info('Nodes in chain: %s', node_ids_dkg)
 
