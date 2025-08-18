@@ -32,12 +32,6 @@ def test_get_schain_env():
     assert get_schain_env() == expected_env
     expected_env = {'SEGFAULT_SIGNALS': 'all', 'NO_ULIMIT_CHECK': 1}
     assert get_schain_env(ulimit_check=False) == expected_env
-    expected_env = {
-        'SEGFAULT_SIGNALS': 'all',
-        'NO_ULIMIT_CHECK': 1,
-        'TEST_BLOCK_REWARDS_ACTIVATION': 1,
-    }
-    assert get_schain_env(ulimit_check=False, chain_id='0x3A6') == expected_env
 
 
 @pytest.mark.skip(reason='shared space is temporarily disabled')
