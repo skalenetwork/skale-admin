@@ -20,7 +20,6 @@ from skale import SkaleManager
 from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.types.schain import SchainName
 from skale.utils.account_tools import send_eth
-from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.wallets import SgxWallet
 
 from core.config.schain.directory import init_schain_config_dir
