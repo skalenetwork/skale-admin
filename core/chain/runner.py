@@ -26,6 +26,7 @@ from docker.types import LogConfig, Ulimit
 from core.chain.volume import get_schain_volume_config
 from core.schains.limits import get_schain_limit, get_ima_limit, get_schain_type
 from core.schains.types import MetricType, ContainerType
+from core.config.schain.static_params import get_static_chain_id_fair
 from core.chain.skaled_exit_codes import SkaledExitCodes
 from core.chain.cmd import get_skaled_container_cmd
 from core.config.schain.helper import get_schain_env
@@ -213,7 +214,11 @@ def run_skaled_container(
     volume_config = get_schain_volume_config(
         chain_name, DATA_DIR_CONTAINER_PATH, mode=volume_mode, passive_node=passive_node
     )
-    env = get_schain_env(ulimit_check=ulimit_check)
+    chain_id = None
+    if is_fair():
+        chain_id = get_static_chain_id_fair()
+
+    env = get_schain_env(ulimit_check=ulimit_check, chain_id=chain_id)
 
     cmd = get_skaled_container_cmd(
         chain_name,

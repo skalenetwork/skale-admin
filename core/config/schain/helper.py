@@ -25,7 +25,12 @@ from web3 import Web3
 
 from core.config.fair.helper import get_current_nodes as get_fair_current_nodes
 from core.dkg.utils import get_secret_key_share_filepath
-from tools.configs import ENV_TYPE, FAIR_STATIC_PARAMS_FILEPATH, STATIC_PARAMS_FILEPATH
+from tools.configs import (
+    ENV_TYPE,
+    FAIR_STATIC_PARAMS_FILEPATH,
+    MAINNET_CHAIN_ID,
+    STATIC_PARAMS_FILEPATH,
+)
 from tools.helper import is_fair, read_json, safe_load_yml
 
 logger = logging.getLogger(__name__)
@@ -89,10 +94,12 @@ def get_own_ip_from_config(config: Dict) -> Optional[str]:
     return None
 
 
-def get_schain_env(ulimit_check=True):
+def get_schain_env(ulimit_check=True, chain_id: str | None = None) -> Dict[str, str]:
     env = {'SEGFAULT_SIGNALS': 'all'}
     if not ulimit_check:
         env.update({'NO_ULIMIT_CHECK': 1})
+    if is_fair() and (chain_id is None or chain_id != MAINNET_CHAIN_ID):
+        env.update({'TEST_BLOCK_REWARDS_ACTIVATION': 1})
     return env
 
 
