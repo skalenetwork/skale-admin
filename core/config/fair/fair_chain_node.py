@@ -45,7 +45,7 @@ class FairChainNodeInfo(NodeInfo):
             **parse_public_key_info(self.bls_public_key),
             **{
                 'owner': self.owner,
-                'rewardWalletAddress': self.reward_wallet_address,  # todo: fix for compatibility
+                'rewardWalletAddress': self.reward_wallet_address,
                 'schainIndex': self.committee_index,
                 'ip': self.ip,
                 'publicKey': self.public_key,
