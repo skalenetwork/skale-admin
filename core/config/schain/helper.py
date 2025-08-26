@@ -46,11 +46,6 @@ def get_static_params_fair(env_type=ENV_TYPE, path=FAIR_STATIC_PARAMS_FILEPATH):
     return ydata['envs'][env_type]
 
 
-def get_mainnet_static_params_fair(path=FAIR_STATIC_PARAMS_FILEPATH) -> Dict:
-    ydata = safe_load_yml(path)
-    return ydata['envs'][MAINNET_ENV_TYPE_NAME]
-
-
 def fix_address(address):
     return Web3.to_checksum_address(address)
 
@@ -99,14 +94,16 @@ def get_own_ip_from_config(config: Dict) -> Optional[str]:
     return None
 
 
-def get_schain_env(ulimit_check=True, chain_id: str | None = None) -> Dict[str, str]:
+def get_schain_env(ulimit_check=True) -> Dict[str, str]:
     env = {'SEGFAULT_SIGNALS': 'all'}
     if not ulimit_check:
         env.update({'NO_ULIMIT_CHECK': 1})
 
-    mainnet_chain_id = get_mainnet_static_params_fair()['info']['chain_id']
-    if is_fair() and (chain_id is None or chain_id != mainnet_chain_id):
-        env.update({'TEST_BLOCK_REWARDS_ACTIVATION': 1})
+    if is_fair():
+        params = get_static_params_fair()[ENV_TYPE]
+        is_testnet_reward_activation_address = params['info']['testnet_reward_activation_address']
+        if is_testnet_reward_activation_address:
+            env.update({'TEST_BLOCK_REWARDS_ACTIVATION': 1})
     return env
 
 

@@ -214,11 +214,8 @@ def run_skaled_container(
     volume_config = get_schain_volume_config(
         chain_name, DATA_DIR_CONTAINER_PATH, mode=volume_mode, passive_node=passive_node
     )
-    chain_id = None
-    if is_fair():
-        chain_id = get_static_chain_id_fair()
 
-    env = get_schain_env(ulimit_check=ulimit_check, chain_id=chain_id)
+    env = get_schain_env(ulimit_check=ulimit_check)
 
     cmd = get_skaled_container_cmd(
         chain_name,
