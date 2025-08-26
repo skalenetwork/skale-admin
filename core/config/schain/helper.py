@@ -28,7 +28,6 @@ from core.dkg.utils import get_secret_key_share_filepath
 from tools.configs import (
     ENV_TYPE,
     FAIR_STATIC_PARAMS_FILEPATH,
-    MAINNET_ENV_TYPE_NAME,
     STATIC_PARAMS_FILEPATH,
 )
 from tools.helper import is_fair, read_json, safe_load_yml
