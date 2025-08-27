@@ -16,6 +16,7 @@ package-lock.json
 scripts/.env
 
 static/
+context/
 
 __pycache__/
 *.pyc

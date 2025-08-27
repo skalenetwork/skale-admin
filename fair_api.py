@@ -23,7 +23,7 @@ import os
 import time
 from http import HTTPStatus
 
-import werkzeug
+from werkzeug import exceptions as wz_exceptions
 from flask import Flask, g
 
 from core.node_config import NodeConfig
@@ -37,6 +37,7 @@ from web.routes.fair_node import fair_node_bp
 from web.routes.fair_node_passive import fair_node_passive_bp
 from web.routes.fair_chain import fair_chain_bp
 from web.routes.fair_wallet import wallet_bp
+from web.routes.fair_staking import fair_staking_bp
 from web.routes.ssl import ssl_bp
 
 REQ_ID_SIZE = 10
@@ -56,6 +57,7 @@ else:
     app.register_blueprint(fair_node_bp)
     app.register_blueprint(info_bp)
     app.register_blueprint(wallet_bp)
+    app.register_blueprint(fair_staking_bp)
 
 
 @app.before_request
@@ -83,7 +85,7 @@ def recursion_error_handler(e):
     )
 
 
-@app.errorhandler(werkzeug.exceptions.InternalServerError)
+@app.errorhandler(wz_exceptions.InternalServerError)
 def any_error_handler(e):
     original = getattr(e, 'original_exception', None)
     logger.exception('Request failed with error %s', original)
