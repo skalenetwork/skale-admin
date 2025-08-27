@@ -57,9 +57,9 @@ def _node_id_or_error(node_config: NodeConfig) -> tuple[int | None, Response | N
     return node_config.id, None
 
 
-@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'add-allowed-receiver'), methods=['POST'])
+@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'add-receiver'), methods=['POST'])
 @g_fair
-def add_allowed_receiver() -> Response:
+def add_receiver() -> Response:
     body, err = _get_body(['receiver'])
     if err:
         return err
@@ -78,9 +78,9 @@ def add_allowed_receiver() -> Response:
     return construct_ok_response()
 
 
-@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'remove-allowed-receiver'), methods=['POST'])
+@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'remove-receiver'), methods=['POST'])
 @g_fair
-def remove_allowed_receiver() -> Response:
+def remove_receiver() -> Response:
     body, err = _get_body(['receiver'])
     if err:
         return err
@@ -94,26 +94,6 @@ def remove_allowed_receiver() -> Response:
         logger.error('Error removeAllowedReceiver: %s', e)
         return construct_err_response(
             msg=f'Error removeAllowedReceiver: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-    return construct_ok_response()
-
-
-@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'send-all-fees'), methods=['POST'])
-@g_fair
-def send_all_fees() -> Response:
-    body, err = _get_body(['to'])
-    if err:
-        return err
-    try:
-        to = to_checksum_address(str(body['to']))
-    except Exception:
-        return construct_err_response('Invalid recipient address')
-    try:
-        g.fair.staking.send_all_fees(to)
-    except TransactionError as e:
-        logger.error('Error sendAllFees: %s', e)
-        return construct_err_response(
-            msg=f'Error sendAllFees: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
     return construct_ok_response()
 
@@ -183,20 +163,21 @@ def claim_fees() -> Response:
 @fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'send-fees'), methods=['POST'])
 @g_fair
 def send_fees() -> Response:
-    body, err = _get_body(['to', 'amount'])
+    body, err = _get_body(['to'])
     if err:
         return err
     try:
         to = to_checksum_address(str(body['to']))
     except Exception:
         return construct_err_response('Invalid recipient address')
+    amount = body.get('amount')
+
     try:
-        amount = body['amount']
-        amount_wei = g.fair.web3.to_wei(amount, 'ether')
-    except Exception:
-        return construct_err_response('Invalid amount')
-    try:
-        g.fair.staking.send_fees(to, int(amount_wei))
+        if amount is None or amount == '':
+            g.fair.staking.send_all_fees(to)
+        else:
+            amount_wei = g.fair.web3.to_wei(amount, 'ether')
+            g.fair.staking.send_fees(to, int(amount_wei))
     except TransactionError as e:
         logger.error('Error sendFees: %s', e)
         return construct_err_response(
