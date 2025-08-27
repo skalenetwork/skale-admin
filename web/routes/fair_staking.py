@@ -98,23 +98,6 @@ def remove_receiver() -> Response:
     return construct_ok_response()
 
 
-@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'claim-all-fees'), methods=['POST'])
-@g_fair
-def claim_all_fees() -> Response:
-    node_config: NodeConfig = g.config
-    node_id, err = _node_id_or_error(node_config)
-    if err:
-        return err
-    try:
-        g.fair.staking.claim_all_fees(node_id)
-    except TransactionError as e:
-        logger.error('Error claimAllFees: %s', e)
-        return construct_err_response(
-            msg=f'Error claimAllFees: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
-        )
-    return construct_ok_response()
-
-
 @fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'set-fee-rate'), methods=['POST'])
 @g_fair
 def set_fee_rate() -> Response:
@@ -138,20 +121,20 @@ def set_fee_rate() -> Response:
 @fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'claim-fees'), methods=['POST'])
 @g_fair
 def claim_fees() -> Response:
-    body, err = _get_body(['amount'])
+    body, err = _get_body()
     if err:
         return err
     node_config: NodeConfig = g.config
     node_id, node_err = _node_id_or_error(node_config)
     if node_err:
         return node_err
+    amount = body.get('amount')
     try:
-        amount = body['amount']
-        amount_wei = g.fair.web3.to_wei(amount, 'ether')
-    except Exception:
-        return construct_err_response('Invalid amount')
-    try:
-        g.fair.staking.claim_fees(node_id, int(amount_wei))
+        if amount is None or amount == '':
+            g.fair.staking.claim_all_fees(node_id)
+        else:
+            amount_wei = g.fair.web3.to_wei(amount, 'ether')
+            g.fair.staking.claim_fees(node_id, int(amount_wei))
     except TransactionError as e:
         logger.error('Error claimFees: %s', e)
         return construct_err_response(
