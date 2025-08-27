@@ -99,7 +99,7 @@ def get_schain_env(ulimit_check=True) -> Dict[str, str]:
         env.update({'NO_ULIMIT_CHECK': 1})
 
     if is_fair():
-        params = get_static_params_fair()[ENV_TYPE]
+        params = get_static_params_fair()
         is_testnet_reward_activation_address = params['info']['testnet_reward_activation_address']
         if is_testnet_reward_activation_address:
             env.update({'TEST_BLOCK_REWARDS_ACTIVATION': 1})
