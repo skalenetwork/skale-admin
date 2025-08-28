@@ -145,7 +145,7 @@ class ChainRecord(FlatRedisRecord):
     def set_repair_ts(self, value: int | None) -> None:
         self._set_field('repair_ts', value)
 
-    def set_restart_ts(self, value: int | None) -> None:
+    def set_restart_ts(self, value: int) -> None:
         self._set_field('restart_ts', value)
 
     def reset_failed_counters(self) -> None:

@@ -68,7 +68,7 @@ def run_config_pipeline(
     )
 
     chain_record = ChainRecord(chain_name)
-    logger.info('Chain record: %s', chain_record)
+    logger.info('Chain record: %s', chain_record.to_dict())
 
     logger.info('Initializing config checks')
     config_checks = FairConfigChecks(
