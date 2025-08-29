@@ -32,7 +32,12 @@ from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from tools.configs import PASSIVE_NODE
 from tools.docker_utils import DockerUtils
-from web.helper import construct_err_response, construct_ok_response, g_fair, get_api_url
+from web.helper import (
+    construct_err_response,
+    construct_ok_response,
+    g_fair_passive,
+    get_api_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +67,7 @@ def record():
 
 
 @fair_chain_bp.route(get_api_url(BLUEPRINT_NAME, 'checks'), methods=['GET'])
-@g_fair
+@g_fair_passive
 def checks():
     logger.debug(request)
     fair: FairManager = g.fair

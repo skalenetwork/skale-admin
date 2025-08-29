@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import platform
+import shutil
 import psutil
 import socket
 import time
@@ -28,6 +29,7 @@ from enum import Enum
 from typing import Dict, List, Optional, TypedDict
 
 import requests
+from requests.exceptions import RequestException, ConnectionError, Timeout, HTTPError
 
 from skale import SkaleManager
 from skale.schain_config.generator import get_nodes_for_schain
@@ -39,8 +41,15 @@ from skale.types.schain import SchainName
 from skale.types.node import NodeWithId
 
 from core.monitoring import update_monitoring_services
-from tools.configs import WATCHDOG_PORT, CHANGE_IP_DELAY, CHECK_REPORT_PATH, META_FILEPATH
-from tools.helper import read_json
+from tools.configs import (
+    PASSIVE_NODE,
+    WATCHDOG_PORT,
+    CHANGE_IP_DELAY,
+    CHECK_REPORT_PATH,
+    META_FILEPATH,
+)
+from tools.configs.schains import CHAIN_STATE_PATH
+from tools.helper import is_fair, read_json
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
@@ -290,13 +299,24 @@ def _get_node_status(node_info):
 
 def get_block_device_size() -> int:
     """Returns block device size in bytes"""
-    response = requests.get(DOCKER_LVMPY_BLOCK_SIZE_URL, json={'Name': None})
-    data = response.json()
-    if data['Err'] != '':
-        err = data['Err']
-        logger.info(f'Lvmpy returned an error {err}')
+    try:
+        if PASSIVE_NODE or is_fair():
+            total, _, _ = shutil.disk_usage(CHAIN_STATE_PATH)
+            return total
+    except (FileNotFoundError, PermissionError, OSError) as e:
+        print(f'Error getting block device size: {e}')
         return -1
-    return data['Size']
+    try:
+        response = requests.get(DOCKER_LVMPY_BLOCK_SIZE_URL, json={'Name': None}, timeout=10)
+        data = response.json()
+        if data['Err'] != '':
+            err = data['Err']
+            logger.error(f'Lvmpy returned an error {err}')
+            return -1
+        return data['Size']
+    except (RequestException, ConnectionError, Timeout, HTTPError) as e:
+        logger.exception(f'Error getting block device size: {e}')
+        return -1
 
 
 def get_node_hardware_info() -> dict:
