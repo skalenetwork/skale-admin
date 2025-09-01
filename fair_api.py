@@ -50,12 +50,12 @@ app = Flask(__name__)
 
 app.register_blueprint(fair_chain_bp)
 app.register_blueprint(ssl_bp)
+app.register_blueprint(info_bp)
 
 if PASSIVE_NODE:
     app.register_blueprint(fair_node_passive_bp)
 else:
     app.register_blueprint(fair_node_bp)
-    app.register_blueprint(info_bp)
     app.register_blueprint(wallet_bp)
     app.register_blueprint(fair_staking_bp)
 

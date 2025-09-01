@@ -27,7 +27,7 @@ from core.node_config import NodeConfig
 from web.helper import (
     construct_err_response,
     construct_ok_response,
-    g_fair_passive,
+    g_fair_no_wallet,
     get_api_url,
 )
 
@@ -38,7 +38,7 @@ fair_node_passive_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
 
 @fair_node_passive_bp.route(get_api_url(BLUEPRINT_NAME, 'info'), methods=['GET'])
-@g_fair_passive
+@g_fair_no_wallet
 def info():
     logger.debug(request)
     node_config: NodeConfig = g.config
@@ -52,7 +52,7 @@ def info():
 
 
 @fair_node_passive_bp.route(get_api_url(BLUEPRINT_NAME, 'setup'), methods=['POST'])
-@g_fair_passive
+@g_fair_no_wallet
 def setup():
     logger.debug(request)
     if not request.json:

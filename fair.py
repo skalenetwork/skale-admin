@@ -45,6 +45,7 @@ SLEEP_INTERVAL = 90
 
 def monitor(node_config: NodeConfig) -> None:
     scheduler = BackgroundScheduler()
+    scheduler.start()
     while True:
         try:
             start_tasks(node_config, scheduler=scheduler)
@@ -59,6 +60,7 @@ def update_chain_record() -> None:
     chain_name = get_fair_chain_name()
     chain_record = ChainRecord(chain_name)
     chain_record.set_first_run(True)
+    chain_record.set_restart_ts(0)
 
 
 def worker() -> None:

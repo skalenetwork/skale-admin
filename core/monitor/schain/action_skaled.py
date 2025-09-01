@@ -104,6 +104,7 @@ class SkaledActionManager(BaseSkaledActionManager):
         download_snapshot: bool = False,
         start_ts: Optional[int] = None,
         abort_on_exit: bool = True,
+        passive_node: bool = PASSIVE_NODE,
     ) -> bool:
         logger.info(
             'Starting skaled container watchman snapshot: %s, start_ts: %s',
@@ -120,7 +121,7 @@ class SkaledActionManager(BaseSkaledActionManager):
             start_ts=start_ts,
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,
-            passive_node=PASSIVE_NODE,
+            passive_node=passive_node,
             historic_state=self.node_options.historic_state,
         )
         time.sleep(CONTAINER_POST_RUN_DELAY)

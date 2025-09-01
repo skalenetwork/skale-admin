@@ -74,7 +74,6 @@ def handle_healthcheck_job(
                 id=HEALTHCHECK_JOB_NAME,
                 name='fair healthcheck job',
             )
-            scheduler.start()
             logger.info('Healthcheck scheduler started - jobs will now execute')
         else:
             logger.info('Healthcheck job already exists in the scheduler, skipping')
