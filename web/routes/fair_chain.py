@@ -35,7 +35,7 @@ from tools.docker_utils import DockerUtils
 from web.helper import (
     construct_err_response,
     construct_ok_response,
-    g_fair_passive,
+    g_fair_no_wallet,
     get_api_url,
 )
 
@@ -67,7 +67,7 @@ def record():
 
 
 @fair_chain_bp.route(get_api_url(BLUEPRINT_NAME, 'checks'), methods=['GET'])
-@g_fair_passive
+@g_fair_no_wallet
 def checks():
     logger.debug(request)
     fair: FairManager = g.fair

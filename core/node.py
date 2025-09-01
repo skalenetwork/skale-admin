@@ -304,7 +304,7 @@ def get_block_device_size() -> int:
             total, _, _ = shutil.disk_usage(CHAIN_STATE_PATH)
             return total
     except (FileNotFoundError, PermissionError, OSError) as e:
-        print(f'Error getting block device size: {e}')
+        logger.exception(f'Error getting block device size: {e}')
         return -1
     try:
         response = requests.get(DOCKER_LVMPY_BLOCK_SIZE_URL, json={'Name': None}, timeout=10)
