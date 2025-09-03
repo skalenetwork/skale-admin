@@ -206,8 +206,8 @@ def test_recreated_chain_containers(
 
     skaled_am.volume()
     skaled_am.recreated_chain_containers()
-    schain_container = f'skale_schain_{name}'
-    ima_container = f'skale_ima_{name}'
+    schain_container = f'sk_skaled_{name}'
+    ima_container = f'sk_ima_{name}'
     dutils.wait_for_container_creation(schain_container)
     dutils.wait_for_container_creation(ima_container)
     skaled_created_ts = dutils.get_container_created_ts(schain_container)
@@ -230,7 +230,7 @@ def test_ima_container_action_from_scratch(
     containers = dutils.get_all_ima_containers(all=True)
     assert len(containers) == 1
     container_name = containers[0].name
-    assert container_name == f'skale_ima_{skaled_am.name}'
+    assert container_name == f'sk_ima_{skaled_am.name}'
     image = dutils.get_container_image_name(container_name)
     assert image == 'skalenetwork/ima:2.1.0'
 
@@ -244,9 +244,9 @@ def test_ima_container_action_image_pulling(
         skaled_am.ima_container()
         containers = dutils.get_all_ima_containers(all=True)
         assert len(containers) == 1
-        assert containers[0].name == f'skale_ima_{skaled_am.name}'
+        assert containers[0].name == f'sk_ima_{skaled_am.name}'
         container_name = containers[0].name
-        assert container_name == f'skale_ima_{skaled_am.name}'
+        assert container_name == f'sk_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
         assert image == 'skalenetwork/ima:2.1.0-beta.3'
         assert dutils.pulled('skalenetwork/ima:2.1.0')
@@ -261,7 +261,7 @@ def test_ima_container_action_image_migration(
         containers = dutils.get_all_ima_containers(all=True)
         assert len(containers) == 1
         container_name = containers[0].name
-        assert container_name == f'skale_ima_{skaled_am.name}'
+        assert container_name == f'sk_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
         assert image == 'skalenetwork/ima:2.1.0'
 
@@ -279,7 +279,7 @@ def test_ima_container_action_time_frame_migration(
             containers = dutils.get_all_ima_containers(all=True)
             assert len(containers) == 1
             container_name = containers[0].name
-            assert container_name == f'skale_ima_{skaled_am.name}'
+            assert container_name == f'sk_ima_{skaled_am.name}'
             image = dutils.get_container_image_name(container_name)
             assert image == 'skalenetwork/ima:2.0.0-beta.9'
             actual_time_frame = int(dutils.get_container_env_value(container_name, 'TIME_FRAMING'))
@@ -295,7 +295,7 @@ def test_ima_container_action_time_frame_migration(
             containers = dutils.get_all_ima_containers(all=True)
             assert len(containers) == 1
             container_name = containers[0].name
-            assert container_name == f'skale_ima_{skaled_am.name}'
+            assert container_name == f'sk_ima_{skaled_am.name}'
             image = dutils.get_container_image_name(container_name)
             assert image == 'skalenetwork/ima:2.0.0-beta.9'
             actual_time_frame = int(dutils.get_container_env_value(container_name, 'TIME_FRAMING'))

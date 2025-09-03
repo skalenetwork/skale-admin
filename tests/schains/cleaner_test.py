@@ -30,8 +30,8 @@ from web.models.schain import SChainRecord, mark_schain_deleted, upsert_schain_r
 
 from tests.utils import get_schain_struct, run_simple_skaled_container, run_simple_ima_container
 
-SKALED_CONTAINER_NAME_TEMPLATE = 'skale_schain_{}'
-IMA_CONTAINER_NAME_TEMPLATE = 'skale_ima_{}'
+SKALED_CONTAINER_NAME_TEMPLATE = 'sk_skaled_{}'
+IMA_CONTAINER_NAME_TEMPLATE = 'sk_ima_{}'
 
 TEST_SCHAIN_NAME_1 = 'schain_cleaner_test1'
 TEST_SCHAIN_NAME_2 = 'schain_cleaner_test2'
@@ -86,7 +86,7 @@ def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils):
         )
 
     monitor(skale, node_config, dutils=dutils)
-    assert [c.name for c in dutils.client.containers.list(filters={'name': 'skale_schains'})] == []
+    assert [c.name for c in dutils.client.containers.list(filters={'name': 'sk_skaleds'})] == []
 
 
 def test_remove_config_dir():

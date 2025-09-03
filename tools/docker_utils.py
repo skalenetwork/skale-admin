@@ -135,7 +135,7 @@ class DockerUtils:
         return self.get_containers_info(all=all, name_filter='skale_*')
 
     def get_all_schain_containers(self, all=False, format=False) -> list:
-        return self.get_containers_info(all=all, name_filter='skale_schain_*')
+        return self.get_containers_info(all=all, name_filter='sk_skaled_*')
 
     @format_containers
     def get_containers_info(self, all=False, name_filter='*', format=False) -> list:
@@ -143,7 +143,7 @@ class DockerUtils:
 
     @format_containers
     def get_all_ima_containers(self, all=False, format=False) -> list:
-        return self.client.containers.list(all=all, filters={'name': 'skale_ima_*'})
+        return self.client.containers.list(all=all, filters={'name': 'sk_ima_*'})
 
     def get_info(self, container_id: str, raise_not_found: bool = False) -> dict:
         container_info = {}
