@@ -213,6 +213,7 @@ def run_skaled_container(
     volume_config = get_schain_volume_config(
         chain_name, DATA_DIR_CONTAINER_PATH, mode=volume_mode, passive_node=passive_node
     )
+
     env = get_schain_env(ulimit_check=ulimit_check)
 
     cmd = get_skaled_container_cmd(
