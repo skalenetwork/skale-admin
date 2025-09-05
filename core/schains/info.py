@@ -59,4 +59,4 @@ def get_schain_info_by_name(skale: SkaleManager, schain_name: str) -> SchainData
 
 
 def get_skaled_version() -> str:
-    return CONTAINERS_INFO['schain']['version']
+    return CONTAINERS_INFO['skaled']['version']

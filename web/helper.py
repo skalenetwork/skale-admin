@@ -104,3 +104,12 @@ def g_fair(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def g_fair_no_wallet(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        g.fair = init_fair_manager()
+        return func(*args, **kwargs)
+
+    return wrapper

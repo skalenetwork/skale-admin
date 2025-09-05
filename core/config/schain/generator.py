@@ -137,7 +137,7 @@ def generate_schain_config(
     schain_base_port: int,
     common_bls_public_keys: list[str],
     mainnet_ima_addresses: dict[str, ChecksumAddress],
-    sync_node: bool = False,
+    passive_node: bool = False,
     archive=None,
     catchup=None,
 ) -> SChainConfig:
@@ -146,7 +146,7 @@ def generate_schain_config(
         f'Going to generate sChain config for {schain.name}, '
         f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}'
     )
-    if sync_node:
+    if passive_node:
         logger.info(f'Sync node config options: archive: {archive}, catchup: {catchup}')
     else:
         logger.info(f'Regular node config options: ecdsa keyname: {ecdsa_key_name}')
@@ -183,7 +183,7 @@ def generate_schain_config(
         node_groups=node_groups,
         schain_base_port=schain_base_port,
         common_bls_public_keys=common_bls_public_keys,
-        sync_node=sync_node,
+        passive_node=passive_node,
         archive=archive,
         catchup=catchup,
     )
@@ -231,7 +231,7 @@ def generate_schain_config_with_skale(
     node_config: NodeConfig,
     rotation_data: Rotation,
     ecdsa_key_name: str,
-    sync_node: bool = False,
+    passive_node: bool = False,
     node_options: NodeOptions = NodeOptions(),
 ) -> SChainConfig | FairConfig:
     schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
@@ -245,7 +245,7 @@ def generate_schain_config_with_skale(
     group_index = skale.schains.name_to_id(schain_name)
     common_bls_public_keys = get_common_bls_public_key(skale, group_index)
 
-    if sync_node:
+    if passive_node:
         schain_base_port = node_config.schain_base_port
     else:
         schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
@@ -258,7 +258,7 @@ def generate_schain_config_with_skale(
             ecdsa_key_name=ecdsa_key_name,
             schain_nodes_with_schains=schain_nodes_with_schains,
             node_groups=node_groups,
-            sync_node=sync_node,
+            passive_node=passive_node,
             archive=node_options.archive,
             catchup=node_options.catchup,
         )
@@ -277,7 +277,7 @@ def generate_schain_config_with_skale(
         is_owner_contract=is_owner_contract,
         schain_base_port=schain_base_port,
         common_bls_public_keys=common_bls_public_keys,
-        sync_node=sync_node,
+        passive_node=passive_node,
         archive=node_options.archive,
         catchup=node_options.catchup,
         mainnet_ima_addresses=mainnet_ima_addresses,

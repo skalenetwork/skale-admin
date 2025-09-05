@@ -33,7 +33,7 @@ from core.monitor.monitor_base import BaseSkaledMonitor
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.types.chain import FairChainName
-from tools.configs import SYNC_NODE
+from tools.configs import PASSIVE_NODE
 from tools.configs.fair import SKALED_RESTART_JOB_NAME
 from tools.docker_utils import DockerUtils
 from tools.helper import no_hyphens
@@ -64,7 +64,7 @@ def run_skaled_pipeline(
         chain_record=chain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        sync_node=SYNC_NODE,
+        passive_node=PASSIVE_NODE,
     )
 
     logger.info('Initializing skaled status')
@@ -121,15 +121,15 @@ class BaseFairSkaledMonitor(BaseSkaledMonitor):
 class RegularSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.committee_scope_firewall_rules:
-            self._am.committee_scope_firewall_rules()
+            self.am.committee_scope_firewall_rules()
         if not self.checks.volume:
-            self._am.volume()
+            self.am.volume()
         if not self.checks.skaled_container:
-            self._am.skaled_container()
+            self.am.skaled_container(passive_node=PASSIVE_NODE)
         else:
-            self._am.reset_restart_counter()
+            self.am.reset_restart_counter()
         if not self.checks.rpc:
-            self._am.skaled_rpc()
+            self.am.skaled_rpc()
 
 
 class NoConfigSkaledMonitor(BaseFairSkaledMonitor):
@@ -144,15 +144,18 @@ class NoConfigSkaledMonitor(BaseFairSkaledMonitor):
 class StartupSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self) -> None:
         if not self.checks.committee_scope_firewall_rules:
-            self._am.committee_scope_firewall_rules()
+            self.am.committee_scope_firewall_rules()
         if not self.checks.volume:
-            self._am.volume()
+            self.am.volume()
         if not self.checks.skaled_container:
-            self._am.skaled_container(download_snapshot=True)
+            download_snapshot = True
+            if PASSIVE_NODE and not self.am.chain_record.snapshot_from:
+                download_snapshot = False
+            self.am.skaled_container(download_snapshot=download_snapshot, passive_node=PASSIVE_NODE)
         else:
-            self._am.reset_restart_counter()
+            self.am.reset_restart_counter()
         if not self.checks.rpc:
-            self._am.skaled_rpc()
+            self.am.skaled_rpc()
 
 
 class UpdateConfigSkaledMonitor(BaseFairSkaledMonitor):
@@ -160,7 +163,7 @@ class UpdateConfigSkaledMonitor(BaseFairSkaledMonitor):
         if not self.checks.config_updated:
             self.am.update_config()
         if not self.checks.committee_scope_firewall_rules:
-            self._am.committee_scope_firewall_rules()
+            self.am.committee_scope_firewall_rules()
         last_group_start_timestamp = get_last_group_start_timestamp_from_config(
             self.am.cfm.latest_upstream_config
         )
@@ -172,7 +175,7 @@ class RecreateSkaledMonitor(BaseFairSkaledMonitor):
         if not self.checks.config_updated:
             self.am.update_config()
         if not self.checks.committee_scope_firewall_rules:
-            self._am.committee_scope_firewall_rules()
+            self.am.committee_scope_firewall_rules()
         self.am.recreated_skaled_container()
 
 

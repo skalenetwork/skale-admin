@@ -32,6 +32,7 @@ from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.types.chain import FairChainName
 
+from tools.configs import PASSIVE_NODE
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
 
@@ -47,9 +48,10 @@ def run_config_pipeline(
 ) -> None:
     logger.info('Running config pipeline for %s', chain_name)
 
-    is_healthy = fair.status.is_healthy(node_id=node_config.id)
-    logger.info('Node health status: %s', is_healthy)
-    handle_healthcheck_job(scheduler, node_config)
+    if not PASSIVE_NODE:
+        is_healthy = fair.status.is_healthy(node_id=node_config.id)
+        logger.info('Node health status: %s', is_healthy)
+        handle_healthcheck_job(scheduler, node_config)
 
     active_committee_index = fair.committee.get_active_committee_index()
     last_committee_index = fair.committee.last_committee_index()
@@ -66,7 +68,7 @@ def run_config_pipeline(
     )
 
     chain_record = ChainRecord(chain_name)
-    logger.info('Chain record: %s', chain_record)
+    logger.info('Chain record: %s', chain_record.to_dict())
 
     logger.info('Initializing config checks')
     config_checks = FairConfigChecks(
@@ -93,11 +95,11 @@ def run_config_pipeline(
     logger.info('Config status: %s', status)
 
     if is_committee_node:
-        logger.info('Committee node mode, running config monitor')
+        logger.info('Committee node mode, running CommitteeConfigMonitor')
         mon = CommitteeConfigMonitor(config_am, config_checks)
     else:
-        logger.info('Active node mode, running sync config monitor')
-        mon = ActiveConfigMonitor(config_am, config_checks)
+        logger.info('Non-committee node mode, running DefaultConfigMonitor')
+        mon = DefaultConfigMonitor(config_am, config_checks)
     statsd_client = get_statsd_client()
 
     statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(chain_name)}')
@@ -145,7 +147,7 @@ class CommitteeConfigMonitor(BaseConfigMonitor):
         self.am.reset_config_record()
 
 
-class ActiveConfigMonitor(BaseConfigMonitor):
+class DefaultConfigMonitor(BaseConfigMonitor):
     def execute(self) -> None:
         last_dkg_successful = self.am.fair.dkg.is_last_dkg_successful()
         if not self.checks.config_dir:

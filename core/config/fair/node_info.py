@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from skale.dataclasses.node_info import NodeInfo
 from skale.types.node import NodeId, Port
 
+from tools.configs import PASSIVE_NODE
+
 logger = logging.getLogger(__name__)
 
 
@@ -42,15 +44,14 @@ class FairCurrentNodeInfo(NodeInfo):
             **super().to_dict(),
             **{
                 'ecdsaKeyName': self.ecdsa_key_name,
-                # 'syncNode': not self.is_committee_node,
+                'syncNode': PASSIVE_NODE,
                 'info-acceptors': 1,
                 **self.static_node_info,
             },
         }
-        # todod: handle later
-        # if not self.is_committee_node:
-        #     node_info['archiveMode'] = self.archive
-        #     node_info['syncFromCatchup'] = self.catchup
+        if PASSIVE_NODE:
+            node_info['archiveMode'] = self.archive
+            node_info['syncFromCatchup'] = self.catchup
         return node_info
 
 

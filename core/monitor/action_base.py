@@ -35,6 +35,7 @@ from core.redis.chain_record import ChainRecord
 from core.schains.cleaner import remove_schain_volume, remove_skaled_container
 from core.schains.exit_scheduler import ExitScheduleFileManager
 from core.types.chain import ChainName
+from tools.configs import PASSIVE_NODE
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.node_options import NodeOptions
@@ -155,7 +156,10 @@ class BaseSkaledActionManager(BaseActionManager):
         self.chain_record.set_failed_rpc_count(0)
         if type(self.chain_record) is ChainRecord:  # todo: remove after migration to ChainRecord
             self.chain_record.set_restart_ts(0)
-        initial_status = self.skaled_container(abort_on_exit=abort_on_exit)
+        initial_status = self.skaled_container(
+            abort_on_exit=abort_on_exit,
+            passive_node=PASSIVE_NODE,
+        )
         return initial_status
 
     @BaseActionManager.monitor_block

@@ -44,7 +44,7 @@ from core.config.schain.file_manager import ConfigFileManager
 
 from core.schains.external_config import ExternalConfig, ExternalState
 
-from tools.configs import SYNC_NODE
+from tools.configs import PASSIVE_NODE
 from tools.helper import no_hyphens
 from tools.node_options import NodeOptions
 from tools.resources import get_statsd_client
@@ -147,7 +147,7 @@ class ConfigActionManager(BaseActionManager):
                 generation=self.generation,
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,
-                sync_node=SYNC_NODE,
+                passive_node=PASSIVE_NODE,
                 node_options=self.node_options,
             )
 
@@ -185,7 +185,7 @@ class ConfigActionManager(BaseActionManager):
         return True
 
     @BaseActionManager.monitor_block
-    def update_reload_ts(self, ip_matched: CheckRes, sync_node: bool = False) -> bool:
+    def update_reload_ts(self, ip_matched: CheckRes, passive_node: bool = False) -> bool:
         """
         - If ip_matched is True, then config is synced and skaled reload is not needed
         - If ip_matched is False, then config is not synced and skaled reload is needed
@@ -200,7 +200,7 @@ class ConfigActionManager(BaseActionManager):
             return True
 
         node_index_in_group = 0
-        if not sync_node:
+        if not passive_node:
             node_index_in_group = get_node_index_in_group(
                 self.skale, self.name, self.node_config.id
             )

@@ -78,7 +78,7 @@ def schains_checks():
                     current_nodes=current_nodes,
                     last_dkg_successful=True,
                     estate=estate,
-                    sync_node=False,
+                    passive_node=False,
                 ).get_all(needed=checks_filter)
                 if not checks_filter or 'process' in checks_filter:
                     schain_checks.update(

@@ -34,7 +34,7 @@ from tests.utils import (
 
 
 NOT_EXISTS_SCHAIN_NAME = 'qwerty123'
-SKALED_CONTAINER_NAME = 'skale_schain_test'
+SKALED_CONTAINER_NAME = 'sk_skaled_test'
 TEST_NODE_ID = 0
 REMOVING_CONTAINER_WAITING_INTERVAL = 2
 

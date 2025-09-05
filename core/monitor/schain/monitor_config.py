@@ -32,7 +32,7 @@ from core.schains.external_config import ExternalConfig, ExternalState
 from core.monitor.schain.action_config import ConfigActionManager
 from core.node import get_current_nodes
 
-from tools.configs import SYNC_NODE
+from tools.configs import PASSIVE_NODE
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord
@@ -52,7 +52,7 @@ def run_config_pipeline(
     schain = skale.schains.get_by_name(schain_name)
     rotation_data = skale.node_rotation.get_rotation(schain_name)
     allowed_ranges = get_sync_agent_ranges(skale)
-    ima_linked = not SYNC_NODE and skale_ima.linker.has_schain(schain_name)
+    ima_linked = not PASSIVE_NODE and skale_ima.linker.has_schain(schain_name)
     group_index = skale.schains.name_to_group_id(schain_name)
     last_dkg_successful = skale.dkg.is_last_dkg_successful(cast(SchainHash, group_index))
     current_nodes = get_current_nodes(skale, schain_name)
@@ -95,7 +95,7 @@ def run_config_pipeline(
     status = config_checks.get_all(log=False, expose=True)
     logger.info('Config status: %s', status)
 
-    if SYNC_NODE:
+    if PASSIVE_NODE:
         logger.info(
             'Sync node last_dkg_successful %s, rotation_data %s', last_dkg_successful, rotation_data
         )
@@ -158,5 +158,5 @@ class SyncConfigMonitor(BaseConfigMonitor):
             self.am.external_state()
         if self.checks.last_dkg_successful and not self.checks.upstream_config:
             self.am.upstream_config()
-            self.am.update_reload_ts(self.checks.skaled_node_ips, sync_node=True)
+            self.am.update_reload_ts(self.checks.skaled_node_ips, passive_node=True)
         self.am.reset_config_record()

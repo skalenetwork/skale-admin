@@ -34,6 +34,7 @@ from core.redis.chain_record import ChainRecord
 from core.schains.process import ProcessReport
 from core.types.chain import FairChainName
 from core.utils.fair import init_fair_manager
+from tools.configs import PASSIVE_NODE
 from tools.docker_utils import DockerUtils
 from tools.str_formatters import arguments_list_string
 
@@ -70,7 +71,8 @@ class ConfigTask(BaseTask):
 
     def run(self) -> None:
         try:
-            fair = init_fair_manager(node_config=self.node_config)
+            fair_manager_node_config = None if PASSIVE_NODE else self.node_config
+            fair = init_fair_manager(node_config=fair_manager_node_config)
             run_config_pipeline(
                 chain_name=cast(FairChainName, self.chain_name),
                 fair=fair,

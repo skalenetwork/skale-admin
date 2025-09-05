@@ -20,7 +20,7 @@
 import logging
 from typing import Optional
 
-from tools.helper import process_template
+from tools.helper import is_fair, process_template
 from tools.docker_utils import DockerUtils, get_docker_group_id
 
 from tools.configs import SKALE_DIR_HOST
@@ -48,7 +48,12 @@ def update_filebeat_service(
     node_ip, node_id, contract_alias_or_address: str, dutils: Optional[DockerUtils] = None
 ):
     dutils = dutils or DockerUtils()
-    template_data = {'ip': node_ip, 'id': node_id, 'contract_address': contract_alias_or_address}
+    template_data = {
+        'ip': node_ip,
+        'id': node_id,
+        'contract_address': contract_alias_or_address,
+        'is_skale_node': not is_fair(),
+    }
 
     logger.info('Configuring filebeat %s', template_data)
     process_template(FILEBEAT_TEMPLATE_PATH, FILEBEAT_CONFIG_PATH, template_data)

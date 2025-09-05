@@ -45,12 +45,12 @@ def create_new_upstream_config(
     generation: int,
     ecdsa_sgx_key_name: str,
     rotation_data: Rotation,
-    sync_node: bool,
+    passive_node: bool,
     node_options: NodeOptions,
 ) -> Dict:
     logger.warning(
         arguments_list_string(
-            {'sChain name': schain_name, 'generation': generation, 'sync_node': sync_node},
+            {'sChain name': schain_name, 'generation': generation, 'passive_node': passive_node},
             'Generating sChain config',
         )
     )
@@ -63,7 +63,7 @@ def create_new_upstream_config(
         node_config=node_config,
         rotation_data=rotation_data,
         ecdsa_key_name=ecdsa_sgx_key_name,
-        sync_node=sync_node,
+        passive_node=passive_node,
         node_options=node_options,
     )
     return schain_config.to_dict()

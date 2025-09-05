@@ -208,7 +208,7 @@ def test_generate_fair_config_adapter(fair_default_secret_key_file, node_groups)
         schain_nodes_with_schains=cast(list[NodeWithSchains], schain_nodes_with_schains),
         node_groups=node_groups,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
-        sync_node=False,
+        passive_node=False,
         archive=False,
         catchup=False,
     )

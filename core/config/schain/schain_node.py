@@ -54,11 +54,11 @@ class SChainNodeInfo(NodeInfo):
 
 
 def generate_schain_nodes(
-    schain_nodes_with_schains: list, schain_name: str, rotation_id: int, sync_node: bool = False
+    schain_nodes_with_schains: list, schain_name: str, rotation_id: int, passive_node: bool = False
 ):
     schain_nodes = []
 
-    if sync_node:
+    if passive_node:
         bls_public_keys = ['0:0:1:0'] * len(schain_nodes_with_schains)
     else:
         bls_public_keys = get_bls_public_keys(schain_name, rotation_id)

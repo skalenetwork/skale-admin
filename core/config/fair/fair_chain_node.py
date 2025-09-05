@@ -17,14 +17,15 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from eth_typing import HexStr
 from dataclasses import dataclass
-from skale.dataclasses.node_info import NodeInfo
-from skale.utils.helper import ip_from_bytes
-from skale.types.node import FairNode
-from skale.types.dkg import DkgId
 
-from core.config.schain.helper import parse_public_key_info, get_bls_public_keys
+from eth_typing import HexStr
+from skale.dataclasses.node_info import NodeInfo
+from skale.types.dkg import DkgId
+from skale.types.node import FairNodeForChainConfig
+from skale.utils.helper import ip_from_bytes
+
+from core.config.schain.helper import get_bls_public_keys, parse_public_key_info
 from core.config.schain.static_params import get_fair_chain_name
 
 
@@ -32,6 +33,7 @@ from core.config.schain.static_params import get_fair_chain_name
 class FairChainNodeInfo(NodeInfo):
     bls_public_key: str
     owner: str
+    reward_wallet_address: str
     committee_index: int
     ip: str
     public_key: HexStr
@@ -43,6 +45,7 @@ class FairChainNodeInfo(NodeInfo):
             **parse_public_key_info(self.bls_public_key),
             **{
                 'owner': self.owner,
+                'rewardWalletAddress': self.reward_wallet_address,
                 'schainIndex': self.committee_index,
                 'ip': self.ip,
                 'publicKey': self.public_key,
@@ -51,7 +54,7 @@ class FairChainNodeInfo(NodeInfo):
 
 
 def generate_fair_chain_nodes(
-    committee_nodes: list[FairNode], dkg_id: DkgId, is_committee_node: bool
+    committee_nodes: list[FairNodeForChainConfig], dkg_id: DkgId, is_committee_node: bool
 ) -> list[FairChainNodeInfo]:
     chain_nodes = []
 
@@ -69,6 +72,7 @@ def generate_fair_chain_nodes(
             committee_index=i,
             ip=ip_from_bytes(node.ip),
             owner=node.address,
+            reward_wallet_address=node.reward_wallet_address,
             public_key=node.public_key,
         )
         chain_nodes.append(node_info)

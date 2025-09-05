@@ -24,7 +24,7 @@ def test_generate_wallets_config():
         wallets = generate_wallets_config(
             'test_schain',
             0,
-            sync_node=False,
+            passive_node=False,
             nodes_in_schain=4,
             common_bls_public_keys=COMMON_PUBLIC_KEY,
         )
@@ -42,12 +42,12 @@ def test_generate_wallets_config():
     assert wallets['ima']['BLSPublicKey3'] == '1'
 
 
-def test_generate_wallets_config_sync_node():
+def test_generate_wallets_config_passive_node():
     with mock.patch('core.config.schain.node_info.read_json', return_value=SECRET_KEY_MOCK):
         wallets = generate_wallets_config(
             'test_schain',
             0,
-            sync_node=True,
+            passive_node=True,
             nodes_in_schain=4,
             common_bls_public_keys=COMMON_PUBLIC_KEY,
         )

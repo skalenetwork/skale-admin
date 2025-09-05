@@ -62,9 +62,9 @@ def test_get_snapshot_opts():
     assert sync_opts == ['--download-snapshot readfromconfig']
 
 
-def test_get_skaled_container_cmd_sync_node(schain_config, cert_key_pair):
+def test_get_skaled_container_cmd_passive_node(schain_config, cert_key_pair):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
-    container_opts = get_skaled_container_cmd(schain_name, enable_ssl=False, sync_node=True)
+    container_opts = get_skaled_container_cmd(schain_name, enable_ssl=False, passive_node=True)
     config_filepath = get_skaled_container_config_path(schain_name)
 
     expected_opts = (

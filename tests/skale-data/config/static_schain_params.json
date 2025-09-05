@@ -31,7 +31,7 @@
             "transaction_queue_size": 100000,
             "max_open_leveldb_files": 256
         },
-        "sync_node": {
+        "passive_node": {
             "min_cache_size": 32000000,
             "max_cache_size": 64000000,
             "collection_queue_size": 20,
