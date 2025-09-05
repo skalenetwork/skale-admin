@@ -190,15 +190,15 @@ def test_safe_rm(dutils):
 
 def test_get_logs_backup_filepath(dutils):
     ls = []
-    container_mock = SimpleNamespace(name='skale_schain_test')
+    container_mock = SimpleNamespace(name='sk_skaled_test')
     with mock.patch('os.listdir', return_value=ls):
         path = dutils.get_logs_backup_filepath(container_mock)
-    assert path == os.path.join(NODE_DATA_PATH, 'log/.removed_containers/skale_schain_test-0.log')
+    assert path == os.path.join(NODE_DATA_PATH, 'log/.removed_containers/sk_skaled_test-0.log')
 
-    ls = ['skale_schain_test-0.log', 'skale_schain_test-1.log', 'skale_schain_testgg-0.log']
+    ls = ['sk_skaled_test-0.log', 'sk_skaled_test-1.log', 'sk_skaled_testgg-0.log']
     with mock.patch('os.listdir', return_value=ls):
         path = dutils.get_logs_backup_filepath(container_mock)
-    assert path == os.path.join(NODE_DATA_PATH, 'log/.removed_containers/skale_schain_test-2.log')
+    assert path == os.path.join(NODE_DATA_PATH, 'log/.removed_containers/sk_skaled_test-2.log')
 
 
 def run_test_schain_container(dutils):

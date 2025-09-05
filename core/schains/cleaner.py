@@ -133,9 +133,7 @@ def get_schain_names_from_contract(skale, node_id):
 
 def get_schains_with_containers(dutils=None):
     dutils = dutils or DockerUtils()
-    return [
-        c.name.replace('skale_schain_', '', 1) for c in dutils.get_all_schain_containers(all=True)
-    ]
+    return [c.name.replace('sk_skaled_', '', 1) for c in dutils.get_all_schain_containers(all=True)]
 
 
 def get_schains_firewall_configs() -> list:
@@ -267,7 +265,7 @@ def cleanup_schain(
     )
     check_status = checks.get_all()
     if check_status['skaled_container'] or is_exited(
-        schain_name, container_type=ContainerType.schain, dutils=dutils
+        schain_name, container_type=ContainerType.skaled, dutils=dutils
     ):
         remove_skaled_container(schain_name, dutils=dutils)
     if check_status['volume']:

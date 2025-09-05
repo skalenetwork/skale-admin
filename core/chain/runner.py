@@ -283,7 +283,7 @@ def add_config_volume(run_args, schain_name, mode=None):
 
 def is_exited(
     schain_name: str,
-    container_type: ContainerType = ContainerType.schain,
+    container_type: ContainerType = ContainerType.skaled,
     dutils: DockerUtils | None = None,
 ):
     dutils = dutils or DockerUtils()

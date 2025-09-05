@@ -31,7 +31,7 @@ class SchainType(Enum):
 
 class ContainerType(Enum):
     base = 0
-    schain = 1
+    skaled = 1
     ima = 2
 
 
