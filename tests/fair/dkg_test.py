@@ -264,9 +264,7 @@ class TestDKGFair:
     def new_wallet(self, fair):
         wallet = generate_sgx_wallets(fair, 1)[0]
         print('Address', fair.wallet.address, fair.web3.eth.get_balance(fair.wallet.address))
-        send_eth(
-            web3=fair.web3, wallet=fair.wallet, receiver_address=wallet.address, amount=0.1
-        )
+        send_eth(web3=fair.web3, wallet=fair.wallet, receiver_address=wallet.address, amount=0.1)
         return wallet
 
     @pytest.fixture
@@ -276,7 +274,8 @@ class TestDKGFair:
     @pytest.fixture
     def fair_new_node(self, fair, new_fair_instance):
         ip, _, port, _ = generate_random_node_data()
-        new_fair_instance.nodes.register_active(ip, port)
+        self_stake_requirement = new_fair_instance.staking.self_stake_requirement()
+        new_fair_instance.nodes.register_active(ip, port, value=self_stake_requirement)
         return new_fair_instance.nodes.get_by_address(new_fair_instance.wallet.address)
 
     @pytest.fixture
