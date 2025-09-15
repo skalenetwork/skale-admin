@@ -59,7 +59,8 @@ def register():
 
     fair: FairManager = g.fair
     try:
-        fair.nodes.register_active(ip, port)
+        self_stake_requirement = fair.staking.self_stake_requirement()
+        fair.nodes.register_active(ip, port, value=self_stake_requirement)
     except TransactionError as e:
         logger.error(f'Error registering node: {e}')
         return construct_err_response(
