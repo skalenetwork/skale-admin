@@ -22,6 +22,7 @@ from http import HTTPStatus
 from typing import Iterable
 
 from flask import Blueprint, Response, g, request
+from skale import FairManager
 from skale.transactions.exceptions import TransactionError
 from skale.utils.web3_utils import to_checksum_address
 
@@ -118,10 +119,11 @@ def set_fee_rate() -> Response:
     return construct_ok_response()
 
 
-@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'claim-fees'), methods=['POST'])
+@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'request-fees'), methods=['POST'])
 @g_fair
-def claim_fees() -> Response:
+def request_fees() -> Response:
     body, err = _get_body()
+    fair: FairManager = g.fair
     if err:
         return err
     node_config: NodeConfig = g.config
@@ -131,22 +133,23 @@ def claim_fees() -> Response:
     amount = body.get('amount')
     try:
         if amount is None or amount == '':
-            g.fair.staking.claim_all_fees(node_id)
+            fair.staking.request_all_fees(node_id)
         else:
-            amount_wei = g.fair.web3.to_wei(amount, 'ether')
-            g.fair.staking.claim_fees(node_id, int(amount_wei))
+            amount_wei = fair.web3.to_wei(amount, 'ether')
+            fair.staking.request_fees(node_id, int(amount_wei))
     except TransactionError as e:
-        logger.error('Error claimFees: %s', e)
+        logger.error('Error requestFees: %s', e)
         return construct_err_response(
-            msg=f'Error claimFees: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            msg=f'Error requestFees: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
     return construct_ok_response()
 
 
-@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'send-fees'), methods=['POST'])
+@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'request-send-fees'), methods=['POST'])
 @g_fair
-def send_fees() -> Response:
+def request_send_fees() -> Response:
     body, err = _get_body(['to'])
+    fair: FairManager = g.fair
     if err:
         return err
     try:
@@ -157,14 +160,35 @@ def send_fees() -> Response:
 
     try:
         if amount is None or amount == '':
-            g.fair.staking.send_all_fees(to)
+            fair.staking.request_send_all_fees(to)
         else:
-            amount_wei = g.fair.web3.to_wei(amount, 'ether')
-            g.fair.staking.send_fees(to, int(amount_wei))
+            amount_wei = fair.web3.to_wei(amount, 'ether')
+            fair.staking.request_send_fees(to, int(amount_wei))
     except TransactionError as e:
-        logger.error('Error sendFees: %s', e)
+        logger.error('Error requestSendFees: %s', e)
         return construct_err_response(
-            msg=f'Error sendFees: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+            msg=f'Error requestSendFees: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+        )
+    return construct_ok_response()
+
+
+@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'claim-request'), methods=['POST'])
+@g_fair
+def claim_request() -> Response:
+    body, err = _get_body(['requestId'])
+    fair: FairManager = g.fair
+    if err:
+        return err
+    try:
+        request_id = int(body['requestId'])
+    except Exception:
+        return construct_err_response('Invalid requestId')
+    try:
+        fair.staking.claim_request(request_id)
+    except TransactionError as e:
+        logger.error('Error claimRequest: %s', e)
+        return construct_err_response(
+            msg=f'Error claimRequest: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
         )
     return construct_ok_response()
 
@@ -189,3 +213,18 @@ def get_earned_fee_amount() -> Response:
             'amount_ether': str(g.fair.web3.from_wei(int(amount_wei), 'ether')),
         }
     )
+
+
+@fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'get-exit-requests'), methods=['POST'])
+@g_fair
+def get_exit_requests() -> Response:
+    fair: FairManager = g.fair
+    try:
+        exit_requests_raw = fair.staking.get_exit_requests_for(fair.wallet.address)
+        exit_requests = [obj.to_dict() for obj in exit_requests_raw]
+        return construct_ok_response({'exit_requests': exit_requests})
+    except Exception as e:
+        logger.exception('Error get_exit_requests_for: %s', e)
+        return construct_err_response(
+            msg=f'Error get_exit_requests_for: {e}', status_code=HTTPStatus.INTERNAL_SERVER_ERROR
+        )
