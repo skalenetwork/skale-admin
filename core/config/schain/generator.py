@@ -260,9 +260,8 @@ def generate_schain_config_with_skale(
     else:
         schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
 
-    adapt_skale_node_groups_to_fair(skale, node_groups)
-
     if is_fair():
+        adapt_skale_node_groups_to_fair(skale, node_groups)
         return generate_fair_config_adapter(
             skale_node=node,
             node_id=NodeId(node_config.id),
