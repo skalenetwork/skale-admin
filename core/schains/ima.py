@@ -244,7 +244,7 @@ def get_ima_log_checks():
         error_text = None
         errors = []
         categories = []
-        container_name = f'skale_ima_{schain_name}'
+        container_name = f'sk_ima_{schain_name}'
         cont_data = next((item for item in ima_containers if item['name'] == container_name), None)
         if cont_data is None:
             continue

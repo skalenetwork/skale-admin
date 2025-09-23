@@ -32,7 +32,7 @@ API_LOG_PATH = os.path.join(LOG_FOLDER, API_LOG_FILENAME)
 DEBUG_LOG_FILENAME = 'debug.log'
 DEBUG_LOG_PATH = os.path.join(LOG_FOLDER, DEBUG_LOG_FILENAME)
 
-SYNC_LOG_FILENAME = 'sync_node.log'
+SYNC_LOG_FILENAME = 'passive_node.log'
 SYNC_LOG_PATH = os.path.join(LOG_FOLDER, SYNC_LOG_FILENAME)
 
 
@@ -45,7 +45,5 @@ LOG_FILE_SIZE_BYTES = LOG_FILE_SIZE_MB * 1000000
 LOG_BACKUP_COUNT = 20
 
 ADMIN_LOG_FORMAT = '[%(asctime)s %(levelname)s][%(process)d][%(processName)s][%(threadName)s] - %(name)s:%(lineno)d - %(message)s'  # noqa
-FAIR_LOG_FORMAT = (
-    '[%(asctime)s %(levelname)s][%(threadName)s] - %(name)s:%(lineno)d - %(message)s'  # noqa
-)
+FAIR_LOG_FORMAT = '[%(asctime)s %(levelname)s][%(threadName)s] - %(name)s:%(lineno)d - %(message)s'  # noqa
 API_LOG_FORMAT = '[%(asctime)s] %(process)d %(levelname)s %(url)s %(module)s: %(message)s'  # noqa

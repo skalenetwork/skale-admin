@@ -71,7 +71,7 @@ def generate_skale_section(
     node_groups: dict,
     schain_base_port: int,
     common_bls_public_keys: list[str],
-    sync_node: bool = False,
+    passive_node: bool = False,
     archive=None,
     catchup=None,
 ) -> SkaleConfig:
@@ -92,7 +92,7 @@ def generate_skale_section(
         schain_base_port=schain_base_port,
         nodes_in_schain=nodes_in_schain,
         common_bls_public_keys=common_bls_public_keys,
-        sync_node=sync_node,
+        passive_node=passive_node,
         archive=archive,
         catchup=catchup,
     )
@@ -101,7 +101,7 @@ def generate_skale_section(
         schain_nodes_with_schains=schain_nodes_with_schains,
         schain_name=schain.name,
         rotation_id=rotation_id,
-        sync_node=sync_node,
+        passive_node=passive_node,
     )
 
     schain_info = generate_schain_info(
@@ -111,7 +111,7 @@ def generate_skale_section(
         static_schain_info=static_schain_info,
         nodes=schain_nodes,
         node_groups=node_groups,
-        sync_node=sync_node,
+        passive_node=passive_node,
         archive=archive,
     )
 

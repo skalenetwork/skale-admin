@@ -26,12 +26,12 @@ DATA_DIR_CONTAINER_PATH = '/data_dir'
 SHARED_SPACE_CONTAINER_PATH = '/shared-space'
 SHARED_SPACE_VOLUME_NAME = 'shared-space'
 
-ImageType = Literal['ima', 'schain']
+ImageType = Literal['ima', 'skaled']
 
-SKALED_CONTAINER: ImageType = 'schain'
+SKALED_CONTAINER: ImageType = 'skaled'
 IMA_CONTAINER: ImageType = 'ima'
 
-CONTAINER_NAME_PREFIX = 'skale'
+CONTAINER_NAME_PREFIX = 'sk'
 CONTAINERS_FILENAME = 'containers.json'
 
 CONTAINERS_FILEPATH = os.path.join(CONFIG_FOLDER, CONTAINERS_FILENAME)

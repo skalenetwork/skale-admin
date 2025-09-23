@@ -141,13 +141,13 @@ class BaseSkaledChecks(IChecks):
         rule_controller: IRuleController,
         *,
         dutils: Optional[DockerUtils] = None,
-        sync_node: bool = False,
+        passive_node: bool = False,
     ):
         self.name = chain_name
         self.chain_record = chain_record
         self.dutils = dutils or DockerUtils()
         self.container_name = get_container_name(SKALED_CONTAINER, self.name)
-        self.sync_node = sync_node
+        self.passive_node = passive_node
         self.rule_controller = rule_controller
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=chain_name)
         self.statsd_client = get_statsd_client()
@@ -185,7 +185,9 @@ class BaseSkaledChecks(IChecks):
     def volume(self) -> CheckRes:
         """Checks that sChain volume exists"""
 
-        return CheckRes(is_volume_exists(self.name, sync_node=self.sync_node, dutils=self.dutils))
+        return CheckRes(
+            is_volume_exists(self.name, passive_node=self.passive_node, dutils=self.dutils)
+        )
 
     @property
     def skaled_container(self) -> CheckRes:

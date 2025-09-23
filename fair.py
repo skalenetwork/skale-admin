@@ -31,7 +31,7 @@ from core.monitor.fair.main import start_tasks
 from core.redis.chain_record import ChainRecord
 from core.redis.migrations import run_redis_migrations
 
-from tools.configs import INIT_LOCK_PATH
+from tools.configs import INIT_LOCK_PATH, PASSIVE_NODE
 
 from tools.logger import init_fair_logger
 from tools.configs.web3 import fair_contracts
@@ -45,6 +45,7 @@ SLEEP_INTERVAL = 90
 
 def monitor(node_config: NodeConfig) -> None:
     scheduler = BackgroundScheduler()
+    scheduler.start()
     while True:
         try:
             start_tasks(node_config, scheduler=scheduler)
@@ -59,6 +60,7 @@ def update_chain_record() -> None:
     chain_name = get_fair_chain_name()
     chain_record = ChainRecord(chain_name)
     chain_record.set_first_run(True)
+    chain_record.set_restart_ts(0)
 
 
 def worker() -> None:
@@ -76,7 +78,8 @@ def main():
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:
-        generate_sgx_key(node_config)
+        if not PASSIVE_NODE:
+            generate_sgx_key(node_config)
         run_redis_migrations()
     worker()
 

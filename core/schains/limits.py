@@ -67,7 +67,7 @@ def get_limit(
 
 def get_schain_limit(schain_type: SchainType, metric_type: MetricType) -> int:
     alloc = _get_resource_allocation_info()
-    return cast(int, get_limit(metric_type, schain_type, ContainerType.schain, alloc))
+    return cast(int, get_limit(metric_type, schain_type, ContainerType.skaled, alloc))
 
 
 def get_ima_limit(schain_type: SchainType, metric_type: MetricType) -> int:

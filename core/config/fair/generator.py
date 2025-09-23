@@ -25,13 +25,11 @@ from typing import Dict
 
 from skale import FairManager
 from skale.fair_config import generate_committee_history, get_nodes_from_last_two_committees
-from skale.types.committee import CommitteeGroup
-from skale.types.node import FairNode, NodeId, NodeWithSchains
+from skale.types.committee import Committee, CommitteeGroup, CommitteeIndex, Timestamp
+from skale.types.dkg import DkgId, Fp2Point, G2Point
+from skale.types.node import FairNodeForChainConfig, NodeId, NodeWithSchains
 from skale.types.node import Node as SkaleNode
 from skale.types.rotation import NodesGroup
-from skale.types.committee import CommitteeIndex, Timestamp, Committee
-from skale.types.dkg import G2Point, DkgId, Fp2Point
-
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.config.base import FairConfig, SChainBaseConfig
@@ -45,6 +43,7 @@ from core.config.schain.static_params import (
     get_static_schain_info_fair,
 )
 from tools.configs.schains import FAIR_BASE_SCHAIN_CONFIG_FILEPATH
+from tools.configs.web3 import ZERO_ADDRESS
 from tools.helper import cast_manager_to_fair_node_id
 
 logger = logging.getLogger(__name__)
@@ -86,14 +85,19 @@ def generate_fair_config_with_manager(
     )
 
 
-def skale_node_to_fair_node_adapter(skale_node: SkaleNode, node_id: NodeId) -> FairNode:
-    return FairNode(
+def skale_node_to_fair_node_adapter(
+    skale_node: SkaleNode, node_id: NodeId
+) -> FairNodeForChainConfig:
+    return FairNodeForChainConfig(
         id=node_id,
         ip=skale_node['ip'],
         ip_str=socket.inet_ntoa(skale_node['ip']),
         port=skale_node['port'],
         domain_name=skale_node['domain_name'],
         address=to_checksum_address(public_key_to_address(skale_node['publicKey'])),
+        # This function is only used during boot phase, so all nodes are in initial committee
+        # Therefore all nodes have ZERO_ADDRESS as reward wallet address
+        reward_wallet_address=to_checksum_address(ZERO_ADDRESS),
         name=skale_node['name'],
         public_key=skale_node['publicKey'],
     )
@@ -106,7 +110,7 @@ def generate_fair_config_adapter(
     schain_nodes_with_schains: list[NodeWithSchains],
     node_groups: Dict[int, NodesGroup],
     ecdsa_key_name: str,
-    sync_node: bool = False,
+    passive_node: bool = False,
     archive: bool = False,
     catchup: bool = False,
 ):
@@ -120,6 +124,7 @@ def generate_fair_config_adapter(
         {
             'ts': Timestamp(0),
             'index': CommitteeIndex(0),
+            'staking_contract_address': to_checksum_address(ZERO_ADDRESS),
             'group': committee_nodes,
             'committee': Committee(
                 node_ids=[node.id for node in committee_nodes],
@@ -131,6 +136,7 @@ def generate_fair_config_adapter(
         {
             'ts': Timestamp(chain_start_ts),
             'index': CommitteeIndex(0),
+            'staking_contract_address': to_checksum_address(ZERO_ADDRESS),
             'group': committee_nodes,
             'committee': Committee(
                 node_ids=[node.id for node in committee_nodes],
@@ -152,7 +158,7 @@ def generate_fair_config_adapter(
 
 
 def generate_fair_config(
-    node: FairNode,
+    node: FairNodeForChainConfig,
     committee_info_from_manager: list[CommitteeGroup],
     node_groups: Dict[int, NodesGroup],
     ecdsa_key_name: str,

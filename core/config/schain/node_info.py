@@ -40,7 +40,7 @@ class CurrentNodeInfo(NodeInfo):
 
     static_node_info: dict
 
-    sync_node: bool
+    passive_node: bool
     catchup: bool
     archive: bool
 
@@ -51,12 +51,12 @@ class CurrentNodeInfo(NodeInfo):
             **{
                 'ecdsaKeyName': self.ecdsa_key_name,
                 'wallets': self.wallets,
-                'syncNode': self.sync_node,
+                'syncNode': self.passive_node,
                 'info-acceptors': 1,
                 **self.static_node_info,
             },
         }
-        if self.sync_node:
+        if self.passive_node:
             node_info['archiveMode'] = self.archive
             node_info['syncFromCatchup'] = self.catchup
         return node_info
@@ -72,12 +72,12 @@ def generate_current_node_info(
     nodes_in_schain: int,
     schain_base_port: int,
     common_bls_public_keys: list[str],
-    sync_node: bool = False,
+    passive_node: bool = False,
     archive: bool = False,
     catchup: bool = False,
 ) -> CurrentNodeInfo:
     wallets = generate_wallets_config(
-        schain.name, rotation_id, sync_node, nodes_in_schain, common_bls_public_keys
+        schain.name, rotation_id, passive_node, nodes_in_schain, common_bls_public_keys
     )
 
     if ecdsa_key_name is None:
@@ -89,7 +89,7 @@ def generate_current_node_info(
         base_port=schain_base_port,
         ecdsa_key_name=ecdsa_key_name,
         wallets=wallets,
-        sync_node=sync_node,
+        passive_node=passive_node,
         archive=archive,
         catchup=catchup,
         static_node_info=static_node_info,
@@ -99,7 +99,7 @@ def generate_current_node_info(
 def generate_wallets_config(
     schain_name: str,
     rotation_id: int,
-    sync_node: bool,
+    passive_node: bool,
     nodes_in_schain: int,
     common_bls_public_keys: list[str],
 ) -> dict:
@@ -112,7 +112,7 @@ def generate_wallets_config(
 
     wallets['ima'].update({'n': nodes_in_schain, **formatted_common_pk})
 
-    if not sync_node:
+    if not passive_node:
         secret_key_share_filepath = get_secret_key_share_filepath(schain_name, rotation_id)
         secret_key_share_config = read_json(secret_key_share_filepath)
 

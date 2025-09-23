@@ -38,11 +38,13 @@ def get_skaled_container_cmd(
     start_ts: int | None = None,
     download_snapshot: bool = False,
     enable_ssl: bool = True,
-    sync_node: bool = False,
+    passive_node: bool = False,
     snapshot_from: Optional[str] = None,
 ) -> str:
     """Returns parameters that will be passed to skaled binary in the Chain container"""
-    opts = get_chain_container_base_opts(chain_name, enable_ssl=enable_ssl, sync_node=sync_node)
+    opts = get_chain_container_base_opts(
+        chain_name, enable_ssl=enable_ssl, passive_node=passive_node
+    )
     if snapshot_from:
         opts.extend(['--no-snapshot-majority', snapshot_from])
     if download_snapshot:
@@ -59,7 +61,7 @@ def get_snapshot_opts(start_ts: int | None = None) -> list:
 
 
 def get_chain_container_base_opts(
-    chain_name: str, enable_ssl: bool = True, sync_node: bool = False
+    chain_name: str, enable_ssl: bool = True, passive_node: bool = False
 ) -> list:
     config_filepath = get_skaled_container_config_path(chain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
@@ -85,7 +87,7 @@ def get_chain_container_base_opts(
     if not is_fair():
         cmd.append(f'--main-net-url {ENDPOINT}')
 
-    if not sync_node:
+    if not passive_node:
         cmd.extend(
             [
                 f'--sgx-url {SGX_SERVER_URL}',

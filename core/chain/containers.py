@@ -39,7 +39,7 @@ from core.schains.ima import get_ima_time_frame, ImaData
 from core.chain.ssl import update_ssl_change_date
 
 from core.types.chain import ChainName
-from tools.configs import SYNC_NODE
+from tools.configs import PASSIVE_NODE
 from tools.configs.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER, IMA_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import is_fair
@@ -59,13 +59,13 @@ def monitor_skaled_container(
     snapshot_from: Optional[str] = None,
     abort_on_exit: bool = True,
     dutils: Optional[DockerUtils] = None,
-    sync_node: bool = False,
+    passive_node: bool = False,
     historic_state: bool = False,
 ) -> None:
     dutils = dutils or DockerUtils()
     logger.info(f'Monitoring skaled container for {chain_name}')
 
-    if not is_volume_exists(chain_name, sync_node=sync_node, dutils=dutils):
+    if not is_volume_exists(chain_name, passive_node=passive_node, dutils=dutils):
         logger.error(f'Data volume for chain {chain_name} does not exist')
         return
 
@@ -83,7 +83,7 @@ def monitor_skaled_container(
             start_ts=start_ts,
             dutils=dutils,
             snapshot_from=snapshot_from,
-            sync_node=sync_node,
+            passive_node=passive_node,
             historic_state=historic_state,
         )
         update_ssl_change_date(chain_record)
@@ -122,7 +122,7 @@ def monitor_ima_container(
 ) -> None:
     dutils = dutils or DockerUtils()
 
-    if SYNC_NODE or is_fair():
+    if PASSIVE_NODE or is_fair():
         return
 
     if not ima_data.linked:

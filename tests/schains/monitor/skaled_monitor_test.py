@@ -46,7 +46,7 @@ def skaled_checks(schain_db, skale, rule_controller, dutils):
         schain_record=schain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        sync_node=False,
+        passive_node=False,
     )
 
 
@@ -406,8 +406,8 @@ def test_regular_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon.run()
     assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
-    assert dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
-    assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
+    assert dutils.safe_get_container(f'sk_skaled_{skaled_am.name}')
+    assert dutils.safe_get_container(f'sk_ima_{skaled_am.name}')
 
 
 def test_backup_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
@@ -415,10 +415,10 @@ def test_backup_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon.run()
     assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
-    schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
+    schain_container = dutils.safe_get_container(f'sk_skaled_{skaled_am.name}')
     assert schain_container
     assert '--download-snapshot' in dutils.get_cmd(schain_container.id)
-    assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
+    assert dutils.safe_get_container(f'sk_ima_{skaled_am.name}')
 
 
 def test_repair_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
@@ -430,11 +430,11 @@ def test_repair_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     assert dutils.get_vol(skaled_am.name)
 
     assert dutils.get_vol_created_ts(skaled_am.name) > ts_before
-    schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
+    schain_container = dutils.safe_get_container(f'sk_skaled_{skaled_am.name}')
     assert schain_container
     assert '--download-snapshot' in dutils.get_cmd(schain_container.id)
     assert dutils.get_container_created_ts(schain_container.id) > ts_before
-    assert not dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
+    assert not dutils.safe_get_container(f'sk_ima_{skaled_am.name}')
 
 
 def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
@@ -448,8 +448,8 @@ def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dut
         assert esfm.exit_ts == ts
     assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
-    assert dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
-    assert dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
+    assert dutils.safe_get_container(f'sk_skaled_{skaled_am.name}')
+    assert dutils.safe_get_container(f'sk_ima_{skaled_am.name}')
 
 
 @pytest.mark.skip
@@ -468,7 +468,7 @@ def test_recreate_skaled_monitor(
     ts_before = time.time()
     time.sleep(1)
     mon.run()
-    schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
+    schain_container = dutils.safe_get_container(f'sk_skaled_{skaled_am.name}')
     assert schain_container
     assert dutils.get_container_created_ts(schain_container.id) > ts_before
 
@@ -489,7 +489,7 @@ def test_update_config_skaled_monitor(
     mon.run()
     assert dutils.get_vol(name)
     assert dutils.get_vol_created_ts(name) > ts_before
-    schain_container = dutils.safe_get_container(f'skale_schain_{name}')
+    schain_container = dutils.safe_get_container(f'sk_skaled_{name}')
     assert schain_container
     assert dutils.get_container_created_ts(schain_container.id) > ts_before
     assert (
@@ -501,8 +501,8 @@ def test_no_config_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = NoConfigSkaledMonitor(skaled_am, skaled_checks)
     mon.run()
     assert not dutils.get_vol(skaled_am.name)
-    assert not dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
-    assert not dutils.safe_get_container(f'skale_ima_{skaled_am.name}')
+    assert not dutils.safe_get_container(f'sk_skaled_{skaled_am.name}')
+    assert not dutils.safe_get_container(f'sk_ima_{skaled_am.name}')
 
 
 def test_new_node_monitor(skaled_am, skaled_checks, clean_docker, dutils):
@@ -510,6 +510,6 @@ def test_new_node_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon.run()
     assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
-    schain_container = dutils.safe_get_container(f'skale_schain_{skaled_am.name}')
+    schain_container = dutils.safe_get_container(f'sk_skaled_{skaled_am.name}')
     assert schain_container
     assert '--download-snapshot' in dutils.get_cmd(schain_container.id)

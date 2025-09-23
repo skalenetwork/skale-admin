@@ -20,7 +20,6 @@ from skale import SkaleManager
 from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.types.schain import SchainName
 from skale.utils.account_tools import send_eth
-from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.wallets import SgxWallet
 
 from core.config.schain.directory import init_schain_config_dir
@@ -107,7 +106,7 @@ def register_node(skale):
     ip, public_ip, port, name = generate_random_node_data()
     port = 10000
     skale.manager.create_node(
-        ip=ip, port=port, name=name, public_ip=public_ip, domain_name=DEFAULT_DOMAIN_NAME
+        ip=ip, port=port, name=name, public_ip=public_ip, domain_name=f'{name}.com'
     )
     node_id = skale.nodes.node_name_to_index(name)
     logger.info(f'Registered node {name}, ID: {node_id}')
