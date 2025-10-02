@@ -9,7 +9,7 @@ env:
   IMA_TAG: "2.3.0-beta.3"
   SGX_WALLET_TAG: "1.10.1-develop.3"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-  PYTHON_VERSION: 3.11
+  PYTHON_VERSION: 3.13
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
