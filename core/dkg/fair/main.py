@@ -42,8 +42,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_dkg_client(
-    node_id: NodeId, fair: FairManager, sgx_key_name: str, dkg_id: DkgId,
-    chain_name: FairChainName
+    node_id: NodeId, fair: FairManager, sgx_key_name: str, dkg_id: DkgId, chain_name: FairChainName
 ) -> FairDKGClient:
     dkg_client = None
     try:

@@ -149,15 +149,11 @@ class FairDKGClient(BaseDKGClient):
         received_secret_key_contribution = ''.join(
             to_verify(self.incoming_secret_key_contribution[j]) for j in range(self.sgx.n)
         )
-        logger.info(
-            f'DKGClient is going to create BLS private key with name {self.bls_name}'
-        )
+        logger.info(f'DKGClient is going to create BLS private key with name {self.bls_name}')
         bls_private_key = self.sgx.create_bls_private_key_v2(
             self.poly_name, self.bls_name, self.eth_key_name, received_secret_key_contribution
         )
-        logger.info(
-            f'DKGClient is going to fetch BLS public key with name {self.bls_name}'
-        )
+        logger.info(f'DKGClient is going to fetch BLS public key with name {self.bls_name}')
         self.public_key = self.sgx.get_bls_public_key(self.bls_name)
         return bls_private_key
 
@@ -169,9 +165,7 @@ class FairDKGClient(BaseDKGClient):
             from_node = self.node_ids_contract[event.nodeIndex]
             broadcasted_data = [event.verificationVector, event.secretKeyContribution]
             self.store_broadcasted_data(broadcasted_data, from_node)
-            logger.info(
-                f'Received by {self.node_id_dkg} from {from_node}'
-            )
+            logger.info(f'Received by {self.node_id_dkg} from {from_node}')
 
     def broadcast(self):
         poly_success = self.generate_polynomial(self.poly_name)

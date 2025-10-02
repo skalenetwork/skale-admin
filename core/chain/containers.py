@@ -76,7 +76,7 @@ def monitor_skaled_container(
         return
 
     if not is_container_exists(chain_name, dutils=dutils):
-        logger.info(f"Chain {chain_name}: container doesn't exits")
+        logger.info(f"Chain {chain_name}: container doesn't exist")
         run_skaled_container(
             chain_name=chain_name,
             download_snapshot=download_snapshot,

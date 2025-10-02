@@ -166,9 +166,7 @@ def report_bad_data(dkg_client, index):
                 f'Sending complaint once again'
             )
             dkg_client.send_complaint(index, reason=ComplaintReason.NO_RESPONSE)
-            wait_for_fail(
-                dkg_client.skale, dkg_client.chain_name, channel_started_time, 'response'
-            )
+            wait_for_fail(dkg_client.skale, dkg_client.chain_name, channel_started_time, 'response')
     except DkgTransactionError:
         pass
 
