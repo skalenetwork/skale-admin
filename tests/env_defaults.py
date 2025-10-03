@@ -13,7 +13,7 @@ def get_json_field(filepath, field) -> str:
 
 os.environ.setdefault('SKALE_DIR_HOST', os.path.join(os.getcwd(), 'tests/skale-data'))
 os.environ.setdefault('SKALE_LIB_PATH', os.path.join(os.getcwd(), 'tests/skale-data/lib'))
-os.environ.setdefault('RUNNING_ON_HOST', 'True')
+os.environ.setdefault('RUNNING_ON_HOST', 'False' if os.path.exists('/.dockerenv') else 'True')
 os.environ.setdefault('ENV', 'test')
 os.environ.setdefault(
     'SGX_CERTIFICATES_FOLDER', os.path.join(os.getcwd(), 'tests/skale-data/node_data/sgx_certs')
