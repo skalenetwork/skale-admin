@@ -6,11 +6,16 @@
 
 This repo contains source code for 3 core SKALE Node containers:
 
-- `skale_admin` - worker that manages sChains creation and node rotation
-- `skale_api` - webserver that provides node API
-- `celery` - distributed task queue
+* `skale_admin` - worker that manages sChains creation and node rotation
+* `skale_api` - webserver that provides node API
+* `celery` - distributed task queue
 
 ## Development
+
+### Dependencies
+
+```bash
+```
 
 ### Add linting and formatting git hooks
 
@@ -29,11 +34,11 @@ ruff check
    ETH_PRIVATE_KEY=[..] MANAGER_BRANCH=[..] bash ./scripts/deploy_manager.sh
    ```
 
-   - `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
-   - `MANAGER_BRANCH` - tag of the SKALE Manager image to use (`$MANAGER_BRANCH-latest` will be used)
-   - `SGX_WALLET_TAG` - tag of the SGX simulator to use (optional, `latest` will be used by default)
+   * `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
+   * `MANAGER_BRANCH` - tag of the SKALE Manager image to use (`$MANAGER_BRANCH-latest` will be used)
+   * `SGX_WALLET_TAG` - tag of the SGX simulator to use (optional, `latest` will be used by default)
 
-   List of the available SM tags: <https://hub.docker.com/r/skalenetwork/skale-manager/tags>  
+   List of the available SM tags: <https://hub.docker.com/r/skalenetwork/skale-manager/tags>\
    List of the available SGX tags: <https://hub.docker.com/r/skalenetwork/sgxwallet_sim/tags>
 
 2. Run SGX wallet simulator and all tests after it
@@ -42,8 +47,8 @@ ruff check
 ETH_PRIVATE_KEY=[...] SCHAIN_TYPE=[...] bash ./scripts/run_tests.sh
 ```
 
-- `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
-- `SCHAIN_TYPE` - type of the chain for the DKG test (could be `test2` - 2 nodes, `test4` - 4 nodes, `tiny` - 16 nodes)
+* `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
+* `SCHAIN_TYPE` - type of the chain for the DKG test (could be `test2` - 2 nodes, `test4` - 4 nodes, `tiny` - 16 nodes)
 
 Test build:
 

@@ -2,13 +2,14 @@ FROM python:3.13.7-slim-trixie
 
 RUN apt-get update && apt-get install -y wget git libxslt-dev kmod swig nftables python3-nftables
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 RUN mkdir /usr/src/admin
 WORKDIR /usr/src/admin
 
-COPY requirements.txt ./
-COPY requirements-dev.txt ./
+COPY pyproject.toml ./
 
-RUN pip3 install -r requirements.txt
+RUN uv sync --prerelease=allow
 
 COPY . .
 

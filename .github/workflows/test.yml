@@ -31,8 +31,7 @@ jobs:
       - name: Install python dependencies
         run: |
           source ../.venv/bin/activate
-          uv pip install -r requirements.txt --prerelease=allow
-          uv pip install -r requirements-dev.txt
+          uv sync --prerelease=allow --all-extras
 
       - name: Checking formatting with ruff
         run: uv run ruff check
@@ -90,8 +89,7 @@ jobs:
       - name: Install python dependencies
         run: |
           source ../.venv/bin/activate
-          uv pip install -r requirements.txt --prerelease=allow
-          uv pip install -r requirements-dev.txt
+          uv sync --prerelease=allow --all-extras
 
       - name: Checking formatting with ruff
         run: uv run ruff check
