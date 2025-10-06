@@ -5,6 +5,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import tests.env_defaults  # noqa: F401 # set default env variables for tests
+
 import pytest
 import yaml
 

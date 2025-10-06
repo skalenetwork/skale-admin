@@ -8,9 +8,9 @@ Jinja2==3.1.6
 docker==7.1.0
 websocket-client==1.8.0
 
-requests==2.32.4
+requests==2.32.5
 
-skale.py==7.4dev5
+skale.py==7.5dev0
 
 ima-predeployed==2.1.0b0
 etherbase-predeployed==1.1.0b3
@@ -21,16 +21,18 @@ multisigwallet-predeployed==1.1.0a8
 context-predeployed==1.0.0.dev3
 
 statsd==4.0.1
-psutil==5.9.3
+psutil==7.1.0
 
 colorful==0.5.7
 celery==5.5.3
 
-filelock==3.0.12
+filelock==3.19.1
 
-pyOpenSSL==23.1.1
+pyOpenSSL==25.3.0
 python-dateutil==2.8.2
-python-telegram-bot==12.8
+python-telegram-bot==22.5
 sh==1.14.1
 
 APScheduler==3.11.0
+
+pyyaml==6.0.3
