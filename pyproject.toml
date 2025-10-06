@@ -31,10 +31,11 @@ dependencies = [
     "APScheduler==3.11.0",
     "pydantic-settings==2.11.0",
     "pyyaml==6.0.3",
+    "setuptools==80.9.0",                   # required by predeployed packages
 ]
 
 [project.optional-dependencies]
-dev = ["ruff==0.13.2", "setuptools==80.9.0"]
+dev = ["ruff==0.13.2"]
 test = [
     "pytest==8.4.2",
     "pytest-cov==2.9.0",

@@ -30,6 +30,7 @@ jobs:
 
       - name: Install python dependencies
         run: |
+          export PATH="$PATH:/home/ivan/.local/bin"
           source ../.venv/bin/activate
           uv sync --prerelease=allow --all-extras
 
