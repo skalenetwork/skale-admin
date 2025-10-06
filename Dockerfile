@@ -1,4 +1,4 @@
-FROM python:3.11-bookworm
+FROM python:3.13.7-slim-trixie
 
 RUN apt-get update && apt-get install -y wget git libxslt-dev kmod swig nftables python3-nftables
 
