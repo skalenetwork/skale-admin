@@ -32,3 +32,6 @@ pyOpenSSL==23.1.1
 python-dateutil==2.8.2
 python-telegram-bot==12.8
 sh==1.14.1
+
+# for predeployeds
+setuptools==80.9.0
