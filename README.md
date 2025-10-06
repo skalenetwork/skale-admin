@@ -14,7 +14,16 @@ This repo contains source code for 3 core SKALE Node containers:
 
 ### Dependencies
 
+Install `uv`:
+
 ```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Install all dependencies:
+
+```bash
+uv sync --prerelease=allow --all-extras
 ```
 
 ### Add linting and formatting git hooks
