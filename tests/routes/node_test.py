@@ -2,10 +2,10 @@ import datetime
 import glob
 import shutil
 import socket
-
-import freezegun
 from unittest import mock
 from unittest.mock import patch
+
+import freezegun
 import pytest
 from flask import Flask, appcontext_pushed, g
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME

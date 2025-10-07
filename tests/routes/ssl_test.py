@@ -4,8 +4,8 @@ import json
 import os
 import pathlib
 from contextlib import contextmanager
-
 from unittest import mock
+
 import pytest
 from flask import Flask, appcontext_pushed, g
 

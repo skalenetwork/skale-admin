@@ -3,8 +3,8 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, cast
-
 from unittest import mock
+
 import pytest
 from eth_typing import BlockNumber, ChecksumAddress, HexStr
 from skale.contracts.manager.schains import SchainStructure

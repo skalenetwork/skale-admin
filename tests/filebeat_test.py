@@ -1,5 +1,4 @@
 import os
-
 from unittest import mock
 
 from core.monitoring import filebeat_config_processed

@@ -1,4 +1,5 @@
 from unittest import mock
+
 import pytest
 from flask import Flask, appcontext_pushed, g
 

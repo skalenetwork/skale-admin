@@ -3,8 +3,8 @@ import os
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-
 from unittest import mock
+
 import pytest
 from skale.skale_manager import spawn_skale_manager_lib
 

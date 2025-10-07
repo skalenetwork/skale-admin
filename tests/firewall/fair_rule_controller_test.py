@@ -1,6 +1,6 @@
 import os
-
 from unittest import mock
+
 import pytest
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 

@@ -1,8 +1,8 @@
 import json
 import os
 from pathlib import Path
-
 from unittest import mock
+
 import pytest
 from config_controller_predeployed import (
     CONFIG_CONTROLLER_ADDRESS,

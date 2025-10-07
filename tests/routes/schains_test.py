@@ -2,8 +2,8 @@ import json
 import os
 import shutil
 from functools import partial
-
 from unittest import mock
+
 import pytest
 from Crypto.Hash import keccak
 from flask import Flask, appcontext_pushed, g

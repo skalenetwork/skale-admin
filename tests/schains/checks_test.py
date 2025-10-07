@@ -3,9 +3,9 @@ import os
 import time
 from collections import namedtuple
 from http import HTTPStatus
+from unittest import mock
 
 import docker
-from unittest import mock
 import pytest
 from skale.schain_config.generator import get_schain_nodes_with_schains
 

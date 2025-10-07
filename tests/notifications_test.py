@@ -1,7 +1,7 @@
 from datetime import datetime
+from unittest import mock
 
 import freezegun
-from unittest import mock
 import pytest
 from redis import BlockingConnectionPool, Redis
 

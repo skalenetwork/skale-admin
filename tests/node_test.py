@@ -1,7 +1,7 @@
 import os
 import time
-
 from unittest import mock
+
 import pytest
 from skale import SkaleManager
 from skale.utils.account_tools import generate_account
