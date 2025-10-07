@@ -20,16 +20,14 @@
 import logging
 import sys
 
-from skale.types.dkg import DkgId, Status
-
-from core.dkg.fair.broadcast_filter import FairFilter
-from core.dkg.client import BaseDKGClient
-from core.dkg.structures import DKGStep
-from core.dkg.utils import DkgVerificationError, SgxDkgPolynomGenerationError, to_verify
-
 from sgx.http import SgxUnreachableError
 from sgx.sgx_rpc_handler import DkgPolyStatus
+from skale.types.dkg import DkgId, Status
 
+from core.dkg.client import BaseDKGClient
+from core.dkg.fair.broadcast_filter import FairFilter
+from core.dkg.structures import DKGStep
+from core.dkg.utils import DkgVerificationError, SgxDkgPolynomGenerationError, to_verify
 from tools.configs import NODE_DATA_PATH
 from tools.sgx_utils import sgx_unreachable_retry
 

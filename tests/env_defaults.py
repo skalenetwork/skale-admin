@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 
 def get_json_field(filepath, field) -> str:

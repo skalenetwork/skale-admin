@@ -18,9 +18,9 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+
 from tools.configs import SCHAIN_CONFIG_DIR_SKALED
 from tools.exceptions import MissingEnvVariableError
-
 
 IMA_CONTRACTS = os.getenv('IMA_CONTRACTS')
 SCHAIN_IMA_CONTRACTS = 'predeployed'

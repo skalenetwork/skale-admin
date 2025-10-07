@@ -17,20 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import json
 import logging
+import os
 
 from dateutil import parser
+from flask import Blueprint, request
 from OpenSSL import crypto
 
-from flask import Blueprint, request
-
-from core.nginx import reload_nginx
 from core.chain.ssl import is_ssl_folder_empty
-from web.models.schain import set_schains_need_reload
-from web.helper import construct_ok_response, construct_err_response, get_api_url
+from core.nginx import reload_nginx
 from tools.configs import SSL_CERTIFICATES_FILEPATH
+from web.helper import construct_err_response, construct_ok_response, get_api_url
+from web.models.schain import set_schains_need_reload
 
 logger = logging.getLogger(__name__)
 

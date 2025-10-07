@@ -1,15 +1,14 @@
+from context_predeployed import CONTEXT_ADDRESS
+from etherbase_predeployed import ETHERBASE_ADDRESS
+from marionette_predeployed import MARIONETTE_ADDRESS
 from skale.dataclasses.schain_options import AllocationType
 
-from marionette_predeployed import MARIONETTE_ADDRESS
-from etherbase_predeployed import ETHERBASE_ADDRESS
-from context_predeployed import CONTEXT_ADDRESS
-
-from core.schains.types import SchainType
 from core.config.schain.generator import get_ima_contracts_addresses
 from core.config.schain.predeployed import (
-    generate_v1_predeployed_contracts,
     generate_predeployed_accounts,
+    generate_v1_predeployed_contracts,
 )
+from core.schains.types import SchainType
 from tools.configs.schains import ETHERBASE_ALLOC
 
 NUM_OF_PREDEPLOYED_CONTRACTS_GEN_0 = 22

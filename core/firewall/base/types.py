@@ -18,11 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from abc import ABC, abstractmethod
+from collections import namedtuple
+from dataclasses import dataclass
 from enum import IntEnum
 from functools import total_ordering
-from dataclasses import dataclass
 from typing import Iterable, Optional
-from collections import namedtuple
 
 from skale.dataclasses.skaled_ports import SkaledPorts  # noqa
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa

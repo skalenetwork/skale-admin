@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+
 from tools.configs import NODE_DATA_PATH
 
 TIMES = 1

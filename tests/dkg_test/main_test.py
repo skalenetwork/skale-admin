@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor as Executor
 from contextlib import contextmanager
 from enum import Enum
 
-import mock
+from unittest import mock
 import pytest
 from eth_utils.hexadecimal import remove_0x_prefix
 from skale import SkaleManager

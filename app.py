@@ -27,20 +27,18 @@ import werkzeug
 from flask import Flask, g
 
 from core.node_config import NodeConfig
-
 from tools.configs import FLASK_SECRET_KEY_FILE
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
 from tools.resources import get_database
-
-from web.routes.node import node_bp
-from web.routes.schains import schains_bp
-from web.routes.wallet import wallet_bp
-from web.routes.ssl import ssl_bp
+from web.helper import construct_err_response
 from web.routes.health import health_bp
 from web.routes.info import info_bp
-from web.helper import construct_err_response
+from web.routes.node import node_bp
+from web.routes.schains import schains_bp
+from web.routes.ssl import ssl_bp
+from web.routes.wallet import wallet_bp
 
 REQ_ID_SIZE = 10
 

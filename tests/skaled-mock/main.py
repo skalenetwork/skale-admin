@@ -1,8 +1,7 @@
 import json
 import logging
-from logging import StreamHandler
-
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from logging import StreamHandler
 
 logging.basicConfig(
     handlers=[

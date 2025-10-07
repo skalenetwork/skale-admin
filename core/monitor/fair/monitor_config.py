@@ -20,8 +20,8 @@
 
 import logging
 from abc import abstractmethod
-from apscheduler.schedulers.background import BackgroundScheduler
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from skale import FairManager
 
 from core.checks.fair import FairConfigChecks
@@ -31,7 +31,6 @@ from core.monitor.monitor_base import IMonitor
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.types.chain import FairChainName
-
 from tools.configs import PASSIVE_NODE
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client

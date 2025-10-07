@@ -6,11 +6,11 @@ import time
 import pytest
 
 from core.firewall import (
-    Action,
-    cleanup_firewall_for_schain,
-    NFTablesController,
     NFT_CHAIN_BASE_PATH,
+    Action,
+    NFTablesController,
     SChainRule,
+    cleanup_firewall_for_schain,
 )
 from tools.helper import run_cmd
 

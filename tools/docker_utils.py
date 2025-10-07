@@ -36,19 +36,18 @@ from docker.models.volumes import Volume
 
 from tools.configs import DOCKER_NODE_CONFIG_FILEPATH
 from tools.configs.containers import (
+    CONTAINER_LOGS_SEPARATOR,
     CONTAINER_NOT_FOUND,
     CREATED_STATUS,
     DEFAULT_DOCKER_HOST,
     DOCKER_DEFAULT_HEAD_LINES,
-    DOCKER_DEFAULT_TAIL_LINES,
     DOCKER_DEFAULT_STOP_TIMEOUT,
+    DOCKER_DEFAULT_TAIL_LINES,
     EXITED_STATUS,
     RUNNING_STATUS,
-    CONTAINER_LOGS_SEPARATOR,
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
 from tools.helper import read_json
-
 
 logger = logging.getLogger(__name__)
 

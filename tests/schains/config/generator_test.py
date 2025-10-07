@@ -2,37 +2,34 @@ import json
 import os
 from pathlib import Path
 
+from unittest import mock
 import pytest
-import mock
-from web3 import Web3
-
-from skale.contracts.manager.schains import SchainStructure
-from skale.types.rotation import Rotation
-from skale.dataclasses.schain_options import AllocationType
-from etherbase_predeployed import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
-from marionette_predeployed import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
-from filestorage_predeployed import FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTATION_ADDRESS
 from config_controller_predeployed import (
     CONFIG_CONTROLLER_ADDRESS,
     CONFIG_CONTROLLER_IMPLEMENTATION_ADDRESS,
 )
-from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
+from etherbase_predeployed import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
+from filestorage_predeployed import FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTATION_ADDRESS
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
+from marionette_predeployed import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
+from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
+from skale.contracts.manager.schains import SchainStructure
+from skale.dataclasses.schain_options import AllocationType
+from skale.types.rotation import Rotation
+from web3 import Web3
 
 from core.config.base import FairConfig
 from core.config.schain.generator import (
-    generate_schain_config_with_skale,
     generate_schain_config,
-    get_schain_originator,
+    generate_schain_config_with_skale,
     get_ima_contracts_addresses,
+    get_schain_originator,
 )
 from core.config.schain.helper import get_schain_id
 from core.config.schain.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
+from tests.utils import TEST_MAINNET_OWNER_ADDRESS, TEST_ORIGINATOR_ADDRESS, get_schain_struct
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.node_options import NodeOptions
-
-from tests.utils import get_schain_struct, TEST_ORIGINATOR_ADDRESS, TEST_MAINNET_OWNER_ADDRESS
-
 
 NODE_ID = 1
 ECDSA_KEY_NAME = 'TEST:KEY:NAME'

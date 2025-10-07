@@ -1,16 +1,16 @@
-from concurrent.futures import as_completed, ProcessPoolExecutor as pexec
+from concurrent.futures import ProcessPoolExecutor as pexec
+from concurrent.futures import as_completed
 
 import pytest
 
 from web.models.schain import (
+    SChainRecord,
     get_schains_names,
     get_schains_statuses,
     mark_schain_deleted,
     set_schains_first_run,
-    SChainRecord,
     upsert_schain_record,
 )
-
 
 THREADS = 8
 RECORDS_NUMBER = THREADS

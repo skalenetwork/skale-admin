@@ -32,11 +32,11 @@ from tools.configs.logs import (
     ADMIN_LOG_PATH,
     API_LOG_FORMAT,
     API_LOG_PATH,
-    FAIR_LOG_FORMAT,
-    SYNC_LOG_PATH,
     DEBUG_LOG_PATH,
-    LOG_FILE_SIZE_BYTES,
+    FAIR_LOG_FORMAT,
     LOG_BACKUP_COUNT,
+    LOG_FILE_SIZE_BYTES,
+    SYNC_LOG_PATH,
 )
 from tools.configs.web3 import ENDPOINT
 

@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+
 from tools.configs import CONFIG_FOLDER, NODE_DATA_PATH, NODE_DATA_PATH_HOST, SKALE_LIB_PATH
 
 SCHAINS_DIR_NAME = 'schains'

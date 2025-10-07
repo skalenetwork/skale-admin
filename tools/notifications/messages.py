@@ -29,7 +29,6 @@ from redis import BlockingConnectionPool, Redis
 from tools.configs.tg import CHECKS_STATE_EXPIRATION, TG_API_KEY, TG_CHAT_ID
 from tools.notifications.tasks import send_message_to_telegram
 
-
 logger = logging.getLogger(__name__)
 redis_client = Redis(connection_pool=BlockingConnectionPool())
 

@@ -21,12 +21,12 @@ import logging
 import os
 
 from skale.types.schain import Schain
+
 from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
 from core.types.chain import ChainName, FairChainName
+from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 from tools.configs.schains import CHAIN_STATE_PATH, FILESTORAGE_STATIC_PATH
-from tools.configs.containers import SHARED_SPACE_VOLUME_NAME, SHARED_SPACE_CONTAINER_PATH
-
 from tools.docker_utils import DockerUtils
 from tools.helper import is_fair
 

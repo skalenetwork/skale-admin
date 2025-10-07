@@ -3,8 +3,8 @@ import threading
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from core.firewall import IpRange
 from core.config.schain.directory import schain_config_dir
+from core.firewall import IpRange
 from tools.helper import read_json, write_json
 
 

@@ -18,18 +18,15 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from flask import Blueprint, g, request
 
+from flask import Blueprint, g, request
 from sgx import SgxClient
 
-from core.node import get_check_report
-from core.node import get_meta_info, get_node_hardware_info, get_btrfs_info
-
-from tools.helper import get_endpoint_call_speed, is_fair
+from core.node import get_btrfs_info, get_check_report, get_meta_info, get_node_hardware_info
 from tools.configs.web3 import BOOT_ENDPOINT, ENDPOINT, UNTRUSTED_PROVIDERS
+from tools.helper import get_endpoint_call_speed, is_fair
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
-
-from web.helper import construct_ok_response, get_api_url, g_web3
+from web.helper import construct_ok_response, g_web3, get_api_url
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'info'

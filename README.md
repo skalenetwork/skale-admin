@@ -26,13 +26,37 @@ Install all dependencies:
 uv sync --prerelease=allow --all-extras
 ```
 
-### Add linting and formatting git hooks
+### Linting and type checking
+
+#### Check linting/formatting issues
+
+```bash
+uv run ruff check
+```
+
+#### Check type issues
+
+```bash
+uv run mypy .
+```
+
+#### Auto-fix ruff issues (linting + formatting)
+
+```bash
+uv run ruff check --fix
+```
+
+# Format code with ruff
+
+```bash
+uv run ruff format
+```
 
 In file `.git/hooks/pre-commit` add:
 
 ```shell
 #!/bin/sh
-ruff check
+uv run ruff check
 ```
 
 ### Run tests locally

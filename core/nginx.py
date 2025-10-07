@@ -1,7 +1,7 @@
 import logging
 
 from core.chain.ssl import is_ssl_folder_empty
-from tools.configs.nginx import NGINX_TEMPLATE_FILEPATH, NGINX_CONFIG_FILEPATH, NGINX_CONTAINER_NAME
+from tools.configs.nginx import NGINX_CONFIG_FILEPATH, NGINX_CONTAINER_NAME, NGINX_TEMPLATE_FILEPATH
 from tools.docker_utils import DockerUtils
 from tools.helper import process_template
 

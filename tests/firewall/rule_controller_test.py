@@ -1,8 +1,7 @@
 import pytest
 
-from core.firewall import Action, IpRange, SChainRule, SkaledPorts, LOOPBACK_INTERFACE
+from core.firewall import LOOPBACK_INTERFACE, Action, IpRange, SChainRule, SkaledPorts
 from core.firewall.schain.rule_controller import NotInitializedError
-
 from tests.utils import SChainTestRuleController
 
 

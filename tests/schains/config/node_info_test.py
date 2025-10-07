@@ -1,10 +1,10 @@
-import mock
+from unittest import mock
 
+from core.config.schain.node_info import generate_current_node_info, generate_wallets_config
 from core.config.schain.static_params import get_static_node_info
-from core.config.schain.node_info import generate_wallets_config, generate_current_node_info
 from core.schains.types import SchainType
-from tools.configs import SGX_SSL_KEY_FILEPATH, SGX_SSL_CERT_FILEPATH
 from tests.utils import get_schain_struct
+from tools.configs import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
 
 COMMON_PUBLIC_KEY = [1, 2, 3, 4]
 

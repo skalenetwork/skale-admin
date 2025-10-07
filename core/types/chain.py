@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import NewType, Union
+
 from skale.types.schain import SchainName
 
 FairChainName = NewType('FairChainName', str)

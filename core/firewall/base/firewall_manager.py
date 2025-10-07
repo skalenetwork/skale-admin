@@ -24,7 +24,6 @@ from typing import Iterable, Optional
 from .nftables import NFTablesController
 from .types import IFirewallManager, SChainRule
 
-
 logger = logging.getLogger(__name__)
 
 

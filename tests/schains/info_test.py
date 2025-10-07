@@ -1,9 +1,8 @@
 import freezegun
+from web3 import Web3
 
 from core.schains.info import get_schain_info_by_name
 from tests.utils import CURRENT_DATETIME, upsert_schain_record_with_config
-
-from web3 import Web3
 
 
 @freezegun.freeze_time(CURRENT_DATETIME)

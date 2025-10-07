@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import freezegun
-import mock
+from unittest import mock
 import pytest
 from redis import BlockingConnectionPool, Redis
 
@@ -9,8 +9,8 @@ from tools.notifications.messages import (
     cleanup_notification_state,
     compose_balance_message,
     compose_checks_message,
-    notify_checks,
     notify_balance,
+    notify_checks,
     notify_repair_mode,
     send_message,
 )

@@ -1,37 +1,30 @@
 import json
 import os
 import time
+from collections import namedtuple
 from http import HTTPStatus
 
-from collections import namedtuple
-
-import mock
 import docker
+from unittest import mock
 import pytest
-
 from skale.schain_config.generator import get_schain_nodes_with_schains
 
-
-from core.checks.schain import SChainChecks, CheckRes
-from core.config.schain.file_manager import UpstreamConfigFilename
-from core.config.schain.directory import get_schain_check_filepath, schain_config_dir
-from core.config.schain.schain_node import generate_schain_nodes
 from core.chain.runner import get_container_info, get_image_name, run_ima_container
 from core.chain.skaled_exit_codes import SkaledExitCodes
-
-from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
-from tools.helper import read_json
-
-from web.models.schain import upsert_schain_record, SChainRecord
-
+from core.checks.schain import CheckRes, SChainChecks
+from core.config.schain.directory import get_schain_check_filepath, schain_config_dir
+from core.config.schain.file_manager import UpstreamConfigFilename
+from core.config.schain.schain_node import generate_schain_nodes
 from tests.utils import (
     CONFIG_STREAM,
     generate_schain_config,
     get_schain_struct,
-    response_mock,
     request_mock,
+    response_mock,
 )
-
+from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
+from tools.helper import read_json
+from web.models.schain import SChainRecord, upsert_schain_record
 
 NOT_EXISTS_SCHAIN_NAME = 'qwerty123'
 SKALED_CONTAINER_NAME = 'sk_skaled_test'

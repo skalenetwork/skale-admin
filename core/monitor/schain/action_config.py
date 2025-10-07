@@ -18,18 +18,18 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from typing import Optional, List
+from typing import List, Optional
 
-from skale import SkaleManager, SkaleIma
+from skale import SkaleIma, SkaleManager
 from skale.types.rotation import Rotation
 from skale.types.schain import Schain
 
 from core.checks.base import CheckRes
-from core.config.base import update_chain_config_version
-from core.monitor.action_base import BaseActionManager
-from core.node_config import NodeConfig
-from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
 from core.checks.schain import ConfigChecks
+from core.config.base import update_chain_config_version
+from core.config.schain.directory import init_schain_config_dir
+from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.main import create_new_upstream_config
 from core.dkg.schain import (
     DkgError,
     get_dkg_client,
@@ -37,19 +37,15 @@ from core.dkg.schain import (
     run_dkg,
     save_dkg_results,
 )
-
-from core.config.schain.directory import init_schain_config_dir
-from core.config.schain.main import create_new_upstream_config
-from core.config.schain.file_manager import ConfigFileManager
-
+from core.monitor.action_base import BaseActionManager
+from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
+from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig, ExternalState
-
 from tools.configs import PASSIVE_NODE
 from tools.helper import no_hyphens
 from tools.node_options import NodeOptions
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord, upsert_schain_record
-
 
 logger = logging.getLogger(__name__)
 

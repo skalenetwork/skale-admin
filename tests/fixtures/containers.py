@@ -1,12 +1,13 @@
 import json
 import os
 import pathlib
-import pytest
+
 import docker
+import pytest
 
 from core.chain.status import SkaledStatus, init_skaled_status
 from core.config.schain.directory import skaled_status_filepath
-from core.schains.cleaner import remove_skaled_container, remove_schain_volume
+from core.schains.cleaner import remove_schain_volume, remove_skaled_container
 from tests.conftest import rm_schain_dir
 from tests.utils import generate_skaled_status_file
 from tools.configs.containers import CONTAINERS_FILEPATH

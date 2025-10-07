@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 
 from core.schains.process import ProcessReport
-
 from tools.configs.schains import SCHAINS_DIR_PATH
 
 
