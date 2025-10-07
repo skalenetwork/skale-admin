@@ -18,19 +18,18 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from apscheduler.schedulers.background import BackgroundScheduler
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from skale import FairManager
 from skale.transactions.exceptions import TransactionError
+
+from core.node_config import NodeConfig
+from core.utils.fair import init_local_fair
 from tools.configs.fair import (
     HEALTHCHECK_JOB_NAME,
     SAFE_HEARTBEAT_BUFFER,
 )
 from tools.exceptions import LocalEndpointUnreachableError
-
-from core.node_config import NodeConfig
-from core.utils.fair import init_local_fair
-
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,8 @@ def healthcheck_job(
 ) -> None:
     logger.info('Running healthcheck job')
     try:
-        res = local_fair.status.alive()
+        alive_gas_limit = local_fair.status.calc_alive_gas_limit()
+        res = local_fair.status.alive(gas_limit=alive_gas_limit)
         logger.info(f'Healthcheck tx result: {res}')
     except TransactionError as e:
         logger.exception(f'Healthcheck failed: {e}')
