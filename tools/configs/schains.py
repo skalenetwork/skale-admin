@@ -18,12 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from tools.configs import (
-    CONFIG_FOLDER,
-    NODE_DATA_PATH,
-    NODE_DATA_PATH_HOST,
-    SKALE_LIB_PATH
-)
+
+from tools.configs import CONFIG_FOLDER, NODE_DATA_PATH, NODE_DATA_PATH_HOST, SKALE_LIB_PATH
 
 SCHAINS_DIR_NAME = 'schains'
 SCHAINS_DIR_PATH = os.path.join(NODE_DATA_PATH, SCHAINS_DIR_NAME)
@@ -53,7 +49,6 @@ SCHAIN_STATIC_PATH = os.path.join(SKALE_LIB_PATH, 'filestorage')
 DEFAULT_RPC_CHECK_TIMEOUT = 30
 RPC_CHECK_TIMEOUT_STEP = 10
 
-MAX_CONSENSUS_STORAGE_INF_VALUE = 1000000000000000000
 MAX_HISTORIC_STATE_DB_SIZE = 2530799910
 
 DKG_TIMEOUT_COEFFICIENT = 2.2

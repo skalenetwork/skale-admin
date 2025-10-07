@@ -606,7 +606,6 @@ def test_generate_sync_node_config_archive_catchup(
 
     assert not config['skaleConfig']['nodeInfo'].get('syncFromCatchup')
     assert not config['skaleConfig']['nodeInfo'].get('archiveMode')
-    assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') < 1000000000000000000
 
     schain_config = generate_schain_config(
         schain=get_schain_struct_no_originator(),
@@ -629,7 +628,6 @@ def test_generate_sync_node_config_archive_catchup(
 
     assert config['skaleConfig']['nodeInfo'].get('syncFromCatchup')
     assert config['skaleConfig']['nodeInfo'].get('archiveMode') is False
-    assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') < 1000000000000000000
 
     schain_config = generate_schain_config(
         schain=get_schain_struct_no_originator(),
@@ -652,7 +650,6 @@ def test_generate_sync_node_config_archive_catchup(
 
     assert config['skaleConfig']['nodeInfo'].get('syncFromCatchup') is None
     assert config['skaleConfig']['nodeInfo'].get('archiveMode') is None
-    assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') < 1000000000000000000
 
     schain_config = generate_schain_config(
         schain=get_schain_struct_no_originator(),
@@ -675,7 +672,6 @@ def test_generate_sync_node_config_archive_catchup(
 
     assert config['skaleConfig']['nodeInfo'].get('syncFromCatchup')
     assert config['skaleConfig']['nodeInfo'].get('archiveMode')
-    assert config['skaleConfig']['sChain'].get('maxConsensusStorageBytes') == 1000000000000000000
 
 
 def test_generate_sync_node_config_static_accounts(
