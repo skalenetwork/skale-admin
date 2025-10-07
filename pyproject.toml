@@ -69,3 +69,6 @@ ignore_missing_imports = true
 
 [tool.coverage.run]
 omit = ["tests/*", "helper-scripts/*"]
+
+[tool.setuptools.packages.find]
+exclude = ["core*", "web*", "healthchecks*", "tools*"]
