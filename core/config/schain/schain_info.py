@@ -21,8 +21,7 @@ from dataclasses import dataclass
 
 from core.schains.limits import get_allocation_type_name, get_schain_limit, get_schain_type
 from core.schains.types import MetricType
-
-from tools.configs.schains import MAX_CONSENSUS_STORAGE_INF_VALUE, MAX_HISTORIC_STATE_DB_SIZE
+from tools.configs.schains import MAX_HISTORIC_STATE_DB_SIZE
 
 
 @dataclass
@@ -84,7 +83,6 @@ def generate_schain_info(
     allocation_type_name = get_allocation_type_name(schain.options.allocation_type)
     volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)[allocation_type_name]
     if passive_node and archive:
-        volume_limits['max_consensus_storage_bytes'] = MAX_CONSENSUS_STORAGE_INF_VALUE
         volume_limits['max_historic_state_db_size'] = MAX_HISTORIC_STATE_DB_SIZE
     leveldb_limits = get_schain_limit(schain_type, MetricType.leveldb_limits)[allocation_type_name]
     contract_storage_limit = leveldb_limits['contract_storage']
