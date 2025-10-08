@@ -1,4 +1,4 @@
-FROM python:3.13.7-slim-trixie AS builder
+FROM python:3.13.8-slim-trixie AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
@@ -8,7 +8,7 @@ COPY pyproject.toml ./
 
 RUN uv pip install --prerelease=allow --system --no-cache .
 
-FROM python:3.13.7-slim-trixie
+FROM python:3.13.8-slim-trixie
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends wget kmod nftables python3-nftables && \
