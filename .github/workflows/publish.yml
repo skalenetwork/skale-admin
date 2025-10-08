@@ -29,7 +29,7 @@ jobs:
       - name: Build and publish container
         run: |
           export BRANCH=${GITHUB_REF##*/}
-          export VERSION=$(cat VERSION)
+          export VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
           echo "Branch: $BRANCH"
           echo "Base version: $VERSION"
           export VERSION=$(bash ./helper-scripts/calculate_version.sh)

@@ -1,7 +1,7 @@
-import mock
+from unittest import mock
+
 from core.node_config import NodeConfig
 from core.updates import update_node_config_file
-
 
 OLD_NODE_STRUCT = {'name': 'test', 'ip': b'A\x80\x17\xe4'}
 

@@ -17,13 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import json
 import logging
+import os
 import shutil
 
 from tools.configs import NODE_DATA_PATH
-
 
 logger = logging.getLogger(__name__)
 

@@ -10,9 +10,9 @@ import pytest
 
 from core.firewall import IpRange
 from core.firewall.utils import get_sync_agent_ranges
-from core.schains.process import ProcessReport
 from core.monitor.schain.main import ConfigTask, SkaledTask
-from core.monitor.tasks import execute_tasks, ITask
+from core.monitor.tasks import ITask, execute_tasks
+from core.schains.process import ProcessReport
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import is_node_part_of_chain
 from web.models.schain import upsert_schain_record

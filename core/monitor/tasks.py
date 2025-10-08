@@ -27,7 +27,6 @@ from core.node_config import NodeConfig
 from core.schains.process import ProcessReport
 from core.types.chain import ChainName
 
-
 logger = logging.getLogger(__name__)
 
 

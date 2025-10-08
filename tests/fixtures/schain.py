@@ -2,8 +2,8 @@ import os
 import pathlib
 import shutil
 from typing import cast
-import pytest
 
+import pytest
 from skale.types.schain import SchainName
 
 from core.checks.schain import SChainChecks

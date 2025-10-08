@@ -24,11 +24,11 @@ from datetime import datetime
 from typing import cast
 
 from peewee import (
+    BooleanField,
     CharField,
     DateTimeField,
-    IntegrityError,
     IntegerField,
-    BooleanField,
+    IntegrityError,
     OperationalError,
 )
 

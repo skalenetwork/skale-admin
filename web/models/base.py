@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from peewee import Model
+
 from tools.resources import get_database
 
 

@@ -3,15 +3,14 @@ from copy import deepcopy
 
 import pytest
 
-from core.node import get_current_nodes
 from core.checks.schain import ConfigChecks
 from core.config.schain.directory import schain_config_dir
 from core.monitor.schain.action_config import ConfigActionManager
+from core.node import get_current_nodes
 from core.schains.external_config import ExternalConfig
+from tests.utils import CONFIG_STREAM
 from tools.helper import read_json
 from web.models.schain import SChainRecord
-
-from tests.utils import CONFIG_STREAM
 
 
 @pytest.fixture

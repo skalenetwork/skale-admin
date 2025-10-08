@@ -21,18 +21,17 @@ import itertools
 import logging
 from abc import abstractmethod
 from functools import wraps
-from typing import Any, Callable, cast, Dict, Iterable, List, Optional, TypeVar
+from typing import Any, Callable, Dict, Iterable, List, Optional, TypeVar, cast
 
-from .firewall_manager import NFTFairChainFirewallManager
 from ..base.types import (
+    LOOPBACK_INTERFACE,
+    PORTS_PER_SCHAIN,
     Action,
     IRuleController,
-    PORTS_PER_SCHAIN,
     SChainRule,
-    LOOPBACK_INTERFACE,
     SkaledPorts,
 )
-
+from .firewall_manager import NFTFairChainFirewallManager
 
 logger = logging.getLogger(__name__)
 

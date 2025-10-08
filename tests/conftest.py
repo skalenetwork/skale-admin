@@ -5,11 +5,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import tests.env_defaults  # noqa: F401 # set default env variables for tests
-
 import pytest
 import yaml
 
+import tests.env_defaults  # noqa: F401 # set default env variables for tests
 from core.chain.status import (
     init_node_cli_status,
     node_cli_status_filepath,

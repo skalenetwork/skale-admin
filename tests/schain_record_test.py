@@ -1,5 +1,5 @@
+from core.chain.ssl import ssl_reload_needed, update_ssl_change_date
 from web.models.schain import SChainRecord
-from core.chain.ssl import update_ssl_change_date, ssl_reload_needed
 
 
 def test_ssl_change_date_matches_no_certs(schain_db, ssl_folder):

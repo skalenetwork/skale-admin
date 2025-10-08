@@ -20,33 +20,30 @@
 import logging
 import time
 
-from skale import SkaleManager, SkaleIma
 from filelock import FileLock
+from skale import SkaleIma, SkaleManager
 
+from core.monitoring import update_monitoring_services
 from core.node_config import NodeConfig
-from core.schains.process_manager import run_process_manager
+from core.redis.migrations import run_redis_migrations
 from core.schains.cleaner import run_cleaner
 from core.schains.process import cleanup_schains_pids
+from core.schains.process_manager import run_process_manager
 from core.updates import update_node_config_file
-from core.monitoring import update_monitoring_services
-from core.redis.migrations import run_redis_migrations
-
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
-from tools.configs.web3 import STATE_FILEPATH, endpoint, manager_contracts
 from tools.configs.ima import ima_contracts
+from tools.configs.web3 import STATE_FILEPATH, endpoint, manager_contracts
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 from tools.sgx_utils import generate_sgx_key
 from tools.wallet_utils import init_wallet
-
+from web.migrations import migrate
 from web.models.schain import (
     create_tables,
     set_schains_backup_run,
     set_schains_first_run,
     set_schains_sync_config_run,
 )
-from web.migrations import migrate
-
 
 init_admin_logger()
 logger = logging.getLogger(__name__)

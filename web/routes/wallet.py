@@ -23,8 +23,8 @@ from flask import Blueprint, g, request
 from skale.utils.account_tools import send_eth as send_eth_
 from skale.utils.web3_utils import to_checksum_address
 
-from web.helper import construct_ok_response, construct_err_response, get_api_url, g_skale
 from tools.wallet_utils import wallet_with_balance
+from web.helper import construct_err_response, construct_ok_response, g_skale, get_api_url
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'wallet'

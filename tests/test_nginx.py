@@ -1,5 +1,5 @@
-import shutil
 import os
+import shutil
 from pathlib import Path
 
 import pytest
@@ -7,7 +7,6 @@ import pytest
 from core.nginx import reload_nginx
 from tools.configs import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
 from tools.configs.nginx import NGINX_CONTAINER_NAME
-
 
 TEMPLATE = """
 limit_req_zone $binary_remote_addr zone=one:10m rate=7r/s;

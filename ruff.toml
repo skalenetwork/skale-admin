@@ -1,8 +1,0 @@
-line-length = 100
-
-[format]
-quote-style = "single"
-
-[lint]
-# Add the `line-too-long` rule to the enforced rule set.
-extend-select = ["E501"]

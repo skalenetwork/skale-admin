@@ -3,16 +3,16 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, cast
+from unittest import mock
 
-import mock
 import pytest
 from eth_typing import BlockNumber, ChecksumAddress, HexStr
 from skale.contracts.manager.schains import SchainStructure
+from skale.types.committee import Committee, Timestamp
+from skale.types.dkg import DkgId, Fp2Point, G2Point
 from skale.types.node import FairNode, Node, NodeId, NodeStatus, NodeWithSchains, Port
 from skale.types.rotation import NodesGroup, NodesSwap, Rotation, RotationNodeData
 from skale.types.validator import ValidatorId
-from skale.types.committee import Timestamp, Committee
-from skale.types.dkg import G2Point, DkgId, Fp2Point
 
 from core.config.base import FairConfig
 from core.config.fair.generator import generate_fair_config, generate_fair_config_adapter

@@ -23,9 +23,9 @@ import time
 
 from sgx import SgxClient
 from sgx.http import SgxUnreachableError
+
 from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
-
 
 logger = logging.getLogger(__name__)
 

@@ -20,6 +20,8 @@
 import logging
 import sys
 
+from sgx.http import SgxUnreachableError
+from sgx.sgx_rpc_handler import DkgPolyStatus
 from skale.contracts.manager.dkg import G2Point
 from skale.transactions.result import TransactionFailedError
 
@@ -28,17 +30,13 @@ from core.dkg.schain.broadcast_filter import SchainFilter
 from core.dkg.schain.structures import ComplaintReason
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
-    convert_g2_points_to_array,
-    convert_str_to_key_share,
     DkgTransactionError,
     DkgVerificationError,
     SgxDkgPolynomGenerationError,
+    convert_g2_points_to_array,
+    convert_str_to_key_share,
     to_verify,
 )
-
-from sgx.http import SgxUnreachableError
-from sgx.sgx_rpc_handler import DkgPolyStatus
-
 from tools.configs import NODE_DATA_PATH
 from tools.sgx_utils import sgx_unreachable_retry
 
@@ -282,8 +280,7 @@ class SchainDKGClient(BaseDKGClient):
 
         if not is_alright_possible or not self.is_channel_opened():
             logger.info(
-                f'sChain: {self.chain_name}. '
-                f'{self.node_id_dkg} node could not sent an alright note'
+                f'sChain: {self.chain_name}. {self.node_id_dkg} node could not sent an alright note'
             )
             return False
         return True

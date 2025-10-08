@@ -23,8 +23,8 @@ import os
 import time
 from http import HTTPStatus
 
-from werkzeug import exceptions as wz_exceptions
 from flask import Flask, g
+from werkzeug import exceptions as wz_exceptions
 
 from core.node_config import NodeConfig
 from tools.configs import FLASK_SECRET_KEY_FILE, PASSIVE_NODE
@@ -32,12 +32,12 @@ from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
 from web.helper import construct_err_response
-from web.routes.info import info_bp
+from web.routes.fair_chain import fair_chain_bp
 from web.routes.fair_node import fair_node_bp
 from web.routes.fair_node_passive import fair_node_passive_bp
-from web.routes.fair_chain import fair_chain_bp
-from web.routes.fair_wallet import wallet_bp
 from web.routes.fair_staking import fair_staking_bp
+from web.routes.fair_wallet import wallet_bp
+from web.routes.info import info_bp
 from web.routes.ssl import ssl_bp
 
 REQ_ID_SIZE = 10

@@ -4,18 +4,14 @@ import os
 import pytest
 from skale.utils.helper import ip_to_bytes
 
-from core.node import get_current_nodes
-
 from core.checks.schain import ConfigChecks
 from core.config.schain.directory import schain_config_dir
-
 from core.monitor.schain.action_config import ConfigActionManager
 from core.monitor.schain.monitor_config import RegularConfigMonitor, SyncConfigMonitor
+from core.node import get_current_nodes
 from core.schains.external_config import ExternalConfig
-
-from web.models.schain import SChainRecord
-
 from tests.utils import CONFIG_STREAM, generate_random_ip
+from web.models.schain import SChainRecord
 
 
 @pytest.fixture

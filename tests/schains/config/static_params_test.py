@@ -1,14 +1,13 @@
 from core.config.schain.helper import get_static_params
-from core.schains.types import SchainType
 from core.config.schain.static_params import (
     get_automatic_repair_option,
     get_schain_static_param,
+    get_static_node_info,
     get_static_schain_cmd,
     get_static_schain_info,
-    get_static_node_info,
 )
+from core.schains.types import SchainType
 from tools.configs import ENV_TYPE
-
 
 TEST_SCHAIN_NAME = 'test-schain'
 DEFAULT_TS_NAME = 'revertableFSPatchTimestamp'

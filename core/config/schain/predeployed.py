@@ -18,44 +18,41 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from importlib.metadata import version
 
-from eth_typing import ChecksumAddress
-
-from skale.dataclasses.schain_options import AllocationType
-from skale.wallets.web3_wallet import public_key_to_address
-from etherbase_predeployed import (
-    UpgradeableEtherbaseUpgradeableGenerator,
-    ETHERBASE_ADDRESS,
-    ETHERBASE_IMPLEMENTATION_ADDRESS,
-)
-from marionette_predeployed import (
-    UpgradeableMarionetteGenerator,
-    MARIONETTE_ADDRESS,
-    MARIONETTE_IMPLEMENTATION_ADDRESS,
-)
-from filestorage_predeployed import (
-    UpgradeableFileStorageGenerator,
-    FILESTORAGE_ADDRESS,
-    FILESTORAGE_IMPLEMENTATION_ADDRESS,
-)
 from config_controller_predeployed import (
-    UpgradeableConfigControllerGenerator,
     CONFIG_CONTROLLER_ADDRESS,
     CONFIG_CONTROLLER_IMPLEMENTATION_ADDRESS,
+    UpgradeableConfigControllerGenerator,
 )
-from multisigwallet_predeployed import MultiSigWalletGenerator, MULTISIGWALLET_ADDRESS
-from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminGenerator
+from context_predeployed import CONTEXT_ADDRESS, ContextGenerator
+from eth_typing import ChecksumAddress
+from etherbase_predeployed import (
+    ETHERBASE_ADDRESS,
+    ETHERBASE_IMPLEMENTATION_ADDRESS,
+    UpgradeableEtherbaseUpgradeableGenerator,
+)
+from filestorage_predeployed import (
+    FILESTORAGE_ADDRESS,
+    FILESTORAGE_IMPLEMENTATION_ADDRESS,
+    UpgradeableFileStorageGenerator,
+)
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS, generate_contracts
-from context_predeployed import ContextGenerator, CONTEXT_ADDRESS
+from marionette_predeployed import (
+    MARIONETTE_ADDRESS,
+    MARIONETTE_IMPLEMENTATION_ADDRESS,
+    UpgradeableMarionetteGenerator,
+)
+from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS, MultiSigWalletGenerator
+from predeployed_generator.openzeppelin.proxy_admin_generator import ProxyAdminGenerator
+from skale.dataclasses.schain_options import AllocationType
+from skale.wallets.web3_wallet import public_key_to_address
 
 from core.config.schain.accounts import add_to_accounts, generate_account
 from core.config.schain.generation import Gen
-
-from core.schains.types import SchainType
 from core.schains.limits import get_fs_allocated_storage
-
-from tools.configs.schains import SCHAIN_OWNER_ALLOC, NODE_OWNER_ALLOC, ETHERBASE_ALLOC
-from importlib.metadata import version
+from core.schains.types import SchainType
+from tools.configs.schains import ETHERBASE_ALLOC, NODE_OWNER_ALLOC, SCHAIN_OWNER_ALLOC
 
 logger = logging.getLogger(__name__)
 

@@ -1,29 +1,28 @@
 import os
 import time
+from unittest import mock
 
-import mock
 import pytest
-
 from skale import SkaleManager
 from skale.utils.account_tools import generate_account
-from skale.utils.contracts_provision.main import generate_random_node_data
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
+from skale.utils.contracts_provision.main import (
+    cleanup_nodes,
+    generate_random_node_data,
+    link_nodes_to_validator,
+)
 from skale.utils.helper import ip_from_bytes
 from skale.wallets import Web3Wallet
 
 from core.node import (
-    get_block_device_size,
-    get_node_hardware_info,
     Node,
     NodeExitStatus,
     NodeStatus,
+    get_block_device_size,
+    get_node_hardware_info,
 )
 from core.node_config import NodeConfig
 from tools.configs import NODE_DATA_PATH
-from skale.utils.contracts_provision.main import (
-    cleanup_nodes,
-    link_nodes_to_validator,
-)
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 

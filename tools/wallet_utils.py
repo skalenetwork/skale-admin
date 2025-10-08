@@ -19,7 +19,6 @@
 
 import logging
 
-
 from redis import Redis
 from skale.utils.web3_utils import init_web3
 from skale.wallets import BaseWallet, RedisWalletAdapter, SgxWallet

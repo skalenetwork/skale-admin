@@ -1,19 +1,14 @@
-import mock
+from unittest import mock
+
 import pytest
-
-
 from flask import Flask, appcontext_pushed, g
 
-from core.node_config import NodeConfig
 from core.checks.schain import SChainChecks
-
-
+from core.node_config import NodeConfig
+from tests.utils import get_bp_data, get_schain_struct
+from web.helper import get_api_url
 from web.models.schain import SChainRecord
 from web.routes.health import health_bp
-from web.helper import get_api_url
-
-from tests.utils import get_bp_data, get_schain_struct
-
 
 TEST_SGX_KEYNAME = 'test_keyname'
 

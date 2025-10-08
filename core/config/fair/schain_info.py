@@ -19,7 +19,9 @@
 
 from dataclasses import dataclass
 from typing import Dict
+
 from skale.types.rotation import NodesGroup
+
 from core.config.fair.committee import CommitteeInfo
 from core.config.schain.static_params import get_fair_chain_name
 from tools.configs.schains import MAX_HISTORIC_STATE_DB_SIZE

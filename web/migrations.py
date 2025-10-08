@@ -20,12 +20,12 @@
 import logging
 from datetime import datetime
 
-from playhouse.migrate import SqliteMigrator, migrate as playhouse_migrate
-from peewee import DateTimeField, IntegerField, BooleanField, CharField
+from peewee import BooleanField, CharField, DateTimeField, IntegerField
+from playhouse.migrate import SqliteMigrator
+from playhouse.migrate import migrate as playhouse_migrate
 
-from web.models.schain import DEFAULT_CONFIG_VERSION
 from tools.resources import get_database
-
+from web.models.schain import DEFAULT_CONFIG_VERSION
 
 logger = logging.getLogger(__name__)
 

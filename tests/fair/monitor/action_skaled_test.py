@@ -1,12 +1,12 @@
 from datetime import datetime
-import mock
+from unittest import mock
+
 import pytest
 from apscheduler.schedulers.background import BackgroundScheduler
 
+from core.checks.fair import SkaledChecks
 from core.config.schain.static_params import get_fair_chain_name
 from core.monitor.fair.action_skaled import FairSkaledActionManager
-from core.checks.fair import SkaledChecks
-
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from tools.configs import PASSIVE_NODE

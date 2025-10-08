@@ -17,28 +17,26 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from abc import ABC, abstractmethod
 import logging
 import os
+from abc import ABC, abstractmethod
 
 from eth_utils.hexadecimal import remove_0x_prefix
+from sgx import SgxClient
+from sgx.sgx_rpc_handler import SgxServerError
 
 from core.dkg.broadcast_filter import BaseFilter
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
-    convert_hex_to_g2_array,
     convert_g2_array_to_hex,
     convert_g2_points_to_array,
+    convert_hex_to_g2_array,
     convert_key_share_to_str,
     convert_str_to_key_share,
-    generate_chain_poly_name,
     generate_chain_bls_key_name,
+    generate_chain_poly_name,
     to_verify,
 )
-
-from sgx import SgxClient
-from sgx.sgx_rpc_handler import SgxServerError
-
 from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client

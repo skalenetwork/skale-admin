@@ -1,34 +1,30 @@
 import json
 import os
 import shutil
-from pathlib import Path
-
-import mock
-import pytest
-
 from dataclasses import dataclass
+from pathlib import Path
+from unittest import mock
 
+import pytest
 from skale.skale_manager import spawn_skale_manager_lib
 
+from core.chain.runner import get_container_name
+from core.config.schain.directory import init_schain_config_dir
 from core.schains.cleaner import (
     cleanup_schain,
     delete_bls_keys,
-    remove_schain,
-    monitor,
     get_schains_on_node,
+    monitor,
     remove_config_dir,
+    remove_ima_container,
+    remove_schain,
     remove_schain_volume,
     remove_skaled_container,
-    remove_ima_container,
 )
-from core.config.schain.directory import init_schain_config_dir
-from core.chain.runner import get_container_name
-from tools.configs.containers import SKALED_CONTAINER, IMA_CONTAINER
+from tests.utils import get_schain_struct, run_simple_ima_container, run_simple_skaled_container
+from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from web.models.schain import SChainRecord, mark_schain_deleted, upsert_schain_record
-
-
-from tests.utils import get_schain_struct, run_simple_skaled_container, run_simple_ima_container
 
 SKALED_CONTAINER_NAME_TEMPLATE = 'sk_skaled_{}'
 IMA_CONTAINER_NAME_TEMPLATE = 'sk_ima_{}'

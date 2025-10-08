@@ -21,22 +21,20 @@ import logging
 from abc import abstractmethod
 from typing import cast
 
-from skale import SkaleManager, SkaleIma
-from skale.types.schain import SchainName, SchainHash
+from skale import SkaleIma, SkaleManager
+from skale.types.schain import SchainHash, SchainName
 
-from core.monitor.monitor_base import IMonitor
-from core.node_config import NodeConfig
 from core.checks.schain import ConfigChecks
 from core.firewall.utils import get_sync_agent_ranges
-from core.schains.external_config import ExternalConfig, ExternalState
+from core.monitor.monitor_base import IMonitor
 from core.monitor.schain.action_config import ConfigActionManager
 from core.node import get_current_nodes
-
+from core.node_config import NodeConfig
+from core.schains.external_config import ExternalConfig, ExternalState
 from tools.configs import PASSIVE_NODE
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord
-
 
 logger = logging.getLogger(__name__)
 

@@ -18,12 +18,13 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
+
 from skale.dataclasses.node_info import NodeInfo
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.utils.helper import ip_from_bytes
 from skale.utils.web3_utils import public_key_to_address
 
-from core.config.schain.helper import parse_public_key_info, get_bls_public_keys
+from core.config.schain.helper import get_bls_public_keys, parse_public_key_info
 
 
 @dataclass

@@ -7,22 +7,23 @@ from unittest import mock
 import pytest
 from skale import FairManager, SkaleManager
 from skale.types.dkg import Status
-from skale.types.node import NodeStatus, NodeId
+from skale.types.node import NodeId, NodeStatus
 from skale.utils.account_tools import send_eth
 from skale.wallets.web3_wallet import generate_wallet
 
 from core.config.schain.directory import init_schain_config_dir
 from core.dkg.fair.main import get_dkg_client, run_dkg
 from core.dkg.structures import DKGResult
+from core.dkg.utils import DkgError
 from tests.dkg_test.main_test import (
     DKG_TIMEOUT,
     DKGRunType,
     DKGStatus,
     DKGStep,
-    generate_random_node_data,
     cleanup_schain_config,
     create_schain,
     exec_dkg_runners,
+    generate_random_node_data,
     generate_random_schain_data,
     generate_sgx_wallets,
     get_dkg_runners,
@@ -33,7 +34,6 @@ from tests.dkg_test.main_test import (
     remove_schain,
     transfer_eth_to_wallets,
 )
-from core.dkg.utils import DkgError
 from tests.utils import ETH_PRIVATE_KEY
 from tools.helper import read_json, run_cmd
 
