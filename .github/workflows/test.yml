@@ -131,7 +131,7 @@ jobs:
       - name: Run core tests
         run: |
           source ../.venv13/bin/activate
-          bash ./scripts/run_core_tests.sh
+          bash ./scripts/run_core_tests.sh --durations=0 -v
 
       - name: Cleanup docker artifacts
         run: |
