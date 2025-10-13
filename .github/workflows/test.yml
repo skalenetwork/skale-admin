@@ -39,6 +39,13 @@ jobs:
       - name: Checking formatting with ruff
         run: uv run ruff check
 
+      - name: Cleanup artifacts
+        if: always()
+        run: |
+          docker rm -f $(docker ps -aq)
+          rm -r tests/schain-data/.artifacts/skaled-datadir || true
+          rm -r helper-scripts/contracts_data || true
+
       - name: Launch hardhat node
         run: |
           bash ./helper-scripts/helper.sh run_hh_node
