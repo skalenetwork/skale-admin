@@ -42,7 +42,6 @@ jobs:
       - name: Cleanup artifacts
         if: always()
         run: |
-          docker rm -f $(docker ps -aq)
           rm -r tests/schain-data/.artifacts/skaled-datadir || true
           rm -r helper-scripts/contracts_data || true
 
