@@ -21,13 +21,13 @@ from dataclasses import dataclass
 
 from core.schains.limits import get_allocation_type_name, get_schain_limit, get_schain_type
 from core.schains.types import MetricType
-
-from tools.configs.schains import MAX_CONSENSUS_STORAGE_INF_VALUE, MAX_HISTORIC_STATE_DB_SIZE
+from tools.configs.schains import MAX_HISTORIC_STATE_DB_SIZE
 
 
 @dataclass
 class SChainInfo:
     """Dataclass that represents sChain key of the skaleConfig section"""
+
     schain_id: int
     name: str
     block_author: str
@@ -62,7 +62,7 @@ class SChainInfo:
             'nodeGroups': self.node_groups,
             'multiTransactionMode': self.multitransaction_mode,
             'nodes': self.nodes,
-            **self.static_schain_info
+            **self.static_schain_info,
         }
         if self.max_historic_state_db_size:
             data.update({'maxHistoricStateDbSize': self.max_historic_state_db_size})
@@ -77,13 +77,12 @@ def generate_schain_info(
     node_groups: dict,
     nodes: dict,
     sync_node: bool,
-    archive: bool
+    archive: bool,
 ) -> SChainInfo:
     schain_type = get_schain_type(schain.part_of_node)
     allocation_type_name = get_allocation_type_name(schain.options.allocation_type)
     volume_limits = get_schain_limit(schain_type, MetricType.volume_limits)[allocation_type_name]
     if sync_node and archive:
-        volume_limits['max_consensus_storage_bytes'] = MAX_CONSENSUS_STORAGE_INF_VALUE
         volume_limits['max_historic_state_db_size'] = MAX_HISTORIC_STATE_DB_SIZE
     leveldb_limits = get_schain_limit(schain_type, MetricType.leveldb_limits)[allocation_type_name]
     contract_storage_limit = leveldb_limits['contract_storage']
@@ -99,5 +98,5 @@ def generate_schain_info(
         nodes=nodes,
         multitransaction_mode=schain.options.multitransaction_mode,
         static_schain_info=static_schain_info,
-        **volume_limits
+        **volume_limits,
     )

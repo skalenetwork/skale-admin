@@ -22,6 +22,9 @@ jobs:
         with:
           submodules: true
 
+      - name: Ensure PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Install python dependencies
         run: |
           source ../.venv/bin/activate
