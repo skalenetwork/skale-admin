@@ -104,6 +104,10 @@ jobs:
       - name: Checking formatting with ruff
         run: uv run ruff check
 
+      - name: Launch hardhat node
+        run: |
+          bash ./helper-scripts/helper.sh run_hh_node
+
       - name: Run sgx wallet sim
         run: |
           bash ./scripts/run_sgxwallet.sh
