@@ -39,11 +39,15 @@ jobs:
       - name: Checking formatting with ruff
         run: uv run ruff check
 
+      - name: Launch hardhat node
+        run: |
+          bash ./helper-scripts/helper.sh run_hh_node
+
       - name: Run sgx wallet sim
         run: |
           bash ./scripts/run_sgxwallet.sh
 
-      - name: Deploy skaled
+      - name: Run skaled
         run: |
           bash ./scripts/run_skaled.sh
 
@@ -83,7 +87,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
       ENDPOINT: http://127.0.0.1:8545
-      RUN_ANVIL: true
+      # RUN_ANVIL: true
     steps:
       - uses: actions/checkout@v4
         with:
