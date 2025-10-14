@@ -7,7 +7,7 @@ env:
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
   MANAGER_TAG: "1.12.0-develop.21"
   IMA_TAG: "2.3.0-beta.3"
-  SGX_WALLET_TAG: "1.10.1-develop.3"
+  SGX_WALLET_TAG: "70e430dfa890ec1d3348f4e1d40be408b3242cd4"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
   PYTHON_VERSION: 3.13
 
@@ -17,24 +17,25 @@ concurrency:
 
 jobs:
   test_fair:
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     env:
       ENDPOINT: http://127.0.0.1:1234
       FAIR_TAG: "0.0.1-develop.50"
       SKALED_TAG: 4.1.0-develop.24-mirage
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: true
-
-      - name: Ensure PATH
-        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python 3.13
+        run: uv python install 3.13
 
       - name: Install python dependencies
-        run: |
-          source ../.venv13/bin/activate
-          uv sync --prerelease=allow --all-extras
+        run: uv sync --prerelease=allow --all-extras
 
       - name: Checking formatting with ruff
         run: uv run ruff check
@@ -88,23 +89,25 @@ jobs:
 
   test_core:
     needs: [test_fair]
-    runs-on: self-hosted
+    runs-on: ubuntu-22.04
     env:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
       ENDPOINT: http://127.0.0.1:8545
       # RUN_ANVIL: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: true
-
-      - name: Ensure PATH
-        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python 3.13
+        run: uv python install 3.13
 
       - name: Install python dependencies
         run: |
-          source ../.venv13/bin/activate
           uv sync --prerelease=allow --all-extras
 
       - name: Checking formatting with ruff
