@@ -71,7 +71,6 @@ jobs:
 
       - name: Run core tests
         run: |
-          source ../.venv13/bin/activate
           bash ./scripts/run_fair_test.sh
 
       - name: Cleanup build artifacts
@@ -139,7 +138,6 @@ jobs:
 
       - name: Run core tests
         run: |
-          source ../.venv13/bin/activate
           bash ./scripts/run_core_tests.sh --durations=0 -v
 
       - name: Cleanup docker artifacts
@@ -170,5 +168,4 @@ jobs:
 
       - name: Run codecov
         run: |
-          source ../.venv13/bin/activate
           uv run codecov -t $CODECOV_TOKEN
