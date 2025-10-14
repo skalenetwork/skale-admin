@@ -22,6 +22,7 @@ jobs:
       ENDPOINT: http://127.0.0.1:1234
       FAIR_TAG: "0.0.1-develop.50"
       SKALED_TAG: 4.1.0-develop.24-mirage
+      RUN_ANVIL: true
 
     steps:
       - uses: actions/checkout@v5
@@ -46,9 +47,9 @@ jobs:
           rm -r tests/schain-data/.artifacts/skaled-datadir || true
           rm -r helper-scripts/contracts_data || true
 
-      - name: Launch hardhat node
-        run: |
-          bash ./helper-scripts/helper.sh run_hh_node
+      # - name: Launch hardhat node
+      #   run: |
+      #     bash ./helper-scripts/helper.sh run_hh_node
 
       - name: Run sgx wallet sim
         run: |
@@ -93,7 +94,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
       ENDPOINT: http://127.0.0.1:8545
-      # RUN_ANVIL: true
+      RUN_ANVIL: true
     steps:
       - uses: actions/checkout@v5
         with:
@@ -112,9 +113,9 @@ jobs:
       - name: Checking formatting with ruff
         run: uv run ruff check
 
-      - name: Launch hardhat node
-        run: |
-          bash ./helper-scripts/helper.sh run_hh_node
+      # - name: Launch hardhat node
+      #   run: |
+      #     bash ./helper-scripts/helper.sh run_hh_node
 
       - name: Run sgx wallet sim
         run: |
