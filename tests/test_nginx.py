@@ -96,6 +96,7 @@ def ssl_dir():
 @pytest.fixture
 def nginx_container(tmp_dir, ssl_dir, config_path, dutils):
     try:
+        dutils.client.images.pull('nginx', tag='1.20.2')
         c = dutils.run_container(
             'nginx:1.20.2',
             NGINX_CONTAINER_NAME,
