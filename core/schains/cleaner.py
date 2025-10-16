@@ -42,7 +42,7 @@ from core.node import get_current_nodes, get_skale_node_version
 from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType
-from tools.configs import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER, PASSIVE_NODE
+from tools.configs import NFT_CHAIN_CONFIG_WILDCARD, PASSIVE_NODE, SGX_CERTIFICATES_FOLDER
 from tools.configs.containers import IMA_CONTAINER, SCHAIN_STOP_TIMEOUT, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils

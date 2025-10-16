@@ -1,7 +1,7 @@
 import logging
 from unittest import mock
 
-from tools.logger import compose_hiding_patterns, HidingFormatter, ADMIN_LOG_FORMAT
+from tools.logger import ADMIN_LOG_FORMAT, HidingFormatter, compose_hiding_patterns
 
 
 def test_custom_formatter():

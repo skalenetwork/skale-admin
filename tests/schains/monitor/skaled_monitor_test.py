@@ -11,22 +11,20 @@ from core.config.schain.directory import schain_config_dir
 from core.monitor.schain.action_skaled import SkaledActionManager
 from core.monitor.schain.monitor_skaled import (
     BackupSkaledMonitor,
-    get_skaled_monitor,
-    ReloadGroupSkaledMonitor,
-    ReloadIpSkaledMonitor,
     NewNodeSkaledMonitor,
     NoConfigSkaledMonitor,
     RecreateSkaledMonitor,
     RegularSkaledMonitor,
+    ReloadGroupSkaledMonitor,
+    ReloadIpSkaledMonitor,
     RepairSkaledMonitor,
     UpdateConfigSkaledMonitor,
+    get_skaled_monitor,
 )
-from core.schains.external_config import ExternalConfig
 from core.schains.exit_scheduler import ExitScheduleFileManager
-from web.models.schain import SChainRecord
-
+from core.schains.external_config import ExternalConfig
 from tests.utils import CURRENT_TS
-
+from web.models.schain import SChainRecord
 
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)

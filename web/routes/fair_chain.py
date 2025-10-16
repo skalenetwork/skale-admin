@@ -18,8 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from http import HTTPStatus
 from datetime import datetime
+from http import HTTPStatus
 
 from flask import Blueprint, g, request
 from skale import FairManager

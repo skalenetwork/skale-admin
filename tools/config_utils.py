@@ -17,14 +17,14 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import logging
 import functools
-from filelock import FileLock
+import logging
+import os
 from json.decoder import JSONDecodeError
 
-from tools.helper import read_json, write_json
+from filelock import FileLock
 
+from tools.helper import read_json, write_json
 
 logger = logging.getLogger(__name__)
 

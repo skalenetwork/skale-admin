@@ -2,28 +2,25 @@ import datetime
 import glob
 import shutil
 import socket
+from unittest import mock
+from unittest.mock import patch
 
-import pytest
-import mock
-from mock import patch
 import freezegun
+import pytest
 from flask import Flask, appcontext_pushed, g
+from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
+from skale.utils.contracts_provision.utils import generate_random_node_data
+from skale.utils.web3_utils import to_checksum_address
 from web3 import Web3
 
-from skale.utils.contracts_provision.utils import generate_random_node_data
-from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
-from skale.utils.web3_utils import to_checksum_address
-
+from core.config.schain.file_manager import ConfigFileManager
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
-from core.config.schain.file_manager import ConfigFileManager
+from tests.utils import get_bp_data, post_bp_data
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
-from web.routes.node import node_bp
 from web.helper import get_api_url
-
-from tests.utils import get_bp_data, post_bp_data
-
+from web.routes.node import node_bp
 
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)

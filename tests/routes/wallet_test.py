@@ -3,9 +3,8 @@ from flask import Flask, appcontext_pushed, g
 from skale.wallets.web3_wallet import to_checksum_address
 
 from tests.utils import get_bp_data, init_web3_wallet, post_bp_data
-from web.routes.wallet import wallet_bp
 from web.helper import get_api_url
-
+from web.routes.wallet import wallet_bp
 
 BLUEPRINT_NAME = 'wallet'
 

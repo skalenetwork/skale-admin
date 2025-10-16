@@ -1,11 +1,12 @@
 from skale.utils.helper import ip_to_bytes
+
 from core.node import (
-    get_current_nodes,
-    get_current_ips,
-    get_max_ip_change_ts,
     calc_reload_ts,
-    get_node_index_in_group,
+    get_current_ips,
+    get_current_nodes,
+    get_max_ip_change_ts,
     get_node_delay,
+    get_node_index_in_group,
 )
 from tests.utils import generate_random_ip
 

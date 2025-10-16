@@ -1,11 +1,11 @@
 import json
+
 import pytest
 
-from core.config.schain.generator import SChainBaseConfig
 from core.config.schain.accounts import generate_dynamic_accounts
-
-from tools.helper import read_json
+from core.config.schain.generator import SChainBaseConfig
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
+from tools.helper import read_json
 
 # Run only on admin 2.0.2 or older
 # Add config with node groups to the root admin folder

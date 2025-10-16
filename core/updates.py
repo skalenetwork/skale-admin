@@ -18,11 +18,12 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+
 from skale import SkaleManager
 from skale.utils.helper import ip_from_bytes
 
-from core.node_config import NodeConfig
 from core.config.schain.file_manager import ConfigFileManager
+from core.node_config import NodeConfig
 from core.schains.cleaner import get_schains_on_node
 from tools.docker_utils import DockerUtils
 

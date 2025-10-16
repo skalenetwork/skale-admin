@@ -17,24 +17,21 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import time
 import logging
+import time
 
-from filelock import FileLock
 from apscheduler.schedulers.background import BackgroundScheduler
+from filelock import FileLock
 
 from core.config.schain.static_params import get_fair_chain_name
+from core.monitor.fair.main import start_tasks
 from core.monitoring import update_monitoring_services
 from core.node_config import NodeConfig
-
-from core.monitor.fair.main import start_tasks
 from core.redis.chain_record import ChainRecord
 from core.redis.migrations import run_redis_migrations
-
 from tools.configs import INIT_LOCK_PATH, PASSIVE_NODE
-
-from tools.logger import init_fair_logger
 from tools.configs.web3 import fair_contracts
+from tools.logger import init_fair_logger
 from tools.sgx_utils import generate_sgx_key
 
 init_fair_logger()

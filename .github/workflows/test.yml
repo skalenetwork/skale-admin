@@ -9,7 +9,7 @@ env:
   IMA_TAG: "2.3.0-beta.3"
   SGX_WALLET_TAG: "1.10.1-develop.3"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-  PYTHON_VERSION: 3.11
+  PYTHON_VERSION: 3.13
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -28,11 +28,13 @@ jobs:
         with:
           submodules: true
 
+      - name: Ensure PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Install python dependencies
         run: |
-          source ../.venv/bin/activate
-          uv pip install -r requirements.txt --prerelease=allow
-          uv pip install -r requirements-dev.txt
+          source ../.venv13/bin/activate
+          uv sync --prerelease=allow --all-extras
 
       - name: Checking formatting with ruff
         run: uv run ruff check
@@ -58,7 +60,7 @@ jobs:
 
       - name: Run core tests
         run: |
-          source ../.venv/bin/activate
+          source ../.venv13/bin/activate
           bash ./scripts/run_fair_test.sh
 
       - name: Cleanup build artifacts
@@ -87,11 +89,13 @@ jobs:
         with:
           submodules: true
 
+      - name: Ensure PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Install python dependencies
         run: |
-          source ../.venv/bin/activate
-          uv pip install -r requirements.txt --prerelease=allow
-          uv pip install -r requirements-dev.txt
+          source ../.venv13/bin/activate
+          uv sync --prerelease=allow --all-extras
 
       - name: Checking formatting with ruff
         run: uv run ruff check
@@ -118,7 +122,7 @@ jobs:
 
       - name: Run core tests
         run: |
-          source ../.venv/bin/activate
+          source ../.venv13/bin/activate
           bash ./scripts/run_core_tests.sh
 
       - name: Cleanup docker artifacts
@@ -149,5 +153,5 @@ jobs:
 
       - name: Run codecov
         run: |
-          source ../.venv/bin/activate
-          codecov -t $CODECOV_TOKEN
+          source ../.venv13/bin/activate
+          uv run codecov -t $CODECOV_TOKEN

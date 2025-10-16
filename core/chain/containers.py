@@ -17,13 +17,10 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import time
 import logging
+import time
 from typing import Optional, cast
 
-from core.redis.chain_record import ChainRecord
-from core.chain.status import SkaledStatus
-from core.chain.volume import is_volume_exists
 from core.chain.runner import (
     get_container_image,
     get_ima_container_time_frame,
@@ -35,17 +32,17 @@ from core.chain.runner import (
     run_ima_container,
     run_skaled_container,
 )
-from core.schains.ima import get_ima_time_frame, ImaData
 from core.chain.ssl import update_ssl_change_date
-
+from core.chain.status import SkaledStatus
+from core.chain.volume import is_volume_exists
+from core.redis.chain_record import ChainRecord
+from core.schains.ima import ImaData, get_ima_time_frame
 from core.types.chain import ChainName
 from tools.configs import PASSIVE_NODE
-from tools.configs.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER, IMA_CONTAINER
+from tools.configs.containers import IMA_CONTAINER, MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import is_fair
-
 from web.models.schain import SChainRecord
-
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +73,7 @@ def monitor_skaled_container(
         return
 
     if not is_container_exists(chain_name, dutils=dutils):
-        logger.info(f"Chain {chain_name}: container doesn't exits")
+        logger.info(f"Chain {chain_name}: container doesn't exist")
         run_skaled_container(
             chain_name=chain_name,
             download_snapshot=download_snapshot,

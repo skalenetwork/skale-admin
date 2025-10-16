@@ -24,21 +24,18 @@ from typing import cast
 
 from requests import Response
 
-from core.redis.chain_record import ChainRecord
-from core.chain.runner import restart_container
-from core.chain.runner import is_container_exists, is_container_running
-
+from core.chain.runner import is_container_exists, is_container_running, restart_container
 from core.chain.status import SkaledStatus
+from core.redis.chain_record import ChainRecord
+from core.types.chain import ChainName
 from tools.configs import ALLOWED_TIMESTAMP_DIFF
-from tools.docker_utils import DockerUtils
+from tools.configs.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
 from tools.configs.schains import (
     DEFAULT_RPC_CHECK_TIMEOUT,
     MAX_SCHAIN_FAILED_RPC_COUNT,
     RPC_CHECK_TIMEOUT_STEP,
 )
-from tools.configs.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
-
-from core.types.chain import ChainName
+from tools.docker_utils import DockerUtils
 from tools.helper import post_request
 from web.models.schain import SChainRecord
 

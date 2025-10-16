@@ -21,8 +21,8 @@ import logging
 import os
 import re
 import shutil
-import time
 import threading
+import time
 from abc import ABCMeta, abstractmethod
 from pathlib import Path
 from typing import ClassVar, Dict, List, Optional, TypeVar

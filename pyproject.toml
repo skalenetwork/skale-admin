@@ -1,0 +1,74 @@
+[project]
+name = "skale-admin"
+version = "3.2.0"
+requires-python = ">=3.13"
+dependencies = [
+    "peewee==3.18.2",
+    "Flask==3.1.2",
+    "Werkzeug==3.1.3",
+    "gunicorn==23.0.0",
+    "Jinja2==3.1.6",
+    "docker==7.1.0",
+    "websocket-client==1.8.0",
+    "requests==2.32.5",
+    "skale.py==7.5dev1",
+    "ima-predeployed==2.1.0b0",
+    "etherbase-predeployed==1.1.0b3",
+    "marionette-predeployed==2.0.0b2",
+    "config-controller-predeployed==1.1.0",
+    "filestorage-predeployed==1.1.0.dev8",
+    "multisigwallet-predeployed==1.1.0a8",
+    "context-predeployed==1.0.0.dev3",
+    "statsd==4.0.1",
+    "psutil==7.1.0",
+    "colorful==0.5.7",
+    "celery==5.5.3",
+    "filelock==3.19.1",
+    "pyOpenSSL==25.3.0",
+    "python-dateutil==2.8.2",
+    "python-telegram-bot==22.5",
+    "sh==1.14.1",
+    "APScheduler==3.11.0",
+    "pydantic-settings==2.11.0",
+    "pyyaml==6.0.3",
+    "setuptools==80.9.0",                   # required by predeployed packages
+]
+
+[project.optional-dependencies]
+dev = ["ruff==0.14.0", "mypy==1.18.2"]
+test = [
+    "pytest==8.4.2",
+    "pytest-cov==7.0.0",
+    "freezegun==1.5.5",
+    "codecov==2.1.13",
+]
+
+[tool.pytest.ini_options]
+log_cli = false
+log_cli_level = "INFO"
+log_cli_format = "[%(asctime)s] [%(levelname)8s] [%(threadName)s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I"]
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.mypy]
+python_version = "3.13"
+warn_unused_configs = true
+ignore_missing_imports = true
+# todo: uncomment when types are added to all modules
+# warn_return_any = true
+# disallow_untyped_defs = true
+
+[tool.coverage.run]
+omit = ["tests/*", "helper-scripts/*"]
+
+[tool.setuptools.packages.find]
+exclude = ["core*", "web*", "healthchecks*", "tools*"]

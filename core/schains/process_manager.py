@@ -22,20 +22,19 @@ import time
 from multiprocessing import Process
 from typing import Optional
 
-from skale import SkaleManager, SkaleIma
+from skale import SkaleIma, SkaleManager
 from skale.contracts.manager.schains import SchainStructure
 
-from core.node_config import NodeConfig
 from core.monitor.schain.main import start_tasks
+from core.node_config import NodeConfig
 from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process import (
     get_schain_process_info,
     is_monitor_process_alive,
     terminate_process,
 )
-
-from tools.str_formatters import arguments_list_string
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
+from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
 

@@ -20,7 +20,7 @@
 import logging
 
 from eth_utils.hexadecimal import remove_0x_prefix
-from web3.exceptions import Web3Exception, TransactionNotFound
+from web3.exceptions import TransactionNotFound, Web3Exception
 
 from core.dkg.broadcast_filter import BaseFilter, DKGEvent
 

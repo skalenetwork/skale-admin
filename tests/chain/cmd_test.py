@@ -1,9 +1,8 @@
 from core.chain.cmd import get_skaled_container_cmd, get_snapshot_opts
-from core.config.schain.main import get_skaled_container_config_path
 from core.chain.ssl import get_ssl_filepath
-from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH
-
+from core.config.schain.main import get_skaled_container_config_path
 from tools.configs import SGX_SERVER_URL
+from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH
 from tools.configs.web3 import ENDPOINT
 
 

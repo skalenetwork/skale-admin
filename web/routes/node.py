@@ -18,18 +18,17 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from http import HTTPStatus
 import time
+from http import HTTPStatus
 
-from flask import Blueprint, abort, g, request
 import requests
+from flask import Blueprint, abort, g, request
 
 from core.node import Node, NodeStatus
-
 from core.updates import update_unsafe_for_schains
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
-from web.helper import construct_err_response, construct_ok_response, get_api_url, g_skale
+from web.helper import construct_err_response, construct_ok_response, g_skale, get_api_url
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'node'

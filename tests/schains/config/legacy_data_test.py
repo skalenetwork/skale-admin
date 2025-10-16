@@ -3,7 +3,6 @@ import json
 from core.config.schain.legacy_data import is_static_accounts, static_accounts, static_groups
 from tests.utils import STATIC_NODE_GROUPS
 
-
 SCHAIN_NAME = 'test'
 
 

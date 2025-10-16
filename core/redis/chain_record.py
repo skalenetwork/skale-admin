@@ -18,11 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from typing import cast
 from datetime import datetime
+from typing import cast
 
-from core.redis.flat_redis_record import FieldInfo, FlatRedisRecord
 from core.dkg.structures import DKGStatus
+from core.redis.flat_redis_record import FieldInfo, FlatRedisRecord
 
 logger = logging.getLogger(__name__)
 

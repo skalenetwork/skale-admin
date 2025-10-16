@@ -19,6 +19,7 @@
 
 import os
 from typing import Any, Dict, Literal, Optional
+
 import colorful as cf
 
 from tools.configs import LONG_LINE

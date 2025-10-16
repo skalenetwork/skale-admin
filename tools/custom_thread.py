@@ -17,8 +17,8 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import threading
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
 

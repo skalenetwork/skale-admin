@@ -1,17 +1,17 @@
-import mock
 import logging
 import os
 import pathlib
 import shutil
 import time
+from unittest import mock
 
 import psutil
 import pytest
 
 from core.schains.process import ProcessReport, cleanup_schains_pids, terminate_process
 from core.schains.process_manager import run_pm_schain
-from tools.configs.schains import SCHAINS_DIR_PATH
 from tests.utils import get_schain_struct
+from tools.configs.schains import SCHAINS_DIR_PATH
 
 logger = logging.getLogger(__name__)
 

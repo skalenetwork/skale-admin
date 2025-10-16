@@ -22,31 +22,30 @@ import logging
 import os
 import platform
 import shutil
-import psutil
 import socket
 import time
 from enum import Enum
 from typing import Dict, List, Optional, TypedDict
 
+import psutil
 import requests
-from requests.exceptions import RequestException, ConnectionError, Timeout, HTTPError
-
+from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 from skale import SkaleManager
 from skale.schain_config.generator import get_nodes_for_schain
 from skale.transactions.exceptions import TransactionLogicError
+from skale.types.node import NodeWithId
+from skale.types.schain import SchainName
 from skale.utils.exceptions import InvalidNodeIdError
 from skale.utils.helper import ip_from_bytes
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
-from skale.types.schain import SchainName
-from skale.types.node import NodeWithId
 
 from core.monitoring import update_monitoring_services
 from tools.configs import (
-    PASSIVE_NODE,
-    WATCHDOG_PORT,
     CHANGE_IP_DELAY,
     CHECK_REPORT_PATH,
     META_FILEPATH,
+    PASSIVE_NODE,
+    WATCHDOG_PORT,
 )
 from tools.configs.schains import CHAIN_STATE_PATH
 from tools.helper import is_fair, read_json

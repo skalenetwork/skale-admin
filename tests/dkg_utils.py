@@ -3,8 +3,7 @@
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
 
-from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
-
+from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 
 INSECURE_PRIVATE_KEY = 'f253bad7b1f62b8ff60bbf451cf2e8e9ebb5d6e9bff450c55b8d5504b8c63d3'
 SECRET_KEY_INFO = {

@@ -21,8 +21,8 @@ import os
 
 from skale.schain_config.rotation_history import RotationNodeData
 
+from tools.configs import ENV_TYPE, STATIC_ACCOUNTS_FOLDER, STATIC_GROUPS_FOLDER
 from tools.helper import read_json
-from tools.configs import STATIC_ACCOUNTS_FOLDER, STATIC_GROUPS_FOLDER, ENV_TYPE
 
 
 def static_accounts(schain_name: str) -> dict:

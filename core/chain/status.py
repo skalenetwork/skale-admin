@@ -17,12 +17,12 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import json
 import logging
+import os
+from abc import ABCMeta, abstractmethod
 from json.decoder import JSONDecodeError
 from typing import Optional
-from abc import ABCMeta, abstractmethod
 
 from core.config.schain.directory import node_cli_status_filepath, skaled_status_filepath
 from tools.config_utils import config_getter, log_broken_status_file

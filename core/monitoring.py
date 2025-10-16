@@ -20,22 +20,21 @@
 import logging
 from typing import Optional
 
-from tools.helper import is_fair, process_template
-from tools.docker_utils import DockerUtils, get_docker_group_id
-
 from tools.configs import SKALE_DIR_HOST
 from tools.configs.monitoring import (
-    FILEBEAT_TEMPLATE_PATH,
-    FILEBEAT_CONTAINER_NAME,
     FILEBEAT_CONFIG_PATH,
+    FILEBEAT_CONTAINER_NAME,
+    FILEBEAT_TEMPLATE_PATH,
     INFLUX_URL,
     TELEGRAF,
+    TELEGRAF_CONFIG_PATH,
     TELEGRAF_CONTAINER_NAME,
     TELEGRAF_IMAGE,
-    TELEGRAF_TEMPLATE_PATH,
-    TELEGRAF_CONFIG_PATH,
     TELEGRAF_MEM_LIMIT,
+    TELEGRAF_TEMPLATE_PATH,
 )
+from tools.docker_utils import DockerUtils, get_docker_group_id
+from tools.helper import is_fair, process_template
 
 logger = logging.getLogger(__name__)
 

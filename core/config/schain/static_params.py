@@ -19,8 +19,8 @@
 
 from eth_typing import HexStr
 
-from core.schains.types import SchainType
 from core.config.schain.helper import get_static_params, get_static_params_fair
+from core.schains.types import SchainType
 from core.types.chain import FairChainName
 from tools.configs import ENV_TYPE
 

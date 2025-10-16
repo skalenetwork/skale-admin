@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+import tests.env_defaults  # noqa: F401 # set default env variables for tests
 from core.chain.status import (
     init_node_cli_status,
     node_cli_status_filepath,

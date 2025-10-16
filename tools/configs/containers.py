@@ -19,6 +19,7 @@
 
 import os
 from typing import Literal
+
 from tools.configs import CONFIG_FOLDER
 from tools.helper import read_json
 

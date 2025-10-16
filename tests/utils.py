@@ -9,10 +9,10 @@ import string
 import time
 from contextlib import contextmanager
 from typing import cast
+from unittest.mock import MagicMock, Mock
 
 import requests
 from eth_typing import ChecksumAddress, HexAddress
-from mock import MagicMock, Mock
 from skale.contracts.manager.schains import SchainStructureWithStatus
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.types.schain import SchainHash, SchainName

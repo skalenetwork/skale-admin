@@ -20,19 +20,19 @@
 import json
 import logging
 import socket
-
 from typing import List, Optional
 
-from skale import SkaleManager, FairManager
+from skale import FairManager, SkaleManager
 
-from .base.types import IpRange
+from tools.configs.fair import NFT_COMMITTEE_SCOPE_CHAIN, NFT_NETWORK_SCOPE_CHAIN
+
 from .base.nftables import NFTablesController
+from .base.types import IpRange
 from .fair.rule_controller import (
     FairCommitteeScopeRuleController,
     FairNetworkScopeRuleController,
 )
 from .schain.rule_controller import NFTSchainRuleController
-from tools.configs.fair import NFT_NETWORK_SCOPE_CHAIN, NFT_COMMITTEE_SCOPE_CHAIN
 
 logger = logging.getLogger(__name__)
 

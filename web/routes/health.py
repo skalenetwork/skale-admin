@@ -20,19 +20,17 @@
 import logging
 from http import HTTPStatus
 
-
 from flask import Blueprint, g, request
 
-from core.node import get_skale_node_version
-from core.node import get_current_nodes
 from core.checks.schain import SChainChecks
-from core.schains.external_config import ExternalState
 from core.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
+from core.node import get_current_nodes, get_skale_node_version
+from core.schains.external_config import ExternalState
 from core.schains.ima import get_ima_log_checks
 from core.schains.process import is_process_healthy
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
+from web.helper import construct_err_response, construct_ok_response, g_skale, get_api_url
 from web.models.schain import SChainRecord
-from web.helper import construct_err_response, construct_ok_response, get_api_url, g_skale
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'health'

@@ -17,24 +17,21 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 import time
-import logging
 from typing import Dict
 
-from skale import SkaleManager, SkaleIma
+from skale import SkaleIma, SkaleManager
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 
-from core.schains.process_manager import run_pm_schain
 from core.node_config import NodeConfig
-
-from tools.logger import init_sync_logger
-from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS
+from core.schains.process_manager import run_pm_schain
 from tools.configs.ima import IMA_CONTRACTS
-
-from web.models.schain import create_tables
+from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS
+from tools.logger import init_sync_logger
 from web.migrations import migrate
-
+from web.models.schain import create_tables
 
 init_sync_logger()
 logger = logging.getLogger(__name__)

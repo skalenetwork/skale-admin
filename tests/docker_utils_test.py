@@ -1,28 +1,25 @@
 import os
 from functools import partial
-
-from docker.errors import APIError
-import pytest
-from mock import Mock, MagicMock
-
 from types import SimpleNamespace
+from unittest import mock
+from unittest.mock import MagicMock, Mock
+
+import pytest
+from docker.errors import APIError
 
 from core.chain.runner import (
-    run_skaled_container,
+    get_container_info,
     get_container_name,
     get_image_name,
-    get_container_info,
+    run_skaled_container,
 )
 from tests.utils import (
     run_simple_skaled_container,
     run_simple_skaled_container_in_sync_mode,
 )
-from tools.configs.containers import SKALED_CONTAINER
 from tools.configs import NODE_DATA_PATH
+from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
-
-from unittest import mock
-
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 TEST_SKALE_DATA_DIR = os.path.join(DIR_PATH, 'skale-data')

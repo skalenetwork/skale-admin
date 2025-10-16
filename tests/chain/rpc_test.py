@@ -6,13 +6,12 @@ from unittest import mock
 import freezegun
 import requests
 
-from core.chain.rpc import handle_failed_skaled_rpc
+from core.chain.rpc import check_endpoint_blocks, handle_failed_skaled_rpc
 from core.chain.runner import get_container_info
-from core.chain.rpc import check_endpoint_blocks
-from tools.configs.containers import SKALED_CONTAINER, MAX_SKALED_RESTART_COUNT
+from tests.utils import generate_skaled_status_file
+from tools.configs.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
 from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
 from web.models.schain import SChainRecord
-from tests.utils import generate_skaled_status_file
 
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
