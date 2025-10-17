@@ -24,19 +24,19 @@ from skale.schain_config.generator import get_nodes_for_schain
 
 from core.dkg.schain.structures import ComplaintReason
 from core.dkg.schain.utils import (
+    DkgError,
+    broadcast_and_check_data,
+    check_failed_dkg,
+    check_no_complaints,
+    check_response,
+    generate_bls_keys,
+    get_latest_block_timestamp,
     init_dkg_client,
     send_complaint,
-    get_latest_block_timestamp,
-    DkgError,
-    check_response,
-    check_no_complaints,
-    check_failed_dkg,
     wait_for_fail,
-    broadcast_and_check_data,
 )
 from core.dkg.structures import DKGResult, DKGStatus, DKGStep
 from core.dkg.utils import DKGKeyGenerationError
-from core.dkg.schain.utils import generate_bls_keys
 
 logger = logging.getLogger(__name__)
 

@@ -3,25 +3,24 @@ import json
 import os
 import time
 from typing import Optional
+from unittest import mock
 
 import freezegun
 import pytest
-import mock
 
+from core.chain.runner import get_container_info
 from core.chain.status import SkaledStatus
 from core.checks.schain import SkaledChecks
-from core.schains.cleaner import remove_ima_container
 from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import UpstreamConfigFilename
-from core.firewall import Action, SChainRule, LOOPBACK_INTERFACE
+from core.firewall import LOOPBACK_INTERFACE, Action, SChainRule
 from core.monitor.schain.action_skaled import SkaledActionManager
-from core.chain.runner import get_container_info
+from core.schains.cleaner import remove_ima_container
 from core.types.chain import ChainName
+from tests.utils import IMA_MIGRATION_TS
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
-
-from tests.utils import IMA_MIGRATION_TS
 
 CURRENT_TIMESTAMP = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)

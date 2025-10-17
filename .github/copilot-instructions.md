@@ -11,7 +11,7 @@
 - no redundant code - move repeated logic into helper functions
 - use type hints to specify the expected types of function arguments and return values
 
-- check `ruff.toml` for formatting rules
+- check `pyproject.toml` for formatting rules
 - always lint changes using `ruff check`
 - tests should be placed in `tests/` directory, follow the existing structure and code style
 - do not try to run tests

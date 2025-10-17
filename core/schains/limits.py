@@ -18,14 +18,15 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import cast
+
 from skale.dataclasses.schain_options import AllocationType
 
-from core.schains.types import SchainType, ContainerType, MetricType
-from tools.helper import read_json
+from core.schains.types import ContainerType, MetricType, SchainType
 from tools.configs.resource_allocation import (
-    RESOURCE_ALLOCATION_FILEPATH,
     FILESTORAGE_LIMIT_OPTION_NAME,
+    RESOURCE_ALLOCATION_FILEPATH,
 )
+from tools.helper import read_json
 
 
 def get_schain_type(schain_part_of_node: int) -> SchainType:

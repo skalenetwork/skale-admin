@@ -20,38 +20,34 @@
 import logging
 import os
 import time
-from typing import Optional, cast
 from importlib import reload
+from typing import Optional, cast
 
-from skale import SkaleManager, SkaleIma
+from skale import SkaleIma, SkaleManager
 from skale.types.schain import SchainName, SchainStructure
 from web3._utils import http_session_manager
 
-from core.monitor.schain.monitor_config import run_config_pipeline
-from core.node import get_skale_node_version
-from core.node_config import NodeConfig
+from core.chain.status import get_node_cli_status, get_skaled_status
+from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
 from core.checks.schain import SkaledChecks
-from core.checks.base import get_api_checks_status, TG_ALLOWED_CHECKS
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_automatic_repair_option
 from core.firewall import get_default_rule_controller
-from core.schains.external_config import ExternalConfig
 from core.monitor.schain import get_skaled_monitor
-
 from core.monitor.schain.action_skaled import SkaledActionManager
-
+from core.monitor.schain.monitor_config import run_config_pipeline
 from core.monitor.tasks import BaseTask, execute_tasks
+from core.node import get_skale_node_version
+from core.node_config import NodeConfig
+from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport
-from core.chain.status import get_node_cli_status, get_skaled_status
-
-from tools.docker_utils import DockerUtils
 from tools.configs import PASSIVE_NODE
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
-from tools.notifications.messages import notify_checks
+from tools.docker_utils import DockerUtils
 from tools.helper import is_node_part_of_chain, no_hyphens
+from tools.notifications.messages import notify_checks
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord, upsert_schain_record
-
 
 logger = logging.getLogger(__name__)
 

@@ -1,21 +1,19 @@
 import json
+
 import pytest
-from skale.schain_config.rotation_history import get_previous_schain_groups
 from skale.dataclasses.schain_options import AllocationType
+from skale.schain_config.rotation_history import get_previous_schain_groups
 
-from core.config.schain.predeployed import generate_predeployed_accounts
 from core.config.precompiled import generate_precompiled_accounts
-
-from core.schains.limits import get_schain_type
 from core.config.schain.generator import (
+    SChainBaseConfig,
     get_on_chain_owner,
     get_schain_originator,
-    SChainBaseConfig,
 )
-
-from tools.helper import is_address_contract
+from core.config.schain.predeployed import generate_predeployed_accounts
+from core.schains.limits import get_schain_type
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
-
+from tools.helper import is_address_contract
 
 CHAINS = []
 

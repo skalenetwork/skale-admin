@@ -1,17 +1,15 @@
 import os
-import mock
+from unittest import mock
 
 import pytest
-
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
 from core.firewall import (
     Action,
+    SChainRule,
     get_fair_committee_scope_rule_controller,
     get_fair_network_scope_rule_controller,
-    SChainRule,
 )
-
 from tools.helper import run_cmd
 
 

@@ -5,8 +5,7 @@ import pytest
 
 from core.monitoring import TelegrafNotConfiguredError, update_telegraf_service
 from tools.configs import DOCKER_NODE_CONFIG_FILEPATH
-from tools.configs.monitoring import TELEGRAF_TEMPLATE_PATH, TELEGRAF_CONFIG_PATH
-
+from tools.configs.monitoring import TELEGRAF_CONFIG_PATH, TELEGRAF_TEMPLATE_PATH
 
 CONFIG_TEMPLATE = """
 [agent]

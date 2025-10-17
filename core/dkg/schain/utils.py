@@ -20,23 +20,22 @@
 import logging
 from time import sleep
 
+from sgx.http import SgxUnreachableError
 from skale.schain_config.generator import get_nodes_for_schain
 
 from core.dkg.schain.client import SchainDKGClient
 from core.dkg.schain.structures import ComplaintReason
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
+    BROADCAST_DATA_SEARCH_SLEEP,
+    UINT_CONSTANT,
+    BroadcastResult,
     DkgError,
+    DkgFailedError,
     DKGKeyGenerationError,
     DkgTransactionError,
-    BroadcastResult,
-    DkgFailedError,
-    UINT_CONSTANT,
-    BROADCAST_DATA_SEARCH_SLEEP,
     sync_broadcast_data,
 )
-
-from sgx.http import SgxUnreachableError
 
 logger = logging.getLogger(__name__)
 
@@ -166,9 +165,7 @@ def report_bad_data(dkg_client, index):
                 f'Sending complaint once again'
             )
             dkg_client.send_complaint(index, reason=ComplaintReason.NO_RESPONSE)
-            wait_for_fail(
-                dkg_client.skale, dkg_client.chain_name, channel_started_time, 'response'
-            )
+            wait_for_fail(dkg_client.skale, dkg_client.chain_name, channel_started_time, 'response')
     except DkgTransactionError:
         pass
 

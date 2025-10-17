@@ -12,4 +12,4 @@ export_test_env
 
 bash scripts/run_redis.sh
 
-python -m py.test tests/fair/dkg_test.py $@
+uv run pytest tests/fair/dkg_test.py $@

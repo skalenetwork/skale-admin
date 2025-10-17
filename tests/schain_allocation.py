@@ -17,9 +17,10 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with SKALE.py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import yaml
 import math
+import os
+
+import yaml
 
 
 def calc_disk_factor(divider, decimals=3):

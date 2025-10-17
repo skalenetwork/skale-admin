@@ -18,11 +18,14 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import abc
-from typing import Any
-from datetime import datetime
+import logging
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
 
 from tools.resources import rs
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -78,6 +81,7 @@ class FlatRedisRecord:
     def _set_field(self, field_name: str, value) -> None:
         key = self._get_field_key(field_name)
         serialized_value = self._serialize_field(value, self._record_fields()[field_name].type)
+        logger.info('Setting field %s to value %s', field_name, serialized_value)
         rs.set(key, serialized_value)
 
     def _deserialize_field(self, value, field_type: type):

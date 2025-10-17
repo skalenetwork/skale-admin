@@ -17,14 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import logging
+import os
 from datetime import datetime
 
 from core.redis.chain_record import ChainRecord
+from tools.configs import SSL_CERT_PATH, SSL_CERTIFICATES_FILEPATH
 from web.models.schain import SChainRecord
-from tools.configs import SSL_CERTIFICATES_FILEPATH, SSL_CERT_PATH
-
 
 logger = logging.getLogger(__name__)
 

@@ -133,6 +133,12 @@ class FairSkaledActionManager(BaseSkaledActionManager):
 
     @BaseActionManager.monitor_block
     def schedule_skaled_restart(self, restart_deadline: int) -> bool:
+        job = self.scheduler.get_job(SKALED_RESTART_JOB_NAME)
+        if job:
+            logger.warning(
+                f'skaled restart job already scheduled at {self.chain_record.restart_ts}'
+            )
+            return False
         logger.info('Scheduling skaled restart')
         earliest_possible_restart_ts = int(time.time())
         latest_possible_restart_ts = restart_deadline - SKALED_RESTART_DELAY_SECONDS

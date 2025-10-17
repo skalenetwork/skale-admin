@@ -18,9 +18,10 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
-from typing import Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 
 from core.node import get_skale_node_version
 from core.redis.chain_record import ChainRecord
@@ -29,8 +30,8 @@ from tools.helper import read_json
 from web.models.schain import SChainRecord
 
 if TYPE_CHECKING:
-    from core.config.schain.skale_section import SkaleConfig
     from core.config.fair.generator import FairSkaleConfig
+    from core.config.schain.skale_section import SkaleConfig
 
 
 logger = logging.getLogger(__name__)

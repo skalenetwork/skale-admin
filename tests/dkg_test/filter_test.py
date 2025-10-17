@@ -1,4 +1,5 @@
-import mock
+from unittest import mock
+
 import pytest
 
 from core.dkg.schain.broadcast_filter import SchainFilter

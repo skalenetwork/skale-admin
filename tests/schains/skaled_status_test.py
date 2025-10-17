@@ -1,8 +1,8 @@
 from core.chain.status import (
-    get_node_cli_status,
-    node_cli_status_filepath,
     NodeCliStatus,
     SkaledStatus,
+    get_node_cli_status,
+    node_cli_status_filepath,
 )
 from core.config.schain.directory import skaled_status_filepath
 

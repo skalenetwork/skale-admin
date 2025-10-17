@@ -20,19 +20,17 @@
 import logging
 from typing import Dict, List, Optional
 
-from skale import SkaleManager, SkaleIma
+from skale import SkaleIma, SkaleManager
 from skale.types.rotation import Rotation
 from skale.types.schain import SchainName
 
-from core.node_config import NodeConfig
 from core.config.schain.directory import get_files_with_prefix, schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager, SkaledConfigFilename
 from core.config.schain.generator import generate_schain_config_with_skale
-
+from core.node_config import NodeConfig
 from tools.configs import SCHAIN_CONFIG_DIR_SKALED
-from tools.str_formatters import arguments_list_string
 from tools.node_options import NodeOptions
-
+from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
 

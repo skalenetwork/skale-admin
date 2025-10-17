@@ -1,18 +1,15 @@
-import pytest
 from time import sleep
+
+import pytest
 from flask import Flask, appcontext_pushed, g
 from sgx import SgxClient
 
 from core.node_config import NodeConfig
-
-from tools.configs import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
-
+from tests.utils import get_bp_data, run_custom_schain_container
+from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from web.helper import get_api_url
 from web.models.schain import SChainRecord
 from web.routes.info import info_bp
-from web.helper import get_api_url
-
-from tests.utils import get_bp_data, run_custom_schain_container
-
 
 TEST_SGX_KEYNAME = 'test_keyname'
 BLUEPRINT_NAME = 'info'

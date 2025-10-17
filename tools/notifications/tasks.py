@@ -17,13 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import logging
+import os
+
 from celery import Celery
 from telegram import Bot
 
 from tools.configs.db import REDIS_URI
-
 
 # No more than 20 per minute
 NOTIFICATIONS_RATE_LIMIT = os.getenv('NOTIFICATIONS_RATE_LIMIT', '20/m')

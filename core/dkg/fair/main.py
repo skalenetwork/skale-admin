@@ -21,29 +21,28 @@ import logging
 from time import sleep
 
 from skale import FairManager
-from skale.types.dkg import Status, DkgId
+from skale.types.dkg import DkgId, Status
 from skale.types.node import NodeId
 
 from core.dkg.fair.client import FairDKGClient
-from core.dkg.utils import DKGKeyGenerationError
 from core.dkg.fair.utils import (
-    generate_bls_keys,
-    init_dkg_client,
+    BROADCAST_DATA_SEARCH_SLEEP,
     DkgError,
     broadcast_and_check_data,
     check_dkg_id_with_exception,
-    BROADCAST_DATA_SEARCH_SLEEP,
+    generate_bls_keys,
+    init_dkg_client,
     send_alright_and_wait_for_others,
 )
 from core.dkg.structures import DKGResult, DKGStatus
+from core.dkg.utils import DKGKeyGenerationError
 from core.types.chain import FairChainName
 
 logger = logging.getLogger(__name__)
 
 
 def get_dkg_client(
-    node_id: NodeId, fair: FairManager, sgx_key_name: str, dkg_id: DkgId,
-    chain_name: FairChainName
+    node_id: NodeId, fair: FairManager, sgx_key_name: str, dkg_id: DkgId, chain_name: FairChainName
 ) -> FairDKGClient:
     dkg_client = None
     try:

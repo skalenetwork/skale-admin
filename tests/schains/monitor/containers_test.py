@@ -3,9 +3,8 @@ from unittest import mock
 
 from core.chain.containers import monitor_skaled_container
 from core.chain.runner import is_container_exists
-from web.models.schain import upsert_schain_record
-
 from tests.utils import get_schain_struct, run_custom_schain_container
+from web.models.schain import upsert_schain_record
 
 
 def test_monitor_skaled_container(
