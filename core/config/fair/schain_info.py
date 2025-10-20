@@ -58,17 +58,13 @@ def generate_schain_info(
     schain_id: int,
     static_schain_info: dict,
     node_groups: dict,
-    nodes: list,
-    passive_node: bool,
+    nodes: dict[int, CommitteeInfo],
     archive: bool,
 ) -> FairChainInfo:
-    # TODOd: fix override from config
-    if passive_node and archive:
-        # max_consensus_storage_bytes = MAX_CONSENSUS_STORAGE_INF_VALUE
+    if archive:
         max_historic_state_db_size = MAX_HISTORIC_STATE_DB_SIZE
     else:
         max_historic_state_db_size = None
-        # max_consensus_storage_bytes = 10  # todo: from config
 
     return FairChainInfo(
         schain_id=schain_id,
