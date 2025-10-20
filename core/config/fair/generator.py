@@ -35,7 +35,7 @@ from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 from core.config.base import FairConfig, SChainBaseConfig
 from core.config.fair.committee import generate_committee_info
 from core.config.fair.node_info import FairCurrentNodeInfo, generate_fair_current_node_info
-from core.config.fair.schain_info import FairChainInfo
+from core.config.fair.schain_info import FairChainInfo, generate_schain_info
 from core.config.precompiled import get_precompiled_contracts_fair
 from core.config.schain.static_params import (
     get_static_chain_id_fair,
@@ -185,11 +185,11 @@ def generate_fair_config(
         committee_info_from_manager=committee_info_from_manager,
         node_id=node.id,
     )
-
-    schain_info = FairChainInfo(
+    schain_info = generate_schain_info(
         schain_id=chain_id_int,
         node_groups=node_groups,
         nodes=committee_info,
+        archive=archive,
         static_schain_info=static_schain_info,
     )
 
