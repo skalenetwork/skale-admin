@@ -19,10 +19,10 @@ from core.config.schain.helper import (
     get_node_ips_from_config,
     get_own_ip_from_config,
 )
+from core.ima.container import ImaData
 from core.node import get_current_nodes
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig, ExternalState
-from core.schains.ima import ImaData
 from tests.utils import (
     ALLOWED_RANGES,
     CONFIG_STREAM,

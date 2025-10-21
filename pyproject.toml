@@ -11,7 +11,7 @@ dependencies = [
     "docker==7.1.0",
     "websocket-client==1.8.0",
     "requests==2.32.5",
-    "skale.py==7.6dev2",
+    "skale.py==7.6dev3",
     "ima-predeployed==2.1.0b0",
     "etherbase-predeployed==1.1.0b3",
     "marionette-predeployed==2.0.0b2",

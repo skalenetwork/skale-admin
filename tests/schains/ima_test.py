@@ -1,4 +1,4 @@
-from core.schains.ima import get_ima_env
+from core.ima.container import get_ima_env
 
 
 def test_get_ima_env(_schain_name, schain_config):

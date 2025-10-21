@@ -23,6 +23,7 @@ import time
 from filelock import FileLock
 from skale import SkaleIma, SkaleManager
 
+from core.ima.abi import generate_ima_container_abis
 from core.monitoring import update_monitoring_services
 from core.node_config import NodeConfig
 from core.redis.migrations import run_redis_migrations
@@ -98,6 +99,7 @@ def init():
         if PULL_CONFIG_FOR_SCHAIN:
             set_schains_sync_config_run(PULL_CONFIG_FOR_SCHAIN)
         cleanup_notification_state()
+        generate_ima_container_abis(skale, SkaleIma(endpoint(), ima_contracts()))
 
 
 def main():
