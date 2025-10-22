@@ -35,8 +35,8 @@ from tests.utils import (
     set_automine,
     set_interval_mining,
 )
-from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.sgx import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 
 warnings.filterwarnings('ignore')
 
