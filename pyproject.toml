@@ -43,6 +43,9 @@ test = [
     "codecov==2.1.13",
 ]
 
+[tool.uv]
+prerelease = "allow"
+
 [tool.pytest.ini_options]
 log_cli = false
 log_cli_level = "INFO"

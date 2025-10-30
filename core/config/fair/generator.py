@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from typing import Dict
 
 from skale import FairManager
-from skale.fair_config import generate_committee_history, get_nodes_from_last_two_committees
+from skale.fair_config import generate_committee_history, get_nodes_from_two_operational_committees
 from skale.types.committee import Committee, CommitteeGroup, CommitteeIndex, Timestamp
 from skale.types.dkg import DkgId, Fp2Point, G2Point
 from skale.types.node import FairNodeForChainConfig, NodeId, NodeWithSchains
@@ -71,7 +71,7 @@ def generate_fair_config_with_manager(
 ) -> FairConfig:
     node = fair.nodes.get(cast_manager_to_fair_node_id(node_id))
 
-    committee_nodes_in_scope = get_nodes_from_last_two_committees(fair)
+    committee_nodes_in_scope = get_nodes_from_two_operational_committees(fair)
     node_groups = generate_committee_history(fair=fair)
 
     return generate_fair_config(
