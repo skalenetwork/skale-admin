@@ -53,7 +53,7 @@ class IStatus(metaclass=ABCMeta):
             return {}
 
     def log(self) -> None:
-        logger.info(f'{self.__class__.__name__}: \n' + json.dumps(self.all, indent=4))
+        logger.debug(f'{self.__class__.__name__}: \n' + json.dumps(self.all, indent=4))
 
 
 class SkaledStatus(IStatus):

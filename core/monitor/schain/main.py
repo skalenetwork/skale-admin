@@ -55,8 +55,9 @@ logger = logging.getLogger(__name__)
 def run_skaled_pipeline(
     schain_name: SchainName, skale: SkaleManager, node_config: NodeConfig, dutils: DockerUtils
 ) -> None:
+    logger.info('Running skaled pipeline')
     schain = skale.schains.get_by_name(schain_name)
-    logger.info('Initializing schain record')
+    logger.debug('Initializing schain record')
     schain_record = SChainRecord.get_by_name(schain_name)
 
     logger.info('Record: %s', SChainRecord.to_dict(schain_record))
@@ -64,7 +65,7 @@ def run_skaled_pipeline(
     dutils = dutils or DockerUtils()
 
     rc = get_default_rule_controller(name=schain_name)
-    logger.info('Initializing skaled checks')
+    logger.debug('Initializing skaled checks')
     skaled_checks = SkaledChecks(
         schain_name=schain.name,
         schain_record=schain_record,
@@ -73,12 +74,12 @@ def run_skaled_pipeline(
         passive_node=PASSIVE_NODE,
     )
 
-    logger.info('Initializing skaled status')
+    logger.debug('Initializing skaled status')
     skaled_status = get_skaled_status(schain_name)
-    logger.info('Initializing node-cli status')
+    logger.debug('Initializing node-cli status')
     ncli_status = get_node_cli_status(schain_name)
 
-    logger.info('Initializing skaled action manager')
+    logger.debug('Initializing skaled action manager')
     skaled_am = SkaledActionManager(
         schain=schain,
         rule_controller=rc,
@@ -88,16 +89,15 @@ def run_skaled_pipeline(
         econfig=ExternalConfig(schain_name),
         dutils=dutils,
     )
-    logger.info('Gathering skaled status')
+    logger.debug('Gathering skaled status')
     check_status = skaled_checks.get_all(log=False, expose=True)
-    logger.info('Get automatic repair option')
+    logger.debug('Get automatic repair option')
     automatic_repair = get_automatic_repair_option()
-    logger.info('Creating api only check results')
+    logger.debug('Creating api only check results')
     api_status = get_api_checks_status(status=check_status, allowed=TG_ALLOWED_CHECKS)
     notify_checks(schain_name, node_config.all(), api_status)
 
     logger.info('Skaled check status: %s', check_status)
-
     logger.info('Upstream config %s', skaled_am.upstream_config_path)
 
     mon = get_skaled_monitor(

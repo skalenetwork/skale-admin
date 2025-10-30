@@ -22,43 +22,38 @@ from typing import Any, Dict, Literal, Optional
 
 import colorful as cf
 
-from tools.configs import LONG_LINE
-
-DISABLE_COLORS = os.environ.get('DISABLE_COLORS', None)
-
+DISABLE_COLORS = os.environ.get('DISABLE_COLORS') == 'True'
 cf.use_style('solarized')
-
-PALETTE = {'success': '#00c853', 'info': '#1976d2', 'error': '#d50000'}
+PALETTE = {
+    'success': '#00c853',
+    'info': '#1976d2',
+    'error': '#d50000',
+    'warning': '#ff6f00',
+    'primary': '#6200ea',
+    'secondary': '#00838f',
+    'lime': '#cddc39',
+    'pink': '#e91e63',
+    'light': '#D7AFFF',
+    'cyan': '#00bcd4',
+}
 
 
 def arguments_list_string(
     args: Dict[str, Any],
     title: Optional[str] = None,
-    type: Literal['info', 'success', 'error'] = 'info',
+    type: Literal[
+        'info', 'success', 'error', 'warning', 'primary', 'secondary', 'lime', 'pink', 'light'
+    ] = 'info',
 ) -> str:
-    components = []
-    border_line = f'\n{LONG_LINE}\n'
-    components.append(border_line if DISABLE_COLORS else str(cf.blue(border_line)))
+    if DISABLE_COLORS:
+        title_part = f'{title} - ' if title else ''
+        args_part = ', '.join(f'{key}: {value}' for key, value in args.items())
+        return f'{title_part}{{{args_part}}}'
 
-    if title:
-        if DISABLE_COLORS:
-            components.append(f'{title}\n')
-        else:
-            with cf.with_palette(PALETTE) as c:
-                if type == 'error':
-                    components.append(str(c.bold_error(title)) + '\n')
-                elif type == 'success':
-                    components.append(str(c.bold_success(title)) + '\n')
-                else:
-                    components.append(str(c.bold_info(title)) + '\n')
-
-    for key, value in args.items():
-        if DISABLE_COLORS:
-            components.append(f'{key}: {value}\n')
-        else:
-            components.append(f'{str(cf.bold_violet(key))}: {value}\n')
-
-    bottom_border = f'{LONG_LINE}\n'
-    components.append(bottom_border if DISABLE_COLORS else str(cf.blue(bottom_border)))
-
-    return ''.join(components)
+    with cf.with_palette(PALETTE) as c:
+        color_fn = getattr(c, f'bold_{type}')
+        title_part = str(color_fn('> ' + title + ' - ')) if title else str(color_fn('> '))
+        args_part = ', '.join(
+            f'{str(c.bold_cyan(key))}: {str(c.light(value))}' for key, value in args.items()
+        )
+        return f'{title_part}{str(color_fn("{"))} {args_part} {str(color_fn("}"))}'

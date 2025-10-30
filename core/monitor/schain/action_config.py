@@ -42,7 +42,7 @@ from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig, ExternalState
 from tools.configs import PASSIVE_NODE
-from tools.helper import no_hyphens
+from tools.helper import dict_to_hash, no_hyphens
 from tools.node_options import NodeOptions
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord, upsert_schain_record
@@ -150,7 +150,8 @@ class ConfigActionManager(BaseActionManager):
             result = False
             if (
                 not self.cfm.upstream_config_exists()
-                or new_config != self.cfm.latest_upstream_config
+                or not self.cfm.latest_upstream_config
+                or dict_to_hash(new_config) != dict_to_hash(self.cfm.latest_upstream_config)
             ):
                 logger.info('Saving new config')
                 rotation_id = self.rotation_data.rotation_counter

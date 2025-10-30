@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import hashlib
 import itertools
 import json
 import logging
@@ -183,3 +184,7 @@ def is_fair() -> bool:
 
 def cast_manager_to_fair_node_id(manager_node_id: int) -> NodeId:
     return cast(NodeId, manager_node_id)
+
+
+def dict_to_hash(d: dict) -> str:
+    return hashlib.md5(json.dumps(d).encode()).hexdigest()
