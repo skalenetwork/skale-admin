@@ -84,10 +84,6 @@ def run_cmd(cmd, env={}, shell=False):
     return res
 
 
-def format_output(res):
-    return res.stdout.decode('UTF-8').rstrip(), res.stderr.decode('UTF-8').rstrip()
-
-
 def merged_unique(*args):
     seen = set()
     for item in itertools.chain(*args):
