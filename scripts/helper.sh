@@ -23,9 +23,9 @@ export_test_env () {
     export ALLOWED_TS_DIFF=9000000
     export SCHAIN_STOP_TIMEOUT=1
 
-    export MANAGER_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh manager_address)
-    export IMA_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh ima_address)
-    export FAIR_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh fair_address)
+    export MANAGER_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh manager_address) || true
+    export IMA_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh ima_address) || true
+    export FAIR_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh fair_address) || true
 
     export DEFAULT_GAS_PRICE_WEI=1000000000
 
@@ -33,7 +33,7 @@ export_test_env () {
         export ETH_PRIVATE_KEY=$(cat $PWD/helper-scripts/private_key.txt)
     fi
 
-    cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info
+    cp $PWD/helper-scripts/contracts_data/ima.json $SKALE_DIR_HOST/contracts_info || true
 }
 
 
