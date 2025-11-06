@@ -63,7 +63,7 @@ select = ["E", "W", "F", "I"]
 quote-style = "single"
 
 [tool.mypy]
-python_version = "3.13"
+python_version = ">=3.13"
 warn_unused_configs = true
 ignore_missing_imports = true
 # todo: uncomment when types are added to all modules
