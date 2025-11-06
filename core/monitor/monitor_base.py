@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod
 
 from core.checks.base import BaseSkaledChecks
 from core.monitor.action_base import BaseSkaledActionManager
+from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,13 @@ class BaseSkaledMonitor(IMonitor):
 
     def run(self):
         typename = type(self).__name__
-        logger.info('Skaled monitor type starting %s', typename)
+        logger.info(
+            arguments_list_string(
+                {'type': typename, 'chain': self.am.chain_name},
+                'running_skaled_monitor',
+                'secondary',
+            )
+        )
         try:
             self.am._upd_last_seen()
             self.execute()

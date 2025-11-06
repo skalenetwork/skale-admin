@@ -94,7 +94,7 @@ class BaseActionManager(abc.ABC):
 
     def log_executed_blocks(self) -> None:
         logger.info(
-            arguments_list_string(self.executed_blocks, f'Finished monitor runner - {self.name}')
+            arguments_list_string(self.executed_blocks, f'finish_monitor_runner - {self.name}')
         )
 
 

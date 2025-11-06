@@ -19,11 +19,15 @@
 
 import os
 
-from tools.configs import SCHAIN_CONFIG_DIR_SKALED
+from tools.configs import CONTRACTS_INFO_FOLDER, SCHAIN_CONFIG_DIR_SKALED
 from tools.exceptions import MissingEnvVariableError
 
 IMA_CONTRACTS = os.getenv('IMA_CONTRACTS')
-SCHAIN_IMA_CONTRACTS = 'predeployed'
+
+# legacy variables, used only to run ima-agent
+_IMA_MAINNET_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, '.ima_mainnet_abi.json')
+_IMA_SCHAIN_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, '.ima_schain_abi.json')
+_MANAGER_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, '.manager_abi.json')
 
 IMA_NETWORK_BROWSER_FILENAME = 'ima_network_browser_data.json'
 IMA_NETWORK_BROWSER_FILEPATH = os.path.join(SCHAIN_CONFIG_DIR_SKALED, IMA_NETWORK_BROWSER_FILENAME)

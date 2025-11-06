@@ -34,6 +34,7 @@ from core.schains.external_config import ExternalConfig, ExternalState
 from tools.configs import PASSIVE_NODE
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
+from tools.str_formatters import arguments_list_string
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def run_config_pipeline(
     node_config: NodeConfig,
     stream_version: str,
 ) -> None:
-    logger.info('Gathering initial skale manager data')
+    logger.info('Running config pipeline')
     schain = skale.schains.get_by_name(schain_name)
     rotation_data = skale.node_rotation.get_rotation(schain_name)
     allowed_ranges = get_sync_agent_ranges(skale)
@@ -55,14 +56,14 @@ def run_config_pipeline(
     last_dkg_successful = skale.dkg.is_last_dkg_successful(cast(SchainHash, group_index))
     current_nodes = get_current_nodes(skale, schain_name)
 
-    logger.info('Initializing schain record')
+    logger.debug('Initializing schain record')
     schain_record = SChainRecord.get_by_name(schain_name)
 
     estate = ExternalState(
         ima_linked=ima_linked, chain_id=skale_ima.web3.eth.chain_id, ranges=allowed_ranges
     )
     econfig = ExternalConfig(schain_name)
-    logger.info('Initializing config checks')
+    logger.debug('Initializing config checks')
     config_checks = ConfigChecks(
         schain_name=schain_name,
         node_id=node_config.id,
@@ -75,7 +76,7 @@ def run_config_pipeline(
         estate=estate,
     )
 
-    logger.info('Initializing config action manager')
+    logger.debug('Initializing config action manager')
     config_am = ConfigActionManager(
         skale=skale,
         skale_ima=skale_ima,
@@ -89,9 +90,8 @@ def run_config_pipeline(
         econfig=econfig,
     )
 
-    logger.info('Gathering config status')
-    status = config_checks.get_all(log=False, expose=True)
-    logger.info('Config status: %s', status)
+    logger.debug('Gathering config status')
+    checks_res = config_checks.get_all(log=False, expose=True)
 
     if PASSIVE_NODE:
         logger.info(
@@ -99,7 +99,6 @@ def run_config_pipeline(
         )
         mon = SyncConfigMonitor(config_am, config_checks)
     else:
-        logger.info('Regular node mode, running config monitor')
         mon = RegularConfigMonitor(config_am, config_checks)
     statsd_client = get_statsd_client()
 
@@ -108,6 +107,20 @@ def run_config_pipeline(
         f'admin.config_pipeline.rotation_id.{no_hyphens(schain_name)}',
         rotation_data.rotation_counter,
     )
+
+    logger.info(
+        arguments_list_string(
+            {
+                'type': mon.__class__.__name__,
+                'checks_res': checks_res,
+                'rotation_data': rotation_data,
+                'estate': estate.to_dict(),
+            },
+            'config_pipeline_info',
+            'secondary',
+        )
+    )
+
     with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(schain_name)}'):
         mon.run()
 
@@ -123,7 +136,13 @@ class BaseConfigMonitor(IMonitor):
 
     def run(self):
         typename = type(self).__name__
-        logger.info('Config monitor type starting %s', typename)
+        logger.info(
+            arguments_list_string(
+                {'type': typename, 'chain': self.am.schain.name},
+                'run_config_monitor',
+                'primary',
+            )
+        )
         try:
             self.am._upd_last_seen()
             self.execute()
@@ -146,6 +165,7 @@ class RegularConfigMonitor(BaseConfigMonitor):
         if not self.checks.upstream_config:
             self.am.upstream_config()
         self.am.update_reload_ts(self.checks.skaled_node_ips)
+        self.am.reset_config_record()
 
 
 class SyncConfigMonitor(BaseConfigMonitor):

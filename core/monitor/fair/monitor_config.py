@@ -34,6 +34,7 @@ from core.types.chain import FairChainName
 from tools.configs import PASSIVE_NODE
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
+from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +122,13 @@ class BaseConfigMonitor(IMonitor):
 
     def run(self):
         typename = type(self).__name__
-        logger.info('Config monitor type starting %s', typename)
+        logger.info(
+            arguments_list_string(
+                {'type': typename, 'chain': self.am.chain_name},
+                'run_config_monitor',
+                'primary',
+            )
+        )
         try:
             self.am._upd_last_seen()
             self.execute()

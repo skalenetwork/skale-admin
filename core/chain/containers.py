@@ -35,8 +35,8 @@ from core.chain.runner import (
 from core.chain.ssl import update_ssl_change_date
 from core.chain.status import SkaledStatus
 from core.chain.volume import is_volume_exists
+from core.ima.container import ImaData, get_ima_time_frame
 from core.redis.chain_record import ChainRecord
-from core.schains.ima import ImaData, get_ima_time_frame
 from core.types.chain import ChainName
 from tools.configs import PASSIVE_NODE
 from tools.configs.containers import IMA_CONTAINER, MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER

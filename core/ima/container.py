@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2025 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -28,21 +28,23 @@ from websocket import create_connection
 
 from core.config.endpoint import get_chain_ports_from_config
 from core.config.schain.directory import schain_config_dir
-from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.file_manager import ConfigFileManager, SkaledConfigNotFoundError
 from core.config.schain.helper import get_chain_id, get_static_params
 from core.config.schain.node_info import CurrentNodeInfo
-from tools.configs import ENV_TYPE, SGX_SERVER_URL, SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
+from tools.configs import ENV_TYPE
 from tools.configs.containers import CONTAINERS_INFO, IMA_MIGRATION_PATH
 from tools.configs.db import REDIS_URI
 from tools.configs.ima import (
+    _IMA_MAINNET_ABI_FILEPATH,
+    _IMA_SCHAIN_ABI_FILEPATH,
+    _MANAGER_ABI_FILEPATH,
     DEFAULT_TIME_FRAME,
-    IMA_CONTRACTS,
     IMA_NETWORK_BROWSER_FILEPATH,
     IMA_STATE_CONTAINER_PATH,
-    SCHAIN_IMA_CONTRACTS,
 )
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS
+from tools.configs.sgx import sgx_server_url, sgx_ssl_cert_filepath, sgx_ssl_key_filepath
+from tools.configs.web3 import endpoint
 from tools.helper import safe_load_yml
 
 logger = logging.getLogger(__name__)
@@ -58,9 +60,9 @@ class ImaData:
 class ImaEnv:
     schain_dir: str
 
-    manager_contracts: str
-    ima_contracts: str
-    ima_schain_contracts: str
+    manager_abi_path: str
+    mainnet_proxy_path: str
+    schain_proxy_path: str
 
     state_file: str
     network_browser_data_path: str
@@ -93,9 +95,9 @@ class ImaEnv:
         """Returns upper-case representation of the ImaEnv object"""
         return {
             'SCHAIN_DIR': self.schain_dir,
-            'MANAGER_CONTRACTS': self.manager_contracts,
-            'IMA_CONTRACTS': self.ima_contracts,
-            'IMA_SCHAIN_CONTRACTS': self.ima_schain_contracts,
+            'MANAGER_ABI_PATH': self.manager_abi_path,
+            'MAINNET_PROXY_PATH': self.mainnet_proxy_path,
+            'SCHAIN_PROXY_PATH': self.schain_proxy_path,
             'STATE_FILE': self.state_file,
             'SCHAIN_NAME': self.schain_name,
             'SCHAIN_RPC_URL': self.schain_rpc_url,
@@ -146,8 +148,10 @@ def schain_index_to_node_number(node):
     return int(node['schainIndex']) - 1
 
 
-def get_ima_env(schain_name: str, mainnet_chain_id: int | None, time_frame: int) -> ImaEnv:
+def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> ImaEnv:
     schain_config = ConfigFileManager(schain_name).skaled_config
+    if schain_config is None:
+        raise SkaledConfigNotFoundError(f'Skaled config for schain {schain_name} not found')
     node_info = schain_config['skaleConfig']['nodeInfo']
     bls_key_name = node_info['wallets']['ima']['keyShareName']
     schain_nodes = schain_config['skaleConfig']['sChain']
@@ -160,20 +164,20 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int | None, time_frame: int)
 
     return ImaEnv(
         schain_dir=schain_config_dir(schain_name),
-        manager_contracts=MANAGER_CONTRACTS,
-        ima_contracts=IMA_CONTRACTS,
-        ima_schain_contracts=SCHAIN_IMA_CONTRACTS,
+        manager_abi_path=_MANAGER_ABI_FILEPATH,
+        mainnet_proxy_path=_IMA_MAINNET_ABI_FILEPATH,
+        schain_proxy_path=_IMA_SCHAIN_ABI_FILEPATH,
         state_file=IMA_STATE_CONTAINER_PATH,
         schain_name=schain_name,
         schain_rpc_url=get_localhost_http_endpoint(schain_name),
-        mainnet_rpc_url=ENDPOINT,
+        mainnet_rpc_url=endpoint(),
         node_number=schain_index,
         nodes_count=len(schain_nodes['nodes']),
-        sgx_url=SGX_SERVER_URL,
+        sgx_url=sgx_server_url(),
         ecdsa_key_name=node_info['ecdsaKeyName'],
         bls_key_name=bls_key_name,
-        sgx_ssl_key_path=SGX_SSL_KEY_FILEPATH,
-        sgx_ssl_cert_path=SGX_SSL_CERT_FILEPATH,
+        sgx_ssl_key_path=sgx_ssl_key_filepath(),
+        sgx_ssl_cert_path=sgx_ssl_cert_filepath(),
         node_address=node_address,
         tm_url_mainnet=REDIS_URI,
         cid_main_net=mainnet_chain_id,

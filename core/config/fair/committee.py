@@ -27,7 +27,7 @@ from skale.types.node import NodeId
 from core.config.fair.fair_chain_node import FairChainNodeInfo, generate_fair_chain_nodes
 from core.config.schain.static_params import get_fair_chain_name
 from core.dkg.utils import get_secret_key_share_filepath
-from tools.configs import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
+from tools.configs.sgx import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
 from tools.helper import read_json
 
 

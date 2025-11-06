@@ -37,7 +37,7 @@ from core.dkg.utils import (
     generate_chain_poly_name,
     to_verify,
 )
-from tools.configs import SGX_CERTIFICATES_FOLDER
+from tools.configs.sgx import SGX_CERTIFICATES_FOLDER
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
 from tools.sgx_utils import sgx_unreachable_retry
