@@ -80,15 +80,14 @@ def run_skaled_pipeline(
         dutils=dutils,
     )
 
-    logger.info('Gathering skaled status')
+    logger.debug('Gathering skaled status')
     check_status = skaled_checks.get_all(log=False, expose=True)
 
-    logger.info('Get automatic repair option')
-    logger.info('Creating api only check results')
+    logger.debug('Get automatic repair option')
     api_status = get_api_checks_status(status=check_status, allowed=TG_ALLOWED_CHECKS)
     notify_checks(chain_name, node_config.all(), api_status)
 
-    logger.info('Skaled check status: %s', check_status)
+    logger.debug('Skaled check status: %s', check_status)
     logger.info('Upstream config: %s', skaled_am.upstream_config_path)
 
     mon = get_skaled_monitor(

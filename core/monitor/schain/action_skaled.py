@@ -42,6 +42,8 @@ from core.config.schain.main import (
     get_finish_ts_from_skaled_config,
 )
 from core.firewall import IRuleController
+from core.ima.container import ImaData
+from core.ima.container import get_migration_ts as get_ima_migration_ts
 from core.monitor.action_base import (
     CONTAINER_POST_RUN_DELAY,
     BaseActionManager,
@@ -50,8 +52,6 @@ from core.monitor.action_base import (
 from core.node_config import NodeConfig
 from core.schains.cleaner import remove_ima_container, remove_skaled_container
 from core.schains.external_config import ExternalConfig
-from core.schains.ima import ImaData
-from core.schains.ima import get_migration_ts as get_ima_migration_ts
 from core.schains.limits import get_schain_type
 from tools.configs import PASSIVE_NODE
 from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER

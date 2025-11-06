@@ -6,7 +6,7 @@ from sgx import SgxClient
 
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, run_custom_schain_container
-from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.configs.sgx import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from web.helper import get_api_url
 from web.models.schain import SChainRecord
 from web.routes.info import info_bp

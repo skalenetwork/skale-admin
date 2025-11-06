@@ -26,7 +26,6 @@ from urllib.parse import urlparse
 
 from flask import has_request_context, request
 
-from tools.configs import SGX_SERVER_URL
 from tools.configs.logs import (
     ADMIN_LOG_FORMAT,
     ADMIN_LOG_PATH,
@@ -38,6 +37,7 @@ from tools.configs.logs import (
     LOG_FILE_SIZE_BYTES,
     SYNC_LOG_PATH,
 )
+from tools.configs.sgx import SGX_SERVER_URL
 from tools.configs.web3 import ENDPOINT
 
 LOCAL_IPS = ['127.0.0.1', 'localhost']

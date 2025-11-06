@@ -25,8 +25,8 @@ from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
 from tests.utils import ETH_PRIVATE_KEY
-from tools.configs import SGX_CERTIFICATES_FOLDER
 from tools.configs.ima import IMA_CONTRACTS
+from tools.configs.sgx import SGX_CERTIFICATES_FOLDER
 from tools.configs.web3 import ENDPOINT, FAIR_CONTRACTS, MANAGER_CONTRACTS
 
 ETH_AMOUNT_PER_NODE = 1

@@ -17,6 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import hashlib
 import itertools
 import json
 import logging
@@ -81,10 +82,6 @@ def run_cmd(cmd, env={}, shell=False):
         logger.error(res.stderr.decode('UTF-8').rstrip())
         raise subprocess.CalledProcessError(res.returncode, cmd)
     return res
-
-
-def format_output(res):
-    return res.stdout.decode('UTF-8').rstrip(), res.stderr.decode('UTF-8').rstrip()
 
 
 def merged_unique(*args):
@@ -183,3 +180,7 @@ def is_fair() -> bool:
 
 def cast_manager_to_fair_node_id(manager_node_id: int) -> NodeId:
     return cast(NodeId, manager_node_id)
+
+
+def dict_to_hash(d: dict) -> str:
+    return hashlib.md5(json.dumps(d).encode()).hexdigest()

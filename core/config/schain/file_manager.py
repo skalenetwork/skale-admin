@@ -36,6 +36,14 @@ IConfigFilenameType = TypeVar('IConfigFilenameType', bound='IConfigFilename')
 logger = logging.getLogger(__name__)
 
 
+class SkaledConfigNotFoundError(FileNotFoundError):
+    """
+    Raised when skaled config is not found for a schain.
+    """
+
+    pass
+
+
 class IConfigFilename(metaclass=ABCMeta):
     @property
     @abstractmethod

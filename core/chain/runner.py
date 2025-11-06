@@ -28,7 +28,7 @@ from core.chain.skaled_exit_codes import SkaledExitCodes
 from core.chain.volume import get_schain_volume_config
 from core.config.schain.directory import schain_config_dir_host
 from core.config.schain.helper import get_schain_env
-from core.schains.ima import get_ima_env
+from core.ima.container import get_ima_env
 from core.schains.limits import get_ima_limit, get_schain_limit, get_schain_type
 from core.schains.types import ContainerType, MetricType
 from core.types.chain import ChainName
