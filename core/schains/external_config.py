@@ -3,8 +3,8 @@ import threading
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from core.schains.firewall.types import IpRange
-from core.schains.config.directory import schain_config_dir
+from core.config.schain.directory import schain_config_dir
+from core.firewall import IpRange
 from tools.helper import read_json, write_json
 
 
@@ -20,7 +20,7 @@ class ExternalState:
             'chain_id': self.chain_id,
             'ima_linked': self.ima_linked,
             'ranges': list(map(list, self.ranges)),
-            'reload_ts': self.reload_ts
+            'reload_ts': self.reload_ts,
         }
 
 
@@ -56,7 +56,7 @@ class ExternalConfig:
                 chain_id=plain['chain_id'],
                 ima_linked=plain['ima_linked'],
                 ranges=list(sorted(map(lambda r: IpRange(*r), plain['ranges']))),
-                reload_ts=plain.get('reload_ts')
+                reload_ts=plain.get('reload_ts'),
             )
         return None
 

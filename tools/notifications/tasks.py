@@ -17,13 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import logging
+import os
+
 from celery import Celery
 from telegram import Bot
 
 from tools.configs.db import REDIS_URI
-
 
 # No more than 20 per minute
 NOTIFICATIONS_RATE_LIMIT = os.getenv('NOTIFICATIONS_RATE_LIMIT', '20/m')
@@ -39,8 +39,4 @@ SEND_MSG_TIMEOUT = 30
 def send_message_to_telegram(api_key, chat_id, message, bot=None):
     bot = bot or Bot(api_key)
     logger.info(f'Sending message to telegram {message}')
-    return bot.send_message(
-        chat_id=chat_id,
-        text=message,
-        timeout=SEND_MSG_TIMEOUT
-    )
+    return bot.send_message(chat_id=chat_id, text=message, timeout=SEND_MSG_TIMEOUT)

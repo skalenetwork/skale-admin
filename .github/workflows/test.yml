@@ -1,24 +1,30 @@
 name: Test
+
 on: [push]
+
 env:
   ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
   SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-  MANAGER_TAG: "1.10.0-v1.10.0.0"
-  IMA_TAG: "1.3.4-beta.5"
-  SGX_WALLET_TAG: "1.83.0-beta.5"
+  MANAGER_TAG: "1.12.0-develop.21"
+  IMA_TAG: "2.3.0-beta.3"
+  SGX_WALLET_TAG: "1.10.1-develop.3"
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-  PYTHON_VERSION: 3.11
+  PYTHON_VERSION: 3.13
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test_core:
+  test_fair:
     runs-on: self-hosted
     env:
-      ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
-      ENDPOINT: http://127.0.0.1:8545
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
+      ENDPOINT: http://127.0.0.1:1234
+      FAIR_TAG: "0.0.1-develop.50"
+      SKALED_TAG: 4.1.0-develop.24-mirage
+
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: true
 
@@ -27,30 +33,96 @@ jobs:
 
       - name: Install python dependencies
         run: |
-          source ../.venv/bin/activate
-          uv pip install -r requirements.txt --prerelease=allow
-          uv pip install -r requirements-dev.txt
+          source ../.venv13/bin/activate
+          uv sync --prerelease=allow --all-extras
 
-      - name: Lint with flake8
-        run: uv run flake8 .
+      - name: Checking formatting with ruff
+        run: uv run ruff check
 
-      - name: Launch anvil node
+      - name: Run sgx wallet sim
         run: |
-          docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil && sleep 5 && docker logs anvil --tail 1000
+          bash ./scripts/run_sgxwallet.sh
 
-      - name: Deploy manager & ima contracts
+      - name: Deploy skaled
         run: |
-          bash ./helper-scripts/deploy_test_ima.sh
+          bash ./scripts/run_skaled.sh
+
+      - name: Deploy manager
+        run: |
+          bash ./helper-scripts/deploy_manager.sh
+          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
 
       - name: Show stats before tests
         if: always()
-        run: | 
+        run: |
           lsblk -f
           free -h
 
       - name: Run core tests
         run: |
-          source ../.venv/bin/activate
+          source ../.venv13/bin/activate
+          bash ./scripts/run_fair_test.sh
+
+      - name: Cleanup build artifacts
+        if: always()
+        run: |
+          docker rm -f $(docker ps -aq)
+          rm -r tests/schain-data/.artifacts/skaled-datadir || true
+          rm helper-scripts/private_key.txt || true
+
+      - name: Show stats after core tests
+        if: always()
+        run: |
+          lsblk -f
+          free -h
+
+  test_core:
+    needs: [test_fair]
+    runs-on: self-hosted
+    env:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
+      ENDPOINT: http://127.0.0.1:8545
+      RUN_ANVIL: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Ensure PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install python dependencies
+        run: |
+          source ../.venv13/bin/activate
+          uv sync --prerelease=allow --all-extras
+
+      - name: Checking formatting with ruff
+        run: uv run ruff check
+
+      - name: Run sgx wallet sim
+        run: |
+          bash ./scripts/run_sgxwallet.sh
+
+      - name: Deploy manager
+        run: |
+          bash ./helper-scripts/deploy_manager.sh
+          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
+
+      - name: Deploy IMA
+        run: |
+          bash ./helper-scripts/deploy_ima.sh
+          docker rmi -f skalenetwork/ima-contracts:${{ env.IMA_TAG }}
+
+      - name: Show stats before tests
+        if: always()
+        run: |
+          lsblk -f
+          free -h
+
+      - name: Run core tests
+        run: |
+          source ../.venv13/bin/activate
           bash ./scripts/run_core_tests.sh
 
       - name: Cleanup docker artifacts
@@ -69,16 +141,17 @@ jobs:
 
       - name: Show stats after firewall tests
         if: always()
-        run: | 
+        run: |
           lsblk -f
           free -h
 
-      - name: Cleanup docker artifacts
+      - name: Cleanup build artifacts
         if: always()
         run: |
           docker rm -f $(docker ps -aq)
+          rm helper-scripts/private_key.txt || true
 
       - name: Run codecov
         run: |
-          source ../.venv/bin/activate
-          codecov -t $CODECOV_TOKEN
+          source ../.venv13/bin/activate
+          uv run codecov -t $CODECOV_TOKEN

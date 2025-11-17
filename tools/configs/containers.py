@@ -18,6 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+from typing import Literal
+
 from tools.configs import CONFIG_FOLDER
 from tools.helper import read_json
 
@@ -25,10 +27,12 @@ DATA_DIR_CONTAINER_PATH = '/data_dir'
 SHARED_SPACE_CONTAINER_PATH = '/shared-space'
 SHARED_SPACE_VOLUME_NAME = 'shared-space'
 
-SCHAIN_CONTAINER = 'schain'
-IMA_CONTAINER = 'ima'
+ImageType = Literal['ima', 'skaled']
 
-CONTAINER_NAME_PREFIX = 'skale'
+SKALED_CONTAINER: ImageType = 'skaled'
+IMA_CONTAINER: ImageType = 'ima'
+
+CONTAINER_NAME_PREFIX = 'sk'
 CONTAINERS_FILENAME = 'containers.json'
 
 CONTAINERS_FILEPATH = os.path.join(CONFIG_FOLDER, CONTAINERS_FILENAME)
@@ -52,8 +56,10 @@ SCHAIN_STOP_TIMEOUT = int(os.getenv('SCHAIN_STOP_TIMEOUT', 300))
 
 DEFAULT_DOCKER_HOST = 'unix:///var/run/skale/docker.sock'
 
-MAX_SCHAIN_RESTART_COUNT = int(os.getenv('MAX_SCHAIN_RESTART_COUNT', 5))
+MAX_SKALED_RESTART_COUNT = int(os.getenv('MAX_SKALED_RESTART_COUNT', 5))
 
 CONTAINER_LOGS_SEPARATOR = b'=' * 80 + b'\n'
 
 HISTORIC_STATE_IMAGE_POSTFIX = '-historic'
+
+SKALED_RESTART_DELAY_SECONDS = int(os.getenv('SKALED_RESTART_DELAY_SECONDS', 300))

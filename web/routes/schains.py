@@ -22,29 +22,25 @@ from dataclasses import asdict
 
 from flask import Blueprint, g, request
 
-from core.schains.config.file_manager import ConfigFileManager
-from core.schains.config.helper import (
-    get_base_port_from_config,
+from core.chain.status import init_skaled_status
+from core.config.endpoint import get_base_port_from_config
+from core.config.schain.file_manager import ConfigFileManager
+from core.config.schain.helper import (
     get_node_ips_from_config,
-    get_own_ip_from_config
+    get_own_ip_from_config,
 )
-from core.schains.firewall.utils import (
-    get_default_rule_controller,
-    get_sync_agent_ranges
-)
-from core.schains.status import init_skaled_status
-from core.schains.ima import get_ima_version_after_migration
-from core.schains.info import get_schain_info_by_name, get_skaled_version
+from core.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
+from core.ima.container import get_ima_version_after_migration
 from core.schains.cleaner import get_schains_on_node
-from web.models.schain import get_schains_statuses
+from core.schains.info import get_schain_info_by_name, get_skaled_version
 from web.helper import (
-    construct_ok_response,
     construct_err_response,
     construct_key_error_response,
+    construct_ok_response,
+    g_skale,
     get_api_url,
-    g_skale
 )
-
+from web.models.schain import get_schains_statuses
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'schains'
@@ -76,9 +72,7 @@ def schain_config():
         return construct_key_error_response([key])
     config = ConfigFileManager(schain_name).skaled_config
     if config is None:
-        return construct_err_response(
-            msg=f'sChain config not found: {schain_name}'
-        )
+        return construct_err_response(msg=f'sChain config not found: {schain_name}')
     skale_config = config['skaleConfig']
     return construct_ok_response(skale_config)
 
@@ -91,9 +85,7 @@ def schains_list():
     if node_id is None:
         return construct_err_response(msg='No node installed')
     schains_list = [
-        asdict(s)
-        for s in g.skale.schains.get_schains_for_node(node_id)
-        if s and s.name != ''
+        asdict(s) for s in g.skale.schains.get_schains_for_node(node_id) if s and s.name != ''
     ]
     return construct_ok_response(schains_list)
 
@@ -114,21 +106,13 @@ def firewall_rules():
     sync_agent_ranges = get_sync_agent_ranges(g.skale)
     cfm = ConfigFileManager(schain_name)
     if not cfm.skaled_config_exists:
-        return construct_err_response(
-            msg=f'No schain with name {schain_name}'
-        )
+        return construct_err_response(msg=f'No schain with name {schain_name}')
     conf = cfm.skaled_config
     base_port = get_base_port_from_config(conf)
     node_ips = get_node_ips_from_config(conf)
     own_ip = get_own_ip_from_config(conf)
 
-    rc = get_default_rule_controller(
-        schain_name,
-        base_port,
-        own_ip,
-        node_ips,
-        sync_agent_ranges
-    )
+    rc = get_default_rule_controller(schain_name, base_port, own_ip, node_ips, sync_agent_ranges)
     endpoints = [e.to_dict() for e in rc.actual_rules()]
     return construct_ok_response({'endpoints': endpoints})
 
@@ -140,9 +124,7 @@ def get_schain():
     schain_name = request.args.get('schain_name')
     info = get_schain_info_by_name(g.skale, schain_name)
     if not info:
-        return construct_err_response(
-            msg=f'No schain with name {schain_name}'
-        )
+        return construct_err_response(msg=f'No schain with name {schain_name}')
     response = info.to_dict()
     return construct_ok_response(response)
 
@@ -152,6 +134,6 @@ def schain_containers_versions():
     logger.debug(request)
     version_data = {
         'skaled_version': get_skaled_version(),
-        'ima_version': get_ima_version_after_migration()
+        'ima_version': get_ima_version_after_migration(),
     }
     return construct_ok_response(version_data)

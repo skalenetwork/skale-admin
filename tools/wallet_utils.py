@@ -19,14 +19,14 @@
 
 import logging
 
-
 from redis import Redis
 from skale.utils.web3_utils import init_web3
 from skale.wallets import BaseWallet, RedisWalletAdapter, SgxWallet
 from skale.wallets.web3_wallet import to_checksum_address
 
-from tools.configs import DEFAULT_POOL, SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
-from tools.configs.web3 import ENDPOINT
+from core.node_config import NodeConfig
+from tools.configs import DEFAULT_POOL
+from tools.configs.sgx import SGX_CERTIFICATES_FOLDER, sgx_server_url
 from tools.resources import rs as grs
 
 logger = logging.getLogger(__name__)
@@ -53,11 +53,16 @@ def check_required_balance(skale):  # todo: move to the skale.py
     return int(balances['eth_balance_wei']) >= DEPOSIT_AMOUNT_ETH_WEI
 
 
-def init_wallet(node_config, rs: Redis = grs, pool: str = DEFAULT_POOL) -> BaseWallet:
-    web3 = init_web3(ENDPOINT)
+def init_wallet(
+    node_config: NodeConfig,
+    endpoint: str,
+    rs: Redis = grs,
+    pool: str = DEFAULT_POOL,
+) -> BaseWallet:
+    web3 = init_web3(endpoint)
     sgx_wallet = SgxWallet(
         web3=web3,
-        sgx_endpoint=SGX_SERVER_URL,
+        sgx_endpoint=sgx_server_url(),
         key_name=node_config.sgx_key_name,
         path_to_cert=SGX_CERTIFICATES_FOLDER,
     )

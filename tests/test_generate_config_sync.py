@@ -1,26 +1,26 @@
 import json
+
 import pytest
-from skale.schain_config.rotation_history import get_previous_schain_groups
 from skale.dataclasses.schain_options import AllocationType
+from skale.schain_config.rotation_history import get_previous_schain_groups
 
-from core.schains.config.predeployed import generate_predeployed_accounts
-from core.schains.config.precompiled import generate_precompiled_accounts
-
+from core.config.precompiled import generate_precompiled_accounts
+from core.config.schain.generator import (
+    SChainBaseConfig,
+    get_on_chain_owner,
+    get_schain_originator,
+)
+from core.config.schain.predeployed import generate_predeployed_accounts
 from core.schains.limits import get_schain_type
-from core.schains.config.generator import (
-    get_on_chain_owner, get_schain_originator, SChainBaseConfig)
-
-from tools.helper import is_address_contract
 from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
-
+from tools.helper import is_address_contract
 
 CHAINS = []
 
 
-@pytest.mark.skip(reason="test only used to generate static accounts for a sync node")
+@pytest.mark.skip(reason='test only used to generate static accounts for a sync node')
 def test_generate_config(skale):
     for schain_name in CHAINS:
-
         schain = skale.schains.get_by_name(schain_name)
         schain_type = get_schain_type(schain.part_of_node)
 
@@ -29,10 +29,7 @@ def test_generate_config(skale):
 
         schain_nodes_with_schains = []
         for key, value in original_group.items():
-            schain_nodes_with_schains.append({
-                'id': int(key),
-                'publicKey': value[2]
-            })
+            schain_nodes_with_schains.append({'id': int(key), 'publicKey': value[2]})
 
         is_owner_contract = is_address_contract(skale.web3, schain.mainnet_owner)
         on_chain_owner = get_on_chain_owner(schain, schain.generation, is_owner_contract)
@@ -41,9 +38,7 @@ def test_generate_config(skale):
 
         originator_address = get_schain_originator(schain)
 
-        precompiled_accounts = generate_precompiled_accounts(
-            on_chain_owner=on_chain_owner
-        )
+        precompiled_accounts = generate_precompiled_accounts(on_chain_owner=on_chain_owner)
 
         base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
@@ -55,7 +50,7 @@ def test_generate_config(skale):
             on_chain_owner=on_chain_owner,
             mainnet_owner=mainnet_owner,
             originator_address=originator_address,
-            generation=schain.generation
+            generation=schain.generation,
         )
 
         accounts = {

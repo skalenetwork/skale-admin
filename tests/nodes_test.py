@@ -1,25 +1,25 @@
 from skale.utils.helper import ip_to_bytes
+
 from core.node import (
-    get_current_nodes,
-    get_current_ips,
-    get_max_ip_change_ts,
     calc_reload_ts,
+    get_current_ips,
+    get_current_nodes,
+    get_max_ip_change_ts,
+    get_node_delay,
     get_node_index_in_group,
-    get_node_delay
 )
 from tests.utils import generate_random_ip
-from tests.conftest import NUMBER_OF_NODES
 
 
-def test_get_current_nodes(skale, schain_on_contracts):
+def test_get_current_nodes(skale, schain_on_contracts, number_of_nodes):
     current_nodes = get_current_nodes(skale, schain_on_contracts)
-    assert len(current_nodes) == NUMBER_OF_NODES
+    assert len(current_nodes) == number_of_nodes
 
 
-def test_get_current_ips(skale, schain_on_contracts):
+def test_get_current_ips(skale, schain_on_contracts, number_of_nodes):
     current_nodes = get_current_nodes(skale, schain_on_contracts)
     current_ips = get_current_ips(current_nodes)
-    assert len(current_ips) == NUMBER_OF_NODES
+    assert len(current_ips) == number_of_nodes
     assert current_ips[0] == current_nodes[0]['ip']
 
 

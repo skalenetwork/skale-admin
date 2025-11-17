@@ -1,14 +1,16 @@
 import concurrent.futures
-import mock
+from unittest import mock
 
 import pytest
-
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
-from core.schains.firewall import NFTablesController
-from core.schains.firewall.utils import get_default_rule_controller
-from core.schains.firewall.types import Action, IpRange, SkaledPorts
-
+from core.firewall import (
+    Action,
+    IpRange,
+    NFTablesController,
+    SkaledPorts,
+    get_default_rule_controller,
+)
 from tools.helper import run_cmd
 
 

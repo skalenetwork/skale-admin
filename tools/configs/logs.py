@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+
 from tools.configs import NODE_DATA_PATH
 
 LOG_FOLDER_NAME = 'log'
@@ -32,15 +33,12 @@ API_LOG_PATH = os.path.join(LOG_FOLDER, API_LOG_FILENAME)
 DEBUG_LOG_FILENAME = 'debug.log'
 DEBUG_LOG_PATH = os.path.join(LOG_FOLDER, DEBUG_LOG_FILENAME)
 
-SYNC_LOG_FILENAME = 'sync_node.log'
+SYNC_LOG_FILENAME = 'passive_node.log'
 SYNC_LOG_PATH = os.path.join(LOG_FOLDER, SYNC_LOG_FILENAME)
 
 
 REMOVED_CONTAINERS_FOLDER_NAME = '.removed_containers'
-REMOVED_CONTAINERS_FOLDER_PATH = os.path.join(
-    LOG_FOLDER,
-    REMOVED_CONTAINERS_FOLDER_NAME
-)
+REMOVED_CONTAINERS_FOLDER_PATH = os.path.join(LOG_FOLDER, REMOVED_CONTAINERS_FOLDER_NAME)
 
 LOG_FILE_SIZE_MB = 100
 LOG_FILE_SIZE_BYTES = LOG_FILE_SIZE_MB * 1000000
@@ -48,4 +46,5 @@ LOG_FILE_SIZE_BYTES = LOG_FILE_SIZE_MB * 1000000
 LOG_BACKUP_COUNT = 20
 
 ADMIN_LOG_FORMAT = '[%(asctime)s %(levelname)s][%(process)d][%(processName)s][%(threadName)s] - %(name)s:%(lineno)d - %(message)s'  # noqa
+FAIR_LOG_FORMAT = '[%(asctime)s %(levelname)s][%(threadName)s] - %(name)s:%(lineno)d - %(message)s'  # noqa
 API_LOG_FORMAT = '[%(asctime)s] %(process)d %(levelname)s %(url)s %(module)s: %(message)s'  # noqa

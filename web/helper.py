@@ -17,33 +17,28 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import logging
 import json
+import logging
+import os
 from functools import wraps
 from http import HTTPStatus
 
-from flask import g, Response
-from skale import Skale
+from flask import Response, g
+from skale import SkaleManager
 from skale.utils.web3_utils import init_web3
 
 from core.node_config import NodeConfig
-from tools.helper import init_skale
+from core.utils.fair import init_fair_manager
+from tools.configs.web3 import boot_endpoint, endpoint
+from tools.helper import init_skale, is_fair
 from tools.wallet_utils import init_wallet
-from tools.configs.web3 import ENDPOINT
-
 from web import API_VERSION_PREFIX
-
 
 logger = logging.getLogger(__name__)
 
 
 def construct_response(status, data):
-    return Response(
-        response=json.dumps(data),
-        status=status,
-        mimetype='application/json'
-    )
+    return Response(response=json.dumps(data), status=status, mimetype='application/json')
 
 
 def construct_ok_response(data=None):
@@ -68,16 +63,20 @@ def get_api_url(blueprint_name, method_name):
     return os.path.join(API_VERSION_PREFIX, blueprint_name, method_name)
 
 
-def init_skale_from_node_config(node_config: NodeConfig) -> Skale:
-    wallet = init_wallet(node_config)
+def init_skale_from_node_config(node_config: NodeConfig) -> SkaleManager:
+    wallet = init_wallet(node_config, endpoint=endpoint())
     return init_skale(wallet)
 
 
 def g_web3(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        g.web3 = init_web3(ENDPOINT)
+        if is_fair():
+            g.web3 = init_web3(boot_endpoint())
+        else:
+            g.web3 = init_web3(endpoint())
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -90,4 +89,27 @@ def g_skale(func):
         else:
             g.skale = init_skale(g.wallet)
         return func(*args, **kwargs)
+
+    return wrapper
+
+
+def g_fair(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if getattr(g, 'wallet', None) is None:
+            g.fair = init_fair_manager(node_config=g.config)
+            g.wallet = g.fair.wallet
+        else:
+            g.fair = init_fair_manager(wallet=g.wallet)
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def g_fair_no_wallet(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        g.fair = init_fair_manager()
+        return func(*args, **kwargs)
+
     return wrapper

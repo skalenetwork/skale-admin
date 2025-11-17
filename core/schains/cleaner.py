@@ -26,32 +26,37 @@ from pathlib import Path
 from typing import Optional
 
 from sgx import SgxClient
-from skale import Skale
+from skale import SkaleManager
+from skale.types.schain import SchainName
 
+from core.chain.runner import get_container_name, is_exited
+from core.checks.schain import SChainChecks
+from core.config.schain.directory import schain_config_dir
+from core.dkg.utils import get_secret_key_share_filepath
+from core.firewall.utils import (
+    cleanup_firewall_for_schain,
+    get_default_rule_controller,
+    get_sync_agent_ranges,
+)
 from core.node import get_current_nodes, get_skale_node_version
-from core.schains.checks import SChainChecks
-from core.schains.config.directory import schain_config_dir
-from core.schains.dkg.utils import get_secret_key_share_filepath
-from core.schains.firewall.utils import cleanup_firewall_for_schain, get_default_rule_controller
-from core.schains.process import ProcessReport, terminate_process
-from core.schains.runner import get_container_name, is_exited
 from core.schains.external_config import ExternalConfig
+from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType
-from core.schains.firewall.utils import get_sync_agent_ranges
-
-from tools.configs import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER, SYNC_NODE
+from tools.configs import NFT_CHAIN_CONFIG_WILDCARD, PASSIVE_NODE
+from tools.configs.containers import IMA_CONTAINER, SCHAIN_STOP_TIMEOUT, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.containers import SCHAIN_CONTAINER, IMA_CONTAINER, SCHAIN_STOP_TIMEOUT
+from tools.configs.sgx import SGX_CERTIFICATES_FOLDER
 from tools.docker_utils import DockerUtils
-from tools.helper import merged_unique, read_json, is_node_part_of_chain
+from tools.helper import is_node_part_of_chain, merged_unique, read_json
 from tools.sgx_utils import SGX_SERVER_URL
 from tools.str_formatters import arguments_list_string
 from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
 
-
 logger = logging.getLogger(__name__)
 
 JOIN_TIMEOUT = 1800
+
+FAIR_NFT_CHAIN_NAMES = ['fair-network', 'fair-committee']
 
 
 def run_cleaner(skale, node_config):
@@ -75,10 +80,10 @@ def remove_schain_volume(schain_name: str, dutils: DockerUtils = None) -> None:
     dutils.rm_vol(schain_name)
 
 
-def remove_schain_container(schain_name: str, dutils: DockerUtils = None):
+def remove_skaled_container(schain_name: str, dutils: DockerUtils = None):
     dutils = dutils or DockerUtils()
     log_remove('container', schain_name)
-    schain_container_name = get_container_name(SCHAIN_CONTAINER, schain_name)
+    schain_container_name = get_container_name(SKALED_CONTAINER, schain_name)
     return dutils.safe_rm(schain_container_name, v=True, force=True, timeout=SCHAIN_STOP_TIMEOUT)
 
 
@@ -129,13 +134,16 @@ def get_schain_names_from_contract(skale, node_id):
 
 def get_schains_with_containers(dutils=None):
     dutils = dutils or DockerUtils()
-    return [
-        c.name.replace('skale_schain_', '', 1) for c in dutils.get_all_schain_containers(all=True)
-    ]
+    return [c.name.replace('sk_skaled_', '', 1) for c in dutils.get_all_schain_containers(all=True)]
 
 
 def get_schains_firewall_configs() -> list:
-    return list(map(lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)))
+    return list(
+        filter(
+            lambda name: name not in FAIR_NFT_CHAIN_NAMES,
+            map(lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)),
+        )
+    )
 
 
 def get_schains_on_node(dutils=None):
@@ -161,14 +169,6 @@ def get_schains_on_node(dutils=None):
             schains_firewall_configs,
         )
     )
-
-
-def schain_names_to_ids(skale, schain_names):
-    ids = []
-    for name in schain_names:
-        id_ = skale.schains.name_to_id(name)
-        ids.append(bytes.fromhex(id_))
-    return ids
 
 
 def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
@@ -204,7 +204,7 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
 
 
 def remove_schain(
-    skale: Skale,
+    skale: SkaleManager,
     node_id: int,
     schain_name: str,
     msg: str,
@@ -218,7 +218,7 @@ def remove_schain(
     delete_bls_keys(skale, schain_name)
     sync_agent_ranges = get_sync_agent_ranges(skale)
     rotation_data = skale.node_rotation.get_rotation(schain_name)
-    rotation_id = rotation_data['rotation_id']
+    rotation_id = rotation_data.rotation_counter
     estate = ExternalConfig(name=schain_name).get()
     current_nodes = get_current_nodes(skale, schain_name)
     group_index = skale.schains.name_to_group_id(schain_name)
@@ -238,7 +238,7 @@ def remove_schain(
 
 def cleanup_schain(
     node_id: int,
-    schain_name: str,
+    schain_name: SchainName,
     sync_agent_ranges: list,
     rotation_id: int,
     last_dkg_successful: bool,
@@ -262,13 +262,13 @@ def cleanup_schain(
         estate=estate,
         last_dkg_successful=last_dkg_successful,
         dutils=dutils,
-        sync_node=SYNC_NODE,
+        passive_node=PASSIVE_NODE,
     )
     check_status = checks.get_all()
     if check_status['skaled_container'] or is_exited(
-        schain_name, container_type=ContainerType.schain, dutils=dutils
+        schain_name, container_type=ContainerType.skaled, dutils=dutils
     ):
-        remove_schain_container(schain_name, dutils=dutils)
+        remove_skaled_container(schain_name, dutils=dutils)
     if check_status['volume']:
         remove_schain_volume(schain_name, dutils=dutils)
     if any(checks.firewall_rules.data):

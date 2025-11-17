@@ -1,17 +1,17 @@
-import mock
 import logging
 import os
 import pathlib
 import shutil
 import time
+from unittest import mock
 
 import psutil
 import pytest
 
 from core.schains.process import ProcessReport, cleanup_schains_pids, terminate_process
 from core.schains.process_manager import run_pm_schain
-from tools.configs.schains import SCHAINS_DIR_PATH
 from tests.utils import get_schain_struct
+from tools.configs.schains import SCHAINS_DIR_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ def wait_for_process_report(process_report):
 
 
 def test_run_pm_schain(tmp_dir, skale, skale_ima, node_config, _schain_name):
-    schain = get_schain_struct(schain_name=_schain_name)
+    schain = get_schain_struct(_test_schain_name=_schain_name)
 
     timeout = 7
 
@@ -109,7 +109,7 @@ def test_run_pm_schain(tmp_dir, skale, skale_ima, node_config, _schain_name):
 
 
 def test_cleanup_schains_pids(tmp_dir, skale, skale_ima, node_config, _schain_name):
-    schain = get_schain_struct(schain_name=_schain_name)
+    schain = get_schain_struct(_test_schain_name=_schain_name)
 
     process_report = ProcessReport(schain.name)
     assert not process_report.exists()

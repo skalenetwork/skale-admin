@@ -1,9 +1,6 @@
 import os
-from urllib.parse import urlparse
 
-LONG_LINE = '=' * 100
-
-DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 RUNNING_ON_HOST = os.getenv('RUNNING_ON_HOST', False)
 SKALE_DIR_HOST = os.getenv('SKALE_DIR_HOST')
@@ -48,31 +45,10 @@ SSL_KEY_PATH = os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_KEY_NAME)
 SSL_CERT_PATH = os.path.join(SSL_CERTIFICATES_FILEPATH, SSL_CRT_NAME)
 
 BACKUP_RUN = os.getenv('BACKUP_RUN', False)
-SGX_SERVER_URL = os.environ.get('SGX_SERVER_URL')
-
-PARSED_SGX_URL = urlparse(SGX_SERVER_URL)
-SGX_HTTPS_ENABLED = PARSED_SGX_URL.scheme == 'https'
-
-SGX_CERTIFICATES_FOLDER_NAME = os.getenv('SGX_CERTIFICATES_DIR_NAME')
-SGX_SSL_KEY_NAME = 'sgx.key'
-SGX_SSL_CERT_NAME = 'sgx.crt'
-
-if SGX_CERTIFICATES_FOLDER_NAME:
-    SGX_CERTIFICATES_FOLDER = os.path.join(NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER_NAME)
-else:
-    SGX_CERTIFICATES_FOLDER = os.getenv('SGX_CERTIFICATES_FOLDER')
-
-if SGX_HTTPS_ENABLED and SGX_CERTIFICATES_FOLDER:
-    SGX_SSL_KEY_FILEPATH = os.path.join(SGX_CERTIFICATES_FOLDER, SGX_SSL_KEY_NAME)
-    SGX_SSL_CERT_FILEPATH = os.path.join(SGX_CERTIFICATES_FOLDER, SGX_SSL_CERT_NAME)
-else:
-    SGX_SSL_KEY_FILEPATH = None
-    SGX_SSL_CERT_FILEPATH = None
 
 NODE_CONFIG_LOCK_PATH = os.getenv('NODE_CONFIG_LOCK_PATH')
 if not NODE_CONFIG_LOCK_PATH:
-    NODE_CONFIG_LOCK_PATH = os.path.join(NODE_DATA_PATH,
-                                         'node_config.lock')
+    NODE_CONFIG_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'node_config.lock')
 INIT_LOCK_PATH = os.getenv('INIT_LOCK_PATH')
 if not INIT_LOCK_PATH:
     INIT_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'init.lock')
@@ -81,10 +57,12 @@ META_FILEPATH = os.path.join(NODE_DATA_PATH, 'meta.json')
 
 ALLOWED_TIMESTAMP_DIFF = int(os.getenv('ALLOWED_TIMESTAMP_DIFF', 120))
 
-ENV_TYPE = os.environ.get('ENV_TYPE')
+ENV_TYPE = os.environ['ENV_TYPE']
+SKALE_NETWORK_TYPE = os.environ.get('SKALE_NETWORK_TYPE')
 ALLOCATION_FILEPATH = os.path.join(CONFIG_FOLDER, 'schain_allocation.yml')
 
 STATIC_PARAMS_FILEPATH = os.path.join(CONFIG_FOLDER, 'static_params.yaml')
+FAIR_STATIC_PARAMS_FILEPATH = os.path.join(CONFIG_FOLDER, 'fair_static_params.yaml')
 
 DEFAULT_POOL = 'transactions'
 
@@ -103,7 +81,7 @@ CHANGE_IP_DELAY = 300
 
 STATSD_HOST = '127.0.0.1'
 STATSD_PORT = 8125
-SYNC_NODE = os.getenv('SYNC_NODE') == 'True'
+PASSIVE_NODE = os.getenv('PASSIVE_NODE') == 'True'
 
 DOCKER_NODE_CONFIG_FILEPATH = os.path.join(NODE_DATA_PATH, 'docker.json')
 

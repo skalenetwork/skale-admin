@@ -20,39 +20,23 @@
 import logging
 from http import HTTPStatus
 
-
 from flask import Blueprint, g, request
-from sgx import SgxClient
 
-
-from core.node import get_check_report, get_skale_node_version
-from core.node import get_current_nodes
-from core.schains.checks import SChainChecks
+from core.checks.schain import SChainChecks
+from core.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
+from core.ima.container import get_ima_log_checks
+from core.node import get_current_nodes, get_skale_node_version
 from core.schains.external_config import ExternalState
-from core.schains.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
-from core.schains.ima import get_ima_log_checks
 from core.schains.process import is_process_healthy
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
-from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from web.helper import construct_err_response, construct_ok_response, g_skale, get_api_url
 from web.models.schain import SChainRecord
-from web.helper import construct_err_response, construct_ok_response, get_api_url, g_skale
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'health'
 
 
 health_bp = Blueprint(BLUEPRINT_NAME, __name__)
-
-
-@health_bp.route(get_api_url(BLUEPRINT_NAME, 'containers'), methods=['GET'])
-def containers():
-    logger.debug(request)
-    all = request.args.get('all') == 'True'
-    name_filter = request.args.get('name_filter') or ''
-    containers_list = g.docker_utils.get_containers_info(
-        all=all, name_filter=name_filter, format=True
-    )
-    return construct_ok_response(containers_list)
 
 
 @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
@@ -75,7 +59,7 @@ def schains_checks():
     for schain in schains:
         if schain.name != '':
             rotation_data = g.skale.node_rotation.get_rotation(schain.name)
-            rotation_id = rotation_data['rotation_id']
+            rotation_id = rotation_data.rotation_counter
             if SChainRecord.added(schain.name):
                 rc = get_default_rule_controller(
                     name=schain.name, sync_agent_ranges=sync_agent_ranges
@@ -92,7 +76,7 @@ def schains_checks():
                     current_nodes=current_nodes,
                     last_dkg_successful=True,
                     estate=estate,
-                    sync_node=False,
+                    passive_node=False,
                 ).get_all(needed=checks_filter)
                 if not checks_filter or 'process' in checks_filter:
                     schain_checks.update(
@@ -111,42 +95,3 @@ def ima_log_checks():
         return construct_err_response(status_code=HTTPStatus.BAD_REQUEST, msg='No node installed')
     checks = get_ima_log_checks()
     return construct_ok_response(checks)
-
-
-@health_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx'), methods=['GET'])
-def sgx_info():
-    logger.debug(request)
-    status_zmq = False
-    status_https = False
-    version = None
-    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER, zmq=True)
-    try:
-        if sgx.zmq.get_server_status() == 0:
-            status_zmq = True
-        version = sgx.zmq.get_server_version()
-    except Exception as err:
-        logger.error(f'Cannot make SGX ZMQ check {err}')
-    sgx_https = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
-    try:
-        if sgx_https.get_server_status() == 0:
-            status_https = True
-        if version is None:
-            version = sgx_https.get_server_version()
-    except Exception as err:
-        logger.error(f'Cannot make SGX HTTPS check {err}')
-
-    res = {
-        'status_zmq': status_zmq,
-        'status_https': status_https,
-        'sgx_server_url': SGX_SERVER_URL,
-        'sgx_keyname': g.config.sgx_key_name,
-        'sgx_wallet_version': version,
-    }
-    return construct_ok_response(data=res)
-
-
-@health_bp.route(get_api_url(BLUEPRINT_NAME, 'check-report'), methods=['GET'])
-def check_report():
-    logger.debug(request)
-    report = get_check_report()
-    return construct_ok_response(data=report)

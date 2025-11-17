@@ -3,15 +3,14 @@ from copy import deepcopy
 
 import pytest
 
+from core.checks.schain import ConfigChecks
+from core.config.schain.directory import schain_config_dir
+from core.monitor.schain.action_config import ConfigActionManager
 from core.node import get_current_nodes
-from core.schains.checks import ConfigChecks
-from core.schains.config.directory import schain_config_dir
-from core.schains.monitor.action import ConfigActionManager
 from core.schains.external_config import ExternalConfig
+from tests.utils import CONFIG_STREAM
 from tools.helper import read_json
 from web.models.schain import SChainRecord
-
-from tests.utils import CONFIG_STREAM
 
 
 @pytest.fixture
@@ -20,14 +19,7 @@ def rotation_data(schain_db, skale):
 
 
 @pytest.fixture
-def config_checks(
-    schain_db,
-    skale,
-    node_config,
-    schain_on_contracts,
-    estate,
-    rotation_data
-):
+def config_checks(schain_db, skale, node_config, schain_on_contracts, estate, rotation_data):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
     current_nodes = get_current_nodes(skale, name)
@@ -35,24 +27,17 @@ def config_checks(
         schain_name=name,
         node_id=node_config.id,
         schain_record=schain_record,
-        rotation_id=rotation_data['rotation_id'],
+        rotation_id=rotation_data.rotation_counter,
         stream_version=CONFIG_STREAM,
         last_dkg_successful=True,
         current_nodes=current_nodes,
-        estate=estate
+        estate=estate,
     )
 
 
 @pytest.fixture
 def config_am(
-    schain_db,
-    skale,
-    node_config,
-    schain_on_contracts,
-    predeployed_ima,
-    secret_key,
-    estate,
-    config_checks
+    schain_db, skale, node_config, schain_on_contracts, secret_key, estate, config_checks, skale_ima
 ):
     name = schain_db
     rotation_data = skale.node_rotation.get_rotation(name)
@@ -60,13 +45,14 @@ def config_am(
     current_nodes = get_current_nodes(skale, name)
     return ConfigActionManager(
         skale=skale,
+        skale_ima=skale_ima,
         schain=schain,
         node_config=node_config,
         rotation_data=rotation_data,
         checks=config_checks,
         stream_version=CONFIG_STREAM,
         current_nodes=current_nodes,
-        estate=estate
+        estate=estate,
     )
 
 
@@ -122,6 +108,6 @@ def test_external_state_config_actions(config_am, config_checks, empty_econfig):
         'ima_linked': True,
         'chain_id': config_am.skale.web3.eth.chain_id,
         'ranges': [['1.1.1.1', '2.2.2.2'], ['3.3.3.3', '4.4.4.4']],
-        'reload_ts': None
+        'reload_ts': None,
     }
     assert config_checks.external_state

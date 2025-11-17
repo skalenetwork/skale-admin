@@ -18,36 +18,42 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+from typing import Any, Dict, Literal, Optional
+
 import colorful as cf
 
-from tools.configs import LONG_LINE
-
-DISABLE_COLORS = os.environ.get('DISABLE_COLORS', None)
-
+DISABLE_COLORS = os.environ.get('DISABLE_COLORS') == 'True'
 cf.use_style('solarized')
-
 PALETTE = {
     'success': '#00c853',
     'info': '#1976d2',
-    'error': '#d50000'
+    'error': '#d50000',
+    'warning': '#ff6f00',
+    'primary': '#6200ea',
+    'secondary': '#00838f',
+    'lime': '#cddc39',
+    'pink': '#e91e63',
+    'light': '#D7AFFF',
+    'cyan': '#00bcd4',
 }
 
 
-def arguments_list_string(args, title=None, type='info'):
-    s = f'\n{LONG_LINE}\n' if DISABLE_COLORS else cf.blue(f'\n{LONG_LINE}\n')
-    if title:
-        if DISABLE_COLORS:
-            s += f'{title}\n'
-        else:
-            with cf.with_palette(PALETTE) as c:
-                if type == 'error':
-                    s += f'{c.bold_error(title)}\n'
-                elif type == 'success':
-                    s += f'{c.bold_success(title)}\n'
-                else:
-                    s += f'{c.bold_info(title)}\n'
-    for k in args:
-        s += f'{k}: ' if DISABLE_COLORS else f'{cf.bold_violet(k)}: '
-        s += f'{args[k]}\n'
-    s += f'{LONG_LINE}\n' if DISABLE_COLORS else cf.blue(f'{LONG_LINE}\n')
-    return s
+def arguments_list_string(
+    args: Dict[str, Any],
+    title: Optional[str] = None,
+    type: Literal[
+        'info', 'success', 'error', 'warning', 'primary', 'secondary', 'lime', 'pink', 'light'
+    ] = 'info',
+) -> str:
+    if DISABLE_COLORS:
+        title_part = f'{title} - ' if title else ''
+        args_part = ', '.join(f'{key}: {value}' for key, value in args.items())
+        return f'{title_part}{{{args_part}}}'
+
+    with cf.with_palette(PALETTE) as c:
+        color_fn = getattr(c, f'bold_{type}')
+        title_part = str(color_fn('> ' + title + ' - ')) if title else str(color_fn('> '))
+        args_part = ', '.join(
+            f'{str(c.bold_cyan(key))}: {str(c.light(value))}' for key, value in args.items()
+        )
+        return f'{title_part}{str(color_fn("{"))} {args_part} {str(color_fn("}"))}'

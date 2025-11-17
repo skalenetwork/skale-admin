@@ -36,19 +36,18 @@ from docker.models.volumes import Volume
 
 from tools.configs import DOCKER_NODE_CONFIG_FILEPATH
 from tools.configs.containers import (
+    CONTAINER_LOGS_SEPARATOR,
     CONTAINER_NOT_FOUND,
     CREATED_STATUS,
     DEFAULT_DOCKER_HOST,
     DOCKER_DEFAULT_HEAD_LINES,
-    DOCKER_DEFAULT_TAIL_LINES,
     DOCKER_DEFAULT_STOP_TIMEOUT,
+    DOCKER_DEFAULT_TAIL_LINES,
     EXITED_STATUS,
     RUNNING_STATUS,
-    CONTAINER_LOGS_SEPARATOR
 )
 from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
 from tools.helper import read_json
-
 
 logger = logging.getLogger(__name__)
 
@@ -69,15 +68,17 @@ def format_containers(f):
             return containers
         res = []
         for container in containers:
-            res.append({
-                'image': container.attrs['Config']['Image'],
-                'name': re.sub('/', '', container.attrs['Name']),
-                'state': container.attrs['State'],
-                'cpu_shares': container.attrs['HostConfig']['CpuShares'],
-                'mem_limit': container.attrs['HostConfig']['Memory'],
-                'swap_limit': container.attrs['HostConfig']['MemorySwap'],
-                'swappiness': container.attrs['HostConfig']['MemorySwappiness']
-            })
+            res.append(
+                {
+                    'image': container.attrs['Config']['Image'],
+                    'name': re.sub('/', '', container.attrs['Name']),
+                    'state': container.attrs['State'],
+                    'cpu_shares': container.attrs['HostConfig']['CpuShares'],
+                    'mem_limit': container.attrs['HostConfig']['Memory'],
+                    'swap_limit': container.attrs['HostConfig']['MemorySwap'],
+                    'swappiness': container.attrs['HostConfig']['MemorySwappiness'],
+                }
+            )
         return res
 
     return inner
@@ -90,26 +91,16 @@ def get_docker_group_id() -> int:
 class DockerUtils:
     docker_lock = multiprocessing.Lock()
 
-    def __init__(
-        self,
-        volume_driver: str = 'lvmpy',
-        host: str = DEFAULT_DOCKER_HOST
-    ) -> None:
+    def __init__(self, volume_driver: str = 'lvmpy', host: str = DEFAULT_DOCKER_HOST) -> None:
         self.client = self.init_docker_client(host=host)
         self.cli = self.init_docker_cli(host=host)
         self.volume_driver = volume_driver
 
-    def init_docker_client(
-        self,
-        host: str = DEFAULT_DOCKER_HOST
-    ) -> DockerClient:
-        logger.debug('Initing docker client with host %s', host)
+    def init_docker_client(self, host: str = DEFAULT_DOCKER_HOST) -> DockerClient:
+        logger.debug('Initializing docker client with host %s', host)
         return docker.DockerClient(base_url=host)
 
-    def init_docker_cli(
-        self,
-        host: str = DEFAULT_DOCKER_HOST
-    ) -> APIClient:
+    def init_docker_cli(self, host: str = DEFAULT_DOCKER_HOST) -> APIClient:
         return APIClient(base_url=host)
 
     def is_data_volume_exists(self, name: str) -> bool:
@@ -126,22 +117,16 @@ class DockerUtils:
             return False
         return True
 
-    def run_container(self, image_name: str, name: str,
-                      *args, **kwargs) -> Container:
-        return self.client.containers.run(image_name, name=name, detach=True,
-                                          *args, **kwargs)
+    def run_container(self, image_name: str, name: str, *args, **kwargs) -> Container:
+        return self.client.containers.run(image_name, name=name, detach=True, *args, **kwargs)
 
     def create_data_volume(self, name: str, size: int = None) -> Volume:
         driver_opts = None
         if self.volume_driver != 'local' and size:
             driver_opts = {'size': str(size)}
-        logging.info(
-            f'Creating volume - size: {size}, name: {name}, driver_opts: {driver_opts}')
+        logging.info(f'Creating volume - size: {size}, name: {name}, driver_opts: {driver_opts}')
         volume = self.client.volumes.create(
-            name=name,
-            driver=self.volume_driver,
-            driver_opts=driver_opts,
-            labels={"schain": name}
+            name=name, driver=self.volume_driver, driver_opts=driver_opts, labels={'schain': name}
         )
         return volume
 
@@ -149,7 +134,7 @@ class DockerUtils:
         return self.get_containers_info(all=all, name_filter='skale_*')
 
     def get_all_schain_containers(self, all=False, format=False) -> list:
-        return self.get_containers_info(all=all, name_filter='skale_schain_*')
+        return self.get_containers_info(all=all, name_filter='sk_skaled_*')
 
     @format_containers
     def get_containers_info(self, all=False, name_filter='*', format=False) -> list:
@@ -157,7 +142,7 @@ class DockerUtils:
 
     @format_containers
     def get_all_ima_containers(self, all=False, format=False) -> list:
-        return self.client.containers.list(all=all, filters={'name': 'skale_ima_*'})
+        return self.client.containers.list(all=all, filters={'name': 'sk_ima_*'})
 
     def get_info(self, container_id: str, raise_not_found: bool = False) -> dict:
         container_info = {}
@@ -170,8 +155,7 @@ class DockerUtils:
         except docker.errors.NotFound:
             if raise_not_found:
                 raise
-            logger.debug(
-                f'Can not get info - no such container: {container_id}')
+            logger.debug(f'Can not get info - no such container: {container_id}')
             container_info['status'] = CONTAINER_NOT_FOUND
         return container_info
 
@@ -208,7 +192,7 @@ class DockerUtils:
     def rm_vol(self, name: str, retry_lvmpy_error: bool = True) -> None:
         logger.info(f'Going to remove volume {name}')
         if retry_lvmpy_error:
-            timeouts = [2 ** power for power in range(MAX_RETRIES)]
+            timeouts = [2**power for power in range(MAX_RETRIES)]
         else:
             timeouts = [0]
         error = None
@@ -221,8 +205,7 @@ class DockerUtils:
                 volume.remove(force=True)
             except Exception as err:
                 error = err
-                logger.error(
-                    f'Removing volume returned {err}. Sleeping {timeout}s')
+                logger.error(f'Removing volume returned {err}. Sleeping {timeout}s')
                 time.sleep(timeout)
             else:
                 error = None
@@ -248,8 +231,7 @@ class DockerUtils:
         container = self.safe_get_container(container_name)
         if not container:
             return
-        logger.info(
-            f'Stopping container: {container_name}, timeout: {timeout}')
+        logger.info(f'Stopping container: {container_name}, timeout: {timeout}')
         container.stop(timeout=timeout)
         self.backup_container_logs(container)
         logger.info(f'Removing container: {container_name}, kwargs: {kwargs}')
@@ -261,7 +243,7 @@ class DockerUtils:
         cls,
         container: Container,
         head: int = DOCKER_DEFAULT_HEAD_LINES,
-        tail: int = DOCKER_DEFAULT_TAIL_LINES
+        tail: int = DOCKER_DEFAULT_TAIL_LINES,
     ):
         tail_lines = container.logs(tail=tail)
         lines_number = len(io.BytesIO(tail_lines).readlines())
@@ -271,22 +253,16 @@ class DockerUtils:
         return head_lines, tail_lines
 
     def display_container_logs(
-        self,
-        container_name: Container,
-        head: int = 100,
-        tail: int = 200,
-        to_logger: bool = True
-    ) -> str:
+        self, container_name: str, head: int = 50, tail: int = 100, to_logger: bool = True
+    ) -> str | None:
         container = self.safe_get_container(container_name)
         if not container:
             return
         head_lines, tail_lines = DockerUtils.get_container_logs(
-            container=container,
-            head=head,
-            tail=tail
+            container=container, head=head, tail=tail
         )
         pretext = f'container {container_name} logs: \n'
-        logs = (head_lines + CONTAINER_LOGS_SEPARATOR + tail_lines).decode("utf-8")
+        logs = (head_lines + CONTAINER_LOGS_SEPARATOR + tail_lines).decode('utf-8')
         if to_logger:
             logger.info(pretext + logs)
         else:
@@ -299,12 +275,10 @@ class DockerUtils:
         container: Container,
         log_filepath: str,
         head: int = DOCKER_DEFAULT_HEAD_LINES,
-        tail: int = DOCKER_DEFAULT_TAIL_LINES
+        tail: int = DOCKER_DEFAULT_TAIL_LINES,
     ) -> None:
         head_lines, tail_lines = DockerUtils.get_container_logs(
-            container=container,
-            head=head,
-            tail=tail
+            container=container, head=head, tail=tail
         )
         with open(log_filepath, 'wb') as out:
             out.write(head_lines)
@@ -315,33 +289,25 @@ class DockerUtils:
         self,
         container: Container,
         head: int = DOCKER_DEFAULT_HEAD_LINES,
-        tail: int = DOCKER_DEFAULT_TAIL_LINES
+        tail: int = DOCKER_DEFAULT_TAIL_LINES,
     ) -> None:
         logger.info(f'Going to backup container logs: {container.name}')
         logs_backup_filepath = self.get_logs_backup_filepath(container)
-        DockerUtils.save_container_logs(
-            container,
-            logs_backup_filepath,
-            head=head,
-            tail=tail
-        )
+        DockerUtils.save_container_logs(container, logs_backup_filepath, head=head, tail=tail)
         logger.info(
-            f'Old container logs saved to {logs_backup_filepath}, '
-            f'head {head}, tail: {tail}'
+            f'Old container logs saved to {logs_backup_filepath}, head {head}, tail: {tail}'
         )
 
     def get_logs_backup_filepath(self, container: Container) -> str:
-        container_index = sum(1 for f in os.listdir(REMOVED_CONTAINERS_FOLDER_PATH)
-                              if f.startswith(f'{container.name}-'))
+        container_index = sum(
+            1
+            for f in os.listdir(REMOVED_CONTAINERS_FOLDER_PATH)
+            if f.startswith(f'{container.name}-')
+        )
         log_file_name = f'{container.name}-{container_index}.log'
         return os.path.join(REMOVED_CONTAINERS_FOLDER_PATH, log_file_name)
 
-    def restart(
-        self,
-        container_name: str,
-        timeout: int = DOCKER_DEFAULT_STOP_TIMEOUT,
-        **kwargs
-    ):
+    def restart(self, container_name: str, timeout: int = DOCKER_DEFAULT_STOP_TIMEOUT, **kwargs):
         logger.info(f'Restarting container: {container_name}')
         try:
             container = self.client.containers.get(container_name)
@@ -368,15 +334,14 @@ class DockerUtils:
     def get_vol_created_ts(self, name: str) -> int:
         vol = self.get_vol(name)
         if vol:
-            iso_time = vol.attrs['CreatedAt'][:-1]
+            iso_time = vol.attrs['CreatedAt']
+            if iso_time.endswith('Z'):
+                iso_time = iso_time[:-1] + '+00:00'
             return int(datetime.fromisoformat(iso_time).timestamp())
         else:
             return 0
 
-    def restart_all_schains(
-        self,
-        timeout: int = DOCKER_DEFAULT_STOP_TIMEOUT
-    ) -> None:
+    def restart_all_schains(self, timeout: int = DOCKER_DEFAULT_STOP_TIMEOUT) -> None:
         containers = self.get_all_schain_containers()
         for container in containers:
             self.restart(container.name, timeout=timeout)

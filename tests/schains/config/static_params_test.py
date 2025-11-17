@@ -1,14 +1,13 @@
-from core.schains.config.helper import get_static_params
-from core.schains.types import SchainType
-from core.schains.config.static_params import (
+from core.config.schain.helper import get_static_params
+from core.config.schain.static_params import (
     get_automatic_repair_option,
     get_schain_static_param,
+    get_static_node_info,
     get_static_schain_cmd,
     get_static_schain_info,
-    get_static_node_info,
 )
+from core.schains.types import SchainType
 from tools.configs import ENV_TYPE
-
 
 TEST_SCHAIN_NAME = 'test-schain'
 DEFAULT_TS_NAME = 'revertableFSPatchTimestamp'
@@ -68,16 +67,19 @@ def test_get_schain_static_param():
     )
 
     assert new_ts_info_custom_chain != static_params['schain'][CHAIN_SPECIFIC_TS_NAME]
-    assert new_ts_info_custom_chain == \
-        static_params['schain'][CHAIN_SPECIFIC_TS_NAME][TEST_SCHAIN_NAME]
+    assert (
+        new_ts_info_custom_chain
+        == static_params['schain'][CHAIN_SPECIFIC_TS_NAME][TEST_SCHAIN_NAME]
+    )
 
     new_ts_info_default_chain = get_schain_static_param(
         static_params['schain'][CHAIN_SPECIFIC_TS_NAME], 'test'
     )
     assert new_ts_info_default_chain != static_params['schain'][CHAIN_SPECIFIC_TS_NAME]
     assert new_ts_info_default_chain != static_params['schain'][CHAIN_SPECIFIC_TS_NAME].get('test')
-    assert new_ts_info_default_chain == \
-        static_params['schain'][CHAIN_SPECIFIC_TS_NAME].get('default')
+    assert new_ts_info_default_chain == static_params['schain'][CHAIN_SPECIFIC_TS_NAME].get(
+        'default'
+    )
 
 
 def test_get_static_node_info():

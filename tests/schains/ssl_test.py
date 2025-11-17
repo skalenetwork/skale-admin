@@ -1,8 +1,8 @@
 import os
 from datetime import datetime
 
+from core.chain.ssl import get_ssl_filepath, get_ssl_files_change_date
 from tools.configs import NODE_DATA_PATH
-from core.schains.ssl import get_ssl_filepath, get_ssl_files_change_date
 
 
 def test_get_ssl_filepath(cert_key_pair):

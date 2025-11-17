@@ -1,0 +1,95 @@
+#   -*- coding: utf-8 -*-
+#
+#   This file is part of SKALE Admin
+#
+#   Copyright (C) 2022 SKALE Labs
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Affero General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Affero General Public License for more details.
+#
+#   You should have received a copy of the GNU Affero General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
+import os
+import time
+from typing import Dict
+
+from skale import SkaleIma, SkaleManager
+from skale.schain_config.ports_allocation import get_schain_base_port_on_node
+
+from core.node_config import NodeConfig
+from core.schains.process_manager import run_pm_schain
+from tools.configs.ima import IMA_CONTRACTS
+from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS
+from tools.logger import init_sync_logger
+from web.migrations import migrate
+from web.models.schain import create_tables
+
+init_sync_logger()
+logger = logging.getLogger(__name__)
+
+SLEEP_INTERVAL = 180
+WORKER_RESTART_SLEEP_INTERVAL = 2
+
+SCHAIN_NAME = os.environ.get('SCHAIN_NAME')
+
+
+def monitor(skale, skale_ima, node_config, schain: Dict) -> None:
+    while True:
+        try:
+            run_pm_schain(skale, skale_ima, node_config, schain)
+        except Exception:
+            logger.exception('Process manager procedure failed!')
+        logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
+        time.sleep(SLEEP_INTERVAL)
+
+
+def worker(schain_name: str):
+    skale = SkaleManager(ENDPOINT, MANAGER_CONTRACTS)
+    skale_ima = SkaleIma(ENDPOINT, IMA_CONTRACTS)
+
+    if not skale.schains_internal.is_schain_exist(schain_name):
+        logger.error(f'Provided SKALE Chain does not exist: {schain_name}')
+        exit(1)
+
+    schain = skale.schains.get_by_name(schain_name)
+    node_config = NodeConfig()
+
+    schain_nodes = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    if not node_config.id:
+        node_config.id = schain_nodes[0]
+
+    node = skale.nodes.get(node_config.id)
+    if node_config.schain_base_port == -1:
+        schains_on_node = skale.schains.get_schains_for_node(node_config.id)
+        node_config.schain_base_port = get_schain_base_port_on_node(
+            schains_on_node, schain_name, node['port']
+        )
+
+    logger.info(f'Node {node_config.id} will be used as a current node')
+    monitor(skale, skale_ima, node_config, schain)
+
+
+def main():
+    if SCHAIN_NAME is None:
+        raise Exception('You should provide SCHAIN_NAME')
+    while True:
+        try:
+            create_tables()
+            migrate()
+            worker(SCHAIN_NAME)
+        except Exception:
+            logger.exception('Sync node worker failed')
+        time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
+
+
+if __name__ == '__main__':
+    main()

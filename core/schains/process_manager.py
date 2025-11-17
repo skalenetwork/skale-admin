@@ -22,25 +22,24 @@ import time
 from multiprocessing import Process
 from typing import Optional
 
-from skale import Skale, SkaleIma
+from skale import SkaleIma, SkaleManager
 from skale.contracts.manager.schains import SchainStructure
 
+from core.monitor.schain.main import start_tasks
 from core.node_config import NodeConfig
-from core.schains.monitor.main import start_tasks
 from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process import (
     get_schain_process_info,
     is_monitor_process_alive,
-    terminate_process
+    terminate_process,
 )
-
-from tools.str_formatters import arguments_list_string
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
+from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
 
 
-def run_process_manager(skale: Skale, skale_ima: SkaleIma, node_config: NodeConfig) -> None:
+def run_process_manager(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig) -> None:
     logger.info('Process manager started')
     node_id = node_config.id
     node_info = node_config.all()
@@ -53,7 +52,7 @@ def run_process_manager(skale: Skale, skale_ima: SkaleIma, node_config: NodeConf
 
 
 def run_pm_schain(
-    skale: Skale,
+    skale: SkaleManager,
     skale_ima: SkaleIma,
     node_config: NodeConfig,
     schain: SchainStructure,
@@ -76,15 +75,13 @@ def run_pm_schain(
             logger.info('%s Process is running: PID = %d', log_prefix, pid)
     else:
         process = Process(
-            name=schain.name,
-            target=start_tasks,
-            args=(skale, schain, node_config, skale_ima)
+            name=schain.name, target=start_tasks, args=(skale, schain, node_config, skale_ima)
         )
         process.start()
         logger.info('Process started for %s', schain.name)
 
 
-def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
+def fetch_schains_to_monitor(skale: SkaleManager, node_id: int) -> list:
     """
     Returns list of sChain dicts that admin should monitor (currently assigned + rotating).
     """
@@ -108,7 +105,7 @@ def fetch_schains_to_monitor(skale: Skale, node_id: int) -> list:
     return active_schains
 
 
-def get_leaving_schains_for_node(skale: Skale, node_id: int) -> list:
+def get_leaving_schains_for_node(skale: SkaleManager, node_id: int) -> list:
     logger.info('Get leaving_history for node ...')
     leaving_schains = []
     leaving_history = skale.node_rotation.get_leaving_history(node_id)

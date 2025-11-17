@@ -1,20 +1,19 @@
 import json
-import mock
 import os
 import shutil
 from functools import partial
+from unittest import mock
 
 import pytest
-from flask import Flask, appcontext_pushed, g
 from Crypto.Hash import keccak
+from flask import Flask, appcontext_pushed, g
 
+from core.config.schain.file_manager import ConfigFileManager
 from core.node_config import NodeConfig
-from core.schains.config.file_manager import ConfigFileManager
 from tests.utils import get_bp_data, get_test_rule_controller
+from web.helper import get_api_url
 from web.models.schain import SChainRecord, upsert_schain_record
 from web.routes.schains import schains_bp
-from web.helper import get_api_url
-
 
 BLUEPRINT_NAME = 'schains'
 

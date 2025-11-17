@@ -22,19 +22,19 @@
     "skaleDisableChainIdCheck": true
   },
   "unddos": {
-		"origins": [
-			{
-				"origin": [
-					"*"
-				],
-				"ban_lengthy": 120,
-				"ban_peak": 15,
-				"max_calls_per_minute": 1000000000,
-				"max_calls_per_second": 1000000000,
-				"max_ws_conn": 20000
-			}
-		]
-	},
+    "origins": [
+      {
+        "origin": [
+          "*"
+        ],
+        "ban_lengthy": 120,
+        "ban_peak": 15,
+        "max_calls_per_minute": 1000000000,
+        "max_calls_per_second": 1000000000,
+        "max_ws_conn": 20000
+      }
+    ]
+  },
   "genesis": {
     "nonce": "0x0000000000000042",
     "difficulty": "0x020000",
@@ -45,40 +45,38 @@
     "extraData": "0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa",
     "gasLimit": "0xFFFFFFF"
   },
-  "accounts": {
-  },
-"skaleConfig": {
-        "nodeInfo": {
-            "nodeID": 1,
-            "nodeName": "test-node",
-            "basePort": 2231,
-            "httpRpcPort": 2234,
-            "httpsRpcPort": 10002,
-            "wsRpcPort": 10003,
-            "wssRpcPort": 10008,
-            "infoHttpRpcPort": 10009,
-            "info-acceptors": 1,
-            "bindIP": "0.0.0.0",
-            "imaMonitoringPort": 10006
-        },
-        "sChain": {
-            "schainID": 1,
-            "schainName": "test-chain",
-            "schainOwner": "0x3483A10F7d6fDeE0b0C1E9ad39cbCE13BD094b12",
-            "nodes": [
-                {
-                    "nodeID": 1,
-                    "nodeName": "test-node",
-                    "basePort": 2231,
-                    "httpRpcPort": 2234,
-                    "httpsRpcPort": 10002,
-                    "wsRpcPort": 10003,
-                    "wssRpcPort": 10008,
-                    "schainIndex": 1,
-                    "ip": "127.0.0.1",
-                    "publicIP": "127.0.0.1"
-                }
-            ]
+  "accounts": {},
+  "skaleConfig": {
+    "nodeInfo": {
+      "nodeID": 1,
+      "nodeName": "test-node",
+      "basePort": 2231,
+      "httpRpcPort": 2234,
+      "httpsRpcPort": 10002,
+      "wsRpcPort": 10003,
+      "wssRpcPort": 10008,
+      "info-acceptors": 1,
+      "bindIP": "0.0.0.0",
+      "imaMonitoringPort": 10006
+    },
+    "sChain": {
+      "schainID": 1,
+      "schainName": "test-chain",
+      "schainOwner": "0x3483A10F7d6fDeE0b0C1E9ad39cbCE13BD094b12",
+      "nodes": [
+        {
+          "nodeID": 1,
+          "nodeName": "test-node",
+          "basePort": 2231,
+          "httpRpcPort": 2234,
+          "httpsRpcPort": 10002,
+          "wsRpcPort": 10003,
+          "wssRpcPort": 10008,
+          "schainIndex": 1,
+          "ip": "127.0.0.1",
+          "publicIP": "127.0.0.1"
         }
+      ]
     }
+  }
 }

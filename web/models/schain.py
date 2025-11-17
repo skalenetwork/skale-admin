@@ -21,17 +21,18 @@ import functools
 import logging
 import time
 from datetime import datetime
+from typing import cast
 
 from peewee import (
+    BooleanField,
     CharField,
     DateTimeField,
-    IntegrityError,
     IntegerField,
-    BooleanField,
+    IntegrityError,
     OperationalError,
 )
 
-from core.schains.dkg.structures import DKGStatus
+from core.dkg.structures import DKGStatus
 from web.models.base import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -220,6 +221,9 @@ class SChainRecord(BaseModel):
         self.ssl_change_date = value
         self.save()
 
+    def set_force_skaled_start(self, value: bool) -> None:
+        logger.warning(f'force_skaled_start is not implemented SChainRecord ({self.name})')
+
     def is_dkg_done(self) -> bool:
         return self.dkg_status == DKGStatus.DONE
 
@@ -274,7 +278,7 @@ def set_schains_need_reload():
     query.execute()
 
 
-def upsert_schain_record(name):
+def upsert_schain_record(name) -> SChainRecord:
     if not SChainRecord.added(name):
         logger.debug(f'Could not find sChain record: {name}, going to add')
         schain_record, _ = SChainRecord.add(name)
@@ -285,7 +289,7 @@ def upsert_schain_record(name):
     if not schain_record:
         logger.error(f'schain_record is None for {name}')
 
-    return schain_record
+    return cast(SChainRecord, schain_record)
 
 
 def mark_schain_deleted(name):

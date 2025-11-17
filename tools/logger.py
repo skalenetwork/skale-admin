@@ -26,27 +26,32 @@ from urllib.parse import urlparse
 
 from flask import has_request_context, request
 
-from tools.configs import SGX_SERVER_URL
 from tools.configs.logs import (
     ADMIN_LOG_FORMAT,
     ADMIN_LOG_PATH,
-    API_LOG_FORMAT, API_LOG_PATH,
-    SYNC_LOG_PATH,
+    API_LOG_FORMAT,
+    API_LOG_PATH,
     DEBUG_LOG_PATH,
+    FAIR_LOG_FORMAT,
+    LOG_BACKUP_COUNT,
     LOG_FILE_SIZE_BYTES,
-    LOG_BACKUP_COUNT
+    SYNC_LOG_PATH,
 )
+from tools.configs.sgx import SGX_SERVER_URL
 from tools.configs.web3 import ENDPOINT
+
+LOCAL_IPS = ['127.0.0.1', 'localhost']
 
 
 def compose_hiding_patterns():
     sgx_ip = urlparse(SGX_SERVER_URL).hostname
     eth_ip = urlparse(ENDPOINT).hostname
-    return {
-        rf'{sgx_ip}': '[SGX_IP]',
-        rf'{eth_ip}': '[ETH_IP]',
-        r'NEK\:\w+': '[SGX_KEY]'
-    }
+    patterns = {r'NEK\:\w+': '[SGX_KEY]'}
+    if sgx_ip not in LOCAL_IPS:
+        patterns.update({rf'{sgx_ip}': '[SGX_IP]'})
+    if eth_ip not in LOCAL_IPS:
+        patterns.update({rf'{eth_ip}': '[ETH_IP]'})
+    return patterns
 
 
 class RequestFormatter(logging.Formatter):
@@ -83,20 +88,14 @@ class HidingFormatter(RequestFormatter):
         return self._filter_sensitive(msg)
 
 
-def init_logger(
-    log_format,
-    log_file_path=None,
-    debug_file_path=None
-):
+def init_logger(log_format, log_file_path=None, debug_file_path=None):
     handlers = []
 
     hiding_patterns = compose_hiding_patterns()
     formatter = HidingFormatter(log_format, hiding_patterns)
     if log_file_path:
         f_handler = RotatingFileHandler(
-            log_file_path,
-            maxBytes=LOG_FILE_SIZE_BYTES,
-            backupCount=LOG_BACKUP_COUNT
+            log_file_path, maxBytes=LOG_FILE_SIZE_BYTES, backupCount=LOG_BACKUP_COUNT
         )
 
         f_handler.setFormatter(formatter)
@@ -109,9 +108,9 @@ def init_logger(
     handlers.append(stream_handler)
 
     if debug_file_path:
-        f_handler_debug = RotatingFileHandler(debug_file_path,
-                                              maxBytes=LOG_FILE_SIZE_BYTES,
-                                              backupCount=LOG_BACKUP_COUNT)
+        f_handler_debug = RotatingFileHandler(
+            debug_file_path, maxBytes=LOG_FILE_SIZE_BYTES, backupCount=LOG_BACKUP_COUNT
+        )
         f_handler_debug.setFormatter(formatter)
         f_handler_debug.setLevel(logging.DEBUG)
         handlers.append(f_handler_debug)
@@ -121,6 +120,10 @@ def init_logger(
 
 def init_admin_logger():
     init_logger(ADMIN_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
+
+
+def init_fair_logger():
+    init_logger(FAIR_LOG_FORMAT, ADMIN_LOG_PATH, DEBUG_LOG_PATH)
 
 
 def init_api_logger():
