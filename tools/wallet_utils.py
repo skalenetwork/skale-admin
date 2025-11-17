@@ -32,7 +32,7 @@ from tools.resources import rs as grs
 logger = logging.getLogger(__name__)
 
 # todo: move to smart contracts
-DEPOSIT_AMOUNT_ETH = 0.2
+DEPOSIT_AMOUNT_ETH = 0.02
 DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10**18))
 
 
