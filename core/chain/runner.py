@@ -43,6 +43,7 @@ from tools.configs.containers import (
     CONTAINER_NAME_PREFIX,
     CONTAINERS_INFO,
     DATA_DIR_CONTAINER_PATH,
+    FAIR_IMAGE_SUFFIX,
     HISTORIC_STATE_IMAGE_POSTFIX,
     IMA_CONTAINER,
     SCHAIN_STOP_TIMEOUT,
@@ -80,8 +81,11 @@ def get_image_name(image_type: str, new: bool = False, historic_state: bool = Fa
         tag_field = 'new_version'
     container_info = CONTAINERS_INFO[image_type]
     image_name = f'{container_info["name"]}:{container_info[tag_field]}'
-    if historic_state and image_type == SKALED_CONTAINER:
-        image_name += HISTORIC_STATE_IMAGE_POSTFIX
+    if image_type == SKALED_CONTAINER:
+        if is_fair():
+            image_name += FAIR_IMAGE_SUFFIX
+        if historic_state:
+            image_name += HISTORIC_STATE_IMAGE_POSTFIX
     return image_name
 
 
