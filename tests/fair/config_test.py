@@ -10,7 +10,7 @@ from eth_typing import BlockNumber, ChecksumAddress, HexStr
 from skale.contracts.manager.schains import SchainStructure
 from skale.types.committee import Committee, Timestamp
 from skale.types.dkg import DkgId, Fp2Point, G2Point
-from skale.types.node import FairNode, Node, NodeId, NodeStatus, NodeWithSchains, Port
+from skale.types.node import FairNode, Node, NodeId, NodeStatus, NodeWithSchainHashes, Port
 from skale.types.rotation import NodesGroup, NodesSwap, Rotation, RotationNodeData
 from skale.types.validator import ValidatorId
 
@@ -162,7 +162,7 @@ def test_generate_fair_config_adapter(fair_default_secret_key_file, node_groups)
 
     node_bls_keys_for_node_info = ['0xNodeA', '0xNodeB']
 
-    schain_nodes_with_schains = [
+    schain_nodes_with_schain_hashes = [
         {
             'id': 1,
             'name': 'node-1',
@@ -205,7 +205,9 @@ def test_generate_fair_config_adapter(fair_default_secret_key_file, node_groups)
         skale_node=node,
         node_id=node_id,
         chain_start_ts=CURRENT_TS,
-        schain_nodes_with_schains=cast(list[NodeWithSchains], schain_nodes_with_schains),
+        schain_nodes_with_schain_hashes=cast(
+            list[NodeWithSchainHashes], schain_nodes_with_schain_hashes
+        ),
         node_groups=node_groups,
         ecdsa_key_name='NEK:SIMPLE_REGULAR',
         passive_node=False,

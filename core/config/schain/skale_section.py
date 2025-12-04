@@ -66,7 +66,7 @@ def generate_skale_section(
     node_id: int,
     node: dict,
     ecdsa_key_name: str,
-    schain_nodes_with_schains: list,
+    schain_nodes_with_schain_hashes: list,
     rotation_id: int,
     node_groups: dict,
     schain_base_port: int,
@@ -80,7 +80,7 @@ def generate_skale_section(
     schain_type = get_schain_type(schain.part_of_node)
     static_node_info = get_static_node_info(schain_type)
     static_schain_info = get_static_schain_info(schain.name)
-    nodes_in_schain = len(schain_nodes_with_schains)
+    nodes_in_schain = len(schain_nodes_with_schain_hashes)
 
     node_info = generate_current_node_info(
         node_id=node_id,
@@ -98,7 +98,7 @@ def generate_skale_section(
     )
 
     schain_nodes = generate_schain_nodes(
-        schain_nodes_with_schains=schain_nodes_with_schains,
+        schain_nodes_with_schain_hashes=schain_nodes_with_schain_hashes,
         schain_name=schain.name,
         rotation_id=rotation_id,
         passive_node=passive_node,

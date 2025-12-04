@@ -7,7 +7,7 @@ from unittest import mock
 
 import docker
 import pytest
-from skale.schain_config.generator import get_schain_nodes_with_schains
+from skale.schain_config.generator import get_schain_nodes_with_schain_hashes
 
 from core.chain.runner import get_container_info, get_image_name, run_ima_container
 from core.chain.skaled_exit_codes import SkaledExitCodes
@@ -126,9 +126,9 @@ def test_upstream_config_check(skale, schain_checks):
 
     upstream_path = os.path.join(schain_config_dir(name), f'schain_{name}_{rotation_id}_{ts}.json')
 
-    schain_nodes_with_schains = get_schain_nodes_with_schains(skale, name)
+    schain_nodes_with_schain_hashes = get_schain_nodes_with_schain_hashes(skale, name)
     nodes = generate_schain_nodes(
-        schain_nodes_with_schains=schain_nodes_with_schains,
+        schain_nodes_with_schain_hashes=schain_nodes_with_schain_hashes,
         schain_name=name,
         rotation_id=rotation_id,
     )

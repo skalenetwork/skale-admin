@@ -18,12 +18,12 @@ import pytest
 from eth_utils.hexadecimal import remove_0x_prefix
 from skale import SkaleManager
 from skale.contracts.manager.dkg import G2Point, KeyShare
+from skale.types.node import NodeId
 from skale.types.schain import SchainName
 from skale.utils.account_tools import send_eth
 from skale.wallets import SgxWallet
 
 from core.config.schain.directory import init_schain_config_dir
-from core.config.schain.generator import get_schain_nodes_with_schains
 from core.dkg.schain.main import get_dkg_client, is_last_dkg_finished, run_dkg
 from core.dkg.schain.utils import generate_bls_keys
 from core.dkg.structures import DKGStatus, DKGStep
@@ -138,14 +138,13 @@ def generate_poly_name(group_index_str, node_id, dkg_id):
     return f'POLY:SCHAIN_ID:{group_index_str}:NODE_ID:{str(node_id)}:DKG_ID:{str(dkg_id)}'
 
 
-def get_node_id_dkg_and_public_keys(schain_nodes, node_id):
+def get_node_id_dkg_and_public_keys(public_keys_list: list[tuple[NodeId, str]], node_id):
     node_id_dkg = -1
-    public_keys = [0] * len(schain_nodes)
-    for i, node in enumerate(schain_nodes):
-        if node['id'] == node_id:
+    public_keys = [''] * len(public_keys_list)
+    for i, node in enumerate(public_keys_list):
+        if node[0] == node_id:
             node_id_dkg = i
-
-        public_keys[i] = node['publicKey']
+        public_keys[i] = node[1]
     return node_id_dkg, public_keys
 
 
@@ -169,12 +168,13 @@ def convert_str_to_key_share(sent_secret_key_contribution, n):
     return return_value
 
 
-def generate_broadcast_data(skale, schain_name, node_id):
-    schain_nodes = get_schain_nodes_with_schains(skale, schain_name)
-    node_id_dkg, public_keys = get_node_id_dkg_and_public_keys(schain_nodes, node_id)
+def generate_broadcast_data(skale: SkaleManager, schain_name, node_id):
+    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    public_keys = skale.nodes.get_public_keys(node_ids)
+    node_id_dkg, public_keys = get_node_id_dkg_and_public_keys(public_keys, node_id)
     client = skale.wallet.sgx_client
 
-    n = len(schain_nodes)
+    n = len(node_ids)
     t = (2 * n + 1) // 3
     client.n, client.t = n, t
 
