@@ -17,10 +17,11 @@ from unittest import mock
 import pytest
 from eth_utils.hexadecimal import remove_0x_prefix
 from skale import SkaleManager
-from skale.contracts.manager.dkg import G2Point, KeyShare
+from skale.types.dkg import G2Point, KeyShare
 from skale.types.node import NodeId
 from skale.types.schain import SchainName
 from skale.utils.account_tools import send_eth
+from skale.utils.helper import schain_name_to_hash
 from skale.wallets import SgxWallet
 
 from core.config.schain.directory import init_schain_config_dir
@@ -396,7 +397,7 @@ class TestDKG:
             assert result.step == DKGStep.KEY_GENERATION
             keys_data = result.keys_data
             assert keys_data is not None
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
         assert skale.dkg.is_last_dkg_successful(gid)
 
         regular_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
@@ -438,7 +439,7 @@ class TestDKG:
         )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
@@ -468,7 +469,7 @@ class TestDKG:
         )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.DONE
@@ -503,7 +504,7 @@ class TestDKG:
         )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
@@ -533,7 +534,7 @@ class TestDKG:
         )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.DONE
@@ -577,7 +578,7 @@ class TestDKG:
             )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
@@ -627,7 +628,7 @@ class TestDKG:
             )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED

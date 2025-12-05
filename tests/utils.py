@@ -149,7 +149,7 @@ def get_schain_struct(_test_schain_name) -> SchainStructureWithStatus:
         start_block=1000,
         deposit=Wei(0),
         index=1,
-        chain_id=SchainHash(b'1'),
+        schain_hash=SchainHash(b'1'),
         active=True,
     )
 

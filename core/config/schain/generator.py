@@ -24,13 +24,13 @@ from eth_typing import ChecksumAddress
 from etherbase_predeployed.address import ETHERBASE_ADDRESS
 from marionette_predeployed.address import MARIONETTE_ADDRESS
 from skale import SkaleIma, SkaleManager
-from skale.contracts.manager.schains import SchainStructure
 from skale.schain_config.generator import get_schain_nodes_with_schain_hashes
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.schain_config.rotation_history import get_previous_schain_groups
 from skale.types.node import NodeId
 from skale.types.rotation import Rotation
-from skale.types.schain import SchainName
+from skale.types.schain import SchainName, SchainStructure
+from skale.utils.helper import schain_name_to_hash
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 from skale_contracts.projects.ima import MainnetImaContract
 from web3 import Web3
@@ -252,7 +252,7 @@ def generate_schain_config_with_skale(
 
     is_owner_contract = is_address_contract(skale.web3, schain.mainnet_owner)
 
-    group_index = skale.schains.name_to_id(schain_name)
+    group_index = schain_name_to_hash(schain_name)
     common_bls_public_keys = get_common_bls_public_key(skale, group_index)
 
     if passive_node:

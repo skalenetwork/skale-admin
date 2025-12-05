@@ -10,6 +10,7 @@ import pytest
 from flask import Flask, appcontext_pushed, g
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.utils.contracts_provision.utils import generate_random_node_data
+from skale.utils.helper import schain_name_to_hash
 from skale.utils.web3_utils import to_checksum_address
 from web3 import Web3
 
@@ -196,7 +197,7 @@ def node_config_for_schain(skale, schain_on_contracts, node_config):
 
 
 def test_exit_status(skale_bp, skale, schain_on_contracts, node_config_for_schain):
-    schain_id = skale.schains.name_to_id(schain_on_contracts)
+    schain_id = schain_name_to_hash(schain_on_contracts)
     with mock.patch(
         'skale.contracts.manager.node_rotation.NodeRotation.get_leaving_history',
         return_value=[{'schain_id': schain_id, 'finished_rotation': 1000}],
