@@ -8,14 +8,19 @@ from config_controller_predeployed import (
     CONFIG_CONTROLLER_ADDRESS,
     CONFIG_CONTROLLER_IMPLEMENTATION_ADDRESS,
 )
-from etherbase_predeployed import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
+from eth_typing import BlockNumber, HexStr
+from etherbase_predeployed.address import ETHERBASE_ADDRESS, ETHERBASE_IMPLEMENTATION_ADDRESS
 from filestorage_predeployed import FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTATION_ADDRESS
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
-from marionette_predeployed import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
-from multisigwallet_predeployed import MULTISIGWALLET_ADDRESS
-from skale.contracts.manager.schains import SchainStructure
+from marionette_predeployed.address import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
+from multisigwallet_predeployed.address import MULTISIGWALLET_ADDRESS
 from skale.dataclasses.schain_options import AllocationType
-from skale.types.rotation import Rotation
+from skale.types.node import Node, NodeId, NodeStatus, NodeWithSchainHashes, Port
+from skale.types.rotation import NodeGroups, Rotation, RotationNodeData
+from skale.types.schain import SchainName, SchainStructure
+from skale.types.validator import ValidatorId
+from skale.utils.helper import schain_name_to_hash
+from skale.utils.web3_utils import to_checksum_address
 from web3 import Web3
 
 from core.config.base import FairConfig
@@ -31,9 +36,11 @@ from tests.utils import TEST_MAINNET_OWNER_ADDRESS, TEST_ORIGINATOR_ADDRESS, get
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.node_options import NodeOptions
 
-NODE_ID = 1
+NODE_ID = NodeId(1)
 ECDSA_KEY_NAME = 'TEST:KEY:NAME'
-COMMON_BLS_PUBLIC_KEY = ([123, 456, 789, 123],)
+COMMON_BLS_PUBLIC_KEY: list[str] = ['123', '456', '789', '123']
+SCHAIN_NAME = SchainName('test_schain')
+EMPTY_NODE_GROUPS: NodeGroups = {}
 
 SECRET_KEY = {
     'key_share_name': 'BLS_KEY:SCHAIN_ID:1:NODE_ID:0:DKG_ID:0',
@@ -47,15 +54,15 @@ SECRET_KEY = {
     ],
 }
 
-NODE_GROUPS = {
+NODE_GROUPS: NodeGroups = {
     2: {
         'rotation': {
-            'leaving_node_id': 0,
-            'new_node_id': 5,
+            'leaving_node_id': NodeId(0),
+            'new_node_id': NodeId(5),
         },
         'nodes': {
-            '4': [4, 31, '0x5d'],
-            '5': [8, 179, '0xon'],
+            NodeId(4): RotationNodeData(4, NodeId(31), '0x5d'),
+            NodeId(5): RotationNodeData(8, NodeId(179), '0xon'),
         },
         'finish_ts': 1681498775,
         'bls_public_key': {
@@ -67,12 +74,12 @@ NODE_GROUPS = {
     },
     1: {
         'rotation': {
-            'leaving_node_id': 3,
-            'new_node_id': 4,
+            'leaving_node_id': NodeId(3),
+            'new_node_id': NodeId(4),
         },
         'nodes': {
-            '0': [0, 159, '0xgd'],
-            '4': [4, 31, '0x5d'],
+            NodeId(0): RotationNodeData(0, NodeId(159), '0xgd'),
+            NodeId(4): RotationNodeData(4, NodeId(31), '0x5d'),
         },
         'finish_ts': 1681390775,
         'bls_public_key': {
@@ -84,24 +91,36 @@ NODE_GROUPS = {
     },
     0: {
         'rotation': {
-            'leaving_node_id': 2,
-            'new_node_id': 3,
+            'leaving_node_id': NodeId(2),
+            'new_node_id': NodeId(3),
         },
         'nodes': {
-            '0': [0, 159, '0xgd'],
-            '3': [7, 61, '0xbh'],
+            NodeId(0): RotationNodeData(0, NodeId(159), '0xgd'),
+            NodeId(3): RotationNodeData(7, NodeId(61), '0xbh'),
         },
         'finish_ts': None,
         'bls_public_key': None,
     },
 }
 
-TEST_NODE = {'id': 1, 'name': 'test', 'publicKey': '0x5556', 'port': 10000}
+TEST_NODE: Node = {
+    'name': 'test',
+    'ip': b'\x01\x02\x03\x04',
+    'publicIP': b'\x01\x02\x03\x04',
+    'publicKey': HexStr('0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34'),
+    'port': Port(10000),
+    'start_block': BlockNumber(0),
+    'last_reward_date': 0,
+    'finish_time': 0,
+    'status': NodeStatus.ACTIVE,
+    'validator_id': ValidatorId(0),
+    'domain_name': 'test.com',
+}
 
 
 def get_schain_struct_no_originator() -> SchainStructure:
-    schain = get_schain_struct(_test_schain_name='test_schain')
-    schain.originator = '0x0000000000000000000000000000000000000000'
+    schain = get_schain_struct(_test_schain_name=SCHAIN_NAME)
+    schain.originator = to_checksum_address('0x0000000000000000000000000000000000000000')
     return schain
 
 
@@ -110,17 +129,23 @@ def get_schain_struct_static_account() -> SchainStructure:
     return schain
 
 
-def get_schain_node_with_schains(schain_name: str) -> list:
-    schain = get_schain_struct(_test_schain_name=schain_name)
+def get_schain_nodes_with_schain_hashes(schain_name: SchainName) -> list[NodeWithSchainHashes]:
+    schain_hash = schain_name_to_hash(schain_name)
     return [
         {
             'name': 'test',
             'ip': b'\x01\x02\x03\x04',
             'publicIP': b'\x01\x02\x03\x04',
-            'publicKey': '0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34',
-            'port': 10000,
-            'id': 1,
-            'schains': [schain],
+            'publicKey': HexStr('0x0B5e3eBB74eE281A24DDa3B1A4e70692c15EAC34'),
+            'port': Port(10000),
+            'id': NodeId(1),
+            'start_block': BlockNumber(0),
+            'last_reward_date': 0,
+            'finish_time': 0,
+            'status': NodeStatus.ACTIVE,
+            'validator_id': ValidatorId(0),
+            'domain_name': 'test.com',
+            'schain_hashes': [schain_hash],
         }
     ]
 
@@ -142,7 +167,7 @@ def schain_secret_key_file(schain_on_contracts):
 
 @pytest.fixture
 def schain_secret_key_file_default_chain():
-    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, 'test_schain')
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, SCHAIN_NAME)
     Path(schain_dir_path).mkdir(exist_ok=True)
     secret_key_path = os.path.join(schain_dir_path, 'secret_key_0.json')
     with open(secret_key_path, 'w') as key_file:
@@ -292,7 +317,9 @@ def test_generate_schain_config_with_skale(
     current_node_id = node_ids[0]
     node_config.id = current_node_id
 
-    rotation_data = Rotation(leaving_node_id=1, new_node_id=0, freeze_until=0, rotation_counter=0)
+    rotation_data = Rotation(
+        leaving_node_id=NodeId(1), new_node_id=NodeId(0), freeze_until=0, rotation_counter=0
+    )
 
     schain_config = generate_schain_config_with_skale(
         skale=skale,
@@ -308,19 +335,19 @@ def test_generate_schain_config_with_skale(
 
 
 def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale_ima):
-    node_id, generation, rotation_id = 1, 0, 0
+    node_id, generation, rotation_id = NodeId(1), 0, 0
     ecdsa_key_name = 'test'
-    node_groups = {}
+
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
-        schain=get_schain_struct(_test_schain_name='test_schain'),
+        schain=get_schain_struct(_test_schain_name=SCHAIN_NAME),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -334,19 +361,18 @@ def test_generate_schain_config_gen0(schain_secret_key_file_default_chain, skale
 
 
 def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale_ima):
-    node_id, generation, rotation_id = 1, 1, 0
+    node_id, generation, rotation_id = NodeId(1), 1, 0
     ecdsa_key_name = 'test'
-    node_groups = {}
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
-        schain=get_schain_struct(_test_schain_name='test_schain'),
+        schain=get_schain_struct(_test_schain_name=SCHAIN_NAME),
         node=TEST_NODE,
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=True,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -378,9 +404,8 @@ def test_generate_schain_config_gen1(schain_secret_key_file_default_chain, skale
 
 
 def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_chain, skale_ima):
-    node_id, generation, rotation_id = 1, 1, 0
+    node_id, generation, rotation_id = NodeId(1), 1, 0
     ecdsa_key_name = 'test'
-    node_groups = {}
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
@@ -389,8 +414,8 @@ def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_cha
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -404,9 +429,8 @@ def test_generate_schain_config_gen1_pk_owner(schain_secret_key_file_default_cha
 
 
 def test_generate_schain_config_gen2_schain_id(schain_secret_key_file_default_chain, skale_ima):
-    node_id, generation, rotation_id = 1, 2, 0
+    node_id, generation, rotation_id = NodeId(1), 2, 0
     ecdsa_key_name = 'test'
-    node_groups = {}
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
@@ -415,8 +439,8 @@ def test_generate_schain_config_gen2_schain_id(schain_secret_key_file_default_ch
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -428,7 +452,7 @@ def test_generate_schain_config_gen2_schain_id(schain_secret_key_file_default_ch
 
 
 def test_generate_schain_config_gen1_schain_id(schain_secret_key_file_default_chain, skale_ima):
-    node_id, generation, rotation_id = 1, 1, 0
+    node_id, generation, rotation_id = NodeId(1), 1, 0
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
@@ -437,8 +461,8 @@ def test_generate_schain_config_gen1_schain_id(schain_secret_key_file_default_ch
         node_id=node_id,
         ecdsa_key_name='test',
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups={},
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -450,7 +474,7 @@ def test_generate_schain_config_gen1_schain_id(schain_secret_key_file_default_ch
 
 
 def test_generate_schain_config_gen0_schain_id(schain_secret_key_file_default_chain, skale_ima):
-    node_id, generation, rotation_id = 1, 0, 0
+    node_id, generation, rotation_id = NodeId(1), 0, 0
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
@@ -459,8 +483,8 @@ def test_generate_schain_config_gen0_schain_id(schain_secret_key_file_default_ch
         node_id=node_id,
         ecdsa_key_name='test',
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups={},
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -472,11 +496,10 @@ def test_generate_schain_config_gen0_schain_id(schain_secret_key_file_default_ch
 
 
 def test_generate_schain_config_allocation_type(schain_secret_key_file_default_chain, skale_ima):
-    node_id, generation, rotation_id = 1, 1, 0
+    node_id, generation, rotation_id = NodeId(1), 1, 0
     ecdsa_key_name = 'test'
-    node_groups = {}
 
-    schain = get_schain_struct(_test_schain_name='test_schain')
+    schain = get_schain_struct(_test_schain_name=SCHAIN_NAME)
     schain.options.allocation_type = AllocationType.NO_FILESTORAGE
 
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
@@ -487,8 +510,8 @@ def test_generate_schain_config_allocation_type(schain_secret_key_file_default_c
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=True,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -500,7 +523,7 @@ def test_generate_schain_config_allocation_type(schain_secret_key_file_default_c
     assert config['skaleConfig']['sChain']['maxSkaledLeveldbStorageBytes'] == 94904996659
     assert config['skaleConfig']['sChain']['maxFileStorageBytes'] == 0
 
-    schain = get_schain_struct(_test_schain_name='test_schain')
+    schain = get_schain_struct(_test_schain_name=SCHAIN_NAME)
     schain.options.allocation_type = AllocationType.MAX_CONSENSUS_DB
 
     schain_config = generate_schain_config(
@@ -509,8 +532,8 @@ def test_generate_schain_config_allocation_type(schain_secret_key_file_default_c
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=True,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -531,7 +554,9 @@ def test_generate_schain_config_with_skale_gen2(
     current_node_id = node_ids[0]
     node_config.id = current_node_id
 
-    rotation_data = Rotation(leaving_node_id=1, new_node_id=0, freeze_until=0, rotation_counter=0)
+    rotation_data = Rotation(
+        leaving_node_id=NodeId(1), new_node_id=NodeId(0), freeze_until=0, rotation_counter=0
+    )
 
     schain_config = generate_schain_config_with_skale(
         skale=skale,
@@ -551,15 +576,13 @@ def test_get_schain_originator():
     originator = get_schain_originator(get_schain_struct_no_originator())
     assert originator == TEST_MAINNET_OWNER_ADDRESS
 
-    originator = get_schain_originator(get_schain_struct(_test_schain_name='test_schain'))
+    originator = get_schain_originator(get_schain_struct(_test_schain_name=SCHAIN_NAME))
     assert originator == TEST_ORIGINATOR_ADDRESS
 
 
 def test_generate_passive_node_config(schain_secret_key_file_default_chain, skale_ima):
-    node_id, generation, rotation_id = 1, 1, 0
+    node_id, generation, rotation_id = NodeId(1), 1, 0
     ecdsa_key_name = 'test'
-    node_groups = {}
-
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
@@ -568,8 +591,8 @@ def test_generate_passive_node_config(schain_secret_key_file_default_chain, skal
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -586,9 +609,8 @@ def test_generate_passive_node_config(schain_secret_key_file_default_chain, skal
 def test_generate_passive_node_config_archive_catchup(
     schain_secret_key_file_default_chain, skale_ima
 ):
-    node_id, generation, rotation_id = 1, 1, 0
+    node_id, generation, rotation_id = NodeId(1), 1, 0
     ecdsa_key_name = 'test'
-    node_groups = {}
 
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
@@ -598,8 +620,8 @@ def test_generate_passive_node_config_archive_catchup(
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -618,8 +640,8 @@ def test_generate_passive_node_config_archive_catchup(
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -640,8 +662,8 @@ def test_generate_passive_node_config_archive_catchup(
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -662,8 +684,8 @@ def test_generate_passive_node_config_archive_catchup(
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('test_schain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -682,9 +704,8 @@ def test_generate_passive_node_config_archive_catchup(
 def test_generate_passive_node_config_static_accounts(
     schain_secret_key_file_default_chain, skale_ima
 ):
-    node_id, generation, rotation_id = 1, 1, 0
+    node_id, generation, rotation_id = NodeId(1), 1, 0
     ecdsa_key_name = 'test'
-    node_groups = {}
 
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
     schain = get_schain_struct_static_account()
@@ -695,8 +716,10 @@ def test_generate_passive_node_config_static_accounts(
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains('static_chain'),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(
+            SchainName('static_chain')
+        ),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -716,8 +739,8 @@ def test_generate_passive_node_config_static_accounts(
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains(schain.name),
-        node_groups=node_groups,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(schain.name),
+        node_groups=EMPTY_NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
         common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
@@ -735,7 +758,7 @@ def test_generate_config_static_groups(
     static_groups_for_schain,
     skale_ima,
 ):
-    node_id, generation, rotation_id = 1, 1, 0
+    node_id, generation, rotation_id = NodeId(1), 1, 0
     ecdsa_key_name = 'test'
 
     schain = get_schain_struct(_test_schain_name=_schain_name)
@@ -751,7 +774,7 @@ def test_generate_config_static_groups(
         node_id=node_id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_id,
-        schain_nodes_with_schains=get_schain_node_with_schains(_schain_name),
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(_schain_name),
         node_groups=NODE_GROUPS,
         generation=generation,
         is_owner_contract=False,
@@ -788,7 +811,9 @@ def test_generate_schain_config_with_skale_calls_fair(
     current_node_id = node_ids[0]
     node_config.id = current_node_id
 
-    rotation_data = Rotation(leaving_node_id=1, new_node_id=0, freeze_until=0, rotation_counter=0)
+    rotation_data = Rotation(
+        leaving_node_id=NodeId(1), new_node_id=NodeId(0), freeze_until=0, rotation_counter=0
+    )
 
     mock_generate_fair.return_value = mock.MagicMock(spec=FairConfig)
 

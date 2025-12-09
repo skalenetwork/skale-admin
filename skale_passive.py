@@ -24,6 +24,8 @@ from typing import Dict
 
 from skale import SkaleIma, SkaleManager
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
+from skale.types.schain import SchainName
+from skale.utils.helper import schain_name_to_hash
 
 from core.node_config import NodeConfig
 from core.schains.process_manager import run_pm_schain
@@ -52,7 +54,7 @@ def monitor(skale, skale_ima, node_config, schain: Dict) -> None:
         time.sleep(SLEEP_INTERVAL)
 
 
-def worker(schain_name: str):
+def worker(schain_name: SchainName):
     skale = SkaleManager(ENDPOINT, MANAGER_CONTRACTS)
     skale_ima = SkaleIma(ENDPOINT, IMA_CONTRACTS)
 
@@ -68,10 +70,11 @@ def worker(schain_name: str):
         node_config.id = schain_nodes[0]
 
     node = skale.nodes.get(node_config.id)
+    schain_hash = schain_name_to_hash(schain_name)
     if node_config.schain_base_port == -1:
-        schains_on_node = skale.schains.get_schains_for_node(node_config.id)
+        schain_hashes = skale.schains_internal.get_schain_hashes_for_node(node_config.id)
         node_config.schain_base_port = get_schain_base_port_on_node(
-            schains_on_node, schain_name, node['port']
+            schain_hashes, schain_hash, node['port']
         )
 
     logger.info(f'Node {node_config.id} will be used as a current node')

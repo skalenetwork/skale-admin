@@ -19,6 +19,8 @@
 
 from dataclasses import dataclass
 
+from skale.types.node import Node, NodeId, NodeWithSchainHashes, Port
+from skale.types.rotation import NodeGroups
 from skale.types.schain import SchainStructure
 
 from core.config.schain.node_info import CurrentNodeInfo, generate_current_node_info
@@ -63,17 +65,17 @@ def generate_skale_section(
     on_chain_etherbase: str,
     on_chain_owner: str,
     schain_id: int,
-    node_id: int,
-    node: dict,
+    node_id: NodeId,
+    node: Node,
     ecdsa_key_name: str,
-    schain_nodes_with_schain_hashes: list,
+    schain_nodes_with_schain_hashes: list[NodeWithSchainHashes],
     rotation_id: int,
-    node_groups: dict,
-    schain_base_port: int,
+    node_groups: NodeGroups,
+    schain_base_port: Port,
     common_bls_public_keys: list[str],
     passive_node: bool = False,
-    archive=None,
-    catchup=None,
+    archive: bool = False,
+    catchup: bool = False,
 ) -> SkaleConfig:
     contract_settings = generate_contract_settings()
 

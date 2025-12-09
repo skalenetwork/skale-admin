@@ -22,6 +22,7 @@ from time import sleep
 
 from sgx.http import SgxUnreachableError
 from skale.schain_config.generator import get_nodes_for_schain
+from skale.types.schain import SchainHash
 
 from core.dkg.schain.client import SchainDKGClient
 from core.dkg.schain.structures import ComplaintReason
@@ -240,8 +241,8 @@ def get_latest_block_timestamp(skale):
     return skale.web3.eth.get_block('latest')['timestamp']
 
 
-def get_common_bls_public_key(skale, group_index: str) -> list[str]:
-    raw_common_public_key = skale.key_storage.get_common_public_key(group_index)
+def get_common_bls_public_key(skale, schain_hash: SchainHash) -> list[str]:
+    raw_common_public_key = skale.key_storage.get_common_public_key(schain_hash)
     return [elem for coord in raw_common_public_key for elem in coord]
 
 

@@ -19,6 +19,10 @@
 
 from dataclasses import dataclass
 
+from skale.types.rotation import NodeGroups
+from skale.types.schain import SchainStructure
+
+from core.config.schain.schain_node import SChainNodeInfo
 from core.schains.limits import get_allocation_type_name, get_schain_limit, get_schain_type
 from core.schains.types import MetricType
 from tools.configs.schains import MAX_HISTORIC_STATE_DB_SIZE
@@ -40,8 +44,8 @@ class SChainInfo:
     max_file_storage_bytes: int
     max_reserved_storage_bytes: int
 
-    node_groups: dict
-    nodes: list
+    node_groups: NodeGroups
+    nodes: list[SChainNodeInfo]
     static_schain_info: dict
 
     multitransaction_mode: bool
@@ -71,11 +75,11 @@ class SChainInfo:
 
 def generate_schain_info(
     schain_id: int,
-    schain: dict,
+    schain: SchainStructure,
     on_chain_etherbase: str,
     static_schain_info: dict,
-    node_groups: dict,
-    nodes: dict,
+    node_groups: NodeGroups,
+    nodes: list[SChainNodeInfo],
     passive_node: bool,
     archive: bool,
 ) -> SChainInfo:
