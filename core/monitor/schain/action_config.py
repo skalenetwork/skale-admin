@@ -22,7 +22,7 @@ from typing import List, Optional
 
 from skale import SkaleIma, SkaleManager
 from skale.types.rotation import Rotation
-from skale.types.schain import Schain
+from skale.types.schain import SchainStructure
 
 from core.checks.base import CheckRes
 from core.checks.schain import ConfigChecks
@@ -55,7 +55,7 @@ class ConfigActionManager(BaseActionManager):
         self,
         skale: SkaleManager,
         skale_ima: SkaleIma,
-        schain: Schain,
+        schain: SchainStructure,
         node_config: NodeConfig,
         rotation_data: Rotation,
         stream_version: str,
@@ -139,7 +139,7 @@ class ConfigActionManager(BaseActionManager):
                 skale=self.skale,
                 skale_ima=self.skale_ima,
                 node_config=self.node_config,
-                schain_name=self.name,
+                schain=self.schain,
                 generation=self.generation,
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,

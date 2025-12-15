@@ -23,6 +23,7 @@ import time
 from filelock import FileLock
 from skale import SkaleIma, SkaleManager
 
+from core.cache import AdminCache
 from core.ima.abi import generate_ima_container_abis
 from core.monitoring import update_monitoring_services
 from core.node_config import NodeConfig
@@ -49,15 +50,16 @@ from web.models.schain import (
 init_admin_logger()
 logger = logging.getLogger(__name__)
 
-SLEEP_INTERVAL = 90
+SLEEP_INTERVAL = 180
 WORKER_RESTART_SLEEP_INTERVAL = 2
 ERROR_SLEEP_INTERVAL = 1
 
 
-def monitor(skale, skale_ima, node_config):
+def monitor(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig) -> None:
+    admin_cache: AdminCache = AdminCache(skale, node_config.id)
     while True:
         try:
-            run_process_manager(skale, skale_ima, node_config)
+            run_process_manager(skale, skale_ima, node_config, admin_cache)
         except Exception:
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')

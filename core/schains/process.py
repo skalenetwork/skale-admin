@@ -41,10 +41,10 @@ def is_schain_process_report_exist(schain_name: str) -> bool:
     return path.is_file()
 
 
-def get_schain_process_info(schain_name: str) -> Tuple[int | None, int | None]:
+def get_schain_process_info(schain_name: str) -> Tuple[int | None, int]:
     report = ProcessReport(schain_name)
     if not ProcessReport(schain_name).exists():
-        return None, None
+        return None, 0
     else:
         return report.pid, report.ts
 

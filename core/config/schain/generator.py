@@ -29,7 +29,7 @@ from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.schain_config.rotation_history import get_previous_schain_groups
 from skale.types.node import Node, NodeId, NodeWithSchainHashes, Port
 from skale.types.rotation import NodeGroups, Rotation
-from skale.types.schain import SchainName, SchainStructure
+from skale.types.schain import SchainStructure
 from skale.utils.helper import schain_name_to_hash
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 from skale_contracts.projects.ima import MainnetImaContract
@@ -236,7 +236,7 @@ def adapt_skale_node_groups_to_fair(skale: SkaleManager, node_groups: NodeGroups
 def generate_schain_config_with_skale(
     skale: SkaleManager,
     skale_ima: SkaleIma,
-    schain_name: SchainName,
+    schain: SchainStructure,
     generation: int,
     node_config: NodeConfig,
     rotation_data: Rotation,
@@ -244,15 +244,14 @@ def generate_schain_config_with_skale(
     passive_node: bool = False,
     node_options: NodeOptions = NodeOptions(),
 ) -> SChainConfig | FairConfig:
-    schain_nodes_with_schain_hashes = get_schain_nodes_with_schain_hashes(skale, schain_name)
+    schain_nodes_with_schain_hashes = get_schain_nodes_with_schain_hashes(skale, schain.name)
     schain_hashes = skale.schains_internal.get_schain_hashes_for_node(node_config.id)
-    schain = skale.schains.get_by_name(schain_name)
     node = skale.nodes.get(node_config.id)
-    node_groups = get_previous_schain_groups(skale, schain_name)
+    node_groups = get_previous_schain_groups(skale, schain.name)
 
     is_owner_contract = is_address_contract(skale.web3, schain.mainnet_owner)
 
-    schain_hash = schain_name_to_hash(schain_name)
+    schain_hash = schain_name_to_hash(schain.name)
     common_bls_public_keys = get_common_bls_public_key(skale, schain_hash)
 
     if passive_node:
