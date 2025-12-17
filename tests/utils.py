@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, Mock
 
 import requests
 from eth_typing import ChecksumAddress, HexAddress
-from skale.contracts.manager.schains import SchainStructureWithStatus
+from skale.contracts.manager.schains import SchainStructure
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.types.schain import SchainHash, SchainName
 from skale.utils.web3_utils import init_web3
@@ -135,8 +135,8 @@ def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
     return json.loads(data.decode('utf-8'))
 
 
-def get_schain_struct(_test_schain_name) -> SchainStructureWithStatus:
-    return SchainStructureWithStatus(
+def get_schain_struct(_test_schain_name) -> SchainStructure:
+    return SchainStructure(
         name=_test_schain_name,
         part_of_node=0,
         generation=1,

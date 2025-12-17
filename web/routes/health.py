@@ -50,9 +50,12 @@ def schains_checks():
     if node_id is None:
         return construct_err_response(status_code=HTTPStatus.BAD_REQUEST, msg='No node installed')
 
+    #### ALL FROM CACHE
     schains = g.skale.schains.get_schains_for_node(node_id)
     allowed_diff = int(g.skale.constants_holder.get_dkg_timeout() * DKG_TIMEOUT_COEFFICIENT)
     sync_agent_ranges = get_sync_agent_ranges(g.skale)
+    ##############################
+
     stream_version = get_skale_node_version()
     estate = ExternalState(chain_id=g.skale.web3.eth.chain_id, ima_linked=True, ranges=[])
     checks = []
