@@ -27,13 +27,13 @@ from skale import SkaleIma
 from skale.types.schain import SchainStructure
 from web3._utils import http_session_manager
 
-from core.cache import AdminCache
 from core.chain.status import get_node_cli_status, get_skaled_status
 from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
 from core.checks.schain import SkaledChecks
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_automatic_repair_option
 from core.firewall import get_default_rule_controller
+from core.manager_cache import ManagerCache
 from core.monitor.schain import get_skaled_monitor
 from core.monitor.schain.action_skaled import SkaledActionManager
 from core.monitor.schain.monitor_config import run_config_pipeline
@@ -48,7 +48,7 @@ from tools.configs.web3 import endpoint
 from tools.docker_utils import DockerUtils
 from tools.helper import init_skale, is_node_part_of_chain, no_hyphens
 from tools.notifications.messages import notify_checks
-from tools.resources import get_statsd_client
+from tools.resources import get_statsd_client, rs
 from tools.wallet_utils import init_wallet
 from web.models.schain import SChainRecord, upsert_schain_record
 
@@ -172,13 +172,12 @@ class ConfigTask(BaseTask):
         skale_ima: SkaleIma,
         node_config: NodeConfig,
         stream_version: str,
-        admin_cache: AdminCache,
     ) -> None:
         wallet = init_wallet(node_config=node_config, endpoint=endpoint())
         self.skale = init_skale(wallet)
         self.skale_ima = skale_ima
         self.schain = schain
-        self.admin_cache = admin_cache
+        self.manager_cache = ManagerCache(rs, self.skale, node_config.id)
         super().__init__(
             chain_name=schain.name,
             node_config=node_config,
@@ -204,7 +203,7 @@ class ConfigTask(BaseTask):
                 skale_ima=self.skale_ima,
                 node_config=self.node_config,
                 stream_version=self.stream_version,
-                admin_cache=self.admin_cache,
+                manager_cache=self.manager_cache,
             )
             logger.info('Sleeping %d seconds after monitor task', self.POST_MONITOR_SLEEP_SECONDS)
             time.sleep(self.POST_MONITOR_SLEEP_SECONDS)
@@ -216,7 +215,6 @@ def start_tasks(
     schain: SchainStructure,
     node_config: NodeConfig,
     skale_ima: SkaleIma,
-    admin_cache: AdminCache,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
     reload(http_session_manager)
@@ -254,14 +252,13 @@ def start_tasks(
             skale_ima=skale_ima,
             node_config=node_config,
             stream_version=stream_version,
-            admin_cache=admin_cache,
         ),
-        # SkaledTask(
-        #     schain=schain,
-        #     node_config=node_config,
-        #     stream_version=stream_version,
-        #     dutils=dutils,
-        # ),
+        SkaledTask(
+            schain=schain,
+            node_config=node_config,
+            stream_version=stream_version,
+            dutils=dutils,
+        ),
     ]
     execute_tasks(tasks=tasks, process_report=process_report)
     return True

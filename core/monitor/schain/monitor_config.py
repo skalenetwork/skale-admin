@@ -24,8 +24,8 @@ from typing import cast
 from skale import SkaleIma, SkaleManager
 from skale.types.schain import SchainHash, SchainStructure
 
-from core.cache import AdminCache
 from core.checks.schain import ConfigChecks
+from core.manager_cache import ManagerCache
 from core.monitor.monitor_base import IMonitor
 from core.monitor.schain.action_config import ConfigActionManager
 from core.node import get_current_nodes
@@ -46,7 +46,7 @@ def run_config_pipeline(
     skale_ima: SkaleIma,
     node_config: NodeConfig,
     stream_version: str,
-    admin_cache: AdminCache,
+    manager_cache: ManagerCache,
 ) -> None:
     logger.info('Running config pipeline')
 
@@ -89,7 +89,9 @@ def run_config_pipeline(
     schain_record = SChainRecord.get_by_name(schain.name)
 
     estate = ExternalState(
-        ima_linked=ima_linked, chain_id=skale_ima.web3.eth.chain_id, ranges=admin_cache.sync_ranges
+        ima_linked=ima_linked,
+        chain_id=skale_ima.web3.eth.chain_id,
+        ranges=manager_cache.sync_ranges,
     )
     econfig = ExternalConfig(schain.name)
     logger.debug('Initializing config checks')
