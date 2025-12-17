@@ -34,7 +34,9 @@ from core.schains.process import (
     is_monitor_process_alive,
     terminate_process,
 )
+from tools.configs import PASSIVE_NODE
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
+from tools.helper import is_node_part_of_chain
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +45,8 @@ def run_process_manager(
     skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig, admin_cache: AdminCache
 ) -> None:
     logger.info('Process manager started')
-    node_id = node_config.id
     node_info = node_config.all()
     notify_if_not_enough_balance(skale, node_info)
-    admin_cache.refresh(skale, node_id)
     for schain in admin_cache.schains:
         run_pm_schain(skale, skale_ima, node_config, schain, admin_cache)
     logger.info('Process manager procedure finished')
@@ -68,6 +68,14 @@ def run_pm_schain(
         dkg_timeout = admin_cache.dkg_timeout
         allowed_diff = timeout or int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
 
+    is_rotation_active = skale.node_rotation.is_rotation_active(schain.name)
+    leaving_chain = not PASSIVE_NODE and not is_node_part_of_chain(
+        skale, schain.name, node_config.id
+    )
+    if leaving_chain and not is_rotation_active:
+        logger.info('Not on node (%d), skipping', node_config.id)
+        return
+
     pid, pts = get_schain_process_info(schain.name)
     if pid is not None and is_monitor_process_alive(pid):
         if int(time.time()) - pts > allowed_diff:
@@ -77,7 +85,7 @@ def run_pm_schain(
             logger.info('%s Process is running: PID = %d', log_prefix, pid)
     else:
         process = Process(
-            name=schain.name, target=start_tasks, args=(schain, node_config, skale_ima)
+            name=schain.name, target=start_tasks, args=(schain, node_config, skale_ima, admin_cache)
         )
         process.start()
         logger.info('Process started for %s', schain.name)

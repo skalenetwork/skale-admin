@@ -20,7 +20,9 @@
 import logging
 from time import sleep
 
-from skale.schain_config.generator import get_nodes_for_schain
+from skale import SkaleManager
+from skale.types.schain import SchainName
+from skale.utils.helper import schain_name_to_hash
 
 from core.dkg.schain.structures import ComplaintReason
 from core.dkg.schain.utils import (
@@ -141,10 +143,10 @@ def init_bls(dkg_client, rotation_id=0):
         return dkg_client
 
 
-def is_last_dkg_finished(skale, schain_name):
-    schain_index = skale.schains.name_to_group_id(schain_name)
-    num_of_nodes = len(get_nodes_for_schain(skale, schain_name))
-    return skale.dkg.get_number_of_completed(schain_index) == num_of_nodes
+def is_last_dkg_finished(skale: SkaleManager, schain_name: SchainName) -> bool:
+    num_of_nodes = len(skale.schains_internal.get_node_ids_for_schain(schain_name))
+    schain_hash = schain_name_to_hash(schain_name)
+    return skale.dkg.get_number_of_completed(schain_hash) == num_of_nodes
 
 
 def run_dkg(skale, dkg_client, schain_name, rotation_id) -> DKGResult:

@@ -27,8 +27,9 @@ from typing import Optional
 
 from sgx import SgxClient
 from skale import SkaleManager
-from skale.types.schain import SchainName
+from skale.types.schain import SchainName, SchainStructure
 
+from core.cache import AdminCache
 from core.chain.runner import get_container_name, is_exited
 from core.checks.schain import SChainChecks
 from core.config.schain.directory import schain_config_dir
@@ -39,6 +40,7 @@ from core.firewall.utils import (
     get_sync_agent_ranges,
 )
 from core.node import get_current_nodes, get_skale_node_version
+from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType
@@ -59,8 +61,8 @@ JOIN_TIMEOUT = 1800
 FAIR_NFT_CHAIN_NAMES = ['fair-network', 'fair-committee']
 
 
-def run_cleaner(skale, node_config):
-    process = Process(name='cleaner', target=monitor, args=(skale, node_config))
+def run_cleaner(skale: SkaleManager, node_config: NodeConfig, admin_cache: AdminCache) -> None:
+    process = Process(name='cleaner', target=monitor, args=(skale, node_config, admin_cache))
     process.start()
     logger.info('Cleaner process started')
     process.join(JOIN_TIMEOUT)
@@ -100,11 +102,11 @@ def remove_config_dir(schain_name: str) -> None:
     shutil.rmtree(schain_dir_path)
 
 
-def monitor(skale, node_config, dutils=None):
+def monitor(skale: SkaleManager, node_config: NodeConfig, admin_cache: AdminCache, dutils=None):
     dutils = dutils or DockerUtils()
     logger.info('Cleaner procedure started.')
     schains_on_node = get_schains_on_node(dutils=dutils)
-    schain_names_on_contracts = get_schain_names_from_contract(skale, node_config.id)
+    schain_names_on_contracts = get_schain_names_from_contract(admin_cache.schains)
     logger.info(
         f'\nsChains on contracts: {schain_names_on_contracts}\n\
 sChains on node: {schains_on_node}'
@@ -127,9 +129,8 @@ sChains on node: {schains_on_node}'
     logger.info('Cleanup procedure finished')
 
 
-def get_schain_names_from_contract(skale, node_id):
-    schains_on_contract = skale.schains.get_schains_for_node(node_id)
-    return list(map(lambda schain: schain.name, schains_on_contract))
+def get_schain_names_from_contract(schains: list[SchainStructure]) -> list:
+    return list(map(lambda schain: schain.name, schains))
 
 
 def get_schains_with_containers(dutils=None):
@@ -206,7 +207,7 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
 def remove_schain(
     skale: SkaleManager,
     node_id: int,
-    schain_name: str,
+    schain_name: SchainName,
     msg: str,
     dutils: Optional[DockerUtils] = None,
 ) -> None:

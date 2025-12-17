@@ -23,10 +23,11 @@ import time
 from importlib import reload
 from typing import Optional
 
-from skale import SkaleIma, SkaleManager
+from skale import SkaleIma
 from skale.types.schain import SchainStructure
 from web3._utils import http_session_manager
 
+from core.cache import AdminCache
 from core.chain.status import get_node_cli_status, get_skaled_status
 from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
 from core.checks.schain import SkaledChecks
@@ -43,9 +44,9 @@ from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport
 from tools.configs import PASSIVE_NODE
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
-from tools.configs.web3 import endpoint, manager_contracts
+from tools.configs.web3 import endpoint
 from tools.docker_utils import DockerUtils
-from tools.helper import is_node_part_of_chain, no_hyphens
+from tools.helper import init_skale, is_node_part_of_chain, no_hyphens
 from tools.notifications.messages import notify_checks
 from tools.resources import get_statsd_client
 from tools.wallet_utils import init_wallet
@@ -119,6 +120,7 @@ def run_skaled_pipeline(
 class SkaledTask(BaseTask):
     NAME = 'skaled'
     STUCK_TIMEOUT_SECONDS = 60 * 60 * 1
+    POST_MONITOR_SLEEP_SECONDS = 120
 
     def __init__(
         self,
@@ -153,6 +155,8 @@ class SkaledTask(BaseTask):
                 node_config=self.node_config,
                 dutils=self.dutils,
             )
+            logger.info('Sleeping %d seconds after monitor task', self.POST_MONITOR_SLEEP_SECONDS)
+            time.sleep(self.POST_MONITOR_SLEEP_SECONDS)
         except Exception:
             logger.exception('Task %s failed', self.name)
 
@@ -160,19 +164,21 @@ class SkaledTask(BaseTask):
 class ConfigTask(BaseTask):
     NAME = 'config'
     STUCK_TIMEOUT_SECONDS = 60 * 60 * 2
-    POST_MONITOR_SLEEP_SECONDS = 300
+    POST_MONITOR_SLEEP_SECONDS = 420
 
     def __init__(
         self,
         schain: SchainStructure,
-        skale: SkaleManager,
         skale_ima: SkaleIma,
         node_config: NodeConfig,
         stream_version: str,
+        admin_cache: AdminCache,
     ) -> None:
-        self.skale = skale
+        wallet = init_wallet(node_config=node_config, endpoint=endpoint())
+        self.skale = init_skale(wallet)
         self.skale_ima = skale_ima
         self.schain = schain
+        self.admin_cache = admin_cache
         super().__init__(
             chain_name=schain.name,
             node_config=node_config,
@@ -198,6 +204,7 @@ class ConfigTask(BaseTask):
                 skale_ima=self.skale_ima,
                 node_config=self.node_config,
                 stream_version=self.stream_version,
+                admin_cache=self.admin_cache,
             )
             logger.info('Sleeping %d seconds after monitor task', self.POST_MONITOR_SLEEP_SECONDS)
             time.sleep(self.POST_MONITOR_SLEEP_SECONDS)
@@ -209,12 +216,10 @@ def start_tasks(
     schain: SchainStructure,
     node_config: NodeConfig,
     skale_ima: SkaleIma,
+    admin_cache: AdminCache,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
     reload(http_session_manager)
-
-    wallet = init_wallet(node_config=node_config, endpoint=endpoint())
-    skale = SkaleManager(endpoint(), manager_contracts(), wallet)
 
     name = schain.name
     init_ts, pid = int(time.time()), os.getpid()
@@ -224,13 +229,6 @@ def start_tasks(
 
     stream_version = get_skale_node_version()
     schain_record = upsert_schain_record(name)
-
-    is_rotation_active = skale.node_rotation.is_rotation_active(name)
-
-    leaving_chain = not PASSIVE_NODE and not is_node_part_of_chain(skale, name, node_config.id)
-    if leaving_chain and not is_rotation_active:
-        logger.info('Not on node (%d), finishing process', node_config.id)
-        return True
 
     logger.info(
         'sync_config_run %s, config_version %s, stream_version %s',
@@ -253,17 +251,17 @@ def start_tasks(
     tasks = [
         ConfigTask(
             schain=schain,
-            skale=skale,
             skale_ima=skale_ima,
             node_config=node_config,
             stream_version=stream_version,
+            admin_cache=admin_cache,
         ),
-        SkaledTask(
-            schain=schain,
-            node_config=node_config,
-            stream_version=stream_version,
-            dutils=dutils,
-        ),
+        # SkaledTask(
+        #     schain=schain,
+        #     node_config=node_config,
+        #     stream_version=stream_version,
+        #     dutils=dutils,
+        # ),
     ]
     execute_tasks(tasks=tasks, process_report=process_report)
     return True

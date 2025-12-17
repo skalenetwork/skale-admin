@@ -34,7 +34,7 @@ from core.schains.process_manager import run_process_manager
 from core.updates import update_node_config_file
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
 from tools.configs.ima import ima_contracts
-from tools.configs.web3 import STATE_FILEPATH, endpoint, manager_contracts
+from tools.configs.web3 import endpoint, manager_contracts
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 from tools.sgx_utils import generate_sgx_key
@@ -50,7 +50,7 @@ from web.models.schain import (
 init_admin_logger()
 logger = logging.getLogger(__name__)
 
-SLEEP_INTERVAL = 180
+SLEEP_INTERVAL = 240
 WORKER_RESTART_SLEEP_INTERVAL = 2
 ERROR_SLEEP_INTERVAL = 1
 
@@ -58,13 +58,14 @@ ERROR_SLEEP_INTERVAL = 1
 def monitor(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig) -> None:
     admin_cache: AdminCache = AdminCache(skale, node_config.id)
     while True:
+        admin_cache.refresh(skale, node_config.id)
         try:
             run_process_manager(skale, skale_ima, node_config, admin_cache)
         except Exception:
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
         time.sleep(SLEEP_INTERVAL)
-        run_cleaner(skale, node_config)
+        run_cleaner(skale, node_config, admin_cache)
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_cleaner')
         time.sleep(SLEEP_INTERVAL)
 
@@ -76,7 +77,7 @@ def worker():
         time.sleep(SLEEP_INTERVAL)
 
     wallet = init_wallet(node_config=node_config, endpoint=endpoint())
-    skale = SkaleManager(endpoint(), manager_contracts(), wallet, state_path=STATE_FILEPATH)
+    skale = SkaleManager(endpoint(), manager_contracts(), wallet)
     skale_ima = SkaleIma(endpoint(), ima_contracts(), wallet)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
@@ -85,7 +86,7 @@ def worker():
 
 
 def init():
-    skale = SkaleManager(endpoint(), manager_contracts(), state_path=STATE_FILEPATH)
+    skale = SkaleManager(endpoint(), manager_contracts())
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:

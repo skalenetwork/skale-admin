@@ -24,8 +24,8 @@ from typing import cast
 from skale import SkaleIma, SkaleManager
 from skale.types.schain import SchainHash, SchainStructure
 
+from core.cache import AdminCache
 from core.checks.schain import ConfigChecks
-from core.firewall.utils import get_sync_agent_ranges
 from core.monitor.monitor_base import IMonitor
 from core.monitor.schain.action_config import ConfigActionManager
 from core.node import get_current_nodes
@@ -46,20 +46,50 @@ def run_config_pipeline(
     skale_ima: SkaleIma,
     node_config: NodeConfig,
     stream_version: str,
+    admin_cache: AdminCache,
 ) -> None:
     logger.info('Running config pipeline')
+
+    logger.info(
+        arguments_list_string(
+            {
+                'http_posts': skale.stats.http_posts,
+                'rpc_objects': skale.stats.rpc_objects,
+                'most_common': skale.stats.by_method.most_common(10),
+            },
+            'stats_run_config_pipeline_start',
+        )
+    )
+
+    ########
+    ########
+
+    # 1. check if rotation is finished
+    # 2. check if all nodes are the same (no ip changes, no id changes)
+    # 3.
+
     rotation_data = skale.node_rotation.get_rotation(schain.name)
-    allowed_ranges = get_sync_agent_ranges(skale)
     ima_linked = not PASSIVE_NODE and skale_ima.linker.has_schain(schain.name)
     group_index = skale.schains.name_to_group_id(schain.name)
     last_dkg_successful = skale.dkg.is_last_dkg_successful(cast(SchainHash, group_index))
     current_nodes = get_current_nodes(skale, schain.name)
 
+    logger.info(
+        arguments_list_string(
+            {
+                'http_posts': skale.stats.http_posts,
+                'rpc_objects': skale.stats.rpc_objects,
+                'most_common': skale.stats.by_method.most_common(10),
+            },
+            'stats_run_config_pipeline_current_nodes',
+        )
+    )
+
     logger.debug('Initializing schain record')
     schain_record = SChainRecord.get_by_name(schain.name)
 
     estate = ExternalState(
-        ima_linked=ima_linked, chain_id=skale_ima.web3.eth.chain_id, ranges=allowed_ranges
+        ima_linked=ima_linked, chain_id=skale_ima.web3.eth.chain_id, ranges=admin_cache.sync_ranges
     )
     econfig = ExternalConfig(schain.name)
     logger.debug('Initializing config checks')
@@ -122,6 +152,17 @@ def run_config_pipeline(
 
     with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(schain.name)}'):
         mon.run()
+
+    logger.info(
+        arguments_list_string(
+            {
+                'http_posts': skale.stats.http_posts,
+                'rpc_objects': skale.stats.rpc_objects,
+                'most_common': skale.stats.by_method.most_common(10),
+            },
+            'stats_run_config_pipeline_end',
+        )
+    )
 
 
 class BaseConfigMonitor(IMonitor):

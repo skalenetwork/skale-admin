@@ -80,6 +80,7 @@ class AdminCache:
             'dkg_timeout': skale.constants_holder.get_dkg_timeout(),
             'sync_ranges': get_sync_agent_ranges(skale),
             'schains': fetch_schains_to_monitor(skale, node_id),
+            # 'nodes'
         }
 
     def refresh(self, skale: SkaleManager, node_id: NodeId) -> None:

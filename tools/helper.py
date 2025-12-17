@@ -37,7 +37,8 @@ from skale.types.node import NodeId
 from skale.wallets import BaseWallet
 
 from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
-from tools.configs.web3 import STATE_FILEPATH, ZERO_ADDRESS, endpoint, manager_contracts
+from tools.configs.db import REDIS_URI
+from tools.configs.web3 import ZERO_ADDRESS, endpoint, manager_contracts
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +116,13 @@ def wait_until_admin_inited():
 
 
 def init_skale(wallet: BaseWallet) -> SkaleManager:
-    return SkaleManager(endpoint(), manager_contracts(), wallet, state_path=STATE_FILEPATH)
+    return SkaleManager(
+        endpoint(),
+        manager_contracts(),
+        wallet,
+        enable_stats=True,
+        redis_cache_url=REDIS_URI,
+    )
 
 
 def safe_load_yml(filepath):
