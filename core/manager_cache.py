@@ -36,7 +36,7 @@ from tools.str_formatters import arguments_list_string
 logger = logging.getLogger(__name__)
 
 
-def get_leaving_schains_for_node(skale: SkaleManager, node_id: NodeId) -> list:
+def get_leaving_schains_for_node(skale: SkaleManager, node_id: NodeId) -> list[SchainStructure]:
     logger.info('Get leaving_history for node ...')
     leaving_schains = []
     leaving_history = skale.node_rotation.get_leaving_history(node_id)
