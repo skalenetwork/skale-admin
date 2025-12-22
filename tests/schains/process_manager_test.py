@@ -7,7 +7,11 @@ from unittest import mock
 
 import psutil
 import pytest
+from skale import SkaleIma, SkaleManager
+from skale.types.schain import SchainName
 
+from core.manager_cache import ManagerCache
+from core.node_config import NodeConfig
 from core.schains.process import ProcessReport, cleanup_schains_pids, terminate_process
 from core.schains.process_manager import run_pm_schain
 from tests.utils import get_schain_struct
@@ -41,7 +45,7 @@ def target_regular_mock(*args, **kwargs):
 
 
 def target_stuck_mock(*args, **kwargs):
-    schain_name = ProcessReport(args[1].name)
+    schain_name = SchainName(ProcessReport(args[1].name))
     ProcessReport(schain_name).update(os.getpid(), int(time.time()))
     logger.info('Starting stucked test task runner')
     iterations = 10000
@@ -58,13 +62,22 @@ def wait_for_process_report(process_report):
     assert process_report.exists()
 
 
-def test_run_pm_schain(tmp_dir, skale, skale_ima, node_config, _schain_name):
+def test_run_pm_schain(
+    tmp_dir,
+    skale: SkaleManager,
+    skale_ima: SkaleIma,
+    node_config: NodeConfig,
+    manager_cache: ManagerCache,
+    _schain_name,
+):
     schain = get_schain_struct(_test_schain_name=_schain_name)
 
     timeout = 7
 
     with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
-        run_pm_schain(skale, skale_ima, node_config, schain, timeout=timeout)
+        run_pm_schain(
+            skale, skale_ima, node_config, schain, manager_cache=manager_cache, timeout=timeout
+        )
 
     process_report = ProcessReport(schain.name)
     wait_for_process_report(process_report)
@@ -89,7 +102,9 @@ def test_run_pm_schain(tmp_dir, skale, skale_ima, node_config, _schain_name):
         wait_it += 1
 
     with mock.patch('core.schains.process_manager.start_tasks', target_stuck_mock):
-        run_pm_schain(skale, skale_ima, node_config, schain, timeout=timeout)
+        run_pm_schain(
+            skale, skale_ima, node_config, schain, manager_cache=manager_cache, timeout=timeout
+        )
 
     start_ts = int(time.time())
 
@@ -108,14 +123,21 @@ def test_run_pm_schain(tmp_dir, skale, skale_ima, node_config, _schain_name):
         terminate_process(pid)
 
 
-def test_cleanup_schains_pids(tmp_dir, skale, skale_ima, node_config, _schain_name):
+def test_cleanup_schains_pids(
+    tmp_dir,
+    skale: SkaleManager,
+    skale_ima: SkaleIma,
+    node_config: NodeConfig,
+    manager_cache: ManagerCache,
+    _schain_name,
+):
     schain = get_schain_struct(_test_schain_name=_schain_name)
 
     process_report = ProcessReport(schain.name)
     assert not process_report.exists()
 
     with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
-        run_pm_schain(skale, skale_ima, node_config, schain)
+        run_pm_schain(skale, skale_ima, node_config, schain=schain, manager_cache=manager_cache)
 
     wait_for_process_report(process_report)
     assert process_report.exists()

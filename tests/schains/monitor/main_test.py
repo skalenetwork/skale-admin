@@ -67,9 +67,9 @@ def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
 
 def test_config_task(skale, skale_ima, schain_db, schain_on_contracts, node_config):
     stream_version = '2.3.0'
+    schain = skale.schains.get_by_name(schain_on_contracts)
     config_task = ConfigTask(
-        schain_name=schain_on_contracts,
-        skale=skale,
+        schain=schain,
         skale_ima=skale_ima,
         node_config=node_config,
         stream_version=stream_version,
@@ -89,9 +89,9 @@ def test_config_task(skale, skale_ima, schain_db, schain_on_contracts, node_conf
 def test_skaled_task(skale, schain_db, schain_on_contracts, node_config, dutils):
     record = upsert_schain_record(schain_on_contracts)
     stream_version = '2.3.0'
+    schain = skale.schains.get_by_name(schain_on_contracts)
     skaled_task = SkaledTask(
-        chain_name=schain_on_contracts,
-        skale=skale,
+        schain=schain,
         node_config=node_config,
         stream_version=stream_version,
         dutils=dutils,

@@ -3,7 +3,7 @@ from unittest import mock
 from skale import SkaleManager
 
 from core.chain.runner import is_exited
-from core.manager_cache import get_leaving_schains_for_node
+from core.manager_cache_helper import get_leaving_schains_for_node
 from core.node_config import NodeConfig
 
 

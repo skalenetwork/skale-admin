@@ -14,6 +14,7 @@ from filestorage_predeployed import FILESTORAGE_ADDRESS, FILESTORAGE_IMPLEMENTAT
 from ima_predeployed.generator import MESSAGE_PROXY_FOR_SCHAIN_ADDRESS
 from marionette_predeployed.address import MARIONETTE_ADDRESS, MARIONETTE_IMPLEMENTATION_ADDRESS
 from multisigwallet_predeployed.address import MULTISIGWALLET_ADDRESS
+from skale import SkaleIma, SkaleManager
 from skale.dataclasses.schain_options import AllocationType
 from skale.types.node import Node, NodeId, NodeStatus, NodeWithSchainHashes, Port
 from skale.types.rotation import NodeGroups, Rotation, RotationNodeData
@@ -32,6 +33,7 @@ from core.config.schain.generator import (
 )
 from core.config.schain.helper import get_schain_id
 from core.config.schain.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
+from core.node_config import NodeConfig
 from tests.utils import TEST_MAINNET_OWNER_ADDRESS, TEST_ORIGINATOR_ADDRESS, get_schain_struct
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.node_options import NodeOptions
@@ -310,9 +312,14 @@ def check_config(node_id, all_node_ids, config):
 
 
 def test_generate_schain_config_with_skale(
-    skale, skale_ima, node_config, schain_on_contracts, schain_secret_key_file
+    skale: SkaleManager,
+    skale_ima: SkaleIma,
+    node_config: NodeConfig,
+    schain_on_contracts: SchainName,
+    schain_secret_key_file,
 ):
     schain_name = schain_on_contracts
+    schain = skale.schains.get_by_name(schain_name)
     node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
     current_node_id = node_ids[0]
     node_config.id = current_node_id
@@ -324,7 +331,7 @@ def test_generate_schain_config_with_skale(
     schain_config = generate_schain_config_with_skale(
         skale=skale,
         skale_ima=skale_ima,
-        schain_name=schain_name,
+        schain=schain,
         node_config=node_config,
         rotation_data=rotation_data,
         ecdsa_key_name=ECDSA_KEY_NAME,
@@ -547,9 +554,14 @@ def test_generate_schain_config_allocation_type(schain_secret_key_file_default_c
 
 
 def test_generate_schain_config_with_skale_gen2(
-    skale, skale_ima, schain_on_contracts, schain_secret_key_file, node_config
+    skale: SkaleManager,
+    skale_ima: SkaleIma,
+    schain_on_contracts: SchainName,
+    schain_secret_key_file,
+    node_config: NodeConfig,
 ):
     schain_name = schain_on_contracts
+    schain = skale.schains.get_by_name(schain_name)
     node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
     current_node_id = node_ids[0]
     node_config.id = current_node_id
@@ -561,7 +573,7 @@ def test_generate_schain_config_with_skale_gen2(
     schain_config = generate_schain_config_with_skale(
         skale=skale,
         skale_ima=skale_ima,
-        schain_name=schain_name,
+        schain=schain,
         node_config=node_config,
         rotation_data=rotation_data,
         ecdsa_key_name=ECDSA_KEY_NAME,
@@ -800,13 +812,14 @@ def test_generate_config_static_groups(
 def test_generate_schain_config_with_skale_calls_fair(
     mock_generate_standard,
     mock_generate_fair,
-    skale,
-    skale_ima,
-    node_config,
-    schain_on_contracts,
+    skale: SkaleManager,
+    skale_ima: SkaleIma,
+    node_config: NodeConfig,
+    schain_on_contracts: SchainName,
     schain_secret_key_file,
 ):
     schain_name = schain_on_contracts
+    schain = skale.schains.get_by_name(schain_name)
     node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
     current_node_id = node_ids[0]
     node_config.id = current_node_id
@@ -820,7 +833,7 @@ def test_generate_schain_config_with_skale_calls_fair(
     result = generate_schain_config_with_skale(
         skale=skale,
         skale_ima=skale_ima,
-        schain_name=schain_name,
+        schain=schain,
         generation=2,
         node_config=node_config,
         rotation_data=rotation_data,

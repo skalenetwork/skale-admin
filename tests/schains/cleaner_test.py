@@ -67,12 +67,12 @@ def upsert_db(db):
         upsert_schain_record(name)
 
 
-def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils):
+def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils, manager_cache):
     ensure_schain_removed_mock = mock.Mock()
 
     ensure_schain_removed_mock = mock.Mock(side_effect=ValueError)
     with mock.patch('core.schains.cleaner.ensure_schain_removed', ensure_schain_removed_mock):
-        monitor(skale, node_config, dutils=dutils)
+        monitor(skale, node_config, manager_cache=manager_cache, dutils=dutils)
 
         ensure_schain_removed_mock.assert_any_call(
             skale, TEST_SCHAIN_NAME_1, node_config.id, dutils=dutils
@@ -81,7 +81,7 @@ def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils):
             skale, TEST_SCHAIN_NAME_2, node_config.id, dutils=dutils
         )
 
-    monitor(skale, node_config, dutils=dutils)
+    monitor(skale, node_config, manager_cache=manager_cache, dutils=dutils)
     assert [c.name for c in dutils.client.containers.list(filters={'name': 'sk_skaleds'})] == []
 
 

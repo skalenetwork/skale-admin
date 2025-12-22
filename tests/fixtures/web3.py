@@ -24,10 +24,13 @@ from skale.utils.contracts_provision.main import (
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
+from core.manager_cache import ManagerCache
+from core.node_config import NodeConfig
 from tests.utils import ETH_PRIVATE_KEY
 from tools.configs.ima import IMA_CONTRACTS
 from tools.configs.sgx import SGX_CERTIFICATES_FOLDER
 from tools.configs.web3 import ENDPOINT, FAIR_CONTRACTS, MANAGER_CONTRACTS
+from tools.resources import rs
 
 ETH_AMOUNT_PER_NODE = 1
 NUMBER_OF_NODES = 2
@@ -187,4 +190,6 @@ def nodes(skale, node_skales, validator):
         cleanup_nodes(skale, ids)
 
 
-# fair
+@pytest.fixture
+def manager_cache(skale, node_config: NodeConfig) -> ManagerCache:
+    return ManagerCache(rs, skale, node_config.id)

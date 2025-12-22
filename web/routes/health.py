@@ -20,16 +20,24 @@
 import logging
 from http import HTTPStatus
 
-from flask import Blueprint, g, request
+from flask import Blueprint, Response, g, request
+from skale import SkaleManager
 
 from core.checks.schain import SChainChecks
-from core.firewall.utils import get_default_rule_controller, get_sync_agent_ranges
+from core.firewall.utils import get_default_rule_controller
 from core.ima.container import get_ima_log_checks
+from core.manager_cache import ManagerCache
 from core.node import get_current_nodes, get_skale_node_version
 from core.schains.external_config import ExternalState
 from core.schains.process import is_process_healthy
 from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
-from web.helper import construct_err_response, construct_ok_response, g_skale, get_api_url
+from web.helper import (
+    construct_err_response,
+    construct_ok_response,
+    g_manager_cache,
+    g_skale,
+    get_api_url,
+)
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
@@ -41,33 +49,33 @@ health_bp = Blueprint(BLUEPRINT_NAME, __name__)
 
 @health_bp.route(get_api_url(BLUEPRINT_NAME, 'schains'), methods=['GET'])
 @g_skale
-def schains_checks():
+@g_manager_cache
+def schains_checks() -> Response:
     logger.debug(request)
-    checks_filter = request.args.get('checks_filter')
-    if checks_filter:
-        checks_filter = checks_filter.split(',')
+    checks_filter_raw = request.args.get('checks_filter')
+    if checks_filter_raw:
+        checks_filter = checks_filter_raw.split(',')
     node_id = g.config.id
     if node_id is None:
         return construct_err_response(status_code=HTTPStatus.BAD_REQUEST, msg='No node installed')
 
-    #### ALL FROM CACHE
-    schains = g.skale.schains.schains_for_node(node_id)
-    allowed_diff = int(g.skale.constants_holder.get_dkg_timeout() * DKG_TIMEOUT_COEFFICIENT)
-    sync_agent_ranges = get_sync_agent_ranges(g.skale)
-    ##############################
+    manager_cache: ManagerCache = g.manager_cache
+    skale: SkaleManager = g.skale
+
+    allowed_diff = int(manager_cache.dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
 
     stream_version = get_skale_node_version()
-    estate = ExternalState(chain_id=g.skale.web3.eth.chain_id, ima_linked=True, ranges=[])
+    estate = ExternalState(chain_id=skale.web3.eth.chain_id, ima_linked=True, ranges=[])
     checks = []
-    for schain in schains:
+    for schain in manager_cache.schains:
         if schain.name != '':
-            rotation_data = g.skale.node_rotation.get_rotation(schain.name)
+            rotation_data = skale.node_rotation.get_rotation(schain.name)
             rotation_id = rotation_data.rotation_counter
             if SChainRecord.added(schain.name):
                 rc = get_default_rule_controller(
-                    name=schain.name, sync_agent_ranges=sync_agent_ranges
+                    name=schain.name, sync_agent_ranges=manager_cache.sync_ranges
                 )
-                current_nodes = get_current_nodes(g.skale, schain.name)
+                current_nodes = get_current_nodes(g.skale, schain.schain_hash, manager_cache)
                 schain_record = SChainRecord.get_by_name(schain.name)
                 schain_checks = SChainChecks(
                     schain.name,

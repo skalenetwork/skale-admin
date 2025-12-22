@@ -27,27 +27,29 @@ from flask import Response, g
 from skale import SkaleManager
 from skale.utils.web3_utils import init_web3
 
+from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from core.utils.fair import init_fair_manager
 from tools.configs.web3 import boot_endpoint, endpoint
 from tools.helper import init_skale, is_fair
+from tools.resources import rs
 from tools.wallet_utils import init_wallet
 from web import API_VERSION_PREFIX
 
 logger = logging.getLogger(__name__)
 
 
-def construct_response(status, data):
+def construct_response(status, data) -> Response:
     return Response(response=json.dumps(data), status=status, mimetype='application/json')
 
 
-def construct_ok_response(data=None):
+def construct_ok_response(data=None) -> Response:
     if data is None:
         data = {}
     return construct_response(HTTPStatus.OK, {'status': 'ok', 'payload': data})
 
 
-def construct_err_response(msg=None, status_code=HTTPStatus.BAD_REQUEST):
+def construct_err_response(msg=None, status_code=HTTPStatus.BAD_REQUEST) -> Response:
     if msg is None:
         msg = {}
     return construct_response(status_code, {'status': 'error', 'payload': msg})
@@ -110,6 +112,15 @@ def g_fair_no_wallet(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         g.fair = init_fair_manager()
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def g_manager_cache(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        g.manager_cache = ManagerCache(rs, g.skale, g.config.id)
         return func(*args, **kwargs)
 
     return wrapper
