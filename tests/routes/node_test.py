@@ -191,7 +191,7 @@ def test_public_ip_info(skale_bp):
 
 @pytest.fixture
 def node_config_for_schain(skale, schain_on_contracts, node_config):
-    nodes = skale.schains_internal.get_node_ids_for_schain(schain_on_contracts)
+    nodes = skale.schains_internal.node_ids_for_schain(schain_on_contracts)
     node_config.id = nodes[0]
     return node_config
 

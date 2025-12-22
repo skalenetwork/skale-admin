@@ -18,91 +18,19 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-import logging
-from typing import Any
 
-from eth_typing import ChecksumAddress
-from skale import SkaleManager
-from skale.dataclasses.schain_options import AllocationType, SchainOptions
-from skale.types.node import NodeId
-from skale.types.schain import SchainHash, SchainName, SchainStructure
-from web3.types import Wei
+from skale.types.node import NodeWithChangeIp
+from skale.types.schain import SchainStructure
 
 from core.firewall.base.types import IpRange
 from core.firewall.utils import get_sync_agent_ranges
-from core.redis_cache import CacheSpec, RedisCache, cached, hex_to_bytes, json_bytes, json_obj
-from tools.str_formatters import arguments_list_string
-
-logger = logging.getLogger(__name__)
-
-
-def get_leaving_schains_for_node(skale: SkaleManager, node_id: NodeId) -> list[SchainStructure]:
-    logger.info('Get leaving_history for node ...')
-    leaving_schains = []
-    leaving_history = skale.node_rotation.get_leaving_history(node_id)
-    for leaving_schain in leaving_history:
-        schain = skale.schains.get(leaving_schain['schain_id'])
-        if skale.node_rotation.is_rotation_active(schain.name) and schain.name:
-            schain.active = True
-            leaving_schains.append(schain)
-    logger.info(f'Got leaving sChains for the node: {leaving_schains}')
-    return leaving_schains
-
-
-def fetch_schains_to_monitor(skale: SkaleManager, node_id: NodeId) -> list[SchainStructure]:
-    """
-    Returns list of sChain dicts that admin should monitor (currently assigned + rotating).
-    """
-    logger.info('Fetching schains to monitor...')
-    schains = skale.schains.get_schains_for_node(node_id)
-    leaving_schains = get_leaving_schains_for_node(skale, node_id)
-    schains.extend(leaving_schains)
-    active_schains = list(filter(lambda schain: schain.active, schains))
-    schains_holes = len(schains) - len(active_schains)
-    logger.info(
-        arguments_list_string(
-            {
-                'Node ID': node_id,
-                'sChains on node': active_schains,
-                'Number of sChains on node': len(active_schains),
-                'Empty sChain structs': schains_holes,
-            },
-            'Monitoring sChains',
-        )
-    )
-    return active_schains
-
-
-def schain_structure_from_dict(d: dict[str, Any]) -> SchainStructure:
-    opt = d['options']
-    return SchainStructure(
-        name=SchainName(d['name']),
-        mainnet_owner=ChecksumAddress(d['mainnet_owner']),
-        index_in_owner_list=int(d['index_in_owner_list']),
-        part_of_node=int(d['part_of_node']),
-        lifetime=int(d['lifetime']),
-        start_date=int(d['start_date']),
-        start_block=int(d['start_block']),
-        deposit=Wei(int(d['deposit'])),
-        index=int(d['index']),
-        generation=int(d['generation']),
-        originator=ChecksumAddress(d['originator']),
-        schain_hash=SchainHash(hex_to_bytes(d['schain_hash'])),
-        options=SchainOptions(
-            multitransaction_mode=bool(opt['multitransaction_mode']),
-            threshold_encryption=bool(opt['threshold_encryption']),
-            allocation_type=AllocationType(opt['allocation_type']),
-        ),
-        active=bool(d['active']),
-    )
-
-
-def should_refresh_schains(
-    skale: SkaleManager, node_id: NodeId, cached: list[SchainStructure]
-) -> bool:
-    current = skale.schains_internal.get_schain_hashes_for_node(node_id)
-    cached_hashes = [s.schain_hash for s in cached]
-    return set(current) != set(cached_hashes)
+from core.manager_cache_helper import (
+    fetch_connected_nodes,
+    fetch_schains_to_monitor,
+    schain_structure_from_dict,
+    should_refresh_schains,
+)
+from core.redis_cache import CacheSpec, RedisCache, cached, json_bytes, json_obj
 
 
 class ManagerCache(RedisCache):
@@ -145,5 +73,15 @@ class ManagerCache(RedisCache):
             refresh_if=lambda self, cached: should_refresh_schains(
                 self.skale, self.node_id, cached
             ),
+        )
+    )
+
+    nodes: cached[list[NodeWithChangeIp]] = cached(
+        CacheSpec[list[NodeWithChangeIp]](
+            name='nodes',
+            ttl=600,
+            fetch=lambda self: fetch_connected_nodes(self.skale, self.node_id),
+            ser=lambda nodes: json_bytes([n for n in nodes]),
+            de=lambda raw: [x for x in json_obj(raw)],
         )
     )

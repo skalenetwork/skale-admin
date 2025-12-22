@@ -144,7 +144,7 @@ def init_bls(dkg_client, rotation_id=0):
 
 
 def is_last_dkg_finished(skale: SkaleManager, schain_name: SchainName) -> bool:
-    num_of_nodes = len(skale.schains_internal.get_node_ids_for_schain(schain_name))
+    num_of_nodes = len(skale.schains_internal.node_ids_for_schain(schain_name))
     schain_hash = schain_name_to_hash(schain_name)
     return skale.dkg.get_number_of_completed(schain_hash) == num_of_nodes
 

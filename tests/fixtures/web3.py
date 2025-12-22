@@ -178,7 +178,7 @@ def new_node_wallet(node_wallets) -> Web3Wallet:
 
 @pytest.fixture
 def nodes(skale, node_skales, validator):
-    cleanup_nodes(skale, skale.nodes.get_active_node_ids())
+    cleanup_nodes(skale, skale.nodes.active_node_ids())
     link_nodes_to_validator(skale, validator, node_skales)
     ids = create_nodes(node_skales)
     try:

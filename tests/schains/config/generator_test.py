@@ -313,7 +313,7 @@ def test_generate_schain_config_with_skale(
     skale, skale_ima, node_config, schain_on_contracts, schain_secret_key_file
 ):
     schain_name = schain_on_contracts
-    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
     current_node_id = node_ids[0]
     node_config.id = current_node_id
 
@@ -550,7 +550,7 @@ def test_generate_schain_config_with_skale_gen2(
     skale, skale_ima, schain_on_contracts, schain_secret_key_file, node_config
 ):
     schain_name = schain_on_contracts
-    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
     current_node_id = node_ids[0]
     node_config.id = current_node_id
 
@@ -807,7 +807,7 @@ def test_generate_schain_config_with_skale_calls_fair(
     schain_secret_key_file,
 ):
     schain_name = schain_on_contracts
-    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
     current_node_id = node_ids[0]
     node_config.id = current_node_id
 

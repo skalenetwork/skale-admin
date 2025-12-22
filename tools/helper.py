@@ -163,7 +163,7 @@ def get_endpoint_call_speed(web3):
 def is_node_part_of_chain(skale, schain_name, node_id) -> bool:
     if not skale.schains_internal.is_schain_exist(schain_name):
         return False
-    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
     return node_id in node_ids
 
 

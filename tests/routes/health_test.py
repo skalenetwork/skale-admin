@@ -59,7 +59,7 @@ def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils)
         def __init__(self, *args, **kwargs):
             super().__init__(*args, dutils=dutils, **kwargs)
 
-    def get_schains_for_node_mock(self, node_id):
+    def schains_for_node_mock(self, node_id):
         return [
             get_schain_struct(_test_schain_name=schain_name),
             get_schain_struct(_test_schain_name='test-schain'),
@@ -68,8 +68,8 @@ def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils)
 
     with mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
         with mock.patch(
-            'skale.contracts.manager.schains.SChains.get_schains_for_node',
-            get_schains_for_node_mock,
+            'skale.contracts.manager.schains.SChains.schains_for_node',
+            schains_for_node_mock,
         ):
             data = get_bp_data(skale_bp, get_api_url('health', 'schains'))
             assert data['status'] == 'ok'

@@ -72,7 +72,7 @@ def run_config_pipeline(
     ima_linked = not PASSIVE_NODE and skale_ima.linker.has_schain(schain.name)
     group_index = skale.schains.name_to_group_id(schain.name)
     last_dkg_successful = skale.dkg.is_last_dkg_successful(cast(SchainHash, group_index))
-    current_nodes = get_current_nodes(skale, schain.name)
+    current_nodes = get_current_nodes(skale, schain.schain_hash, manager_cache)
 
     logger.info(
         arguments_list_string(

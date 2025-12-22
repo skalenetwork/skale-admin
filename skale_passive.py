@@ -65,7 +65,7 @@ def worker(schain_name: SchainName):
     schain = skale.schains.get_by_name(schain_name)
     node_config = NodeConfig()
 
-    schain_nodes = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    schain_nodes = skale.schains_internal.node_ids_for_schain(schain_name)
     if not node_config.id:
         node_config.id = schain_nodes[0]
 

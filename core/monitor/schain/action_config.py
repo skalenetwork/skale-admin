@@ -38,7 +38,7 @@ from core.dkg.schain import (
     save_dkg_results,
 )
 from core.monitor.action_base import BaseActionManager
-from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
+from core.node import NodeWithChangeIp, calc_reload_ts, get_node_index_in_group
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig, ExternalState
 from tools.configs import PASSIVE_NODE
@@ -61,7 +61,7 @@ class ConfigActionManager(BaseActionManager):
         stream_version: str,
         checks: ConfigChecks,
         estate: ExternalState,
-        current_nodes: List[ExtendedManagerNodeInfo],
+        current_nodes: List[NodeWithChangeIp],
         econfig: Optional[ExternalConfig] = None,
         node_options: NodeOptions | None = None,
     ):

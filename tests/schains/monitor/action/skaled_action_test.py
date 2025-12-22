@@ -322,7 +322,7 @@ def test_cleanup_empty_action(skaled_am, skaled_checks):
 
 def test_schain_finish_ts(skale, schain_on_contracts):
     name = schain_on_contracts
-    max_node_id = skale.nodes.get_nodes_number() - 1
+    max_node_id = skale.nodes.nodes_number() - 1
     assert skale.node_rotation.get_schain_finish_ts(max_node_id, name) is None
 
 

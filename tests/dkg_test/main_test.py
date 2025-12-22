@@ -170,8 +170,8 @@ def convert_str_to_key_share(sent_secret_key_contribution, n):
 
 
 def generate_broadcast_data(skale: SkaleManager, schain_name, node_id):
-    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
-    public_keys = skale.nodes.get_public_keys(node_ids)
+    node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
+    public_keys = skale.nodes.public_keys(node_ids)
     node_id_dkg, public_keys = get_node_id_dkg_and_public_keys(public_keys, node_id)
     client = skale.wallet.sgx_client
 
@@ -264,7 +264,7 @@ def run_node_dkg(
 ):
     init_schain_config_dir(schain_name)
     sgx_key_name = skale.wallet._key_name
-    rotation_id = skale.schains.get_last_rotation_id(schain_name)
+    rotation_id = skale.schains.last_rotation_id(schain_name)
 
     timeout = index * 5  # diversify start time for all nodes
     logger.info('Node %d going to sleep %d seconds %s', node_id, timeout, type(runs))
@@ -292,7 +292,7 @@ def run_node_dkg(
 
 
 def create_schain(skale: SkaleManager, name: str, lifetime_seconds: int) -> None:
-    _ = skale.schains.get_schain_price(TYPE_OF_NODES, lifetime_seconds)
+    _ = skale.schains.schain_price(TYPE_OF_NODES, lifetime_seconds)
     skale.schains.grant_role(skale.schains.schain_creator_role(), skale.wallet.address)
     skale.schains.add_schain_by_foundation(
         lifetime_seconds, TYPE_OF_NODES, 0, name, value=TEST_SRW_FUND_VALUE
@@ -335,7 +335,7 @@ class TestDKG:
 
     @pytest.fixture(scope='class')
     def other_maintenance(self, skale):
-        nodes = skale.nodes.get_active_node_ids()
+        nodes = skale.nodes.active_node_ids()
         for nid in nodes:
             skale.nodes.set_node_in_maintenance(nid)
         yield
@@ -642,14 +642,14 @@ class TestDKG:
 
     @pytest.fixture
     def no_ids_for_schain_skale(self, skale):
-        get_node_ids_f = skale.schains_internal.get_node_ids_for_schain
+        get_node_ids_f = skale.schains_internal.node_ids_for_schain
         try:
-            skale.schains_internal.get_node_ids_for_schain = mock.Mock(return_value=[])
+            skale.schains_internal.node_ids_for_schain = mock.Mock(return_value=[])
 
             skale.constants_holder.get_dkg_timeout = mock.Mock(return_value=2)
             yield skale
         finally:
-            skale.schains_internal.get_node_ids_for_schain = get_node_ids_f
+            skale.schains_internal.node_ids_for_schain = get_node_ids_f
 
     def test_failed_get_dkg_client(
         self, no_ids_for_schain_skale, schain, no_automine, interval_mining

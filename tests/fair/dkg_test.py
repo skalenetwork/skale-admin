@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture(scope='session')
 def no_zero_node(validator, skale, manager_contracts, endpoint):
-    if skale.nodes.get_nodes_number() == 0 or skale.nodes.get(0)['status'] != NodeStatus.LEFT:
+    if skale.nodes.nodes_number() == 0 or skale.nodes.get(0)['status'] != NodeStatus.LEFT:
         wallet = generate_wallet(skale.web3)
         link_addresses_to_validator(skale, [wallet])
         transfer_eth_to_wallets(skale, [wallet])
@@ -197,7 +197,7 @@ class TestDKGFair:
 
     @pytest.fixture(scope='class')
     def other_maintenance(self, skale):
-        nodes = skale.nodes.get_active_node_ids()
+        nodes = skale.nodes.active_node_ids()
         if N_OF_NODES > len(nodes):
             for i in range(N_OF_NODES, len(nodes)):
                 skale.nodes.set_node_in_maintenance(nodes[i])

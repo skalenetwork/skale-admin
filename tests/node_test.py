@@ -166,7 +166,7 @@ def test_get_node_id_node_not_registered(unregistered_node):
 def test_start_exit(skale, node):
     skale.nodes.init_exit(node.config.id)
     node.exit({})
-    status = NodeExitStatus(node.skale.nodes.get_node_status(node.config.id))
+    status = NodeExitStatus(node.skale.nodes.node_status(node.config.id))
 
     assert status != NodeExitStatus.ACTIVE
 
@@ -186,7 +186,7 @@ def test_exit_status_active_forzen(skale, node):
     assert node.info['status'] == NodeStatus.LEFT.value
 
     future_ts = int(time.time()) + 1000
-    node.skale.nodes.get_node_finish_time = mock.Mock(return_value=future_ts)
+    node.skale.nodes.node_finish_time = mock.Mock(return_value=future_ts)
     exit_status_data = node.get_exit_status()
     assert exit_status_data['status'] == NodeExitStatus.WAIT_FOR_ROTATIONS.name
     assert exit_status_data['exit_time'] != 0
@@ -203,12 +203,12 @@ def test_exit_status_maintenance(skale, maintenance_node):
 def test_node_maintenance(node, skale):
     res = node.set_maintenance_on()
     assert res == {'data': None, 'status': 'ok'}
-    node_status = NodeStatus(skale.nodes.get_node_status(node.config.id))
+    node_status = NodeStatus(skale.nodes.node_status(node.config.id))
     assert node_status == NodeStatus.IN_MAINTENANCE
 
     res = node.set_maintenance_off()
     assert res == {'data': None, 'status': 'ok'}
-    node_status = NodeStatus(skale.nodes.get_node_status(node.config.id))
+    node_status = NodeStatus(skale.nodes.node_status(node.config.id))
     assert node_status == NodeStatus.ACTIVE
 
 

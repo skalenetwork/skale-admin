@@ -181,7 +181,7 @@ def test_delete_bls_keys_with_invalid_secret_key(
     secret_key_1.json - invalid, secret_key_2.json not exists
     """
     skale_for_test = spawn_skale_manager_lib(skale)
-    skale_for_test.schains.get_last_rotation_id = lambda x: 2
+    skale_for_test.schains.last_rotation_id = lambda x: 2
     with mock.patch(
         'core.schains.cleaner.SgxClient.delete_bls_key', new=mock.Mock()
     ) as delete_mock:
