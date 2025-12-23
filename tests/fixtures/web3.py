@@ -200,3 +200,10 @@ def nodes(skale, node_skales, validator):
 @pytest.fixture
 def manager_cache(skale, node_config: NodeConfig) -> ManagerCache:
     return ManagerCache(rs, skale, node_config.id)
+
+
+@pytest.fixture
+def clear_manager_cache(skale, node_config: NodeConfig) -> ManagerCache:
+    mcache = ManagerCache(rs, skale, node_config.id)
+    mcache.clear_all_fields()
+    return mcache

@@ -2,10 +2,13 @@ from unittest import mock
 
 import pytest
 from flask import Flask, appcontext_pushed, g
+from skale import SkaleManager
+from skale.types.schain import SchainName
 
 from core.checks.schain import SChainChecks
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, get_schain_struct
+from tools.docker_utils import DockerUtils
 from web.helper import get_api_url
 from web.models.schain import SChainRecord
 from web.routes.health import health_bp
@@ -52,7 +55,13 @@ def unregistered_skale_bp(skale, dutils):
             SChainRecord.drop_table()
 
 
-def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils):
+def test_schains_checks(
+    skale_bp,
+    skale: SkaleManager,
+    schain_on_contracts: SchainName,
+    schain_db: SchainName,
+    dutils: DockerUtils,
+):
     schain_name = schain_db
 
     class SChainChecksMock(SChainChecks):

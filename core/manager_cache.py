@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import logging
 
 from skale.types.node import NodeWithChangeIp
 from skale.types.schain import SchainStructure
@@ -32,14 +33,31 @@ from core.manager_cache_helper import (
 )
 from core.redis_cache import CacheSpec, RedisCache, cached, json_bytes, json_obj
 
+logger = logging.getLogger(__name__)
+
 
 class ManagerCache(RedisCache):
     key_prefix = 'manager-cache:v1'
 
-    def should_refresh_schains(self, cached_schains: list[SchainStructure]) -> bool:
-        current = self.skale.schains_internal.get_schain_hashes_for_node(self.node_id)
-        cached = [s.schain_hash for s in cached_schains]
-        return set(current) != set(cached)
+    def clear_dkg_timeout(self) -> None:
+        logger.info('Clearing DKG timeout cache')
+        self.clear('dkg_timeout')
+
+    def clear_sync_ranges(self) -> None:
+        logger.info('Clearing sync ranges cache')
+        self.clear('sync_ranges')
+
+    def clear_schains(self) -> None:
+        logger.info('Clearing schains cache')
+        self.clear('schains')
+
+    def clear_nodes(self) -> None:
+        logger.info('Clearing nodes cache')
+        self.clear('nodes')
+
+    def clear_all_fields(self) -> None:
+        logger.info('Clearing all manager cache fields')
+        self.clear_many(['dkg_timeout', 'sync_ranges', 'schains', 'nodes'])
 
     dkg_timeout: cached[int] = cached(
         CacheSpec[int](

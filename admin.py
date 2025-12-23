@@ -58,6 +58,7 @@ ERROR_SLEEP_INTERVAL = 1
 
 def monitor(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig) -> None:
     manager_cache: ManagerCache = ManagerCache(rs, skale, node_config.id)
+    manager_cache.clear_all_fields()
     while True:
         try:
             run_process_manager(skale, skale_ima, node_config, manager_cache)

@@ -7,11 +7,15 @@ from concurrent.futures import Future
 from unittest import mock
 
 import pytest
+from skale import SkaleIma, SkaleManager
+from skale.types.schain import SchainHash, SchainName
 
 from core.firewall import IpRange
 from core.firewall.utils import get_sync_agent_ranges
+from core.manager_cache import ManagerCache
 from core.monitor.schain.main import ConfigTask, SkaledTask
 from core.monitor.tasks import ITask, execute_tasks
+from core.node_config import NodeConfig
 from core.schains.process import ProcessReport
 from tools.configs.schains import SCHAINS_DIR_PATH
 from tools.helper import is_node_part_of_chain
@@ -65,9 +69,16 @@ def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
     assert not chain_on_node
 
 
-def test_config_task(skale, skale_ima, schain_db, schain_on_contracts, node_config):
+def test_config_task(
+    skale: SkaleManager,
+    skale_ima: SkaleIma,
+    schain_db: SchainName,
+    schain_hash_on_contracts: SchainHash,
+    node_config: NodeConfig,
+    clear_manager_cache: ManagerCache,
+):
     stream_version = '2.3.0'
-    schain = skale.schains.get_by_name(schain_on_contracts)
+    schain = skale.schains.get(schain_hash_on_contracts)
     config_task = ConfigTask(
         schain=schain,
         skale_ima=skale_ima,

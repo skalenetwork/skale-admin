@@ -6,10 +6,14 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from skale import SkaleManager
 from skale.skale_manager import spawn_skale_manager_lib
+from skale.types.schain import SchainName
 
 from core.chain.runner import get_container_name
 from core.config.schain.directory import init_schain_config_dir
+from core.manager_cache import ManagerCache
+from core.node_config import NodeConfig
 from core.schains.cleaner import (
     cleanup_schain,
     delete_bls_keys,
@@ -24,6 +28,7 @@ from core.schains.cleaner import (
 from tests.utils import get_schain_struct, run_simple_ima_container, run_simple_skaled_container
 from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord, mark_schain_deleted, upsert_schain_record
 
 SKALED_CONTAINER_NAME_TEMPLATE = 'sk_skaled_{}'
@@ -201,9 +206,23 @@ def test_get_schains_on_node(
 
 
 @mock.patch('core.schains.cleaner.cleanup_firewall_for_schain')
-def test_remove_schain(cleanup_firewall_for_schain, skale, schain_db, node_config, dutils):
+def test_remove_schain(
+    cleanup_firewall_for_schain,
+    skale: SkaleManager,
+    schain_db: SchainName,
+    node_config: NodeConfig,
+    dutils: DockerUtils,
+    manager_cache: ManagerCache,
+):
     schain_name = schain_db
-    remove_schain(skale, node_config.id, schain_name, msg='Test remove_schain', dutils=dutils)
+    remove_schain(
+        skale,
+        node_config.id,
+        schain_name,
+        msg='Test remove_schain',
+        manager_cache=manager_cache,
+        dutils=dutils,
+    )
     container_name = SKALED_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert not is_container_running(dutils, container_name)
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)

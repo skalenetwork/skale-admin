@@ -97,19 +97,12 @@ def schain_structure_from_dict(d: dict[str, Any]) -> SchainStructure:
 def should_refresh_schains(
     skale: SkaleManager, node_id: NodeId, cached: list[SchainStructure]
 ) -> bool:
-    current = skale.schains_internal.get_schain_hashes_for_node(node_id)
+    current = skale.schains_internal.schain_hashes_for_node(node_id)
     cached_hashes = [s.schain_hash for s in cached]
     return set(current) != set(cached_hashes)
 
 
 def fetch_connected_nodes(skale: SkaleManager, node_id: NodeId) -> list[NodeWithChangeIp]:
+    logger.info('Fetching all connected nodes')
     node_ids = skale.schains_internal.connected_node_ids(node_id)
     return [skale.nodes.get_with_change_ip(node_id) for node_id in node_ids]
-
-
-def should_refresh_nodes(
-    skale: SkaleManager, node_id: NodeId, cached: list[NodeWithChangeIp]
-) -> bool:
-    current_ids = skale.schains_internal.connected_node_ids(node_id)
-    cached_ids = [n['id'] for n in cached]
-    return set(current_ids) != set(cached_ids)

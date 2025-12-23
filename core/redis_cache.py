@@ -19,7 +19,7 @@
 
 import json
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, TypeVar, cast, overload
+from typing import Any, Callable, Generic, Iterable, TypeVar, cast, overload
 
 from redis import Redis
 from redis.exceptions import RedisError
@@ -72,8 +72,33 @@ class RedisCache:
     def __init__(self, redis: Redis, skale: SkaleManager, node_id: NodeId) -> None:
         self.redis, self.skale, self.node_id = redis, skale, node_id
 
+    def _key(self, name: str) -> str:
+        return f'{self.key_prefix}:{name}'
+
+    def clear(self, name: str) -> None:
+        self.redis.delete(self._key(name))
+
+    def clear_spec(self, spec: CacheSpec[Any]) -> None:
+        self.clear(spec.name)
+
+    def clear_many(self, names: Iterable[str]) -> None:
+        keys = [self._key(name) for name in names]
+        if not keys:
+            return
+        self.redis.delete(*keys)
+
+    def clear_all(self) -> None:
+        match = f'{self.key_prefix}:*'
+        try:
+            keys = list(self.redis.scan_iter(match=match))
+        except (OSError, RedisError):
+            return
+        if not keys:
+            return
+        self.redis.delete(*keys)
+
     def get(self, spec: CacheSpec[T]) -> T:
-        key = f'{self.key_prefix}:{spec.name}'
+        key = self._key(spec.name)
 
         try:
             raw = self.redis.get(key)
@@ -85,7 +110,7 @@ class RedisCache:
                 val = spec.de(cast(bytes, raw))
                 if spec.refresh_if is None or not spec.refresh_if(self, val):
                     return val
-            except (ValueError, TypeError, UnicodeDecodeError, json.JSONDecodeError, KeyError):
+            except RedisError:
                 pass
 
         val = spec.fetch(self)

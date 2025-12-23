@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 import yaml
+from skale import SkaleManager
+from skale.types.schain import SchainHash, SchainName
 
 import tests.env_defaults  # noqa: F401 # set default env variables for tests
 from core.chain.status import (
@@ -20,6 +22,7 @@ from core.config.schain.helper import (
     get_own_ip_from_config,
 )
 from core.ima.container import ImaData
+from core.manager_cache import ManagerCache
 from core.node import get_current_nodes
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig, ExternalState
@@ -247,9 +250,13 @@ def econfig(schain_db, estate):
 
 
 @pytest.fixture
-def current_nodes(skale, schain_db, schain_on_contracts):
-    name = schain_db
-    return get_current_nodes(skale, name)
+def current_nodes(
+    skale: SkaleManager,
+    schain_db: SchainName,
+    schain_hash_on_contracts: SchainHash,
+    manager_cache: ManagerCache,
+):
+    return get_current_nodes(skale, schain_hash_on_contracts, manager_cache=manager_cache)
 
 
 @pytest.fixture
