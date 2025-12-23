@@ -53,6 +53,7 @@ health_bp = Blueprint(BLUEPRINT_NAME, __name__)
 def schains_checks() -> Response:
     logger.debug(request)
     checks_filter_raw = request.args.get('checks_filter')
+    checks_filter: list[str] | None = None
     if checks_filter_raw:
         checks_filter = checks_filter_raw.split(',')
     node_id = g.config.id

@@ -35,6 +35,7 @@ from jinja2 import Environment
 from skale import SkaleManager
 from skale.types.node import NodeId
 from skale.wallets import BaseWallet
+from web3 import Web3
 
 from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
 from tools.configs.db import REDIS_URI
@@ -146,18 +147,14 @@ def check_pid_psutil(pid):
     return p.is_running() and p.status() != psutil.STATUS_ZOMBIE
 
 
-def get_endpoint_call_speed(web3):
-    scores = []
-    for _ in range(10):
-        start = time.time()
-        result = web3.eth.gas_price
-        if result:
-            scores.append(time.time() - start)
-    if len(scores) == 0:
-        return None
-    call_avg_speed = round(sum(scores) / len(scores), 2)
-    logger.info(f'Endpoint call speed scores: {scores}, avg: {call_avg_speed}')
-    return call_avg_speed
+def get_endpoint_call_speed(web3: Web3) -> float | None:
+    duration: float | None = None
+    start = time.time()
+    result = web3.eth.gas_price
+    if result:
+        duration = time.time() - start
+    logger.info(f'Endpoint call speed: {duration}')
+    return duration
 
 
 def is_node_part_of_chain(skale, schain_name, node_id) -> bool:
