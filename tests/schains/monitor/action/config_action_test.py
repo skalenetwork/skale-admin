@@ -2,27 +2,40 @@ import shutil
 from copy import deepcopy
 
 import pytest
+from skale import SkaleIma, SkaleManager
+from skale.types.rotation import Rotation
+from skale.types.schain import SchainHash, SchainName
 
 from core.checks.schain import ConfigChecks
 from core.config.schain.directory import schain_config_dir
+from core.manager_cache import ManagerCache
 from core.monitor.schain.action_config import ConfigActionManager
 from core.node import get_current_nodes
-from core.schains.external_config import ExternalConfig
+from core.node_config import NodeConfig
+from core.schains.external_config import ExternalConfig, ExternalState
 from tests.utils import CONFIG_STREAM
 from tools.helper import read_json
 from web.models.schain import SChainRecord
 
 
 @pytest.fixture
-def rotation_data(schain_db, skale):
+def rotation_data(schain_db: SchainName, skale: SkaleManager) -> Rotation:
     return skale.node_rotation.get_rotation(schain_db)
 
 
 @pytest.fixture
-def config_checks(schain_db, skale, node_config, schain_on_contracts, estate, rotation_data):
+def config_checks(
+    schain_db: SchainName,
+    skale: SkaleManager,
+    node_config: NodeConfig,
+    schain_hash_on_contracts: SchainHash,
+    estate: ExternalState,
+    rotation_data: Rotation,
+    manager_cache: ManagerCache,
+):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
-    current_nodes = get_current_nodes(skale, name)
+    current_nodes = get_current_nodes(skale, schain_hash_on_contracts, manager_cache)
     return ConfigChecks(
         schain_name=name,
         node_id=node_config.id,
@@ -37,12 +50,20 @@ def config_checks(schain_db, skale, node_config, schain_on_contracts, estate, ro
 
 @pytest.fixture
 def config_am(
-    schain_db, skale, node_config, schain_on_contracts, secret_key, estate, config_checks, skale_ima
+    schain_db: SchainName,
+    skale: SkaleManager,
+    node_config: NodeConfig,
+    schain_hash_on_contracts: SchainHash,
+    secret_key,
+    estate: ExternalState,
+    config_checks: ConfigChecks,
+    skale_ima: SkaleIma,
+    manager_cache: ManagerCache,
 ):
     name = schain_db
     rotation_data = skale.node_rotation.get_rotation(name)
     schain = skale.schains.get_by_name(name)
-    current_nodes = get_current_nodes(skale, name)
+    current_nodes = get_current_nodes(skale, schain_hash_on_contracts, manager_cache)
     return ConfigActionManager(
         skale=skale,
         skale_ima=skale_ima,
@@ -56,7 +77,7 @@ def config_am(
     )
 
 
-def test_upstream_config_actions(config_am, config_checks):
+def test_upstream_config_actions(config_am: ConfigActionManager, config_checks: ConfigChecks):
     config_am.config_dir()
     assert config_checks.config_dir
     assert not config_checks.upstream_config
@@ -94,12 +115,14 @@ def test_upstream_config_actions(config_am, config_checks):
 
 
 @pytest.fixture
-def empty_econfig(schain_db):
+def empty_econfig(schain_db: SchainName) -> ExternalConfig:
     name = schain_db
     return ExternalConfig(name)
 
 
-def test_external_state_config_actions(config_am, config_checks, empty_econfig):
+def test_external_state_config_actions(
+    config_am: ConfigActionManager, config_checks: ConfigChecks, empty_econfig: ExternalConfig
+):
     config_am.config_dir()
     assert not config_checks.external_state
     assert config_am.external_state()

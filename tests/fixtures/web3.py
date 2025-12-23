@@ -5,6 +5,7 @@ from typing import cast
 import pytest
 from eth_typing import HexStr
 from skale import FairManager, SkaleIma, SkaleManager
+from skale.types.schain import SchainHash
 from skale.utils.account_tools import generate_account, send_eth
 from skale.utils.contracts_provision.fake_multisig_contract import deploy_fake_multisig_contract
 from skale.utils.contracts_provision.main import (
@@ -21,6 +22,7 @@ from skale.utils.contracts_provision.main import (
     set_test_msr,
     validator_exist,
 )
+from skale.utils.helper import schain_name_to_hash
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
@@ -140,6 +142,11 @@ def schain_on_contracts(skale, nodes, _schain_name):
         )
     finally:
         cleanup_nodes_schains(skale)
+
+
+@pytest.fixture
+def schain_hash_on_contracts(schain_on_contracts) -> SchainHash:
+    return schain_name_to_hash(schain_on_contracts)
 
 
 @pytest.fixture(scope='session')

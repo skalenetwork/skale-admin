@@ -79,7 +79,7 @@ class ManagerCache(RedisCache):
     nodes: cached[list[NodeWithChangeIp]] = cached(
         CacheSpec[list[NodeWithChangeIp]](
             name='nodes',
-            ttl=600,
+            ttl=840,
             fetch=lambda self: fetch_connected_nodes(self.skale, self.node_id),
             ser=lambda nodes: json_bytes([n for n in nodes]),
             de=lambda raw: [x for x in json_obj(raw)],
