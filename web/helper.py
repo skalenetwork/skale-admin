@@ -25,11 +25,13 @@ from http import HTTPStatus
 
 from flask import Response, g
 from skale import SkaleManager
+from skale.utils.cache import RedisCacheConfig
 from skale.utils.web3_utils import init_web3
 
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from core.utils.fair import init_fair_manager
+from tools.configs.db import REDIS_URI
 from tools.configs.web3 import boot_endpoint, endpoint
 from tools.helper import init_skale, is_fair
 from tools.resources import rs
@@ -76,7 +78,7 @@ def g_web3(func):
         if is_fair():
             g.web3 = init_web3(boot_endpoint())
         else:
-            g.web3 = init_web3(endpoint())
+            g.web3 = init_web3(endpoint(), cache_config=RedisCacheConfig(REDIS_URI))
         return func(*args, **kwargs)
 
     return wrapper

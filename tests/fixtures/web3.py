@@ -7,6 +7,7 @@ from eth_typing import HexStr
 from skale import FairManager, SkaleIma, SkaleManager
 from skale.types.schain import SchainHash
 from skale.utils.account_tools import generate_account, send_eth
+from skale.utils.cache import RedisCacheConfig
 from skale.utils.contracts_provision.fake_multisig_contract import deploy_fake_multisig_contract
 from skale.utils.contracts_provision.main import (
     add_test2_schain_type,
@@ -29,6 +30,7 @@ from skale.wallets import Web3Wallet
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from tests.utils import ETH_PRIVATE_KEY
+from tools.configs.db import REDIS_URI
 from tools.configs.ima import IMA_CONTRACTS
 from tools.configs.sgx import SGX_CERTIFICATES_FOLDER
 from tools.configs.web3 import ENDPOINT, FAIR_CONTRACTS, MANAGER_CONTRACTS
@@ -88,8 +90,13 @@ def private_key() -> HexStr:
 
 
 @pytest.fixture(scope='session')
-def web3(endpoint):
-    return init_web3(endpoint)
+def redis_cache_config() -> RedisCacheConfig:
+    return RedisCacheConfig(REDIS_URI)
+
+
+@pytest.fixture(scope='session')
+def web3(endpoint, redis_cache_config):
+    return init_web3(endpoint, cache_config=redis_cache_config)
 
 
 @pytest.fixture(scope='session')
@@ -109,7 +116,9 @@ def sgx_cert_folder():
 
 @pytest.fixture(scope='session')
 def skale(endpoint, manager_contracts, wallet, sgx_cert_folder):
-    skale_obj = SkaleManager(endpoint, manager_contracts, wallet)
+    skale_obj = SkaleManager(
+        endpoint, manager_contracts, wallet, redis_cache_config=RedisCacheConfig(REDIS_URI)
+    )
     add_test_permissions(skale_obj)
     add_test2_schain_type(skale_obj)
     add_test4_schain_type(skale_obj)

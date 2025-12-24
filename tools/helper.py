@@ -34,6 +34,7 @@ from filelock import FileLock
 from jinja2 import Environment
 from skale import SkaleManager
 from skale.types.node import NodeId
+from skale.utils.cache import RedisCacheConfig
 from skale.wallets import BaseWallet
 from web3 import Web3
 
@@ -122,7 +123,7 @@ def init_skale(wallet: BaseWallet) -> SkaleManager:
         manager_contracts(),
         wallet,
         enable_stats=True,
-        redis_cache_url=REDIS_URI,
+        redis_cache_config=RedisCacheConfig(REDIS_URI),
     )
 
 
