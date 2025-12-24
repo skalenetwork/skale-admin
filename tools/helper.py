@@ -40,7 +40,7 @@ from web3 import Web3
 
 from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
 from tools.configs.db import REDIS_URI
-from tools.configs.web3 import ZERO_ADDRESS, endpoint, manager_contracts
+from tools.configs.web3 import CACHE_TTL_POLICY, ZERO_ADDRESS, endpoint, manager_contracts
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +123,10 @@ def init_skale(wallet: BaseWallet) -> SkaleManager:
         manager_contracts(),
         wallet,
         enable_stats=True,
-        redis_cache_config=RedisCacheConfig(REDIS_URI),
+        redis_cache_config=RedisCacheConfig(
+            REDIS_URI,
+            method_ttl_policy=CACHE_TTL_POLICY,
+        ),
     )
 
 

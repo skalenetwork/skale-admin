@@ -33,7 +33,7 @@ from tests.utils import ETH_PRIVATE_KEY
 from tools.configs.db import REDIS_URI
 from tools.configs.ima import IMA_CONTRACTS
 from tools.configs.sgx import SGX_CERTIFICATES_FOLDER
-from tools.configs.web3 import ENDPOINT, FAIR_CONTRACTS, MANAGER_CONTRACTS
+from tools.configs.web3 import CACHE_TTL_POLICY, ENDPOINT, FAIR_CONTRACTS, MANAGER_CONTRACTS
 from tools.resources import rs
 
 ETH_AMOUNT_PER_NODE = 1
@@ -91,7 +91,10 @@ def private_key() -> HexStr:
 
 @pytest.fixture(scope='session')
 def redis_cache_config() -> RedisCacheConfig:
-    return RedisCacheConfig(REDIS_URI)
+    return RedisCacheConfig(
+        REDIS_URI,
+        method_ttl_policy=CACHE_TTL_POLICY,
+    )
 
 
 @pytest.fixture(scope='session')

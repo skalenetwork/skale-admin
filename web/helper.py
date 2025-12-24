@@ -32,7 +32,7 @@ from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from core.utils.fair import init_fair_manager
 from tools.configs.db import REDIS_URI
-from tools.configs.web3 import boot_endpoint, endpoint
+from tools.configs.web3 import CACHE_TTL_POLICY, boot_endpoint, endpoint
 from tools.helper import init_skale, is_fair
 from tools.resources import rs
 from tools.wallet_utils import init_wallet
@@ -78,7 +78,13 @@ def g_web3(func):
         if is_fair():
             g.web3 = init_web3(boot_endpoint())
         else:
-            g.web3 = init_web3(endpoint(), cache_config=RedisCacheConfig(REDIS_URI))
+            g.web3 = init_web3(
+                endpoint(),
+                cache_config=RedisCacheConfig(
+                    REDIS_URI,
+                    method_ttl_policy=CACHE_TTL_POLICY,
+                ),
+            )
         return func(*args, **kwargs)
 
     return wrapper

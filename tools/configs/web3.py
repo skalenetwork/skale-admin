@@ -38,6 +38,16 @@ NODE_REGISTER_CONFIRMATION_BLOCKS = 5
 
 ZERO_ADDRESS = HexAddress(HexStr('0x0000000000000000000000000000000000000000'))
 
+CACHE_TTL_POLICY = {
+    'eth_call': 1,
+    'eth_getCode': 30,
+    'eth_getStorageAt': 30,
+    'eth_chainId': 600,
+    'eth_getBlockByNumber': 60,
+    'eth_gasPrice': 5,
+    'web3_clientVersion': 600,
+}
+
 
 def endpoint() -> str:
     if not ENDPOINT:
