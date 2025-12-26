@@ -20,34 +20,38 @@
 import logging
 import os
 import time
-from typing import Dict
 
 from skale import SkaleIma, SkaleManager
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
-from skale.types.schain import SchainName
+from skale.types.schain import SchainName, SchainStructure
 from skale.utils.helper import schain_name_to_hash
 
+from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from core.schains.process_manager import run_pm_schain
-from tools.configs.ima import IMA_CONTRACTS
-from tools.configs.web3 import ENDPOINT, MANAGER_CONTRACTS
+from tools.configs.ima import ima_contracts
+from tools.configs.web3 import endpoint, manager_contracts
 from tools.logger import init_sync_logger
+from tools.resources import rs
 from web.migrations import migrate
 from web.models.schain import create_tables
 
 init_sync_logger()
 logger = logging.getLogger(__name__)
 
-SLEEP_INTERVAL = 180
+SLEEP_INTERVAL = 360
 WORKER_RESTART_SLEEP_INTERVAL = 2
 
 SCHAIN_NAME = os.environ.get('SCHAIN_NAME')
 
 
-def monitor(skale, skale_ima, node_config, schain: Dict) -> None:
+def monitor(
+    skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig, schain: SchainStructure
+) -> None:
+    manager_cache = ManagerCache(rs, skale, node_config.id)
     while True:
         try:
-            run_pm_schain(skale, skale_ima, node_config, schain)
+            run_pm_schain(skale, skale_ima, node_config, schain, manager_cache)
         except Exception:
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
@@ -55,8 +59,8 @@ def monitor(skale, skale_ima, node_config, schain: Dict) -> None:
 
 
 def worker(schain_name: SchainName):
-    skale = SkaleManager(ENDPOINT, MANAGER_CONTRACTS)
-    skale_ima = SkaleIma(ENDPOINT, IMA_CONTRACTS)
+    skale = SkaleManager(endpoint(), manager_contracts())
+    skale_ima = SkaleIma(endpoint(), ima_contracts())
 
     if not skale.schains_internal.is_schain_exist(schain_name):
         logger.error(f'Provided SKALE Chain does not exist: {schain_name}')
@@ -88,7 +92,7 @@ def main():
         try:
             create_tables()
             migrate()
-            worker(SCHAIN_NAME)
+            worker(SchainName(SCHAIN_NAME))
         except Exception:
             logger.exception('Sync node worker failed')
         time.sleep(WORKER_RESTART_SLEEP_INTERVAL)

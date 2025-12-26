@@ -173,7 +173,9 @@ class ConfigTask(BaseTask):
         node_config: NodeConfig,
         stream_version: str,
     ) -> None:
-        wallet = init_wallet(node_config=node_config, endpoint=endpoint())
+        wallet = None
+        if not PASSIVE_NODE:
+            wallet = init_wallet(node_config=node_config, endpoint=endpoint())
         self.skale = init_skale(wallet)
         self.skale_ima = skale_ima
         self.schain = schain

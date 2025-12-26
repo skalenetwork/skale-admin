@@ -117,7 +117,7 @@ def wait_until_admin_inited():
         logger.info('Skale admin inited')
 
 
-def init_skale(wallet: BaseWallet) -> SkaleManager:
+def init_skale(wallet: BaseWallet | None) -> SkaleManager:
     return SkaleManager(
         endpoint(),
         manager_contracts(),
