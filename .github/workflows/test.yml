@@ -60,9 +60,6 @@ jobs:
 
       - name: Run core tests
         run: |
-          echo "Waiting for SGX"
-          sleep 180
-          echo "------"
           source ../.venv13/bin/activate
           bash ./scripts/run_fair_test.sh
 
