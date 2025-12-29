@@ -120,7 +120,21 @@ def sgx_cert_folder():
 @pytest.fixture(scope='session')
 def skale(endpoint, manager_contracts, wallet, sgx_cert_folder):
     skale_obj = SkaleManager(
-        endpoint, manager_contracts, wallet, redis_cache_config=RedisCacheConfig(REDIS_URI)
+        endpoint,
+        manager_contracts,
+        wallet,
+        redis_cache_config=RedisCacheConfig(
+            REDIS_URI,
+            method_ttl_policy={
+                'eth_call': 0,
+                'eth_getCode': 10000,
+                'eth_getStorageAt': 10000,
+                'eth_chainId': 10000,
+                'eth_getBlockByNumber': 10000,
+                'eth_gasPrice': 10000,
+                'web3_clientVersion': 10000,
+            },
+        ),
     )
     add_test_permissions(skale_obj)
     add_test2_schain_type(skale_obj)
