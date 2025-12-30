@@ -282,6 +282,7 @@ class TestDKGFair:
     def fair_nodes(self, fair, nodes):
         return [fair.nodes.get(node['node_id']) for node in nodes]
 
+    @pytest.mark.timeout(700)
     def test_dkg_procedure_normal(
         self, skale, schain_creation_data, fair_sgx_instances, fair_nodes, schain, fair
     ):
