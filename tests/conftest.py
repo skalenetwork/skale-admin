@@ -316,3 +316,10 @@ def nft_chain_folder():
         yield path
     finally:
         shutil.rmtree(path)
+
+
+@pytest.fixture(autouse=True)
+def isolation(web3):
+    snapshot_id = web3.provider.make_request('evm_snapshot', [])['result']
+    yield
+    web3.provider.make_request('evm_revert', [snapshot_id])
