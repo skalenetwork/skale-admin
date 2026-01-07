@@ -320,6 +320,10 @@ def nft_chain_folder():
 
 @pytest.fixture(autouse=True)
 def isolation(web3):
-    snapshot_id = web3.provider.make_request('evm_snapshot', [])['result']
+    response = web3.provider.make_request('evm_snapshot', [])
+    if 'result' not in response:
+        yield
+        return
+    snapshot_id = response['result']
     yield
     web3.provider.make_request('evm_revert', [snapshot_id])
