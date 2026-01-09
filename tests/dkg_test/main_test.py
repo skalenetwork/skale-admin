@@ -45,6 +45,7 @@ MAX_WORKERS = 5
 TEST_SRW_FUND_VALUE = 3000000000000000000
 DKG_TIMEOUT = 20000
 DKG_TIMEOUT_FOR_FAILURE = 120  # to speed up failed broadcast/alright test
+DKG_TEST_TIMEOUT = 300
 
 log_format = '[%(asctime)s][%(levelname)s] - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
 
@@ -381,6 +382,7 @@ class TestDKG:
             remove_schain(skale, schain_name)
             cleanup_schain_config(schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
     def test_dkg_procedure_normal(
         self, skale, schain_creation_data, skale_sgx_instances, nodes, dkg_timeout, schain
     ):
@@ -413,6 +415,7 @@ class TestDKG:
         restore_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
         assert regular_dkg_keys_data == restore_dkg_keys_data
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
     def test_dkg_procedure_broadcast_failed_completely(
         self,
         skale,
@@ -451,6 +454,7 @@ class TestDKG:
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
     def test_dkg_procedure_broadcast_failed_once(
         self, skale, schain_creation_data, skale_sgx_instances, nodes, schain
     ):
@@ -478,6 +482,7 @@ class TestDKG:
         assert skale.dkg.is_last_dkg_successful(gid)
         assert is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
     def test_dkg_procedure_alright_failed_completely(
         self,
         skale,
@@ -516,6 +521,7 @@ class TestDKG:
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
     def test_dkg_procedure_alright_failed_once(
         self, skale, schain_creation_data, skale_sgx_instances, nodes, schain
     ):
@@ -543,6 +549,7 @@ class TestDKG:
         assert skale.dkg.is_last_dkg_successful(gid)
         assert is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
     def test_dkg_procedure_complaint_failed(
         self,
         skale,
@@ -590,6 +597,7 @@ class TestDKG:
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
     def test_dkg_procedure_broadcast_bad_data(
         self,
         skale,
