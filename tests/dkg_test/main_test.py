@@ -659,6 +659,7 @@ class TestDKG:
         finally:
             skale.schains_internal.node_ids_for_schain = get_node_ids_f
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
     def test_failed_get_dkg_client(
         self, no_ids_for_schain_skale, schain, no_automine, interval_mining
     ):

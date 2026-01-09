@@ -107,7 +107,7 @@ def init_bls(dkg_client, rotation_id=0):
         for from_node in range(dkg_client.n):
             if not is_alright_sent_list[from_node]:
                 is_alright_sent_list[from_node] = dkg_client.is_all_data_received(from_node)
-        sleep(30)
+        sleep(10)
 
     if check_no_complaints(dkg_client):
         for i in range(dkg_client.n):

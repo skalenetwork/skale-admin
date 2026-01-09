@@ -234,7 +234,7 @@ def wait_for_fail(skale, schain_name, channel_started_time, reason=''):
         check_failed_dkg(skale, schain_name)
         if channel_started_time != skale.dkg.get_channel_started_time(group_index):
             raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
-        sleep(30)
+        sleep(10)
 
 
 def get_latest_block_timestamp(skale):

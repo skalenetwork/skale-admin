@@ -325,5 +325,7 @@ def isolation(web3):
         yield
         return
     snapshot_id = response['result']
-    yield
-    web3.provider.make_request('evm_revert', [snapshot_id])
+    try:
+        yield
+    finally:
+        web3.provider.make_request('evm_revert', [snapshot_id])
