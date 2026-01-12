@@ -7,15 +7,18 @@ from unittest import mock
 
 import freezegun
 import pytest
+from skale.types.schain import SchainName, SchainStructure
 
 from core.chain.runner import get_container_info
 from core.chain.status import SkaledStatus
 from core.checks.schain import SkaledChecks
 from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import UpstreamConfigFilename
-from core.firewall import LOOPBACK_INTERFACE, Action, SChainRule
+from core.firewall import LOOPBACK_INTERFACE, Action, IRuleController, SChainRule
 from core.monitor.schain.action_skaled import SkaledActionManager
+from core.node_config import NodeConfig
 from core.schains.cleaner import remove_ima_container
+from core.schains.external_config import ExternalConfig
 from core.types.chain import ChainName
 from tests.utils import IMA_MIGRATION_TS
 from tools.configs.containers import SKALED_CONTAINER
@@ -51,11 +54,12 @@ def monitor_skaled_container_mock(
 
 
 @pytest.fixture
-def skaled_checks(schain_db, skale, rule_controller, dutils):
-    name = schain_db
-    schain_record = SChainRecord.get_by_name(name)
+def skaled_checks(
+    schain_structure: SchainStructure, rule_controller: IRuleController, dutils: DockerUtils
+):
+    schain_record = SChainRecord.get_by_name(schain_structure.name)
     return SkaledChecks(
-        schain_name=name,
+        schain_name=schain_structure.name,
         schain_record=schain_record,
         rule_controller=rule_controller,
         dutils=dutils,
@@ -65,11 +69,9 @@ def skaled_checks(schain_db, skale, rule_controller, dutils):
 
 @pytest.fixture
 def skaled_am(
-    schain_db,
-    skale,
-    node_config,
-    rule_controller,
-    schain_on_contracts,
+    schain_structure: SchainStructure,
+    node_config: NodeConfig,
+    rule_controller: IRuleController,
     secret_key,
     ssl_folder,
     ima_migration_schedule,
@@ -77,10 +79,8 @@ def skaled_am(
     dutils,
     skaled_checks,
 ):
-    name = schain_db
-    schain = skale.schains.get_by_name(name)
     return SkaledActionManager(
-        schain=schain,
+        schain=schain_structure,
         rule_controller=rule_controller,
         checks=skaled_checks,
         node_config=node_config,
@@ -89,7 +89,7 @@ def skaled_am(
     )
 
 
-def test_volume_action(skaled_am, skaled_checks):
+def test_volume_action(skaled_am: SkaledActionManager, skaled_checks: SkaledChecks):
     try:
         assert not skaled_checks.volume
         skaled_am.volume()
@@ -100,7 +100,7 @@ def test_volume_action(skaled_am, skaled_checks):
         skaled_am.cleanup_schain_docker_entity()
 
 
-def test_skaled_container_action(skaled_am, skaled_checks):
+def test_skaled_container_action(skaled_am: SkaledActionManager, skaled_checks: SkaledChecks):
     try:
         with mock.patch(
             'core.monitor.schain.action_skaled.monitor_skaled_container',
@@ -166,7 +166,9 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am: SkaledActionMan
 
 
 def test_recreated_skaled_container_action_exit_reached(
-    skaled_am, skaled_checks, skaled_status_exit_time_reached
+    skaled_am: SkaledActionManager,
+    skaled_checks: SkaledChecks,
+    skaled_status_exit_time_reached: SkaledStatus,
 ):
     try:
         skaled_am.volume()
@@ -192,14 +194,19 @@ def cleanup_ima(dutils, skaled_am):
 
 
 @pytest.fixture
-def ima_linked(econfig):
+def ima_linked(econfig: ExternalConfig) -> None:
     state = econfig.get()
     state.ima_linked = True
     econfig.update(state)
 
 
 def test_recreated_chain_containers(
-    skaled_am, skaled_checks, ima_linked, cleanup_ima, schain_db, dutils
+    skaled_am: SkaledActionManager,
+    skaled_checks: SkaledChecks,
+    ima_linked: None,
+    cleanup_ima: None,
+    schain_db: SchainName,
+    dutils: DockerUtils,
 ):
     name = schain_db
 
@@ -223,7 +230,13 @@ def test_recreated_chain_containers(
 
 
 def test_ima_container_action_from_scratch(
-    skaled_am, skaled_checks, schain_config, ima_linked, cleanup_ima, ima_migration_schedule, dutils
+    skaled_am: SkaledActionManager,
+    skaled_checks: SkaledChecks,
+    schain_config: dict,
+    ima_linked,
+    cleanup_ima,
+    ima_migration_schedule,
+    dutils: DockerUtils,
 ):
     skaled_am.ima_container()
     containers = dutils.get_all_ima_containers(all=True)
@@ -234,9 +247,13 @@ def test_ima_container_action_from_scratch(
     assert image == 'skalenetwork/ima:2.1.0'
 
 
-# @pytest.mark.skip('Docker API GA issues need to be resolved')
 def test_ima_container_action_image_pulling(
-    skaled_am, skaled_checks, schain_config, ima_linked, cleanup_ima, dutils
+    skaled_am: SkaledActionManager,
+    skaled_checks: SkaledChecks,
+    schain_config: dict,
+    ima_linked,
+    cleanup_ima,
+    dutils: DockerUtils,
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
     with freezegun.freeze_time(dt):
@@ -252,7 +269,12 @@ def test_ima_container_action_image_pulling(
 
 
 def test_ima_container_action_image_migration(
-    skaled_am, skaled_checks, schain_config, ima_linked, cleanup_ima, dutils
+    skaled_am: SkaledActionManager,
+    skaled_checks: SkaledChecks,
+    schain_config: dict,
+    ima_linked,
+    cleanup_ima,
+    dutils: DockerUtils,
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS + 5)
     with freezegun.freeze_time(dt):
@@ -266,7 +288,12 @@ def test_ima_container_action_image_migration(
 
 
 def test_ima_container_action_time_frame_migration(
-    skaled_am, skaled_checks, schain_config, ima_linked, cleanup_ima, dutils
+    skaled_am: SkaledActionManager,
+    skaled_checks: SkaledChecks,
+    schain_config: dict,
+    ima_linked,
+    cleanup_ima,
+    dutils: DockerUtils,
 ):
     dt = datetime.datetime.utcfromtimestamp(IMA_MIGRATION_TS - 5)
     with freezegun.freeze_time(dt):
@@ -303,30 +330,24 @@ def test_ima_container_action_time_frame_migration(
 
 @pytest.mark.skip(reason="test needs new version of ima container that doesn't require ABIs")
 def test_ima_container_action_not_linked(
-    skaled_am,
-    skaled_checks,
-    schain_db,
-    _schain_name,
+    skaled_am: SkaledActionManager,
+    skaled_checks: SkaledChecks,
+    schain_db: SchainName,
+    _schain_name: SchainName,
     cleanup_ima_containers,
     ima_migration_schedule,
-    dutils,
+    dutils: DockerUtils,
 ):
     skaled_am.ima_container()
     assert skaled_checks.ima_container
 
 
-def test_cleanup_empty_action(skaled_am, skaled_checks):
+def test_cleanup_empty_action(skaled_am: SkaledActionManager, skaled_checks: SkaledChecks):
     skaled_am.cleanup_schain_docker_entity()
     assert not skaled_checks.skaled_container
 
 
-def test_schain_finish_ts(skale, schain_on_contracts):
-    name = schain_on_contracts
-    max_node_id = skale.nodes.nodes_number() - 1
-    assert skale.node_rotation.get_schain_finish_ts(max_node_id, name) is None
-
-
-def test_display_skaled_logs(skale, skaled_am, _schain_name):
+def test_display_skaled_logs(skaled_am: SkaledActionManager, _schain_name: SchainName):
     skaled_am.log_executed_blocks()
     # Don't display if no container
     skaled_am.display_skaled_logs()
@@ -343,7 +364,7 @@ def test_display_skaled_logs(skale, skaled_am, _schain_name):
 
 
 @freezegun.freeze_time(CURRENT_DATETIME)
-def test_upd_chain_record(skaled_am, skaled_checks):
+def test_upd_chain_record(skaled_am: SkaledActionManager, skaled_checks: SkaledChecks):
     # Prepare fake record
     r = SChainRecord.get_by_name(skaled_am.name)
     r.set_restart_count(1)
@@ -361,7 +382,7 @@ def test_upd_chain_record(skaled_am, skaled_checks):
     assert r.failed_rpc_count == 0
 
 
-def test_update_config(skaled_am, skaled_checks):
+def test_update_config(skaled_am: SkaledActionManager, skaled_checks: SkaledChecks):
     folder = schain_config_dir(skaled_am.name)
     config_path = os.path.join(folder, f'schain_{skaled_am.name}.json')
     os.remove(config_path)
@@ -377,7 +398,7 @@ def test_update_config(skaled_am, skaled_checks):
         json.dump(config_content, upstream_file)
     skaled_am.update_config()
     with open(config_path) as config_file:
-        json.load(config_file) == config_content
+        assert json.load(config_file) == config_content
     assert skaled_checks.config
     assert skaled_checks.config_updated
 
@@ -397,7 +418,12 @@ def test_update_config(skaled_am, skaled_checks):
     assert skaled_checks.config_updated
 
 
-def test_firewall_rules_action(skaled_am, skaled_checks, rule_controller, econfig):
+def test_firewall_rules_action(
+    skaled_am: SkaledActionManager,
+    skaled_checks: SkaledChecks,
+    rule_controller: IRuleController,
+    econfig: ExternalConfig,
+):
     assert not skaled_checks.firewall_rules
     skaled_am.firewall_rules()
     assert skaled_checks.firewall_rules

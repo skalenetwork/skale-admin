@@ -13,9 +13,9 @@ from unittest.mock import MagicMock, Mock
 
 import requests
 from eth_typing import ChecksumAddress, HexAddress
-from skale.contracts.manager.schains import SchainStructure
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
-from skale.types.schain import SchainHash, SchainName
+from skale.types.node import NodeId
+from skale.types.schain import SchainHash, SchainName, SchainStructure
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 from web3 import Web3
@@ -49,6 +49,9 @@ ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
 
 CONFIG_STREAM = '1.0.0-testnet'
 
+TEST_NODE_ID = NodeId(1)
+
+TEST_TASK_SLEEP = 2
 
 ALLOWED_RANGES = [IpRange('1.1.1.1', '2.2.2.2'), IpRange('3.3.3.3', '4.4.4.4')]
 

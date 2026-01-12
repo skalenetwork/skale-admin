@@ -8,7 +8,7 @@ from unittest import mock
 
 import pytest
 from skale import SkaleIma, SkaleManager
-from skale.types.schain import SchainHash, SchainName
+from skale.types.schain import SchainHash, SchainName, SchainStructure
 
 from core.firewall import IpRange
 from core.firewall.utils import get_sync_agent_ranges
@@ -17,7 +17,9 @@ from core.monitor.schain.main import ConfigTask, SkaledTask
 from core.monitor.tasks import ITask, execute_tasks
 from core.node_config import NodeConfig
 from core.schains.process import ProcessReport
+from tests.utils import TEST_TASK_SLEEP
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.docker_utils import DockerUtils
 from tools.helper import is_node_part_of_chain
 from web.models.schain import upsert_schain_record
 
@@ -84,6 +86,7 @@ def test_config_task(
         skale_ima=skale_ima,
         node_config=node_config,
         stream_version=stream_version,
+        post_monitor_sleep_seconds=TEST_TASK_SLEEP,
     )
     assert config_task.needed
     skale_ima.linker.has_schain = mock.Mock(return_value=True)
@@ -97,15 +100,17 @@ def test_config_task(
         config_task.run()
 
 
-def test_skaled_task(skale, schain_db, schain_on_contracts, node_config, dutils):
-    record = upsert_schain_record(schain_on_contracts)
+def test_skaled_task(
+    schain_structure: SchainStructure, node_config: NodeConfig, dutils: DockerUtils
+):
+    record = upsert_schain_record(schain_structure.name)
     stream_version = '2.3.0'
-    schain = skale.schains.get_by_name(schain_on_contracts)
     skaled_task = SkaledTask(
-        schain=schain,
+        schain=schain_structure,
         node_config=node_config,
         stream_version=stream_version,
         dutils=dutils,
+        post_monitor_sleep_seconds=TEST_TASK_SLEEP,
     )
     assert not skaled_task.needed
     assert skaled_task.name == 'skaled'

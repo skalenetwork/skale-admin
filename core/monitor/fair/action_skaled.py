@@ -61,6 +61,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
         scheduler: BackgroundScheduler,
         dutils: DockerUtils | None = None,
         node_options: NodeOptions | None = None,
+        post_run_delay: int = CONTAINER_POST_RUN_DELAY,
     ):
         super().__init__(
             chain_name=chain_name,
@@ -69,6 +70,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             node_config=node_config,
             dutils=dutils,
             node_options=node_options,
+            post_run_delay=post_run_delay,
         )
         self.chain_name = chain_name
         self.scheduler = scheduler
@@ -102,7 +104,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             passive_node=passive_node,
             historic_state=self.node_options.historic_state,
         )
-        time.sleep(CONTAINER_POST_RUN_DELAY)
+        time.sleep(self.post_run_delay)
         return True
 
     @BaseActionManager.monitor_block

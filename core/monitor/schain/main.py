@@ -120,7 +120,6 @@ def run_skaled_pipeline(
 class SkaledTask(BaseTask):
     NAME = 'skaled'
     STUCK_TIMEOUT_SECONDS = 60 * 60 * 1
-    POST_MONITOR_SLEEP_SECONDS = 120
 
     def __init__(
         self,
@@ -128,9 +127,11 @@ class SkaledTask(BaseTask):
         node_config: NodeConfig,
         stream_version: str,
         dutils: Optional[DockerUtils] = None,
+        post_monitor_sleep_seconds: int = 120,
     ) -> None:
         self.schain = schain
         self.dutils = dutils or DockerUtils()
+        self.post_monitor_sleep_seconds = post_monitor_sleep_seconds
         super().__init__(
             chain_name=schain.name,
             node_config=node_config,
@@ -155,8 +156,8 @@ class SkaledTask(BaseTask):
                 node_config=self.node_config,
                 dutils=self.dutils,
             )
-            logger.info('Sleeping %d seconds after monitor task', self.POST_MONITOR_SLEEP_SECONDS)
-            time.sleep(self.POST_MONITOR_SLEEP_SECONDS)
+            logger.info('Sleeping %d seconds after monitor task', self.post_monitor_sleep_seconds)
+            time.sleep(self.post_monitor_sleep_seconds)
         except Exception:
             logger.exception('Task %s failed', self.name)
 
@@ -164,7 +165,6 @@ class SkaledTask(BaseTask):
 class ConfigTask(BaseTask):
     NAME = 'config'
     STUCK_TIMEOUT_SECONDS = 60 * 60 * 2
-    POST_MONITOR_SLEEP_SECONDS = 420
 
     def __init__(
         self,
@@ -172,6 +172,7 @@ class ConfigTask(BaseTask):
         skale_ima: SkaleIma,
         node_config: NodeConfig,
         stream_version: str,
+        post_monitor_sleep_seconds: int = 420,
     ) -> None:
         wallet = None
         if not PASSIVE_NODE:
@@ -179,6 +180,7 @@ class ConfigTask(BaseTask):
         self.skale = init_skale(wallet)
         self.skale_ima = skale_ima
         self.schain = schain
+        self.post_monitor_sleep_seconds = post_monitor_sleep_seconds
         self.manager_cache = ManagerCache(rs, self.skale, node_config.id)
         super().__init__(
             chain_name=schain.name,
@@ -207,8 +209,8 @@ class ConfigTask(BaseTask):
                 stream_version=self.stream_version,
                 manager_cache=self.manager_cache,
             )
-            logger.info('Sleeping %d seconds after monitor task', self.POST_MONITOR_SLEEP_SECONDS)
-            time.sleep(self.POST_MONITOR_SLEEP_SECONDS)
+            logger.info('Sleeping %d seconds after monitor task', self.post_monitor_sleep_seconds)
+            time.sleep(self.post_monitor_sleep_seconds)
         except Exception:
             logger.exception('Task %s failed', self.name)
 

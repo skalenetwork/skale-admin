@@ -9,6 +9,7 @@ from core.config.schain.static_params import get_fair_chain_name
 from core.monitor.fair.action_skaled import FairSkaledActionManager
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
+from tests.utils import TEST_TASK_SLEEP
 from tools.configs import PASSIVE_NODE
 
 
@@ -64,6 +65,7 @@ def skaled_am(
         node_config=node_config_fair,
         scheduler=scheduler,
         dutils=dutils,
+        post_run_delay=TEST_TASK_SLEEP,
     )
 
 

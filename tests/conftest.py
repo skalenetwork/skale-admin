@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 from skale import SkaleManager
-from skale.types.schain import SchainHash, SchainName
+from skale.types.schain import SchainHash, SchainName, SchainStructure
 
 import tests.env_defaults  # noqa: F401 # set default env variables for tests
 from core.chain.status import (
@@ -31,8 +31,10 @@ from tests.utils import (
     CONFIG_STREAM,
     CURRENT_TS,
     IMA_MIGRATION_TS,
+    TEST_NODE_ID,
     generate_cert,
     generate_schain_config,
+    get_schain_struct,
     get_test_rule_controller,
     upsert_schain_record_with_config,
 )
@@ -174,10 +176,15 @@ def db():
 
 
 @pytest.fixture
-def schain_db(db, _schain_name, meta_file):
+def schain_db(db, _schain_name: SchainName, meta_file) -> SchainName:
     """Database with default schain inserted"""
     upsert_schain_record_with_config(_schain_name)
     return _schain_name
+
+
+@pytest.fixture
+def schain_structure(schain_db: SchainName) -> SchainStructure:
+    return get_schain_struct(_test_schain_name=schain_db)
 
 
 @pytest.fixture
@@ -192,9 +199,9 @@ def meta_file():
 
 
 @pytest.fixture
-def node_config(skale, nodes):
+def node_config():
     node_config = NodeConfig()
-    node_config.id = nodes[0]
+    node_config.id = TEST_NODE_ID
     return node_config
 
 
@@ -242,7 +249,7 @@ def estate(skale):
 
 
 @pytest.fixture
-def econfig(schain_db, estate):
+def econfig(schain_db, estate) -> ExternalConfig:
     name = schain_db
     ec = ExternalConfig(name)
     ec.update(estate)

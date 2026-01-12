@@ -52,8 +52,9 @@ SCHAIN_CLEANUP_TIMEOUT = 10
 
 
 class BaseActionManager(abc.ABC):
-    def __init__(self, name: ChainName):
+    def __init__(self, name: ChainName, post_run_delay: int = CONTAINER_POST_RUN_DELAY):
         self.name = name
+        self.post_run_delay = post_run_delay
         self.executed_blocks: Dict = {}
 
     @staticmethod
@@ -107,6 +108,7 @@ class BaseSkaledActionManager(BaseActionManager):
         node_config: NodeConfig,
         dutils: DockerUtils | None = None,
         node_options: NodeOptions | None = None,
+        post_run_delay: int = CONTAINER_POST_RUN_DELAY,
     ):
         self.chain_name = chain_name
         self.checks = checks
@@ -122,7 +124,7 @@ class BaseSkaledActionManager(BaseActionManager):
 
         self.node_options = node_options or NodeOptions()
 
-        super().__init__(name=chain_name)
+        super().__init__(name=chain_name, post_run_delay=post_run_delay)
 
     @property
     def chain_record(self) -> ChainRecord:
