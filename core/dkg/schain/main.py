@@ -21,6 +21,7 @@ import logging
 from time import sleep
 
 from skale import SkaleManager
+from skale.types.node import NodeId
 from skale.types.schain import SchainName
 from skale.utils.helper import schain_name_to_hash
 
@@ -43,7 +44,13 @@ from core.dkg.utils import DKGKeyGenerationError
 logger = logging.getLogger(__name__)
 
 
-def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
+def get_dkg_client(
+    node_id: NodeId,
+    schain_name: SchainName,
+    skale: SkaleManager,
+    sgx_key_name: str,
+    rotation_id: int,
+):
     dkg_client = None
     try:
         dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
