@@ -275,9 +275,12 @@ class Node:
     def info(self):
         _id = self.config.id
         if _id is not None:
-            raw_info = self.skale.nodes.get(_id)
-            return self._transform_node_info(raw_info, _id)
-        return {'status': NodeStatus.NOT_CREATED.value}
+            try:
+                raw_info = self.skale.nodes.get(_id)
+                return self._transform_node_info(raw_info, _id)
+            except InvalidNodeIdError:
+                logger.warning(f'Node with ID {_id} does not exist on contracts')
+        return {'status': NodeStatus.NOT_CREATED.value, 'id': _id}
 
     def _transform_node_info(self, node_info, node_id):
         node_info['ip'] = ip_from_bytes(node_info['ip'])

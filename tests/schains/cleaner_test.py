@@ -72,7 +72,9 @@ def upsert_db(db):
         upsert_schain_record(name)
 
 
-def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils, manager_cache):
+def test_monitor(
+    db, schain_dirs_for_monitor, skale, node_config, dutils, manager_cache: ManagerCache
+):
     ensure_schain_removed_mock = mock.Mock()
 
     ensure_schain_removed_mock = mock.Mock(side_effect=ValueError)
@@ -80,10 +82,10 @@ def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils, manage
         monitor(skale, node_config, manager_cache=manager_cache, dutils=dutils)
 
         ensure_schain_removed_mock.assert_any_call(
-            skale, TEST_SCHAIN_NAME_1, node_config.id, dutils=dutils
+            skale, TEST_SCHAIN_NAME_1, node_config.id, manager_cache=manager_cache, dutils=dutils
         )
         ensure_schain_removed_mock.assert_any_call(
-            skale, TEST_SCHAIN_NAME_2, node_config.id, dutils=dutils
+            skale, TEST_SCHAIN_NAME_2, node_config.id, manager_cache=manager_cache, dutils=dutils
         )
 
     monitor(skale, node_config, manager_cache=manager_cache, dutils=dutils)
@@ -210,6 +212,7 @@ def test_remove_schain(
     cleanup_firewall_for_schain,
     skale: SkaleManager,
     schain_db: SchainName,
+    schain_on_contracts: SchainName,
     node_config: NodeConfig,
     dutils: DockerUtils,
     manager_cache: ManagerCache,

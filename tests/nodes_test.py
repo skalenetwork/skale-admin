@@ -37,29 +37,25 @@ def test_get_current_ips(
     assert current_ips[0] == current_nodes[0]['ip']
 
 
-def test_get_max_ip_change_ts(
-    skale: SkaleManager, schain_hash_on_contracts: SchainHash, manager_cache: ManagerCache
-):
-    current_nodes = get_current_nodes(skale, schain_hash_on_contracts, manager_cache)
+def test_get_max_ip_change_ts(skale: SkaleManager, schain_hash_on_contracts: SchainHash):
+    current_nodes = get_current_nodes(skale, schain_hash_on_contracts)
     max_ip_change_ts = get_max_ip_change_ts(current_nodes)
     assert max_ip_change_ts is None
     new_ip = generate_random_ip()
     skale.nodes.change_ip(current_nodes[0]['id'], ip_to_bytes(new_ip), ip_to_bytes(new_ip))
-    current_nodes = get_current_nodes(skale, schain_hash_on_contracts, manager_cache)
+    current_nodes = get_current_nodes(skale, schain_hash_on_contracts)
     max_ip_change_ts = get_max_ip_change_ts(current_nodes)
     assert max_ip_change_ts is not None
     assert max_ip_change_ts > 0
 
 
-def test_calc_reload_ts(
-    skale: SkaleManager, schain_hash_on_contracts: SchainHash, manager_cache: ManagerCache
-):
-    current_nodes = get_current_nodes(skale, schain_hash_on_contracts, manager_cache)
+def test_calc_reload_ts(skale: SkaleManager, schain_hash_on_contracts: SchainHash):
+    current_nodes = get_current_nodes(skale, schain_hash_on_contracts)
     reload_ts = calc_reload_ts(current_nodes, 4)
     assert reload_ts is None
     new_ip = generate_random_ip()
     skale.nodes.change_ip(current_nodes[0]['id'], ip_to_bytes(new_ip), ip_to_bytes(new_ip))
-    current_nodes = get_current_nodes(skale, schain_hash_on_contracts, manager_cache)
+    current_nodes = get_current_nodes(skale, schain_hash_on_contracts)
     max_ip_change_ts = get_max_ip_change_ts(current_nodes)
 
     reload_ts = calc_reload_ts(current_nodes, 4)

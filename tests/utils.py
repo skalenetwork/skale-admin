@@ -15,7 +15,8 @@ import requests
 from eth_typing import ChecksumAddress, HexAddress
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.types.node import NodeId
-from skale.types.schain import SchainHash, SchainName, SchainStructure
+from skale.types.schain import SchainName, SchainStructure
+from skale.utils.helper import schain_name_to_hash
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 from web3 import Web3
@@ -153,7 +154,7 @@ def get_schain_struct(_test_schain_name) -> SchainStructure:
         start_block=1000,
         deposit=Wei(0),
         index=1,
-        schain_hash=SchainHash(b'1'),
+        schain_hash=schain_name_to_hash(_test_schain_name),
         active=True,
     )
 

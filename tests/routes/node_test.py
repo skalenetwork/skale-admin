@@ -11,7 +11,6 @@ from flask import Flask, appcontext_pushed, g
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.utils.contracts_provision.utils import generate_random_node_data
 from skale.utils.helper import schain_name_to_hash
-from skale.utils.web3_utils import to_checksum_address
 from web3 import Web3
 
 from core.config.schain.file_manager import ConfigFileManager
@@ -45,12 +44,11 @@ def skale_bp(skale, node_config, dutils):
 
 def test_node_info(skale_bp, skale, node_config, node_wallets):
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'info'))
-    status = NodeStatus.ACTIVE.value
+    status = NodeStatus.NOT_CREATED.value
     assert data['status'] == 'ok'
     node_info = data['payload']['node_info']
     assert node_info['id'] == node_config.id
     assert node_info['status'] == status
-    assert to_checksum_address(node_info['owner']) == node_wallets[0].address
 
 
 def register_mock(

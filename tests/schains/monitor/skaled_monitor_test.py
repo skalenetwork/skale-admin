@@ -420,8 +420,8 @@ def test_backup_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
 def test_repair_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = RepairSkaledMonitor(skaled_am, skaled_checks)
     ts_before = time.time()
-    mon.run()
     time.sleep(1)
+    mon.run()
     assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
 

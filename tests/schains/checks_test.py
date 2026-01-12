@@ -7,11 +7,12 @@ from unittest import mock
 
 import docker
 import pytest
+from skale import SkaleManager
 from skale.schain_config.generator import get_schain_nodes_with_schain_hashes
 
 from core.chain.runner import get_container_info, get_image_name, run_ima_container
 from core.chain.skaled_exit_codes import SkaledExitCodes
-from core.checks.schain import CheckRes, SChainChecks
+from core.checks.schain import CheckRes, ConfigChecks, SChainChecks
 from core.config.schain.directory import get_schain_check_filepath, schain_config_dir
 from core.config.schain.file_manager import UpstreamConfigFilename
 from core.config.schain.schain_node import generate_schain_nodes
@@ -119,7 +120,7 @@ def test_dkg_check(schain_checks, sample_false_checks):
     assert not sample_false_checks.dkg.status
 
 
-def test_upstream_config_check(skale, schain_checks):
+def test_upstream_config_check(skale: SkaleManager, schain_checks: ConfigChecks):
     assert not schain_checks.upstream_config
     ts = int(time.time())
     name, rotation_id = schain_checks.name, schain_checks.rotation_id
@@ -290,7 +291,7 @@ def test_exit_code(skale, rule_controller, schain_db, current_nodes, estate, dut
         dutils.run_container(
             image_name=image_name, name=container_name, entrypoint='bash -c "exit 200"'
         )
-        time.sleep(10)
+        time.sleep(3)
         checks = SChainChecks(
             test_schain_name,
             TEST_NODE_ID,

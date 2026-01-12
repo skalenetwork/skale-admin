@@ -105,12 +105,11 @@ def test_regular_config_monitor(schain_db, regular_config_monitor, rotation_data
 
 def test_regular_config_monitor_change_ip(
     skale: SkaleManager,
-    schain_db: SchainName,
+    schain_on_contracts: SchainName,
     regular_config_monitor: RegularConfigMonitor,
     rotation_data: Rotation,
-    manager_cache: ManagerCache,
 ):
-    name = schain_db
+    name = schain_on_contracts
     schain_hash = schain_name_to_hash(name)
     econfig = ExternalConfig(name=name)
     assert econfig.reload_ts is None
@@ -118,11 +117,11 @@ def test_regular_config_monitor_change_ip(
     regular_config_monitor.run()
     assert econfig.reload_ts is None
 
-    current_nodes = get_current_nodes(skale, schain_hash, manager_cache)
+    current_nodes = get_current_nodes(skale, schain_hash)
     new_ip = generate_random_ip()
     skale.nodes.change_ip(current_nodes[0]['id'], ip_to_bytes(new_ip), ip_to_bytes(new_ip))
 
-    current_nodes = get_current_nodes(skale, schain_hash, manager_cache)
+    current_nodes = get_current_nodes(skale, schain_hash)
     regular_config_monitor.am.current_nodes = current_nodes
     regular_config_monitor.checks.current_nodes = current_nodes
 
@@ -130,7 +129,7 @@ def test_regular_config_monitor_change_ip(
     assert econfig.reload_ts is not None
     assert econfig.reload_ts > 0
 
-    current_nodes = get_current_nodes(skale, schain_hash, manager_cache)
+    current_nodes = get_current_nodes(skale, schain_hash)
     regular_config_monitor.am.current_nodes = current_nodes
     regular_config_monitor.checks.current_nodes = current_nodes
 

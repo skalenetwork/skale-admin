@@ -77,7 +77,9 @@ def config_am(
     )
 
 
-def test_upstream_config_actions(config_am: ConfigActionManager, config_checks: ConfigChecks):
+def test_upstream_config_actions(
+    config_am: ConfigActionManager, config_checks: ConfigChecks, clear_manager_cache: ManagerCache
+):
     config_am.config_dir()
     assert config_checks.config_dir
     assert not config_checks.upstream_config
@@ -92,7 +94,7 @@ def test_upstream_config_actions(config_am: ConfigActionManager, config_checks: 
     finally:
         shutil.move(tmp_schain_folder, schain_folder)
 
-    # DKG action is tested separetely in dkg_test module
+    # DKG action is tested separately in dkg_test module
 
     config_am.config_dir()
     config_am.upstream_config()

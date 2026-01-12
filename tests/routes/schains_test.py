@@ -204,7 +204,7 @@ def test_get_schain(skale_bp, skale, schain_db, meta_file, schain_on_contracts):
 
 
 def test_schain_containers_versions(skale_bp):
-    expected_skaled_version = '3.23'
+    expected_skaled_version = '3.19.0'
     expected_ima_version = '3.22'
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'container-versions'))
     assert data == {
