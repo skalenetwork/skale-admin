@@ -66,6 +66,7 @@ def skaled_am(
         scheduler=scheduler,
         dutils=dutils,
         post_run_delay=TEST_TASK_SLEEP,
+        schain_cleanup_timeout=TEST_TASK_SLEEP,
     )
 
 

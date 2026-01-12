@@ -72,7 +72,7 @@ def test_run_pm_schain(
 ):
     schain = get_schain_struct(_test_schain_name=_schain_name)
 
-    timeout = 7
+    timeout = 4
 
     with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
         run_pm_schain(

@@ -35,6 +35,7 @@ from core.config.fair.helper import random_timestamp_between
 from core.firewall import FairCommitteeScopeRuleController
 from core.monitor.action_base import (
     CONTAINER_POST_RUN_DELAY,
+    SCHAIN_CLEANUP_TIMEOUT,
     BaseActionManager,
     BaseSkaledActionManager,
 )
@@ -62,6 +63,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
         dutils: DockerUtils | None = None,
         node_options: NodeOptions | None = None,
         post_run_delay: int = CONTAINER_POST_RUN_DELAY,
+        schain_cleanup_timeout: int = SCHAIN_CLEANUP_TIMEOUT,
     ):
         super().__init__(
             chain_name=chain_name,
@@ -71,6 +73,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             dutils=dutils,
             node_options=node_options,
             post_run_delay=post_run_delay,
+            schain_cleanup_timeout=schain_cleanup_timeout,
         )
         self.chain_name = chain_name
         self.scheduler = scheduler

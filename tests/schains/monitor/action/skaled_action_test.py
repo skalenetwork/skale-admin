@@ -87,6 +87,7 @@ def skaled_am(
         ncli_status=ncli_status,
         dutils=dutils,
         post_run_delay=TEST_TASK_SLEEP,
+        schain_cleanup_timeout=TEST_TASK_SLEEP,
     )
 
 
@@ -300,7 +301,7 @@ def test_ima_container_action_time_frame_migration(
     with freezegun.freeze_time(dt):
         with mock.patch(
             'core.chain.containers.get_image_name',
-            return_value='skalenetwork/ima:2.0.0-beta.9',
+            return_value='alpine:3.23',
         ):
             skaled_am.ima_container()
             containers = dutils.get_all_ima_containers(all=True)
@@ -308,7 +309,7 @@ def test_ima_container_action_time_frame_migration(
             container_name = containers[0].name
             assert container_name == f'sk_ima_{skaled_am.name}'
             image = dutils.get_container_image_name(container_name)
-            assert image == 'skalenetwork/ima:2.0.0-beta.9'
+            assert image == 'alpine:3.23'
             actual_time_frame = int(dutils.get_container_env_value(container_name, 'TIME_FRAMING'))
             assert actual_time_frame == 1800
 
@@ -316,7 +317,7 @@ def test_ima_container_action_time_frame_migration(
     with freezegun.freeze_time(dt):
         with mock.patch(
             'core.chain.containers.get_image_name',
-            return_value='skalenetwork/ima:2.0.0-beta.9',
+            return_value='alpine:3.23',
         ):
             skaled_am.ima_container()
             containers = dutils.get_all_ima_containers(all=True)
@@ -324,7 +325,7 @@ def test_ima_container_action_time_frame_migration(
             container_name = containers[0].name
             assert container_name == f'sk_ima_{skaled_am.name}'
             image = dutils.get_container_image_name(container_name)
-            assert image == 'skalenetwork/ima:2.0.0-beta.9'
+            assert image == 'alpine:3.23'
             actual_time_frame = int(dutils.get_container_env_value(container_name, 'TIME_FRAMING'))
             assert actual_time_frame == 900
 

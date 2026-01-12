@@ -46,6 +46,7 @@ from core.ima.container import ImaData
 from core.ima.container import get_migration_ts as get_ima_migration_ts
 from core.monitor.action_base import (
     CONTAINER_POST_RUN_DELAY,
+    SCHAIN_CLEANUP_TIMEOUT,
     BaseActionManager,
     BaseSkaledActionManager,
 )
@@ -76,6 +77,7 @@ class SkaledActionManager(BaseSkaledActionManager):
         dutils: DockerUtils | None = None,
         node_options: NodeOptions | None = None,
         post_run_delay: int = CONTAINER_POST_RUN_DELAY,
+        schain_cleanup_timeout: int = SCHAIN_CLEANUP_TIMEOUT,
     ):
         super().__init__(
             chain_name=schain.name,
@@ -85,6 +87,7 @@ class SkaledActionManager(BaseSkaledActionManager):
             dutils=dutils,
             node_options=node_options,
             post_run_delay=post_run_delay,
+            schain_cleanup_timeout=schain_cleanup_timeout,
         )
 
         self.schain = schain
