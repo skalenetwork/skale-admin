@@ -20,7 +20,7 @@ from core.node_config import NodeConfig
 from core.schains.cleaner import remove_ima_container
 from core.schains.external_config import ExternalConfig
 from core.types.chain import ChainName
-from tests.utils import IMA_MIGRATION_TS
+from tests.utils import IMA_MIGRATION_TS, TEST_TASK_SLEEP
 from tools.configs.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
@@ -86,6 +86,7 @@ def skaled_am(
         node_config=node_config,
         ncli_status=ncli_status,
         dutils=dutils,
+        post_run_delay=TEST_TASK_SLEEP,
     )
 
 
@@ -244,7 +245,7 @@ def test_ima_container_action_from_scratch(
     container_name = containers[0].name
     assert container_name == f'sk_ima_{skaled_am.name}'
     image = dutils.get_container_image_name(container_name)
-    assert image == 'skalenetwork/ima:2.1.0'
+    assert image == 'alpine:3.22'
 
 
 def test_ima_container_action_image_pulling(
@@ -264,8 +265,8 @@ def test_ima_container_action_image_pulling(
         container_name = containers[0].name
         assert container_name == f'sk_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.1.0-beta.3'
-        assert dutils.pulled('skalenetwork/ima:2.1.0')
+        assert image == 'alpine:3.23'
+        assert dutils.pulled('alpine:3.23')
 
 
 def test_ima_container_action_image_migration(
@@ -284,7 +285,7 @@ def test_ima_container_action_image_migration(
         container_name = containers[0].name
         assert container_name == f'sk_ima_{skaled_am.name}'
         image = dutils.get_container_image_name(container_name)
-        assert image == 'skalenetwork/ima:2.1.0'
+        assert image == 'alpine:3.22'
 
 
 def test_ima_container_action_time_frame_migration(

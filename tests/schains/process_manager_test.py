@@ -127,11 +127,11 @@ def test_cleanup_schains_pids(
     tmp_dir,
     skale: SkaleManager,
     skale_ima: SkaleIma,
+    schain_on_contracts: SchainName,
     node_config: NodeConfig,
     manager_cache: ManagerCache,
-    _schain_name,
 ):
-    schain = get_schain_struct(_test_schain_name=_schain_name)
+    schain = skale.schains.get_by_name(schain_on_contracts)
 
     process_report = ProcessReport(schain.name)
     assert not process_report.exists()

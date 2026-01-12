@@ -40,6 +40,7 @@ from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.manager_cache import ManagerCache
 from core.monitoring import update_monitoring_services
+from core.node_config import NodeConfig
 from tools.configs import (
     CHANGE_IP_DELAY,
     CHECK_REPORT_PATH,
@@ -95,7 +96,7 @@ DOCKER_LVMPY_BLOCK_SIZE_URL = 'http://127.0.0.1:7373/physical-volume-size'
 class Node:
     """This class contains node registration logic"""
 
-    def __init__(self, skale, config):
+    def __init__(self, skale: SkaleManager, config: NodeConfig):
         self.skale = skale
         self.config = config
 
@@ -186,7 +187,7 @@ class Node:
         try:
             node_data = self.skale.nodes.get(node_id)
         except InvalidNodeIdError:
-            node_id = -1
+            node_id = NodeId(-1)
         else:
             public_key = node_data['publicKey']
             data_address = to_checksum_address(public_key_to_address(public_key))
@@ -195,7 +196,7 @@ class Node:
                 or not name == node_data['name']
                 or not ip == ip_from_bytes(node_data['ip'])
             ):
-                node_id = -1
+                node_id = NodeId(-1)
         return node_id
 
     def exit(self, opts):

@@ -215,22 +215,16 @@ def test_exit(skale_bp, skale, node_config_for_schain):
     data['payload'] == {}
 
 
-@pytest.fixture
-def node_config_in_maintenance(skale, node_config):
-    try:
-        skale.nodes.set_node_in_maintenance(node_config.id)
-        yield node_config
-    finally:
-        skale.nodes.remove_node_from_in_maintenance(node_config.id)
-
-
-def test_exit_maintenance(skale_bp, node_config_in_maintenance):
-    data = post_bp_data(
-        skale_bp,
-        get_api_url(BLUEPRINT_NAME, 'exit/start'),
-    )
-    assert data['status'] == 'error'
-    assert data['payload'] == 'Node is in maintenance'
+def test_exit_maintenance(skale_bp, node_config: NodeConfig):
+    skale_mock = mock.Mock()
+    skale_mock.nodes.node_status.return_value = NodeStatus.IN_MAINTENANCE.value
+    with mock.patch('web.helper.init_skale', return_value=skale_mock):
+        data = post_bp_data(
+            skale_bp,
+            get_api_url(BLUEPRINT_NAME, 'exit/start'),
+        )
+        assert data['status'] == 'error'
+        assert data['payload'] == 'Node is in maintenance'
 
 
 def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale_bp):

@@ -31,6 +31,7 @@ from tests.utils import (
     CONFIG_STREAM,
     CURRENT_TS,
     IMA_MIGRATION_TS,
+    TEST_CHAIN_ID,
     TEST_NODE_ID,
     generate_cert,
     generate_schain_config,
@@ -244,8 +245,8 @@ def new_upstream(schain_db):
 
 
 @pytest.fixture
-def estate(skale):
-    return ExternalState(ima_linked=True, chain_id=skale.web3.eth.chain_id, ranges=ALLOWED_RANGES)
+def estate():
+    return ExternalState(ima_linked=True, chain_id=TEST_CHAIN_ID, ranges=ALLOWED_RANGES)
 
 
 @pytest.fixture

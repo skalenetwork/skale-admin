@@ -51,7 +51,8 @@ CONFIG_STREAM = '1.0.0-testnet'
 
 TEST_NODE_ID = NodeId(1)
 
-TEST_TASK_SLEEP = 2
+TEST_TASK_SLEEP = 0
+TEST_CHAIN_ID = 31337
 
 ALLOWED_RANGES = [IpRange('1.1.1.1', '2.2.2.2'), IpRange('3.3.3.3', '4.4.4.4')]
 

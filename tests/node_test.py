@@ -57,11 +57,11 @@ def unregistered_node(skale, new_node_skale: SkaleManager, validator):
             cleanup_nodes(skale, [node.config.id])
 
 
-def test_info_unregisted_node(unregistered_node):
+def test_info_unregisted_node(unregistered_node: Node):
     assert unregistered_node.info == {'status': 5}
 
 
-def test_create_insufficient_funds(unregistered_node):
+def test_create_insufficient_funds(unregistered_node: Node):
     ip = '1.1.1.2'
     public_ip = '2.2.2.3'
     port = 8081
@@ -72,7 +72,7 @@ def test_create_insufficient_funds(unregistered_node):
         assert res['errors'] == ['Insufficient funds, re-check your wallet']
 
 
-def test_register_info(unregistered_node):
+def test_register_info(unregistered_node: Node):
     unregistered_node.config.id = None
     ip, public_ip, port, name = generate_random_node_data()
     assert unregistered_node.config.schain_base_port == -1
@@ -158,7 +158,7 @@ def test_get_node_id_restores_no_id_node(no_id_node):
     assert no_id_node.skale.nodes.get(nid)['name'] == no_id_node.config.name
 
 
-def test_get_node_id_node_not_registered(unregistered_node):
+def test_get_node_id_node_not_registered(unregistered_node: Node):
     nid = unregistered_node.get_node_id_from_contracts('undefined_name', '0.0.0.0')
     assert nid == -1
 
