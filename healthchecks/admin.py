@@ -21,7 +21,13 @@ import os
 import time
 
 MAX_ALLOWED_LOG_TIME_DIFF = os.getenv('MAX_ALLOWED_LOG_TIME_DIFF', 600)
-ADMIN_LOG_FILEPATH = os.getenv('ADMIN_LOG_FILEPATH', '/skale_node_data/log/admin.log')
+
+if os.getenv('PASSIVE_NODE') == 'True':
+    default_log_path = '/skale_node_data/log/passive_node.log'
+else:
+    default_log_path = '/skale_node_data/log/admin.log'
+
+ADMIN_LOG_FILEPATH = os.getenv('ADMIN_LOG_FILEPATH', default_log_path)
 
 
 def run_healthcheck():

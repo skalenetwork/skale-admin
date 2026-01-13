@@ -24,7 +24,7 @@ from http import HTTPStatus
 import requests
 from flask import Blueprint, abort, g, request
 
-from core.node import Node, NodeStatus
+from core.node import Node, NodeStatus, check_validator_nodes
 from core.updates import update_unsafe_for_schains
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
@@ -166,6 +166,18 @@ def public_ip():
             logger.exception('Ip request failed')
             time.sleep(1)
     return construct_err_response(msg='Public ip request failed')
+
+
+@node_bp.route(get_api_url(BLUEPRINT_NAME, 'validator-nodes'), methods=['GET'])
+@g_skale
+def validator_nodes():
+    logger.debug(request)
+    if g.config.id is None:
+        return construct_ok_response(data=[])
+    res = check_validator_nodes(g.skale, g.config.id)
+    if res['status'] != 0:
+        return construct_err_response(msg=res['errors'])
+    return construct_ok_response(data=res['data'])
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'update-safe'), methods=['GET'])
