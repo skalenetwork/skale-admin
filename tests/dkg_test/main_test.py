@@ -317,6 +317,22 @@ def remove_nodes(skale, nodes):
 
 
 class TestDKG:
+    @pytest.fixture(autouse=True)
+    def dkg_isolation(self, skale):
+        web3 = skale.web3
+        if not web3.is_connected():
+            yield
+            return
+        response = web3.provider.make_request('evm_snapshot', [])
+        if 'result' not in response:
+            yield
+            return
+        snapshot_id = response['result']
+        try:
+            yield
+        finally:
+            web3.provider.make_request('evm_revert', [snapshot_id])
+
     @pytest.fixture
     def schain_creation_data(self):
         _, lifetime_seconds, name = generate_random_schain_data()
