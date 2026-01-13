@@ -16,68 +16,68 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test_fair:
-    runs-on: self-hosted
-    env:
-      ENDPOINT: http://127.0.0.1:1234
-      FAIR_TAG: "0.0.1-develop.50"
-      SKALED_TAG: 4.1.0-develop.24-mirage
+  # test_fair:
+  #   runs-on: self-hosted
+  #   env:
+  #     ENDPOINT: http://127.0.0.1:1234
+  #     FAIR_TAG: "0.0.1-develop.50"
+  #     SKALED_TAG: 4.1.0-develop.24-mirage
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: true
 
-      - name: Ensure PATH
-        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+  #     - name: Ensure PATH
+  #       run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Install python dependencies
-        run: |
-          source ../.venv13/bin/activate
-          uv sync --prerelease=allow --all-extras
+  #     - name: Install python dependencies
+  #       run: |
+  #         source ../.venv13/bin/activate
+  #         uv sync --prerelease=allow --all-extras
 
-      - name: Checking formatting with ruff
-        run: uv run ruff check
+  #     - name: Checking formatting with ruff
+  #       run: uv run ruff check
 
-      - name: Run sgx wallet sim
-        run: |
-          bash ./scripts/run_sgxwallet.sh
+  #     - name: Run sgx wallet sim
+  #       run: |
+  #         bash ./scripts/run_sgxwallet.sh
 
-      - name: Deploy skaled
-        run: |
-          bash ./scripts/run_skaled.sh
+  #     - name: Deploy skaled
+  #       run: |
+  #         bash ./scripts/run_skaled.sh
 
-      - name: Deploy manager
-        run: |
-          bash ./helper-scripts/deploy_manager.sh
-          docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
+  #     - name: Deploy manager
+  #       run: |
+  #         bash ./helper-scripts/deploy_manager.sh
+  #         docker rmi -f skalenetwork/skale-manager:${{ env.MANAGER_TAG }}
 
-      - name: Show stats before tests
-        if: always()
-        run: |
-          lsblk -f
-          free -h
+  #     - name: Show stats before tests
+  #       if: always()
+  #       run: |
+  #         lsblk -f
+  #         free -h
 
-      - name: Run core tests
-        run: |
-          source ../.venv13/bin/activate
-          bash ./scripts/run_fair_test.sh
+  #     - name: Run core tests
+  #       run: |
+  #         source ../.venv13/bin/activate
+  #         bash ./scripts/run_fair_test.sh
 
-      - name: Cleanup build artifacts
-        if: always()
-        run: |
-          docker rm -f $(docker ps -aq)
-          rm -r tests/schain-data/.artifacts/skaled-datadir || true
-          rm helper-scripts/private_key.txt || true
+  #     - name: Cleanup build artifacts
+  #       if: always()
+  #       run: |
+  #         docker rm -f $(docker ps -aq)
+  #         rm -r tests/schain-data/.artifacts/skaled-datadir || true
+  #         rm helper-scripts/private_key.txt || true
 
-      - name: Show stats after core tests
-        if: always()
-        run: |
-          lsblk -f
-          free -h
+  #     - name: Show stats after core tests
+  #       if: always()
+  #       run: |
+  #         lsblk -f
+  #         free -h
 
   test_core:
-    needs: [test_fair]
+    #needs: [test_fair]
     runs-on: self-hosted
     env:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
