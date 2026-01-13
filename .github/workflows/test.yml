@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /tmp/docker-images
-          key: docker-images-v1-${{ runner.os }}-${{ env.MANAGER_TAG }}-${{ env.IMA_TAG }}-${{ env.SGX_WALLET_TAG }}
+          key: docker-images-v1-${{ runner.os }}-${{ env.MANAGER_TAG }}-${{ env.IMA_TAG }}
 
       - name: Load or Pull Docker images
         run: |
@@ -53,7 +53,6 @@ jobs:
           IMAGES=(
             "skalenetwork/skale-manager:$MANAGER_TAG"
             "skalenetwork/ima-contracts:$IMA_TAG"
-            "skalenetwork/sgxwallet_sim:$SGX_WALLET_TAG"
           )
 
           for IMAGE in "${IMAGES[@]}"; do
