@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 export ENDPOINT=http://127.0.0.1:8545
-export MANAGER_TAG=1.12.0-develop.21
+export MANAGER_TAG=1.12.0-develop.23
 export IMA_TAG=2.3.0-beta.3
 
 export FAIR_TAG=0.0.1-develop.50

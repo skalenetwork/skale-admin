@@ -3,7 +3,7 @@ name: Test
 on: [push]
 
 env:
-  MANAGER_TAG: 1.12.0-develop.21
+  MANAGER_TAG: 1.12.0-develop.23
   IMA_TAG: 2.3.0-beta.3
   SGX_WALLET_TAG: e548b375cae741af8fd11db54d6925c27a947af9
 
