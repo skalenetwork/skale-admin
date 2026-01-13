@@ -9,6 +9,7 @@ import pytest
 import yaml
 from skale import SkaleManager
 from skale.types.schain import SchainHash, SchainName, SchainStructure
+from web3 import Web3
 
 import tests.env_defaults  # noqa: F401 # set default env variables for tests
 from core.chain.status import (
@@ -325,7 +326,10 @@ def nft_chain_folder():
 
 
 @pytest.fixture(autouse=True)
-def isolation(web3):
+def isolation(web3: Web3):
+    if not web3.is_connected():
+        yield
+        return
     response = web3.provider.make_request('evm_snapshot', [])
     if 'result' not in response:
         yield
