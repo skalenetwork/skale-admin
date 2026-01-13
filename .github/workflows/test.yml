@@ -10,6 +10,9 @@ env:
 jobs:
   test:
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        test-type: [core, dkg]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -31,13 +34,6 @@ jobs:
         run: |
           . ./scripts/export_env.sh
           printenv >> $GITHUB_ENV
-
-      - name: Cleanup runner
-        run: |
-          sudo rm -rf /usr/local/lib/android || true
-          sudo rm -rf /opt/android-sdk || true
-          sudo rm -rf /usr/local/share/android || true
-          sudo rm -rf /usr/local/share/Android || true
 
       - name: Cache Docker images
         id: cache-docker
@@ -83,6 +79,6 @@ jobs:
         run: |
           bash ./scripts/run_sgxwallet.sh
 
-      - name: Run core tests
+      - name: Run ${{ matrix.test-type }} tests
         run: |
-          bash ./scripts/run_core_tests.sh
+          bash ./scripts/run_${{ matrix.test-type }}_tests.sh
