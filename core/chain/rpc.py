@@ -71,7 +71,7 @@ def handle_failed_skaled_rpc(
         chain_record.set_failed_rpc_count(0)
         return
 
-    if not skaled_status.subsystem_running['Rpc']:
+    if not skaled_status.subsystem_running or not skaled_status.subsystem_running['Rpc']:
         logger.info('Skipping RPC monitor: Rpc has not been initialized')
         skaled_status.log()
         chain_record.set_failed_rpc_count(0)

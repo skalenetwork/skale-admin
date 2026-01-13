@@ -7,9 +7,9 @@ import freezegun
 import pytest
 from skale.types.schain import SchainStructure
 
-from core.chain.status import NodeCliStatus, SkaledStatus
+from core.chain.status import NodeCliStatus, SkaledStatus, init_skaled_status
 from core.checks.schain import CheckRes, SkaledChecks
-from core.config.schain.directory import schain_config_dir
+from core.config.schain.directory import init_schain_config_dir, schain_config_dir
 from core.firewall.base.types import IRuleController
 from core.monitor.schain.action_skaled import SkaledActionManager
 from core.monitor.schain.monitor_skaled import (
@@ -433,7 +433,11 @@ def test_repair_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     assert not dutils.safe_get_container(f'sk_ima_{skaled_am.name}')
 
 
-def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
+def test_group_reload_skaled_monitor(
+    skaled_am: SkaledActionManager, skaled_checks: SkaledChecks, clean_docker, dutils: DockerUtils
+):
+    init_schain_config_dir(skaled_am.name)
+    init_skaled_status(skaled_am.name)
     mon = ReloadGroupSkaledMonitor(skaled_am, skaled_checks)
     ts = time.time()
     esfm = ExitScheduleFileManager(mon.am.name)
