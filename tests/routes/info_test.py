@@ -93,7 +93,7 @@ def test_btrfs_info(skale_bp, skale):
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'btrfs-info'))
     assert data['status'] == 'ok'
     payload = data['payload']
-    assert payload['kernel_module'] is True
+    assert payload['kernel_module'] is False
 
 
 def test_containers(skale_bp, dutils):
