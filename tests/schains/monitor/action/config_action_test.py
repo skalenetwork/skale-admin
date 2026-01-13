@@ -58,12 +58,11 @@ def config_am(
     estate: ExternalState,
     config_checks: ConfigChecks,
     skale_ima: SkaleIma,
-    manager_cache: ManagerCache,
 ):
     name = schain_db
     rotation_data = skale.node_rotation.get_rotation(name)
     schain = skale.schains.get_by_name(name)
-    current_nodes = get_current_nodes(skale, schain_hash_on_contracts, manager_cache)
+    current_nodes = get_current_nodes(skale, schain_hash_on_contracts)
     return ConfigActionManager(
         skale=skale,
         skale_ima=skale_ima,
