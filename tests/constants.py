@@ -1,1 +1,4 @@
 """SKALE test constants"""
+
+TEST_BROADCAST_SLEEP = 1
+DKG_TEST_TIMEOUT = 400

@@ -28,6 +28,7 @@ from core.config.schain.directory import init_schain_config_dir
 from core.dkg.schain.main import get_dkg_client, is_last_dkg_finished, run_dkg
 from core.dkg.structures import DKGStatus, DKGStep
 from core.dkg.utils import DkgError
+from tests.constants import DKG_TEST_TIMEOUT, TEST_BROADCAST_SLEEP
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
     generate_random_node_data,
@@ -43,8 +44,7 @@ warnings.filterwarnings('ignore')
 MAX_WORKERS = 5
 TEST_SRW_FUND_VALUE = 3000000000000000000
 DKG_TIMEOUT = 20000
-DKG_TIMEOUT_FOR_FAILURE = 120  # to speed up failed broadcast/alright test
-DKG_TEST_TIMEOUT = 300
+DKG_TIMEOUT_FOR_FAILURE = 30  # to speed up failed broadcast/alright test
 
 log_format = '[%(asctime)s][%(levelname)s] - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
 
@@ -92,7 +92,7 @@ def link_node_address(skale, wallet):
 
 
 def transfer_eth_to_wallets(skale, wallets):
-    logger.info(f'Transfering {TEST_ETH_AMOUNT} ETH to {len(wallets)} test wallets')
+    logger.info(f'Transferring {TEST_ETH_AMOUNT} ETH to {len(wallets)} test wallets')
     for wallet in wallets:
         send_eth(skale.web3, skale.wallet, wallet.address, TEST_ETH_AMOUNT)
 
@@ -266,7 +266,7 @@ def run_node_dkg(
     sgx_key_name = skale.wallet._key_name
     rotation_id = skale.schains.last_rotation_id(schain_name)
 
-    timeout = index * 5  # diversify start time for all nodes
+    timeout = index * 2  # diversify start time for all nodes
     logger.info('Node %d going to sleep %d seconds %s', node_id, timeout, type(runs))
     time.sleep(timeout)
     logger.info('Starting runs %s, %d', runs, len(runs))
@@ -382,6 +382,7 @@ class TestDKG:
             cleanup_schain_config(schain_name)
 
     @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_normal(
         self, skale, schain_creation_data, skale_sgx_instances, nodes, dkg_timeout, schain
     ):
@@ -415,6 +416,7 @@ class TestDKG:
         assert regular_dkg_keys_data == restore_dkg_keys_data
 
     @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_broadcast_failed_completely(
         self,
         skale,
@@ -454,6 +456,7 @@ class TestDKG:
         assert not is_last_dkg_finished(skale, schain_name)
 
     @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_broadcast_failed_once(
         self, skale, schain_creation_data, skale_sgx_instances, nodes, schain
     ):
@@ -482,6 +485,7 @@ class TestDKG:
         assert is_last_dkg_finished(skale, schain_name)
 
     @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_alright_failed_completely(
         self,
         skale,
@@ -521,6 +525,7 @@ class TestDKG:
         assert not is_last_dkg_finished(skale, schain_name)
 
     @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_alright_failed_once(
         self, skale, schain_creation_data, skale_sgx_instances, nodes, schain
     ):
@@ -549,6 +554,7 @@ class TestDKG:
         assert is_last_dkg_finished(skale, schain_name)
 
     @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_complaint_failed(
         self,
         skale,
@@ -597,6 +603,7 @@ class TestDKG:
         assert not is_last_dkg_finished(skale, schain_name)
 
     @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_broadcast_bad_data(
         self,
         skale,

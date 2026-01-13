@@ -15,6 +15,7 @@ from core.config.schain.directory import init_schain_config_dir
 from core.dkg.fair.main import get_dkg_client, run_dkg
 from core.dkg.structures import DKGResult
 from core.dkg.utils import DkgError
+from tests.constants import DKG_TEST_TIMEOUT, TEST_BROADCAST_SLEEP
 from tests.dkg_test.main_test import (
     DKG_TIMEOUT,
     DKGRunType,
@@ -38,7 +39,6 @@ from tests.utils import ETH_PRIVATE_KEY
 from tools.helper import read_json, run_cmd
 
 N_OF_NODES = 2
-
 logger = logging.getLogger(__name__)
 
 
@@ -113,7 +113,7 @@ def run_fair_dkg(
     sgx_key_name = skale.wallet._key_name
     committee_id = skale.dkg.get_last_dkg_id()
 
-    timeout = index * 5  # diversify start time for all nodes
+    timeout = index * 2  # diversify start time for all nodes
     logger.info('Node %d going to sleep %d seconds %s', node_id, timeout, type(runs))
     time.sleep(timeout)
     logger.info('Starting runs %s, %d', runs, len(runs))
@@ -149,7 +149,7 @@ def run_node_fair_dkg(
     # sgx_key_name = fair.wallet._key_name
     # committee_id = fair.dkg.get_last_dkg_id()
 
-    timeout = index * 5  # diversify start time for all nodes
+    timeout = index * 2  # diversify start time for all nodes
     logger.info('Node %d going to sleep %d seconds %s', node_id, timeout, type(runs))
     time.sleep(timeout)
     logger.info('Starting runs %s, %d', runs, len(runs))
@@ -282,7 +282,8 @@ class TestDKGFair:
     def fair_nodes(self, fair, nodes):
         return [fair.nodes.get(node['node_id']) for node in nodes]
 
-    @pytest.mark.timeout(700)
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_normal(
         self, skale, schain_creation_data, fair_sgx_instances, fair_nodes, schain, fair
     ):
@@ -314,10 +315,3 @@ class TestDKGFair:
 
         restore_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
         assert regular_dkg_keys_data == restore_dkg_keys_data
-
-    # def test_committee_rotation(
-    # self, fair, fair_nodes, fair_sgx_instances, schain_creation_data):
-    #     fair.dkg.generate([node.id for node in fair_nodes])
-    #     chain_name, _ = schain_creation_data
-    #     runners = get_fair_dkg_runners(fair_nodes, fair_sgx_instances, chain_name)
-    #     exec_dkg_runners(runners)
