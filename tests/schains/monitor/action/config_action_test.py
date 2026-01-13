@@ -31,11 +31,10 @@ def config_checks(
     schain_hash_on_contracts: SchainHash,
     estate: ExternalState,
     rotation_data: Rotation,
-    manager_cache: ManagerCache,
 ):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
-    current_nodes = get_current_nodes(skale, schain_hash_on_contracts, manager_cache)
+    current_nodes = get_current_nodes(skale, schain_hash_on_contracts)
     return ConfigChecks(
         schain_name=name,
         node_id=node_config.id,

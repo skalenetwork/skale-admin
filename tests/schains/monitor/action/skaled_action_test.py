@@ -221,6 +221,8 @@ def test_recreated_chain_containers(
     skaled_created_ts = dutils.get_container_created_ts(schain_container)
     ima_created_ts = dutils.get_container_created_ts(ima_container)
 
+    time.sleep(1)
+
     skaled_am.recreated_chain_containers()
     dutils.wait_for_container_creation(schain_container)
     dutils.wait_for_container_creation(ima_container)
