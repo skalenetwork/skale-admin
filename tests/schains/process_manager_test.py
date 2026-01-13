@@ -41,7 +41,7 @@ def target_regular_mock(*args, **kwargs):
     for i in range(iterations):
         process_report.ts = int(time.time())
         logger.info('Regular test task runner beat %s', i)
-        time.sleep(1)
+        time.sleep(0.5)
 
 
 def target_stuck_mock(*args, **kwargs):
@@ -51,7 +51,7 @@ def target_stuck_mock(*args, **kwargs):
     iterations = 10000
     for i in range(iterations):
         logger.info('Stuck test task runner beat %s', i)
-        time.sleep(1)
+        time.sleep(0.5)
 
 
 def wait_for_process_report(process_report):
@@ -139,7 +139,8 @@ def test_cleanup_schains_pids(
     assert not process_report.exists()
 
     with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
-        run_pm_schain(skale, None, node_config, schain=schain, manager_cache=manager_cache)
+        with mock.patch('core.schains.process_manager.is_node_part_of_chain', return_value=True):
+            run_pm_schain(skale, None, node_config, schain=schain, manager_cache=manager_cache)
 
     wait_for_process_report(process_report)
     assert process_report.exists()
