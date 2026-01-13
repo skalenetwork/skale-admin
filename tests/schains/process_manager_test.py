@@ -45,7 +45,7 @@ def target_regular_mock(*args, **kwargs):
 
 
 def target_stuck_mock(*args, **kwargs):
-    schain_name = SchainName(ProcessReport(args[1].name))
+    schain_name = SchainName(args[0].name)
     ProcessReport(schain_name).update(os.getpid(), int(time.time()))
     logger.info('Starting stucked test task runner')
     iterations = 10000
@@ -66,17 +66,18 @@ def test_run_pm_schain(
     tmp_dir,
     skale: SkaleManager,
     node_config: NodeConfig,
-    manager_cache: ManagerCache,
+    clear_manager_cache: ManagerCache,
     _schain_name,
 ):
     schain = get_schain_struct(_test_schain_name=_schain_name)
 
-    timeout = 4
+    timeout = 2
 
     with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
-        run_pm_schain(
-            skale, None, node_config, schain, manager_cache=manager_cache, timeout=timeout
-        )
+        with mock.patch('core.schains.process_manager.is_node_part_of_chain', return_value=True):
+            run_pm_schain(
+                skale, None, node_config, schain, manager_cache=clear_manager_cache, timeout=timeout
+            )
 
     process_report = ProcessReport(schain.name)
     wait_for_process_report(process_report)
@@ -95,15 +96,17 @@ def test_run_pm_schain(
         terminate_process(pid)
 
     old_pid = pid
+
+    with mock.patch('core.schains.process_manager.start_tasks', target_stuck_mock):
+        with mock.patch('core.schains.process_manager.is_node_part_of_chain', return_value=True):
+            run_pm_schain(
+                skale, None, node_config, schain, manager_cache=clear_manager_cache, timeout=timeout
+            )
+
     wait_it = 0
     while wait_it < MAX_ITERATIONS and process_report.pid == old_pid:
         time.sleep(0.5)
         wait_it += 1
-
-    with mock.patch('core.schains.process_manager.start_tasks', target_stuck_mock):
-        run_pm_schain(
-            skale, None, node_config, schain, manager_cache=manager_cache, timeout=timeout
-        )
 
     start_ts = int(time.time())
 

@@ -9,6 +9,7 @@ from unittest import mock
 import pytest
 from skale import SkaleIma, SkaleManager
 from skale.types.schain import SchainHash, SchainName, SchainStructure
+from skale.wallets import SgxWallet
 
 from core.firewall import IpRange
 from core.firewall.utils import get_sync_agent_ranges
@@ -19,6 +20,7 @@ from core.node_config import NodeConfig
 from core.schains.process import ProcessReport
 from tests.utils import TEST_TASK_SLEEP
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.sgx import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
 from tools.docker_utils import DockerUtils
 from tools.helper import is_node_part_of_chain
 from web.models.schain import upsert_schain_record
@@ -81,23 +83,38 @@ def test_config_task(
 ):
     stream_version = '2.3.0'
     schain = skale.schains.get(schain_hash_on_contracts)
-    config_task = ConfigTask(
-        schain=schain,
-        skale_ima=skale_ima,
-        node_config=node_config,
-        stream_version=stream_version,
-        post_monitor_sleep_seconds=TEST_TASK_SLEEP,
-    )
-    assert config_task.needed
-    skale_ima.linker.has_schain = mock.Mock(return_value=True)
 
-    def get_monitor_mock(*args, **kwargs):
-        result = mock.MagicMock()
-        result.__name__ = 'TestConfigMonitor'
-        return result
+    original_sgx_key_name = node_config.sgx_key_name
 
-    with mock.patch('core.monitor.schain.monitor_config.RegularConfigMonitor', get_monitor_mock):
-        config_task.run()
+    try:
+        wallet = SgxWallet(
+            SGX_SERVER_URL,
+            skale.web3,
+            path_to_cert=SGX_CERTIFICATES_FOLDER,
+        )
+        node_config.sgx_key_name = wallet.key_name
+
+        config_task = ConfigTask(
+            schain=schain,
+            skale_ima=skale_ima,
+            node_config=node_config,
+            stream_version=stream_version,
+            post_monitor_sleep_seconds=TEST_TASK_SLEEP,
+        )
+        assert config_task.needed
+        skale_ima.linker.has_schain = mock.Mock(return_value=True)
+
+        def get_monitor_mock(*args, **kwargs):
+            result = mock.MagicMock()
+            result.__name__ = 'TestConfigMonitor'
+            return result
+
+        with mock.patch(
+            'core.monitor.schain.monitor_config.RegularConfigMonitor', get_monitor_mock
+        ):
+            config_task.run()
+    finally:
+        node_config.sgx_key_name = original_sgx_key_name
 
 
 def test_skaled_task(
