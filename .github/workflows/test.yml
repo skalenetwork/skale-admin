@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        test-type: [core, dkg]
+        type: [core, dkg, fair]
     steps:
       - uses: actions/checkout@v5
         with:
@@ -33,7 +33,18 @@ jobs:
       - name: Export env
         run: |
           . ./scripts/export_env.sh
+          if [ "${{ matrix.type }}" == "fair" ]; then
+            export ENDPOINT=http://127.0.0.1:1234
+            export RUN_ANVIL=false
+          fi
           printenv >> $GITHUB_ENV
+
+      - name: Cleanup runner
+        run: |
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/android-sdk || true
+          sudo rm -rf /usr/local/share/android || true
+          sudo rm -rf /usr/local/share/Android || true
 
       - name: Cache Docker images
         id: cache-docker
@@ -65,12 +76,18 @@ jobs:
             fi
           done
 
+      - name: Deploy skaled
+        if: ${{ matrix.type == 'fair' }}
+        run: |
+          bash ./scripts/run_skaled.sh
+
       - name: Deploy manager
         run: |
           bash ./helper-scripts/deploy_manager.sh
           docker rmi -f skalenetwork/skale-manager:$MANAGER_TAG
 
       - name: Deploy IMA
+        if: ${{ matrix.type == 'core' }}
         run: |
           bash ./helper-scripts/deploy_ima.sh
           docker rmi -f skalenetwork/ima-contracts:$IMA_TAG
@@ -79,6 +96,6 @@ jobs:
         run: |
           bash ./scripts/run_sgxwallet.sh
 
-      - name: Run ${{ matrix.test-type }} tests
+      - name: Run ${{ matrix.type }} tests
         run: |
-          bash ./scripts/run_${{ matrix.test-type }}_tests.sh
+          bash ./scripts/run_${{ matrix.type }}_tests.sh
