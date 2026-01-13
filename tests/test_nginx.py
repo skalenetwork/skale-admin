@@ -97,7 +97,7 @@ def ssl_dir():
 def nginx_container(tmp_dir, ssl_dir, config_path, dutils):
     try:
         c = dutils.run_container(
-            'nginx:1.20.2',
+            'nginx:1.29.4-alpine',
             NGINX_CONTAINER_NAME,
             volumes={
                 tmp_dir: {'bind': '/etc/nginx/conf.d', 'mode': 'ro', 'propagation': 'slave'},
