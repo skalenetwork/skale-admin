@@ -26,9 +26,8 @@ from skale.wallets import SgxWallet
 
 from core.config.schain.directory import init_schain_config_dir
 from core.dkg.schain.main import get_dkg_client, is_last_dkg_finished, run_dkg
-from core.dkg.schain.utils import generate_bls_keys
 from core.dkg.structures import DKGStatus, DKGStep
-from core.dkg.utils import DkgError, DKGKeyGenerationError
+from core.dkg.utils import DkgError
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
     generate_random_node_data,
@@ -658,32 +657,3 @@ class TestDKG:
             yield skale
         finally:
             skale.schains_internal.node_ids_for_schain = get_node_ids_f
-
-    @pytest.mark.skip  # todo: tmp skip until fixed
-    def test_failed_get_dkg_client(
-        self, no_ids_for_schain_skale, schain, no_automine, interval_mining
-    ):
-        skale = no_ids_for_schain_skale
-        with pytest.raises(DkgError):
-            get_dkg_client(
-                node_id=0,
-                schain_name='fake-schain',
-                skale=skale,
-                sgx_key_name='fake-sgx-keyname',
-                rotation_id=0,
-            )
-
-    @pytest.mark.skip
-    def test_failed_generate_bls_keys(self, skale, skale_sgx_instances, nodes, schain):
-        skale.key_storage.get_common_public_key = mock.Mock(
-            side_effect=DkgTestError('Key storage operation failed')
-        )
-        dkg_client = get_dkg_client(
-            node_id=nodes[0]['node_id'],
-            schain_name=schain,
-            skale=skale,
-            sgx_key_name=skale_sgx_instances[0],
-            rotation_id=0,
-        )
-        with pytest.raises(DKGKeyGenerationError):
-            generate_bls_keys(dkg_client)

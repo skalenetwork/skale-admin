@@ -115,7 +115,7 @@ def get_config(config_path):
 
 
 def test_nginx_reload(dutils, ssl_dir, tmp_dir, template, config_path, nginx_container):
-    reload_nginx(template, config_path, dutils=dutils)
+    reload_nginx(template, config_path, dutils=dutils, timeout=1)
 
     # Check that container is running
     info = dutils.get_info(NGINX_CONTAINER_NAME)
