@@ -59,8 +59,10 @@ jobs:
 
           IMAGES=(
             "skalenetwork/skale-manager:$MANAGER_TAG"
-            "skalenetwork/ima-contracts:$IMA_TAG"
           )
+          if [ "${{ matrix.type }}" == "core" ]; then
+            IMAGES+=("skalenetwork/ima-contracts:$IMA_TAG")
+          fi
 
           for IMAGE in "${IMAGES[@]}"; do
             TAR_FILE="/tmp/docker-images/$(echo $IMAGE | tr '/:' '_').tar"
