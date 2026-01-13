@@ -105,14 +105,14 @@ def clean_docker(dutils, cleanup_schain_containers, cleanup_ima_containers):
 
 
 @pytest.fixture
-def cleanup_schain_containers(dutils):
+def cleanup_schain_containers(dutils: DockerUtils):
     try:
         yield
     finally:
         containers = dutils.get_all_schain_containers(all=True)
         for container in containers:
-            dutils.safe_rm(container.name, force=True)
-            dutils.safe_rm(container.name.replace('schain', 'ima'), force=True)
+            dutils.safe_rm(container.name, force=True, timeout=1)
+            dutils.safe_rm(container.name.replace('schain', 'ima'), force=True, timeout=1)
 
 
 @pytest.fixture

@@ -66,12 +66,12 @@ def check_schain_container(schain_name: str, client: DockerUtils):
 
 
 @pytest.fixture
-def cleanup_container(schain_config, dutils):
+def cleanup_container(schain_config, dutils: DockerUtils):
     try:
         yield
     finally:
         schain_name = schain_config['skaleConfig']['sChain']['schainName']
-        dutils.safe_rm(get_container_name(SKALED_CONTAINER, schain_name), force=True)
+        dutils.safe_rm(get_container_name(SKALED_CONTAINER, schain_name), force=True, timeout=1)
 
 
 def remove_skaled_container(schain_name, client):
