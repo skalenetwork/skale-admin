@@ -33,7 +33,7 @@ def tmp_dir(_schain_name):
 
 
 def target_regular_mock(*args, **kwargs):
-    schain_name = args[1].name
+    schain_name = args[0].name
     process_report = ProcessReport(schain_name)
     process_report.update(os.getpid(), int(time.time()))
     logger.info('Starting regular test task runner')
@@ -65,7 +65,6 @@ def wait_for_process_report(process_report):
 def test_run_pm_schain(
     tmp_dir,
     skale: SkaleManager,
-    skale_ima: SkaleIma,
     node_config: NodeConfig,
     manager_cache: ManagerCache,
     _schain_name,
@@ -76,7 +75,7 @@ def test_run_pm_schain(
 
     with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
         run_pm_schain(
-            skale, skale_ima, node_config, schain, manager_cache=manager_cache, timeout=timeout
+            skale, None, node_config, schain, manager_cache=manager_cache, timeout=timeout
         )
 
     process_report = ProcessReport(schain.name)
@@ -103,7 +102,7 @@ def test_run_pm_schain(
 
     with mock.patch('core.schains.process_manager.start_tasks', target_stuck_mock):
         run_pm_schain(
-            skale, skale_ima, node_config, schain, manager_cache=manager_cache, timeout=timeout
+            skale, None, node_config, schain, manager_cache=manager_cache, timeout=timeout
         )
 
     start_ts = int(time.time())
@@ -137,7 +136,7 @@ def test_cleanup_schains_pids(
     assert not process_report.exists()
 
     with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
-        run_pm_schain(skale, skale_ima, node_config, schain=schain, manager_cache=manager_cache)
+        run_pm_schain(skale, None, node_config, schain=schain, manager_cache=manager_cache)
 
     wait_for_process_report(process_report)
     assert process_report.exists()

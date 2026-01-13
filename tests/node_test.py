@@ -58,7 +58,7 @@ def unregistered_node(skale, new_node_skale: SkaleManager, validator):
 
 
 def test_info_unregisted_node(unregistered_node: Node):
-    assert unregistered_node.info == {'status': 5}
+    assert unregistered_node.info == {'id': None, 'status': 5}
 
 
 def test_create_insufficient_funds(unregistered_node: Node):
