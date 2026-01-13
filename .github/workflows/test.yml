@@ -2,6 +2,11 @@ name: Test
 
 on: [push]
 
+env:
+  MANAGER_TAG: 1.12.0-develop.21
+  IMA_TAG: 2.3.0-beta.3
+  SGX_WALLET_TAG: e548b375cae741af8fd11db54d6925c27a947af9
+
 jobs:
   test:
     runs-on: ubuntu-22.04
@@ -26,6 +31,37 @@ jobs:
         run: |
           . ./scripts/export_env.sh
           printenv >> $GITHUB_ENV
+
+      - name: Cache Docker images
+        id: cache-docker
+        uses: actions/cache@v4
+        with:
+          path: /tmp/docker-images
+          key: docker-images-v1-${{ runner.os }}-${{ env.MANAGER_TAG }}-${{ env.IMA_TAG }}-${{ env.SGX_WALLET_TAG }}
+
+      - name: Load or Pull Docker images
+        run: |
+          mkdir -p /tmp/docker-images
+
+          IMAGES=(
+            "skalenetwork/skale-manager:$MANAGER_TAG"
+            "skalenetwork/ima-contracts:$IMA_TAG"
+            "skalenetwork/sgxwallet_sim:$SGX_WALLET_TAG"
+          )
+
+          for IMAGE in "${IMAGES[@]}"; do
+            TAR_FILE="/tmp/docker-images/$(echo $IMAGE | tr '/:' '_').tar"
+
+            if [ -f "$TAR_FILE" ]; then
+              echo "Loading $IMAGE from cache..."
+              docker load -i "$TAR_FILE"
+            else
+              echo "Pulling $IMAGE..."
+              docker pull "$IMAGE"
+              echo "Saving $IMAGE to cache..."
+              docker save "$IMAGE" -o "$TAR_FILE"
+            fi
+          done
 
       - name: Run sgx wallet sim
         run: |
