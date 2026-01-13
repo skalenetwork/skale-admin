@@ -2,10 +2,6 @@ name: Test
 
 on: [push]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 env:
   MANAGER_TAG: 1.12.0-develop.21
   IMA_TAG: 2.3.0-beta.3
@@ -90,7 +86,3 @@ jobs:
       - name: Run core tests
         run: |
           bash ./scripts/run_core_tests.sh
-
-      - name: Cleanup docker artifacts
-        run: |
-          docker rm -f $(docker ps -aq)
