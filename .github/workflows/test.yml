@@ -107,8 +107,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.type }}
-          path: .coverage.${{ matrix.type }}
-          if-no-files-found: warn
+          path: .coverage*
+          if-no-files-found: error
 
   codecov:
     runs-on: ubuntu-22.04
@@ -138,7 +138,7 @@ jobs:
 
       - name: Combine coverage
         run: |
-          cp coverage-artifacts/.coverage.* .
+          cp coverage-artifacts/.coverage* .
           uv run coverage combine
           uv run coverage xml -o coverage.xml
 
