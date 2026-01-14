@@ -1,12 +1,6 @@
 name: Publish SGX Wallet Image to GHCR
 
-on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag of the image to publish"
-        required: true
-        default: "e548b375cae741af8fd11db54d6925c27a947af9"
+on: [push]
 
 jobs:
   publish:
@@ -23,11 +17,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Pull and Push Image
+        env:
+          TAG: "e548b375cae741af8fd11db54d6925c27a947af9"
         run: |
-          SOURCE_IMAGE="skalenetwork/sgxwallet_sim:${{ inputs.tag }}"
+          SOURCE_IMAGE="skalenetwork/sgxwallet_sim:$TAG"
           # Construct target image name. ensuring lowercase for the registry
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          TARGET_IMAGE="ghcr.io/$OWNER/sgxwallet_sim:${{ inputs.tag }}"
+          TARGET_IMAGE="ghcr.io/$OWNER/sgxwallet_sim:$TAG"
 
           echo "Source: $SOURCE_IMAGE"
           echo "Target: $TARGET_IMAGE"
