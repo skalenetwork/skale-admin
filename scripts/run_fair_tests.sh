@@ -12,4 +12,4 @@ export_test_env
 
 bash scripts/run_redis.sh
 
-uv run pytest --cov-config=.coveragerc --cov=. tests/fair/dkg_test.py $@
+uv run pytest --cov=. tests/fair/dkg_test.py $@

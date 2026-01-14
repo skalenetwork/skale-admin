@@ -103,12 +103,19 @@ jobs:
         run: |
           bash ./scripts/run_${{ matrix.type }}_tests.sh
 
+      - name: Normalize coverage filename
+        run: |
+          if [ -f .coverage ]; then
+            mv .coverage .coverage.${{ matrix.type }}
+          fi
+
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.type }}
-          path: .coverage*
-          if-no-files-found: error
+          path: .coverage.${{ matrix.type }}*
+          include-hidden-files: true
+          if-no-files-found: warn
 
   codecov:
     runs-on: ubuntu-22.04
@@ -138,7 +145,7 @@ jobs:
 
       - name: Combine coverage
         run: |
-          cp coverage-artifacts/.coverage* .
+          cp coverage-artifacts/.coverage.* .
           uv run coverage combine
           uv run coverage xml -o coverage.xml
 
