@@ -37,6 +37,7 @@ jobs:
             export ENDPOINT=http://127.0.0.1:1234
             export RUN_ANVIL=false
           fi
+          export COVERAGE_FILE=.coverage.${{ matrix.type }}
           printenv >> $GITHUB_ENV
 
       - name: Cleanup runner
@@ -101,3 +102,48 @@ jobs:
       - name: Run ${{ matrix.type }} tests
         run: |
           bash ./scripts/run_${{ matrix.type }}_tests.sh
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.type }}
+          path: .coverage.${{ matrix.type }}
+          if-no-files-found: warn
+
+  codecov:
+    runs-on: ubuntu-22.04
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+
+      - name: Install python dependencies
+        run: uv sync --all-extras
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-artifacts
+          merge-multiple: true
+
+      - name: Combine coverage
+        run: |
+          cp coverage-artifacts/.coverage.* .
+          uv run coverage combine
+          uv run coverage xml -o coverage.xml
+
+      - name: Run codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          uv run codecov -t "$CODECOV_TOKEN" -f coverage.xml
