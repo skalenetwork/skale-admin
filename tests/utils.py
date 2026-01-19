@@ -13,9 +13,10 @@ from unittest.mock import MagicMock, Mock
 
 import requests
 from eth_typing import ChecksumAddress, HexAddress
-from skale.contracts.manager.schains import SchainStructureWithStatus
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
-from skale.types.schain import SchainHash, SchainName
+from skale.types.node import NodeId
+from skale.types.schain import SchainName, SchainStructure
+from skale.utils.helper import schain_name_to_hash
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 from web3 import Web3
@@ -49,6 +50,10 @@ ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
 
 CONFIG_STREAM = '1.0.0-testnet'
 
+TEST_NODE_ID = NodeId(1)
+
+TEST_TASK_SLEEP = 0
+TEST_CHAIN_ID = 31337
 
 ALLOWED_RANGES = [IpRange('1.1.1.1', '2.2.2.2'), IpRange('3.3.3.3', '4.4.4.4')]
 
@@ -135,8 +140,8 @@ def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
     return json.loads(data.decode('utf-8'))
 
 
-def get_schain_struct(_test_schain_name) -> SchainStructureWithStatus:
-    return SchainStructureWithStatus(
+def get_schain_struct(_test_schain_name) -> SchainStructure:
+    return SchainStructure(
         name=_test_schain_name,
         part_of_node=0,
         generation=1,
@@ -149,7 +154,7 @@ def get_schain_struct(_test_schain_name) -> SchainStructureWithStatus:
         start_block=1000,
         deposit=Wei(0),
         index=1,
-        chain_id=SchainHash(b'1'),
+        schain_hash=schain_name_to_hash(_test_schain_name),
         active=True,
     )
 

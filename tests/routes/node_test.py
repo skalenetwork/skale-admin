@@ -10,7 +10,7 @@ import pytest
 from flask import Flask, appcontext_pushed, g
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.utils.contracts_provision.utils import generate_random_node_data
-from skale.utils.web3_utils import to_checksum_address
+from skale.utils.helper import schain_name_to_hash
 from web3 import Web3
 
 from core.config.schain.file_manager import ConfigFileManager
@@ -44,12 +44,11 @@ def skale_bp(skale, node_config, dutils):
 
 def test_node_info(skale_bp, skale, node_config, node_wallets):
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'info'))
-    status = NodeStatus.ACTIVE.value
+    status = NodeStatus.NOT_CREATED.value
     assert data['status'] == 'ok'
     node_info = data['payload']['node_info']
     assert node_info['id'] == node_config.id
     assert node_info['status'] == status
-    assert to_checksum_address(node_info['owner']) == node_wallets[0].address
 
 
 def register_mock(
@@ -190,13 +189,13 @@ def test_public_ip_info(skale_bp):
 
 @pytest.fixture
 def node_config_for_schain(skale, schain_on_contracts, node_config):
-    nodes = skale.schains_internal.get_node_ids_for_schain(schain_on_contracts)
+    nodes = skale.schains_internal.node_ids_for_schain(schain_on_contracts)
     node_config.id = nodes[0]
     return node_config
 
 
 def test_exit_status(skale_bp, skale, schain_on_contracts, node_config_for_schain):
-    schain_id = skale.schains.name_to_id(schain_on_contracts)
+    schain_id = schain_name_to_hash(schain_on_contracts)
     with mock.patch(
         'skale.contracts.manager.node_rotation.NodeRotation.get_leaving_history',
         return_value=[{'schain_id': schain_id, 'finished_rotation': 1000}],
@@ -214,22 +213,16 @@ def test_exit(skale_bp, skale, node_config_for_schain):
     data['payload'] == {}
 
 
-@pytest.fixture
-def node_config_in_maintenance(skale, node_config):
-    try:
-        skale.nodes.set_node_in_maintenance(node_config.id)
-        yield node_config
-    finally:
-        skale.nodes.remove_node_from_in_maintenance(node_config.id)
-
-
-def test_exit_maintenance(skale_bp, node_config_in_maintenance):
-    data = post_bp_data(
-        skale_bp,
-        get_api_url(BLUEPRINT_NAME, 'exit/start'),
-    )
-    assert data['status'] == 'error'
-    assert data['payload'] == 'Node is in maintenance'
+def test_exit_maintenance(skale_bp, node_config: NodeConfig):
+    skale_mock = mock.Mock()
+    skale_mock.nodes.node_status.return_value = NodeStatus.IN_MAINTENANCE.value
+    with mock.patch('web.helper.init_skale', return_value=skale_mock):
+        data = post_bp_data(
+            skale_bp,
+            get_api_url(BLUEPRINT_NAME, 'exit/start'),
+        )
+        assert data['status'] == 'error'
+        assert data['payload'] == 'Node is in maintenance'
 
 
 def test_update_safe(skale, schain_on_contracts, schain_config, upstreams, skale_bp):

@@ -18,9 +18,8 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from typing import Dict
 
-from skale.types.rotation import NodesGroup
+from skale.types.rotation import NodeGroups
 
 from core.config.fair.committee import CommitteeInfo
 from core.config.schain.static_params import get_fair_chain_name
@@ -31,7 +30,7 @@ from tools.configs.schains import MAX_HISTORIC_STATE_DB_SIZE
 class FairChainInfo:
     schain_id: int
 
-    node_groups: Dict[int, NodesGroup]
+    node_groups: NodeGroups
     nodes: dict[int, CommitteeInfo]
     static_schain_info: dict
 
@@ -57,7 +56,7 @@ class FairChainInfo:
 def generate_schain_info(
     schain_id: int,
     static_schain_info: dict,
-    node_groups: dict,
+    node_groups: NodeGroups,
     nodes: dict[int, CommitteeInfo],
     archive: bool,
 ) -> FairChainInfo:

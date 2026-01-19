@@ -27,7 +27,9 @@ from typing import Optional
 
 from sgx import SgxClient
 from skale import SkaleManager
-from skale.types.schain import SchainName
+from skale.types.node import NodeId
+from skale.types.schain import SchainName, SchainStructure
+from skale.utils.helper import schain_name_to_hash
 
 from core.chain.runner import get_container_name, is_exited
 from core.checks.schain import SChainChecks
@@ -36,9 +38,10 @@ from core.dkg.utils import get_secret_key_share_filepath
 from core.firewall.utils import (
     cleanup_firewall_for_schain,
     get_default_rule_controller,
-    get_sync_agent_ranges,
 )
+from core.manager_cache import ManagerCache
 from core.node import get_current_nodes, get_skale_node_version
+from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType
@@ -59,8 +62,8 @@ JOIN_TIMEOUT = 1800
 FAIR_NFT_CHAIN_NAMES = ['fair-network', 'fair-committee']
 
 
-def run_cleaner(skale, node_config):
-    process = Process(name='cleaner', target=monitor, args=(skale, node_config))
+def run_cleaner(skale: SkaleManager, node_config: NodeConfig, manager_cache: ManagerCache) -> None:
+    process = Process(name='cleaner', target=monitor, args=(skale, node_config, manager_cache))
     process.start()
     logger.info('Cleaner process started')
     process.join(JOIN_TIMEOUT)
@@ -100,11 +103,11 @@ def remove_config_dir(schain_name: str) -> None:
     shutil.rmtree(schain_dir_path)
 
 
-def monitor(skale, node_config, dutils=None):
+def monitor(skale: SkaleManager, node_config: NodeConfig, manager_cache: ManagerCache, dutils=None):
     dutils = dutils or DockerUtils()
     logger.info('Cleaner procedure started.')
     schains_on_node = get_schains_on_node(dutils=dutils)
-    schain_names_on_contracts = get_schain_names_from_contract(skale, node_config.id)
+    schain_names_on_contracts = get_schain_names_from_contract(manager_cache.schains)
     logger.info(
         f'\nsChains on contracts: {schain_names_on_contracts}\n\
 sChains on node: {schains_on_node}'
@@ -121,15 +124,16 @@ sChains on node: {schains_on_node}'
                 logger.warning('Found phantom schain on node')
                 continue
             try:
-                ensure_schain_removed(skale, schain_name, node_config.id, dutils=dutils)
+                ensure_schain_removed(
+                    skale, schain_name, node_config.id, manager_cache=manager_cache, dutils=dutils
+                )
             except Exception:
                 logger.exception('%s removal failed', schain_name)
     logger.info('Cleanup procedure finished')
 
 
-def get_schain_names_from_contract(skale, node_id):
-    schains_on_contract = skale.schains.get_schains_for_node(node_id)
-    return list(map(lambda schain: schain.name, schains_on_contract))
+def get_schain_names_from_contract(schains: list[SchainStructure]) -> list:
+    return list(map(lambda schain: schain.name, schains))
 
 
 def get_schains_with_containers(dutils=None):
@@ -171,7 +175,13 @@ def get_schains_on_node(dutils=None):
     )
 
 
-def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
+def ensure_schain_removed(
+    skale: SkaleManager,
+    schain_name: SchainName,
+    node_id: NodeId,
+    manager_cache: ManagerCache,
+    dutils=None,
+):
     dutils = dutils or DockerUtils()
     is_schain_exist = skale.schains_internal.is_schain_exist(schain_name)
 
@@ -180,7 +190,9 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
             {'sChain name': schain_name},
             'Going to remove this sChain because it was removed from contracts',
         )
-        return remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
+        return remove_schain(
+            skale, node_id, schain_name, msg, manager_cache=manager_cache, dutils=dutils
+        )
 
     if skale.node_rotation.is_rotation_active(schain_name):
         msg = arguments_list_string(
@@ -195,7 +207,9 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
             {'sChain name': schain_name},
             'Going to remove this sChain because this node is not in the group',
         )
-        return remove_schain(skale, node_id, schain_name, msg, dutils=dutils)
+        return remove_schain(
+            skale, node_id, schain_name, msg, manager_cache=manager_cache, dutils=dutils
+        )
 
     msg = arguments_list_string(
         {'sChain name': schain_name}, 'sChain do not satisfy removal condidions'
@@ -206,8 +220,9 @@ def ensure_schain_removed(skale, schain_name, node_id, dutils=None):
 def remove_schain(
     skale: SkaleManager,
     node_id: int,
-    schain_name: str,
+    schain_name: SchainName,
     msg: str,
+    manager_cache: ManagerCache,
     dutils: Optional[DockerUtils] = None,
 ) -> None:
     logger.warning(msg)
@@ -216,11 +231,13 @@ def remove_schain(
         terminate_process(report.pid)
 
     delete_bls_keys(skale, schain_name)
-    sync_agent_ranges = get_sync_agent_ranges(skale)
+
+    sync_agent_ranges = manager_cache.sync_ranges
+    schain_hash = schain_name_to_hash(schain_name)
     rotation_data = skale.node_rotation.get_rotation(schain_name)
     rotation_id = rotation_data.rotation_counter
     estate = ExternalConfig(name=schain_name).get()
-    current_nodes = get_current_nodes(skale, schain_name)
+    current_nodes = get_current_nodes(skale, schain_hash, manager_cache)
     group_index = skale.schains.name_to_group_id(schain_name)
     last_dkg_successful = skale.dkg.is_last_dkg_successful(group_index)
 
@@ -286,7 +303,7 @@ def cleanup_schain(
 
 
 def delete_bls_keys(skale, schain_name):
-    last_rotation_id = skale.schains.get_last_rotation_id(schain_name)
+    last_rotation_id = skale.schains.last_rotation_id(schain_name)
     for i in range(last_rotation_id + 1):
         try:
             secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)

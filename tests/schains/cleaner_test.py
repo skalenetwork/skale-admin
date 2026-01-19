@@ -6,10 +6,14 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from skale import SkaleManager
 from skale.skale_manager import spawn_skale_manager_lib
+from skale.types.schain import SchainName
 
 from core.chain.runner import get_container_name
 from core.config.schain.directory import init_schain_config_dir
+from core.manager_cache import ManagerCache
+from core.node_config import NodeConfig
 from core.schains.cleaner import (
     cleanup_schain,
     delete_bls_keys,
@@ -24,6 +28,7 @@ from core.schains.cleaner import (
 from tests.utils import get_schain_struct, run_simple_ima_container, run_simple_skaled_container
 from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord, mark_schain_deleted, upsert_schain_record
 
 SKALED_CONTAINER_NAME_TEMPLATE = 'sk_skaled_{}'
@@ -67,21 +72,23 @@ def upsert_db(db):
         upsert_schain_record(name)
 
 
-def test_monitor(db, schain_dirs_for_monitor, skale, node_config, dutils):
+def test_monitor(
+    db, schain_dirs_for_monitor, skale, node_config, dutils, manager_cache: ManagerCache
+):
     ensure_schain_removed_mock = mock.Mock()
 
     ensure_schain_removed_mock = mock.Mock(side_effect=ValueError)
     with mock.patch('core.schains.cleaner.ensure_schain_removed', ensure_schain_removed_mock):
-        monitor(skale, node_config, dutils=dutils)
+        monitor(skale, node_config, manager_cache=manager_cache, dutils=dutils)
 
         ensure_schain_removed_mock.assert_any_call(
-            skale, TEST_SCHAIN_NAME_1, node_config.id, dutils=dutils
+            skale, TEST_SCHAIN_NAME_1, node_config.id, manager_cache=manager_cache, dutils=dutils
         )
         ensure_schain_removed_mock.assert_any_call(
-            skale, TEST_SCHAIN_NAME_2, node_config.id, dutils=dutils
+            skale, TEST_SCHAIN_NAME_2, node_config.id, manager_cache=manager_cache, dutils=dutils
         )
 
-    monitor(skale, node_config, dutils=dutils)
+    monitor(skale, node_config, manager_cache=manager_cache, dutils=dutils)
     assert [c.name for c in dutils.client.containers.list(filters={'name': 'sk_skaleds'})] == []
 
 
@@ -181,7 +188,7 @@ def test_delete_bls_keys_with_invalid_secret_key(
     secret_key_1.json - invalid, secret_key_2.json not exists
     """
     skale_for_test = spawn_skale_manager_lib(skale)
-    skale_for_test.schains.get_last_rotation_id = lambda x: 2
+    skale_for_test.schains.last_rotation_id = lambda x: 2
     with mock.patch(
         'core.schains.cleaner.SgxClient.delete_bls_key', new=mock.Mock()
     ) as delete_mock:
@@ -201,9 +208,24 @@ def test_get_schains_on_node(
 
 
 @mock.patch('core.schains.cleaner.cleanup_firewall_for_schain')
-def test_remove_schain(cleanup_firewall_for_schain, skale, schain_db, node_config, dutils):
+def test_remove_schain(
+    cleanup_firewall_for_schain,
+    skale: SkaleManager,
+    schain_db: SchainName,
+    schain_on_contracts: SchainName,
+    node_config: NodeConfig,
+    dutils: DockerUtils,
+    manager_cache: ManagerCache,
+):
     schain_name = schain_db
-    remove_schain(skale, node_config.id, schain_name, msg='Test remove_schain', dutils=dutils)
+    remove_schain(
+        skale,
+        node_config.id,
+        schain_name,
+        msg='Test remove_schain',
+        manager_cache=manager_cache,
+        dutils=dutils,
+    )
     container_name = SKALED_CONTAINER_NAME_TEMPLATE.format(schain_name)
     assert not is_container_running(dutils, container_name)
     schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)

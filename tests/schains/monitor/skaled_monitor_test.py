@@ -5,9 +5,12 @@ from unittest import mock
 
 import freezegun
 import pytest
+from skale.types.schain import SchainStructure
 
+from core.chain.status import NodeCliStatus, SkaledStatus, init_skaled_status
 from core.checks.schain import CheckRes, SkaledChecks
-from core.config.schain.directory import schain_config_dir
+from core.config.schain.directory import init_schain_config_dir, schain_config_dir
+from core.firewall.base.types import IRuleController
 from core.monitor.schain.action_skaled import SkaledActionManager
 from core.monitor.schain.monitor_skaled import (
     BackupSkaledMonitor,
@@ -21,9 +24,11 @@ from core.monitor.schain.monitor_skaled import (
     UpdateConfigSkaledMonitor,
     get_skaled_monitor,
 )
+from core.node_config import NodeConfig
 from core.schains.exit_scheduler import ExitScheduleFileManager
 from core.schains.external_config import ExternalConfig
-from tests.utils import CURRENT_TS
+from tests.utils import CURRENT_TS, TEST_TASK_SLEEP
+from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
 
 CURRENT_TIMESTAMP = 1594903080
@@ -36,7 +41,7 @@ def rotation_data(schain_db, skale):
 
 
 @pytest.fixture
-def skaled_checks(schain_db, skale, rule_controller, dutils):
+def skaled_checks(schain_db, rule_controller, dutils):
     name = schain_db
     schain_record = SChainRecord.get_by_name(name)
     return SkaledChecks(
@@ -50,11 +55,9 @@ def skaled_checks(schain_db, skale, rule_controller, dutils):
 
 @pytest.fixture
 def skaled_am(
-    schain_db,
-    skale,
-    node_config,
-    rule_controller,
-    schain_on_contracts,
+    schain_structure: SchainStructure,
+    node_config: NodeConfig,
+    rule_controller: IRuleController,
     rotation_data,
     secret_key,
     ssl_folder,
@@ -63,15 +66,15 @@ def skaled_am(
     dutils,
     skaled_checks,
 ):
-    name = schain_db
-    schain = skale.schains.get_by_name(name)
     return SkaledActionManager(
-        schain=schain,
+        schain=schain_structure,
         rule_controller=rule_controller,
         node_config=node_config,
         ncli_status=ncli_status,
         checks=skaled_checks,
         dutils=dutils,
+        post_run_delay=TEST_TASK_SLEEP,
+        schain_cleanup_timeout=TEST_TASK_SLEEP,
     )
 
 
@@ -82,8 +85,10 @@ class SkaledChecksNoConfig(SkaledChecks):
 
 
 @pytest.fixture
-def skaled_checks_no_config(schain_db, skale, rule_controller, dutils):
-    name = schain_db
+def skaled_checks_no_config(
+    schain_structure: SchainStructure, rule_controller: IRuleController, dutils
+):
+    name = schain_structure.name
     schain_record = SChainRecord.get_by_name(name)
     return SkaledChecksNoConfig(
         schain_name=name,
@@ -104,8 +109,10 @@ class SkaledChecksConfigOutdated(SkaledChecks):
 
 
 @pytest.fixture
-def skaled_checks_outdated_config(schain_db, skale, rule_controller, dutils):
-    name = schain_db
+def skaled_checks_outdated_config(
+    schain_structure: SchainStructure, rule_controller: IRuleController, dutils
+):
+    name = schain_structure.name
     schain_record = SChainRecord.get_by_name(name)
     return SkaledChecksConfigOutdated(
         schain_name=name,
@@ -205,8 +212,10 @@ class SkaledChecksWithConfig(SkaledChecks):
 
 
 @pytest.fixture
-def skaled_checks_new_config(schain_db, skale, rule_controller, dutils):
-    name = schain_db
+def skaled_checks_new_config(
+    schain_structure: SchainStructure, rule_controller: IRuleController, dutils: DockerUtils
+):
+    name = schain_structure.name
     schain_record = SChainRecord.get_by_name(name)
     return SkaledChecksWithConfig(
         schain_name=name,
@@ -218,35 +227,31 @@ def skaled_checks_new_config(schain_db, skale, rule_controller, dutils):
 
 @freezegun.freeze_time(CURRENT_DATETIME)
 def test_get_skaled_monitor_reload_group(
-    skale,
-    skaled_am,
-    skaled_checks_new_config,
-    schain_db,
-    skaled_status,
-    node_config,
-    rule_controller,
-    schain_on_contracts,
+    skaled_am: SkaledActionManager,
+    skaled_checks_new_config: SkaledChecks,
+    schain_structure: SchainStructure,
+    skaled_status: SkaledStatus,
+    node_config: NodeConfig,
+    rule_controller: IRuleController,
     rotation_data,
     secret_keys,
     ssl_folder,
-    skaled_checks,
-    ncli_status,
-    dutils,
+    skaled_checks: SkaledChecks,
+    ncli_status: NodeCliStatus,
+    dutils: DockerUtils,
 ):
-    name = schain_db
+    name = schain_structure.name
     schain_record = SChainRecord.get_by_name(name)
 
     state = skaled_checks_new_config.get_all()
     state['rotation_id_updated'] = False
-
-    schain = skale.schains.get_by_name(name)
 
     with mock.patch(
         f'{__name__}.SkaledActionManager.upstream_finish_ts', new_callable=mock.PropertyMock
     ) as finish_ts_mock:
         finish_ts_mock.return_value = CURRENT_TIMESTAMP - 10
         skaled_am = SkaledActionManager(
-            schain=schain,
+            schain=schain_structure,
             rule_controller=rule_controller,
             node_config=node_config,
             checks=skaled_checks,
@@ -257,7 +262,7 @@ def test_get_skaled_monitor_reload_group(
         assert mon == RegularSkaledMonitor
         finish_ts_mock.return_value = CURRENT_TIMESTAMP + 10
         skaled_am = SkaledActionManager(
-            schain=schain,
+            schain=schain_structure,
             rule_controller=rule_controller,
             node_config=node_config,
             checks=skaled_checks,
@@ -270,33 +275,29 @@ def test_get_skaled_monitor_reload_group(
 
 @freezegun.freeze_time(CURRENT_DATETIME)
 def test_get_skaled_monitor_reload_ip(
-    skale,
-    skaled_am,
-    skaled_checks_new_config,
-    schain_db,
-    skaled_status,
-    node_config,
-    rule_controller,
-    schain_on_contracts,
+    skaled_am: SkaledActionManager,
+    skaled_checks_new_config: SkaledChecks,
+    schain_structure: SchainStructure,
+    skaled_status: SkaledStatus,
+    node_config: NodeConfig,
+    rule_controller: IRuleController,
     rotation_data,
     secret_keys,
     ssl_folder,
-    skaled_checks,
-    ncli_status,
-    dutils,
+    skaled_checks: SkaledChecks,
+    ncli_status: NodeCliStatus,
+    dutils: DockerUtils,
 ):
-    name = schain_db
+    name = schain_structure.name
     schain_record = SChainRecord.get_by_name(name)
 
     state = skaled_checks_new_config.get_all()
     state['rotation_id_updated'] = False
 
-    schain = skale.schains.get_by_name(name)
-
     econfig = ExternalConfig(name)
 
     skaled_am = SkaledActionManager(
-        schain=schain,
+        schain=schain_structure,
         rule_controller=rule_controller,
         node_config=node_config,
         checks=skaled_checks,
@@ -316,30 +317,27 @@ def test_get_skaled_monitor_reload_ip(
 
 @freezegun.freeze_time(CURRENT_DATETIME)
 def test_get_skaled_monitor_new_node(
-    schain_db,
-    skale,
-    node_config,
-    rule_controller,
-    schain_on_contracts,
+    schain_structure: SchainStructure,
+    node_config: NodeConfig,
+    rule_controller: IRuleController,
     rotation_data,
     secret_key,
     ssl_folder,
-    skaled_status,
-    skaled_checks,
+    skaled_status: SkaledStatus,
+    skaled_checks: SkaledChecks,
     ima_migration_schedule,
     ncli_status,
-    dutils,
+    dutils: DockerUtils,
 ):
-    name = schain_db
+    name = schain_structure.name
     schain_record = SChainRecord.get_by_name(name)
-    schain = skale.schains.get_by_name(name)
 
     finish_ts = CURRENT_TIMESTAMP + 10
     with mock.patch(
         f'{__name__}.SkaledActionManager.finish_ts', new_callable=mock.PropertyMock
     ) as finish_ts_mock:
         skaled_am = SkaledActionManager(
-            schain=schain,
+            schain=schain_structure,
             rule_controller=rule_controller,
             node_config=node_config,
             ncli_status=ncli_status,
@@ -422,8 +420,8 @@ def test_backup_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
 def test_repair_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = RepairSkaledMonitor(skaled_am, skaled_checks)
     ts_before = time.time()
-    mon.run()
     time.sleep(1)
+    mon.run()
     assert skaled_am.rule_controller.is_rules_synced
     assert dutils.get_vol(skaled_am.name)
 
@@ -435,7 +433,11 @@ def test_repair_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     assert not dutils.safe_get_container(f'sk_ima_{skaled_am.name}')
 
 
-def test_group_reload_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
+def test_group_reload_skaled_monitor(
+    skaled_am: SkaledActionManager, skaled_checks: SkaledChecks, clean_docker, dutils: DockerUtils
+):
+    init_schain_config_dir(skaled_am.name)
+    init_skaled_status(skaled_am.name)
     mon = ReloadGroupSkaledMonitor(skaled_am, skaled_checks)
     ts = time.time()
     esfm = ExitScheduleFileManager(mon.am.name)

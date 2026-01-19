@@ -5,7 +5,9 @@ from typing import cast
 import pytest
 from eth_typing import HexStr
 from skale import FairManager, SkaleIma, SkaleManager
+from skale.types.schain import SchainHash
 from skale.utils.account_tools import generate_account, send_eth
+from skale.utils.cache import RedisCacheConfig
 from skale.utils.contracts_provision.fake_multisig_contract import deploy_fake_multisig_contract
 from skale.utils.contracts_provision.main import (
     add_test2_schain_type,
@@ -21,13 +23,18 @@ from skale.utils.contracts_provision.main import (
     set_test_msr,
     validator_exist,
 )
+from skale.utils.helper import schain_name_to_hash
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
 
+from core.manager_cache import ManagerCache
+from core.node_config import NodeConfig
 from tests.utils import ETH_PRIVATE_KEY
+from tools.configs.db import REDIS_URI
 from tools.configs.ima import IMA_CONTRACTS
 from tools.configs.sgx import SGX_CERTIFICATES_FOLDER
-from tools.configs.web3 import ENDPOINT, FAIR_CONTRACTS, MANAGER_CONTRACTS
+from tools.configs.web3 import CACHE_TTL_POLICY, ENDPOINT, FAIR_CONTRACTS, MANAGER_CONTRACTS
+from tools.resources import rs
 
 ETH_AMOUNT_PER_NODE = 1
 NUMBER_OF_NODES = 2
@@ -83,8 +90,16 @@ def private_key() -> HexStr:
 
 
 @pytest.fixture(scope='session')
-def web3(endpoint):
-    return init_web3(endpoint)
+def redis_cache_config() -> RedisCacheConfig:
+    return RedisCacheConfig(
+        REDIS_URI,
+        method_ttl_policy=CACHE_TTL_POLICY,
+    )
+
+
+@pytest.fixture(scope='session')
+def web3(endpoint, redis_cache_config):
+    return init_web3(endpoint, cache_config=redis_cache_config)
 
 
 @pytest.fixture(scope='session')
@@ -104,7 +119,23 @@ def sgx_cert_folder():
 
 @pytest.fixture(scope='session')
 def skale(endpoint, manager_contracts, wallet, sgx_cert_folder):
-    skale_obj = SkaleManager(endpoint, manager_contracts, wallet)
+    skale_obj = SkaleManager(
+        endpoint,
+        manager_contracts,
+        wallet,
+        redis_cache_config=RedisCacheConfig(
+            REDIS_URI,
+            method_ttl_policy={
+                'eth_call': 0,
+                'eth_getCode': 10000,
+                'eth_getStorageAt': 10000,
+                'eth_chainId': 10000,
+                'eth_getBlockByNumber': 10000,
+                'eth_gasPrice': 10000,
+                'web3_clientVersion': 10000,
+            },
+        ),
+    )
     add_test_permissions(skale_obj)
     add_test2_schain_type(skale_obj)
     add_test4_schain_type(skale_obj)
@@ -137,6 +168,11 @@ def schain_on_contracts(skale, nodes, _schain_name):
         )
     finally:
         cleanup_nodes_schains(skale)
+
+
+@pytest.fixture
+def schain_hash_on_contracts(schain_on_contracts) -> SchainHash:
+    return schain_name_to_hash(schain_on_contracts)
 
 
 @pytest.fixture(scope='session')
@@ -178,7 +214,7 @@ def new_node_wallet(node_wallets) -> Web3Wallet:
 
 @pytest.fixture
 def nodes(skale, node_skales, validator):
-    cleanup_nodes(skale, skale.nodes.get_active_node_ids())
+    cleanup_nodes(skale, skale.nodes.active_node_ids())
     link_nodes_to_validator(skale, validator, node_skales)
     ids = create_nodes(node_skales)
     try:
@@ -187,4 +223,13 @@ def nodes(skale, node_skales, validator):
         cleanup_nodes(skale, ids)
 
 
-# fair
+@pytest.fixture
+def manager_cache(skale, node_config: NodeConfig) -> ManagerCache:
+    return ManagerCache(rs, skale, node_config.id)
+
+
+@pytest.fixture
+def clear_manager_cache(skale, node_config: NodeConfig) -> ManagerCache:
+    mcache = ManagerCache(rs, skale, node_config.id)
+    mcache.clear_all_fields()
+    return mcache

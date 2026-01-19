@@ -2,10 +2,13 @@ from unittest import mock
 
 import pytest
 from flask import Flask, appcontext_pushed, g
+from skale import SkaleManager
+from skale.types.schain import SchainName
 
 from core.checks.schain import SChainChecks
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, get_schain_struct
+from tools.docker_utils import DockerUtils
 from web.helper import get_api_url
 from web.models.schain import SChainRecord
 from web.routes.health import health_bp
@@ -52,14 +55,20 @@ def unregistered_skale_bp(skale, dutils):
             SChainRecord.drop_table()
 
 
-def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils):
+def test_schains_checks(
+    skale_bp,
+    skale: SkaleManager,
+    schain_on_contracts: SchainName,
+    schain_db: SchainName,
+    dutils: DockerUtils,
+):
     schain_name = schain_db
 
     class SChainChecksMock(SChainChecks):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, dutils=dutils, **kwargs)
 
-    def get_schains_for_node_mock(self, node_id):
+    def schains_for_node_mock(self, node_id):
         return [
             get_schain_struct(_test_schain_name=schain_name),
             get_schain_struct(_test_schain_name='test-schain'),
@@ -68,8 +77,8 @@ def test_schains_checks(skale_bp, skale, schain_on_contracts, schain_db, dutils)
 
     with mock.patch('web.routes.health.SChainChecks', SChainChecksMock):
         with mock.patch(
-            'skale.contracts.manager.schains.SChains.get_schains_for_node',
-            get_schains_for_node_mock,
+            'skale.contracts.manager.schains.SChains.schains_for_node',
+            schains_for_node_mock,
         ):
             data = get_bp_data(skale_bp, get_api_url('health', 'schains'))
             assert data['status'] == 'ok'

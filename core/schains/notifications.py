@@ -23,6 +23,7 @@ from typing import Dict
 
 from skale import SkaleManager
 
+from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
 from tools.notifications.messages import notify_balance
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,8 @@ REQUIRED_BALANCE_WEI = 10**17
 
 
 def notify_if_not_enough_balance(skale: SkaleManager, node_info: Dict) -> None:
+    if not TG_API_KEY or not TG_CHAT_ID:
+        return
     eth_balance_wei = skale.web3.eth.get_balance(skale.wallet.address)
     logger.info(f'Node account has {eth_balance_wei} WEI')
     balance_in_skl = skale.web3.from_wei(eth_balance_wei, 'ether')

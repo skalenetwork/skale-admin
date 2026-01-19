@@ -21,6 +21,8 @@ import logging
 from dataclasses import dataclass
 
 from skale.dataclasses.node_info import NodeInfo
+from skale.types.node import Node, NodeId, Port
+from skale.types.schain import SchainStructure
 
 from core.dkg.utils import get_secret_key_share_filepath
 from tools.configs.sgx import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
@@ -61,14 +63,14 @@ class CurrentNodeInfo(NodeInfo):
 
 
 def generate_current_node_info(
-    node: dict,
-    node_id: int,
+    node: Node,
+    node_id: NodeId,
     ecdsa_key_name: str,
     static_node_info: dict,
-    schain: dict,
+    schain: SchainStructure,
     rotation_id: int,
     nodes_in_schain: int,
-    schain_base_port: int,
+    schain_base_port: Port,
     common_bls_public_keys: list[str],
     passive_node: bool = False,
     archive: bool = False,

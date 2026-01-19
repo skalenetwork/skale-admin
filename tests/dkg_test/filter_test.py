@@ -11,7 +11,7 @@ N = 16
 @pytest.fixture
 def filter_mock(skale):
     filter = SchainFilter(skale, SCHAIN_NAME, N)
-    filter.first_unseen_block = skale.web3.eth.get_block('latest')['number'] - 100
+    filter.first_unseen_block = max(0, skale.web3.eth.get_block('latest')['number'] - 100)
     return filter
 
 
@@ -39,7 +39,7 @@ def test_get_events(skale, filter_mock):
 
 def test_get_events_from_start(skale, filter_mock):
     latest = skale.web3.eth.get_block('latest')['number']
-    mock_start_block = skale.web3.eth.get_block('latest')['number'] - 100
+    mock_start_block = max(0, skale.web3.eth.get_block('latest')['number'] - 100)
     with (
         mock.patch.object(
             skale.web3.eth, 'get_block', wraps=skale.web3.eth.get_block

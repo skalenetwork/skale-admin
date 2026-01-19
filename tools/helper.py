@@ -34,10 +34,13 @@ from filelock import FileLock
 from jinja2 import Environment
 from skale import SkaleManager
 from skale.types.node import NodeId
+from skale.utils.cache import RedisCacheConfig
 from skale.wallets import BaseWallet
+from web3 import Web3
 
 from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
-from tools.configs.web3 import STATE_FILEPATH, ZERO_ADDRESS, endpoint, manager_contracts
+from tools.configs.db import REDIS_URI
+from tools.configs.web3 import CACHE_TTL_POLICY, ZERO_ADDRESS, endpoint, manager_contracts
 
 logger = logging.getLogger(__name__)
 
@@ -114,8 +117,17 @@ def wait_until_admin_inited():
         logger.info('Skale admin inited')
 
 
-def init_skale(wallet: BaseWallet) -> SkaleManager:
-    return SkaleManager(endpoint(), manager_contracts(), wallet, state_path=STATE_FILEPATH)
+def init_skale(wallet: BaseWallet | None) -> SkaleManager:
+    return SkaleManager(
+        endpoint(),
+        manager_contracts(),
+        wallet,
+        enable_stats=True,
+        redis_cache_config=RedisCacheConfig(
+            REDIS_URI,
+            method_ttl_policy=CACHE_TTL_POLICY,
+        ),
+    )
 
 
 def safe_load_yml(filepath):
@@ -139,24 +151,20 @@ def check_pid_psutil(pid):
     return p.is_running() and p.status() != psutil.STATUS_ZOMBIE
 
 
-def get_endpoint_call_speed(web3):
-    scores = []
-    for _ in range(10):
-        start = time.time()
-        result = web3.eth.gas_price
-        if result:
-            scores.append(time.time() - start)
-    if len(scores) == 0:
-        return None
-    call_avg_speed = round(sum(scores) / len(scores), 2)
-    logger.info(f'Endpoint call speed scores: {scores}, avg: {call_avg_speed}')
-    return call_avg_speed
+def get_endpoint_call_speed(web3: Web3) -> float | None:
+    duration: float | None = None
+    start = time.time()
+    result = web3.eth.gas_price
+    if result:
+        duration = time.time() - start
+    logger.info(f'Endpoint call speed: {duration}')
+    return duration
 
 
 def is_node_part_of_chain(skale, schain_name, node_id) -> bool:
     if not skale.schains_internal.is_schain_exist(schain_name):
         return False
-    node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+    node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
     return node_id in node_ids
 
 

@@ -2,6 +2,8 @@ import logging
 from dataclasses import dataclass
 
 from skale import SkaleManager
+from skale.types.schain import SchainName
+from skale.utils.helper import schain_name_to_hash
 from web3 import Web3
 
 from tools.configs.containers import CONTAINERS_INFO
@@ -34,8 +36,8 @@ class SchainData:
         }
 
 
-def get_schain_info_by_name(skale: SkaleManager, schain_name: str) -> SchainData:
-    sid = skale.schains.name_to_id(schain_name)
+def get_schain_info_by_name(skale: SkaleManager, schain_name: SchainName) -> SchainData:
+    sid = schain_name_to_hash(schain_name)
     contracts_info = skale.schains.get(sid)
 
     if SChainRecord.added(schain_name):

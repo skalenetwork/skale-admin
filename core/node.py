@@ -25,21 +25,22 @@ import shutil
 import socket
 import time
 from enum import Enum
-from typing import Dict, List, Optional, TypedDict
+from typing import Dict, List, Optional
 
 import psutil
 import requests
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 from skale import SkaleManager
-from skale.schain_config.generator import get_nodes_for_schain
 from skale.transactions.exceptions import TransactionLogicError
-from skale.types.node import NodeWithId
-from skale.types.schain import SchainName
+from skale.types.node import NodeId, NodeWithChangeIp
+from skale.types.schain import SchainHash, SchainName
 from skale.utils.exceptions import InvalidNodeIdError
 from skale.utils.helper import ip_from_bytes
-from skale.utils.web3_utils import public_key_to_address, to_checksum_address
+from skale.utils.web3_utils import public_key_to_address
 
+from core.manager_cache import ManagerCache
 from core.monitoring import update_monitoring_services
+from core.node_config import NodeConfig
 from tools.configs import (
     CHANGE_IP_DELAY,
     CHECK_REPORT_PATH,
@@ -95,7 +96,7 @@ DOCKER_LVMPY_BLOCK_SIZE_URL = 'http://127.0.0.1:7373/physical-volume-size'
 class Node:
     """This class contains node registration logic"""
 
-    def __init__(self, skale, config):
+    def __init__(self, skale: SkaleManager, config: NodeConfig):
         self.skale = skale
         self.config = config
 
@@ -127,22 +128,20 @@ class Node:
             return self._error(
                 f'Node is already installed on this machine. Node ID: {self.config.id}'
             )
-        node_id = self.get_node_id_from_contracts(name, ip)
+        if not check_required_balance(self.skale):
+            return self._error('Insufficient funds, re-check your wallet')
+
+        if not self.skale.nodes.is_node_name_available(name):
+            return self._error(f'Node name is already taken: {name}')
+
+        if not self.skale.nodes.is_node_ip_available(ip):
+            return self._error(f'Node IP is already taken: {ip}')
+
+        node_id = self.create_node_on_contracts(
+            ip, public_ip, port, name, domain_name, gas_limit, gas_price, skip_dry_run
+        )
         if node_id < 0:
-            if not check_required_balance(self.skale):
-                return self._error('Insufficient funds, re-check your wallet')
-
-            if not self.skale.nodes.is_node_name_available(name):
-                return self._error(f'Node name is already taken: {name}')
-
-            if not self.skale.nodes.is_node_ip_available(ip):
-                return self._error(f'Node IP is already taken: {ip}')
-
-            node_id = self.create_node_on_contracts(
-                ip, public_ip, port, name, domain_name, gas_limit, gas_price, skip_dry_run
-            )
-            if node_id < 0:
-                return self._error(f'Node registration failed: {ip}:{port}, name: {name}')
+            return self._error(f'Node registration failed: {ip}:{port}, name: {name}')
         self.config.id = self.skale.nodes.node_name_to_index(name)
 
         self.config.name = name
@@ -181,25 +180,8 @@ class Node:
         self._log_node_info('Node successfully registered', ip, public_ip, port, name)
         return self.skale.nodes.node_name_to_index(name)
 
-    def get_node_id_from_contracts(self, name, ip) -> int:
-        node_id = self.skale.nodes.node_name_to_index(name)
-        try:
-            node_data = self.skale.nodes.get(node_id)
-        except InvalidNodeIdError:
-            node_id = -1
-        else:
-            public_key = node_data['publicKey']
-            data_address = to_checksum_address(public_key_to_address(public_key))
-            if (
-                not data_address == self.skale.wallet.address
-                or not name == node_data['name']
-                or not ip == ip_from_bytes(node_data['ip'])
-            ):
-                node_id = -1
-        return node_id
-
     def exit(self, opts):
-        schains_list = self.skale.schains.get_active_schains_for_node(self.config.id)
+        schains_list = self.skale.schains.active_schains_for_node(self.config.id)
         exit_count = len(schains_list) or 1
         for _ in range(exit_count):
             try:
@@ -208,7 +190,7 @@ class Node:
                 logger.exception('Node rotation failed')
 
     def get_exit_status(self):
-        active_schains = self.skale.schains.get_active_schains_for_node(self.config.id)
+        active_schains = self.skale.schains.active_schains_for_node(self.config.id)
         schain_statuses = [
             {'name': schain.name, 'status': SchainExitStatus.ACTIVE.name}
             for schain in active_schains
@@ -224,8 +206,8 @@ class Node:
             if not schain_name:
                 schain_name = '[REMOVED]'
             schain_statuses.append({'name': schain_name, 'status': status.name})
-        node_status = NodeExitStatus(self.skale.nodes.get_node_status(self.config.id))
-        exit_time = self.skale.nodes.get_node_finish_time(self.config.id)
+        node_status = NodeExitStatus(self.skale.nodes.node_status(self.config.id))
+        exit_time = self.skale.nodes.node_finish_time(self.config.id)
         if node_status == NodeExitStatus.WAIT_FOR_ROTATIONS and current_time >= exit_time:
             node_status = NodeExitStatus.COMPLETED
         return {'status': node_status.name, 'data': schain_statuses, 'exit_time': exit_time}
@@ -274,9 +256,12 @@ class Node:
     def info(self):
         _id = self.config.id
         if _id is not None:
-            raw_info = self.skale.nodes.get(_id)
-            return self._transform_node_info(raw_info, _id)
-        return {'status': NodeStatus.NOT_CREATED.value}
+            try:
+                raw_info = self.skale.nodes.get(_id)
+                return self._transform_node_info(raw_info, _id)
+            except InvalidNodeIdError:
+                logger.warning(f'Node with ID {_id} does not exist on contracts')
+        return {'status': NodeStatus.NOT_CREATED.value, 'id': _id}
 
     def _transform_node_info(self, node_info, node_id):
         node_info['ip'] = ip_from_bytes(node_info['ip'])
@@ -359,48 +344,41 @@ def get_check_report(report_path: str = CHECK_REPORT_PATH) -> Dict:
         return json.load(report_file)
 
 
-class ManagerNodeInfo(TypedDict):
-    name: str
-    ip: str
-    publicIP: str
-    port: int
-    start_block: int
-    last_reward_date: int
-    finish_time: int
-    status: int
-    validator_id: int
-    publicKey: str
-    domain_name: str
-
-
-class ExtendedManagerNodeInfo(ManagerNodeInfo):
-    ip_change_ts: int
-
-
-def get_current_nodes(skale: SkaleManager, name: SchainName) -> List[ExtendedManagerNodeInfo]:
-    if not skale.schains_internal.is_schain_exist(name):
+def get_current_nodes(
+    skale: SkaleManager, schain_hash: SchainHash, manager_cache: ManagerCache | None = None
+) -> List[NodeWithChangeIp]:
+    if skale.schains_internal.is_empty_schain_hash(schain_hash):
         return []
-    current_nodes: list[NodeWithId] = get_nodes_for_schain(skale, name)
-    for node in current_nodes:
-        node['ip_change_ts'] = skale.nodes.get_last_change_ip_time(node['id'])
-        node['ip'] = ip_from_bytes(node['ip'])
-        node['publicIP'] = ip_from_bytes(node['publicIP'])
+    ids = skale.schains_internal.node_ids_for_schain_hash(schain_hash)
+
+    cached_by_id: dict[NodeId, NodeWithChangeIp] = {}
+    if manager_cache is not None:
+        cached_by_id = {node['id']: node for node in manager_cache.nodes}
+
+    current_nodes: list[NodeWithChangeIp] = []
+    for node_id in ids:
+        if node_id in cached_by_id:
+            current_nodes.append(cached_by_id[node_id])
+        else:
+            node = skale.nodes.get_with_change_ip(node_id)
+            current_nodes.append(node)
+
     return current_nodes
 
 
-def get_current_ips(current_nodes: List[ExtendedManagerNodeInfo]) -> list[str]:
+def get_current_ips(current_nodes: List[NodeWithChangeIp]) -> list[str]:
     return [node['ip'] for node in current_nodes]
 
 
-def get_max_ip_change_ts(current_nodes: List[ExtendedManagerNodeInfo]) -> Optional[int]:
+def get_max_ip_change_ts(current_nodes: List[NodeWithChangeIp]) -> Optional[int]:
     max_ip_change_ts = max(current_nodes, key=lambda node: node['ip_change_ts'])['ip_change_ts']
     return None if max_ip_change_ts == 0 else max_ip_change_ts
 
 
-def calc_reload_ts(current_nodes: List[ExtendedManagerNodeInfo], node_index: int) -> int:
+def calc_reload_ts(current_nodes: List[NodeWithChangeIp], node_index: int) -> int | None:
     max_ip_change_ts = get_max_ip_change_ts(current_nodes)
     if max_ip_change_ts is None:
-        return
+        return None
     return max_ip_change_ts + get_node_delay(node_index)
 
 
@@ -412,10 +390,12 @@ def get_node_delay(node_index: int) -> int:
     return CHANGE_IP_DELAY * (node_index + 1)
 
 
-def get_node_index_in_group(skale: SkaleManager, schain_name: str, node_id: int) -> Optional[int]:
+def get_node_index_in_group(
+    skale: SkaleManager, schain_name: SchainName, node_id: NodeId
+) -> Optional[int]:
     """Returns node index in group or None if node is not in group"""
     try:
-        node_ids = skale.schains_internal.get_node_ids_for_schain(schain_name)
+        node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
         return node_ids.index(node_id)
     except ValueError:
         return None
@@ -435,7 +415,7 @@ def is_port_open(ip, port):
 def check_validator_nodes(skale, node_id):
     try:
         node = skale.nodes.get(node_id)
-        node_ids = skale.nodes.get_validator_node_indices(node['validator_id'])
+        node_ids = skale.nodes.validator_node_indices(node['validator_id'])
 
         try:
             node_ids.remove(node_id)

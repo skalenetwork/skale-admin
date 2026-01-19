@@ -13,6 +13,6 @@ export_test_env
 
 bash scripts/run_redis.sh
 
-uv run pytest --cov=. tests --ignore=tests/dkg_test --ignore=tests/firewall --ignore=tests/fair $@
+uv run pytest --cov=. tests/dkg_test $@
 tests_cleanup
 sgx_cleanup

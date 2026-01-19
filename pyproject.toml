@@ -1,6 +1,6 @@
 [project]
 name = "skale-admin"
-version = "3.2.0"
+version = "3.3.0"
 requires-python = ">=3.13"
 dependencies = [
     "peewee==3.18.2",
@@ -11,13 +11,13 @@ dependencies = [
     "docker==7.1.0",
     "websocket-client==1.8.0",
     "requests==2.32.5",
-    "skale.py==7.8dev0",
+    "skale.py==7.11dev4",
     "ima-predeployed==2.3.0b3",
     "etherbase-predeployed==1.1.0b3",
     "marionette-predeployed==2.0.0b2",
     "config-controller-predeployed==1.1.0",
     "filestorage-predeployed==1.1.0.dev8",
-    "multisigwallet-predeployed==1.1.0a8",
+    "multisigwallet-predeployed==1.1.0b0",
     "context-predeployed==1.0.0.dev3",
     "statsd==4.0.1",
     "psutil==7.1.0",
@@ -37,8 +37,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["ruff==0.14.0", "mypy==1.18.2"]
 test = [
-    "pytest==8.4.2",
+    "pytest==9.0.2",
     "pytest-cov==7.0.0",
+    "pytest-timeout==2.4.0",
     "freezegun==1.5.5",
     "codecov==2.1.13",
 ]
@@ -47,6 +48,7 @@ test = [
 prerelease = "allow"
 
 [tool.pytest.ini_options]
+addopts = ["--durations=0", "--timeout=35", "--timeout-method=thread"]
 log_cli = false
 log_cli_level = "INFO"
 log_cli_format = "[%(asctime)s] [%(levelname)8s] [%(threadName)s] %(message)s (%(filename)s:%(lineno)s)"

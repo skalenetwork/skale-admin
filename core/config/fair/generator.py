@@ -21,15 +21,14 @@
 import logging
 import socket
 from dataclasses import dataclass
-from typing import Dict
 
 from skale import FairManager
 from skale.fair_config import generate_committee_history, get_nodes_from_two_operational_committees
 from skale.types.committee import Committee, CommitteeGroup, CommitteeIndex, Timestamp
 from skale.types.dkg import DkgId, Fp2Point, G2Point
-from skale.types.node import FairNodeForChainConfig, NodeId, NodeWithSchains
+from skale.types.node import FairNodeForChainConfig, NodeId, NodeWithSchainHashes
 from skale.types.node import Node as SkaleNode
-from skale.types.rotation import NodesGroup
+from skale.types.rotation import NodeGroups
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 
 from core.config.base import FairConfig, SChainBaseConfig
@@ -107,8 +106,8 @@ def generate_fair_config_adapter(
     skale_node: SkaleNode,
     node_id: NodeId,
     chain_start_ts: int,
-    schain_nodes_with_schains: list[NodeWithSchains],
-    node_groups: Dict[int, NodesGroup],
+    schain_nodes_with_schain_hashes: list[NodeWithSchainHashes],
+    node_groups: NodeGroups,
     ecdsa_key_name: str,
     passive_node: bool = False,
     archive: bool = False,
@@ -117,7 +116,7 @@ def generate_fair_config_adapter(
     node = skale_node_to_fair_node_adapter(skale_node, node_id)
     committee_nodes = [
         skale_node_to_fair_node_adapter(schain_node, schain_node['id'])
-        for schain_node in schain_nodes_with_schains
+        for schain_node in schain_nodes_with_schain_hashes
     ]
 
     committee_info_from_manager: list[CommitteeGroup] = [
@@ -160,7 +159,7 @@ def generate_fair_config_adapter(
 def generate_fair_config(
     node: FairNodeForChainConfig,
     committee_info_from_manager: list[CommitteeGroup],
-    node_groups: Dict[int, NodesGroup],
+    node_groups: NodeGroups,
     ecdsa_key_name: str,
     is_committee_node: bool,
     archive: bool = False,

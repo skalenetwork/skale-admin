@@ -24,13 +24,13 @@ from eth_typing import ChecksumAddress
 from etherbase_predeployed.address import ETHERBASE_ADDRESS
 from marionette_predeployed.address import MARIONETTE_ADDRESS
 from skale import SkaleIma, SkaleManager
-from skale.contracts.manager.schains import SchainStructure
-from skale.schain_config.generator import get_schain_nodes_with_schains
+from skale.schain_config.generator import get_schain_nodes_with_schain_hashes
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.schain_config.rotation_history import get_previous_schain_groups
-from skale.types.node import NodeId
-from skale.types.rotation import Rotation
-from skale.types.schain import SchainName
+from skale.types.node import Node, NodeId, NodeWithSchainHashes, Port
+from skale.types.rotation import NodeGroups, Rotation
+from skale.types.schain import SchainStructure
+from skale.utils.helper import schain_name_to_hash
 from skale.utils.web3_utils import public_key_to_address, to_checksum_address
 from skale_contracts.projects.ima import MainnetImaContract
 from web3 import Web3
@@ -127,20 +127,20 @@ def get_ima_contracts_addresses(skale_ima: SkaleIma) -> Dict[str, ChecksumAddres
 
 def generate_schain_config(
     schain: SchainStructure,
-    node_id: int,
-    node: dict,
+    node_id: NodeId,
+    node: Node,
     ecdsa_key_name: str,
     rotation_id: int,
-    schain_nodes_with_schains: list,
-    node_groups: list,
+    schain_nodes_with_schain_hashes: list[NodeWithSchainHashes],
+    node_groups: NodeGroups,
     generation: int,
     is_owner_contract: bool,
-    schain_base_port: int,
+    schain_base_port: Port,
     common_bls_public_keys: list[str],
     mainnet_ima_addresses: dict[str, ChecksumAddress],
     passive_node: bool = False,
-    archive=None,
-    catchup=None,
+    archive: bool = False,
+    catchup: bool = False,
 ) -> SChainConfig:
     """Main function that is used to generate sChain config"""
     logger.info(
@@ -179,7 +179,7 @@ def generate_schain_config(
         node_id=node_id,
         node=node,
         ecdsa_key_name=ecdsa_key_name,
-        schain_nodes_with_schains=schain_nodes_with_schains,
+        schain_nodes_with_schain_hashes=schain_nodes_with_schain_hashes,
         rotation_id=rotation_id,
         node_groups=node_groups,
         schain_base_port=schain_base_port,
@@ -199,7 +199,7 @@ def generate_schain_config(
             schain_name=schain.name,
             allocation_type=schain.options.allocation_type,
             schain_type=schain_type,
-            schain_nodes=schain_nodes_with_schains,
+            schain_nodes=schain_nodes_with_schain_hashes,
             on_chain_owner=on_chain_owner,
             mainnet_owner=mainnet_owner,
             originator_address=originator_address,
@@ -224,7 +224,7 @@ def generate_schain_config(
     return schain_config
 
 
-def adapt_skale_node_groups_to_fair(skale: SkaleManager, node_groups: dict) -> None:
+def adapt_skale_node_groups_to_fair(skale: SkaleManager, node_groups: NodeGroups) -> None:
     for group_id in node_groups:
         nodes = node_groups[group_id]['nodes']
         for node_index in nodes:
@@ -236,7 +236,7 @@ def adapt_skale_node_groups_to_fair(skale: SkaleManager, node_groups: dict) -> N
 def generate_schain_config_with_skale(
     skale: SkaleManager,
     skale_ima: SkaleIma,
-    schain_name: SchainName,
+    schain: SchainStructure,
     generation: int,
     node_config: NodeConfig,
     rotation_data: Rotation,
@@ -244,21 +244,20 @@ def generate_schain_config_with_skale(
     passive_node: bool = False,
     node_options: NodeOptions = NodeOptions(),
 ) -> SChainConfig | FairConfig:
-    schain_nodes_with_schains = get_schain_nodes_with_schains(skale, schain_name)
-    schains_on_node = skale.schains.get_schains_for_node(node_config.id)
-    schain = skale.schains.get_by_name(schain_name)
+    schain_nodes_with_schain_hashes = get_schain_nodes_with_schain_hashes(skale, schain.name)
+    schain_hashes = skale.schains_internal.get_schain_hashes_for_node(node_config.id)
     node = skale.nodes.get(node_config.id)
-    node_groups = get_previous_schain_groups(skale, schain_name)
+    node_groups = get_previous_schain_groups(skale, schain.name)
 
     is_owner_contract = is_address_contract(skale.web3, schain.mainnet_owner)
 
-    group_index = skale.schains.name_to_id(schain_name)
-    common_bls_public_keys = get_common_bls_public_key(skale, group_index)
+    schain_hash = schain_name_to_hash(schain.name)
+    common_bls_public_keys = get_common_bls_public_key(skale, schain_hash)
 
     if passive_node:
         schain_base_port = node_config.schain_base_port
     else:
-        schain_base_port = get_schain_base_port_on_node(schains_on_node, schain.name, node['port'])
+        schain_base_port = get_schain_base_port_on_node(schain_hashes, schain_hash, node['port'])
 
     if is_fair():
         adapt_skale_node_groups_to_fair(skale, node_groups)
@@ -267,7 +266,7 @@ def generate_schain_config_with_skale(
             node_id=NodeId(node_config.id),
             chain_start_ts=schain.start_date,
             ecdsa_key_name=ecdsa_key_name,
-            schain_nodes_with_schains=schain_nodes_with_schains,
+            schain_nodes_with_schain_hashes=schain_nodes_with_schain_hashes,
             node_groups=node_groups,
             passive_node=passive_node,
             archive=node_options.archive,
@@ -282,7 +281,7 @@ def generate_schain_config_with_skale(
         node_id=node_config.id,
         ecdsa_key_name=ecdsa_key_name,
         rotation_id=rotation_data.rotation_counter,
-        schain_nodes_with_schains=schain_nodes_with_schains,
+        schain_nodes_with_schain_hashes=schain_nodes_with_schain_hashes,
         node_groups=node_groups,
         generation=generation,
         is_owner_contract=is_owner_contract,

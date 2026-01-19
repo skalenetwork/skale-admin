@@ -9,11 +9,14 @@ logger = logging.getLogger(__name__)
 
 
 def reload_nginx(
-    template_filepath=NGINX_TEMPLATE_FILEPATH, config_filepath=NGINX_CONFIG_FILEPATH, dutils=None
+    template_filepath=NGINX_TEMPLATE_FILEPATH,
+    config_filepath=NGINX_CONFIG_FILEPATH,
+    dutils=None,
+    timeout=10,
 ):
     dutils = dutils or DockerUtils()
     generate_nginx_config(template_filepath=template_filepath, config_filepath=config_filepath)
-    restart_nginx_container(dutils=dutils)
+    restart_nginx_container(dutils=dutils, timeout=timeout)
 
 
 def generate_nginx_config(
@@ -25,9 +28,10 @@ def generate_nginx_config(
     }
     logger.info(f'Processing nginx template. ssl: {ssl_on}')
     process_template(template_filepath, config_filepath, template_data)
+    logger.info(f'template processed and saved to {config_filepath}')
 
 
-def restart_nginx_container(dutils=None):
+def restart_nginx_container(dutils=None, timeout=10):
     dutils = dutils or DockerUtils()
     nginx_container = dutils.client.containers.get(NGINX_CONTAINER_NAME)
-    nginx_container.restart()
+    nginx_container.restart(timeout=timeout)

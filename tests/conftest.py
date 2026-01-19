@@ -7,6 +7,9 @@ from pathlib import Path
 
 import pytest
 import yaml
+from skale import SkaleManager
+from skale.types.schain import SchainHash, SchainName, SchainStructure
+from web3 import Web3
 
 import tests.env_defaults  # noqa: F401 # set default env variables for tests
 from core.chain.status import (
@@ -28,8 +31,11 @@ from tests.utils import (
     CONFIG_STREAM,
     CURRENT_TS,
     IMA_MIGRATION_TS,
+    TEST_CHAIN_ID,
+    TEST_NODE_ID,
     generate_cert,
     generate_schain_config,
+    get_schain_struct,
     get_test_rule_controller,
     upsert_schain_record_with_config,
 )
@@ -171,10 +177,15 @@ def db():
 
 
 @pytest.fixture
-def schain_db(db, _schain_name, meta_file):
+def schain_db(db, _schain_name: SchainName, meta_file) -> SchainName:
     """Database with default schain inserted"""
     upsert_schain_record_with_config(_schain_name)
     return _schain_name
+
+
+@pytest.fixture
+def schain_structure(schain_db: SchainName) -> SchainStructure:
+    return get_schain_struct(_test_schain_name=schain_db)
 
 
 @pytest.fixture
@@ -189,9 +200,9 @@ def meta_file():
 
 
 @pytest.fixture
-def node_config(skale, nodes):
+def node_config():
     node_config = NodeConfig()
-    node_config.id = nodes[0]
+    node_config.id = TEST_NODE_ID
     return node_config
 
 
@@ -234,12 +245,12 @@ def new_upstream(schain_db):
 
 
 @pytest.fixture
-def estate(skale):
-    return ExternalState(ima_linked=True, chain_id=skale.web3.eth.chain_id, ranges=ALLOWED_RANGES)
+def estate():
+    return ExternalState(ima_linked=True, chain_id=TEST_CHAIN_ID, ranges=ALLOWED_RANGES)
 
 
 @pytest.fixture
-def econfig(schain_db, estate):
+def econfig(schain_db, estate) -> ExternalConfig:
     name = schain_db
     ec = ExternalConfig(name)
     ec.update(estate)
@@ -247,9 +258,12 @@ def econfig(schain_db, estate):
 
 
 @pytest.fixture
-def current_nodes(skale, schain_db, schain_on_contracts):
-    name = schain_db
-    return get_current_nodes(skale, name)
+def current_nodes(
+    skale: SkaleManager,
+    schain_db: SchainName,
+    schain_hash_on_contracts: SchainHash,
+):
+    return get_current_nodes(skale, schain_hash_on_contracts)
 
 
 @pytest.fixture
@@ -309,3 +323,19 @@ def nft_chain_folder():
         yield path
     finally:
         shutil.rmtree(path)
+
+
+@pytest.fixture(autouse=True)
+def isolation(web3: Web3):
+    if not web3.is_connected():
+        yield
+        return
+    response = web3.provider.make_request('evm_snapshot', [])
+    if 'result' not in response:
+        yield
+        return
+    snapshot_id = response['result']
+    try:
+        yield
+    finally:
+        web3.provider.make_request('evm_revert', [snapshot_id])

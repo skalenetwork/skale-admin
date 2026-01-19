@@ -24,6 +24,7 @@ from filelock import FileLock
 from skale import SkaleIma, SkaleManager
 
 from core.ima.abi import generate_ima_container_abis
+from core.manager_cache import ManagerCache
 from core.monitoring import update_monitoring_services
 from core.node_config import NodeConfig
 from core.redis.migrations import run_redis_migrations
@@ -33,9 +34,10 @@ from core.schains.process_manager import run_process_manager
 from core.updates import update_node_config_file
 from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
 from tools.configs.ima import ima_contracts
-from tools.configs.web3 import STATE_FILEPATH, endpoint, manager_contracts
+from tools.configs.web3 import endpoint, manager_contracts
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
+from tools.resources import rs
 from tools.sgx_utils import generate_sgx_key
 from tools.wallet_utils import init_wallet
 from web.migrations import migrate
@@ -49,20 +51,22 @@ from web.models.schain import (
 init_admin_logger()
 logger = logging.getLogger(__name__)
 
-SLEEP_INTERVAL = 90
+SLEEP_INTERVAL = 240
 WORKER_RESTART_SLEEP_INTERVAL = 2
 ERROR_SLEEP_INTERVAL = 1
 
 
-def monitor(skale, skale_ima, node_config):
+def monitor(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig) -> None:
+    manager_cache: ManagerCache = ManagerCache(rs, skale, node_config.id)
+    manager_cache.clear_all_fields()
     while True:
         try:
-            run_process_manager(skale, skale_ima, node_config)
+            run_process_manager(skale, skale_ima, node_config, manager_cache)
         except Exception:
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_process_manager')
         time.sleep(SLEEP_INTERVAL)
-        run_cleaner(skale, node_config)
+        run_cleaner(skale, node_config, manager_cache)
         logger.info(f'Sleeping for {SLEEP_INTERVAL}s after run_cleaner')
         time.sleep(SLEEP_INTERVAL)
 
@@ -74,7 +78,7 @@ def worker():
         time.sleep(SLEEP_INTERVAL)
 
     wallet = init_wallet(node_config=node_config, endpoint=endpoint())
-    skale = SkaleManager(endpoint(), manager_contracts(), wallet, state_path=STATE_FILEPATH)
+    skale = SkaleManager(endpoint(), manager_contracts(), wallet)
     skale_ima = SkaleIma(endpoint(), ima_contracts(), wallet)
     if BACKUP_RUN:
         logger.info('Running sChains in snapshot download mode')
@@ -83,7 +87,7 @@ def worker():
 
 
 def init():
-    skale = SkaleManager(endpoint(), manager_contracts(), state_path=STATE_FILEPATH)
+    skale = SkaleManager(endpoint(), manager_contracts())
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:

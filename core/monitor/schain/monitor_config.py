@@ -22,10 +22,10 @@ from abc import abstractmethod
 from typing import cast
 
 from skale import SkaleIma, SkaleManager
-from skale.types.schain import SchainHash, SchainName
+from skale.types.schain import SchainHash, SchainStructure
 
 from core.checks.schain import ConfigChecks
-from core.firewall.utils import get_sync_agent_ranges
+from core.manager_cache import ManagerCache
 from core.monitor.monitor_base import IMonitor
 from core.monitor.schain.action_config import ConfigActionManager
 from core.node import get_current_nodes
@@ -41,31 +41,55 @@ logger = logging.getLogger(__name__)
 
 
 def run_config_pipeline(
-    schain_name: SchainName,
+    schain: SchainStructure,
     skale: SkaleManager,
     skale_ima: SkaleIma,
     node_config: NodeConfig,
     stream_version: str,
+    manager_cache: ManagerCache,
 ) -> None:
     logger.info('Running config pipeline')
-    schain = skale.schains.get_by_name(schain_name)
-    rotation_data = skale.node_rotation.get_rotation(schain_name)
-    allowed_ranges = get_sync_agent_ranges(skale)
-    ima_linked = not PASSIVE_NODE and skale_ima.linker.has_schain(schain_name)
-    group_index = skale.schains.name_to_group_id(schain_name)
+
+    logger.debug(
+        arguments_list_string(
+            {
+                'http_posts': skale.stats.http_posts,
+                'rpc_objects': skale.stats.rpc_objects,
+                'most_common': skale.stats.by_method.most_common(10),
+            },
+            'stats_run_config_pipeline_start',
+        )
+    )
+
+    rotation_data = skale.node_rotation.get_rotation(schain.name)
+    ima_linked = not PASSIVE_NODE and skale_ima.linker.has_schain(schain.name)
+    group_index = skale.schains.name_to_group_id(schain.name)
     last_dkg_successful = skale.dkg.is_last_dkg_successful(cast(SchainHash, group_index))
-    current_nodes = get_current_nodes(skale, schain_name)
+    current_nodes = get_current_nodes(skale, schain.schain_hash, manager_cache)
+
+    logger.debug(
+        arguments_list_string(
+            {
+                'http_posts': skale.stats.http_posts,
+                'rpc_objects': skale.stats.rpc_objects,
+                'most_common': skale.stats.by_method.most_common(10),
+            },
+            'stats_run_config_pipeline_current_nodes',
+        )
+    )
 
     logger.debug('Initializing schain record')
-    schain_record = SChainRecord.get_by_name(schain_name)
+    schain_record = SChainRecord.get_by_name(schain.name)
 
     estate = ExternalState(
-        ima_linked=ima_linked, chain_id=skale_ima.web3.eth.chain_id, ranges=allowed_ranges
+        ima_linked=ima_linked,
+        chain_id=skale_ima.web3.eth.chain_id,
+        ranges=manager_cache.sync_ranges,
     )
-    econfig = ExternalConfig(schain_name)
+    econfig = ExternalConfig(schain.name)
     logger.debug('Initializing config checks')
     config_checks = ConfigChecks(
-        schain_name=schain_name,
+        schain_name=schain.name,
         node_id=node_config.id,
         schain_record=schain_record,
         stream_version=stream_version,
@@ -102,9 +126,9 @@ def run_config_pipeline(
         mon = RegularConfigMonitor(config_am, config_checks)
     statsd_client = get_statsd_client()
 
-    statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(schain_name)}')
+    statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(schain.name)}')
     statsd_client.gauge(
-        f'admin.config_pipeline.rotation_id.{no_hyphens(schain_name)}',
+        f'admin.config_pipeline.rotation_id.{no_hyphens(schain.name)}',
         rotation_data.rotation_counter,
     )
 
@@ -121,8 +145,19 @@ def run_config_pipeline(
         )
     )
 
-    with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(schain_name)}'):
+    with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(schain.name)}'):
         mon.run()
+
+    logger.debug(
+        arguments_list_string(
+            {
+                'http_posts': skale.stats.http_posts,
+                'rpc_objects': skale.stats.rpc_objects,
+                'most_common': skale.stats.by_method.most_common(10),
+            },
+            'stats_run_config_pipeline_end',
+        )
+    )
 
 
 class BaseConfigMonitor(IMonitor):

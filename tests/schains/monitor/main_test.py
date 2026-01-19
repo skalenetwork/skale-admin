@@ -7,13 +7,21 @@ from concurrent.futures import Future
 from unittest import mock
 
 import pytest
+from skale import SkaleIma, SkaleManager
+from skale.types.schain import SchainHash, SchainName, SchainStructure
+from skale.wallets import SgxWallet
 
 from core.firewall import IpRange
 from core.firewall.utils import get_sync_agent_ranges
+from core.manager_cache import ManagerCache
 from core.monitor.schain.main import ConfigTask, SkaledTask
 from core.monitor.tasks import ITask, execute_tasks
+from core.node_config import NodeConfig
 from core.schains.process import ProcessReport
+from tests.utils import TEST_TASK_SLEEP
 from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.configs.sgx import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.docker_utils import DockerUtils
 from tools.helper import is_node_part_of_chain
 from web.models.schain import upsert_schain_record
 
@@ -65,36 +73,61 @@ def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
     assert not chain_on_node
 
 
-def test_config_task(skale, skale_ima, schain_db, schain_on_contracts, node_config):
+def test_config_task(
+    skale: SkaleManager,
+    skale_ima: SkaleIma,
+    schain_db: SchainName,
+    schain_hash_on_contracts: SchainHash,
+    node_config: NodeConfig,
+    clear_manager_cache: ManagerCache,
+):
     stream_version = '2.3.0'
-    config_task = ConfigTask(
-        schain_name=schain_on_contracts,
-        skale=skale,
-        skale_ima=skale_ima,
-        node_config=node_config,
-        stream_version=stream_version,
-    )
-    assert config_task.needed
-    skale_ima.linker.has_schain = mock.Mock(return_value=True)
+    schain = skale.schains.get(schain_hash_on_contracts)
 
-    def get_monitor_mock(*args, **kwargs):
-        result = mock.MagicMock()
-        result.__name__ = 'TestConfigMonitor'
-        return result
+    original_sgx_key_name = node_config.sgx_key_name
 
-    with mock.patch('core.monitor.schain.monitor_config.RegularConfigMonitor', get_monitor_mock):
-        config_task.run()
+    try:
+        wallet = SgxWallet(
+            SGX_SERVER_URL,
+            skale.web3,
+            path_to_cert=SGX_CERTIFICATES_FOLDER,
+        )
+        node_config.sgx_key_name = wallet.key_name
+
+        config_task = ConfigTask(
+            schain=schain,
+            skale_ima=skale_ima,
+            node_config=node_config,
+            stream_version=stream_version,
+            post_monitor_sleep_seconds=TEST_TASK_SLEEP,
+        )
+        assert config_task.needed
+        skale_ima.linker.has_schain = mock.Mock(return_value=True)
+
+        def get_monitor_mock(*args, **kwargs):
+            result = mock.MagicMock()
+            result.__name__ = 'TestConfigMonitor'
+            return result
+
+        with mock.patch(
+            'core.monitor.schain.monitor_config.RegularConfigMonitor', get_monitor_mock
+        ):
+            config_task.run()
+    finally:
+        node_config.sgx_key_name = original_sgx_key_name
 
 
-def test_skaled_task(skale, schain_db, schain_on_contracts, node_config, dutils):
-    record = upsert_schain_record(schain_on_contracts)
+def test_skaled_task(
+    schain_structure: SchainStructure, node_config: NodeConfig, dutils: DockerUtils
+):
+    record = upsert_schain_record(schain_structure.name)
     stream_version = '2.3.0'
     skaled_task = SkaledTask(
-        chain_name=schain_on_contracts,
-        skale=skale,
+        schain=schain_structure,
         node_config=node_config,
         stream_version=stream_version,
         dutils=dutils,
+        post_monitor_sleep_seconds=TEST_TASK_SLEEP,
     )
     assert not skaled_task.needed
     assert skaled_task.name == 'skaled'

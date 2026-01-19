@@ -22,7 +22,7 @@ from typing import List, Optional
 
 from skale import SkaleIma, SkaleManager
 from skale.types.rotation import Rotation
-from skale.types.schain import Schain
+from skale.types.schain import SchainStructure
 
 from core.checks.base import CheckRes
 from core.checks.schain import ConfigChecks
@@ -38,7 +38,7 @@ from core.dkg.schain import (
     save_dkg_results,
 )
 from core.monitor.action_base import BaseActionManager
-from core.node import ExtendedManagerNodeInfo, calc_reload_ts, get_node_index_in_group
+from core.node import NodeWithChangeIp, calc_reload_ts, get_node_index_in_group
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig, ExternalState
 from tools.configs import PASSIVE_NODE
@@ -55,13 +55,13 @@ class ConfigActionManager(BaseActionManager):
         self,
         skale: SkaleManager,
         skale_ima: SkaleIma,
-        schain: Schain,
+        schain: SchainStructure,
         node_config: NodeConfig,
         rotation_data: Rotation,
         stream_version: str,
         checks: ConfigChecks,
         estate: ExternalState,
-        current_nodes: List[ExtendedManagerNodeInfo],
+        current_nodes: List[NodeWithChangeIp],
         econfig: Optional[ExternalConfig] = None,
         node_options: NodeOptions | None = None,
     ):
@@ -139,7 +139,7 @@ class ConfigActionManager(BaseActionManager):
                 skale=self.skale,
                 skale_ima=self.skale_ima,
                 node_config=self.node_config,
-                schain_name=self.name,
+                schain=self.schain,
                 generation=self.generation,
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,

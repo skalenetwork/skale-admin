@@ -22,7 +22,7 @@ from typing import Dict, List, Optional
 
 from skale import SkaleIma, SkaleManager
 from skale.types.rotation import Rotation
-from skale.types.schain import SchainName
+from skale.types.schain import SchainStructure
 
 from core.config.schain.directory import get_files_with_prefix, schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager, SkaledConfigFilename
@@ -39,7 +39,7 @@ def create_new_upstream_config(
     skale: SkaleManager,
     skale_ima: SkaleIma,
     node_config: NodeConfig,
-    schain_name: SchainName,
+    schain: SchainStructure,
     generation: int,
     ecdsa_sgx_key_name: str,
     rotation_data: Rotation,
@@ -48,7 +48,7 @@ def create_new_upstream_config(
 ) -> Dict:
     logger.warning(
         arguments_list_string(
-            {'sChain name': schain_name, 'generation': generation, 'passive_node': passive_node},
+            {'sChain name': schain.name, 'generation': generation, 'passive_node': passive_node},
             'Generating sChain config',
         )
     )
@@ -56,7 +56,7 @@ def create_new_upstream_config(
     schain_config = generate_schain_config_with_skale(
         skale=skale,
         skale_ima=skale_ima,
-        schain_name=schain_name,
+        schain=schain,
         generation=generation,
         node_config=node_config,
         rotation_data=rotation_data,

@@ -48,7 +48,7 @@ from core.dkg.utils import get_secret_key_share_filepath
 from core.firewall import IRuleController
 from core.ima.container import get_ima_time_frame
 from core.ima.container import get_migration_ts as get_ima_migration_ts
-from core.node import ExtendedManagerNodeInfo, get_current_ips
+from core.node import NodeWithChangeIp, get_current_ips
 from core.schains.external_config import ExternalConfig, ExternalState
 from tools.configs.containers import IMA_CONTAINER
 from tools.docker_utils import DockerUtils
@@ -66,7 +66,7 @@ class ConfigChecks(IChecks):
         schain_record: SChainRecord,
         rotation_id: int,
         stream_version: str,
-        current_nodes: list[ExtendedManagerNodeInfo],
+        current_nodes: list[NodeWithChangeIp],
         estate: ExternalState,
         last_dkg_successful: bool,
         passive_node: bool = False,
@@ -253,7 +253,7 @@ class SChainChecks(IChecks):
         rule_controller: IRuleController,
         stream_version: str,
         estate: ExternalState,
-        current_nodes: list[ExtendedManagerNodeInfo],
+        current_nodes: list[NodeWithChangeIp],
         last_dkg_successful: bool,
         rotation_id: int = 0,
         *,

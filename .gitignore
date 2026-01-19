@@ -21,6 +21,7 @@ context/
 __pycache__/
 *.pyc
 .pypirc
+target/
 
 server/*_tmp*
 *_tmp*

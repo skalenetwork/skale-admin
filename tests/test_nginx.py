@@ -97,7 +97,7 @@ def ssl_dir():
 def nginx_container(tmp_dir, ssl_dir, config_path, dutils):
     try:
         c = dutils.run_container(
-            'nginx:1.20.2',
+            'nginx:1.29.4-alpine',
             NGINX_CONTAINER_NAME,
             volumes={
                 tmp_dir: {'bind': '/etc/nginx/conf.d', 'mode': 'ro', 'propagation': 'slave'},
@@ -115,7 +115,7 @@ def get_config(config_path):
 
 
 def test_nginx_reload(dutils, ssl_dir, tmp_dir, template, config_path, nginx_container):
-    reload_nginx(template, config_path, dutils=dutils)
+    reload_nginx(template, config_path, dutils=dutils, timeout=1)
 
     # Check that container is running
     info = dutils.get_info(NGINX_CONTAINER_NAME)

@@ -38,7 +38,7 @@ def test_handle_failed_skaled_rpc_exit_time_reached(
     image_name, container_name, _, _ = get_container_info(SKALED_CONTAINER, schain_db)
 
     dutils.run_container(image_name=image_name, name=container_name, entrypoint='bash -c "exit 0"')
-    time.sleep(7)
+    time.sleep(3)
     schain_record.set_failed_rpc_count(MAX_SCHAIN_FAILED_RPC_COUNT)
 
     container_info = dutils.get_info(container_name)
@@ -66,7 +66,7 @@ def test_monitor_schain_downloading_snapshot(
     dutils.run_container(
         image_name=image_name, name=container_name, entrypoint='bash -c "sleep 100"'
     )
-    time.sleep(7)
+    time.sleep(3)
     schain_record.set_failed_rpc_count(MAX_SCHAIN_FAILED_RPC_COUNT)
 
     container_info = dutils.get_info(container_name)

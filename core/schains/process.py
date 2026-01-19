@@ -41,10 +41,10 @@ def is_schain_process_report_exist(schain_name: str) -> bool:
     return path.is_file()
 
 
-def get_schain_process_info(schain_name: str) -> Tuple[int | None, int | None]:
+def get_schain_process_info(schain_name: str) -> Tuple[int | None, int]:
     report = ProcessReport(schain_name)
     if not ProcessReport(schain_name).exists():
-        return None, None
+        return None, 0
     else:
         return report.pid, report.ts
 
@@ -137,7 +137,7 @@ def terminate_process(pid: int, kill_timeout: int = P_KILL_WAIT_TIMEOUT, log_msg
     except psutil.NoSuchProcess:
         logger.info(f'{log_prefix} - no such process')
     except psutil.TimeoutExpired:
-        logger.warning(f'{log_prefix} - timout expired, going to kill')
+        logger.warning(f'{log_prefix} - timeout expired, going to kill')
         p.kill()
         logger.info(f'{log_prefix} -  process was killed')
     except Exception:

@@ -21,7 +21,9 @@ from dataclasses import dataclass
 
 from skale.dataclasses.node_info import NodeInfo
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
-from skale.utils.helper import ip_from_bytes
+from skale.types.node import NodeWithSchainHashes
+from skale.types.schain import SchainName
+from skale.utils.helper import ip_from_bytes, schain_name_to_hash
 from skale.utils.web3_utils import public_key_to_address
 
 from core.config.schain.helper import get_bls_public_keys, parse_public_key_info
@@ -55,17 +57,22 @@ class SChainNodeInfo(NodeInfo):
 
 
 def generate_schain_nodes(
-    schain_nodes_with_schains: list, schain_name: str, rotation_id: int, passive_node: bool = False
-):
+    schain_nodes_with_schain_hashes: list[NodeWithSchainHashes],
+    schain_name: SchainName,
+    rotation_id: int,
+    passive_node: bool = False,
+) -> list[SChainNodeInfo]:
     schain_nodes = []
 
     if passive_node:
-        bls_public_keys = ['0:0:1:0'] * len(schain_nodes_with_schains)
+        bls_public_keys = ['0:0:1:0'] * len(schain_nodes_with_schain_hashes)
     else:
         bls_public_keys = get_bls_public_keys(schain_name, rotation_id)
 
-    for i, node in enumerate(schain_nodes_with_schains, 1):
-        base_port = get_schain_base_port_on_node(node['schains'], schain_name, node['port'])
+    schain_hash = schain_name_to_hash(schain_name)
+
+    for i, node in enumerate(schain_nodes_with_schain_hashes, 1):
+        base_port = get_schain_base_port_on_node(node['schain_hashes'], schain_hash, node['port'])
         node_info = SChainNodeInfo(
             name=node['name'],
             node_id=node['id'],

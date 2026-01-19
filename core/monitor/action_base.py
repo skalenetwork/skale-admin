@@ -52,8 +52,9 @@ SCHAIN_CLEANUP_TIMEOUT = 10
 
 
 class BaseActionManager(abc.ABC):
-    def __init__(self, name: ChainName):
+    def __init__(self, name: ChainName, post_run_delay: int = CONTAINER_POST_RUN_DELAY):
         self.name = name
+        self.post_run_delay = post_run_delay
         self.executed_blocks: Dict = {}
 
     @staticmethod
@@ -107,11 +108,14 @@ class BaseSkaledActionManager(BaseActionManager):
         node_config: NodeConfig,
         dutils: DockerUtils | None = None,
         node_options: NodeOptions | None = None,
+        post_run_delay: int = CONTAINER_POST_RUN_DELAY,
+        schain_cleanup_timeout: int = SCHAIN_CLEANUP_TIMEOUT,
     ):
         self.chain_name = chain_name
         self.checks = checks
         self.node_config = node_config
         self.rule_controller = rule_controller
+        self.schain_cleanup_timeout = schain_cleanup_timeout
 
         self.skaled_status = init_skaled_status(chain_name)
         self.cfm: ConfigFileManager = ConfigFileManager(chain_name=self.chain_name)
@@ -122,7 +126,7 @@ class BaseSkaledActionManager(BaseActionManager):
 
         self.node_options = node_options or NodeOptions()
 
-        super().__init__(name=chain_name)
+        super().__init__(name=chain_name, post_run_delay=post_run_delay)
 
     @property
     def chain_record(self) -> ChainRecord:
@@ -183,7 +187,7 @@ class BaseSkaledActionManager(BaseActionManager):
     def cleanup_schain_docker_entity(self) -> bool:
         logger.info('Removing skaled docker artifacts')
         remove_skaled_container(self.name, dutils=self.dutils)
-        time.sleep(SCHAIN_CLEANUP_TIMEOUT)
+        time.sleep(self.schain_cleanup_timeout)
         remove_schain_volume(self.name, dutils=self.dutils)
         return True
 

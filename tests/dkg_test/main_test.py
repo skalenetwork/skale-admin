@@ -17,17 +17,18 @@ from unittest import mock
 import pytest
 from eth_utils.hexadecimal import remove_0x_prefix
 from skale import SkaleManager
-from skale.contracts.manager.dkg import G2Point, KeyShare
+from skale.types.dkg import G2Point, KeyShare
+from skale.types.node import NodeId
 from skale.types.schain import SchainName
 from skale.utils.account_tools import send_eth
+from skale.utils.helper import schain_name_to_hash
 from skale.wallets import SgxWallet
 
 from core.config.schain.directory import init_schain_config_dir
-from core.config.schain.generator import get_schain_nodes_with_schains
 from core.dkg.schain.main import get_dkg_client, is_last_dkg_finished, run_dkg
-from core.dkg.schain.utils import generate_bls_keys
 from core.dkg.structures import DKGStatus, DKGStep
-from core.dkg.utils import DkgError, DKGKeyGenerationError
+from core.dkg.utils import DkgError
+from tests.constants import DKG_TEST_TIMEOUT, TEST_BROADCAST_SLEEP
 from tests.dkg_test import N_OF_NODES, TEST_ETH_AMOUNT, TYPE_OF_NODES
 from tests.utils import (
     generate_random_node_data,
@@ -43,7 +44,7 @@ warnings.filterwarnings('ignore')
 MAX_WORKERS = 5
 TEST_SRW_FUND_VALUE = 3000000000000000000
 DKG_TIMEOUT = 20000
-DKG_TIMEOUT_FOR_FAILURE = 120  # to speed up failed broadcast/alright test
+DKG_TIMEOUT_FOR_FAILURE = 30  # to speed up failed broadcast/alright test
 
 log_format = '[%(asctime)s][%(levelname)s] - %(threadName)s - %(name)s:%(lineno)d - %(message)s'  # noqa
 
@@ -91,7 +92,7 @@ def link_node_address(skale, wallet):
 
 
 def transfer_eth_to_wallets(skale, wallets):
-    logger.info(f'Transfering {TEST_ETH_AMOUNT} ETH to {len(wallets)} test wallets')
+    logger.info(f'Transferring {TEST_ETH_AMOUNT} ETH to {len(wallets)} test wallets')
     for wallet in wallets:
         send_eth(skale.web3, skale.wallet, wallet.address, TEST_ETH_AMOUNT)
 
@@ -138,14 +139,13 @@ def generate_poly_name(group_index_str, node_id, dkg_id):
     return f'POLY:SCHAIN_ID:{group_index_str}:NODE_ID:{str(node_id)}:DKG_ID:{str(dkg_id)}'
 
 
-def get_node_id_dkg_and_public_keys(schain_nodes, node_id):
+def get_node_id_dkg_and_public_keys(public_keys_list: list[tuple[NodeId, str]], node_id):
     node_id_dkg = -1
-    public_keys = [0] * len(schain_nodes)
-    for i, node in enumerate(schain_nodes):
-        if node['id'] == node_id:
+    public_keys = [''] * len(public_keys_list)
+    for i, node in enumerate(public_keys_list):
+        if node[0] == node_id:
             node_id_dkg = i
-
-        public_keys[i] = node['publicKey']
+        public_keys[i] = node[1]
     return node_id_dkg, public_keys
 
 
@@ -169,12 +169,13 @@ def convert_str_to_key_share(sent_secret_key_contribution, n):
     return return_value
 
 
-def generate_broadcast_data(skale, schain_name, node_id):
-    schain_nodes = get_schain_nodes_with_schains(skale, schain_name)
-    node_id_dkg, public_keys = get_node_id_dkg_and_public_keys(schain_nodes, node_id)
+def generate_broadcast_data(skale: SkaleManager, schain_name, node_id):
+    node_ids = skale.schains_internal.node_ids_for_schain(schain_name)
+    public_keys = skale.nodes.public_keys(node_ids)
+    node_id_dkg, public_keys = get_node_id_dkg_and_public_keys(public_keys, node_id)
     client = skale.wallet.sgx_client
 
-    n = len(schain_nodes)
+    n = len(node_ids)
     t = (2 * n + 1) // 3
     client.n, client.t = n, t
 
@@ -263,9 +264,9 @@ def run_node_dkg(
 ):
     init_schain_config_dir(schain_name)
     sgx_key_name = skale.wallet._key_name
-    rotation_id = skale.schains.get_last_rotation_id(schain_name)
+    rotation_id = skale.schains.last_rotation_id(schain_name)
 
-    timeout = index * 5  # diversify start time for all nodes
+    timeout = index * 2  # diversify start time for all nodes
     logger.info('Node %d going to sleep %d seconds %s', node_id, timeout, type(runs))
     time.sleep(timeout)
     logger.info('Starting runs %s, %d', runs, len(runs))
@@ -291,7 +292,7 @@ def run_node_dkg(
 
 
 def create_schain(skale: SkaleManager, name: str, lifetime_seconds: int) -> None:
-    _ = skale.schains.get_schain_price(TYPE_OF_NODES, lifetime_seconds)
+    _ = skale.schains.schain_price(TYPE_OF_NODES, lifetime_seconds)
     skale.schains.grant_role(skale.schains.schain_creator_role(), skale.wallet.address)
     skale.schains.add_schain_by_foundation(
         lifetime_seconds, TYPE_OF_NODES, 0, name, value=TEST_SRW_FUND_VALUE
@@ -334,7 +335,7 @@ class TestDKG:
 
     @pytest.fixture(scope='class')
     def other_maintenance(self, skale):
-        nodes = skale.nodes.get_active_node_ids()
+        nodes = skale.nodes.active_node_ids()
         for nid in nodes:
             skale.nodes.set_node_in_maintenance(nid)
         yield
@@ -380,6 +381,8 @@ class TestDKG:
             remove_schain(skale, schain_name)
             cleanup_schain_config(schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_normal(
         self, skale, schain_creation_data, skale_sgx_instances, nodes, dkg_timeout, schain
     ):
@@ -396,7 +399,7 @@ class TestDKG:
             assert result.step == DKGStep.KEY_GENERATION
             keys_data = result.keys_data
             assert keys_data is not None
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
         assert skale.dkg.is_last_dkg_successful(gid)
 
         regular_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
@@ -412,6 +415,8 @@ class TestDKG:
         restore_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
         assert regular_dkg_keys_data == restore_dkg_keys_data
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_broadcast_failed_completely(
         self,
         skale,
@@ -438,7 +443,7 @@ class TestDKG:
         )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
@@ -450,6 +455,8 @@ class TestDKG:
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_broadcast_failed_once(
         self, skale, schain_creation_data, skale_sgx_instances, nodes, schain
     ):
@@ -468,7 +475,7 @@ class TestDKG:
         )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.DONE
@@ -477,6 +484,8 @@ class TestDKG:
         assert skale.dkg.is_last_dkg_successful(gid)
         assert is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_alright_failed_completely(
         self,
         skale,
@@ -503,7 +512,7 @@ class TestDKG:
         )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
@@ -515,6 +524,8 @@ class TestDKG:
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_alright_failed_once(
         self, skale, schain_creation_data, skale_sgx_instances, nodes, schain
     ):
@@ -533,7 +544,7 @@ class TestDKG:
         )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.DONE
@@ -542,6 +553,8 @@ class TestDKG:
         assert skale.dkg.is_last_dkg_successful(gid)
         assert is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_complaint_failed(
         self,
         skale,
@@ -577,7 +590,7 @@ class TestDKG:
             )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
@@ -589,6 +602,8 @@ class TestDKG:
         assert not skale.dkg.is_last_dkg_successful(gid)
         assert not is_last_dkg_finished(skale, schain_name)
 
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
     def test_dkg_procedure_broadcast_bad_data(
         self,
         skale,
@@ -627,7 +642,7 @@ class TestDKG:
             )
         results = exec_dkg_runners(runners)
         assert len(results) == N_OF_NODES
-        gid = skale.schains.name_to_id(schain_name)
+        gid = schain_name_to_hash(schain_name)
 
         for i, (node_data, result) in enumerate(zip(nodes, results)):
             assert result.status == DKGStatus.FAILED
@@ -641,39 +656,11 @@ class TestDKG:
 
     @pytest.fixture
     def no_ids_for_schain_skale(self, skale):
-        get_node_ids_f = skale.schains_internal.get_node_ids_for_schain
+        get_node_ids_f = skale.schains_internal.node_ids_for_schain
         try:
-            skale.schains_internal.get_node_ids_for_schain = mock.Mock(return_value=[])
+            skale.schains_internal.node_ids_for_schain = mock.Mock(return_value=[])
 
             skale.constants_holder.get_dkg_timeout = mock.Mock(return_value=2)
             yield skale
         finally:
-            skale.schains_internal.get_node_ids_for_schain = get_node_ids_f
-
-    def test_failed_get_dkg_client(
-        self, no_ids_for_schain_skale, schain, no_automine, interval_mining
-    ):
-        skale = no_ids_for_schain_skale
-        with pytest.raises(DkgError):
-            get_dkg_client(
-                node_id=0,
-                schain_name='fake-schain',
-                skale=skale,
-                sgx_key_name='fake-sgx-keyname',
-                rotation_id=0,
-            )
-
-    @pytest.mark.skip
-    def test_failed_generate_bls_keys(self, skale, skale_sgx_instances, nodes, schain):
-        skale.key_storage.get_common_public_key = mock.Mock(
-            side_effect=DkgTestError('Key storage operation failed')
-        )
-        dkg_client = get_dkg_client(
-            node_id=nodes[0]['node_id'],
-            schain_name=schain,
-            skale=skale,
-            sgx_key_name=skale_sgx_instances[0],
-            rotation_id=0,
-        )
-        with pytest.raises(DKGKeyGenerationError):
-            generate_bls_keys(dkg_client)
+            skale.schains_internal.node_ids_for_schain = get_node_ids_f

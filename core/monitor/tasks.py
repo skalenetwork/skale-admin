@@ -30,7 +30,7 @@ from core.types.chain import ChainName
 logger = logging.getLogger(__name__)
 
 
-SLEEP_INTERVAL_SECONDS = 10
+SLEEP_INTERVAL_SECONDS = 30
 
 
 class ITask(metaclass=abc.ABCMeta):

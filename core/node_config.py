@@ -19,7 +19,7 @@
 
 import logging
 
-from skale.types.node import NodeId
+from skale.types.node import NodeId, Port
 
 from tools.configs import NODE_CONFIG_FILEPATH
 from tools.json_object import JsonObject
@@ -64,9 +64,9 @@ class NodeConfig(JsonObject):
         return self._set('sgx_key_name', sgx_key_name)
 
     @property
-    def schain_base_port(self) -> int:
-        return self._get('schain_base_port') or -1
+    def schain_base_port(self) -> Port:
+        return self._get('schain_base_port') or Port(-1)
 
     @schain_base_port.setter
-    def schain_base_port(self, schain_port: int) -> None:
+    def schain_base_port(self, schain_port: Port) -> None:
         return self._set('schain_base_port', schain_port)

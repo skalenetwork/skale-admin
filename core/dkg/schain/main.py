@@ -20,7 +20,10 @@
 import logging
 from time import sleep
 
-from skale.schain_config.generator import get_nodes_for_schain
+from skale import SkaleManager
+from skale.types.node import NodeId
+from skale.types.schain import SchainName
+from skale.utils.helper import schain_name_to_hash
 
 from core.dkg.schain.structures import ComplaintReason
 from core.dkg.schain.utils import (
@@ -41,7 +44,13 @@ from core.dkg.utils import DKGKeyGenerationError
 logger = logging.getLogger(__name__)
 
 
-def get_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id):
+def get_dkg_client(
+    node_id: NodeId,
+    schain_name: SchainName,
+    skale: SkaleManager,
+    sgx_key_name: str,
+    rotation_id: int,
+):
     dkg_client = None
     try:
         dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
@@ -105,7 +114,7 @@ def init_bls(dkg_client, rotation_id=0):
         for from_node in range(dkg_client.n):
             if not is_alright_sent_list[from_node]:
                 is_alright_sent_list[from_node] = dkg_client.is_all_data_received(from_node)
-        sleep(30)
+        sleep(10)
 
     if check_no_complaints(dkg_client):
         for i in range(dkg_client.n):
@@ -141,10 +150,10 @@ def init_bls(dkg_client, rotation_id=0):
         return dkg_client
 
 
-def is_last_dkg_finished(skale, schain_name):
-    schain_index = skale.schains.name_to_group_id(schain_name)
-    num_of_nodes = len(get_nodes_for_schain(skale, schain_name))
-    return skale.dkg.get_number_of_completed(schain_index) == num_of_nodes
+def is_last_dkg_finished(skale: SkaleManager, schain_name: SchainName) -> bool:
+    num_of_nodes = len(skale.schains_internal.node_ids_for_schain(schain_name))
+    schain_hash = schain_name_to_hash(schain_name)
+    return skale.dkg.get_number_of_completed(schain_hash) == num_of_nodes
 
 
 def run_dkg(skale, dkg_client, schain_name, rotation_id) -> DKGResult:
