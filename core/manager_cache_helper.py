@@ -98,8 +98,8 @@ def should_refresh_schains(
     skale: SkaleManager, node_id: NodeId, cached: list[SchainStructure]
 ) -> bool:
     current = skale.schains_internal.schain_hashes_for_node(node_id)
-    cached_hashes = [s.schain_hash for s in cached]
-    return set(current) != set(cached_hashes)
+    cached_hashes = set(s.schain_hash for s in cached)
+    return set(current) != cached_hashes
 
 
 def fetch_connected_nodes(skale: SkaleManager, node_id: NodeId) -> list[NodeWithChangeIp]:

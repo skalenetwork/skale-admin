@@ -128,22 +128,20 @@ class Node:
             return self._error(
                 f'Node is already installed on this machine. Node ID: {self.config.id}'
             )
-        node_id = self.get_node_id_from_contracts(name, ip)
+        if not check_required_balance(self.skale):
+            return self._error('Insufficient funds, re-check your wallet')
+
+        if not self.skale.nodes.is_node_name_available(name):
+            return self._error(f'Node name is already taken: {name}')
+
+        if not self.skale.nodes.is_node_ip_available(ip):
+            return self._error(f'Node IP is already taken: {ip}')
+
+        node_id = self.create_node_on_contracts(
+            ip, public_ip, port, name, domain_name, gas_limit, gas_price, skip_dry_run
+        )
         if node_id < 0:
-            if not check_required_balance(self.skale):
-                return self._error('Insufficient funds, re-check your wallet')
-
-            if not self.skale.nodes.is_node_name_available(name):
-                return self._error(f'Node name is already taken: {name}')
-
-            if not self.skale.nodes.is_node_ip_available(ip):
-                return self._error(f'Node IP is already taken: {ip}')
-
-            node_id = self.create_node_on_contracts(
-                ip, public_ip, port, name, domain_name, gas_limit, gas_price, skip_dry_run
-            )
-            if node_id < 0:
-                return self._error(f'Node registration failed: {ip}:{port}, name: {name}')
+            return self._error(f'Node registration failed: {ip}:{port}, name: {name}')
         self.config.id = self.skale.nodes.node_name_to_index(name)
 
         self.config.name = name
@@ -181,23 +179,6 @@ class Node:
             return -1
         self._log_node_info('Node successfully registered', ip, public_ip, port, name)
         return self.skale.nodes.node_name_to_index(name)
-
-    def get_node_id_from_contracts(self, name, ip) -> int:
-        node_id = self.skale.nodes.node_name_to_index(name)
-        try:
-            node_data = self.skale.nodes.get(node_id)
-        except InvalidNodeIdError:
-            node_id = NodeId(-1)
-        else:
-            public_key = node_data['publicKey']
-            data_address = to_checksum_address(public_key_to_address(public_key))
-            if (
-                not data_address == self.skale.wallet.address
-                or not name == node_data['name']
-                or not ip == ip_from_bytes(node_data['ip'])
-            ):
-                node_id = NodeId(-1)
-        return node_id
 
     def exit(self, opts):
         schains_list = self.skale.schains.active_schains_for_node(self.config.id)

@@ -50,7 +50,7 @@ def run_config_pipeline(
 ) -> None:
     logger.info('Running config pipeline')
 
-    logger.info(
+    logger.debug(
         arguments_list_string(
             {
                 'http_posts': skale.stats.http_posts,
@@ -61,20 +61,13 @@ def run_config_pipeline(
         )
     )
 
-    ########
-    ########
-
-    # 1. check if rotation is finished
-    # 2. check if all nodes are the same (no ip changes, no id changes)
-    # 3.
-
     rotation_data = skale.node_rotation.get_rotation(schain.name)
     ima_linked = not PASSIVE_NODE and skale_ima.linker.has_schain(schain.name)
     group_index = skale.schains.name_to_group_id(schain.name)
     last_dkg_successful = skale.dkg.is_last_dkg_successful(cast(SchainHash, group_index))
     current_nodes = get_current_nodes(skale, schain.schain_hash, manager_cache)
 
-    logger.info(
+    logger.debug(
         arguments_list_string(
             {
                 'http_posts': skale.stats.http_posts,
@@ -155,7 +148,7 @@ def run_config_pipeline(
     with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(schain.name)}'):
         mon.run()
 
-    logger.info(
+    logger.debug(
         arguments_list_string(
             {
                 'http_posts': skale.stats.http_posts,
