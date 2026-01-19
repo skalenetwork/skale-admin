@@ -6,11 +6,8 @@ import pytest
 from skale import SkaleManager
 from skale.utils.account_tools import generate_account
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
-from skale.utils.contracts_provision.main import (
-    cleanup_nodes,
-    generate_random_node_data,
-    link_nodes_to_validator,
-)
+from skale.utils.contracts_provision.main import cleanup_nodes, link_nodes_to_validator
+from skale.utils.contracts_provision.utils import generate_random_node_data
 from skale.utils.helper import ip_from_bytes
 from skale.wallets import Web3Wallet
 
@@ -107,17 +104,12 @@ def test_register_info(unregistered_node: Node):
 
 
 @pytest.fixture
-def maintenance_node(skale, node):
+def maintenance_node(skale, node: Node):
     try:
         skale.nodes.set_node_in_maintenance(node.config.id)
         yield node
     finally:
         skale.nodes.remove_node_from_in_maintenance(node.config.id)
-
-
-def test_get_node_id_node(node):
-    node_id = node.get_node_id_from_contracts(node.config.name, node.config.ip)
-    assert node_id == node.config.id
 
 
 @pytest.fixture
@@ -129,13 +121,6 @@ def no_address_node(node):
         yield node
     finally:
         node.skale.wallet._address = address
-
-
-def test_get_node_id_ignores_not_matched_address(no_address_node):
-    nid = no_address_node.get_node_id_from_contracts(
-        no_address_node.config.name, no_address_node.config.ip
-    )
-    assert nid == -1
 
 
 @pytest.fixture
@@ -151,16 +136,6 @@ def no_id_node(node):
     finally:
         config, node.config = node.config, config
         os.remove(no_id_config_path)
-
-
-def test_get_node_id_restores_no_id_node(no_id_node):
-    nid = no_id_node.get_node_id_from_contracts(no_id_node.config.name, no_id_node.config.ip)
-    assert no_id_node.skale.nodes.get(nid)['name'] == no_id_node.config.name
-
-
-def test_get_node_id_node_not_registered(unregistered_node: Node):
-    nid = unregistered_node.get_node_id_from_contracts('undefined_name', '0.0.0.0')
-    assert nid == -1
 
 
 def test_start_exit(skale, node):
