@@ -36,7 +36,7 @@ from skale.types.node import NodeId, NodeWithChangeIp
 from skale.types.schain import SchainHash, SchainName
 from skale.utils.exceptions import InvalidNodeIdError
 from skale.utils.helper import ip_from_bytes
-from skale.utils.web3_utils import public_key_to_address, to_checksum_address
+from skale.utils.web3_utils import public_key_to_address
 
 from core.manager_cache import ManagerCache
 from core.monitoring import update_monitoring_services
