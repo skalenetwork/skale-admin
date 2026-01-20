@@ -39,3 +39,8 @@ export IMA_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh ima_address) || true
 export FAIR_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh fair_address) || true
 
 export DEFAULT_GAS_PRICE_WEI=1000000000
+
+if [ $SKALE_NETWORK_TYPE == "fair" ]; then
+  export ENDPOINT=http://127.0.0.1:1234
+  export RUN_ANVIL=false
+fi
