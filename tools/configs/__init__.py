@@ -49,6 +49,9 @@ BACKUP_RUN = os.getenv('BACKUP_RUN', False)
 NODE_CONFIG_LOCK_PATH = os.getenv('NODE_CONFIG_LOCK_PATH')
 if not NODE_CONFIG_LOCK_PATH:
     NODE_CONFIG_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'node_config.lock')
+
+BITE = os.getenv('BITE') == 'True'
+
 INIT_LOCK_PATH = os.getenv('INIT_LOCK_PATH')
 if not INIT_LOCK_PATH:
     INIT_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'init.lock')
