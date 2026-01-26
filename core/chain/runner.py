@@ -33,6 +33,7 @@ from core.schains.limits import get_ima_limit, get_schain_limit, get_schain_type
 from core.schains.types import ContainerType, MetricType
 from core.types.chain import ChainName
 from tools.configs import (
+    BITE,
     NODE_DATA_PATH_HOST,
     SCHAIN_CONFIG_DIR_SKALED,
     SCHAIN_NODE_DATA_PATH,
@@ -84,6 +85,8 @@ def get_image_name(image_type: str, new: bool = False, historic_state: bool = Fa
     if image_type == SKALED_CONTAINER:
         if is_fair():
             image_name += FAIR_IMAGE_SUFFIX
+        if BITE:
+            image_name += '-bite'
         if historic_state:
             image_name += HISTORIC_STATE_IMAGE_POSTFIX
     return image_name
