@@ -2,7 +2,7 @@ import os
 
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-RUNNING_ON_HOST = os.getenv('RUNNING_ON_HOST', False)
+RUNNING_ON_HOST = os.getenv('RUNNING_ON_HOST') == 'True'
 SKALE_DIR_HOST = os.getenv('SKALE_DIR_HOST')
 NODE_DATA_PATH_HOST = os.path.join(SKALE_DIR_HOST, 'node_data')
 
