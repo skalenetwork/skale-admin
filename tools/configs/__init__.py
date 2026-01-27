@@ -2,7 +2,7 @@ import os
 
 DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-RUNNING_ON_HOST = os.getenv('RUNNING_ON_HOST', False)
+RUNNING_ON_HOST = os.getenv('RUNNING_ON_HOST') == 'True'
 SKALE_DIR_HOST = os.getenv('SKALE_DIR_HOST')
 NODE_DATA_PATH_HOST = os.path.join(SKALE_DIR_HOST, 'node_data')
 
@@ -49,6 +49,9 @@ BACKUP_RUN = os.getenv('BACKUP_RUN', False)
 NODE_CONFIG_LOCK_PATH = os.getenv('NODE_CONFIG_LOCK_PATH')
 if not NODE_CONFIG_LOCK_PATH:
     NODE_CONFIG_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'node_config.lock')
+
+BITE = os.getenv('BITE') == 'True'
+
 INIT_LOCK_PATH = os.getenv('INIT_LOCK_PATH')
 if not INIT_LOCK_PATH:
     INIT_LOCK_PATH = os.path.join(NODE_DATA_PATH, 'init.lock')
