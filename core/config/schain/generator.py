@@ -161,7 +161,13 @@ def generate_schain_config(
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
-    dynamic_params = {'chainID': get_chain_id(schain.name)}
+    dynamic_params = {
+        'chainID': get_chain_id(schain.name),
+        'dynamicPricingMinPrice': schain.options.min_gas_price,
+        'dynamicPricingStartPrice': schain.options.min_gas_price,
+        'dynamicPricingMaxPrice': schain.options.max_gas_price,
+        'externalGasDifficulty': schain.options.external_gas_difficulty,
+    }
 
     legacy_groups = static_groups(schain.name)
     logger.debug('Legacy node groups: %s', legacy_groups)
