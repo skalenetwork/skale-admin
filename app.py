@@ -27,11 +27,11 @@ import werkzeug
 from flask import Flask, g
 
 from core.node_config import NodeConfig
-from tools.configs import FLASK_SECRET_KEY_FILE
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
 from tools.resources import get_database
+from tools.settings import get_settings
 from web.helper import construct_err_response
 from web.routes.health import health_bp
 from web.routes.info import info_bp
@@ -60,6 +60,7 @@ def before_request():
     wait_until_admin_inited()
     g.request_start_time = time.time()
     g.config = NodeConfig()
+    g.st = get_settings()
     g.request_id = binascii.b2a_hex(os.urandom(REQ_ID_SIZE // 2)).decode('utf-8')
     g.db = get_database()
     g.db.connect(reuse_if_open=True)
@@ -89,8 +90,3 @@ def any_error_handler(e):
     original = getattr(e, 'original_exception', None)
     logger.exception('Request failed with error %s', original)
     return construct_err_response(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, msg=str(e))
-
-
-app.secret_key = FLASK_SECRET_KEY_FILE
-app.use_reloader = False
-logger.info('Starting api ...')

@@ -27,15 +27,16 @@ from core.config.endpoint import get_local_chain_http_endpoint_from_config
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_fair_chain_name
 from core.node_config import NodeConfig
-from tools.configs.web3 import boot_endpoint, fair_contracts
 from tools.exceptions import LocalEndpointUnreachableError
+from tools.settings import get_fair_base_settings, get_fair_settings, get_settings
 from tools.wallet_utils import init_wallet
 
 logger = logging.getLogger(__name__)
 
 
 def get_local_skaled_endpoint_fair() -> str | None:
-    chain_name = get_fair_chain_name()
+    st = get_settings()
+    chain_name = get_fair_chain_name(st.env_type)
     cfm = ConfigFileManager(chain_name=chain_name)
     if cfm.skaled_config:
         local_endpoint = get_local_chain_http_endpoint_from_config(cfm.skaled_config)
@@ -45,7 +46,8 @@ def get_local_skaled_endpoint_fair() -> str | None:
 
 
 def get_fair_endpoints() -> list[str]:
-    endpoints = [boot_endpoint()]
+    st = get_fair_base_settings()
+    endpoints = [str(st.endpoint)]
     local_endpoint = get_local_skaled_endpoint_fair()
     if local_endpoint:
         endpoints.insert(0, local_endpoint)
@@ -58,9 +60,13 @@ def init_fair_manager(
 ) -> FairManager:
     endpoints = get_fair_endpoints()
     endpoint = get_endpoint(endpoints)
+    st = get_fair_base_settings()
     if node_config:
-        wallet = init_wallet(node_config=node_config, endpoint=endpoint)
-    return FairManager(endpoints, fair_contracts(), wallet=wallet)
+        st = get_fair_settings()
+        wallet = init_wallet(
+            node_config=node_config, endpoint=endpoint, sgx_server_url=str(st.sgx_url)
+        )
+    return FairManager(endpoints, st.contracts.fair, wallet=wallet)
 
 
 def init_local_fair(
@@ -72,5 +78,9 @@ def init_local_fair(
             'Local skaled endpoint is not found, cannot initialize FairManager'
         )
     if node_config:
-        wallet = init_wallet(node_config=node_config, endpoint=local_endpoint)
-    return FairManager(local_endpoint, fair_contracts(), wallet=wallet)
+        wallet = init_wallet(
+            node_config=node_config,
+            endpoint=local_endpoint,
+            sgx_server_url=str(get_fair_settings().sgx_url),
+        )
+    return FairManager(local_endpoint, get_fair_base_settings().contracts.fair, wallet=wallet)

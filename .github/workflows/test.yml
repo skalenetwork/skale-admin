@@ -32,7 +32,7 @@ jobs:
 
       - name: Export env
         run: |
-          export SKALE_NETWORK_TYPE=${{ matrix.type }}
+          export SKALE_NETWORK_TYPE=${{ matrix.type }} # todof: update!
           export COVERAGE_FILE=.coverage.${{ matrix.type }}
           . ./scripts/export_env.sh
           printenv >> $GITHUB_ENV

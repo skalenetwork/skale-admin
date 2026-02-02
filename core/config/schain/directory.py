@@ -23,7 +23,7 @@ import os
 from pathlib import Path
 from typing import List
 
-from tools.configs.schains import (
+from tools.constants.schains import (
     BASE_SCHAIN_CONFIG_FILEPATH,
     NODE_CLI_STATUS_FILENAME,
     SCHAIN_SCHECKS_FILENAME,

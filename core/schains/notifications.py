@@ -23,7 +23,7 @@ from typing import Dict
 
 from skale import SkaleManager
 
-from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from tools.configs.tg import TG_API_KEY, TG_CHAT_ID  # todof: remove if tg is not used
 from tools.notifications.messages import notify_balance
 
 logger = logging.getLogger(__name__)

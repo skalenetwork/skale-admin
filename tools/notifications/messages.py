@@ -26,7 +26,7 @@ from typing import Dict, List, Optional
 
 from redis import BlockingConnectionPool, Redis
 
-from tools.configs.tg import CHECKS_STATE_EXPIRATION, TG_API_KEY, TG_CHAT_ID
+from tools.configs.tg import TG_API_KEY, TG_CHAT_ID  # todof: remove if tg is not used
 from tools.notifications.tasks import send_message_to_telegram
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,8 @@ GREEN_LIGHT = '\u2705'
 EXCLAMATION_MARK = '\u2757'
 SUCCESS_MAX_ATTEMPS = 1
 FAILED_MAX_ATTEMPS = 1
+
+CHECKS_STATE_EXPIRATION = 24 * 60 * 60
 
 
 def tg_notifications_enabled() -> bool:

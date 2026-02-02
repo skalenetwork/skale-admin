@@ -54,12 +54,12 @@ from core.node_config import NodeConfig
 from core.schains.cleaner import remove_ima_container, remove_skaled_container
 from core.schains.external_config import ExternalConfig
 from core.schains.limits import get_schain_type
-from tools.configs import PASSIVE_NODE
-from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
+from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import no_hyphens
+from tools.helper import is_passive, no_hyphens
 from tools.node_options import NodeOptions
 from tools.resources import get_statsd_client
+from tools.settings import get_settings
 from web.models.schain import SChainRecord, upsert_schain_record
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,6 @@ class SkaledActionManager(BaseSkaledActionManager):
         download_snapshot: bool = False,
         start_ts: Optional[int] = None,
         abort_on_exit: bool = True,
-        passive_node: bool = PASSIVE_NODE,
     ) -> bool:
         logger.info(
             'Starting skaled container watchman snapshot: %s, start_ts: %s',
@@ -126,7 +125,7 @@ class SkaledActionManager(BaseSkaledActionManager):
             start_ts=start_ts,
             abort_on_exit=abort_on_exit,
             dutils=self.dutils,
-            passive_node=passive_node,
+            passive_node=is_passive(),
             historic_state=self.node_options.historic_state,
         )
         time.sleep(self.post_run_delay)
@@ -137,7 +136,7 @@ class SkaledActionManager(BaseSkaledActionManager):
         initial_status = self.checks.volume.status
         if not initial_status:
             logger.info('Creating volume')
-            init_data_volume(self.schain, passive_node=PASSIVE_NODE, dutils=self.dutils)
+            init_data_volume(self.schain, passive_node=is_passive(), dutils=self.dutils)
         else:
             logger.info('Volume - ok')
         return initial_status
@@ -199,7 +198,8 @@ class SkaledActionManager(BaseSkaledActionManager):
 
     def ima_container(self) -> bool:
         initial_status = self.checks.ima_container.status
-        migration_ts = get_ima_migration_ts(self.name)
+        st = get_settings()
+        migration_ts = get_ima_migration_ts(self.name, st.env_type)
         logger.debug('Migration time for %s IMA - %d', self.name, migration_ts)
         if not initial_status:
             pull_new_image(image_type=IMA_CONTAINER, dutils=self.dutils)

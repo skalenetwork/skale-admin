@@ -18,9 +18,10 @@ from core.monitor.schain.main import ConfigTask, SkaledTask
 from core.monitor.tasks import ITask, execute_tasks
 from core.node_config import NodeConfig
 from core.schains.process import ProcessReport
+from tests.conftest import TestSettings
 from tests.utils import TEST_TASK_SLEEP
-from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.sgx import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.constants import SGX_CERTIFICATES_FOLDER
+from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from tools.helper import is_node_part_of_chain
 from web.models.schain import upsert_schain_record
@@ -80,6 +81,7 @@ def test_config_task(
     schain_hash_on_contracts: SchainHash,
     node_config: NodeConfig,
     clear_manager_cache: ManagerCache,
+    st: TestSettings,
 ):
     stream_version = '2.3.0'
     schain = skale.schains.get(schain_hash_on_contracts)
@@ -88,9 +90,9 @@ def test_config_task(
 
     try:
         wallet = SgxWallet(
-            SGX_SERVER_URL,
+            str(st.sgx_url),
             skale.web3,
-            path_to_cert=SGX_CERTIFICATES_FOLDER,
+            path_to_cert=str(SGX_CERTIFICATES_FOLDER),
         )
         node_config.sgx_key_name = wallet.key_name
 

@@ -41,8 +41,7 @@ from core.monitor.action_base import BaseActionManager
 from core.node import NodeWithChangeIp, calc_reload_ts, get_node_index_in_group
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig, ExternalState
-from tools.configs import PASSIVE_NODE
-from tools.helper import dict_to_hash, no_hyphens
+from tools.helper import dict_to_hash, is_passive, no_hyphens
 from tools.node_options import NodeOptions
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord, upsert_schain_record
@@ -143,7 +142,7 @@ class ConfigActionManager(BaseActionManager):
                 generation=self.generation,
                 ecdsa_sgx_key_name=self.node_config.sgx_key_name,
                 rotation_data=self.rotation_data,
-                passive_node=PASSIVE_NODE,
+                passive_node=is_passive(),
                 node_options=self.node_options,
             )
 

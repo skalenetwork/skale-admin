@@ -4,7 +4,7 @@ from core.config.schain.node_info import generate_current_node_info, generate_wa
 from core.config.schain.static_params import get_static_node_info
 from core.schains.types import SchainType
 from tests.utils import get_schain_struct
-from tools.configs.sgx import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
+from tools.constants import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
 
 COMMON_PUBLIC_KEY = [1, 2, 3, 4]
 
@@ -69,19 +69,18 @@ def test_generate_current_node_info(
     schain_config,
     _schain_name,
 ):
-    with mock.patch('core.config.schain.static_params.ENV_TYPE', new='testnet'):
-        static_node_info = get_static_node_info(SchainType.medium)
-        current_node_info = generate_current_node_info(
-            node={'name': 'test', 'port': 10000},
-            node_id=1,
-            ecdsa_key_name='123',
-            static_node_info=static_node_info,
-            schain=get_schain_struct(_test_schain_name=_schain_name),
-            rotation_id=0,
-            nodes_in_schain=4,
-            schain_base_port=10000,
-            common_bls_public_keys=COMMON_PUBLIC_KEY,
-        )
+    static_node_info = get_static_node_info(SchainType.medium, env_type='testnet')
+    current_node_info = generate_current_node_info(
+        node={'name': 'test', 'port': 10000},
+        node_id=1,
+        ecdsa_key_name='123',
+        static_node_info=static_node_info,
+        schain=get_schain_struct(_test_schain_name=_schain_name),
+        rotation_id=0,
+        nodes_in_schain=4,
+        schain_base_port=10000,
+        common_bls_public_keys=COMMON_PUBLIC_KEY,
+    )
     current_node_info_dict = current_node_info.to_dict()
     assert current_node_info_dict['nodeID'] == 1
     assert current_node_info_dict['nodeName'] == 'test'
@@ -93,18 +92,17 @@ def test_generate_current_node_info(
     assert current_node_info_dict['maxCacheSize'] == 16000000
     assert current_node_info_dict['collectionQueueSize'] == 20
 
-    with mock.patch('core.config.schain.static_params.ENV_TYPE', new='mainnet'):
-        static_node_info = get_static_node_info(SchainType.medium)
-        current_node_info = generate_current_node_info(
-            node={'name': 'test', 'port': 10000},
-            node_id=1,
-            ecdsa_key_name='123',
-            static_node_info=static_node_info,
-            schain=get_schain_struct(_test_schain_name=_schain_name),
-            rotation_id=0,
-            nodes_in_schain=4,
-            schain_base_port=10000,
-            common_bls_public_keys=COMMON_PUBLIC_KEY,
-        )
+    static_node_info = get_static_node_info(SchainType.medium, env_type='mainnet')
+    current_node_info = generate_current_node_info(
+        node={'name': 'test', 'port': 10000},
+        node_id=1,
+        ecdsa_key_name='123',
+        static_node_info=static_node_info,
+        schain=get_schain_struct(_test_schain_name=_schain_name),
+        rotation_id=0,
+        nodes_in_schain=4,
+        schain_base_port=10000,
+        common_bls_public_keys=COMMON_PUBLIC_KEY,
+    )
     current_node_info_dict = current_node_info.to_dict()
     assert current_node_info_dict['maxCacheSize'] == 16000000

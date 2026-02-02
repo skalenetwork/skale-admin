@@ -9,8 +9,8 @@ import requests
 from core.chain.rpc import check_endpoint_blocks, handle_failed_skaled_rpc
 from core.chain.runner import get_container_info
 from tests.utils import generate_skaled_status_file
-from tools.configs.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
-from tools.configs.schains import MAX_SCHAIN_FAILED_RPC_COUNT
+from tools.constants.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
+from tools.constants.schains import MAX_SCHAIN_FAILED_RPC_COUNT
 from web.models.schain import SChainRecord
 
 CURRENT_TIMESTAMP = 1594903080

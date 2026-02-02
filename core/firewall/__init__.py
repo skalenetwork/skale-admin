@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .base.firewall_manager import ChainFirewallManager  # noqa
-from .base.nftables import NFTablesController, NFT_CHAIN_BASE_PATH  # noqa
+from .base.nftables import NFTablesController  # noqa
 from .schain.rule_controller import SChainRuleController  # noqa
 from .fair.rule_controller import (
     FairController,  # noqa

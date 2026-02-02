@@ -17,8 +17,9 @@ from core.config.schain.file_manager import ConfigFileManager
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, post_bp_data
-from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from tools.configs.tg import TG_API_KEY, TG_CHAT_ID  # todof: remove if tg is not used
+from tools.constants.schains import SCHAINS_DIR_PATH
+from tools.settings import get_settings
 from web.helper import get_api_url
 from web.routes.node import node_bp
 
@@ -37,6 +38,7 @@ def skale_bp(skale, node_config, dutils):
         g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
+        g.st = get_settings()
 
     with appcontext_pushed.connected_to(handler, app):
         yield app.test_client()

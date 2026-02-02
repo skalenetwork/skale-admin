@@ -11,6 +11,7 @@ from flask import Flask, appcontext_pushed, g
 from core.config.schain.file_manager import ConfigFileManager
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, get_test_rule_controller
+from tools.settings import get_settings
 from web.helper import get_api_url
 from web.models.schain import SChainRecord, upsert_schain_record
 from web.routes.schains import schains_bp
@@ -27,6 +28,7 @@ def skale_bp(skale, dutils):
         g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
+        g.st = get_settings()
         g.config.id = 1
 
     with appcontext_pushed.connected_to(handler, app):

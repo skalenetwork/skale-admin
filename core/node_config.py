@@ -18,17 +18,18 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from pathlib import Path
 
 from skale.types.node import NodeId, Port
 
-from tools.configs import NODE_CONFIG_FILEPATH
+from tools.constants import NODE_CONFIG_FILEPATH
 from tools.json_object import JsonObject
 
 logger = logging.getLogger(__name__)
 
 
 class NodeConfig(JsonObject):
-    def __init__(self, filepath: str = NODE_CONFIG_FILEPATH):
+    def __init__(self, filepath: Path = NODE_CONFIG_FILEPATH):
         super().__init__(filepath=filepath)
 
     @property

@@ -28,9 +28,8 @@ from core.chain.runner import is_container_exists, is_container_running, restart
 from core.chain.status import SkaledStatus
 from core.redis.chain_record import ChainRecord
 from core.types.chain import ChainName
-from tools.configs import ALLOWED_TIMESTAMP_DIFF
-from tools.configs.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
-from tools.configs.schains import (
+from tools.constants.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
+from tools.constants.schains import (
     DEFAULT_RPC_CHECK_TIMEOUT,
     MAX_SCHAIN_FAILED_RPC_COUNT,
     RPC_CHECK_TIMEOUT_STEP,
@@ -40,6 +39,8 @@ from tools.helper import post_request
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
+
+ALLOWED_TIMESTAMP_DIFF = 120
 
 
 def handle_failed_skaled_rpc(

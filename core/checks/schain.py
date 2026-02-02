@@ -50,9 +50,10 @@ from core.ima.container import get_ima_time_frame
 from core.ima.container import get_migration_ts as get_ima_migration_ts
 from core.node import NodeWithChangeIp, get_current_ips
 from core.schains.external_config import ExternalConfig, ExternalState
-from tools.configs.containers import IMA_CONTAINER
+from tools.constants.containers import IMA_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.resources import get_statsd_client
+from tools.settings import get_settings
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
@@ -209,8 +210,9 @@ class SkaledChecks(BaseSkaledChecks):
             return CheckRes(True)
         container_name = get_container_name(IMA_CONTAINER, self.name)
         new_image_pulled = is_new_image_pulled(image_type=IMA_CONTAINER, dutils=self.dutils)
+        st = get_settings()
 
-        migration_ts = get_ima_migration_ts(self.name)
+        migration_ts = get_ima_migration_ts(self.name, st.env_type)
         after = time.time() > migration_ts
 
         container_running = self.dutils.is_container_running(container_name)

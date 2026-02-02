@@ -22,35 +22,35 @@ from eth_typing import HexStr
 from core.config.schain.helper import get_static_params, get_static_params_fair
 from core.schains.types import SchainType
 from core.types.chain import FairChainName
-from tools.configs import ENV_TYPE
+from core.types.settings import EnvType
 
 
-def get_static_chain_id_fair(env_type: str = ENV_TYPE) -> HexStr:
+def get_static_chain_id_fair(env_type: EnvType) -> HexStr:
     static_params = get_static_params_fair(env_type)
     return static_params['info']['chain_id']
 
 
-def get_fair_chain_name(env_type: str = ENV_TYPE) -> FairChainName:
+def get_fair_chain_name(env_type: EnvType) -> FairChainName:
     static_params = get_static_params_fair(env_type)
     return static_params['info']['chain_name']
 
 
-def get_static_skaled_cmd_fair(env_type: str = ENV_TYPE) -> list:
+def get_static_skaled_cmd_fair(env_type: EnvType) -> list:
     static_params = get_static_params_fair(env_type)
     return static_params['skaled_cmd']
 
 
-def get_static_schain_cmd(env_type: str = ENV_TYPE) -> list:
+def get_static_schain_cmd(env_type: EnvType) -> list:
     static_params = get_static_params(env_type)
     return static_params['schain_cmd']
 
 
-def get_static_schain_info_fair(env_type: str = ENV_TYPE) -> dict:
+def get_static_schain_info_fair(env_type: EnvType) -> dict:
     static_params = get_static_params_fair(env_type)
     return static_params['schain']
 
 
-def get_static_schain_info(schain_name: str, env_type: str = ENV_TYPE) -> dict:
+def get_static_schain_info(schain_name: str, env_type: EnvType) -> dict:
     static_params = get_static_params(env_type)
     static_params_schain = static_params['schain']
     processed_params = {}
@@ -68,17 +68,17 @@ def get_schain_static_param(static_param_schain: dict, schain_name: str) -> int 
         return static_param_schain.get('default', None)
 
 
-def get_static_node_info(schain_type: SchainType, env_type: str = ENV_TYPE) -> dict:
+def get_static_node_info(schain_type: SchainType, env_type: EnvType) -> dict:
     static_params = get_static_params(env_type)
     return {**static_params['node']['common'], **static_params['node'][schain_type.name]}
 
 
-def get_static_node_info_fair(env_type: str = ENV_TYPE) -> dict:
+def get_static_node_info_fair(env_type: EnvType) -> dict:
     static_params = get_static_params_fair(env_type)
     return static_params['node']
 
 
-def get_automatic_repair_option(env_type: str = ENV_TYPE) -> bool:
+def get_automatic_repair_option(env_type: EnvType) -> bool:
     static_params = get_static_params(env_type)
     node_params = static_params['node']
     if 'admin' in node_params:

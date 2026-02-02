@@ -10,12 +10,13 @@ from core.monitor.fair.action_skaled import FairSkaledActionManager
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from tests.utils import TEST_TASK_SLEEP
-from tools.configs import PASSIVE_NODE
+from tools.helper import is_passive
+from tools.settings import BaseAdminSettings
 
 
 @pytest.fixture
-def chain_name():
-    return get_fair_chain_name()
+def chain_name(st: BaseAdminSettings):
+    return get_fair_chain_name(st.env_type)
 
 
 @pytest.fixture
@@ -45,7 +46,7 @@ def skaled_checks(chain_name, chain_record, rule_controller, dutils):
         chain_record=chain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        passive_node=PASSIVE_NODE,
+        passive_node=is_passive(),
     )
 
 

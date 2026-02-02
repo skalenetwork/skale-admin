@@ -1,7 +1,7 @@
 import pytest
 
 from tests.schain_allocation import generate_schain_allocation
-from tools.configs import CONFIG_FOLDER
+from tools.constants import CONFIG_FOLDER
 
 EXPECTED_SCHAIN_ALLOCATION = [
     (

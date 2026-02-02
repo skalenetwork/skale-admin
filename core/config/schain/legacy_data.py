@@ -19,10 +19,11 @@
 
 import os
 
-from skale.schain_config.rotation_history import RotationNodeData
+from skale.types.rotation import RotationNodeData
 
-from tools.configs import ENV_TYPE, STATIC_ACCOUNTS_FOLDER, STATIC_GROUPS_FOLDER
+from tools.constants import STATIC_ACCOUNTS_FOLDER, STATIC_GROUPS_FOLDER
 from tools.helper import read_json
+from tools.settings import get_settings
 
 
 def static_accounts(schain_name: str) -> dict:
@@ -34,7 +35,8 @@ def is_static_accounts(schain_name: str) -> bool:
 
 
 def static_accounts_filepath(schain_name: str) -> str:
-    static_accounts_env_path = os.path.join(STATIC_ACCOUNTS_FOLDER, ENV_TYPE)
+    st = get_settings()
+    static_accounts_env_path = os.path.join(STATIC_ACCOUNTS_FOLDER, st.env_type)
     if not os.path.isdir(static_accounts_env_path):
         return ''
     return os.path.join(static_accounts_env_path, f'schain-{schain_name}.json')
@@ -58,5 +60,6 @@ def static_groups(schain_name: str) -> dict:
 
 
 def static_groups_filepath(schain_name: str) -> str:
-    static_groups_env_path = os.path.join(STATIC_GROUPS_FOLDER, ENV_TYPE)
+    st = get_settings()
+    static_groups_env_path = os.path.join(STATIC_GROUPS_FOLDER, st.env_type)
     return os.path.join(static_groups_env_path, f'schain-{schain_name}.json')

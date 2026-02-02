@@ -24,13 +24,12 @@ from core.config.endpoint import get_chain_ports_from_config
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.main import get_skaled_container_config_path
 from core.config.schain.static_params import get_static_schain_cmd, get_static_skaled_cmd_fair
-from tools.configs.containers import (
+from tools.constants.containers import (
     DATA_DIR_CONTAINER_PATH,
     SHARED_SPACE_CONTAINER_PATH,
 )
-from tools.configs.sgx import SGX_SERVER_URL
-from tools.configs.web3 import ENDPOINT
 from tools.helper import is_fair
+from tools.settings import get_active_settings, get_settings, get_skale_base_settings
 
 
 def get_skaled_container_cmd(
@@ -63,6 +62,7 @@ def get_snapshot_opts(start_ts: int | None = None) -> list:
 def get_chain_container_base_opts(
     chain_name: str, enable_ssl: bool = True, passive_node: bool = False
 ) -> list:
+    st = get_settings()
     config_filepath = get_skaled_container_config_path(chain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
     config = ConfigFileManager(chain_name=chain_name).skaled_config
@@ -70,9 +70,9 @@ def get_chain_container_base_opts(
 
     static_chain_cmd = None
     if is_fair():
-        static_chain_cmd = get_static_skaled_cmd_fair()
+        static_chain_cmd = get_static_skaled_cmd_fair(st.env_type)
     else:
-        static_chain_cmd = get_static_schain_cmd()
+        static_chain_cmd = get_static_schain_cmd(st.env_type)
 
     cmd = [
         f'--config {config_filepath}',
@@ -85,12 +85,14 @@ def get_chain_container_base_opts(
     ]
 
     if not is_fair():
-        cmd.append(f'--main-net-url {ENDPOINT}')
+        st = get_skale_base_settings()
+        cmd.append(f'--main-net-url {st.endpoint}')
 
     if not passive_node:
+        st = get_active_settings()
         cmd.extend(
             [
-                f'--sgx-url {SGX_SERVER_URL}',
+                f'--sgx-url {st.sgx_url}',
                 f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data',
             ]
         )

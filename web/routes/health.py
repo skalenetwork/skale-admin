@@ -30,7 +30,7 @@ from core.manager_cache import ManagerCache
 from core.node import get_current_nodes, get_skale_node_version
 from core.schains.external_config import ExternalState
 from core.schains.process import is_process_healthy
-from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
+from tools.constants.schains import DKG_TIMEOUT_COEFFICIENT
 from web.helper import (
     construct_err_response,
     construct_ok_response,

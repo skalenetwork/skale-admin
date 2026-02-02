@@ -42,7 +42,7 @@ from core.config.schain.main import (
 from core.firewall import IRuleController
 from core.redis.chain_record import ChainRecord
 from core.types.chain import ChainName
-from tools.configs.containers import SKALED_CONTAINER
+from tools.constants.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import no_hyphens, write_json
 from tools.resources import get_statsd_client

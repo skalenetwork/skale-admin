@@ -34,9 +34,9 @@ from core.firewall.base.firewall_manager import ChainFirewallManager
 from core.firewall.base.types import IFirewallManager, IHostFirewallController, IpRange
 from core.firewall.schain.rule_controller import SChainRuleController
 from core.schains.cleaner import remove_config_dir, remove_schain_volume, remove_skaled_container
-from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
-from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.web3 import ENDPOINT
+from tests.conftest import TestSettings
+from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
+from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from tools.helper import run_cmd, write_json
 from web.models.schain import upsert_schain_record
@@ -175,11 +175,9 @@ def run_simple_ima_container(_test_schain_name, dutils: DockerUtils):
     )
 
 
-def init_web3_wallet() -> Web3Wallet:
-    if not ENDPOINT or not ETH_PRIVATE_KEY:
-        raise ValueError('ENDPOINT and ETH_PRIVATE_KEY environment variables must be set')
-    web3 = init_web3(ENDPOINT)
-    return Web3Wallet(ETH_PRIVATE_KEY, web3)
+def init_web3_wallet(st: TestSettings) -> Web3Wallet:
+    web3 = init_web3(str(st.endpoint))
+    return Web3Wallet(st.eth_private_key, web3)
 
 
 def response_mock(status_code=0, json_data=None, cookies=None, headers=None, raw=None):

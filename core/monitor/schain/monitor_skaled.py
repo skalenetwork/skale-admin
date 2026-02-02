@@ -27,7 +27,7 @@ from core.checks.schain import SkaledChecks
 from core.config.schain.main import get_number_of_secret_shares
 from core.monitor.monitor_base import BaseSkaledMonitor
 from core.monitor.schain.action_skaled import SkaledActionManager
-from tools.configs import PASSIVE_NODE
+from tools.helper import is_passive
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord
 
@@ -61,7 +61,7 @@ class RegularSkaledMonitor(BaseSChainSkaledMonitor):
             self.am.reset_restart_counter()
         if not self.checks.rpc:
             self.am.skaled_rpc()
-        if not self.checks.ima_container and not PASSIVE_NODE:
+        if not self.checks.ima_container and not is_passive():
             self.am.ima_container()
 
 
@@ -305,7 +305,7 @@ def get_skaled_monitor(
 
     mon_type: Type[BaseSkaledMonitor] = RegularSkaledMonitor
 
-    if PASSIVE_NODE:
+    if is_passive():
         if no_config(check_status):
             mon_type = NoConfigSkaledMonitor
         elif is_recreate_mode(check_status, schain_record):

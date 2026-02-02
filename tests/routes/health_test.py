@@ -9,6 +9,7 @@ from core.checks.schain import SChainChecks
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, get_schain_struct
 from tools.docker_utils import DockerUtils
+from tools.settings import get_settings
 from web.helper import get_api_url
 from web.models.schain import SChainRecord
 from web.routes.health import health_bp
@@ -26,6 +27,7 @@ def skale_bp(skale, nodes, node_skales, dutils):
         g.docker_utils = dutils
         g.wallet = node_skales[node_index].wallet
         g.config = NodeConfig()
+        g.st = get_settings()
         g.config.id = nodes[node_index]
 
     with appcontext_pushed.connected_to(handler, app):
@@ -45,6 +47,7 @@ def unregistered_skale_bp(skale, dutils):
         g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
+        g.st = get_settings()
         g.config.id = None
 
     with appcontext_pushed.connected_to(handler, app):

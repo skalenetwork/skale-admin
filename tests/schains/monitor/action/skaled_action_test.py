@@ -21,7 +21,7 @@ from core.schains.cleaner import remove_ima_container
 from core.schains.external_config import ExternalConfig
 from core.types.chain import ChainName
 from tests.utils import IMA_MIGRATION_TS, TEST_TASK_SLEEP
-from tools.configs.containers import SKALED_CONTAINER
+from tools.constants.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord
 

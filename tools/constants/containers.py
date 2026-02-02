@@ -18,29 +18,17 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from typing import Literal
 
-from tools.configs import CONFIG_FOLDER
-from tools.helper import read_json
+from core.types.settings import ImageType
 
 DATA_DIR_CONTAINER_PATH = '/data_dir'
 SHARED_SPACE_CONTAINER_PATH = '/shared-space'
 SHARED_SPACE_VOLUME_NAME = 'shared-space'
 
-ImageType = Literal['ima', 'skaled']
-
 SKALED_CONTAINER: ImageType = 'skaled'
 IMA_CONTAINER: ImageType = 'ima'
 
 CONTAINER_NAME_PREFIX = 'sk'
-CONTAINERS_FILENAME = 'containers.json'
-
-CONTAINERS_FILEPATH = os.path.join(CONFIG_FOLDER, CONTAINERS_FILENAME)
-
-CONTAINERS_INFO = read_json(CONTAINERS_FILEPATH)
-
-IMA_MIGRATION_FILENAME = 'ima_migration_schedule.yaml'
-IMA_MIGRATION_PATH = os.path.join(CONFIG_FOLDER, IMA_MIGRATION_FILENAME)
 
 CONTAINER_NOT_FOUND = 'not_found'
 EXITED_STATUS = 'exited'

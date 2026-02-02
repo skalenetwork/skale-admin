@@ -19,7 +19,7 @@
 
 import os
 
-from tools.configs import NODE_DATA_PATH
+from tools.constants import NODE_DATA_PATH
 
 LOG_FOLDER_NAME = 'log'
 LOG_FOLDER = os.path.join(NODE_DATA_PATH, LOG_FOLDER_NAME)

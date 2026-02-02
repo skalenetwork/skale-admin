@@ -19,6 +19,7 @@
 
 import math
 import os
+from pathlib import Path
 
 import yaml
 
@@ -163,7 +164,7 @@ def generate_shared_space_value(configs: dict, env_type_name: str, schain_alloca
     return shared_space_size_bytes
 
 
-def generate_schain_allocation(skale_node_path: str) -> dict:
+def generate_schain_allocation(skale_node_path: Path) -> dict:
     configs_filepath = os.path.join(skale_node_path, 'static_params.yaml')
     configs = safe_load_yaml(configs_filepath)
 

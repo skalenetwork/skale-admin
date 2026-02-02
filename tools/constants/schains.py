@@ -19,7 +19,7 @@
 
 import os
 
-from tools.configs import CONFIG_FOLDER, NODE_DATA_PATH, NODE_DATA_PATH_HOST, SKALE_LIB_PATH
+from tools.constants import CONFIG_FOLDER, NODE_DATA_PATH, NODE_DATA_PATH_HOST
 
 SCHAINS_DIR_NAME = 'schains'
 SCHAINS_DIR_PATH = os.path.join(NODE_DATA_PATH, SCHAINS_DIR_NAME)
@@ -52,8 +52,7 @@ SKALED_STATUS_FILENAME = 'skaled.status'
 NODE_CLI_STATUS_FILENAME = 'node_cli.status'
 
 STATIC_SCHAIN_DIR_NAME = 'schains'
-CHAIN_STATE_PATH = os.path.join(SKALE_LIB_PATH, 'schains')
-FILESTORAGE_STATIC_PATH = os.path.join(SKALE_LIB_PATH, 'filestorage')
+
 
 DEFAULT_RPC_CHECK_TIMEOUT = 30
 RPC_CHECK_TIMEOUT_STEP = 10

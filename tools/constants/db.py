@@ -17,13 +17,20 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+from pathlib import Path
 
-HERE = os.path.dirname(os.path.realpath(__file__))
-EVENTS_POLL_INTERVAL = 5
+from tools.constants import NODE_DATA_PATH
 
-FLASK_APP_HOST = os.environ['FLASK_APP_HOST']
-FLASK_APP_PORT = int(os.environ['FLASK_APP_PORT'])
-FLASK_DEBUG_MODE = os.environ['FLASK_DEBUG_MODE'] == 'True'
+# sqlite db
 
-SKALE_LIB_NAME = 'skale.py'
+DB_FILENAME = 'skale.db'
+DB_FILE: Path = NODE_DATA_PATH / DB_FILENAME
+DB_PRAGMAS = {
+    'journal_mode': 'wal',
+    'cache_size': -1 * 64000,  # 64MB
+    'foreign_keys': 1,
+    'ignore_check_constraints': 0,
+    'synchronous': 0,
+}
+
+REDIS_URI: str = 'redis://@127.0.0.1:6379'

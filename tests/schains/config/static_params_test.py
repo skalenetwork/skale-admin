@@ -7,20 +7,20 @@ from core.config.schain.static_params import (
     get_static_schain_info,
 )
 from core.schains.types import SchainType
-from tools.configs import ENV_TYPE
+from tools.settings import BaseAdminSettings
 
 TEST_SCHAIN_NAME = 'test-schain'
 DEFAULT_TS_NAME = 'revertableFSPatchTimestamp'
 CHAIN_SPECIFIC_TS_NAME = 'flexibleDeploymentPatchTimestamp'
 
 
-def test_get_static_schain_cmd():
-    schain_cmd = get_static_schain_cmd()
+def test_get_static_schain_cmd(st: BaseAdminSettings):
+    schain_cmd = get_static_schain_cmd(st.env_type)
     assert schain_cmd == ['-v 3', '--web3-trace', '--enable-debug-behavior-apis', '--aa no']
 
 
-def test_get_static_schain_info():
-    schain_info = get_static_schain_info(TEST_SCHAIN_NAME)
+def test_get_static_schain_info(st: BaseAdminSettings):
+    schain_info = get_static_schain_info(TEST_SCHAIN_NAME, st.env_type)
     assert schain_info == {
         'contractStorageZeroValuePatchTimestamp': 1000000,
         'revertableFSPatchTimestamp': 1000000,
@@ -43,9 +43,9 @@ def test_get_static_schain_info():
     }
 
 
-def test_get_static_schain_info_custom_chain_ts():
-    custom_schain_info = get_static_schain_info(TEST_SCHAIN_NAME)
-    default_schain_info = get_static_schain_info('test')
+def test_get_static_schain_info_custom_chain_ts(st: BaseAdminSettings):
+    custom_schain_info = get_static_schain_info(TEST_SCHAIN_NAME, st.env_type)
+    default_schain_info = get_static_schain_info('test', st.env_type)
 
     assert custom_schain_info[DEFAULT_TS_NAME] == default_schain_info[DEFAULT_TS_NAME]
     assert custom_schain_info[CHAIN_SPECIFIC_TS_NAME] != default_schain_info[CHAIN_SPECIFIC_TS_NAME]
@@ -54,8 +54,8 @@ def test_get_static_schain_info_custom_chain_ts():
     assert default_schain_info[CHAIN_SPECIFIC_TS_NAME] == 0
 
 
-def test_get_schain_static_param():
-    static_params = get_static_params(ENV_TYPE)
+def test_get_schain_static_param(st: BaseAdminSettings):
+    static_params = get_static_params(st.env_type)
     legacy_ts_info = get_schain_static_param(
         static_params['schain'][DEFAULT_TS_NAME], TEST_SCHAIN_NAME
     )
@@ -82,9 +82,9 @@ def test_get_schain_static_param():
     )
 
 
-def test_get_static_node_info():
-    node_info_small = get_static_node_info(SchainType.small)
-    node_info_medium = get_static_node_info(SchainType.medium)
+def test_get_static_node_info(st: BaseAdminSettings):
+    node_info_small = get_static_node_info(SchainType.small, st.env_type)
+    node_info_medium = get_static_node_info(SchainType.medium, st.env_type)
 
     assert node_info_small.get('logLevelConfig')
     assert node_info_small.get('minCacheSize')
@@ -93,8 +93,8 @@ def test_get_static_node_info():
     assert node_info_small != node_info_medium
 
 
-def test_get_automatic_repair_option():
-    assert get_automatic_repair_option()
+def test_get_automatic_repair_option(st: BaseAdminSettings):
+    assert get_automatic_repair_option(st.env_type)
     assert get_automatic_repair_option(env_type='mainnet')
     assert get_automatic_repair_option(env_type='testnet')
     assert get_automatic_repair_option(env_type='devnet')

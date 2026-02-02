@@ -27,10 +27,10 @@ from flask import Flask, g
 from werkzeug import exceptions as wz_exceptions
 
 from core.node_config import NodeConfig
-from tools.configs import FLASK_SECRET_KEY_FILE, PASSIVE_NODE
 from tools.docker_utils import DockerUtils
-from tools.helper import wait_until_admin_inited
+from tools.helper import is_passive, wait_until_admin_inited
 from tools.logger import init_api_logger
+from tools.settings import get_node_settings, get_settings
 from web.helper import construct_err_response
 from web.routes.fair_chain import fair_chain_bp
 from web.routes.fair_node import fair_node_bp
@@ -47,12 +47,13 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+node_settings = get_node_settings()
 
 app.register_blueprint(fair_chain_bp)
 app.register_blueprint(ssl_bp)
 app.register_blueprint(info_bp)
 
-if PASSIVE_NODE:
+if is_passive():
     app.register_blueprint(fair_node_passive_bp)
 else:
     app.register_blueprint(fair_node_bp)
@@ -65,6 +66,7 @@ def before_request():
     wait_until_admin_inited()
     g.request_start_time = time.time()
     g.config = NodeConfig()
+    g.st = get_settings()
     g.request_id = binascii.b2a_hex(os.urandom(REQ_ID_SIZE // 2)).decode('utf-8')
     g.docker_utils = DockerUtils()
     logger.info(f'Processing request {g.request_id}')
@@ -90,7 +92,3 @@ def any_error_handler(e):
     original = getattr(e, 'original_exception', None)
     logger.exception('Request failed with error %s', original)
     return construct_err_response(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, msg=str(e))
-
-
-app.secret_key = FLASK_SECRET_KEY_FILE
-logger.info('Starting Fair API ...')

@@ -18,15 +18,14 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import os
 
 from celery import Celery
 from telegram import Bot
 
-from tools.configs.db import REDIS_URI
+from tools.constants.db import REDIS_URI
 
 # No more than 20 per minute
-NOTIFICATIONS_RATE_LIMIT = os.getenv('NOTIFICATIONS_RATE_LIMIT', '20/m')
+NOTIFICATIONS_RATE_LIMIT = '20/m'
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,8 @@
+env_type = 'devnet'
+skale_dir_host = 'a'
+
+sgx_url = 'http://sgx.url'
+
+[contracts]
+manager = 'a'
+ima = 'b'

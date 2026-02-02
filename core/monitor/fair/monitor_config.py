@@ -31,8 +31,7 @@ from core.monitor.monitor_base import IMonitor
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.types.chain import FairChainName
-from tools.configs import PASSIVE_NODE
-from tools.helper import no_hyphens
+from tools.helper import is_passive, no_hyphens
 from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 
@@ -48,7 +47,7 @@ def run_config_pipeline(
 ) -> None:
     logger.info('Running config pipeline for %s', chain_name)
 
-    if not PASSIVE_NODE:
+    if not is_passive():
         is_healthy = fair.status.is_healthy(node_id=node_config.id)
         logger.info('Node health status: %s', is_healthy)
         handle_healthcheck_job(scheduler, node_config)

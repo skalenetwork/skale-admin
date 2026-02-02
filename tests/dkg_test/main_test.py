@@ -36,8 +36,9 @@ from tests.utils import (
     set_automine,
     set_interval_mining,
 )
-from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.sgx import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.constants import SGX_CERTIFICATES_FOLDER
+from tools.constants.schains import SCHAINS_DIR_PATH
+from tools.settings import get_active_settings
 
 warnings.filterwarnings('ignore')
 
@@ -64,9 +65,7 @@ class DKGRunType(int, Enum):
 
 
 def generate_sgx_wallets(skale, n_of_keys):
-    if not SGX_SERVER_URL:
-        raise DkgTestError('SGX_SERVER_URL is not set')
-
+    st = get_active_settings()
     logger.info('Making sure cert folders exists')
     for i in range(n_of_keys):
         os.makedirs(os.path.join(SGX_CERTIFICATES_FOLDER, f'dkg-{i}'), exist_ok=True)
@@ -74,7 +73,7 @@ def generate_sgx_wallets(skale, n_of_keys):
     logger.info(f'Generating {n_of_keys} test wallets')
     return [
         SgxWallet(
-            SGX_SERVER_URL,
+            str(st.sgx_url),
             skale.web3,
             path_to_cert=os.path.join(SGX_CERTIFICATES_FOLDER, f'dkg-{i}'),
         )

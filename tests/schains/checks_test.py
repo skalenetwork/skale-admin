@@ -23,7 +23,7 @@ from tests.utils import (
     request_mock,
     response_mock,
 )
-from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
+from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.helper import read_json
 from web.models.schain import SChainRecord, upsert_schain_record
 

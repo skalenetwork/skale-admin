@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2026 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,16 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+from typing import Literal
 
-from tools.configs import NODE_DATA_PATH
-
-TIMES = 1
-TIMEOUT = 1
-MEMORY_FACTOR = 0.9
-DISK_FACTOR = 0.8
-
-RESOURCE_ALLOCATION_FILENAME = 'resource_allocation.json'
-RESOURCE_ALLOCATION_FILEPATH = os.path.join(NODE_DATA_PATH, RESOURCE_ALLOCATION_FILENAME)
-
-FILESTORAGE_LIMIT_OPTION_NAME = 'max_file_storage_bytes'
+type EnvType = Literal['mainnet', 'devnet', 'testnet', 'qanet']
+type NodeType = Literal['skale', 'fair']
+type NodeMode = Literal['active', 'passive']
+type ImageType = Literal['ima', 'skaled']

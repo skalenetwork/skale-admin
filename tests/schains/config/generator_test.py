@@ -35,7 +35,7 @@ from core.config.schain.helper import get_schain_id
 from core.config.schain.predeployed import PROXY_ADMIN_PREDEPLOYED_ADDRESS
 from core.node_config import NodeConfig
 from tests.utils import TEST_MAINNET_OWNER_ADDRESS, TEST_ORIGINATOR_ADDRESS, get_schain_struct
-from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.node_options import NodeOptions
 
 NODE_ID = NodeId(1)

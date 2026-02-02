@@ -35,9 +35,9 @@ from core.redis.chain_record import ChainRecord
 from core.schains.cleaner import remove_schain_volume, remove_skaled_container
 from core.schains.exit_scheduler import ExitScheduleFileManager
 from core.types.chain import ChainName
-from tools.configs import PASSIVE_NODE
-from tools.configs.containers import SKALED_CONTAINER
+from tools.constants.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
+from tools.helper import is_passive
 from tools.node_options import NodeOptions
 from tools.notifications.messages import notify_repair_mode
 from tools.resources import get_statsd_client
@@ -162,7 +162,7 @@ class BaseSkaledActionManager(BaseActionManager):
             self.chain_record.set_restart_ts(0)
         initial_status = self.skaled_container(
             abort_on_exit=abort_on_exit,
-            passive_node=PASSIVE_NODE,
+            passive_node=is_passive(),
         )
         return initial_status
 

@@ -29,10 +29,9 @@ from skale.utils.helper import schain_name_to_hash
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from core.schains.process_manager import run_pm_schain
-from tools.configs.ima import ima_contracts
-from tools.configs.web3 import endpoint, manager_contracts
 from tools.logger import init_sync_logger
 from tools.resources import rs
+from tools.settings import get_skale_base_settings
 from web.migrations import migrate
 from web.models.schain import create_tables
 
@@ -59,8 +58,9 @@ def monitor(
 
 
 def worker(schain_name: SchainName):
-    skale = SkaleManager(endpoint(), manager_contracts())
-    skale_ima = SkaleIma(endpoint(), ima_contracts())
+    st = get_skale_base_settings()
+    skale = SkaleManager(str(st.endpoint), st.contracts.manager)
+    skale_ima = SkaleIma(str(st.endpoint), st.contracts.ima)
 
     if not skale.schains_internal.is_schain_exist(schain_name):
         logger.error(f'Provided SKALE Chain does not exist: {schain_name}')

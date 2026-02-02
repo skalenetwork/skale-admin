@@ -19,7 +19,7 @@
 
 import logging
 
-from tools.configs import NODE_OPTIONS_FILEPATH
+from tools.constants import NODE_OPTIONS_FILEPATH
 from tools.json_object import JsonObject
 
 logger = logging.getLogger(__name__)

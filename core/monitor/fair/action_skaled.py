@@ -41,8 +41,8 @@ from core.monitor.action_base import (
 )
 from core.node_config import NodeConfig
 from core.types.chain import FairChainName
-from tools.configs.containers import SKALED_RESTART_DELAY_SECONDS
-from tools.configs.fair import SKALED_RESTART_JOB_NAME
+from tools.constants.containers import SKALED_RESTART_DELAY_SECONDS
+from tools.constants.fair import SKALED_RESTART_JOB_NAME
 from tools.docker_utils import DockerUtils
 from tools.node_options import NodeOptions
 

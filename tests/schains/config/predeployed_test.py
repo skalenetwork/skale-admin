@@ -9,7 +9,7 @@ from core.config.schain.predeployed import (
     generate_v1_predeployed_contracts,
 )
 from core.schains.types import SchainType
-from tools.configs.schains import ETHERBASE_ALLOC
+from tools.constants.schains import ETHERBASE_ALLOC
 
 NUM_OF_PREDEPLOYED_CONTRACTS_GEN_0 = 22
 NUM_OF_PREDEPLOYED_CONTRACTS_GEN_1 = 33

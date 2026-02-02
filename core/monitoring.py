@@ -20,8 +20,7 @@
 import logging
 from typing import Optional
 
-from tools.configs import SKALE_DIR_HOST
-from tools.configs.monitoring import (
+from tools.constants.monitoring import (
     FILEBEAT_CONFIG_PATH,
     FILEBEAT_CONTAINER_NAME,
     FILEBEAT_TEMPLATE_PATH,
@@ -35,6 +34,7 @@ from tools.configs.monitoring import (
 )
 from tools.docker_utils import DockerUtils, get_docker_group_id
 from tools.helper import is_fair, process_template
+from tools.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +68,7 @@ def filebeat_config_processed() -> bool:
 
 def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
     dutils = dutils or DockerUtils()
+    st = get_settings()
     if dutils.is_container_exists(TELEGRAF_CONTAINER_NAME):
         dutils.restart(TELEGRAF_CONTAINER_NAME)
     else:
@@ -81,11 +82,14 @@ def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
             environment={'HOST_PROC': '/host/proc'},
             volumes={
                 '/proc': {'bind': '/host/proc', 'mode': 'ro'},
-                f'{SKALE_DIR_HOST}/config/telegraf.conf': {
+                f'{st.skale_dir_host}/config/telegraf.conf': {
                     'bind': '/etc/telegraf/telegraf.conf',
                     'mode': 'ro',
                 },  # noqa
-                f'{SKALE_DIR_HOST}/node_data/telegraf': {'bind': '/var/lib/telegraf', 'mode': 'rw'},
+                f'{st.skale_dir_host}/node_data/telegraf': {
+                    'bind': '/var/lib/telegraf',
+                    'mode': 'rw',
+                },
                 '/var/run/skale/': {'bind': '/var/run/skale', 'mode': 'rw'},
             },
             mem_limit=TELEGRAF_MEM_LIMIT,

@@ -1,4 +1,4 @@
-from tools.configs.web3 import ZERO_ADDRESS
+from tools.constants.web3 import ZERO_ADDRESS
 from tools.helper import is_address_contract, no_hyphens
 
 

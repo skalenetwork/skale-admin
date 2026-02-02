@@ -38,10 +38,9 @@ from core.chain.volume import is_volume_exists
 from core.ima.container import ImaData, get_ima_time_frame
 from core.redis.chain_record import ChainRecord
 from core.types.chain import ChainName
-from tools.configs import PASSIVE_NODE
-from tools.configs.containers import IMA_CONTAINER, MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
+from tools.constants.containers import IMA_CONTAINER, MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import is_fair
+from tools.helper import is_fair, is_passive
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
@@ -119,7 +118,7 @@ def monitor_ima_container(
 ) -> None:
     dutils = dutils or DockerUtils()
 
-    if PASSIVE_NODE or is_fair():
+    if is_passive() or is_fair():
         return
 
     if not ima_data.linked:

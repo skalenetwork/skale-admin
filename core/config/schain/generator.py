@@ -46,7 +46,7 @@ from core.config.schain.skale_section import generate_skale_section
 from core.dkg.schain.utils import get_common_bls_public_key
 from core.node_config import NodeConfig
 from core.schains.limits import get_schain_type
-from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
+from tools.constants.schains import BASE_SCHAIN_CONFIG_FILEPATH
 from tools.helper import is_address_contract, is_fair, is_zero_address
 from tools.node_options import NodeOptions
 

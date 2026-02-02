@@ -10,7 +10,7 @@ import pytest
 from flask import Flask, appcontext_pushed, g
 
 from tests.utils import generate_cert, get_bp_data
-from tools.configs import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
+from tools.constants import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
 from web.helper import get_api_url
 from web.routes.ssl import ssl_bp
 

@@ -19,18 +19,14 @@
 
 import os
 
-from tools.configs import NODE_DATA_PATH
+from tools.constants import NODE_DATA_PATH
 
-# sqlite db
+TIMES = 1
+TIMEOUT = 1
+MEMORY_FACTOR = 0.9
+DISK_FACTOR = 0.8
 
-DB_FILENAME = 'skale.db'
-DB_FILE = os.path.join(NODE_DATA_PATH, DB_FILENAME)
-DB_PRAGMAS = {
-    'journal_mode': 'wal',
-    'cache_size': -1 * 64000,  # 64MB
-    'foreign_keys': 1,
-    'ignore_check_constraints': 0,
-    'synchronous': 0,
-}
+RESOURCE_ALLOCATION_FILENAME = 'resource_allocation.json'
+RESOURCE_ALLOCATION_FILEPATH = os.path.join(NODE_DATA_PATH, RESOURCE_ALLOCATION_FILENAME)
 
-REDIS_URI: str = os.getenv('REDIS_URI', 'redis://@127.0.0.1:6379')
+FILESTORAGE_LIMIT_OPTION_NAME = 'max_file_storage_bytes'

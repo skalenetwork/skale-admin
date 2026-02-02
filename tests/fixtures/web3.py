@@ -30,11 +30,11 @@ from skale.wallets import Web3Wallet
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from tests.utils import ETH_PRIVATE_KEY
-from tools.configs.db import REDIS_URI
-from tools.configs.ima import IMA_CONTRACTS
-from tools.configs.sgx import SGX_CERTIFICATES_FOLDER
-from tools.configs.web3 import CACHE_TTL_POLICY, ENDPOINT, FAIR_CONTRACTS, MANAGER_CONTRACTS
+from tools.constants import SGX_CERTIFICATES_FOLDER
+from tools.constants.db import REDIS_URI
+from tools.constants.web3 import CACHE_TTL_POLICY
 from tools.resources import rs
+from tools.settings import FairBaseSettings, SkaleBaseSettings
 
 ETH_AMOUNT_PER_NODE = 1
 NUMBER_OF_NODES = 2
@@ -53,36 +53,21 @@ def eth_per_node() -> int:
 
 
 @pytest.fixture(scope='session')
-def endpoint() -> str:
-    if not ENDPOINT:
-        raise ValueError('Set ENDPOINT environment variable to use endpoint fixture')
-    return ENDPOINT
+def endpoint(st: SkaleBaseSettings) -> str:
+    return str(st.endpoint)
 
 
 @pytest.fixture(scope='session')
-def manager_contracts() -> str:
-    if not MANAGER_CONTRACTS:
-        raise ValueError(
-            'Set MANAGER_CONTRACTS environment variable to use manager_contracts fixture'
-        )
-    return MANAGER_CONTRACTS
+def manager_contracts(st: SkaleBaseSettings) -> str:
+    return st.contracts.manager
 
 
 @pytest.fixture(scope='session')
-def ima_contracts() -> str:
-    if not IMA_CONTRACTS:
-        raise ValueError('Set IMA_CONTRACTS environment variable to use ima_contracts fixture')
-    return IMA_CONTRACTS
+def fair_contracts(st: FairBaseSettings) -> str:
+    return st.contracts.fair
 
 
-@pytest.fixture(scope='session')
-def fair_contracts() -> str:
-    if not FAIR_CONTRACTS:
-        raise ValueError('Set FAIR_CONTRACTS environment variable to use fair_contracts fixture')
-    return FAIR_CONTRACTS
-
-
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='session')  # todof: move to test config!
 def private_key() -> HexStr:
     if not ETH_PRIVATE_KEY:
         raise ValueError('Set ETH_PRIVATE_KEY environment variable to use private_key fixture')

@@ -7,11 +7,11 @@ from pathlib import Path
 
 import pytest
 import yaml
+from eth_typing import HexStr
 from skale import SkaleManager
 from skale.types.schain import SchainHash, SchainName, SchainStructure
 from web3 import Web3
 
-import tests.env_defaults  # noqa: F401 # set default env variables for tests
 from core.chain.status import (
     init_node_cli_status,
     node_cli_status_filepath,
@@ -40,13 +40,13 @@ from tests.utils import (
     upsert_schain_record_with_config,
 )
 from tools.configs import (
-    CONFIG_FOLDER,
-    ENV_TYPE,
     META_FILEPATH,
     SSL_CERTIFICATES_FILEPATH,
 )
-from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.constants import CONFIG_FOLDER
+from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.helper import write_json
+from tools.settings import SkaleSettings, get_settings
 from web.models.schain import SChainRecord, create_tables
 
 pytest_plugins = ['tests.fixtures.web3', 'tests.fixtures.schain', 'tests.fixtures.containers']
@@ -266,6 +266,20 @@ def current_nodes(
     return get_current_nodes(skale, schain_hash_on_contracts)
 
 
+# @pytest.fixture(scope='session')
+# def st() -> BaseAdminSettings:
+#     return get_settings()
+
+
+class TestSettings(SkaleSettings):
+    eth_private_key: HexStr
+
+
+@pytest.fixture(scope='session')
+def st() -> TestSettings:
+    return TestSettings()  # type: ignore[call-arg]
+
+
 @pytest.fixture
 def upstreams(schain_db, schain_config):
     name = schain_db
@@ -289,11 +303,12 @@ def upstreams(schain_db, schain_config):
 
 @pytest.fixture
 def ima_migration_schedule(schain_db):
+    st = get_settings()
     name = schain_db
     try:
         migration_schedule_path = os.path.join(CONFIG_FOLDER, 'ima_migration_schedule.yaml')
         with open(migration_schedule_path, 'w') as migration_schedule_file:
-            yaml.dump({ENV_TYPE: {name: IMA_MIGRATION_TS}}, migration_schedule_file)
+            yaml.dump({st.env_type: {name: IMA_MIGRATION_TS}}, migration_schedule_file)
         yield migration_schedule_path
     finally:
         os.remove(migration_schedule_path)

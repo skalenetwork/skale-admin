@@ -20,7 +20,7 @@
 from filestorage_predeployed import FILESTORAGE_ADDRESS
 
 from core.config.schain.accounts import add_to_accounts
-from tools.configs.schains import (
+from tools.constants.schains import (
     FAIR_PRECOMPILED_CONTRACTS_FILEPATH,
     PRECOMPILED_CONTRACTS_FILEPATH,
 )

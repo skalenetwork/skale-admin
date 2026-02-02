@@ -30,8 +30,9 @@ from core.firewall.utils import get_fair_committee_scope_rule_controller
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
-from tools.configs import PASSIVE_NODE
 from tools.docker_utils import DockerUtils
+from tools.helper import is_passive
+from tools.settings import BaseAdminSettings
 from web.helper import (
     construct_err_response,
     construct_ok_response,
@@ -61,7 +62,8 @@ def record():
         return construct_err_response(
             msg='Node is not registered', status_code=HTTPStatus.BAD_REQUEST
         )
-    chain_name = get_fair_chain_name()
+    st: BaseAdminSettings = g.st
+    chain_name = get_fair_chain_name(st.env_type)
     chain_record = ChainRecord(chain_name)
     return construct_ok_response({'record': serialize_chain_record(chain_record)})
 
@@ -79,8 +81,9 @@ def checks():
             msg='Node is not registered', status_code=HTTPStatus.BAD_REQUEST
         )
 
+    st: BaseAdminSettings = g.st
     stream_version = get_skale_node_version()
-    chain_name = get_fair_chain_name()
+    chain_name = get_fair_chain_name(st.env_type)
     chain_record = ChainRecord(chain_name)
 
     last_committee_index = fair.committee.last_committee_index()
@@ -101,7 +104,7 @@ def checks():
         chain_record=chain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        passive_node=PASSIVE_NODE,
+        passive_node=is_passive(),
     )
     return construct_ok_response(
         {

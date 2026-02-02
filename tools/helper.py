@@ -24,6 +24,8 @@ import logging
 import os
 import subprocess
 import time
+from functools import lru_cache
+from pathlib import Path
 from subprocess import PIPE
 from typing import cast
 
@@ -38,9 +40,10 @@ from skale.utils.cache import RedisCacheConfig
 from skale.wallets import BaseWallet
 from web3 import Web3
 
-from tools.configs import INIT_LOCK_PATH, SKALE_NETWORK_TYPE
-from tools.configs.db import REDIS_URI
-from tools.configs.web3 import CACHE_TTL_POLICY, ZERO_ADDRESS, endpoint, manager_contracts
+from tools.constants import CONTAINERS_FILEPATH, INIT_LOCK_PATH
+from tools.constants.db import REDIS_URI
+from tools.constants.web3 import CACHE_TTL_POLICY, ZERO_ADDRESS
+from tools.settings import get_node_settings, get_skale_base_settings
 
 logger = logging.getLogger(__name__)
 
@@ -56,17 +59,17 @@ def post_request(url, json, cookies=None, timeout=None):
         return None
 
 
-def read_json(path, mode='r'):
+def read_json(path: Path | str, mode='r'):
     with open(path, mode=mode, encoding='utf-8') as data_file:
         return json.load(data_file)
 
 
-def write_json(path, content):
+def write_json(path: Path | str, content):
     with open(path, 'w') as outfile:
         json.dump(content, outfile, indent=4)
 
 
-def init_file(path, content=None):
+def init_file(path: Path | str, content=None):
     if not os.path.exists(path):
         write_json(path, content)
 
@@ -118,9 +121,10 @@ def wait_until_admin_inited():
 
 
 def init_skale(wallet: BaseWallet | None) -> SkaleManager:
+    st = get_skale_base_settings()
     return SkaleManager(
-        endpoint(),
-        manager_contracts(),
+        str(st.endpoint),
+        st.contracts.manager,
         wallet,
         enable_stats=True,
         redis_cache_config=RedisCacheConfig(
@@ -183,7 +187,13 @@ def no_hyphens(name: str) -> str:
 
 
 def is_fair() -> bool:
-    return SKALE_NETWORK_TYPE == 'fair'
+    node_st = get_node_settings()
+    return node_st.node_type == 'fair'
+
+
+def is_passive() -> bool:
+    node_st = get_node_settings()
+    return node_st.node_mode == 'passive'
 
 
 def cast_manager_to_fair_node_id(manager_node_id: int) -> NodeId:
@@ -192,3 +202,8 @@ def cast_manager_to_fair_node_id(manager_node_id: int) -> NodeId:
 
 def dict_to_hash(d: dict) -> str:
     return hashlib.md5(json.dumps(d).encode()).hexdigest()
+
+
+@lru_cache
+def containers_info() -> dict:
+    return read_json(CONTAINERS_FILEPATH)

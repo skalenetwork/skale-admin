@@ -28,7 +28,7 @@ from core.config.schain.directory import get_files_with_prefix, schain_config_di
 from core.config.schain.file_manager import ConfigFileManager, SkaledConfigFilename
 from core.config.schain.generator import generate_schain_config_with_skale
 from core.node_config import NodeConfig
-from tools.configs import SCHAIN_CONFIG_DIR_SKALED
+from tools.constants import SCHAIN_CONFIG_DIR_SKALED
 from tools.node_options import NodeOptions
 from tools.str_formatters import arguments_list_string
 

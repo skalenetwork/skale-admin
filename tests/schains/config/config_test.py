@@ -12,7 +12,7 @@ from core.config.schain.helper import (
     get_schain_env,
 )
 from core.config.schain.main import get_latest_finish_ts, get_rotation_ids_from_config
-from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
+from tools.constants.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 
 
 def test_get_node_ips_from_config(schain_config):

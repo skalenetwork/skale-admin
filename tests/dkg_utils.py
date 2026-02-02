@@ -3,7 +3,8 @@
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
 
-from tools.configs.sgx import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tests.conftest import TestSettings
+from tools.constants import SGX_CERTIFICATES_FOLDER
 
 INSECURE_PRIVATE_KEY = 'f253bad7b1f62b8ff60bbf451cf2e8e9ebb5d6e9bff450c55b8d5504b8c63d3'
 SECRET_KEY_INFO = {
@@ -44,8 +45,8 @@ def get_bls_public_keys():
     }
 
 
-def import_bls_key():
-    sgx_client = SgxClient(SGX_SERVER_URL, n=1, t=1, path_to_cert=SGX_CERTIFICATES_FOLDER)
+def import_bls_key(st: TestSettings):
+    sgx_client = SgxClient(str(st.sgx_url), n=1, t=1, path_to_cert=str(SGX_CERTIFICATES_FOLDER))
     try:
         sgx_client.import_bls_private_key(SECRET_KEY_INFO['key_share_name'], INSECURE_PRIVATE_KEY)
     except SgxServerError as e:
