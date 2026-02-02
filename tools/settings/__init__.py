@@ -72,6 +72,7 @@ class BaseAdminSettings(TomlBaseSettings):
     endpoint: AnyUrl
     backup_run: bool = False
     pull_config_for_schain: str | None = None
+    bite: bool = False
 
     @property
     def node_data_path_host(self) -> Path:
