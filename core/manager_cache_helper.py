@@ -20,7 +20,7 @@
 import logging
 from typing import Any
 
-from eth_typing import ChecksumAddress
+from eth_typing import ChecksumAddress, HexStr
 from skale import SkaleManager
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.types.node import NodeId, NodeWithChangeIp
@@ -89,6 +89,9 @@ def schain_structure_from_dict(d: dict[str, Any]) -> SchainStructure:
             multitransaction_mode=bool(opt['multitransaction_mode']),
             threshold_encryption=bool(opt['threshold_encryption']),
             allocation_type=AllocationType(opt['allocation_type']),
+            external_gas_difficulty=HexStr(opt.get('external_gas_difficulty', '0x01')),
+            min_gas_price=HexStr(opt.get('min_gas_price')) if opt.get('min_gas_price') else None,
+            max_gas_price=HexStr(opt.get('max_gas_price')) if opt.get('max_gas_price') else None,
         ),
         active=bool(d['active']),
     )
