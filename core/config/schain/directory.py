@@ -27,10 +27,11 @@ from tools.constants.schains import (
     BASE_SCHAIN_CONFIG_FILEPATH,
     NODE_CLI_STATUS_FILENAME,
     SCHAIN_SCHECKS_FILENAME,
+    SCHAINS_DIR_NAME,
     SCHAINS_DIR_PATH,
-    SCHAINS_DIR_PATH_HOST,
     SKALED_STATUS_FILENAME,
 )
+from tools.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,9 @@ def schain_config_dir(name: str) -> str:
 
 def schain_config_dir_host(name: str) -> str:
     """Get sChain config directory path on host"""
-    return os.path.join(SCHAINS_DIR_PATH_HOST, name)
+    st = get_settings()
+    schains_dir_path_host = st.node_data_path_host / SCHAINS_DIR_NAME
+    return os.path.join(schains_dir_path_host, name)
 
 
 def init_schain_config_dir(name: str) -> str:

@@ -19,7 +19,7 @@ from core.node import (
     get_node_hardware_info,
 )
 from core.node_config import NodeConfig
-from tools.configs import NODE_DATA_PATH
+from tools.constants import NODE_DATA_PATH
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 

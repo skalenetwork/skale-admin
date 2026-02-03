@@ -13,6 +13,7 @@ export SGX_WALLET_TAG=e548b375cae741af8fd11db54d6925c27a947af9
 export SKALED_TAG=4.1.0-develop.24-mirage
 
 export SKALE_VOLUME_PATH=$PWD/tests/skale-data
+export SGX_CERTIFICATES_FOLDER=$SKALE_VOLUME_PATH/node_data/sgx_certs
 export PYTHONPATH=${PYTHONPATH}:.
 export ENV=dev
 export SGX_SERVER_URL=https://localhost:1026

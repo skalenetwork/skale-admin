@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-from eth_typing import HexStr
 from skale import SkaleManager
 from skale.types.schain import SchainHash, SchainName, SchainStructure
 from web3 import Web3
@@ -39,17 +38,22 @@ from tests.utils import (
     get_test_rule_controller,
     upsert_schain_record_with_config,
 )
-from tools.configs import (
+from tools.constants import (
+    CONFIG_FOLDER,
     META_FILEPATH,
     SSL_CERTIFICATES_FILEPATH,
 )
-from tools.constants import CONFIG_FOLDER
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.helper import write_json
-from tools.settings import SkaleSettings, get_settings
+from tools.settings import get_settings
 from web.models.schain import SChainRecord, create_tables
 
-pytest_plugins = ['tests.fixtures.web3', 'tests.fixtures.schain', 'tests.fixtures.containers']
+pytest_plugins = [
+    'tests.fixtures.web3',
+    'tests.fixtures.schain',
+    'tests.fixtures.containers',
+    'tests.fixtures.settings',
+]
 
 
 @pytest.fixture
@@ -264,20 +268,6 @@ def current_nodes(
     schain_hash_on_contracts: SchainHash,
 ):
     return get_current_nodes(skale, schain_hash_on_contracts)
-
-
-# @pytest.fixture(scope='session')
-# def st() -> BaseAdminSettings:
-#     return get_settings()
-
-
-class TestSettings(SkaleSettings):
-    eth_private_key: HexStr
-
-
-@pytest.fixture(scope='session')
-def st() -> TestSettings:
-    return TestSettings()  # type: ignore[call-arg]
 
 
 @pytest.fixture

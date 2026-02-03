@@ -79,6 +79,7 @@ class BaseAdminSettings(TomlBaseSettings):
         return self.skale_dir_host / NODE_DATA_FOLDER_NAME
 
     model_config = SettingsConfigDict(
+        extra='allow',
         toml_file=ADMIN_SETTINGS_PATH,
         env_nested_delimiter=NESTED_DELIMITER,
     )

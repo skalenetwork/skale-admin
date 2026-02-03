@@ -26,7 +26,7 @@ from eth_utils.hexadecimal import remove_0x_prefix
 from skale.contracts.manager.dkg import G2Point, KeyShare
 from skale.utils.helper import split_public_key
 
-from tools.configs import NODE_DATA_PATH
+from tools.constants import NODE_DATA_PATH
 from tools.helper import write_json
 
 logger = logging.getLogger(__name__)

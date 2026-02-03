@@ -18,7 +18,7 @@ from core.monitor.schain.main import ConfigTask, SkaledTask
 from core.monitor.tasks import ITask, execute_tasks
 from core.node_config import NodeConfig
 from core.schains.process import ProcessReport
-from tests.conftest import TestSettings
+from tests.fixtures.settings import TestSettings
 from tests.utils import TEST_TASK_SLEEP
 from tools.constants import SGX_CERTIFICATES_FOLDER
 from tools.constants.schains import SCHAINS_DIR_PATH

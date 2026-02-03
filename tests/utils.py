@@ -34,7 +34,7 @@ from core.firewall.base.firewall_manager import ChainFirewallManager
 from core.firewall.base.types import IFirewallManager, IHostFirewallController, IpRange
 from core.firewall.schain.rule_controller import SChainRuleController
 from core.schains.cleaner import remove_config_dir, remove_schain_volume, remove_skaled_container
-from tests.conftest import TestSettings
+from tests.fixtures.settings import TestSettings
 from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
