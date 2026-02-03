@@ -586,6 +586,7 @@ def test_generate_schain_config_with_skale_gen2(
 
 def test_generate_schain_config_with_dynamic_pricing(
     skale_ima: SkaleIma,
+    schain_secret_key_file_default_chain,
 ):
     node_id, generation, rotation_id = NodeId(1), 2, 0
     ecdsa_key_name = 'test'
