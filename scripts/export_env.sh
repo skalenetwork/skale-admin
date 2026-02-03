@@ -14,6 +14,8 @@ export SKALE_VOLUME_PATH=$PWD/tests/skale-data
 export SGX_CERTIFICATES_FOLDER=$SKALE_VOLUME_PATH/node_data/sgx_certs
 export PYTHONPATH=${PYTHONPATH}:.
 
+export ALLOWED_TS_DIFF=9000000 # used directly in skale.py
+
 export CONTRACTS__MANAGER=$(bash $PWD/helper-scripts/helper.sh manager_address) || true
 export CONTRACTS__IMA=$(bash $PWD/helper-scripts/helper.sh ima_address) || true
 export CONTRACTS__FAIR=$(bash $PWD/helper-scripts/helper.sh fair_address) || true
