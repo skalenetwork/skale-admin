@@ -56,12 +56,18 @@ class CurrentNodeInfo(NodeInfo):
                 'wallets': self.wallets,
                 'syncNode': self.passive_node,
                 'info-acceptors': 1,
-                'dynamicPricingMinPrice': self.min_gas_price,
-                'dynamicPricingStartPrice': self.min_gas_price,
-                'dynamicPricingMaxPrice': self.max_gas_price,
                 **self.static_node_info,
             },
         }
+
+        if self.min_gas_price is not None:
+            min_price = int(self.min_gas_price, 0)
+            node_info['dynamicPricingMinPrice'] = min_price
+            node_info['dynamicPricingStartPrice'] = min_price
+
+        if self.max_gas_price is not None:
+            node_info['dynamicPricingMaxPrice'] = int(self.max_gas_price, 0)
+
         if self.passive_node:
             node_info['archiveMode'] = self.archive
             node_info['syncFromCatchup'] = self.catchup
