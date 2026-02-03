@@ -35,7 +35,11 @@ from tools.constants.db import REDIS_URI
 from tools.constants.web3 import CACHE_TTL_POLICY
 from tools.helper import init_skale, is_fair
 from tools.resources import rs
-from tools.settings import get_fair_base_settings, get_skale_base_settings, get_skale_settings
+from tools.settings import (
+    get_fair_base_settings,
+    get_skale_base_settings,
+    get_skale_settings,
+)
 from tools.wallet_utils import init_wallet
 from web import API_VERSION_PREFIX
 

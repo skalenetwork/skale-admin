@@ -1,8 +1,6 @@
 env_type = 'devnet'
-skale_dir_host = 'a'
-
-sgx_url = 'http://sgx.url'
+skale_dir_host = './skale-data/'
+endpoint = 'http://127.0.0.1:8545'
+sgx_url = 'https://localhost:1026'
 
 [contracts]
-manager = 'a'
-ima = 'b'

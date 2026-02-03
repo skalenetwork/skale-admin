@@ -79,7 +79,6 @@ class BaseAdminSettings(TomlBaseSettings):
         return self.skale_dir_host / NODE_DATA_FOLDER_NAME
 
     model_config = SettingsConfigDict(
-        extra='allow',
         toml_file=ADMIN_SETTINGS_PATH,
         env_nested_delimiter=NESTED_DELIMITER,
     )
@@ -128,8 +127,11 @@ def get_skale_settings() -> SkaleSettings:
 
 
 @lru_cache
-def get_skale_base_settings() -> SkaleBaseSettings:
-    return SkaleBaseSettings()  # type: ignore[call-arg]
+def get_skale_base_settings() -> SkaleBaseSettings | SkaleSettings:
+    node_settings = get_node_settings()
+    if node_settings.node_mode == 'passive':
+        return SkaleBaseSettings()  # type: ignore[call-arg]
+    return SkaleSettings()  # type: ignore[call-arg]
 
 
 @lru_cache

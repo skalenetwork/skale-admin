@@ -24,9 +24,9 @@ export ENV=test
 export ALLOWED_TS_DIFF=9000000
 export SCHAIN_STOP_TIMEOUT=1
 
-export MANAGER_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh manager_address) || true
-export IMA_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh ima_address) || true
-export FAIR_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh fair_address) || true
+export CONTRACTS__MANAGER=$(bash $PWD/helper-scripts/helper.sh manager_address) || true
+export CONTRACTS__IMA=$(bash $PWD/helper-scripts/helper.sh ima_address) || true
+export CONTRACTS__FAIR=$(bash $PWD/helper-scripts/helper.sh fair_address) || true
 
 export DEFAULT_GAS_PRICE_WEI=1000000000
 
