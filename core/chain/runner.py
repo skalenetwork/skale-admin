@@ -38,6 +38,7 @@ from tools.constants import (
     SKALE_VOLUME_PATH,
 )
 from tools.constants.containers import (
+    BITE_IMAGE_POSTFIX,
     CONTAINER_NAME_PREFIX,
     DATA_DIR_CONTAINER_PATH,
     FAIR_IMAGE_SUFFIX,
@@ -83,7 +84,7 @@ def get_image_name(image_type: str, new: bool = False, historic_state: bool = Fa
         if is_fair():
             image_name += FAIR_IMAGE_SUFFIX
         if st.bite:
-            image_name += '-bite'
+            image_name += BITE_IMAGE_POSTFIX
         if historic_state:
             image_name += HISTORIC_STATE_IMAGE_POSTFIX
     return image_name

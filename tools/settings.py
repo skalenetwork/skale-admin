@@ -80,6 +80,8 @@ class BaseAdminSettings(TomlBaseSettings):
 
     container_stop_timeout: int = 300
 
+    influx_url: AnyUrl | None = None
+
     @field_validator('skale_dir_host', mode='before')
     @classmethod
     def validate_skale_dir_host(cls, value: Path | str) -> Path:

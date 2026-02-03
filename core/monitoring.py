@@ -24,8 +24,6 @@ from tools.constants.monitoring import (
     FILEBEAT_CONFIG_PATH,
     FILEBEAT_CONTAINER_NAME,
     FILEBEAT_TEMPLATE_PATH,
-    INFLUX_URL,
-    TELEGRAF,
     TELEGRAF_CONFIG_PATH,
     TELEGRAF_CONTAINER_NAME,
     TELEGRAF_IMAGE,
@@ -97,7 +95,7 @@ def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
 
 
 def update_telegraf_service(
-    node_ip: str, node_id: int, url: str = INFLUX_URL, dutils: Optional[DockerUtils] = None
+    node_ip: str, node_id: int, url: str, dutils: Optional[DockerUtils] = None
 ) -> None:
     dutils = dutils or DockerUtils()
     template_data = {'ip': node_ip, 'node_id': str(node_id), 'url': url}
@@ -123,5 +121,6 @@ def update_monitoring_services(
     node_ip, node_id, contract_alias_or_address: str, dutils: Optional[DockerUtils] = None
 ):
     update_filebeat_service(node_ip, node_id, contract_alias_or_address, dutils=dutils)
-    if TELEGRAF:
-        update_telegraf_service(node_ip, node_id, dutils=dutils)
+    st = get_settings()
+    if st.influx_url:
+        update_telegraf_service(node_ip, node_id, str(st.influx_url), dutils=dutils)

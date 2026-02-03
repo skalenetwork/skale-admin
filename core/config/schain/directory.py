@@ -26,7 +26,7 @@ from typing import List
 from tools.constants.schains import (
     BASE_SCHAIN_CONFIG_FILEPATH,
     NODE_CLI_STATUS_FILENAME,
-    SCHAIN_SCHECKS_FILENAME,
+    SCHAIN_CHECKS_FILENAME,
     SCHAINS_DIR_NAME,
     SCHAINS_DIR_PATH,
     SKALED_STATUS_FILENAME,
@@ -67,7 +67,7 @@ def node_cli_status_filepath(name: str) -> str:
 
 def get_schain_check_filepath(schain_name):
     schain_dir_path = schain_config_dir(schain_name)
-    return os.path.join(schain_dir_path, SCHAIN_SCHECKS_FILENAME)
+    return os.path.join(schain_dir_path, SCHAIN_CHECKS_FILENAME)
 
 
 def read_base_config():

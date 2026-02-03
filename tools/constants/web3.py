@@ -20,7 +20,6 @@
 from eth_typing import HexAddress, HexStr
 
 UNTRUSTED_PROVIDERS = ['infura.io', 'gateway.pokt.network']
-NODE_REGISTER_CONFIRMATION_BLOCKS = 5
 
 ZERO_ADDRESS = HexAddress(HexStr('0x0000000000000000000000000000000000000000'))
 
