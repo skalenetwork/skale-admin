@@ -31,11 +31,9 @@ logger = logging.getLogger(__name__)
 
 app = Celery('tasks', broker=REDIS_URI)
 
-SEND_MSG_TIMEOUT = 30
-
 
 @app.task(rate_limit=NOTIFICATIONS_RATE_LIMIT)
 def send_message_to_telegram(api_key, chat_id, message, bot=None):
     bot = bot or Bot(api_key)
     logger.info(f'Sending message to telegram {message}')
-    return bot.send_message(chat_id=chat_id, text=message, timeout=SEND_MSG_TIMEOUT)
+    return bot.send_message(chat_id=chat_id, text=message)

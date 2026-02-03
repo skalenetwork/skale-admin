@@ -70,9 +70,15 @@ class BaseAdminSettings(TomlBaseSettings):
     env_type: EnvType
     skale_dir_host: Path
     endpoint: AnyUrl
+
     backup_run: bool = False
     pull_config_for_schain: str | None = None
     bite: bool = False
+
+    tg_api_key: str | None = None
+    tg_chat_id: str | None = None
+
+    container_stop_timeout: int = 300
 
     @field_validator('skale_dir_host', mode='before')
     @classmethod

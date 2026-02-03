@@ -30,8 +30,8 @@ def test_generate_wallets_config():
         )
 
     assert wallets['ima']['keyShareName'] == SECRET_KEY_MOCK['key_share_name']
-    assert wallets['ima']['certFile'] == SGX_SSL_CERT_FILEPATH
-    assert wallets['ima']['keyFile'] == SGX_SSL_KEY_FILEPATH
+    assert wallets['ima']['certFile'] == str(SGX_SSL_CERT_FILEPATH)
+    assert wallets['ima']['keyFile'] == str(SGX_SSL_KEY_FILEPATH)
     assert wallets['ima']['commonBLSPublicKey0'] == '1'
     assert wallets['ima']['commonBLSPublicKey1'] == '2'
     assert wallets['ima']['commonBLSPublicKey2'] == '3'

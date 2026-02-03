@@ -16,8 +16,8 @@ from web3 import Web3
 from core.config.schain.file_manager import ConfigFileManager
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
+from tests.fixtures.settings import TestSettings
 from tests.utils import get_bp_data, post_bp_data
-from tools.configs.tg import TG_API_KEY, TG_CHAT_ID  # todof: remove if tg is not used
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.settings import get_settings
 from web.helper import get_api_url
@@ -160,7 +160,7 @@ def test_set_domain_name(skale_bp, skale):
 
 
 @freezegun.freeze_time(CURRENT_DATETIME)
-def test_send_tg_notification(skale_bp):
+def test_send_tg_notification(skale_bp, st: TestSettings):
     with mock.patch(
         'tools.notifications.messages.send_message_to_telegram',
         mock.Mock(return_value={'message': 'test'}),
@@ -169,8 +169,8 @@ def test_send_tg_notification(skale_bp):
             skale_bp, get_api_url(BLUEPRINT_NAME, 'send-tg-notification'), {'message': ['test']}
         )
         send_message_to_telegram_mock.delay.assert_called_once_with(
-            TG_API_KEY,
-            TG_CHAT_ID,
+            st.tg_api_key,
+            st.tg_chat_id,
             'test\n\nTimestamp: 1594903080\nDatetime: Thu Jul 16 12:38:00 2020',
         )
 

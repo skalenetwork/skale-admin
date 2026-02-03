@@ -43,7 +43,6 @@ from tools.constants.containers import (
     FAIR_IMAGE_SUFFIX,
     HISTORIC_STATE_IMAGE_POSTFIX,
     IMA_CONTAINER,
-    SCHAIN_STOP_TIMEOUT,
     SKALED_CONTAINER,
     ImageType,
 )
@@ -182,7 +181,7 @@ def run_container(
 def restart_container(
     image_type: ImageType,
     chain_name: ChainName,
-    timeout=SCHAIN_STOP_TIMEOUT,
+    timeout: int | None = None,
     dutils=None,
 ):
     dutils = dutils or DockerUtils()
@@ -190,6 +189,9 @@ def restart_container(
     logger.info(
         arguments_list_string({'Container name': container_name}, 'Restarting container...')
     )
+    if timeout is None:
+        st = get_settings()
+        timeout = st.container_stop_timeout
     cont = dutils.restart(container_name, timeout=timeout)
     return cont
 

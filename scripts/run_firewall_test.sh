@@ -8,8 +8,5 @@ docker build -t admin:base .
 docker build -f tests.Dockerfile -t test-firewall .
 docker run -v "$DIR/../tests/skale-data/node_data":"/skale_node_data" \
     -v "$DIR/../tests/skale-data":"/skale_vol" \
-    -e SGX_SERVER_URL="https://127.0.0.1:1026" \
-    -e ENDPOINT="http://127.0.0.1:8545" \
-    -e DB_ROOT_PASSWORD="root-test-pass" \
     --cap-add=NET_ADMIN --cap-add=NET_RAW \
     --name test-firewall test-firewall pytest --cov core.firewall tests/firewall/ $@

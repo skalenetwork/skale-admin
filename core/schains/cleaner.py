@@ -35,10 +35,7 @@ from core.chain.runner import get_container_name, is_exited
 from core.checks.schain import SChainChecks
 from core.config.schain.directory import schain_config_dir
 from core.dkg.utils import get_secret_key_share_filepath
-from core.firewall.utils import (
-    cleanup_firewall_for_schain,
-    get_default_rule_controller,
-)
+from core.firewall.utils import cleanup_firewall_for_schain, get_default_rule_controller
 from core.manager_cache import ManagerCache
 from core.node import get_current_nodes, get_skale_node_version
 from core.node_config import NodeConfig
@@ -46,11 +43,11 @@ from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType
 from tools.constants import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER
-from tools.constants.containers import IMA_CONTAINER, SCHAIN_STOP_TIMEOUT, SKALED_CONTAINER
+from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from tools.helper import is_node_part_of_chain, is_passive, merged_unique, read_json
-from tools.settings import get_active_settings
+from tools.settings import get_active_settings, get_settings
 from tools.str_formatters import arguments_list_string
 from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
 
@@ -76,20 +73,23 @@ def log_remove(component_name, schain_name):
     logger.info(f'Going to remove {component_name} for sChain {schain_name}')
 
 
-def remove_schain_volume(schain_name: str, dutils: DockerUtils = None) -> None:
+def remove_schain_volume(schain_name: str, dutils: DockerUtils | None = None) -> None:
     dutils = dutils or DockerUtils()
     log_remove('volume', schain_name)
     dutils.rm_vol(schain_name)
 
 
-def remove_skaled_container(schain_name: str, dutils: DockerUtils = None):
+def remove_skaled_container(schain_name: str, dutils: DockerUtils | None = None):
     dutils = dutils or DockerUtils()
+    st = get_settings()
     log_remove('container', schain_name)
     schain_container_name = get_container_name(SKALED_CONTAINER, schain_name)
-    return dutils.safe_rm(schain_container_name, v=True, force=True, timeout=SCHAIN_STOP_TIMEOUT)
+    return dutils.safe_rm(
+        schain_container_name, v=True, force=True, timeout=st.container_stop_timeout
+    )
 
 
-def remove_ima_container(schain_name: str, dutils: DockerUtils = None):
+def remove_ima_container(schain_name: str, dutils: DockerUtils | None = None):
     dutils = dutils or DockerUtils()
     log_remove('IMA container', schain_name)
     ima_container_name = get_container_name(IMA_CONTAINER, schain_name)
