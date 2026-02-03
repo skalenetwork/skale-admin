@@ -1,6 +1,5 @@
 import pathlib
 import shutil
-from typing import cast
 
 import pytest
 from eth_typing import HexStr
@@ -29,12 +28,12 @@ from skale.wallets import Web3Wallet
 
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
-from tests.utils import ETH_PRIVATE_KEY
+from tests.fixtures.settings import TestSettings
 from tools.constants import SGX_CERTIFICATES_FOLDER
 from tools.constants.db import REDIS_URI
 from tools.constants.web3 import CACHE_TTL_POLICY
 from tools.resources import rs
-from tools.settings import FairBaseSettings, SkaleBaseSettings
+from tools.settings import FairBaseSettings, SkaleBaseSettings, SkaleSettings
 
 ETH_AMOUNT_PER_NODE = 1
 NUMBER_OF_NODES = 2
@@ -67,11 +66,14 @@ def fair_contracts(st: FairBaseSettings) -> str:
     return st.contracts.fair
 
 
-@pytest.fixture(scope='session')  # todof: move to test config!
-def private_key() -> HexStr:
-    if not ETH_PRIVATE_KEY:
-        raise ValueError('Set ETH_PRIVATE_KEY environment variable to use private_key fixture')
-    return cast(HexStr, ETH_PRIVATE_KEY)
+@pytest.fixture(scope='session')
+def ima_contracts(st: SkaleSettings) -> str:
+    return st.contracts.ima
+
+
+@pytest.fixture(scope='session')
+def private_key(st: TestSettings) -> HexStr:
+    return st.eth_private_key
 
 
 @pytest.fixture(scope='session')

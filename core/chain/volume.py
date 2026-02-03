@@ -84,7 +84,7 @@ def ensure_data_dir_path(chain_name: ChainName) -> None:
         )
 
 
-def get_schain_volume_config(name, mount_path, mode=None, passive_node=False):
+def get_schain_volume_config(name: str, mount_path: str, mode=None, passive_node=False):
     mode = mode or 'rw'
     if passive_node or is_fair():
         datadir_src = os.path.join(CHAIN_STATE_PATH, name)

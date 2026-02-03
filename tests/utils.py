@@ -44,10 +44,6 @@ from web.models.schain import upsert_schain_record
 CURRENT_TS = 1594903080
 CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TS)
 
-DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
-
-
 CONFIG_STREAM = '1.0.0-testnet'
 
 TEST_NODE_ID = NodeId(1)

@@ -280,14 +280,20 @@ def add_config_volume(run_args, schain_name, mode=None):
     st = get_settings()
 
     # mount /skale_node_data
-    run_args['volumes'][st.node_data_path_host] = {
-        'bind': SCHAIN_NODE_DATA_PATH,
+    run_args['volumes'][str(st.node_data_path_host)] = {
+        'bind': str(SCHAIN_NODE_DATA_PATH),
         'mode': mode or 'ro',
     }
     # mount /skale_vol
-    run_args['volumes'][st.skale_dir_host] = {'bind': SKALE_VOLUME_PATH, 'mode': mode or 'ro'}
+    run_args['volumes'][str(st.skale_dir_host)] = {
+        'bind': str(SKALE_VOLUME_PATH),
+        'mode': mode or 'ro',
+    }
     # mount /skale_schain_data
-    run_args['volumes'][config_dir_host] = {'bind': SCHAIN_CONFIG_DIR_SKALED, 'mode': mode or 'rw'}
+    run_args['volumes'][config_dir_host] = {
+        'bind': str(SCHAIN_CONFIG_DIR_SKALED),
+        'mode': mode or 'rw',
+    }
 
 
 def is_exited(

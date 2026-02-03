@@ -21,7 +21,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TypeAlias
 
-from pydantic import AnyUrl, BaseModel
+from pydantic import AnyUrl, BaseModel, field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -73,6 +73,11 @@ class BaseAdminSettings(TomlBaseSettings):
     backup_run: bool = False
     pull_config_for_schain: str | None = None
     bite: bool = False
+
+    @field_validator('skale_dir_host', mode='before')
+    @classmethod
+    def validate_skale_dir_host(cls, value: Path | str) -> Path:
+        return Path(value).expanduser().resolve()
 
     @property
     def node_data_path_host(self) -> Path:
