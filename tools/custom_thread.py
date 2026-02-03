@@ -66,18 +66,3 @@ class CustomThread(threading.Thread):
         """Stop the thread."""
         self._stopevent.set()
         threading.Thread.join(self, timeout)
-
-
-def test(opts):
-    print(12345)
-
-
-if __name__ == '__main__':
-    testthread = CustomThread('test', test)
-    testthread.start()
-
-    import time
-
-    time.sleep(10.0)
-
-    testthread.join()

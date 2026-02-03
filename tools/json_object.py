@@ -22,7 +22,7 @@ from pathlib import Path
 
 from filelock import FileLock
 
-from tools.helper import init_file, read_json, write_json
+from tools.helper import read_json, write_json
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class JsonObject:
     def __init__(self, filepath: Path):
         self.filepath = filepath
         self.lock_filepath = filepath.with_suffix(f'{filepath.suffix}.lock')
-        init_file(filepath, {})
+        write_json(filepath, {})
 
     def _get(self, field_name: str):
         config = read_json(self.filepath)

@@ -29,7 +29,6 @@ from pathlib import Path
 from subprocess import PIPE
 from typing import cast
 
-import psutil
 import requests
 import yaml
 from filelock import FileLock
@@ -67,17 +66,6 @@ def read_json(path: Path | str, mode='r'):
 def write_json(path: Path | str, content):
     with open(path, 'w') as outfile:
         json.dump(content, outfile, indent=4)
-
-
-def init_file(path: Path | str, content=None):
-    if not os.path.exists(path):
-        write_json(path, content)
-
-
-def files(path):
-    for file in os.listdir(path):
-        if os.path.isfile(os.path.join(path, file)):
-            yield file
 
 
 def run_cmd(cmd, env={}, shell=False):
@@ -150,11 +138,6 @@ def check_pid(pid):
         return True
 
 
-def check_pid_psutil(pid):
-    p = psutil.Process(pid)
-    return p.is_running() and p.status() != psutil.STATUS_ZOMBIE
-
-
 def get_endpoint_call_speed(web3: Web3) -> float | None:
     duration: float | None = None
     start = time.time()
@@ -173,12 +156,10 @@ def is_node_part_of_chain(skale, schain_name, node_id) -> bool:
 
 
 def is_zero_address(address: str) -> bool:
-    """Returns true if provided string is equal to Ethereum zero address"""
     return address == ZERO_ADDRESS
 
 
 def is_address_contract(web3, address) -> bool:
-    """Returns true if contract is deployed at the requested address"""
     return web3.eth.get_code(address) != b''
 
 
