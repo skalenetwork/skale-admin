@@ -584,6 +584,43 @@ def test_generate_schain_config_with_skale_gen2(
     assert schain_config_dict['skaleConfig']['sChain']['schainID'] == get_schain_id(schain_name)
 
 
+def test_generate_schain_config_with_dynamic_pricing(
+    skale_ima: SkaleIma,
+):
+    node_id, generation, rotation_id = NodeId(1), 2, 0
+    ecdsa_key_name = 'test'
+    min_price_hex = HexStr('0x123')
+    max_price_hex = HexStr('0x456')
+    min_price_int = int(min_price_hex, 0)
+    max_price_int = int(max_price_hex, 0)
+
+    schain = get_schain_struct(SCHAIN_NAME)
+    schain.options.min_gas_price = min_price_hex
+    schain.options.max_gas_price = max_price_hex
+    contracts_addresses = get_ima_contracts_addresses(skale_ima)
+
+    schain_config = generate_schain_config(
+        schain=schain,
+        node=TEST_NODE,
+        node_id=node_id,
+        ecdsa_key_name=ecdsa_key_name,
+        rotation_id=rotation_id,
+        schain_nodes_with_schain_hashes=get_schain_nodes_with_schain_hashes(SCHAIN_NAME),
+        node_groups=EMPTY_NODE_GROUPS,
+        generation=generation,
+        is_owner_contract=False,
+        common_bls_public_keys=COMMON_BLS_PUBLIC_KEY,
+        schain_base_port=10000,
+        mainnet_ima_addresses=contracts_addresses,
+    )
+    config = schain_config.to_dict()
+
+    node_info = config['skaleConfig']['nodeInfo']
+    assert node_info['dynamicPricingMinPrice'] == min_price_int
+    assert node_info['dynamicPricingStartPrice'] == min_price_int
+    assert node_info['dynamicPricingMaxPrice'] == max_price_int
+
+
 def test_get_schain_originator():
     originator = get_schain_originator(get_schain_struct_no_originator())
     assert originator == TEST_MAINNET_OWNER_ADDRESS
