@@ -28,7 +28,7 @@ from skale.wallets import Web3Wallet
 
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
-from tests.fixtures.settings import TestSettings
+from tests.fixtures.settings import TestingSettings
 from tools.constants import SGX_CERTIFICATES_FOLDER
 from tools.constants.db import REDIS_URI
 from tools.constants.web3 import CACHE_TTL_POLICY
@@ -72,7 +72,7 @@ def ima_contracts(st: SkaleSettings) -> str:
 
 
 @pytest.fixture(scope='session')
-def private_key(st: TestSettings) -> HexStr:
+def private_key(st: TestingSettings) -> HexStr:
     return st.eth_private_key
 
 

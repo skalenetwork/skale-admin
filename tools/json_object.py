@@ -31,7 +31,8 @@ class JsonObject:
     def __init__(self, filepath: Path):
         self.filepath = filepath
         self.lock_filepath = filepath.with_suffix(f'{filepath.suffix}.lock')
-        write_json(filepath, {})
+        if not self.filepath.exists():
+            write_json(filepath, {})
 
     def _get(self, field_name: str):
         config = read_json(self.filepath)

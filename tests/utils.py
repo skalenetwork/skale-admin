@@ -34,7 +34,7 @@ from core.firewall.base.firewall_manager import ChainFirewallManager
 from core.firewall.base.types import IFirewallManager, IHostFirewallController, IpRange
 from core.firewall.schain.rule_controller import SChainRuleController
 from core.schains.cleaner import remove_config_dir, remove_schain_volume, remove_skaled_container
-from tests.fixtures.settings import TestSettings
+from tests.fixtures.settings import TestingSettings
 from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
@@ -171,7 +171,7 @@ def run_simple_ima_container(_test_schain_name, dutils: DockerUtils):
     )
 
 
-def init_web3_wallet(st: TestSettings) -> Web3Wallet:
+def init_web3_wallet(st: TestingSettings) -> Web3Wallet:
     web3 = init_web3(str(st.endpoint))
     return Web3Wallet(st.eth_private_key, web3)
 

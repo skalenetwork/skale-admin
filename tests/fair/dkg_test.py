@@ -35,7 +35,7 @@ from tests.dkg_test.main_test import (
     remove_schain,
     transfer_eth_to_wallets,
 )
-from tests.fixtures.settings import TestSettings
+from tests.fixtures.settings import TestingSettings
 from tools.helper import read_json, run_cmd
 
 N_OF_NODES = 2
@@ -232,7 +232,7 @@ class TestDKGFair:
 
     @pytest.fixture
     def fair_contracts(
-        self, schain_creation_data, skale_dkg, endpoint, manager_contracts, st: TestSettings
+        self, schain_creation_data, skale_dkg, endpoint, manager_contracts, st: TestingSettings
     ):
         chain_name = schain_creation_data[0]
 

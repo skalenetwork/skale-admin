@@ -18,7 +18,7 @@ from core.monitor.schain.main import ConfigTask, SkaledTask
 from core.monitor.tasks import ITask, execute_tasks
 from core.node_config import NodeConfig
 from core.schains.process import ProcessReport
-from tests.fixtures.settings import TestSettings
+from tests.fixtures.settings import TestingSettings
 from tests.utils import TEST_TASK_SLEEP
 from tools.constants import SGX_CERTIFICATES_FOLDER
 from tools.constants.schains import SCHAINS_DIR_PATH
@@ -81,7 +81,7 @@ def test_config_task(
     schain_hash_on_contracts: SchainHash,
     node_config: NodeConfig,
     clear_manager_cache: ManagerCache,
-    st: TestSettings,
+    st: TestingSettings,
 ):
     stream_version = '2.3.0'
     schain = skale.schains.get(schain_hash_on_contracts)

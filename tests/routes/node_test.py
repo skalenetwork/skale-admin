@@ -16,7 +16,7 @@ from web3 import Web3
 from core.config.schain.file_manager import ConfigFileManager
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
-from tests.fixtures.settings import TestSettings
+from tests.fixtures.settings import TestingSettings
 from tests.utils import get_bp_data, post_bp_data
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.settings import get_settings
@@ -160,7 +160,7 @@ def test_set_domain_name(skale_bp, skale):
 
 
 @freezegun.freeze_time(CURRENT_DATETIME)
-def test_send_tg_notification(skale_bp, st: TestSettings):
+def test_send_tg_notification(skale_bp, st: TestingSettings):
     with mock.patch(
         'tools.notifications.messages.send_message_to_telegram',
         mock.Mock(return_value={'message': 'test'}),
