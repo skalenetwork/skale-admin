@@ -163,9 +163,6 @@ def generate_schain_config(
 
     dynamic_params = {
         'chainID': get_chain_id(schain.name),
-        'dynamicPricingMinPrice': schain.options.min_gas_price,
-        'dynamicPricingStartPrice': schain.options.min_gas_price,
-        'dynamicPricingMaxPrice': schain.options.max_gas_price,
         'externalGasDifficulty': schain.options.external_gas_difficulty,
     }
 

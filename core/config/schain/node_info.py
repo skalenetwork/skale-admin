@@ -44,6 +44,9 @@ class CurrentNodeInfo(NodeInfo):
     catchup: bool
     archive: bool
 
+    min_gas_price: str | None = None
+    max_gas_price: str | None = None
+
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
         node_info = {
@@ -53,6 +56,9 @@ class CurrentNodeInfo(NodeInfo):
                 'wallets': self.wallets,
                 'syncNode': self.passive_node,
                 'info-acceptors': 1,
+                'dynamicPricingMinPrice': self.min_gas_price,
+                'dynamicPricingStartPrice': self.min_gas_price,
+                'dynamicPricingMaxPrice': self.max_gas_price,
                 **self.static_node_info,
             },
         }
@@ -93,6 +99,8 @@ def generate_current_node_info(
         archive=archive,
         catchup=catchup,
         static_node_info=static_node_info,
+        min_gas_price=schain.options.min_gas_price,
+        max_gas_price=schain.options.max_gas_price,
     )
 
 
