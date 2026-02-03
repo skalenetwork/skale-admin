@@ -37,7 +37,6 @@ from core.schains.exit_scheduler import ExitScheduleFileManager
 from core.types.chain import ChainName
 from tools.constants.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import is_passive
 from tools.node_options import NodeOptions
 from tools.notifications.messages import notify_repair_mode
 from tools.resources import get_statsd_client
@@ -160,10 +159,7 @@ class BaseSkaledActionManager(BaseActionManager):
         self.chain_record.set_failed_rpc_count(0)
         if type(self.chain_record) is ChainRecord:  # todo: remove after migration to ChainRecord
             self.chain_record.set_restart_ts(0)
-        initial_status = self.skaled_container(
-            abort_on_exit=abort_on_exit,
-            passive_node=is_passive(),
-        )
+        initial_status = self.skaled_container(abort_on_exit=abort_on_exit)
         return initial_status
 
     @BaseActionManager.monitor_block

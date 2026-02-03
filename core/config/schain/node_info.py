@@ -120,8 +120,8 @@ def generate_wallets_config(
             {
                 'keyShareName': secret_key_share_config['key_share_name'],
                 't': secret_key_share_config['t'],
-                'certFile': SGX_SSL_CERT_FILEPATH,
-                'keyFile': SGX_SSL_KEY_FILEPATH,
+                'certFile': str(SGX_SSL_CERT_FILEPATH),
+                'keyFile': str(SGX_SSL_KEY_FILEPATH),
             }
         )
 

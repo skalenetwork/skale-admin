@@ -1,7 +1,9 @@
 import pytest
 from flask import Flask, appcontext_pushed, g
+from skale import SkaleManager
 from skale.wallets.web3_wallet import to_checksum_address
 
+from tests.fixtures.settings import TestSettings
 from tests.utils import get_bp_data, init_web3_wallet, post_bp_data
 from web.helper import get_api_url
 from web.routes.wallet import wallet_bp
@@ -10,12 +12,12 @@ BLUEPRINT_NAME = 'wallet'
 
 
 @pytest.fixture
-def skale_bp(skale):
+def skale_bp(skale: SkaleManager, st: TestSettings):
     app = Flask(__name__)
     app.register_blueprint(wallet_bp)
 
     def handler(sender, **kwargs):
-        g.wallet = init_web3_wallet()
+        g.wallet = init_web3_wallet(st)
 
     with appcontext_pushed.connected_to(handler, app):
         yield app.test_client()
