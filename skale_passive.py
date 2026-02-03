@@ -29,13 +29,13 @@ from skale.utils.helper import schain_name_to_hash
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from core.schains.process_manager import run_pm_schain
-from tools.logger import init_sync_logger
+from tools.logger import init_admin_logger
 from tools.resources import rs
 from tools.settings import get_skale_base_settings
 from web.migrations import migrate
 from web.models.schain import create_tables
 
-init_sync_logger()
+init_admin_logger()
 logger = logging.getLogger(__name__)
 
 SLEEP_INTERVAL = 360
