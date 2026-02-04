@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import os
 import time
 
 from skale import SkaleIma, SkaleManager
@@ -31,7 +30,7 @@ from core.node_config import NodeConfig
 from core.schains.process_manager import run_pm_schain
 from tools.logger import init_admin_logger
 from tools.resources import rs
-from tools.settings import get_skale_base_settings
+from tools.settings import get_skale_passive_settings
 from web.migrations import migrate
 from web.models.schain import create_tables
 
@@ -40,8 +39,6 @@ logger = logging.getLogger(__name__)
 
 SLEEP_INTERVAL = 360
 WORKER_RESTART_SLEEP_INTERVAL = 2
-
-SCHAIN_NAME = os.environ.get('SCHAIN_NAME')
 
 
 def monitor(
@@ -58,7 +55,7 @@ def monitor(
 
 
 def worker(schain_name: SchainName):
-    st = get_skale_base_settings()
+    st = get_skale_passive_settings()
     skale = SkaleManager(str(st.endpoint), st.contracts.manager)
     skale_ima = SkaleIma(str(st.endpoint), st.contracts.ima)
 
@@ -86,13 +83,12 @@ def worker(schain_name: SchainName):
 
 
 def main():
-    if SCHAIN_NAME is None:
-        raise Exception('You should provide SCHAIN_NAME')
+    st = get_skale_passive_settings()
     while True:
         try:
             create_tables()
             migrate()
-            worker(SchainName(SCHAIN_NAME))
+            worker(st.schain_name)
         except Exception:
             logger.exception('Sync node worker failed')
         time.sleep(WORKER_RESTART_SLEEP_INTERVAL)

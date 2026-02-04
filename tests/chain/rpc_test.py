@@ -9,7 +9,7 @@ import requests
 from core.chain.rpc import check_endpoint_blocks, handle_failed_skaled_rpc
 from core.chain.runner import get_container_info
 from tests.utils import generate_skaled_status_file
-from tools.constants.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
+from tools.constants.containers import SKALED_CONTAINER
 from tools.constants.schains import MAX_SCHAIN_FAILED_RPC_COUNT
 from web.models.schain import SChainRecord
 
@@ -83,7 +83,7 @@ def test_monitor_schain_downloading_snapshot(
 
 
 def test_handle_failed_skaled_rpc_stuck_max_retries(
-    schain_db, dutils, skaled_status, cleanup_schain_containers
+    schain_db, dutils, skaled_status, cleanup_schain_containers, st
 ):
     schain_record = SChainRecord.get_by_name(schain_db)
     image_name, container_name, _, _ = get_container_info(SKALED_CONTAINER, schain_db)
@@ -92,7 +92,7 @@ def test_handle_failed_skaled_rpc_stuck_max_retries(
     )
 
     schain_record.set_failed_rpc_count(MAX_SCHAIN_FAILED_RPC_COUNT)
-    schain_record.set_restart_count(MAX_SKALED_RESTART_COUNT + 1)
+    schain_record.set_restart_count(st.max_skaled_restart_count + 1)
 
     container_info = dutils.get_info(container_name)
     finished_at = container_info['stats']['State']['FinishedAt']

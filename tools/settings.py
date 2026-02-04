@@ -28,6 +28,7 @@ from pydantic_settings import (
     SettingsConfigDict,
     TomlConfigSettingsSource,
 )
+from skale.types.schain import SchainName
 
 from core.types.settings import EnvType, NodeMode, NodeType
 from tools.constants import (
@@ -79,8 +80,11 @@ class BaseAdminSettings(TomlBaseSettings):
     tg_chat_id: str | None = None
 
     container_stop_timeout: int = 300
+    max_skaled_restart_count: int = 5
 
     influx_url: AnyUrl | None = None
+
+    disable_colors: bool = False
 
     @field_validator('skale_dir_host', mode='before')
     @classmethod
@@ -105,7 +109,8 @@ class SkaleSettings(SkaleBaseSettings):
     sgx_url: AnyUrl
 
 
-SkalePassiveSettings: TypeAlias = SkaleBaseSettings
+class SkalePassiveSettings(SkaleBaseSettings):
+    schain_name: SchainName
 
 
 class FairBaseSettings(BaseAdminSettings):
@@ -140,10 +145,15 @@ def get_skale_settings() -> SkaleSettings:
 
 
 @lru_cache
+def get_skale_passive_settings() -> SkalePassiveSettings:
+    return SkalePassiveSettings()  # type: ignore[call-arg]
+
+
+@lru_cache
 def get_skale_base_settings() -> SkaleBaseSettings | SkaleSettings:
     node_settings = get_node_settings()
     if node_settings.node_mode == 'passive':
-        return SkaleBaseSettings()  # type: ignore[call-arg]
+        return SkalePassiveSettings()  # type: ignore[call-arg]
     return SkaleSettings()  # type: ignore[call-arg]
 
 

@@ -21,8 +21,6 @@ from pathlib import Path
 
 from tools.constants import NODE_DATA_PATH
 
-# sqlite db
-
 DB_FILENAME = 'skale.db'
 DB_FILE: Path = NODE_DATA_PATH / DB_FILENAME
 DB_PRAGMAS = {

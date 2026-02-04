@@ -17,8 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-
 from core.types.settings import ImageType
 
 DATA_DIR_CONTAINER_PATH = '/data_dir'
@@ -41,8 +39,6 @@ DOCKER_DEFAULT_TAIL_LINES = 10000
 DOCKER_DEFAULT_STOP_TIMEOUT = 20
 
 DEFAULT_DOCKER_HOST = 'unix:///var/run/skale/docker.sock'
-
-MAX_SKALED_RESTART_COUNT = int(os.getenv('MAX_SKALED_RESTART_COUNT', 5))
 
 CONTAINER_LOGS_SEPARATOR = b'=' * 80 + b'\n'
 
