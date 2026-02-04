@@ -21,11 +21,11 @@ import logging
 from typing import Dict, List, Optional
 
 from Crypto.Hash import keccak
+from skale.core.types import EnvType
 from web3 import Web3
 
 from core.config.fair.helper import get_current_nodes as get_fair_current_nodes
 from core.dkg.utils import get_secret_key_share_filepath
-from core.types.settings import EnvType
 from tools.constants import FAIR_STATIC_PARAMS_FILEPATH, STATIC_PARAMS_FILEPATH
 from tools.helper import is_fair, read_json, safe_load_yml
 

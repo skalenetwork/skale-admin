@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from flask import g
+from skale.core.types import EnvType
 from skale.dataclasses.skaled_ports import SkaledPorts
 from websocket import create_connection
 
@@ -32,7 +33,6 @@ from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager, SkaledConfigNotFoundError
 from core.config.schain.helper import get_chain_id, get_static_params
 from core.config.schain.node_info import CurrentNodeInfo
-from core.types.settings import EnvType
 from tools.constants import (
     CONTAINERS_FILEPATH,
     IMA_MIGRATION_PATH,

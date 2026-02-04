@@ -28,9 +28,10 @@ from pydantic_settings import (
     SettingsConfigDict,
     TomlConfigSettingsSource,
 )
+from skale.core.settings import NodeSettings
+from skale.core.types import EnvType
 from skale.types.schain import SchainName
 
-from core.types.settings import EnvType, NodeMode, NodeType
 from tools.constants import (
     ADMIN_SETTINGS_PATH,
     NESTED_DELIMITER,
@@ -127,16 +128,9 @@ FairPassiveSettings: TypeAlias = FairBaseSettings
 ActiveSettings: TypeAlias = SkaleSettings | FairSettings
 
 
-class NodeSettings(TomlBaseSettings):
-    node_type: NodeType
-    node_mode: NodeMode
-
-    model_config = SettingsConfigDict(toml_file=NODE_SETTINGS_PATH)
-
-
 @lru_cache
 def get_node_settings() -> NodeSettings:
-    return NodeSettings()  # type: ignore[call-arg]
+    return NodeSettings(_toml_file=NODE_SETTINGS_PATH)  # type: ignore[call-arg]
 
 
 @lru_cache

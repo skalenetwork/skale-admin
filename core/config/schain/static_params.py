@@ -18,11 +18,11 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from eth_typing import HexStr
+from skale.core.types import EnvType
 
 from core.config.schain.helper import get_static_params, get_static_params_fair
 from core.schains.types import SchainType
 from core.types.chain import FairChainName
-from core.types.settings import EnvType
 
 
 def get_static_chain_id_fair(env_type: EnvType) -> HexStr:
