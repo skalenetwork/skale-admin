@@ -44,8 +44,8 @@ class CurrentNodeInfo(NodeInfo):
     catchup: bool
     archive: bool
 
-    min_gas_price: str | None = None
-    max_gas_price: str | None = None
+    min_gas_price: int | None = None
+    max_gas_price: int | None = None
 
     def to_dict(self):
         """Returns camel-case representation of the CurrentNodeInfo object"""
@@ -61,12 +61,12 @@ class CurrentNodeInfo(NodeInfo):
         }
 
         if self.min_gas_price is not None:
-            min_price = int(self.min_gas_price, 0)
+            min_price = self.min_gas_price
             node_info['dynamicPricingMinPrice'] = min_price
             node_info['dynamicPricingStartPrice'] = min_price
 
         if self.max_gas_price is not None:
-            node_info['dynamicPricingMaxPrice'] = int(self.max_gas_price, 0)
+            node_info['dynamicPricingMaxPrice'] = self.max_gas_price
 
         if self.passive_node:
             node_info['archiveMode'] = self.archive
