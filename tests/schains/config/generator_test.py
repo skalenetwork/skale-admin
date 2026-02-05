@@ -590,14 +590,12 @@ def test_generate_schain_config_with_dynamic_pricing(
 ):
     node_id, generation, rotation_id = NodeId(1), 2, 0
     ecdsa_key_name = 'test'
-    min_price_hex = HexStr('0x123')
-    max_price_hex = HexStr('0x456')
-    min_price_int = int(min_price_hex, 0)
-    max_price_int = int(max_price_hex, 0)
+    min_price_int = 100000
+    max_price_int = 200000
 
     schain = get_schain_struct(SCHAIN_NAME)
-    schain.options.min_gas_price = min_price_hex
-    schain.options.max_gas_price = max_price_hex
+    schain.options.min_gas_price = min_price_int
+    schain.options.max_gas_price = max_price_int
     contracts_addresses = get_ima_contracts_addresses(skale_ima)
 
     schain_config = generate_schain_config(
