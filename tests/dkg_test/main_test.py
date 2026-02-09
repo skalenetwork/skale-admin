@@ -17,6 +17,7 @@ from unittest import mock
 import pytest
 from eth_utils.hexadecimal import remove_0x_prefix
 from skale import SkaleManager
+from skale.core.settings import FairSettings, SkaleSettings, get_settings
 from skale.types.dkg import G2Point, KeyShare
 from skale.types.node import NodeId
 from skale.types.schain import SchainName
@@ -38,7 +39,6 @@ from tests.utils import (
 )
 from tools.constants import SGX_CERTIFICATES_FOLDER
 from tools.constants.schains import SCHAINS_DIR_PATH
-from tools.settings import get_active_settings
 
 warnings.filterwarnings('ignore')
 
@@ -65,7 +65,8 @@ class DKGRunType(int, Enum):
 
 
 def generate_sgx_wallets(skale, n_of_keys):
-    st = get_active_settings()
+    st = get_settings((SkaleSettings, FairSettings))
+
     logger.info('Making sure cert folders exists')
     for i in range(n_of_keys):
         os.makedirs(os.path.join(SGX_CERTIFICATES_FOLDER, f'dkg-{i}'), exist_ok=True)

@@ -20,6 +20,8 @@
 import logging
 from typing import Optional
 
+from skale.core.settings import get_settings
+
 from tools.constants.monitoring import (
     FILEBEAT_CONFIG_PATH,
     FILEBEAT_CONTAINER_NAME,
@@ -32,7 +34,6 @@ from tools.constants.monitoring import (
 )
 from tools.docker_utils import DockerUtils, get_docker_group_id
 from tools.helper import is_fair, process_template
-from tools.settings import get_settings
 
 logger = logging.getLogger(__name__)
 

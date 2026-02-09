@@ -21,6 +21,8 @@ import logging
 import time
 from typing import Optional, cast
 
+from skale.core.settings import get_settings
+
 from core.chain.runner import (
     get_container_image,
     get_ima_container_time_frame,
@@ -41,7 +43,6 @@ from core.types.chain import ChainName
 from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.helper import is_fair, is_passive
-from tools.settings import get_settings
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)

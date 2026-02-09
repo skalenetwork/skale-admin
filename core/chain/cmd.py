@@ -19,6 +19,8 @@
 
 from typing import Optional
 
+from skale.core.settings import FairSettings, SkaleBaseSettings, SkaleSettings, get_settings
+
 from core.chain.ssl import get_ssl_filepath
 from core.config.endpoint import get_chain_ports_from_config
 from core.config.schain.file_manager import ConfigFileManager
@@ -29,7 +31,6 @@ from tools.constants.containers import (
     SHARED_SPACE_CONTAINER_PATH,
 )
 from tools.helper import is_fair
-from tools.settings import get_active_settings, get_settings, get_skale_base_settings
 
 
 def get_skaled_container_cmd(
@@ -85,14 +86,14 @@ def get_chain_container_base_opts(
     ]
 
     if not is_fair():
-        st = get_skale_base_settings()
+        st = get_settings((SkaleSettings, SkaleBaseSettings))
         cmd.append(f'--main-net-url {st.endpoint}')
 
     if not passive_node:
-        st = get_active_settings()
+        st_active = get_settings((SkaleSettings, FairSettings))
         cmd.extend(
             [
-                f'--sgx-url {st.sgx_url}',
+                f'--sgx-url {st_active.sgx_url}',
                 f'--shared-space-path {SHARED_SPACE_CONTAINER_PATH}/data',
             ]
         )

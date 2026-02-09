@@ -23,6 +23,7 @@ from abc import ABC, abstractmethod
 from eth_utils.hexadecimal import remove_0x_prefix
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
+from skale.core.settings import FairSettings, SkaleSettings, get_settings
 
 from core.dkg.broadcast_filter import BaseFilter
 from core.dkg.structures import DKGStep
@@ -39,7 +40,6 @@ from core.dkg.utils import (
 from tools.constants import SGX_CERTIFICATES_FOLDER
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
-from tools.settings import get_active_settings
 from tools.sgx_utils import sgx_unreachable_retry
 
 logger = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ class BaseDKGClient(ABC):
         self.skale = skale
         self.t = t
         self.n = n
-        st = get_active_settings()
+        st = get_settings((SkaleSettings, FairSettings))
         self.sgx = SgxClient(str(st.sgx_url), n=n, t=t, path_to_cert=str(SGX_CERTIFICATES_FOLDER))
         self.chain_name = chain_name
         self.eth_key_name = eth_key_name

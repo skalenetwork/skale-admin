@@ -7,11 +7,11 @@ from unittest import mock
 import pytest
 from Crypto.Hash import keccak
 from flask import Flask, appcontext_pushed, g
+from skale.core.settings import get_settings
 
 from core.config.schain.file_manager import ConfigFileManager
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, get_test_rule_controller
-from tools.settings import get_settings
 from web.helper import get_api_url
 from web.models.schain import SChainRecord, upsert_schain_record
 from web.routes.schains import schains_bp

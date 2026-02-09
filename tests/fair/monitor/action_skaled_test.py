@@ -3,6 +3,7 @@ from unittest import mock
 
 import pytest
 from apscheduler.schedulers.background import BackgroundScheduler
+from skale.core.settings import BaseAdminSettings
 
 from core.checks.fair import SkaledChecks
 from core.config.schain.static_params import get_fair_chain_name
@@ -11,7 +12,6 @@ from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from tests.utils import TEST_TASK_SLEEP
 from tools.helper import is_passive
-from tools.settings import BaseAdminSettings
 
 
 @pytest.fixture

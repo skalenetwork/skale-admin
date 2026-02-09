@@ -1,8 +1,9 @@
 import logging
 from unittest import mock
 
+from skale.core.settings import SkaleSettings
+
 from tools.logger import ADMIN_LOG_FORMAT, HidingFormatter, compose_hiding_patterns
-from tools.settings import SkaleSettings
 
 
 def test_custom_formatter(st: SkaleSettings):

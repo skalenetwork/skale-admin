@@ -23,6 +23,7 @@ import time
 from typing import Optional, cast
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from skale.core.settings import get_settings
 
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_fair_chain_name
@@ -37,7 +38,6 @@ from core.types.chain import FairChainName
 from core.utils.fair import init_fair_manager
 from tools.docker_utils import DockerUtils
 from tools.helper import is_passive
-from tools.settings import get_settings
 from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)

@@ -25,13 +25,13 @@ from http import HTTPStatus
 
 import werkzeug
 from flask import Flask, g
+from skale.core.settings import get_settings
 
 from core.node_config import NodeConfig
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
 from tools.resources import get_database
-from tools.settings import get_settings
 from web.helper import construct_err_response
 from web.routes.health import health_bp
 from web.routes.info import info_bp

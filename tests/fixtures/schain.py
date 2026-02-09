@@ -4,6 +4,7 @@ import shutil
 from typing import cast
 
 import pytest
+from skale.core.settings import get_settings
 from skale.types.schain import SchainName
 
 from core.checks.schain import SChainChecks
@@ -11,7 +12,6 @@ from tests.utils import CONFIG_STREAM, STATIC_NODE_GROUPS, get_random_string
 from tools.constants import STATIC_GROUPS_FOLDER
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.helper import write_json
-from tools.settings import get_settings
 from web.models.schain import SChainRecord
 
 

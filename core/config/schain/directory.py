@@ -23,6 +23,8 @@ import os
 from pathlib import Path
 from typing import List
 
+from skale.core.settings import get_settings
+
 from tools.constants.schains import (
     BASE_SCHAIN_CONFIG_FILEPATH,
     NODE_CLI_STATUS_FILENAME,
@@ -31,7 +33,6 @@ from tools.constants.schains import (
     SCHAINS_DIR_PATH,
     SKALED_STATUS_FILENAME,
 )
-from tools.settings import get_settings
 
 logger = logging.getLogger(__name__)
 

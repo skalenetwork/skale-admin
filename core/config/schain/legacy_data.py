@@ -19,11 +19,11 @@
 
 import os
 
+from skale.core.settings import get_settings
 from skale.types.rotation import RotationNodeData
 
 from tools.constants import STATIC_ACCOUNTS_FOLDER, STATIC_GROUPS_FOLDER
 from tools.helper import read_json
-from tools.settings import get_settings
 
 
 def static_accounts(schain_name: str) -> dict:

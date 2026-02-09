@@ -3,13 +3,13 @@ from unittest import mock
 import pytest
 from flask import Flask, appcontext_pushed, g
 from skale import SkaleManager
+from skale.core.settings import get_settings
 from skale.types.schain import SchainName
 
 from core.checks.schain import SChainChecks
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, get_schain_struct
 from tools.docker_utils import DockerUtils
-from tools.settings import get_settings
 from web.helper import get_api_url
 from web.models.schain import SChainRecord
 from web.routes.health import health_bp

@@ -21,6 +21,7 @@ import logging
 import time
 from typing import Optional
 
+from skale.core.settings import get_settings
 from skale.types.schain import Schain
 
 from core.chain.containers import monitor_ima_container, monitor_skaled_container
@@ -59,7 +60,6 @@ from tools.docker_utils import DockerUtils
 from tools.helper import is_passive, no_hyphens
 from tools.node_options import NodeOptions
 from tools.resources import get_statsd_client
-from tools.settings import get_settings
 from web.models.schain import SChainRecord, upsert_schain_record
 
 logger = logging.getLogger(__name__)

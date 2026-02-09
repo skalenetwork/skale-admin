@@ -25,6 +25,7 @@ from logging.handlers import RotatingFileHandler
 from urllib.parse import urlparse
 
 from flask import has_request_context, request
+from skale.core.settings import FairSettings, SkaleBaseSettings, SkaleSettings, get_settings
 
 from tools.constants.logs import (
     ADMIN_LOG_FORMAT,
@@ -37,7 +38,6 @@ from tools.constants.logs import (
     LOG_FILE_SIZE_BYTES,
 )
 from tools.helper import is_fair, is_passive
-from tools.settings import get_skale_base_settings, get_skale_settings
 
 LOCAL_IPS = ['127.0.0.1', 'localhost']
 
@@ -45,11 +45,11 @@ LOCAL_IPS = ['127.0.0.1', 'localhost']
 def compose_hiding_patterns():
     sgx_ip = None
     if not is_passive():
-        sgx_url = str(get_skale_settings().sgx_url)
+        sgx_url = str(get_settings((SkaleSettings, FairSettings)).sgx_url)
         sgx_ip = urlparse(sgx_url).hostname
     eth_ip = None
     if not is_fair():
-        eth_url = str(get_skale_base_settings().endpoint)
+        eth_url = str(get_settings((SkaleBaseSettings, SkaleSettings)).endpoint)
         eth_ip = urlparse(eth_url).hostname
     patterns = {r'NEK\:\w+': '[SGX_KEY]'}
     if sgx_ip not in LOCAL_IPS:

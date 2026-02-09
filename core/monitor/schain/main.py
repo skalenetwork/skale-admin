@@ -24,6 +24,7 @@ from importlib import reload
 from typing import Optional
 
 from skale import SkaleIma
+from skale.core.settings import SkaleSettings, get_settings
 from skale.types.schain import SchainStructure
 from web3._utils import http_session_manager
 
@@ -47,7 +48,6 @@ from tools.docker_utils import DockerUtils
 from tools.helper import init_skale, is_node_part_of_chain, is_passive, no_hyphens
 from tools.notifications.messages import notify_checks
 from tools.resources import get_statsd_client, rs
-from tools.settings import get_settings, get_skale_settings
 from tools.wallet_utils import init_wallet
 from web.models.schain import SChainRecord, upsert_schain_record
 
@@ -176,7 +176,7 @@ class ConfigTask(BaseTask):
     ) -> None:
         wallet = None
         if not is_passive():
-            st = get_skale_settings()
+            st = get_settings(SkaleSettings)
             wallet = init_wallet(
                 node_config=node_config, endpoint=str(st.endpoint), sgx_server_url=str(st.sgx_url)
             )

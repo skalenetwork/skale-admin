@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 from skale import SkaleManager
+from skale.core.settings import get_settings
 from skale.types.schain import SchainHash, SchainName, SchainStructure
 from web3 import Web3
 
@@ -45,7 +46,6 @@ from tools.constants import (
 )
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.helper import write_json
-from tools.settings import get_settings
 from web.models.schain import SChainRecord, create_tables
 
 pytest_plugins = [

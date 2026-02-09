@@ -27,6 +27,7 @@ from typing import Optional
 
 from sgx import SgxClient
 from skale import SkaleManager
+from skale.core.settings import FairSettings, SkaleSettings, get_settings
 from skale.types.node import NodeId
 from skale.types.schain import SchainName, SchainStructure
 from skale.utils.helper import schain_name_to_hash
@@ -47,7 +48,6 @@ from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from tools.helper import is_node_part_of_chain, is_passive, merged_unique, read_json
-from tools.settings import get_active_settings, get_settings
 from tools.str_formatters import arguments_list_string
 from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
 
@@ -303,7 +303,7 @@ def cleanup_schain(
 
 def delete_bls_keys(skale, schain_name):
     last_rotation_id = skale.schains.last_rotation_id(schain_name)
-    st = get_active_settings()
+    st = get_settings((SkaleSettings, FairSettings))
     for i in range(last_rotation_id + 1):
         try:
             secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)

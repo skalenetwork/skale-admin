@@ -22,6 +22,7 @@ import time
 
 from filelock import FileLock
 from skale import SkaleIma, SkaleManager
+from skale.core.settings import SkaleBaseSettings, SkaleSettings, get_settings
 
 from core.ima.abi import generate_ima_container_abis
 from core.manager_cache import ManagerCache
@@ -36,7 +37,6 @@ from tools.constants import INIT_LOCK_PATH
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 from tools.resources import rs
-from tools.settings import get_skale_base_settings, get_skale_settings
 from tools.sgx_utils import generate_sgx_key
 from tools.wallet_utils import init_wallet
 from web.migrations import migrate
@@ -72,7 +72,7 @@ def monitor(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig) -
 
 def worker() -> None:
     node_config = NodeConfig()
-    st = get_skale_settings()
+    st = get_settings(SkaleSettings)
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
@@ -88,7 +88,7 @@ def worker() -> None:
 
 
 def init() -> None:
-    st = get_skale_base_settings()
+    st = get_settings(SkaleBaseSettings)
     skale = SkaleManager(str(st.endpoint), st.contracts.manager)
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)

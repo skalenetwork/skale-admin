@@ -24,6 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from flask import g
+from skale.core.settings import SkaleSettings, get_settings
 from skale.core.types import EnvType
 from skale.dataclasses.skaled_ports import SkaledPorts
 from websocket import create_connection
@@ -50,7 +51,6 @@ from tools.constants.ima import (
 )
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.helper import read_json, safe_load_yml
-from tools.settings import get_settings, get_skale_settings
 
 logger = logging.getLogger(__name__)
 
@@ -154,7 +154,7 @@ def schain_index_to_node_number(node):
 
 
 def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> ImaEnv:
-    st = get_skale_settings()
+    st = get_settings(SkaleSettings)
     schain_config = ConfigFileManager(schain_name).skaled_config
     if schain_config is None:
         raise SkaledConfigNotFoundError(f'Skaled config for schain {schain_name} not found')

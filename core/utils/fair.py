@@ -20,6 +20,7 @@
 import logging
 
 from skale import FairManager
+from skale.core.settings import FairBaseSettings, FairSettings, get_settings
 from skale.utils.web3_utils import get_endpoint
 from skale.wallets import BaseWallet
 
@@ -28,7 +29,6 @@ from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_fair_chain_name
 from core.node_config import NodeConfig
 from tools.exceptions import LocalEndpointUnreachableError
-from tools.settings import get_fair_base_settings, get_fair_settings, get_settings
 from tools.wallet_utils import init_wallet
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ def get_local_skaled_endpoint_fair() -> str | None:
 
 
 def get_fair_endpoints() -> list[str]:
-    st = get_fair_base_settings()
+    st = get_settings((FairBaseSettings, FairSettings))
     endpoints = [str(st.endpoint)]
     local_endpoint = get_local_skaled_endpoint_fair()
     if local_endpoint:
@@ -60,9 +60,9 @@ def init_fair_manager(
 ) -> FairManager:
     endpoints = get_fair_endpoints()
     endpoint = get_endpoint(endpoints)
-    st = get_fair_base_settings()
+    st = get_settings((FairBaseSettings, FairSettings))
     if node_config:
-        st = get_fair_settings()
+        st = get_settings(FairSettings)
         wallet = init_wallet(
             node_config=node_config, endpoint=endpoint, sgx_server_url=str(st.sgx_url)
         )
@@ -81,6 +81,8 @@ def init_local_fair(
         wallet = init_wallet(
             node_config=node_config,
             endpoint=local_endpoint,
-            sgx_server_url=str(get_fair_settings().sgx_url),
+            sgx_server_url=str(get_settings(FairSettings).sgx_url),
         )
-    return FairManager(local_endpoint, get_fair_base_settings().contracts.fair, wallet=wallet)
+    return FairManager(
+        local_endpoint, get_settings((FairSettings, FairBaseSettings)).contracts.fair, wallet=wallet
+    )

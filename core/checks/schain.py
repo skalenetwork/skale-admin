@@ -22,6 +22,7 @@ import os
 import time
 from typing import Any, List, Optional
 
+from skale.core.settings import get_settings
 from skale.types.schain import SchainName
 
 from core.chain.runner import (
@@ -53,7 +54,6 @@ from core.schains.external_config import ExternalConfig, ExternalState
 from tools.constants.containers import IMA_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.resources import get_statsd_client
-from tools.settings import get_settings
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)

@@ -22,6 +22,7 @@ import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from filelock import FileLock
+from skale.core.settings import FairBaseSettings, get_settings
 
 from core.config.schain.static_params import get_fair_chain_name
 from core.monitor.fair.main import start_tasks
@@ -32,7 +33,6 @@ from core.redis.migrations import run_redis_migrations
 from tools.constants import INIT_LOCK_PATH
 from tools.helper import is_passive
 from tools.logger import init_fair_logger
-from tools.settings import get_fair_base_settings, get_settings
 from tools.sgx_utils import generate_sgx_key
 
 init_fair_logger()
@@ -68,7 +68,7 @@ def worker() -> None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
-    st = get_fair_base_settings()
+    st = get_settings(FairBaseSettings)
     update_monitoring_services(node_config.ip, node_config.id, st.contracts.fair)
     update_chain_record()
     monitor(node_config)

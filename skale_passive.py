@@ -21,6 +21,7 @@ import logging
 import time
 
 from skale import SkaleIma, SkaleManager
+from skale.core.settings import SkalePassiveSettings, get_settings
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.types.schain import SchainName, SchainStructure
 from skale.utils.helper import schain_name_to_hash
@@ -30,7 +31,6 @@ from core.node_config import NodeConfig
 from core.schains.process_manager import run_pm_schain
 from tools.logger import init_admin_logger
 from tools.resources import rs
-from tools.settings import get_skale_passive_settings
 from web.migrations import migrate
 from web.models.schain import create_tables
 
@@ -55,7 +55,7 @@ def monitor(
 
 
 def worker(schain_name: SchainName):
-    st = get_skale_passive_settings()
+    st = get_settings(SkalePassiveSettings)
     skale = SkaleManager(str(st.endpoint), st.contracts.manager)
     skale_ima = SkaleIma(str(st.endpoint), st.contracts.ima)
 
@@ -83,7 +83,7 @@ def worker(schain_name: SchainName):
 
 
 def main():
-    st = get_skale_passive_settings()
+    st = get_settings(SkalePassiveSettings)
     while True:
         try:
             create_tables()

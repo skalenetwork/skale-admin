@@ -23,6 +23,7 @@ from http import HTTPStatus
 
 from flask import Blueprint, g, request
 from skale import FairManager
+from skale.core.settings import BaseAdminSettings
 
 from core.checks.fair import FairConfigChecks, SkaledChecks
 from core.config.schain.static_params import get_fair_chain_name
@@ -32,7 +33,6 @@ from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from tools.docker_utils import DockerUtils
 from tools.helper import is_passive
-from tools.settings import BaseAdminSettings
 from web.helper import (
     construct_err_response,
     construct_ok_response,

@@ -22,6 +22,7 @@ import logging
 from typing import Optional, Tuple
 
 from docker.types import LogConfig, Ulimit
+from skale.core.settings import get_settings
 
 from core.chain.cmd import get_skaled_container_cmd
 from core.chain.skaled_exit_codes import SkaledExitCodes
@@ -49,7 +50,6 @@ from tools.constants.containers import (
 )
 from tools.docker_utils import DockerUtils
 from tools.helper import containers_info, is_fair
-from tools.settings import get_settings
 from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)

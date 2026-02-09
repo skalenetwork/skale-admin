@@ -24,13 +24,13 @@ import time
 from http import HTTPStatus
 
 from flask import Flask, g
+from skale.core.settings import get_node_settings, get_settings
 from werkzeug import exceptions as wz_exceptions
 
 from core.node_config import NodeConfig
 from tools.docker_utils import DockerUtils
 from tools.helper import is_passive, wait_until_admin_inited
 from tools.logger import init_api_logger
-from tools.settings import get_node_settings, get_settings
 from web.helper import construct_err_response
 from web.routes.fair_chain import fair_chain_bp
 from web.routes.fair_node import fair_node_bp

@@ -20,6 +20,7 @@
 from dataclasses import dataclass
 from typing import Dict
 
+from skale.core.settings import get_settings
 from skale.types.committee import CommitteeGroup
 from skale.types.dkg import DkgId, G2Point
 from skale.types.node import NodeId
@@ -29,7 +30,6 @@ from core.config.schain.static_params import get_fair_chain_name
 from core.dkg.utils import get_secret_key_share_filepath
 from tools.constants import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
 from tools.helper import read_json
-from tools.settings import get_settings
 
 
 @dataclass

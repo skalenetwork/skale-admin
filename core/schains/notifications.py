@@ -22,9 +22,9 @@ import logging
 from typing import Dict
 
 from skale import SkaleManager
+from skale.core.settings import get_settings
 
 from tools.notifications.messages import notify_balance
-from tools.settings import get_settings
 
 logger = logging.getLogger(__name__)
 

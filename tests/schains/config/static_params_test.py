@@ -1,3 +1,5 @@
+from skale.core.settings import BaseAdminSettings
+
 from core.config.schain.helper import get_static_params
 from core.config.schain.static_params import (
     get_automatic_repair_option,
@@ -7,7 +9,6 @@ from core.config.schain.static_params import (
     get_static_schain_info,
 )
 from core.schains.types import SchainType
-from tools.settings import BaseAdminSettings
 
 TEST_SCHAIN_NAME = 'test-schain'
 DEFAULT_TS_NAME = 'revertableFSPatchTimestamp'

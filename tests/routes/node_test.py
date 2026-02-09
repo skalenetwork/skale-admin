@@ -8,6 +8,7 @@ from unittest.mock import patch
 import freezegun
 import pytest
 from flask import Flask, appcontext_pushed, g
+from skale.core.settings import get_settings
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.utils.contracts_provision.utils import generate_random_node_data
 from skale.utils.helper import schain_name_to_hash
@@ -19,7 +20,6 @@ from core.node_config import NodeConfig
 from tests.fixtures.settings import TestingSettings
 from tests.utils import get_bp_data, post_bp_data
 from tools.constants.schains import SCHAINS_DIR_PATH
-from tools.settings import get_settings
 from web.helper import get_api_url
 from web.routes.node import node_bp
 

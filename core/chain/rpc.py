@@ -23,6 +23,7 @@ import time
 from typing import cast
 
 from requests import Response
+from skale.core.settings import get_settings
 
 from core.chain.runner import is_container_exists, is_container_running, restart_container
 from core.chain.status import SkaledStatus
@@ -36,7 +37,6 @@ from tools.constants.schains import (
 )
 from tools.docker_utils import DockerUtils
 from tools.helper import post_request
-from tools.settings import get_settings
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)

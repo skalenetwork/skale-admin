@@ -25,9 +25,9 @@ from functools import wraps
 from typing import Dict, List, Optional
 
 from redis import BlockingConnectionPool, Redis
+from skale.core.settings import get_settings
 
 from tools.notifications.tasks import send_message_to_telegram
-from tools.settings import get_settings
 
 logger = logging.getLogger(__name__)
 redis_client = Redis(connection_pool=BlockingConnectionPool())

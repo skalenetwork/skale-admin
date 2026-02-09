@@ -4,6 +4,7 @@ import shutil
 import pytest
 from eth_typing import HexStr
 from skale import FairManager, SkaleIma, SkaleManager
+from skale.core.settings import FairBaseSettings, SkaleBaseSettings, SkaleSettings
 from skale.types.schain import SchainHash
 from skale.utils.account_tools import generate_account, send_eth
 from skale.utils.cache import RedisCacheConfig
@@ -33,7 +34,6 @@ from tools.constants import SGX_CERTIFICATES_FOLDER
 from tools.constants.db import REDIS_URI
 from tools.constants.web3 import CACHE_TTL_POLICY
 from tools.resources import rs
-from tools.settings import FairBaseSettings, SkaleBaseSettings, SkaleSettings
 
 ETH_AMOUNT_PER_NODE = 1
 NUMBER_OF_NODES = 2

@@ -21,11 +21,11 @@ import logging
 
 from flask import Blueprint, g, request
 from sgx import SgxClient
+from skale.core.settings import ActiveSettings, BaseAdminSettings
 
 from core.node import get_btrfs_info, get_check_report, get_meta_info, get_node_hardware_info
 from tools.constants.web3 import UNTRUSTED_PROVIDERS
 from tools.helper import get_endpoint_call_speed
-from tools.settings import ActiveSettings, BaseAdminSettings
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER
 from web.helper import construct_ok_response, g_web3, get_api_url
 

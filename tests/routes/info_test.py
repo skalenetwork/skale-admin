@@ -3,11 +3,11 @@ from time import sleep
 import pytest
 from flask import Flask, appcontext_pushed, g
 from sgx import SgxClient
+from skale.core.settings import get_settings
 
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, run_custom_schain_container
 from tools.constants import SGX_CERTIFICATES_FOLDER
-from tools.settings import get_settings
 from web.helper import get_api_url
 from web.models.schain import SChainRecord
 from web.routes.info import info_bp
