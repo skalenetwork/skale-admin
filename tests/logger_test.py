@@ -31,8 +31,7 @@ def test_custom_formatter(st: SkaleSettings):
     st_override = st.model_copy(update={'sgx_url': sgx_endpoint, 'endpoint': eth_endpoint})
 
     with (
-        mock.patch('tools.logger.get_skale_settings', return_value=st_override),
-        mock.patch('tools.logger.get_skale_base_settings', return_value=st_override),
+        mock.patch('tools.logger.get_settings', return_value=st_override),
     ):
         formatted_text = HidingFormatter(ADMIN_LOG_FORMAT, compose_hiding_patterns()).format(record)
         assert (
