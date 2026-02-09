@@ -12,7 +12,7 @@ from typing import cast
 from unittest.mock import MagicMock, Mock
 
 import requests
-from eth_typing import ChecksumAddress, HexAddress
+from eth_typing import ChecksumAddress, HexAddress, HexStr
 from skale.dataclasses.schain_options import AllocationType, SchainOptions
 from skale.types.node import NodeId
 from skale.types.schain import SchainName, SchainStructure
@@ -143,7 +143,7 @@ def get_schain_struct(_test_schain_name) -> SchainStructure:
         generation=1,
         mainnet_owner=TEST_MAINNET_OWNER_ADDRESS,
         originator=TEST_ORIGINATOR_ADDRESS,
-        options=SchainOptions(True, True, AllocationType.DEFAULT),
+        options=SchainOptions(True, True, AllocationType.DEFAULT, HexStr('0x01'), None, None),
         index_in_owner_list=0,
         lifetime=3600,
         start_date=100000000,
