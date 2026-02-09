@@ -161,7 +161,10 @@ def generate_schain_config(
 
     base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
 
-    dynamic_params = {'chainID': get_chain_id(schain.name)}
+    dynamic_params = {
+        'chainID': get_chain_id(schain.name),
+        'externalGasDifficulty': schain.options.external_gas_difficulty,
+    }
 
     legacy_groups = static_groups(schain.name)
     logger.debug('Legacy node groups: %s', legacy_groups)
