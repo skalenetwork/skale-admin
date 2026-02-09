@@ -1,6 +1,7 @@
 import pytest
 from eth_typing import HexStr
-from skale.core.settings import SkaleSettings
+
+from tools.settings import SkaleSettings
 
 
 class TestingSettings(SkaleSettings):
