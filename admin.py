@@ -22,7 +22,7 @@ import time
 
 from filelock import FileLock
 from skale import SkaleIma, SkaleManager
-from skale.core.settings import SkaleBaseSettings, SkaleSettings, get_settings
+from skale.core.settings import SkaleSettings, get_settings
 
 from core.ima.abi import generate_ima_container_abis
 from core.manager_cache import ManagerCache
@@ -79,8 +79,8 @@ def worker() -> None:
     wallet = init_wallet(
         node_config=node_config, endpoint=str(st.endpoint), sgx_server_url=str(st.sgx_url)
     )
-    skale = SkaleManager(str(st.endpoint), st.contracts.manager, wallet)
-    skale_ima = SkaleIma(str(st.endpoint), st.contracts.ima, wallet)
+    skale = SkaleManager(str(st.endpoint), st.manager_contracts, wallet)
+    skale_ima = SkaleIma(str(st.endpoint), st.ima_contracts, wallet)
     if st.backup_run:
         logger.info('Running sChains in snapshot download mode')
     update_monitoring_services(node_config.ip, node_config.id, skale.manager.address)
@@ -88,8 +88,8 @@ def worker() -> None:
 
 
 def init() -> None:
-    st = get_settings(SkaleBaseSettings)
-    skale = SkaleManager(str(st.endpoint), st.contracts.manager)
+    st = get_settings(SkaleSettings)
+    skale = SkaleManager(str(st.endpoint), st.manager_contracts)
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:
@@ -105,7 +105,7 @@ def init() -> None:
         if st.pull_config_for_schain:
             set_schains_sync_config_run(st.pull_config_for_schain)
         cleanup_notification_state()
-        generate_ima_container_abis(skale, SkaleIma(str(st.endpoint), st.contracts.ima))
+        generate_ima_container_abis(skale, SkaleIma(str(st.endpoint), st.ima_contracts))
 
 
 def main():

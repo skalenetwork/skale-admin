@@ -4,7 +4,7 @@ import shutil
 import pytest
 from eth_typing import HexStr
 from skale import FairManager, SkaleIma, SkaleManager
-from skale.core.settings import FairBaseSettings, SkaleBaseSettings, SkaleSettings
+from skale.core.settings import FairBaseSettings, BaseNodeSettings, SkaleSettings
 from skale.types.schain import SchainHash
 from skale.utils.account_tools import generate_account, send_eth
 from skale.utils.cache import RedisCacheConfig
@@ -52,23 +52,23 @@ def eth_per_node() -> int:
 
 
 @pytest.fixture(scope='session')
-def endpoint(st: SkaleBaseSettings) -> str:
+def endpoint(st: BaseNodeSettings) -> str:
     return str(st.endpoint)
 
 
 @pytest.fixture(scope='session')
-def manager_contracts(st: SkaleBaseSettings) -> str:
-    return st.contracts.manager
+def manager_contracts(st: BaseNodeSettings) -> str:
+    return st.manager_contracts
 
 
 @pytest.fixture(scope='session')
 def fair_contracts(st: FairBaseSettings) -> str:
-    return st.contracts.fair
+    return st.fair_contracts
 
 
 @pytest.fixture(scope='session')
 def ima_contracts(st: SkaleSettings) -> str:
-    return st.contracts.ima
+    return st.ima_contracts
 
 
 @pytest.fixture(scope='session')

@@ -66,7 +66,7 @@ def init_fair_manager(
         wallet = init_wallet(
             node_config=node_config, endpoint=endpoint, sgx_server_url=str(st.sgx_url)
         )
-    return FairManager(endpoints, st.contracts.fair, wallet=wallet)
+    return FairManager(endpoints, st.fair_contracts, wallet=wallet)
 
 
 def init_local_fair(

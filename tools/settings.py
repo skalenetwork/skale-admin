@@ -21,15 +21,15 @@
 from skale.core.settings import (
     FairBaseSettings,
     FairSettings,
-    NodeSettings,
+    InternalSettings,
     SkalePassiveSettings,
     SkaleSettings,
 )
 
-from tools.constants import ADMIN_SETTINGS_PATH, NODE_SETTINGS_PATH
+from tools.constants import INTERNAL_SETTINGS_PATH, NODE_SETTINGS_PATH
 
-NodeSettings.model_config['toml_file'] = NODE_SETTINGS_PATH
-SkaleSettings.model_config['toml_file'] = ADMIN_SETTINGS_PATH
-SkalePassiveSettings.model_config['toml_file'] = ADMIN_SETTINGS_PATH
-FairSettings.model_config['toml_file'] = ADMIN_SETTINGS_PATH
-FairBaseSettings.model_config['toml_file'] = ADMIN_SETTINGS_PATH
+InternalSettings.model_config['toml_file'] = INTERNAL_SETTINGS_PATH
+SkaleSettings.model_config['toml_file'] = NODE_SETTINGS_PATH
+SkalePassiveSettings.model_config['toml_file'] = NODE_SETTINGS_PATH
+FairSettings.model_config['toml_file'] = NODE_SETTINGS_PATH
+FairBaseSettings.model_config['toml_file'] = NODE_SETTINGS_PATH

@@ -34,7 +34,7 @@ import yaml
 from filelock import FileLock
 from jinja2 import Environment
 from skale import SkaleManager
-from skale.core.settings import SkaleBaseSettings, SkaleSettings, get_node_settings, get_settings
+from skale.core.settings import BaseNodeSettings, SkaleSettings, get_node_settings, get_settings
 from skale.types.node import NodeId
 from skale.utils.cache import RedisCacheConfig
 from skale.wallets import BaseWallet
@@ -109,10 +109,10 @@ def wait_until_admin_inited():
 
 
 def init_skale(wallet: BaseWallet | None) -> SkaleManager:
-    st = get_settings((SkaleSettings, SkaleBaseSettings))
+    st = get_settings((SkaleSettings, BaseNodeSettings))
     return SkaleManager(
         str(st.endpoint),
-        st.contracts.manager,
+        st.manager_contracts,
         wallet,
         enable_stats=True,
         redis_cache_config=RedisCacheConfig(

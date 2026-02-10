@@ -83,8 +83,8 @@ FILESTORAGE_STATIC_PATH: Path = SKALE_LIB_PATH / 'filestorage'
 ## path - settings
 
 SETTINGS_FOLDER_PATH: Path = SKALE_VOLUME_PATH / 'settings'
-ADMIN_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'admin.toml'
 NODE_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'node.toml'
+INTERNAL_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'internal.toml'
 
 ## path - firewall
 

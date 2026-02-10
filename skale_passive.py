@@ -56,8 +56,8 @@ def monitor(
 
 def worker(schain_name: SchainName):
     st = get_settings(SkalePassiveSettings)
-    skale = SkaleManager(str(st.endpoint), st.contracts.manager)
-    skale_ima = SkaleIma(str(st.endpoint), st.contracts.ima)
+    skale = SkaleManager(str(st.endpoint), st.manager_contracts)
+    skale_ima = SkaleIma(str(st.endpoint), st.ima_contracts)
 
     if not skale.schains_internal.is_schain_exist(schain_name):
         logger.error(f'Provided SKALE Chain does not exist: {schain_name}')

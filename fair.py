@@ -69,7 +69,7 @@ def worker() -> None:
         time.sleep(SLEEP_INTERVAL)
 
     st = get_settings(FairBaseSettings)
-    update_monitoring_services(node_config.ip, node_config.id, st.contracts.fair)
+    update_monitoring_services(node_config.ip, node_config.id, st.fair_contracts)
     update_chain_record()
     monitor(node_config)
 

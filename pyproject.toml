@@ -47,6 +47,9 @@ test = [
 [tool.uv]
 prerelease = "allow"
 
+[tool.uv.sources]
+"skale.py" = { git = "https://github.com/skalenetwork/skale.py.git", rev = "bb8053a2b29e54912fb329651c8256f889649a70" }
+
 [tool.pytest.ini_options]
 addopts = ["--durations=0", "--timeout=35", "--timeout-method=thread"]
 log_cli = false

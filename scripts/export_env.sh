@@ -16,9 +16,9 @@ export PYTHONPATH=${PYTHONPATH}:.
 
 export ALLOWED_TS_DIFF=9000000 # used directly in skale.py
 
-export CONTRACTS__MANAGER=$(bash $PWD/helper-scripts/helper.sh manager_address) || true
-export CONTRACTS__IMA=$(bash $PWD/helper-scripts/helper.sh ima_address) || true
-export CONTRACTS__FAIR=$(bash $PWD/helper-scripts/helper.sh fair_address) || true
+export MANAGER_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh manager_address) || true
+export IMA_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh ima_address) || true
+export FAIR_CONTRACTS=$(bash $PWD/helper-scripts/helper.sh fair_address) || true
 
 if [ $SKALE_NETWORK_TYPE == "fair" ]; then
   export ENDPOINT=http://127.0.0.1:1234

@@ -19,7 +19,7 @@
 
 from typing import Optional
 
-from skale.core.settings import FairSettings, SkaleBaseSettings, SkaleSettings, get_settings
+from skale.core.settings import FairSettings, BaseNodeSettings, SkaleSettings, get_settings
 
 from core.chain.ssl import get_ssl_filepath
 from core.config.endpoint import get_chain_ports_from_config
@@ -86,7 +86,7 @@ def get_chain_container_base_opts(
     ]
 
     if not is_fair():
-        st = get_settings((SkaleSettings, SkaleBaseSettings))
+        st = get_settings((SkaleSettings, BaseNodeSettings))
         cmd.append(f'--main-net-url {st.endpoint}')
 
     if not passive_node:
