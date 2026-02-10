@@ -4,7 +4,7 @@ import shutil
 import pytest
 from eth_typing import HexStr
 from skale import FairManager, SkaleIma, SkaleManager
-from skale.core.settings import FairBaseSettings, BaseNodeSettings, SkaleSettings
+from skale.core.settings import BaseNodeSettings, FairBaseSettings, SkaleSettings
 from skale.types.schain import SchainHash
 from skale.utils.account_tools import generate_account, send_eth
 from skale.utils.cache import RedisCacheConfig

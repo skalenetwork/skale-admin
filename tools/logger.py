@@ -25,7 +25,7 @@ from logging.handlers import RotatingFileHandler
 from urllib.parse import urlparse
 
 from flask import has_request_context, request
-from skale.core.settings import FairSettings, BaseNodeSettings, SkaleSettings, get_settings
+from skale.core.settings import BaseNodeSettings, FairSettings, SkaleSettings, get_settings
 
 from tools.constants.logs import (
     ADMIN_LOG_FORMAT,
