@@ -20,7 +20,7 @@
 import logging
 from typing import Optional
 
-from skale.core.settings import get_settings
+from skale.core.settings import get_internal_settings, get_settings
 
 from tools.constants.monitoring import (
     FILEBEAT_CONFIG_PATH,
@@ -67,7 +67,7 @@ def filebeat_config_processed() -> bool:
 
 def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
     dutils = dutils or DockerUtils()
-    st = get_settings()
+    internal_st = get_internal_settings()
     if dutils.is_container_exists(TELEGRAF_CONTAINER_NAME):
         dutils.restart(TELEGRAF_CONTAINER_NAME)
     else:
@@ -81,11 +81,11 @@ def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
             environment={'HOST_PROC': '/host/proc'},
             volumes={
                 '/proc': {'bind': '/host/proc', 'mode': 'ro'},
-                f'{st.skale_dir_host}/config/telegraf.conf': {
+                f'{internal_st.skale_dir_host}/config/telegraf.conf': {
                     'bind': '/etc/telegraf/telegraf.conf',
                     'mode': 'ro',
                 },  # noqa
-                f'{st.skale_dir_host}/node_data/telegraf': {
+                f'{internal_st.skale_dir_host}/node_data/telegraf': {
                     'bind': '/var/lib/telegraf',
                     'mode': 'rw',
                 },

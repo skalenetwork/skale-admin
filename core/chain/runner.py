@@ -22,7 +22,7 @@ import logging
 from typing import Optional, Tuple
 
 from docker.types import LogConfig, Ulimit
-from skale.core.settings import get_settings
+from skale.core.settings import get_internal_settings, get_settings
 
 from core.chain.cmd import get_skaled_container_cmd
 from core.chain.skaled_exit_codes import SkaledExitCodes
@@ -280,15 +280,15 @@ def add_config_volume(run_args, schain_name, mode=None):
         run_args['volumes'] = {}
     config_dir_host = schain_config_dir_host(schain_name)
 
-    st = get_settings()
+    internal_st = get_internal_settings()
 
     # mount /skale_node_data
-    run_args['volumes'][str(st.node_data_path_host)] = {
+    run_args['volumes'][str(internal_st.node_data_path_host)] = {
         'bind': str(SCHAIN_NODE_DATA_PATH),
         'mode': mode or 'ro',
     }
     # mount /skale_vol
-    run_args['volumes'][str(st.skale_dir_host)] = {
+    run_args['volumes'][str(internal_st.skale_dir_host)] = {
         'bind': str(SKALE_VOLUME_PATH),
         'mode': mode or 'ro',
     }

@@ -24,7 +24,7 @@ import time
 from http import HTTPStatus
 
 from flask import Flask, g
-from skale.core.settings import get_node_settings, get_settings
+from skale.core.settings import get_internal_settings, get_settings
 from werkzeug import exceptions as wz_exceptions
 
 from core.node_config import NodeConfig
@@ -47,7 +47,7 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-node_settings = get_node_settings()
+node_settings = get_internal_settings()
 
 app.register_blueprint(fair_chain_bp)
 app.register_blueprint(ssl_bp)

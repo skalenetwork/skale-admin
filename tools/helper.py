@@ -34,7 +34,7 @@ import yaml
 from filelock import FileLock
 from jinja2 import Environment
 from skale import SkaleManager
-from skale.core.settings import BaseNodeSettings, SkaleSettings, get_node_settings, get_settings
+from skale.core.settings import BaseNodeSettings, SkaleSettings, get_internal_settings, get_settings
 from skale.types.node import NodeId
 from skale.utils.cache import RedisCacheConfig
 from skale.wallets import BaseWallet
@@ -168,12 +168,12 @@ def no_hyphens(name: str) -> str:
 
 
 def is_fair() -> bool:
-    node_st = get_node_settings()
+    node_st = get_internal_settings()
     return node_st.node_type == 'fair'
 
 
 def is_passive() -> bool:
-    node_st = get_node_settings()
+    node_st = get_internal_settings()
     return node_st.node_mode == 'passive'
 
 
