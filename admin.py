@@ -22,7 +22,7 @@ import time
 
 from filelock import FileLock
 from skale import SkaleIma, SkaleManager
-from skale.core.settings import SkaleSettings, get_settings
+from skale.core.settings import SkaleSettings, get_settings, get_internal_settings
 
 from core.ima.abi import generate_ima_container_abis
 from core.manager_cache import ManagerCache
@@ -89,6 +89,7 @@ def worker() -> None:
 
 def init() -> None:
     st = get_settings(SkaleSettings)
+    internal_st = get_internal_settings()
     skale = SkaleManager(str(st.endpoint), st.manager_contracts)
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
@@ -100,10 +101,10 @@ def init() -> None:
         run_redis_migrations()
         set_schains_first_run()
         cleanup_schains_pids()
-        if st.backup_run:
+        if internal_st.backup_run:
             set_schains_backup_run()
-        if st.pull_config_for_schain:
-            set_schains_sync_config_run(st.pull_config_for_schain)
+        if internal_st.pull_config_for_schain:
+            set_schains_sync_config_run(internal_st.pull_config_for_schain)
         cleanup_notification_state()
         generate_ima_container_abis(skale, SkaleIma(str(st.endpoint), st.ima_contracts))
 

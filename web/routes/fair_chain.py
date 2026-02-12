@@ -23,7 +23,7 @@ from http import HTTPStatus
 
 from flask import Blueprint, g, request
 from skale import FairManager
-from skale.core.settings import BaseAdminSettings
+from skale.core.settings import BaseNodeSettings
 
 from core.checks.fair import FairConfigChecks, SkaledChecks
 from core.config.schain.static_params import get_fair_chain_name
@@ -62,7 +62,7 @@ def record():
         return construct_err_response(
             msg='Node is not registered', status_code=HTTPStatus.BAD_REQUEST
         )
-    st: BaseAdminSettings = g.st
+    st: BaseNodeSettings = g.st
     chain_name = get_fair_chain_name(st.env_type)
     chain_record = ChainRecord(chain_name)
     return construct_ok_response({'record': serialize_chain_record(chain_record)})
@@ -81,7 +81,7 @@ def checks():
             msg='Node is not registered', status_code=HTTPStatus.BAD_REQUEST
         )
 
-    st: BaseAdminSettings = g.st
+    st: BaseNodeSettings = g.st
     stream_version = get_skale_node_version()
     chain_name = get_fair_chain_name(st.env_type)
     chain_record = ChainRecord(chain_name)

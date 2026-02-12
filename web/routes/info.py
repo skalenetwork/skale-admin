@@ -21,7 +21,7 @@ import logging
 
 from flask import Blueprint, g, request
 from sgx import SgxClient
-from skale.core.settings import ActiveSettings, BaseAdminSettings
+from skale.core.settings import ActiveSettings, BaseNodeSettings
 
 from core.node import get_btrfs_info, get_check_report, get_meta_info, get_node_hardware_info
 from tools.constants.web3 import UNTRUSTED_PROVIDERS
@@ -49,7 +49,7 @@ def endpoint_info():
     logger.debug(request)
     call_speed = get_endpoint_call_speed(g.web3)
     block_number = g.web3.eth.block_number
-    st: BaseAdminSettings = g.st
+    st: BaseNodeSettings = g.st
     endpoint = str(st.endpoint)
     trusted = not any([untrusted in endpoint for untrusted in UNTRUSTED_PROVIDERS])
     try:

@@ -1,4 +1,4 @@
-from skale.core.settings import BaseAdminSettings
+from skale.core.settings import BaseNodeSettings
 
 from core.config.schain.helper import get_static_params
 from core.config.schain.static_params import (
@@ -15,12 +15,12 @@ DEFAULT_TS_NAME = 'revertableFSPatchTimestamp'
 CHAIN_SPECIFIC_TS_NAME = 'flexibleDeploymentPatchTimestamp'
 
 
-def test_get_static_schain_cmd(st: BaseAdminSettings):
+def test_get_static_schain_cmd(st: BaseNodeSettings):
     schain_cmd = get_static_schain_cmd(st.env_type)
     assert schain_cmd == ['-v 3', '--web3-trace', '--enable-debug-behavior-apis', '--aa no']
 
 
-def test_get_static_schain_info(st: BaseAdminSettings):
+def test_get_static_schain_info(st: BaseNodeSettings):
     schain_info = get_static_schain_info(TEST_SCHAIN_NAME, st.env_type)
     assert schain_info == {
         'contractStorageZeroValuePatchTimestamp': 1000000,
@@ -44,7 +44,7 @@ def test_get_static_schain_info(st: BaseAdminSettings):
     }
 
 
-def test_get_static_schain_info_custom_chain_ts(st: BaseAdminSettings):
+def test_get_static_schain_info_custom_chain_ts(st: BaseNodeSettings):
     custom_schain_info = get_static_schain_info(TEST_SCHAIN_NAME, st.env_type)
     default_schain_info = get_static_schain_info('test', st.env_type)
 
@@ -55,7 +55,7 @@ def test_get_static_schain_info_custom_chain_ts(st: BaseAdminSettings):
     assert default_schain_info[CHAIN_SPECIFIC_TS_NAME] == 0
 
 
-def test_get_schain_static_param(st: BaseAdminSettings):
+def test_get_schain_static_param(st: BaseNodeSettings):
     static_params = get_static_params(st.env_type)
     legacy_ts_info = get_schain_static_param(
         static_params['schain'][DEFAULT_TS_NAME], TEST_SCHAIN_NAME
@@ -83,7 +83,7 @@ def test_get_schain_static_param(st: BaseAdminSettings):
     )
 
 
-def test_get_static_node_info(st: BaseAdminSettings):
+def test_get_static_node_info(st: BaseNodeSettings):
     node_info_small = get_static_node_info(SchainType.small, st.env_type)
     node_info_medium = get_static_node_info(SchainType.medium, st.env_type)
 
@@ -94,7 +94,7 @@ def test_get_static_node_info(st: BaseAdminSettings):
     assert node_info_small != node_info_medium
 
 
-def test_get_automatic_repair_option(st: BaseAdminSettings):
+def test_get_automatic_repair_option(st: BaseNodeSettings):
     assert get_automatic_repair_option(st.env_type)
     assert get_automatic_repair_option(env_type='mainnet')
     assert get_automatic_repair_option(env_type='testnet')
