@@ -22,7 +22,7 @@ import time
 
 from filelock import FileLock
 from skale import SkaleIma, SkaleManager
-from skale.core.settings import SkaleSettings, get_settings, get_internal_settings
+from skale.core.settings import SkaleSettings, get_internal_settings, get_settings
 
 from core.ima.abi import generate_ima_container_abis
 from core.manager_cache import ManagerCache
