@@ -25,9 +25,9 @@ from http import HTTPStatus
 
 from flask import Response, g
 from skale import SkaleManager
-from skale.core.settings import SkaleSettings, get_settings
 from skale.utils.cache import RedisCacheConfig
 from skale.utils.web3_utils import init_web3
+from skale_core.settings import SkaleSettings, get_settings
 
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig

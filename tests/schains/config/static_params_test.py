@@ -1,4 +1,4 @@
-from skale.core.settings import BaseNodeSettings
+from skale_core.settings import BaseNodeSettings
 
 from core.config.schain.helper import get_static_params
 from core.config.schain.static_params import (

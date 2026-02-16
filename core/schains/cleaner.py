@@ -27,10 +27,10 @@ from typing import Optional
 
 from sgx import SgxClient
 from skale import SkaleManager
-from skale.core.settings import FairSettings, SkaleSettings, get_settings
 from skale.types.node import NodeId
 from skale.types.schain import SchainName, SchainStructure
 from skale.utils.helper import schain_name_to_hash
+from skale_core.settings import FairSettings, SkaleSettings, get_settings
 
 from core.chain.runner import get_container_name, is_exited
 from core.checks.schain import SChainChecks

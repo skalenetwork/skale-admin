@@ -22,7 +22,7 @@ import logging
 from typing import Optional, Tuple
 
 from docker.types import LogConfig, Ulimit
-from skale.core.settings import get_internal_settings, get_settings
+from skale_core.settings import get_internal_settings, get_settings
 
 from core.chain.cmd import get_skaled_container_cmd
 from core.chain.skaled_exit_codes import SkaledExitCodes

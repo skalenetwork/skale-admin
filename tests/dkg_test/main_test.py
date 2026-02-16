@@ -17,13 +17,13 @@ from unittest import mock
 import pytest
 from eth_utils.hexadecimal import remove_0x_prefix
 from skale import SkaleManager
-from skale.core.settings import FairSettings, SkaleSettings, get_settings
 from skale.types.dkg import G2Point, KeyShare
 from skale.types.node import NodeId
 from skale.types.schain import SchainName
 from skale.utils.account_tools import send_eth
 from skale.utils.helper import schain_name_to_hash
 from skale.wallets import SgxWallet
+from skale_core.settings import FairSettings, SkaleSettings, get_settings
 
 from core.config.schain.directory import init_schain_config_dir
 from core.dkg.schain.main import get_dkg_client, is_last_dkg_finished, run_dkg

@@ -17,7 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from skale.core.types import ImageType
+from skale_core.types import ImageType
 
 DATA_DIR_CONTAINER_PATH = '/data_dir'
 SHARED_SPACE_CONTAINER_PATH = '/shared-space'

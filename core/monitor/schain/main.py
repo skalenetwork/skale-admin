@@ -24,8 +24,8 @@ from importlib import reload
 from typing import Optional
 
 from skale import SkaleIma
-from skale.core.settings import SkaleSettings, get_settings
 from skale.types.schain import SchainStructure
+from skale_core.settings import SkaleSettings, get_settings
 from web3._utils import http_session_manager
 
 from core.chain.status import get_node_cli_status, get_skaled_status

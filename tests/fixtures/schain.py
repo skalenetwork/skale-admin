@@ -4,8 +4,8 @@ import shutil
 from typing import cast
 
 import pytest
-from skale.core.settings import get_settings
 from skale.types.schain import SchainName
+from skale_core.settings import get_settings
 
 from core.checks.schain import SChainChecks
 from tests.utils import CONFIG_STREAM, STATIC_NODE_GROUPS, get_random_string

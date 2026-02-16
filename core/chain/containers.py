@@ -21,7 +21,7 @@ import logging
 import time
 from typing import Optional, cast
 
-from skale.core.settings import get_settings
+from skale_core.settings import get_settings
 
 from core.chain.runner import (
     get_container_image,

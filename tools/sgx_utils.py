@@ -23,7 +23,7 @@ import time
 
 from sgx import SgxClient
 from sgx.http import SgxUnreachableError
-from skale.core.settings import FairSettings, SkaleSettings, get_settings
+from skale_core.settings import FairSettings, SkaleSettings, get_settings
 
 from tools.constants import SGX_CERTIFICATES_FOLDER
 from tools.str_formatters import arguments_list_string

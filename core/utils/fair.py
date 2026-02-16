@@ -20,9 +20,9 @@
 import logging
 
 from skale import FairManager
-from skale.core.settings import FairBaseSettings, FairSettings, get_settings
 from skale.utils.web3_utils import get_endpoint
 from skale.wallets import BaseWallet
+from skale_core.settings import FairBaseSettings, FairSettings, get_settings
 
 from core.config.endpoint import get_local_chain_http_endpoint_from_config
 from core.config.schain.file_manager import ConfigFileManager

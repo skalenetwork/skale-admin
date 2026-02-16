@@ -21,11 +21,12 @@ import logging
 import time
 
 from skale import SkaleIma, SkaleManager
-from skale.core.settings import SkalePassiveSettings, get_settings
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.types.schain import SchainName, SchainStructure
 from skale.utils.helper import schain_name_to_hash
+from skale_core.settings import SkalePassiveSettings, get_settings
 
+import tools.settings  # noqa: F401
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from core.schains.process_manager import run_pm_schain

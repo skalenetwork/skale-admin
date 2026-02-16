@@ -7,7 +7,7 @@ from unittest import mock
 import pytest
 from Crypto.Hash import keccak
 from flask import Flask, appcontext_pushed, g
-from skale.core.settings import get_settings
+from skale_core.settings import get_settings
 
 from core.config.schain.file_manager import ConfigFileManager
 from core.node_config import NodeConfig

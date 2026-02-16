@@ -34,10 +34,10 @@ import yaml
 from filelock import FileLock
 from jinja2 import Environment
 from skale import SkaleManager
-from skale.core.settings import BaseNodeSettings, SkaleSettings, get_internal_settings, get_settings
 from skale.types.node import NodeId
 from skale.utils.cache import RedisCacheConfig
 from skale.wallets import BaseWallet
+from skale_core.settings import BaseNodeSettings, SkaleSettings, get_internal_settings, get_settings
 from web3 import Web3
 
 from tools.constants import CONTAINERS_FILEPATH, INIT_LOCK_PATH

@@ -24,9 +24,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from flask import g
-from skale.core.settings import SkaleSettings, get_settings
-from skale.core.types import EnvType
 from skale.dataclasses.skaled_ports import SkaledPorts
+from skale_core.settings import SkaleSettings, get_settings
+from skale_core.types import EnvType
 from websocket import create_connection
 
 from core.config.endpoint import get_chain_ports_from_config

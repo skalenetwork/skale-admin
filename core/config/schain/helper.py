@@ -21,7 +21,7 @@ import logging
 from typing import Dict, List, Optional
 
 from Crypto.Hash import keccak
-from skale.core.types import EnvType
+from skale_core.types import EnvType
 from web3 import Web3
 
 from core.config.fair.helper import get_current_nodes as get_fair_current_nodes

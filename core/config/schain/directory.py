@@ -23,7 +23,7 @@ import os
 from pathlib import Path
 from typing import List
 
-from skale.core.settings import get_internal_settings
+from skale_core.settings import get_internal_settings
 
 from tools.constants.schains import (
     BASE_SCHAIN_CONFIG_FILEPATH,

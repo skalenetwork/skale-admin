@@ -23,7 +23,7 @@ from http import HTTPStatus
 
 from flask import Blueprint, g, request
 from skale import FairManager
-from skale.core.settings import BaseNodeSettings
+from skale_core.settings import BaseNodeSettings
 
 from core.checks.fair import FairConfigChecks, SkaledChecks
 from core.config.schain.static_params import get_fair_chain_name

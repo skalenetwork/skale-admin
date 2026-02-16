@@ -4,7 +4,6 @@ import shutil
 import pytest
 from eth_typing import HexStr
 from skale import FairManager, SkaleIma, SkaleManager
-from skale.core.settings import BaseNodeSettings, FairBaseSettings, SkaleSettings
 from skale.types.schain import SchainHash
 from skale.utils.account_tools import generate_account, send_eth
 from skale.utils.cache import RedisCacheConfig
@@ -26,6 +25,7 @@ from skale.utils.contracts_provision.main import (
 from skale.utils.helper import schain_name_to_hash
 from skale.utils.web3_utils import init_web3
 from skale.wallets import Web3Wallet
+from skale_core.settings import BaseNodeSettings, FairBaseSettings, SkaleSettings
 
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig

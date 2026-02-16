@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 import yaml
 from skale import SkaleManager
-from skale.core.settings import get_settings
 from skale.types.schain import SchainHash, SchainName, SchainStructure
+from skale_core.settings import get_settings
 from web3 import Web3
 
 from core.chain.status import (

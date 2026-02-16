@@ -19,10 +19,10 @@
 
 from dataclasses import dataclass
 
-from skale.core.settings import get_settings
 from skale.types.node import Node, NodeId, NodeWithSchainHashes, Port
 from skale.types.rotation import NodeGroups
 from skale.types.schain import SchainStructure
+from skale_core.settings import get_settings
 
 from core.config.schain.node_info import CurrentNodeInfo, generate_current_node_info
 from core.config.schain.schain_info import SChainInfo, generate_schain_info

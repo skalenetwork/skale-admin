@@ -22,8 +22,8 @@ import os
 import time
 from typing import Any, List, Optional
 
-from skale.core.settings import get_settings
 from skale.types.schain import SchainName
+from skale_core.settings import get_settings
 
 from core.chain.runner import (
     get_container_name,

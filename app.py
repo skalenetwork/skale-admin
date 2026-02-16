@@ -25,8 +25,9 @@ from http import HTTPStatus
 
 import werkzeug
 from flask import Flask, g
-from skale.core.settings import get_settings
+from skale_core.settings import get_settings
 
+import tools.settings  # noqa: F401
 from core.node_config import NodeConfig
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited

@@ -23,7 +23,7 @@ import time
 from typing import cast
 
 from requests import Response
-from skale.core.settings import get_settings
+from skale_core.settings import get_settings
 
 from core.chain.runner import is_container_exists, is_container_running, restart_container
 from core.chain.status import SkaledStatus

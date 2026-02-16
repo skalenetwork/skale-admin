@@ -8,10 +8,10 @@ from unittest.mock import patch
 import freezegun
 import pytest
 from flask import Flask, appcontext_pushed, g
-from skale.core.settings import get_settings
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.utils.contracts_provision.utils import generate_random_node_data
 from skale.utils.helper import schain_name_to_hash
+from skale_core.settings import get_settings
 from web3 import Web3
 
 from core.config.schain.file_manager import ConfigFileManager

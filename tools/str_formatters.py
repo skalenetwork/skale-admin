@@ -20,7 +20,7 @@
 from typing import Any, Dict, Literal, Optional
 
 import colorful as cf
-from skale.core.settings import get_settings
+from skale_core.settings import get_settings
 
 cf.use_style('solarized')
 PALETTE = {

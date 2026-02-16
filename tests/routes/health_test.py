@@ -3,8 +3,8 @@ from unittest import mock
 import pytest
 from flask import Flask, appcontext_pushed, g
 from skale import SkaleManager
-from skale.core.settings import get_settings
 from skale.types.schain import SchainName
+from skale_core.settings import get_settings
 
 from core.checks.schain import SChainChecks
 from core.node_config import NodeConfig

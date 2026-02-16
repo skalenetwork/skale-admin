@@ -21,8 +21,8 @@ import logging
 import time
 from typing import Optional
 
-from skale.core.settings import get_settings
 from skale.types.schain import Schain
+from skale_core.settings import get_settings
 
 from core.chain.containers import monitor_ima_container, monitor_skaled_container
 from core.chain.runner import (

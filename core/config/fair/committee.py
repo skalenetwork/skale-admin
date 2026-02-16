@@ -20,10 +20,10 @@
 from dataclasses import dataclass
 from typing import Dict
 
-from skale.core.settings import get_settings
 from skale.types.committee import CommitteeGroup
 from skale.types.dkg import DkgId, G2Point
 from skale.types.node import NodeId
+from skale_core.settings import get_settings
 
 from core.config.fair.fair_chain_node import FairChainNodeInfo, generate_fair_chain_nodes
 from core.config.schain.static_params import get_fair_chain_name

@@ -24,9 +24,10 @@ import time
 from http import HTTPStatus
 
 from flask import Flask, g
-from skale.core.settings import get_internal_settings, get_settings
+from skale_core.settings import get_internal_settings, get_settings
 from werkzeug import exceptions as wz_exceptions
 
+import tools.settings  # noqa: F401
 from core.node_config import NodeConfig
 from tools.docker_utils import DockerUtils
 from tools.helper import is_passive, wait_until_admin_inited

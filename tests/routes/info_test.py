@@ -3,7 +3,7 @@ from time import sleep
 import pytest
 from flask import Flask, appcontext_pushed, g
 from sgx import SgxClient
-from skale.core.settings import get_settings
+from skale_core.settings import get_settings
 
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, run_custom_schain_container

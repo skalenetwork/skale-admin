@@ -23,7 +23,7 @@ import time
 from typing import Optional, cast
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from skale.core.settings import get_settings
+from skale_core.settings import get_settings
 
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_fair_chain_name

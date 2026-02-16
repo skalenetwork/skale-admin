@@ -22,8 +22,9 @@ import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from filelock import FileLock
-from skale.core.settings import FairBaseSettings, get_settings
+from skale_core.settings import FairBaseSettings, get_settings
 
+import tools.settings  # noqa: F401
 from core.config.schain.static_params import get_fair_chain_name
 from core.monitor.fair.main import start_tasks
 from core.monitoring import update_monitoring_services

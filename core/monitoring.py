@@ -20,7 +20,7 @@
 import logging
 from typing import Optional
 
-from skale.core.settings import get_internal_settings, get_settings
+from skale_core.settings import get_internal_settings, get_settings
 
 from tools.constants.monitoring import (
     FILEBEAT_CONFIG_PATH,

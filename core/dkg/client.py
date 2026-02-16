@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 from eth_utils.hexadecimal import remove_0x_prefix
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
-from skale.core.settings import FairSettings, SkaleSettings, get_settings
+from skale_core.settings import FairSettings, SkaleSettings, get_settings
 
 from core.dkg.broadcast_filter import BaseFilter
 from core.dkg.structures import DKGStep

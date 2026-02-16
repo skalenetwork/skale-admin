@@ -19,7 +19,7 @@
 
 from typing import Optional
 
-from skale.core.settings import BaseNodeSettings, FairSettings, SkaleSettings, get_settings
+from skale_core.settings import BaseNodeSettings, FairSettings, SkaleSettings, get_settings
 
 from core.chain.ssl import get_ssl_filepath
 from core.config.endpoint import get_chain_ports_from_config

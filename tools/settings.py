@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from skale.core.settings import (
+from skale_core.settings import (
     FairBaseSettings,
     FairSettings,
     InternalSettings,

@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 from apscheduler.schedulers.background import BackgroundScheduler
-from skale.core.settings import BaseNodeSettings
+from skale_core.settings import BaseNodeSettings
 
 from core.checks.fair import SkaledChecks
 from core.config.schain.static_params import get_fair_chain_name
