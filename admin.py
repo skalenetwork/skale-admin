@@ -74,6 +74,7 @@ def monitor(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig) -
 def worker() -> None:
     node_config = NodeConfig()
     st = get_settings(SkaleSettings)
+    internal_st = get_internal_settings()
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
@@ -82,7 +83,7 @@ def worker() -> None:
     )
     skale = SkaleManager(str(st.endpoint), st.manager_contracts, wallet)
     skale_ima = SkaleIma(str(st.endpoint), st.ima_contracts, wallet)
-    if st.backup_run:
+    if internal_st.backup_run:
         logger.info('Running sChains in snapshot download mode')
     update_monitoring_services(node_config.ip, node_config.id, skale.manager.address)
     monitor(skale, skale_ima, node_config)
