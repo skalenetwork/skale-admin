@@ -82,7 +82,7 @@ FILESTORAGE_STATIC_PATH: Path = SKALE_LIB_PATH / 'filestorage'
 
 ## path - settings
 
-SETTINGS_FOLDER_PATH: Path = SKALE_VOLUME_PATH / 'settings'
+SETTINGS_FOLDER_PATH: Path = NODE_DATA_PATH / 'settings'
 NODE_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'node.toml'
 INTERNAL_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'internal.toml'
 
