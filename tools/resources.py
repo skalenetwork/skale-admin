@@ -1,10 +1,11 @@
 import redis
 import statsd
-
 from peewee import SqliteDatabase
 
-from tools.configs.db import DB_FILE, DB_PRAGMAS, REDIS_URI
-from tools.configs import STATSD_HOST, STATSD_PORT
+from tools.constants.db import DB_FILE, DB_PRAGMAS, REDIS_URI
+
+STATSD_HOST = '127.0.0.1'
+STATSD_PORT = 8125
 
 db = SqliteDatabase(DB_FILE, DB_PRAGMAS)
 cpool: redis.ConnectionPool = redis.ConnectionPool.from_url(REDIS_URI)

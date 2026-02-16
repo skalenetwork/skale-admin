@@ -1,0 +1,108 @@
+#   -*- coding: utf-8 -*-
+#
+#   This file is part of SKALE Admin
+#
+#   Copyright (C) 2025 SKALE Labs
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Affero General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Affero General Public License for more details.
+#
+#   You should have received a copy of the GNU Affero General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Dict
+
+from core.node import get_skale_node_version
+from core.redis.chain_record import ChainRecord
+from core.types.chain import ChainName
+from tools.helper import read_json
+from web.models.schain import SChainRecord
+
+if TYPE_CHECKING:
+    from core.config.fair.generator import FairSkaleConfig
+    from core.config.schain.skale_section import SkaleConfig
+
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class BaseConfig:
+    seal_engine: str
+    params: Dict
+    unddos: Dict
+    genesis: Dict
+    accounts: Dict
+    skale_config: SkaleConfig | FairSkaleConfig
+
+    def to_dict(self):
+        return {
+            'sealEngine': self.seal_engine,
+            'params': self.params,
+            'unddos': self.unddos,
+            'genesis': self.genesis,
+            'accounts': self.accounts,
+            'skaleConfig': self.skale_config.to_dict(),
+        }
+
+
+@dataclass
+class SChainConfig(BaseConfig):
+    skale_config: SkaleConfig
+
+
+@dataclass
+class FairConfig(BaseConfig):
+    skale_config: FairSkaleConfig
+
+
+class NoBaseConfigError(Exception):
+    pass
+
+
+class SChainBaseConfig:
+    """Wrapper for the static part of sChain config"""
+
+    def __init__(self, base_config_path):
+        self._base_config_path = base_config_path
+        self.read()
+
+    def read(self):
+        logger.debug(f'Reading sChain base config: {self._base_config_path}')
+        try:
+            self.config = read_json(self._base_config_path)
+        except Exception as err:
+            raise NoBaseConfigError(err)
+
+
+def update_chain_config_version(
+    chain_name: ChainName, chain_record: SChainRecord | ChainRecord
+) -> None:
+    new_config_version = get_skale_node_version()
+    logger.info(
+        f'Going to change config_version for {chain_name}: \
+{chain_record.config_version} -> {new_config_version}'
+    )
+    chain_record.set_config_version(new_config_version)
+
+
+def chain_config_version_match(
+    chain_name: ChainName, chain_record: SChainRecord | ChainRecord
+) -> bool:
+    skale_node_version = get_skale_node_version()
+    logger.info(
+        f'config check, chain: {chain_name}, config_version: \
+{chain_record.config_version}, skale_node_version: {skale_node_version}'
+    )
+    return chain_record.config_version == skale_node_version

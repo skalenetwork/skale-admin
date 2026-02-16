@@ -1,5 +1,5 @@
 {
-  "schain": {
+  "skaled": {
     "name": "skalenetwork/schain",
     "version": "3.19.0",
     "custom_args": {
@@ -30,9 +30,9 @@
     }
   },
   "ima": {
-    "name": "skalenetwork/ima",
-    "version": "2.1.0-beta.3",
-    "new_version": "2.1.0",
+    "name": "alpine",
+    "version": "3.23",
+    "new_version": "3.22",
     "custom_args": {},
     "args": {
       "restart_policy": {

@@ -17,20 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 import json
 import logging
+import os
 
 from dateutil import parser
+from flask import Blueprint, request
 from OpenSSL import crypto
 
-from flask import Blueprint, request
-
+from core.chain.ssl import is_ssl_folder_empty
 from core.nginx import reload_nginx
-from core.schains.ssl import is_ssl_folder_empty
+from tools.constants import SSL_CERTIFICATES_FILEPATH
+from web.helper import construct_err_response, construct_ok_response, get_api_url
 from web.models.schain import set_schains_need_reload
-from web.helper import construct_ok_response, construct_err_response, get_api_url
-from tools.configs import SSL_CERTIFICATES_FILEPATH
 
 logger = logging.getLogger(__name__)
 
@@ -66,17 +65,11 @@ def get_cert_info(cert):
         subject = crypto_cert.get_subject()
         issued_to = subject.CN
         expiration_date_raw = crypto_cert.get_notAfter()
-        expiration_date = parser.parse(
-            expiration_date_raw
-        ).strftime('%Y-%m-%dT%H:%M:%S')
+        expiration_date = parser.parse(expiration_date_raw).strftime('%Y-%m-%dT%H:%M:%S')
     except Exception as err:
         logger.exception('Error during parsing certs')
         return 'error', {'msg': err}
-    return 'ok', {
-        'subject': subject,
-        'issued_to': issued_to,
-        'expiration_date': expiration_date
-    }
+    return 'ok', {'subject': subject, 'issued_to': issued_to, 'expiration_date': expiration_date}
 
 
 ssl_bp = Blueprint(BLUEPRINT_NAME, __name__)
@@ -94,20 +87,19 @@ def status():
     if status == 'error':
         return construct_err_response(msg=CERTS_HAS_INVALID_FORMAT)
     else:
-        return construct_ok_response(data={
-            'issued_to': info['issued_to'],
-            'expiration_date': info['expiration_date']
-        })
+        return construct_ok_response(
+            data={'issued_to': info['issued_to'], 'expiration_date': info['expiration_date']}
+        )
 
 
+# TODO: remove in the next version
 @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'upload'), methods=['POST'])
 def upload():
     request_json = json.loads(request.form['json'])
     force = request_json.get('force') is True
     if not is_ssl_folder_empty() and not force:
         return construct_err_response(msg=CERTS_UPLOADED_ERR_MSG)
-    if SSL_KEY_NAME not in request.files or \
-            SSL_CRT_NAME not in request.files:
+    if SSL_KEY_NAME not in request.files or SSL_CRT_NAME not in request.files:
         return construct_err_response(msg=NO_REQUIRED_FILES_ERR_MSG)
 
     key = request.files[SSL_KEY_NAME].read()

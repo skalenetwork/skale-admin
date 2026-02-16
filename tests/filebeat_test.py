@@ -1,8 +1,8 @@
 import os
-import mock
-from core.monitoring import filebeat_config_processed
-from tools.configs.monitoring import NODE_DATA_PATH
+from unittest import mock
 
+from core.monitoring import filebeat_config_processed
+from tools.constants.monitoring import NODE_DATA_PATH
 
 PROCESSED_FILEBEAT_CONFIG_PATH = os.path.join(NODE_DATA_PATH, 'filebeat_processed.yml')
 

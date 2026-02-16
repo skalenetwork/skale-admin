@@ -17,13 +17,15 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with SKALE.py.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import yaml
 import math
+import os
+from pathlib import Path
+
+import yaml
 
 
 def calc_disk_factor(divider, decimals=3):
-    factor = 10 ** decimals
+    factor = 10**decimals
     disk_factor_raw = 1 - (1 / (divider + 1))
     return math.floor(disk_factor_raw * factor) / factor
 
@@ -49,7 +51,7 @@ class ResourceAlloc(Alloc):
             'test': value / TEST_DIVIDER,
             'small': value / SMALL_DIVIDER,
             'medium': value / MEDIUM_DIVIDER,
-            'large': value / LARGE_DIVIDER
+            'large': value / LARGE_DIVIDER,
         }
         if not fractional:
             for k in self.values:
@@ -63,7 +65,7 @@ class DiskResourceAlloc(Alloc):
             'test': value / TEST_DIVIDER,
             'small': value / SMALL_DIVIDER,
             'medium': value / MEDIUM_DIVIDER,
-            'large': value / LARGE_DIVIDER
+            'large': value / LARGE_DIVIDER,
         }
         if not fractional:
             for k in self.values:
@@ -99,7 +101,9 @@ def calculate_free_disk_space(disk_size: int) -> int:
 
 
 def calculate_shared_space_size(disk_size: int, shared_space_coefficient: float) -> int:
-    return int(disk_size * (1 - DISK_FACTOR) * shared_space_coefficient) // VOLUME_CHUNK * VOLUME_CHUNK  # noqa
+    return (
+        int(disk_size * (1 - DISK_FACTOR) * shared_space_coefficient) // VOLUME_CHUNK * VOLUME_CHUNK
+    )  # noqa
 
 
 def safe_load_yaml(filepath):
@@ -117,9 +121,9 @@ def save_yaml(filepath, data, comments=None):
         yaml.dump(data, outfile, default_flow_style=False)
 
 
-def generate_disk_alloc(configs: dict,
-                        env_type_name: str,
-                        schain_allocation: dict) -> DiskResourceAlloc:
+def generate_disk_alloc(
+    configs: dict, env_type_name: str, schain_allocation: dict
+) -> DiskResourceAlloc:
     """Generates disk allocation for the provided env type"""
     disk_size_bytes = configs['envs'][env_type_name]['server']['disk']  # noqa
     free_disk_space = calculate_free_disk_space(disk_size_bytes)
@@ -128,10 +132,10 @@ def generate_disk_alloc(configs: dict,
     return disk_alloc
 
 
-def generate_volume_alloc(configs: dict, env_type_name: str,
-                          schain_allocation: dict,
-                          disk_alloc: ResourceAlloc) -> SChainVolumeAlloc:
-    """Generates volume partitioning """
+def generate_volume_alloc(
+    configs: dict, env_type_name: str, schain_allocation: dict, disk_alloc: ResourceAlloc
+) -> SChainVolumeAlloc:
+    """Generates volume partitioning"""
     """for the provided env type and disk allocation"""
     proportions = configs['common']['schain']['volume_limits']
     volume_alloc = SChainVolumeAlloc(disk_alloc.to_dict(), proportions)
@@ -139,10 +143,10 @@ def generate_volume_alloc(configs: dict, env_type_name: str,
     return volume_alloc
 
 
-def generate_leveldb_alloc(configs: dict,
-                           env_type_name: str, schain_allocation: dict,
-                           volume_alloc: SChainVolumeAlloc) -> LevelDBAlloc:
-    """Generates LevelDB partitioning """
+def generate_leveldb_alloc(
+    configs: dict, env_type_name: str, schain_allocation: dict, volume_alloc: SChainVolumeAlloc
+) -> LevelDBAlloc:
+    """Generates LevelDB partitioning"""
     """for the provided env type and volume partitioning"""
     leveldb_proportions = configs['common']['schain']['leveldb_limits']
     leveldb_alloc = LevelDBAlloc(volume_alloc.to_dict(), leveldb_proportions)
@@ -150,11 +154,7 @@ def generate_leveldb_alloc(configs: dict,
     return leveldb_alloc
 
 
-def generate_shared_space_value(
-    configs: dict,
-    env_type_name: str,
-    schain_allocation: dict
-) -> int:
+def generate_shared_space_value(configs: dict, env_type_name: str, schain_allocation: dict) -> int:
     disk_size_bytes = configs['envs'][env_type_name]['server']['disk']  # noqa
 
     shared_space_coefficient = configs['common']['schain']['shared_space_coefficient']  # noqa
@@ -164,21 +164,17 @@ def generate_shared_space_value(
     return shared_space_size_bytes
 
 
-def generate_schain_allocation(skale_node_path: str) -> dict:
+def generate_schain_allocation(skale_node_path: Path) -> dict:
     configs_filepath = os.path.join(skale_node_path, 'static_params.yaml')
     configs = safe_load_yaml(configs_filepath)
 
     schain_allocation = {}
     for env_type_name in configs['envs']:
         schain_allocation[env_type_name] = {}
-        disk_alloc = generate_disk_alloc(
-            configs, env_type_name, schain_allocation)
-        volume_alloc = generate_volume_alloc(
-            configs, env_type_name, schain_allocation, disk_alloc)
-        generate_leveldb_alloc(
-            configs, env_type_name, schain_allocation, volume_alloc)
-        generate_shared_space_value(
-            configs, env_type_name, schain_allocation)
+        disk_alloc = generate_disk_alloc(configs, env_type_name, schain_allocation)
+        volume_alloc = generate_volume_alloc(configs, env_type_name, schain_allocation, disk_alloc)
+        generate_leveldb_alloc(configs, env_type_name, schain_allocation, volume_alloc)
+        generate_shared_space_value(configs, env_type_name, schain_allocation)
 
     return schain_allocation
 
@@ -187,7 +183,7 @@ def save_allocation(allocation: dict, allocation_filepath: str) -> None:
     save_yaml(
         filepath=allocation_filepath,
         data=allocation,
-        comments='# DO NOT MODIFY THIS FILE MANUALLY!\n# Use generate_schain_allocation.py script from helper-scripts repo.\n\n'  # noqa
+        comments='# DO NOT MODIFY THIS FILE MANUALLY!\n# Use generate_schain_allocation.py script from helper-scripts repo.\n\n',  # noqa
     )
 
 
@@ -200,5 +196,5 @@ def main():
     print(f'Results saved to {allocation_filepath}')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

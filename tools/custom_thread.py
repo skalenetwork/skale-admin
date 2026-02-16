@@ -17,16 +17,15 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import threading
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
 
 
 class CustomThread(threading.Thread):
-
     def __init__(self, name, func, opts=None, interval=1.0, once=False):
-        """ Setting initial variables """
+        """Setting initial variables"""
         self._stopevent = threading.Event()
         self._sleepperiod = interval
         self.func = func
@@ -36,7 +35,7 @@ class CustomThread(threading.Thread):
         threading.Thread.__init__(self, name=name)
 
     def run(self):
-        """ Main control loop """
+        """Main control loop"""
         logger.debug(f'{self.getName()} thread starts')
 
         if self.once:
@@ -44,8 +43,9 @@ class CustomThread(threading.Thread):
         else:
             running_counter = 0
             while not self._stopevent.isSet():
-                logger.info(f'Running function from thread '
-                            f'{self.getName()}, try: {running_counter}')
+                logger.info(
+                    f'Running function from thread {self.getName()}, try: {running_counter}'
+                )
                 self.safe_run_func()
                 self._stopevent.wait(self._sleepperiod)
                 running_counter += 1
@@ -58,25 +58,11 @@ class CustomThread(threading.Thread):
         except Exception as err:
             logger.exception(
                 f'Error was occurred during the execution. Function: {self.func.__name__}. '
-                f'Error {err}.')
+                f'Error {err}.'
+            )
             # raise e todo: handle
 
     def join(self, timeout=None):
-        """ Stop the thread. """
+        """Stop the thread."""
         self._stopevent.set()
         threading.Thread.join(self, timeout)
-
-
-def test(opts):
-    print(12345)
-
-
-if __name__ == "__main__":
-    testthread = CustomThread('test', test)
-    testthread.start()
-
-    import time
-
-    time.sleep(10.0)
-
-    testthread.join()

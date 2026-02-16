@@ -1,4 +1,6 @@
 import freezegun
+from skale.utils.helper import schain_name_to_hash
+from web3 import Web3
 
 from core.schains.info import get_schain_info_by_name
 from tests.utils import CURRENT_DATETIME, upsert_schain_record_with_config
@@ -11,7 +13,7 @@ def test_get_schain_info_by_name(skale, schain_on_contracts, schain_db):
     info = get_schain_info_by_name(skale, name)
     expected_ts = int(schain_record.repair_date.timestamp())
     assert info.name == name
-    assert info.schain_id == skale.schains.name_to_id(name)
+    assert info.schain_id == schain_name_to_hash(name)
     assert info.part_of_node == 1
     assert info.dkg_status == 1
     assert not info.is_deleted
@@ -20,7 +22,7 @@ def test_get_schain_info_by_name(skale, schain_on_contracts, schain_db):
 
     assert info.to_dict() == {
         'name': name,
-        'id': skale.schains.name_to_id(name),
+        'id': Web3.to_hex(schain_name_to_hash(name)),
         'mainnet_owner': info.mainnet_owner,
         'part_of_node': 1,
         'dkg_status': 1,

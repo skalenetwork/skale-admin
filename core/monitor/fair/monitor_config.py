@@ -1,0 +1,164 @@
+#   -*- coding: utf-8 -*-
+#
+#   This file is part of SKALE Admin
+#
+#   Copyright (C) 2025 SKALE Labs
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Affero General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Affero General Public License for more details.
+#
+#   You should have received a copy of the GNU Affero General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+import logging
+from abc import abstractmethod
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from skale import FairManager
+
+from core.checks.fair import FairConfigChecks
+from core.monitor.fair.action_config import FairConfigActionManager
+from core.monitor.fair.healthcheck import handle_healthcheck_job
+from core.monitor.monitor_base import IMonitor
+from core.node_config import NodeConfig
+from core.redis.chain_record import ChainRecord
+from core.types.chain import FairChainName
+from tools.helper import is_passive, no_hyphens
+from tools.resources import get_statsd_client
+from tools.str_formatters import arguments_list_string
+
+logger = logging.getLogger(__name__)
+
+
+def run_config_pipeline(
+    chain_name: FairChainName,
+    fair: FairManager,
+    node_config: NodeConfig,
+    stream_version: str,
+    scheduler: BackgroundScheduler,
+) -> None:
+    logger.info('Running config pipeline for %s', chain_name)
+
+    if not is_passive():
+        is_healthy = fair.status.is_healthy(node_id=node_config.id)
+        logger.info('Node health status: %s', is_healthy)
+        handle_healthcheck_job(scheduler, node_config)
+
+    active_committee_index = fair.committee.get_active_committee_index()
+    last_committee_index = fair.committee.last_committee_index()
+    last_committee = fair.committee.get_committee(last_committee_index)
+    is_committee_node = node_config.id in last_committee.node_ids
+
+    dkg_id = last_committee.dkg_id
+
+    logger.info(
+        'Running config pipeline, active committee: %s, last committee: %s, is committee node: %s',
+        active_committee_index,
+        last_committee_index,
+        is_committee_node,
+    )
+
+    chain_record = ChainRecord(chain_name)
+    logger.info('Chain record: %s', chain_record.to_dict())
+
+    logger.info('Initializing config checks')
+    config_checks = FairConfigChecks(
+        fair=fair,
+        node_config=node_config,
+        chain_name=chain_name,
+        stream_version=stream_version,
+        dkg_id=dkg_id,
+        chain_record=chain_record,
+    )
+
+    logger.info('Initializing config action manager')
+    config_am = FairConfigActionManager(
+        fair=fair,
+        chain_name=chain_name,
+        dkg_id=dkg_id,
+        node_config=node_config,
+        stream_version=stream_version,
+        checks=config_checks,
+    )
+
+    logger.info('Gathering config status')
+    status = config_checks.get_all(log=False, expose=True)
+    logger.info('Config status: %s', status)
+
+    if is_committee_node:
+        logger.info('Committee node mode, running CommitteeConfigMonitor')
+        mon = CommitteeConfigMonitor(config_am, config_checks)
+    else:
+        logger.info('Non-committee node mode, running DefaultConfigMonitor')
+        mon = DefaultConfigMonitor(config_am, config_checks)
+    statsd_client = get_statsd_client()
+
+    statsd_client.incr(f'admin.config_pipeline.{mon.__class__.__name__}.{no_hyphens(chain_name)}')
+    statsd_client.gauge(
+        f'admin.config_pipeline.rotation_id.{no_hyphens(chain_name)}',
+        dkg_id,
+    )
+    with statsd_client.timer(f'admin.config_pipeline.duration.{no_hyphens(chain_name)}'):
+        mon.run()
+
+
+class BaseConfigMonitor(IMonitor):
+    def __init__(self, action_manager: FairConfigActionManager, checks: FairConfigChecks) -> None:
+        self.am = action_manager
+        self.checks = checks
+
+    @abstractmethod
+    def execute(self) -> None:
+        pass
+
+    def run(self):
+        typename = type(self).__name__
+        logger.info(
+            arguments_list_string(
+                {'type': typename, 'chain': self.am.chain_name},
+                'run_config_monitor',
+                'primary',
+            )
+        )
+        try:
+            self.am._upd_last_seen()
+            self.execute()
+            self.am.log_executed_blocks()
+            self.am._upd_last_seen()
+        except Exception as e:
+            logger.info('Config monitor type failed %s', typename, exc_info=e)
+        finally:
+            logger.info('Config monitor type finished %s', typename)
+
+
+class CommitteeConfigMonitor(BaseConfigMonitor):
+    def execute(self) -> None:
+        if not self.checks.config_dir:
+            self.am.config_dir()
+        if not self.checks.dkg:
+            self.am.dkg()
+        if not self.checks.upstream_config:
+            self.am.upstream_config(is_committee_node=True)
+        if not self.checks.network_scope_firewall_rules:
+            self.am.network_scope_firewall_rules()
+        self.am.reset_config_record()
+
+
+class DefaultConfigMonitor(BaseConfigMonitor):
+    def execute(self) -> None:
+        last_dkg_successful = self.am.fair.dkg.is_last_dkg_successful()
+        if not self.checks.config_dir:
+            self.am.config_dir()
+        if not self.checks.upstream_config and last_dkg_successful:
+            self.am.upstream_config(is_committee_node=False)
+        if not self.checks.network_scope_firewall_rules:
+            self.am.network_scope_firewall_rules()
+        self.am.reset_config_record()

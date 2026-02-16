@@ -1,84 +1,158 @@
 name: Test
+
 on: [push]
+
 env:
-  ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
-  SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
-  MANAGER_TAG: "1.10.0-v1.10.0.0"
-  IMA_TAG: "1.3.4-beta.5"
-  SGX_WALLET_TAG: "1.83.0-beta.5"
-  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-  PYTHON_VERSION: 3.11
+  MANAGER_TAG: 1.12.0-develop.23
+  IMA_TAG: 2.3.0-beta.3
+  SGX_WALLET_TAG: e548b375cae741af8fd11db54d6925c27a947af9
 
 jobs:
-  test_core:
-    runs-on: self-hosted
-    env:
-      ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
-      ENDPOINT: http://127.0.0.1:8545
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      SCHAIN_TYPE: ${{ secrets.SCHAIN_TYPE }}
+  test:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        type: [core, dkg, fair]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Set up Python 3.13
+        run: uv python install 3.13
+
+      - name: Install python dependencies
+        run: uv sync --all-extras
+
+      - name: Lint with ruff
+        run: uv run ruff check
+
+      - name: Export env
+        run: |
+          export SKALE_NETWORK_TYPE=${{ matrix.type }}
+          export COVERAGE_FILE=.coverage.${{ matrix.type }}
+          . ./scripts/export_env.sh
+          printenv >> $GITHUB_ENV
+
+      - name: Cleanup runner
+        run: |
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/android-sdk || true
+          sudo rm -rf /usr/local/share/android || true
+          sudo rm -rf /usr/local/share/Android || true
+
+      - name: Cache Docker images
+        id: cache-docker
+        uses: actions/cache@v4
+        with:
+          path: /tmp/docker-images
+          key: docker-images-v1-${{ runner.os }}-${{ env.MANAGER_TAG }}-${{ env.IMA_TAG }}
+
+      - name: Load or Pull Docker images
+        run: |
+          mkdir -p /tmp/docker-images
+
+          IMAGES=(
+            "skalenetwork/skale-manager:$MANAGER_TAG"
+          )
+          if [ "${{ matrix.type }}" == "core" ]; then
+            IMAGES+=("skalenetwork/ima-contracts:$IMA_TAG")
+          fi
+
+          for IMAGE in "${IMAGES[@]}"; do
+            TAR_FILE="/tmp/docker-images/$(echo $IMAGE | tr '/:' '_').tar"
+
+            if [ -f "$TAR_FILE" ]; then
+              echo "Loading $IMAGE from cache..."
+              docker load -i "$TAR_FILE"
+            else
+              echo "Pulling $IMAGE..."
+              docker pull "$IMAGE"
+              echo "Saving $IMAGE to cache..."
+              docker save "$IMAGE" -o "$TAR_FILE"
+            fi
+          done
+
+      - name: Deploy skaled
+        if: ${{ matrix.type == 'fair' }}
+        run: |
+          bash ./scripts/run_skaled.sh
+
+      - name: Deploy manager
+        run: |
+          bash ./helper-scripts/deploy_manager.sh
+          docker rmi -f skalenetwork/skale-manager:$MANAGER_TAG
+
+      - name: Deploy IMA
+        if: ${{ matrix.type == 'core' }}
+        run: |
+          bash ./helper-scripts/deploy_ima.sh
+          docker rmi -f skalenetwork/ima-contracts:$IMA_TAG
+
+      - name: Run sgx wallet sim
+        run: |
+          bash ./scripts/run_sgxwallet.sh
+
+      - name: Export updated env
+        run: |
+          . ./scripts/export_env.sh
+          printenv >> $GITHUB_ENV
+
+      - name: Run ${{ matrix.type }} tests
+        run: |
+          bash ./scripts/run_${{ matrix.type }}_tests.sh
+
+      - name: Normalize coverage filename
+        run: |
+          if [ -f .coverage ]; then
+            mv .coverage .coverage.${{ matrix.type }}
+          fi
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.type }}
+          path: .coverage.${{ matrix.type }}*
+          include-hidden-files: true
+          if-no-files-found: warn
+
+  codecov:
+    runs-on: ubuntu-22.04
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
         with:
           submodules: true
 
-      - name: Ensure PATH
-        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.13
+        run: uv python install 3.13
 
       - name: Install python dependencies
+        run: uv sync --all-extras
+
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          path: coverage-artifacts
+          merge-multiple: true
+
+      - name: Combine coverage
         run: |
-          source ../.venv/bin/activate
-          uv pip install -r requirements.txt --prerelease=allow
-          uv pip install -r requirements-dev.txt
-
-      - name: Lint with flake8
-        run: uv run flake8 .
-
-      - name: Launch anvil node
-        run: |
-          docker run -d --network host --name anvil ghcr.io/foundry-rs/foundry anvil && sleep 5 && docker logs anvil --tail 1000
-
-      - name: Deploy manager & ima contracts
-        run: |
-          bash ./helper-scripts/deploy_test_ima.sh
-
-      - name: Show stats before tests
-        if: always()
-        run: | 
-          lsblk -f
-          free -h
-
-      - name: Run core tests
-        run: |
-          source ../.venv/bin/activate
-          bash ./scripts/run_core_tests.sh
-
-      - name: Cleanup docker artifacts
-        run: |
-          docker rm -f $(docker ps -aq)
-
-      - name: Show stats after core tests
-        if: always()
-        run: |
-          lsblk -f
-          free -h
-
-      - name: Run firewall tests
-        run: |
-          bash ./scripts/run_firewall_test.sh
-
-      - name: Show stats after firewall tests
-        if: always()
-        run: | 
-          lsblk -f
-          free -h
-
-      - name: Cleanup docker artifacts
-        if: always()
-        run: |
-          docker rm -f $(docker ps -aq)
+          cp coverage-artifacts/.coverage.* .
+          uv run coverage combine
+          uv run coverage xml -o coverage.xml
 
       - name: Run codecov
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
-          source ../.venv/bin/activate
-          codecov -t $CODECOV_TOKEN
+          uv run codecov -t "$CODECOV_TOKEN" -f coverage.xml

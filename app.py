@@ -25,28 +25,21 @@ from http import HTTPStatus
 
 import werkzeug
 from flask import Flask, g
+from skale_core.settings import get_settings
 
+import tools.settings  # noqa: F401
 from core.node_config import NodeConfig
-
-from tools.configs import FLASK_SECRET_KEY_FILE, SGX_SERVER_URL
-from tools.configs.flask import (
-    FLASK_APP_HOST,
-    FLASK_APP_PORT,
-    FLASK_DEBUG_MODE
-)
-from tools.configs.web3 import ENDPOINT
 from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
-from tools.resources import get_database, REDIS_URI
-from tools.str_formatters import arguments_list_string
-
+from tools.resources import get_database
+from web.helper import construct_err_response
+from web.routes.health import health_bp
+from web.routes.info import info_bp
 from web.routes.node import node_bp
 from web.routes.schains import schains_bp
-from web.routes.wallet import wallet_bp
 from web.routes.ssl import ssl_bp
-from web.routes.health import health_bp
-from web.helper import construct_err_response
+from web.routes.wallet import wallet_bp
 
 REQ_ID_SIZE = 10
 
@@ -60,6 +53,7 @@ app.register_blueprint(schains_bp)
 app.register_blueprint(wallet_bp)
 app.register_blueprint(ssl_bp)
 app.register_blueprint(health_bp)
+app.register_blueprint(info_bp)
 
 
 @app.before_request
@@ -67,9 +61,8 @@ def before_request():
     wait_until_admin_inited()
     g.request_start_time = time.time()
     g.config = NodeConfig()
-    g.request_id = binascii.b2a_hex(
-        os.urandom(REQ_ID_SIZE // 2)
-    ).decode('utf-8')
+    g.st = get_settings()
+    g.request_id = binascii.b2a_hex(os.urandom(REQ_ID_SIZE // 2)).decode('utf-8')
     g.db = get_database()
     g.db.connect(reuse_if_open=True)
     g.docker_utils = DockerUtils()
@@ -89,33 +82,12 @@ def teardown_request(response):
 def recursion_error_handler(e):
     return construct_err_response(
         status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        msg='Unexpected RecursionError in API, try again'
+        msg='Unexpected RecursionError in API, try again',
     )
 
 
 @app.errorhandler(werkzeug.exceptions.InternalServerError)
 def any_error_handler(e):
-    original = getattr(e, "original_exception", None)
+    original = getattr(e, 'original_exception', None)
     logger.exception('Request failed with error %s', original)
-    return construct_err_response(
-        status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-        msg=str(e)
-    )
-
-
-app.secret_key = FLASK_SECRET_KEY_FILE
-app.use_reloader = False
-logger.info('Starting api ...')
-
-
-def main():
-    logger.info(arguments_list_string({
-        'Endpoint': ENDPOINT,
-        'Redis uri': REDIS_URI,
-        'SGX Server': SGX_SERVER_URL or 'Not connected'
-        }, 'Starting Flask server'))
-    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST)
-
-
-if __name__ == '__main__':
-    main()
+    return construct_err_response(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, msg=str(e))

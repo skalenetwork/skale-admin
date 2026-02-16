@@ -1,7 +1,6 @@
-import mock
+from unittest import mock
 
-from core.schains.firewall.types import SChainRule
-
+from core.firewall import SChainRule
 from tests.utils import SChainTestFirewallManager
 
 
@@ -13,7 +12,7 @@ def test_firewall_manager():
         SChainRule(first_port=10001),
         SChainRule(first_port=10001, first_ip='3.3.3.3'),
         SChainRule(first_port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
-        SChainRule(first_port=10003)
+        SChainRule(first_port=10003),
     ]
     fm.add_rules(rules)
     assert list(sorted(fm.rules)) == rules, list(sorted(fm.rules))
@@ -24,7 +23,7 @@ def test_firewall_manager():
         SChainRule(first_port=10001, first_ip='3.3.3.3'),
         SChainRule(first_port=10001, first_ip='3.3.3.3', last_ip='4.4.4.4'),
         SChainRule(first_port=10001, first_ip='4.4.4.4', last_ip='5.5.5.5'),
-        SChainRule(first_port=10004)
+        SChainRule(first_port=10004),
     ]
     fm.update_rules(new_rules)
     assert list(sorted(fm.rules)) == new_rules

@@ -1,20 +1,20 @@
 import json
-import mock
 import os
 import shutil
 from functools import partial
+from unittest import mock
 
 import pytest
-from flask import Flask, appcontext_pushed, g
 from Crypto.Hash import keccak
+from flask import Flask, appcontext_pushed, g
+from skale_core.settings import get_settings
 
+from core.config.schain.file_manager import ConfigFileManager
 from core.node_config import NodeConfig
-from core.schains.config.file_manager import ConfigFileManager
 from tests.utils import get_bp_data, get_test_rule_controller
+from web.helper import get_api_url
 from web.models.schain import SChainRecord, upsert_schain_record
 from web.routes.schains import schains_bp
-from web.helper import get_api_url
-
 
 BLUEPRINT_NAME = 'schains'
 
@@ -28,6 +28,7 @@ def skale_bp(skale, dutils):
         g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
+        g.st = get_settings()
         g.config.id = 1
 
     with appcontext_pushed.connected_to(handler, app):
@@ -206,7 +207,7 @@ def test_get_schain(skale_bp, skale, schain_db, meta_file, schain_on_contracts):
 
 def test_schain_containers_versions(skale_bp):
     expected_skaled_version = '3.19.0'
-    expected_ima_version = '2.1.0'
+    expected_ima_version = '3.22'
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'container-versions'))
     assert data == {
         'status': 'ok',

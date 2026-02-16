@@ -1,13 +1,11 @@
-import shutil
 import os
+import shutil
 from pathlib import Path
 
 import pytest
 
 from core.nginx import reload_nginx
-from tools.configs import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
-from tools.configs.nginx import NGINX_CONTAINER_NAME
-
+from tools.constants import CONFIG_FOLDER, NGINX_CONTAINER_NAME, SSL_CERTIFICATES_FILEPATH
 
 TEMPLATE = """
 limit_req_zone $binary_remote_addr zone=one:10m rate=7r/s;
@@ -98,20 +96,12 @@ def ssl_dir():
 def nginx_container(tmp_dir, ssl_dir, config_path, dutils):
     try:
         c = dutils.run_container(
-            'nginx:1.20.2',
+            'nginx:1.29.4-alpine',
             NGINX_CONTAINER_NAME,
             volumes={
-                tmp_dir: {
-                    'bind': '/etc/nginx/conf.d',
-                    'mode': 'ro',
-                    'propagation': 'slave'
-                },
-                ssl_dir: {
-                    'bind': '/ssl',
-                    'mode': 'ro',
-                    'propagation': 'slave'
-                }
-            }
+                tmp_dir: {'bind': '/etc/nginx/conf.d', 'mode': 'ro', 'propagation': 'slave'},
+                ssl_dir: {'bind': '/ssl', 'mode': 'ro', 'propagation': 'slave'},
+            },
         )
         yield c
     finally:
@@ -123,15 +113,8 @@ def get_config(config_path):
         return config_file.read()
 
 
-def test_nginx_reload(
-    dutils,
-    ssl_dir,
-    tmp_dir,
-    template,
-    config_path,
-    nginx_container
-):
-    reload_nginx(template, config_path, dutils=dutils)
+def test_nginx_reload(dutils, ssl_dir, tmp_dir, template, config_path, nginx_container):
+    reload_nginx(template, config_path, dutils=dutils, timeout=1)
 
     # Check that container is running
     info = dutils.get_info(NGINX_CONTAINER_NAME)
@@ -140,7 +123,10 @@ def test_nginx_reload(
     config = get_config(config_path)
 
     # Check that config is correct
-    assert config == '\nlimit_req_zone $binary_remote_addr zone=one:10m rate=7r/s;\n\nserver {\n    listen 3009;\n\n    \n\n    proxy_read_timeout 500s;\n    proxy_connect_timeout 500s;\n    proxy_send_timeout 500s;\n\n    error_log /var/log/nginx/error.log warn;\n    client_max_body_size 20m;\n\n    server_name localhost;\n    limit_req zone=one burst=10;\n\n    location / {\n        include uwsgi_params;\n        uwsgi_read_timeout 500s;\n        uwsgi_socket_keepalive on;\n        uwsgi_pass 127.0.0.1:3010;\n    }\n}\n\nserver {\n    listen 80;\n\n    \n\n    error_log /var/log/nginx/error.log warn;\n    client_max_body_size 20m;\n    server_name localhost;\n    limit_req zone=one burst=50;\n\n    location / {\n        root /filestorage;\n    }\n}'   # noqa
+    assert (
+        config
+        == '\nlimit_req_zone $binary_remote_addr zone=one:10m rate=7r/s;\n\nserver {\n    listen 3009;\n\n    \n\n    proxy_read_timeout 500s;\n    proxy_connect_timeout 500s;\n    proxy_send_timeout 500s;\n\n    error_log /var/log/nginx/error.log warn;\n    client_max_body_size 20m;\n\n    server_name localhost;\n    limit_req zone=one burst=10;\n\n    location / {\n        include uwsgi_params;\n        uwsgi_read_timeout 500s;\n        uwsgi_socket_keepalive on;\n        uwsgi_pass 127.0.0.1:3010;\n    }\n}\n\nserver {\n    listen 80;\n\n    \n\n    error_log /var/log/nginx/error.log warn;\n    client_max_body_size 20m;\n    server_name localhost;\n    limit_req zone=one burst=50;\n\n    location / {\n        root /filestorage;\n    }\n}'  # noqa
+    )
     assert 'ssl' not in config
 
     # Creating fake certificates
@@ -154,5 +140,8 @@ def test_nginx_reload(
 
     # Check that config is correct
     config = get_config(config_path)
-    assert config == '\nlimit_req_zone $binary_remote_addr zone=one:10m rate=7r/s;\n\nserver {\n    listen 3009;\n\n    \n    listen 311 ssl;\n    ssl_certificate     /ssl/ssl_cert;\n    ssl_certificate_key /ssl/ssl_key;\n    \n\n    proxy_read_timeout 500s;\n    proxy_connect_timeout 500s;\n    proxy_send_timeout 500s;\n\n    error_log /var/log/nginx/error.log warn;\n    client_max_body_size 20m;\n\n    server_name localhost;\n    limit_req zone=one burst=10;\n\n    location / {\n        include uwsgi_params;\n        uwsgi_read_timeout 500s;\n        uwsgi_socket_keepalive on;\n        uwsgi_pass 127.0.0.1:3010;\n    }\n}\n\nserver {\n    listen 80;\n\n    \n    listen 443 ssl;\n    ssl_certificate     /ssl/ssl_cert;\n    ssl_certificate_key /ssl/ssl_key;\n    \n\n    error_log /var/log/nginx/error.log warn;\n    client_max_body_size 20m;\n    server_name localhost;\n    limit_req zone=one burst=50;\n\n    location / {\n        root /filestorage;\n    }\n}'  # noqa
+    assert (
+        config
+        == '\nlimit_req_zone $binary_remote_addr zone=one:10m rate=7r/s;\n\nserver {\n    listen 3009;\n\n    \n    listen 311 ssl;\n    ssl_certificate     /ssl/ssl_cert;\n    ssl_certificate_key /ssl/ssl_key;\n    \n\n    proxy_read_timeout 500s;\n    proxy_connect_timeout 500s;\n    proxy_send_timeout 500s;\n\n    error_log /var/log/nginx/error.log warn;\n    client_max_body_size 20m;\n\n    server_name localhost;\n    limit_req zone=one burst=10;\n\n    location / {\n        include uwsgi_params;\n        uwsgi_read_timeout 500s;\n        uwsgi_socket_keepalive on;\n        uwsgi_pass 127.0.0.1:3010;\n    }\n}\n\nserver {\n    listen 80;\n\n    \n    listen 443 ssl;\n    ssl_certificate     /ssl/ssl_cert;\n    ssl_certificate_key /ssl/ssl_key;\n    \n\n    error_log /var/log/nginx/error.log warn;\n    client_max_body_size 20m;\n    server_name localhost;\n    limit_req zone=one burst=50;\n\n    location / {\n        root /filestorage;\n    }\n}'  # noqa
+    )
     assert 'ssl' in config

@@ -1,0 +1,12 @@
+env_type = 'devnet'
+endpoint = 'http://127.0.0.1:8545'
+sgx_url = 'https://localhost:1026'
+
+container_stop_timeout = 1
+
+tg_api_key = '123'
+tg_chat_id = '-1231232'
+
+node_version = '0.0.0'
+block_device = '/dev/sda'
+docker_lvmpy_version = '0.0.0'

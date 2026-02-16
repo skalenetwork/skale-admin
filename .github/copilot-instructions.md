@@ -1,0 +1,22 @@
+- always keep the changes minimal and purposeful
+- focus on fixing the exact problem or implementing the exact feature
+- keep the code simple, do not write defensive code
+- do not describe your changes in details after you made changes, focus on writing code
+- do not generate any documentation, the code should be self-explanatory
+- do not generate any in-line comments
+- for the new files, always add a license header, same format as in the existing files
+- no commented out code
+- no console logs in production code
+- no unused imports
+- no redundant code - move repeated logic into helper functions
+- use type hints to specify the expected types of function arguments and return values
+
+- check `pyproject.toml` for formatting rules
+- always lint changes using `uv run ruff check`
+- tests should be placed in `tests/` directory, follow the existing structure and code style
+- always use `uv` to run all commands in the repo (e.g., `uv run ruff`, `uv run pytest`, etc.)
+- for running tests, export environment variables in the terminal before running the tests: `. ./scripts/export_env.sh`
+- some tests (usually the ones that contain skale, fair or skale_ima fixtures) require a local anvil node with deployed smart contracts: use `. ./scripts/export_env.sh && bash ./helper-scripts/deploy_manager.sh` to deploy, then run the tests
+- if `anvil` container is already running, proceed directly to exporting environment variables and running tests: `. ./scripts/export_env.sh && uv run pytest ...`
+
+- additional external context is located in context directory

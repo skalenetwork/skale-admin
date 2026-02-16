@@ -23,14 +23,15 @@ import time
 
 from sgx import SgxClient
 from sgx.http import SgxUnreachableError
-from tools.configs import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
-from tools.str_formatters import arguments_list_string
+from skale_core.settings import FairSettings, SkaleSettings, get_settings
 
+from tools.constants import SGX_CERTIFICATES_FOLDER
+from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
 
 RETRY_ATTEMPTS = 14
-TIMEOUTS = [2 ** p for p in range(RETRY_ATTEMPTS)]
+TIMEOUTS = [2**p for p in range(RETRY_ATTEMPTS)]
 
 
 class EmptySgxUrlError(Exception):
@@ -54,19 +55,20 @@ def sgx_unreachable_retry(func):
         if error is not None:
             raise error
         return result
+
     return wrapper
 
 
 @sgx_unreachable_retry
 def generate_sgx_key(config):
     logger.info('Generating sgx key...')
-    if not SGX_SERVER_URL:
-        raise EmptySgxUrlError('SGX server URL is not provided')
     if not config.sgx_key_name:
-        sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+        st = get_settings((SkaleSettings, FairSettings))
+        sgx = SgxClient(str(st.sgx_url), SGX_CERTIFICATES_FOLDER)
         key_info = sgx.generate_key()
-        logger.info(arguments_list_string({
-            'Name hash': key_info.name,
-            'Address': key_info.address
-            }, 'Generated new SGX key'))
+        logger.info(
+            arguments_list_string(
+                {'Name hash': key_info.name, 'Address': key_info.address}, 'Generated new SGX key'
+            )
+        )
         config.sgx_key_name = key_info.name

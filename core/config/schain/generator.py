@@ -1,0 +1,297 @@
+#   -*- coding: utf-8 -*-
+#
+#   This file is part of SKALE Admin
+#
+#   Copyright (C) 2019-Present SKALE Labs
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Affero General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Affero General Public License for more details.
+#
+#   You should have received a copy of the GNU Affero General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import logging
+from typing import Dict
+
+from eth_typing import ChecksumAddress
+from etherbase_predeployed.address import ETHERBASE_ADDRESS
+from marionette_predeployed.address import MARIONETTE_ADDRESS
+from skale import SkaleIma, SkaleManager
+from skale.schain_config.generator import get_schain_nodes_with_schain_hashes
+from skale.schain_config.ports_allocation import get_schain_base_port_on_node
+from skale.schain_config.rotation_history import get_previous_schain_groups
+from skale.types.node import Node, NodeId, NodeWithSchainHashes, Port
+from skale.types.rotation import NodeGroups, Rotation
+from skale.types.schain import SchainStructure
+from skale.utils.helper import schain_name_to_hash
+from skale.utils.web3_utils import public_key_to_address, to_checksum_address
+from skale_contracts.projects.ima import MainnetImaContract
+from web3 import Web3
+
+from core.config.base import FairConfig, SChainBaseConfig, SChainConfig
+from core.config.fair.generator import generate_fair_config_adapter
+from core.config.precompiled import generate_precompiled_accounts
+from core.config.schain.generation import Gen
+from core.config.schain.helper import get_chain_id, get_schain_id
+from core.config.schain.legacy_data import is_static_accounts, static_accounts, static_groups
+from core.config.schain.predeployed import generate_predeployed_accounts
+from core.config.schain.skale_section import generate_skale_section
+from core.dkg.schain.utils import get_common_bls_public_key
+from core.node_config import NodeConfig
+from core.schains.limits import get_schain_type
+from tools.constants.schains import BASE_SCHAIN_CONFIG_FILEPATH
+from tools.helper import is_address_contract, is_fair, is_zero_address
+from tools.node_options import NodeOptions
+
+logger = logging.getLogger(__name__)
+
+
+def get_on_chain_owner(schain: SchainStructure, generation: int, is_owner_contract: bool) -> str:
+    """
+    Returns on-chain owner depending on sChain generation.
+    """
+    if not is_owner_contract:
+        return schain.mainnet_owner
+    if generation >= Gen.ONE:
+        return MARIONETTE_ADDRESS
+    if generation == Gen.ZERO:
+        return schain.mainnet_owner
+    return MARIONETTE_ADDRESS
+
+
+def get_on_chain_etherbase(schain: SchainStructure, generation: int) -> str:
+    """
+    Returns on-chain owner depending on sChain generation.
+    """
+    if generation >= Gen.ONE:
+        return ETHERBASE_ADDRESS
+    if generation == Gen.ZERO:
+        return schain.mainnet_owner
+    return ETHERBASE_ADDRESS
+
+
+def get_schain_id_for_chain(schain_name: str, generation: int) -> int:
+    """
+    Returns schain_id depending on sChain generation.
+    """
+    if generation >= Gen.TWO:
+        return get_schain_id(schain_name)
+    if generation >= Gen.ZERO:
+        return 1
+    return get_schain_id(schain_name)
+
+
+def get_schain_originator(schain: SchainStructure) -> str:
+    """
+    Returns address that will be used as an sChain originator
+    """
+    if is_zero_address(schain.originator):
+        return schain.mainnet_owner
+    return schain.originator
+
+
+def get_ima_contracts_addresses(skale_ima: SkaleIma) -> Dict[str, ChecksumAddress]:
+    """Gets core IMA contract addresses on mainnet from the SkaleIma instance."""
+
+    return {
+        'community_pool_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.COMMUNITY_POOL)
+        ),
+        'deposit_box_eth_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ETH)
+        ),
+        'deposit_box_erc20_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC20)
+        ),
+        'deposit_box_erc721_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC721)
+        ),
+        'deposit_box_erc1155_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC1155)
+        ),
+        'deposit_box_erc721_with_metadata_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.DEPOSIT_BOX_ERC721_WITH_META)
+        ),
+        'linker_address': Web3.to_checksum_address(
+            skale_ima.instance.get_contract_address(MainnetImaContract.LINKER)
+        ),
+    }
+
+
+def generate_schain_config(
+    schain: SchainStructure,
+    node_id: NodeId,
+    node: Node,
+    ecdsa_key_name: str,
+    rotation_id: int,
+    schain_nodes_with_schain_hashes: list[NodeWithSchainHashes],
+    node_groups: NodeGroups,
+    generation: int,
+    is_owner_contract: bool,
+    schain_base_port: Port,
+    common_bls_public_keys: list[str],
+    mainnet_ima_addresses: dict[str, ChecksumAddress],
+    passive_node: bool = False,
+    archive: bool = False,
+    catchup: bool = False,
+) -> SChainConfig:
+    """Main function that is used to generate sChain config"""
+    logger.info(
+        f'Going to generate sChain config for {schain.name}, '
+        f'node_name: {node["name"]}, node_id: {node_id}, rotation_id: {rotation_id}'
+    )
+    if passive_node:
+        logger.info(f'Sync node config options: archive: {archive}, catchup: {catchup}')
+    else:
+        logger.info(f'Regular node config options: ecdsa keyname: {ecdsa_key_name}')
+
+    on_chain_etherbase = get_on_chain_etherbase(schain, generation)
+    on_chain_owner = get_on_chain_owner(schain, generation, is_owner_contract)
+    mainnet_owner = schain.mainnet_owner
+    schain_type = get_schain_type(schain.part_of_node)
+
+    schain_id = get_schain_id_for_chain(schain.name, generation)
+
+    base_config = SChainBaseConfig(BASE_SCHAIN_CONFIG_FILEPATH)
+
+    dynamic_params = {
+        'chainID': get_chain_id(schain.name),
+        'externalGasDifficulty': schain.options.external_gas_difficulty,
+    }
+
+    legacy_groups = static_groups(schain.name)
+    logger.debug('Legacy node groups: %s', legacy_groups)
+    logger.debug('Vanilla node groups: %s', node_groups)
+    node_groups.update(legacy_groups)
+    logger.debug('Modified node groups: %s', node_groups)
+
+    originator_address = get_schain_originator(schain)
+
+    skale_config = generate_skale_section(
+        schain=schain,
+        on_chain_etherbase=on_chain_etherbase,
+        on_chain_owner=on_chain_owner,
+        schain_id=schain_id,
+        node_id=node_id,
+        node=node,
+        ecdsa_key_name=ecdsa_key_name,
+        schain_nodes_with_schain_hashes=schain_nodes_with_schain_hashes,
+        rotation_id=rotation_id,
+        node_groups=node_groups,
+        schain_base_port=schain_base_port,
+        common_bls_public_keys=common_bls_public_keys,
+        passive_node=passive_node,
+        archive=archive,
+        catchup=catchup,
+    )
+
+    accounts = {}
+    if is_static_accounts(schain.name):
+        logger.info(f'Found static account for {schain.name}, going to use in config')
+        accounts = static_accounts(schain.name)['accounts']
+    else:
+        logger.info('Static accounts not found, generating regular accounts section')
+        predeployed_accounts = generate_predeployed_accounts(
+            schain_name=schain.name,
+            allocation_type=schain.options.allocation_type,
+            schain_type=schain_type,
+            schain_nodes=schain_nodes_with_schain_hashes,
+            on_chain_owner=on_chain_owner,
+            mainnet_owner=mainnet_owner,
+            originator_address=originator_address,
+            generation=generation,
+            mainnet_ima_addresses=mainnet_ima_addresses,
+        )
+        precompiled_accounts = generate_precompiled_accounts(on_chain_owner=on_chain_owner)
+        accounts = {
+            **base_config.config['accounts'],
+            **predeployed_accounts,
+            **precompiled_accounts,
+        }
+
+    schain_config = SChainConfig(
+        seal_engine=base_config.config['sealEngine'],
+        params={**base_config.config['params'], **dynamic_params},
+        unddos=base_config.config['unddos'],
+        genesis=base_config.config['genesis'],
+        accounts=accounts,
+        skale_config=skale_config,
+    )
+    return schain_config
+
+
+def adapt_skale_node_groups_to_fair(skale: SkaleManager, node_groups: NodeGroups) -> None:
+    for group_id in node_groups:
+        nodes = node_groups[group_id]['nodes']
+        for node_index in nodes:
+            public_key = nodes[node_index][2]
+            owner_address = to_checksum_address(public_key_to_address(public_key))
+            nodes[node_index] = (*nodes[node_index], owner_address)
+
+
+def generate_schain_config_with_skale(
+    skale: SkaleManager,
+    skale_ima: SkaleIma,
+    schain: SchainStructure,
+    generation: int,
+    node_config: NodeConfig,
+    rotation_data: Rotation,
+    ecdsa_key_name: str,
+    passive_node: bool = False,
+    node_options: NodeOptions = NodeOptions(),
+) -> SChainConfig | FairConfig:
+    schain_nodes_with_schain_hashes = get_schain_nodes_with_schain_hashes(skale, schain.name)
+    schain_hashes = skale.schains_internal.get_schain_hashes_for_node(node_config.id)
+    node = skale.nodes.get(node_config.id)
+    node_groups = get_previous_schain_groups(skale, schain.name)
+
+    is_owner_contract = is_address_contract(skale.web3, schain.mainnet_owner)
+
+    schain_hash = schain_name_to_hash(schain.name)
+    common_bls_public_keys = get_common_bls_public_key(skale, schain_hash)
+
+    if passive_node:
+        schain_base_port = node_config.schain_base_port
+    else:
+        schain_base_port = get_schain_base_port_on_node(schain_hashes, schain_hash, node['port'])
+
+    if is_fair():
+        adapt_skale_node_groups_to_fair(skale, node_groups)
+        return generate_fair_config_adapter(
+            skale_node=node,
+            node_id=NodeId(node_config.id),
+            chain_start_ts=schain.start_date,
+            ecdsa_key_name=ecdsa_key_name,
+            schain_nodes_with_schain_hashes=schain_nodes_with_schain_hashes,
+            node_groups=node_groups,
+            passive_node=passive_node,
+            archive=node_options.archive,
+            catchup=node_options.catchup,
+        )
+
+    mainnet_ima_addresses = get_ima_contracts_addresses(skale_ima)
+
+    return generate_schain_config(
+        schain=schain,
+        node=node,
+        node_id=node_config.id,
+        ecdsa_key_name=ecdsa_key_name,
+        rotation_id=rotation_data.rotation_counter,
+        schain_nodes_with_schain_hashes=schain_nodes_with_schain_hashes,
+        node_groups=node_groups,
+        generation=generation,
+        is_owner_contract=is_owner_contract,
+        schain_base_port=schain_base_port,
+        common_bls_public_keys=common_bls_public_keys,
+        passive_node=passive_node,
+        archive=node_options.archive,
+        catchup=node_options.catchup,
+        mainnet_ima_addresses=mainnet_ima_addresses,
+    )
