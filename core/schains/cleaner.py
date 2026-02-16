@@ -30,28 +30,24 @@ from skale import SkaleManager
 from skale.types.node import NodeId
 from skale.types.schain import SchainName, SchainStructure
 from skale.utils.helper import schain_name_to_hash
+from skale_core.settings import FairSettings, SkaleSettings, get_settings
 
 from core.chain.runner import get_container_name, is_exited
 from core.checks.schain import SChainChecks
 from core.config.schain.directory import schain_config_dir
 from core.dkg.utils import get_secret_key_share_filepath
-from core.firewall.utils import (
-    cleanup_firewall_for_schain,
-    get_default_rule_controller,
-)
+from core.firewall.utils import cleanup_firewall_for_schain, get_default_rule_controller
 from core.manager_cache import ManagerCache
 from core.node import get_current_nodes, get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport, terminate_process
 from core.schains.types import ContainerType
-from tools.configs import NFT_CHAIN_CONFIG_WILDCARD, PASSIVE_NODE
-from tools.configs.containers import IMA_CONTAINER, SCHAIN_STOP_TIMEOUT, SKALED_CONTAINER
-from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.sgx import SGX_CERTIFICATES_FOLDER
+from tools.constants import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER
+from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
+from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
-from tools.helper import is_node_part_of_chain, merged_unique, read_json
-from tools.sgx_utils import SGX_SERVER_URL
+from tools.helper import is_node_part_of_chain, is_passive, merged_unique, read_json
 from tools.str_formatters import arguments_list_string
 from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
 
@@ -77,20 +73,23 @@ def log_remove(component_name, schain_name):
     logger.info(f'Going to remove {component_name} for sChain {schain_name}')
 
 
-def remove_schain_volume(schain_name: str, dutils: DockerUtils = None) -> None:
+def remove_schain_volume(schain_name: str, dutils: DockerUtils | None = None) -> None:
     dutils = dutils or DockerUtils()
     log_remove('volume', schain_name)
     dutils.rm_vol(schain_name)
 
 
-def remove_skaled_container(schain_name: str, dutils: DockerUtils = None):
+def remove_skaled_container(schain_name: str, dutils: DockerUtils | None = None):
     dutils = dutils or DockerUtils()
+    st = get_settings()
     log_remove('container', schain_name)
     schain_container_name = get_container_name(SKALED_CONTAINER, schain_name)
-    return dutils.safe_rm(schain_container_name, v=True, force=True, timeout=SCHAIN_STOP_TIMEOUT)
+    return dutils.safe_rm(
+        schain_container_name, v=True, force=True, timeout=st.container_stop_timeout
+    )
 
 
-def remove_ima_container(schain_name: str, dutils: DockerUtils = None):
+def remove_ima_container(schain_name: str, dutils: DockerUtils | None = None):
     dutils = dutils or DockerUtils()
     log_remove('IMA container', schain_name)
     ima_container_name = get_container_name(IMA_CONTAINER, schain_name)
@@ -279,7 +278,7 @@ def cleanup_schain(
         estate=estate,
         last_dkg_successful=last_dkg_successful,
         dutils=dutils,
-        passive_node=PASSIVE_NODE,
+        passive_node=is_passive(),
     )
     check_status = checks.get_all()
     if check_status['skaled_container'] or is_exited(
@@ -304,6 +303,7 @@ def cleanup_schain(
 
 def delete_bls_keys(skale, schain_name):
     last_rotation_id = skale.schains.last_rotation_id(schain_name)
+    st = get_settings((SkaleSettings, FairSettings))
     for i in range(last_rotation_id + 1):
         try:
             secret_key_share_filepath = get_secret_key_share_filepath(schain_name, i)
@@ -311,7 +311,7 @@ def delete_bls_keys(skale, schain_name):
                 secret_key_share_config = read_json(secret_key_share_filepath) or {}
                 bls_key_name = secret_key_share_config.get('key_share_name')
                 if bls_key_name:
-                    sgx = SgxClient(SGX_SERVER_URL, path_to_cert=SGX_CERTIFICATES_FOLDER)
+                    sgx = SgxClient(str(st.sgx_url), path_to_cert=str(SGX_CERTIFICATES_FOLDER))
                     sgx.delete_bls_key(bls_key_name)
         except Exception:
             logger.exception(f'Removing secret_key for rotation {i} failed')

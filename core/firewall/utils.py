@@ -24,7 +24,7 @@ from typing import List, Optional
 
 from skale import FairManager, SkaleManager
 
-from tools.configs.fair import NFT_COMMITTEE_SCOPE_CHAIN, NFT_NETWORK_SCOPE_CHAIN
+from tools.constants.fair import NFT_COMMITTEE_SCOPE_CHAIN, NFT_NETWORK_SCOPE_CHAIN
 
 from .base.nftables import NFTablesController
 from .base.types import IpRange

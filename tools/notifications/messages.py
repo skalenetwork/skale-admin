@@ -25,8 +25,8 @@ from functools import wraps
 from typing import Dict, List, Optional
 
 from redis import BlockingConnectionPool, Redis
+from skale_core.settings import get_settings
 
-from tools.configs.tg import CHECKS_STATE_EXPIRATION, TG_API_KEY, TG_CHAT_ID
 from tools.notifications.tasks import send_message_to_telegram
 
 logger = logging.getLogger(__name__)
@@ -39,9 +39,12 @@ EXCLAMATION_MARK = '\u2757'
 SUCCESS_MAX_ATTEMPS = 1
 FAILED_MAX_ATTEMPS = 1
 
+CHECKS_STATE_EXPIRATION = 24 * 60 * 60
+
 
 def tg_notifications_enabled() -> bool:
-    return TG_API_KEY and TG_CHAT_ID
+    st = get_settings()
+    return st.tg_api_key is not None and st.tg_chat_id is not None
 
 
 def notifications_enabled(func):
@@ -184,7 +187,8 @@ def notify_repair_mode(node_info: Dict, schain_name: str) -> None:
     send_message(message)
 
 
-def send_message(message: List, api_key: str = TG_API_KEY, chat_id: str = TG_CHAT_ID):
+def send_message(message: List):
+    st = get_settings()
     message.extend([f'\nTimestamp: {int(time.time())}', f'Datetime: {datetime.utcnow().ctime()}'])
     plain_message = '\n'.join(message)
-    return send_message_to_telegram.delay(api_key, chat_id, plain_message)
+    return send_message_to_telegram.delay(st.tg_api_key, st.tg_chat_id, plain_message)

@@ -25,7 +25,7 @@ from skale.transactions.exceptions import TransactionError
 
 from core.node_config import NodeConfig
 from core.utils.fair import init_local_fair
-from tools.configs.fair import (
+from tools.constants.fair import (
     HEALTHCHECK_JOB_NAME,
     SAFE_HEARTBEAT_BUFFER,
 )

@@ -4,6 +4,7 @@ import pytest
 from flask import Flask, appcontext_pushed, g
 from skale import SkaleManager
 from skale.types.schain import SchainName
+from skale_core.settings import get_settings
 
 from core.checks.schain import SChainChecks
 from core.node_config import NodeConfig
@@ -26,6 +27,7 @@ def skale_bp(skale, nodes, node_skales, dutils):
         g.docker_utils = dutils
         g.wallet = node_skales[node_index].wallet
         g.config = NodeConfig()
+        g.st = get_settings()
         g.config.id = nodes[node_index]
 
     with appcontext_pushed.connected_to(handler, app):
@@ -45,6 +47,7 @@ def unregistered_skale_bp(skale, dutils):
         g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
+        g.st = get_settings()
         g.config.id = None
 
     with appcontext_pushed.connected_to(handler, app):

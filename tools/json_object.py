@@ -18,19 +18,21 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from pathlib import Path
 
 from filelock import FileLock
 
-from tools.helper import init_file, read_json, write_json
+from tools.helper import read_json, write_json
 
 logger = logging.getLogger(__name__)
 
 
 class JsonObject:
-    def __init__(self, filepath: str):
+    def __init__(self, filepath: Path):
         self.filepath = filepath
-        self.lock_filepath = filepath + '.lock'
-        init_file(filepath, {})
+        self.lock_filepath = filepath.with_suffix(f'{filepath.suffix}.lock')
+        if not self.filepath.exists():
+            write_json(filepath, {})
 
     def _get(self, field_name: str):
         config = read_json(self.filepath)

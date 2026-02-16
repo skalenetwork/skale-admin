@@ -41,8 +41,8 @@ from core.config.schain.static_params import (
     get_static_node_info_fair,
     get_static_schain_info_fair,
 )
-from tools.configs.schains import FAIR_BASE_SCHAIN_CONFIG_FILEPATH
-from tools.configs.web3 import ZERO_ADDRESS
+from tools.constants.schains import FAIR_BASE_SCHAIN_CONFIG_FILEPATH
+from tools.constants.web3 import ZERO_ADDRESS
 from tools.helper import cast_manager_to_fair_node_id
 
 logger = logging.getLogger(__name__)

@@ -6,7 +6,7 @@ from skale.types.schain import SchainName
 from skale.utils.helper import schain_name_to_hash
 from web3 import Web3
 
-from tools.configs.containers import CONTAINERS_INFO
+from tools.helper import containers_info
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
@@ -59,4 +59,4 @@ def get_schain_info_by_name(skale: SkaleManager, schain_name: SchainName) -> Sch
 
 
 def get_skaled_version() -> str:
-    return CONTAINERS_INFO['skaled']['version']
+    return containers_info()['skaled']['version']

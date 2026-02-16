@@ -25,8 +25,9 @@ from logging.handlers import RotatingFileHandler
 from urllib.parse import urlparse
 
 from flask import has_request_context, request
+from skale_core.settings import BaseNodeSettings, FairSettings, SkaleSettings, get_settings
 
-from tools.configs.logs import (
+from tools.constants.logs import (
     ADMIN_LOG_FORMAT,
     ADMIN_LOG_PATH,
     API_LOG_FORMAT,
@@ -35,17 +36,21 @@ from tools.configs.logs import (
     FAIR_LOG_FORMAT,
     LOG_BACKUP_COUNT,
     LOG_FILE_SIZE_BYTES,
-    SYNC_LOG_PATH,
 )
-from tools.configs.sgx import SGX_SERVER_URL
-from tools.configs.web3 import ENDPOINT
+from tools.helper import is_fair, is_passive
 
 LOCAL_IPS = ['127.0.0.1', 'localhost']
 
 
 def compose_hiding_patterns():
-    sgx_ip = urlparse(SGX_SERVER_URL).hostname
-    eth_ip = urlparse(ENDPOINT).hostname
+    sgx_ip = None
+    if not is_passive():
+        sgx_url = str(get_settings((SkaleSettings, FairSettings)).sgx_url)
+        sgx_ip = urlparse(sgx_url).hostname
+    eth_ip = None
+    if not is_fair():
+        eth_url = str(get_settings((BaseNodeSettings, SkaleSettings)).endpoint)
+        eth_ip = urlparse(eth_url).hostname
     patterns = {r'NEK\:\w+': '[SGX_KEY]'}
     if sgx_ip not in LOCAL_IPS:
         patterns.update({rf'{sgx_ip}': '[SGX_IP]'})
@@ -128,7 +133,3 @@ def init_fair_logger():
 
 def init_api_logger():
     init_logger(API_LOG_FORMAT, API_LOG_PATH)
-
-
-def init_sync_logger():
-    init_logger(ADMIN_LOG_FORMAT, SYNC_LOG_PATH, DEBUG_LOG_PATH)

@@ -24,7 +24,7 @@ import multiprocessing
 import os
 from typing import Iterable
 
-from tools.configs import NFT_CHAIN_BASE_PATH
+from tools.constants import NFT_CHAIN_BASE_PATH
 
 from .types import Action, IHostFirewallController, SChainRule
 

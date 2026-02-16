@@ -1,0 +1,6 @@
+NFT_NETWORK_SCOPE_CHAIN = 'network'
+NFT_COMMITTEE_SCOPE_CHAIN = 'committee'
+
+HEALTHCHECK_JOB_NAME = 'fair_healthcheck_job'
+SKALED_RESTART_JOB_NAME = 'fair_skaled_restart_job'
+SAFE_HEARTBEAT_BUFFER = 30

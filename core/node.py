@@ -25,6 +25,7 @@ import shutil
 import socket
 import time
 from enum import Enum
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import psutil
@@ -41,19 +42,15 @@ from skale.utils.web3_utils import public_key_to_address
 from core.manager_cache import ManagerCache
 from core.monitoring import update_monitoring_services
 from core.node_config import NodeConfig
-from tools.configs import (
-    CHANGE_IP_DELAY,
-    CHECK_REPORT_PATH,
-    META_FILEPATH,
-    PASSIVE_NODE,
-    WATCHDOG_PORT,
-)
-from tools.configs.schains import CHAIN_STATE_PATH
-from tools.helper import is_fair, read_json
+from tools.constants import CHAIN_STATE_PATH, CHECK_REPORT_PATH, META_FILEPATH
+from tools.helper import is_fair, is_passive, read_json
 from tools.str_formatters import arguments_list_string
 from tools.wallet_utils import check_required_balance
 
 logger = logging.getLogger(__name__)
+
+WATCHDOG_PORT = 3009
+CHANGE_IP_DELAY = 300
 
 try:
     from sh import lsmod
@@ -284,7 +281,7 @@ def _get_node_status(node_info):
 def get_block_device_size() -> int:
     """Returns block device size in bytes"""
     try:
-        if PASSIVE_NODE or is_fair():
+        if is_passive() or is_fair():
             total, _, _ = shutil.disk_usage(CHAIN_STATE_PATH)
             return total
     except (FileNotFoundError, PermissionError, OSError) as e:
@@ -337,7 +334,7 @@ def get_btrfs_info() -> dict:
     return {'kernel_module': is_btrfs_loaded()}
 
 
-def get_check_report(report_path: str = CHECK_REPORT_PATH) -> Dict:
+def get_check_report(report_path: Path = CHECK_REPORT_PATH) -> Dict:
     if not os.path.isfile(report_path):
         return {}
     with open(report_path) as report_file:

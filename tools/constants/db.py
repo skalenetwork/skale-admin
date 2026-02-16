@@ -17,9 +17,18 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+from pathlib import Path
 
-TG_API_KEY = os.getenv('TG_API_KEY', None)
-TG_CHAT_ID = os.getenv('TG_CHAT_ID', None)
+from tools.constants import NODE_DATA_PATH
 
-CHECKS_STATE_EXPIRATION = int(os.getenv('CHECKS_STATE_EXPIRATION', 24 * 60 * 60))
+DB_FILENAME = 'skale.db'
+DB_FILE: Path = NODE_DATA_PATH / DB_FILENAME
+DB_PRAGMAS = {
+    'journal_mode': 'wal',
+    'cache_size': -1 * 64000,  # 64MB
+    'foreign_keys': 1,
+    'ignore_check_constraints': 0,
+    'synchronous': 0,
+}
+
+REDIS_URI: str = 'redis://@127.0.0.1:6379'

@@ -23,6 +23,7 @@ from skale.types.schain import SchainName
 from skale.utils.account_tools import send_eth
 from skale.utils.helper import schain_name_to_hash
 from skale.wallets import SgxWallet
+from skale_core.settings import FairSettings, SkaleSettings, get_settings
 
 from core.config.schain.directory import init_schain_config_dir
 from core.dkg.schain.main import get_dkg_client, is_last_dkg_finished, run_dkg
@@ -36,8 +37,8 @@ from tests.utils import (
     set_automine,
     set_interval_mining,
 )
-from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.sgx import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.constants import SGX_CERTIFICATES_FOLDER
+from tools.constants.schains import SCHAINS_DIR_PATH
 
 warnings.filterwarnings('ignore')
 
@@ -64,8 +65,7 @@ class DKGRunType(int, Enum):
 
 
 def generate_sgx_wallets(skale, n_of_keys):
-    if not SGX_SERVER_URL:
-        raise DkgTestError('SGX_SERVER_URL is not set')
+    st = get_settings((SkaleSettings, FairSettings))
 
     logger.info('Making sure cert folders exists')
     for i in range(n_of_keys):
@@ -74,7 +74,7 @@ def generate_sgx_wallets(skale, n_of_keys):
     logger.info(f'Generating {n_of_keys} test wallets')
     return [
         SgxWallet(
-            SGX_SERVER_URL,
+            str(st.sgx_url),
             skale.web3,
             path_to_cert=os.path.join(SGX_CERTIFICATES_FOLDER, f'dkg-{i}'),
         )

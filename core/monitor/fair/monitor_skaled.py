@@ -33,10 +33,9 @@ from core.monitor.monitor_base import BaseSkaledMonitor
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.types.chain import FairChainName
-from tools.configs import PASSIVE_NODE
-from tools.configs.fair import SKALED_RESTART_JOB_NAME
+from tools.constants.fair import SKALED_RESTART_JOB_NAME
 from tools.docker_utils import DockerUtils
-from tools.helper import no_hyphens
+from tools.helper import is_passive, no_hyphens
 from tools.notifications.messages import notify_checks
 from tools.resources import get_statsd_client
 
@@ -64,7 +63,7 @@ def run_skaled_pipeline(
         chain_record=chain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        passive_node=PASSIVE_NODE,
+        passive_node=is_passive(),
     )
 
     logger.info('Initializing skaled status')
@@ -124,7 +123,7 @@ class RegularSkaledMonitor(BaseFairSkaledMonitor):
         if not self.checks.volume:
             self.am.volume()
         if not self.checks.skaled_container:
-            self.am.skaled_container(passive_node=PASSIVE_NODE)
+            self.am.skaled_container(passive_node=is_passive())
         else:
             self.am.reset_restart_counter()
         if not self.checks.rpc:
@@ -142,15 +141,16 @@ class NoConfigSkaledMonitor(BaseFairSkaledMonitor):
 
 class StartupSkaledMonitor(BaseFairSkaledMonitor):
     def execute(self) -> None:
+        passive_node = is_passive()
         if not self.checks.committee_scope_firewall_rules:
             self.am.committee_scope_firewall_rules()
         if not self.checks.volume:
             self.am.volume()
         if not self.checks.skaled_container:
             download_snapshot = True
-            if PASSIVE_NODE and not self.am.chain_record.snapshot_from:
+            if passive_node and not self.am.chain_record.snapshot_from:
                 download_snapshot = False
-            self.am.skaled_container(download_snapshot=download_snapshot, passive_node=PASSIVE_NODE)
+            self.am.skaled_container(download_snapshot=download_snapshot, passive_node=passive_node)
         else:
             self.am.reset_restart_counter()
         if not self.checks.rpc:

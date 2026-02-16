@@ -17,14 +17,10 @@ from tests.utils import (
     run_simple_skaled_container,
     run_simple_skaled_container_in_sync_mode,
 )
-from tools.configs import NODE_DATA_PATH
-from tools.configs.containers import SKALED_CONTAINER
+from tools.constants import NODE_DATA_PATH
+from tools.constants.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 
-DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-TEST_SKALE_DATA_DIR = os.path.join(DIR_PATH, 'skale-data')
-ENDPOINT = os.getenv('ENDPOINT')
-ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
 HELLO_MSG = 'Hello, SKALE!'
 LOGS_TEST_LINES = [
     f'{HELLO_MSG}\n',

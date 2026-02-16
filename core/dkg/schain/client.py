@@ -37,10 +37,10 @@ from core.dkg.utils import (
     convert_str_to_key_share,
     to_verify,
 )
-from tools.configs import NODE_DATA_PATH
+from tools.constants import NODE_DATA_PATH
 from tools.sgx_utils import sgx_unreachable_retry
 
-sys.path.insert(0, NODE_DATA_PATH)
+sys.path.insert(0, str(NODE_DATA_PATH))
 
 logger = logging.getLogger(__name__)
 

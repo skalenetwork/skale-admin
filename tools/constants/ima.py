@@ -17,29 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+from pathlib import Path
 
-from tools.configs import CONTRACTS_INFO_FOLDER, SCHAIN_CONFIG_DIR_SKALED
-from tools.exceptions import MissingEnvVariableError
-
-IMA_CONTRACTS = os.getenv('IMA_CONTRACTS')
+from tools.constants import CONTRACTS_INFO_FOLDER, SCHAIN_CONFIG_DIR_SKALED
 
 # legacy variables, used only to run ima-agent
-_IMA_MAINNET_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, '.ima_mainnet_abi.json')
-_IMA_SCHAIN_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, '.ima_schain_abi.json')
-_MANAGER_ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, '.manager_abi.json')
+_IMA_MAINNET_ABI_FILEPATH: Path = CONTRACTS_INFO_FOLDER / '.ima_mainnet_abi.json'
+_IMA_SCHAIN_ABI_FILEPATH: Path = CONTRACTS_INFO_FOLDER / '.ima_schain_abi.json'
+_MANAGER_ABI_FILEPATH: Path = CONTRACTS_INFO_FOLDER / '.manager_abi.json'
 
-IMA_NETWORK_BROWSER_FILENAME = 'ima_network_browser_data.json'
-IMA_NETWORK_BROWSER_FILEPATH = os.path.join(SCHAIN_CONFIG_DIR_SKALED, IMA_NETWORK_BROWSER_FILENAME)
+IMA_NETWORK_BROWSER_FILENAME: str = 'ima_network_browser_data.json'
+IMA_NETWORK_BROWSER_FILEPATH: Path = SCHAIN_CONFIG_DIR_SKALED / IMA_NETWORK_BROWSER_FILENAME
 
-IMA_STATE_PATH = 'ima_state.json'
-IMA_STATE_CONTAINER_PATH = os.path.join(SCHAIN_CONFIG_DIR_SKALED, IMA_STATE_PATH)
-
+IMA_STATE_PATH: str = 'ima_state.json'
+IMA_STATE_CONTAINER_PATH: Path = SCHAIN_CONFIG_DIR_SKALED / IMA_STATE_PATH
 
 DEFAULT_TIME_FRAME = 1800  # 30 min
-
-
-def ima_contracts() -> str:
-    if not IMA_CONTRACTS:
-        raise MissingEnvVariableError('IMA_CONTRACTS is not set.')
-    return IMA_CONTRACTS

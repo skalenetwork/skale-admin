@@ -22,10 +22,7 @@ from typing import cast
 from skale.dataclasses.schain_options import AllocationType
 
 from core.schains.types import ContainerType, MetricType, SchainType
-from tools.configs.resource_allocation import (
-    FILESTORAGE_LIMIT_OPTION_NAME,
-    RESOURCE_ALLOCATION_FILEPATH,
-)
+from tools.constants import FILESTORAGE_LIMIT_OPTION_NAME, RESOURCE_ALLOCATION_FILEPATH
 from tools.helper import read_json
 
 

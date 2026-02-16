@@ -52,7 +52,7 @@ from core.config.schain.accounts import add_to_accounts, generate_account
 from core.config.schain.generation import Gen
 from core.schains.limits import get_fs_allocated_storage
 from core.schains.types import SchainType
-from tools.configs.schains import ETHERBASE_ALLOC, NODE_OWNER_ALLOC, SCHAIN_OWNER_ALLOC
+from tools.constants.schains import ETHERBASE_ALLOC, NODE_OWNER_ALLOC, SCHAIN_OWNER_ALLOC
 
 logger = logging.getLogger(__name__)
 

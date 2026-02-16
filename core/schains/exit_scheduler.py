@@ -22,7 +22,7 @@ import logging
 import os
 import shutil
 
-from tools.configs import NODE_DATA_PATH
+from tools.constants import NODE_DATA_PATH
 
 logger = logging.getLogger(__name__)
 

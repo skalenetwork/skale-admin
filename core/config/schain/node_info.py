@@ -25,7 +25,7 @@ from skale.types.node import Node, NodeId, Port
 from skale.types.schain import SchainStructure
 
 from core.dkg.utils import get_secret_key_share_filepath
-from tools.configs.sgx import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
+from tools.constants import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
 from tools.helper import read_json
 
 logger = logging.getLogger(__name__)
@@ -134,8 +134,8 @@ def generate_wallets_config(
             {
                 'keyShareName': secret_key_share_config['key_share_name'],
                 't': secret_key_share_config['t'],
-                'certFile': SGX_SSL_CERT_FILEPATH,
-                'keyFile': SGX_SSL_KEY_FILEPATH,
+                'certFile': str(SGX_SSL_CERT_FILEPATH),
+                'keyFile': str(SGX_SSL_KEY_FILEPATH),
             }
         )
 

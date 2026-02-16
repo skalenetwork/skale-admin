@@ -19,7 +19,7 @@
 
 import logging
 
-from tools.configs import NODE_OPTIONS_FILEPATH
+from tools.constants import NODE_OPTIONS_FILEPATH
 from tools.json_object import JsonObject
 
 logger = logging.getLogger(__name__)
@@ -31,12 +31,12 @@ class NodeOptions(JsonObject):
 
     @property
     def archive(self) -> bool:
-        return self._get('archive')
+        return bool(self._get('archive'))
 
     @property
     def catchup(self) -> bool:
-        return self._get('catchup')
+        return bool(self._get('catchup'))
 
     @property
     def historic_state(self) -> bool:
-        return self._get('historic_state')
+        return bool(self._get('historic_state'))

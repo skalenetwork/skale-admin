@@ -23,11 +23,12 @@ from typing import Dict
 from skale.types.committee import CommitteeGroup
 from skale.types.dkg import DkgId, G2Point
 from skale.types.node import NodeId
+from skale_core.settings import get_settings
 
 from core.config.fair.fair_chain_node import FairChainNodeInfo, generate_fair_chain_nodes
 from core.config.schain.static_params import get_fair_chain_name
 from core.dkg.utils import get_secret_key_share_filepath
-from tools.configs.sgx import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
+from tools.constants import SGX_SSL_CERT_FILEPATH, SGX_SSL_KEY_FILEPATH
 from tools.helper import read_json
 
 
@@ -92,21 +93,24 @@ def generate_committee_bls_key(
             key_share_name='',  # todod
             t=1,  # todod
             n=n,
-            cert_file=SGX_SSL_CERT_FILEPATH,
-            key_file=SGX_SSL_KEY_FILEPATH,
+            cert_file=str(SGX_SSL_CERT_FILEPATH),
+            key_file=str(SGX_SSL_KEY_FILEPATH),
             common_bls_public_key=common_bls_public_key,
             bls_public_key=['0', '0', '1', '0'],
         )
 
-    secret_key_share_filepath = get_secret_key_share_filepath(get_fair_chain_name(), dkg_id)
+    st = get_settings()
+    secret_key_share_filepath = get_secret_key_share_filepath(
+        get_fair_chain_name(st.env_type), dkg_id
+    )
     secret_key_share_config = read_json(secret_key_share_filepath)
 
     return BlsKey(
         key_share_name=secret_key_share_config['key_share_name'],
         t=secret_key_share_config['t'],
         n=secret_key_share_config['n'],
-        cert_file=SGX_SSL_CERT_FILEPATH,
-        key_file=SGX_SSL_KEY_FILEPATH,
+        cert_file=str(SGX_SSL_CERT_FILEPATH),
+        key_file=str(SGX_SSL_KEY_FILEPATH),
         common_bls_public_key=secret_key_share_config['common_public_key'],
         bls_public_key=secret_key_share_config['public_key'],
     )

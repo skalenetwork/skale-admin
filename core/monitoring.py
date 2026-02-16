@@ -20,13 +20,12 @@
 import logging
 from typing import Optional
 
-from tools.configs import SKALE_DIR_HOST
-from tools.configs.monitoring import (
+from skale_core.settings import get_internal_settings, get_settings
+
+from tools.constants.monitoring import (
     FILEBEAT_CONFIG_PATH,
     FILEBEAT_CONTAINER_NAME,
     FILEBEAT_TEMPLATE_PATH,
-    INFLUX_URL,
-    TELEGRAF,
     TELEGRAF_CONFIG_PATH,
     TELEGRAF_CONTAINER_NAME,
     TELEGRAF_IMAGE,
@@ -68,6 +67,7 @@ def filebeat_config_processed() -> bool:
 
 def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
     dutils = dutils or DockerUtils()
+    internal_st = get_internal_settings()
     if dutils.is_container_exists(TELEGRAF_CONTAINER_NAME):
         dutils.restart(TELEGRAF_CONTAINER_NAME)
     else:
@@ -81,11 +81,14 @@ def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
             environment={'HOST_PROC': '/host/proc'},
             volumes={
                 '/proc': {'bind': '/host/proc', 'mode': 'ro'},
-                f'{SKALE_DIR_HOST}/config/telegraf.conf': {
+                f'{internal_st.skale_dir_host}/config/telegraf.conf': {
                     'bind': '/etc/telegraf/telegraf.conf',
                     'mode': 'ro',
                 },  # noqa
-                f'{SKALE_DIR_HOST}/node_data/telegraf': {'bind': '/var/lib/telegraf', 'mode': 'rw'},
+                f'{internal_st.skale_dir_host}/node_data/telegraf': {
+                    'bind': '/var/lib/telegraf',
+                    'mode': 'rw',
+                },
                 '/var/run/skale/': {'bind': '/var/run/skale', 'mode': 'rw'},
             },
             mem_limit=TELEGRAF_MEM_LIMIT,
@@ -93,7 +96,7 @@ def ensure_telegraf_running(dutils: Optional[DockerUtils] = None) -> None:
 
 
 def update_telegraf_service(
-    node_ip: str, node_id: int, url: str = INFLUX_URL, dutils: Optional[DockerUtils] = None
+    node_ip: str, node_id: int, url: str, dutils: Optional[DockerUtils] = None
 ) -> None:
     dutils = dutils or DockerUtils()
     template_data = {'ip': node_ip, 'node_id': str(node_id), 'url': url}
@@ -119,5 +122,6 @@ def update_monitoring_services(
     node_ip, node_id, contract_alias_or_address: str, dutils: Optional[DockerUtils] = None
 ):
     update_filebeat_service(node_ip, node_id, contract_alias_or_address, dutils=dutils)
-    if TELEGRAF:
-        update_telegraf_service(node_ip, node_id, dutils=dutils)
+    st = get_settings()
+    if st.influx_url:
+        update_telegraf_service(node_ip, node_id, str(st.influx_url), dutils=dutils)

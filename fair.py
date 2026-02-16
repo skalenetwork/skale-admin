@@ -22,15 +22,17 @@ import time
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from filelock import FileLock
+from skale_core.settings import FairBaseSettings, get_settings
 
+import tools.settings  # noqa: F401
 from core.config.schain.static_params import get_fair_chain_name
 from core.monitor.fair.main import start_tasks
 from core.monitoring import update_monitoring_services
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.redis.migrations import run_redis_migrations
-from tools.configs import INIT_LOCK_PATH, PASSIVE_NODE
-from tools.configs.web3 import fair_contracts
+from tools.constants import INIT_LOCK_PATH
+from tools.helper import is_passive
 from tools.logger import init_fair_logger
 from tools.sgx_utils import generate_sgx_key
 
@@ -54,7 +56,8 @@ def monitor(node_config: NodeConfig) -> None:
 
 def update_chain_record() -> None:
     logger.info('Updating chain record during fair admin startup')
-    chain_name = get_fair_chain_name()
+    st = get_settings()
+    chain_name = get_fair_chain_name(st.env_type)
     chain_record = ChainRecord(chain_name)
     chain_record.set_first_run(True)
     chain_record.set_restart_ts(0)
@@ -66,7 +69,8 @@ def worker() -> None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
 
-    update_monitoring_services(node_config.ip, node_config.id, fair_contracts())
+    st = get_settings(FairBaseSettings)
+    update_monitoring_services(node_config.ip, node_config.id, st.fair_contracts)
     update_chain_record()
     monitor(node_config)
 
@@ -75,7 +79,7 @@ def main():
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:
-        if not PASSIVE_NODE:
+        if not is_passive():
             generate_sgx_key(node_config)
         run_redis_migrations()
     worker()

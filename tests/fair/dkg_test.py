@@ -35,7 +35,7 @@ from tests.dkg_test.main_test import (
     remove_schain,
     transfer_eth_to_wallets,
 )
-from tests.utils import ETH_PRIVATE_KEY
+from tests.fixtures.settings import TestingSettings
 from tools.helper import read_json, run_cmd
 
 N_OF_NODES = 2
@@ -231,13 +231,15 @@ class TestDKGFair:
             cleanup_schain_config(schain_name)
 
     @pytest.fixture
-    def fair_contracts(self, schain_creation_data, skale_dkg, endpoint, manager_contracts):
+    def fair_contracts(
+        self, schain_creation_data, skale_dkg, endpoint, manager_contracts, st: TestingSettings
+    ):
         chain_name = schain_creation_data[0]
 
         env = {
             'MAINNET_ENDPOINT': endpoint,
             'TARGET': manager_contracts,
-            'PRIVATE_KEY': ETH_PRIVATE_KEY,
+            'PRIVATE_KEY': st.eth_private_key,
             'DOCKER_NETWORK': 'host',
             'CHAIN_NAME': chain_name,
         }

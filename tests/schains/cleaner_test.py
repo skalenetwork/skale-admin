@@ -26,8 +26,8 @@ from core.schains.cleaner import (
     remove_skaled_container,
 )
 from tests.utils import get_schain_struct, run_simple_ima_container, run_simple_skaled_container
-from tools.configs.containers import IMA_CONTAINER, SKALED_CONTAINER
-from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
+from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 from web.models.schain import SChainRecord, mark_schain_deleted, upsert_schain_record
 

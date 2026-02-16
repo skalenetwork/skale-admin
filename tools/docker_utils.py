@@ -34,8 +34,8 @@ from docker.client import DockerClient
 from docker.models.containers import Container
 from docker.models.volumes import Volume
 
-from tools.configs import DOCKER_NODE_CONFIG_FILEPATH
-from tools.configs.containers import (
+from tools.constants import DOCKER_NODE_CONFIG_FILEPATH
+from tools.constants.containers import (
     CONTAINER_LOGS_SEPARATOR,
     CONTAINER_NOT_FOUND,
     CREATED_STATUS,
@@ -46,7 +46,7 @@ from tools.configs.containers import (
     EXITED_STATUS,
     RUNNING_STATUS,
 )
-from tools.configs.logs import REMOVED_CONTAINERS_FOLDER_PATH
+from tools.constants.logs import REMOVED_CONTAINERS_FOLDER_PATH
 from tools.helper import read_json
 
 logger = logging.getLogger(__name__)

@@ -11,14 +11,15 @@ from flask import Flask, appcontext_pushed, g
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
 from skale.utils.contracts_provision.utils import generate_random_node_data
 from skale.utils.helper import schain_name_to_hash
+from skale_core.settings import get_settings
 from web3 import Web3
 
 from core.config.schain.file_manager import ConfigFileManager
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
+from tests.fixtures.settings import TestingSettings
 from tests.utils import get_bp_data, post_bp_data
-from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.tg import TG_API_KEY, TG_CHAT_ID
+from tools.constants.schains import SCHAINS_DIR_PATH
 from web.helper import get_api_url
 from web.routes.node import node_bp
 
@@ -37,6 +38,7 @@ def skale_bp(skale, node_config, dutils):
         g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
+        g.st = get_settings()
 
     with appcontext_pushed.connected_to(handler, app):
         yield app.test_client()
@@ -158,7 +160,7 @@ def test_set_domain_name(skale_bp, skale):
 
 
 @freezegun.freeze_time(CURRENT_DATETIME)
-def test_send_tg_notification(skale_bp):
+def test_send_tg_notification(skale_bp, st: TestingSettings):
     with mock.patch(
         'tools.notifications.messages.send_message_to_telegram',
         mock.Mock(return_value={'message': 'test'}),
@@ -167,8 +169,8 @@ def test_send_tg_notification(skale_bp):
             skale_bp, get_api_url(BLUEPRINT_NAME, 'send-tg-notification'), {'message': ['test']}
         )
         send_message_to_telegram_mock.delay.assert_called_once_with(
-            TG_API_KEY,
-            TG_CHAT_ID,
+            st.tg_api_key,
+            st.tg_chat_id,
             'test\n\nTimestamp: 1594903080\nDatetime: Thu Jul 16 12:38:00 2020',
         )
 

@@ -17,12 +17,11 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 from typing import Any, Dict, Literal, Optional
 
 import colorful as cf
+from skale_core.settings import get_settings
 
-DISABLE_COLORS = os.environ.get('DISABLE_COLORS') == 'True'
 cf.use_style('solarized')
 PALETTE = {
     'success': '#00c853',
@@ -45,7 +44,8 @@ def arguments_list_string(
         'info', 'success', 'error', 'warning', 'primary', 'secondary', 'lime', 'pink', 'light'
     ] = 'info',
 ) -> str:
-    if DISABLE_COLORS:
+    st = get_settings()
+    if st.disable_colors:
         title_part = f'{title} - ' if title else ''
         args_part = ', '.join(f'{key}: {value}' for key, value in args.items())
         return f'{title_part}{{{args_part}}}'

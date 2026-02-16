@@ -6,7 +6,7 @@ from peewee import CharField, Model, SqliteDatabase
 from playhouse.migrate import SqliteMigrator
 
 from tests.utils import generate_random_name
-from tools.configs.db import DB_PRAGMAS
+from tools.constants.db import DB_PRAGMAS
 from web.migrations import (
     add_config_version_field,
     add_failed_rpc_count_field,

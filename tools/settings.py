@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Admin
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2026 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,16 +17,19 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
 
-from tools.configs import NODE_DATA_PATH
+from skale_core.settings import (
+    FairBaseSettings,
+    FairSettings,
+    InternalSettings,
+    SkalePassiveSettings,
+    SkaleSettings,
+)
 
-TIMES = 1
-TIMEOUT = 1
-MEMORY_FACTOR = 0.9
-DISK_FACTOR = 0.8
+from tools.constants import INTERNAL_SETTINGS_PATH, NODE_SETTINGS_PATH
 
-RESOURCE_ALLOCATION_FILENAME = 'resource_allocation.json'
-RESOURCE_ALLOCATION_FILEPATH = os.path.join(NODE_DATA_PATH, RESOURCE_ALLOCATION_FILENAME)
-
-FILESTORAGE_LIMIT_OPTION_NAME = 'max_file_storage_bytes'
+InternalSettings.model_config['toml_file'] = INTERNAL_SETTINGS_PATH
+SkaleSettings.model_config['toml_file'] = NODE_SETTINGS_PATH
+SkalePassiveSettings.model_config['toml_file'] = NODE_SETTINGS_PATH
+FairSettings.model_config['toml_file'] = NODE_SETTINGS_PATH
+FairBaseSettings.model_config['toml_file'] = NODE_SETTINGS_PATH

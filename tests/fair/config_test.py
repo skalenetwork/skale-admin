@@ -18,9 +18,9 @@ from core.config.base import FairConfig
 from core.config.fair.generator import generate_fair_config, generate_fair_config_adapter
 from core.config.schain.helper import get_static_params_fair as original_get_static_params_fair
 from tests.utils import CURRENT_TS
-from tools.configs import FAIR_STATIC_PARAMS_FILEPATH
-from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.web3 import ZERO_ADDRESS
+from tools.constants import FAIR_STATIC_PARAMS_FILEPATH
+from tools.constants.schains import SCHAINS_DIR_PATH
+from tools.constants.web3 import ZERO_ADDRESS
 
 FAIR_TEST_SECRET_KEY = {
     'key_share_name': 'BLS_KEY:SCHAIN_ID:FAIR:NODE_ID:0:DKG_ID:0',

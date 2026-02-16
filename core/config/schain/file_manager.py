@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import ClassVar, Dict, List, Optional, TypeVar
 
 from core.config.schain.directory import get_files_with_prefix
-from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.helper import read_json, write_json
 
 IConfigFilenameType = TypeVar('IConfigFilenameType', bound='IConfigFilename')

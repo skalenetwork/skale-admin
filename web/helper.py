@@ -27,12 +27,13 @@ from flask import Response, g
 from skale import SkaleManager
 from skale.utils.cache import RedisCacheConfig
 from skale.utils.web3_utils import init_web3
+from skale_core.settings import SkaleSettings, get_settings
 
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from core.utils.fair import init_fair_manager
-from tools.configs.db import REDIS_URI
-from tools.configs.web3 import CACHE_TTL_POLICY, boot_endpoint, endpoint
+from tools.constants.db import REDIS_URI
+from tools.constants.web3 import CACHE_TTL_POLICY
 from tools.helper import init_skale, is_fair
 from tools.resources import rs
 from tools.wallet_utils import init_wallet
@@ -68,18 +69,20 @@ def get_api_url(blueprint_name, method_name):
 
 
 def init_skale_from_node_config(node_config: NodeConfig) -> SkaleManager:
-    wallet = init_wallet(node_config, endpoint=endpoint())
+    st = get_settings(SkaleSettings)
+    wallet = init_wallet(node_config, endpoint=str(st.endpoint), sgx_server_url=str(st.sgx_url))
     return init_skale(wallet)
 
 
 def g_web3(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
+        st = get_settings()
         if is_fair():
-            g.web3 = init_web3(boot_endpoint())
+            g.web3 = init_web3(str(st.endpoint))
         else:
             g.web3 = init_web3(
-                endpoint(),
+                str(st.endpoint),
                 cache_config=RedisCacheConfig(
                     REDIS_URI,
                     method_ttl_policy=CACHE_TTL_POLICY,

@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from skale.types.node import Node, NodeId, NodeWithSchainHashes, Port
 from skale.types.rotation import NodeGroups
 from skale.types.schain import SchainStructure
+from skale_core.settings import get_settings
 
 from core.config.schain.node_info import CurrentNodeInfo, generate_current_node_info
 from core.config.schain.schain_info import SChainInfo, generate_schain_info
@@ -77,11 +78,12 @@ def generate_skale_section(
     archive: bool = False,
     catchup: bool = False,
 ) -> SkaleConfig:
+    st = get_settings()
     contract_settings = generate_contract_settings()
 
     schain_type = get_schain_type(schain.part_of_node)
-    static_node_info = get_static_node_info(schain_type)
-    static_schain_info = get_static_schain_info(schain.name)
+    static_node_info = get_static_node_info(schain_type, st.env_type)
+    static_schain_info = get_static_schain_info(schain.name, st.env_type)
     nodes_in_schain = len(schain_nodes_with_schain_hashes)
 
     node_info = generate_current_node_info(

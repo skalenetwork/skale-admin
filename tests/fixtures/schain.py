@@ -5,11 +5,12 @@ from typing import cast
 
 import pytest
 from skale.types.schain import SchainName
+from skale_core.settings import get_settings
 
 from core.checks.schain import SChainChecks
 from tests.utils import CONFIG_STREAM, STATIC_NODE_GROUPS, get_random_string
-from tools.configs import ENV_TYPE, STATIC_GROUPS_FOLDER
-from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.constants import STATIC_GROUPS_FOLDER
+from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.helper import write_json
 from web.models.schain import SChainRecord
 
@@ -58,7 +59,8 @@ def cleanup_schain_dirs_before():
 
 @pytest.fixture
 def static_groups_for_schain(_schain_name):
-    parent_folder = os.path.join(STATIC_GROUPS_FOLDER, ENV_TYPE)
+    st = get_settings()
+    parent_folder = os.path.join(STATIC_GROUPS_FOLDER, st.env_type)
     os.makedirs(parent_folder)
     static_groups_env_path = os.path.join(
         parent_folder, os.path.join(f'schain-{_schain_name}.json')

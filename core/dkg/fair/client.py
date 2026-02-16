@@ -28,10 +28,10 @@ from core.dkg.client import BaseDKGClient
 from core.dkg.fair.broadcast_filter import FairFilter
 from core.dkg.structures import DKGStep
 from core.dkg.utils import DkgVerificationError, SgxDkgPolynomGenerationError, to_verify
-from tools.configs import NODE_DATA_PATH
+from tools.constants import NODE_DATA_PATH
 from tools.sgx_utils import sgx_unreachable_retry
 
-sys.path.insert(0, NODE_DATA_PATH)
+sys.path.insert(0, str(NODE_DATA_PATH))
 
 logger = logging.getLogger(__name__)
 

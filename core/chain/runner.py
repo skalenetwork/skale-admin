@@ -22,6 +22,7 @@ import logging
 from typing import Optional, Tuple
 
 from docker.types import LogConfig, Ulimit
+from skale_core.settings import get_internal_settings, get_settings
 
 from core.chain.cmd import get_skaled_container_cmd
 from core.chain.skaled_exit_codes import SkaledExitCodes
@@ -32,27 +33,23 @@ from core.ima.container import get_ima_env
 from core.schains.limits import get_ima_limit, get_schain_limit, get_schain_type
 from core.schains.types import ContainerType, MetricType
 from core.types.chain import ChainName
-from tools.configs import (
-    BITE,
-    NODE_DATA_PATH_HOST,
+from tools.constants import (
     SCHAIN_CONFIG_DIR_SKALED,
     SCHAIN_NODE_DATA_PATH,
-    SKALE_DIR_HOST,
     SKALE_VOLUME_PATH,
 )
-from tools.configs.containers import (
+from tools.constants.containers import (
+    BITE_IMAGE_POSTFIX,
     CONTAINER_NAME_PREFIX,
-    CONTAINERS_INFO,
     DATA_DIR_CONTAINER_PATH,
     FAIR_IMAGE_SUFFIX,
     HISTORIC_STATE_IMAGE_POSTFIX,
     IMA_CONTAINER,
-    SCHAIN_STOP_TIMEOUT,
     SKALED_CONTAINER,
     ImageType,
 )
 from tools.docker_utils import DockerUtils
-from tools.helper import is_fair
+from tools.helper import containers_info, is_fair
 from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
@@ -80,13 +77,14 @@ def get_image_name(image_type: str, new: bool = False, historic_state: bool = Fa
     tag_field = 'version'
     if image_type == IMA_CONTAINER and new:
         tag_field = 'new_version'
-    container_info = CONTAINERS_INFO[image_type]
+    container_info = containers_info()[image_type]
     image_name = f'{container_info["name"]}:{container_info[tag_field]}'
+    st = get_settings()
     if image_type == SKALED_CONTAINER:
         if is_fair():
             image_name += FAIR_IMAGE_SUFFIX
-        if BITE:
-            image_name += '-bite'
+        if st.bite:
+            image_name += BITE_IMAGE_POSTFIX
         if historic_state:
             image_name += HISTORIC_STATE_IMAGE_POSTFIX
     return image_name
@@ -97,11 +95,11 @@ def get_container_name(image_type: str, schain_name: str) -> str:
 
 
 def get_container_args(image_type: str) -> dict:
-    return copy.deepcopy(CONTAINERS_INFO[image_type]['args'])
+    return copy.deepcopy(containers_info()[image_type]['args'])
 
 
 def get_container_custom_args(image_type) -> dict:
-    return copy.deepcopy(CONTAINERS_INFO[image_type]['custom_args'])
+    return copy.deepcopy(containers_info()[image_type]['custom_args'])
 
 
 def get_container_info(
@@ -184,7 +182,7 @@ def run_container(
 def restart_container(
     image_type: ImageType,
     chain_name: ChainName,
-    timeout=SCHAIN_STOP_TIMEOUT,
+    timeout: int | None = None,
     dutils=None,
 ):
     dutils = dutils or DockerUtils()
@@ -192,6 +190,9 @@ def restart_container(
     logger.info(
         arguments_list_string({'Container name': container_name}, 'Restarting container...')
     )
+    if timeout is None:
+        st = get_settings()
+        timeout = st.container_stop_timeout
     cont = dutils.restart(container_name, timeout=timeout)
     return cont
 
@@ -279,12 +280,23 @@ def add_config_volume(run_args, schain_name, mode=None):
         run_args['volumes'] = {}
     config_dir_host = schain_config_dir_host(schain_name)
 
+    internal_st = get_internal_settings()
+
     # mount /skale_node_data
-    run_args['volumes'][NODE_DATA_PATH_HOST] = {'bind': SCHAIN_NODE_DATA_PATH, 'mode': mode or 'ro'}
+    run_args['volumes'][str(internal_st.node_data_path_host)] = {
+        'bind': str(SCHAIN_NODE_DATA_PATH),
+        'mode': mode or 'ro',
+    }
     # mount /skale_vol
-    run_args['volumes'][SKALE_DIR_HOST] = {'bind': SKALE_VOLUME_PATH, 'mode': mode or 'ro'}
+    run_args['volumes'][str(internal_st.skale_dir_host)] = {
+        'bind': str(SKALE_VOLUME_PATH),
+        'mode': mode or 'ro',
+    }
     # mount /skale_schain_data
-    run_args['volumes'][config_dir_host] = {'bind': SCHAIN_CONFIG_DIR_SKALED, 'mode': mode or 'rw'}
+    run_args['volumes'][config_dir_host] = {
+        'bind': str(SCHAIN_CONFIG_DIR_SKALED),
+        'mode': mode or 'rw',
+    }
 
 
 def is_exited(

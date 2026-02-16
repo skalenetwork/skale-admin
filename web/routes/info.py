@@ -21,11 +21,12 @@ import logging
 
 from flask import Blueprint, g, request
 from sgx import SgxClient
+from skale_core.settings import ActiveSettings, BaseNodeSettings
 
 from core.node import get_btrfs_info, get_check_report, get_meta_info, get_node_hardware_info
-from tools.configs.web3 import BOOT_ENDPOINT, ENDPOINT, UNTRUSTED_PROVIDERS
-from tools.helper import get_endpoint_call_speed, is_fair
-from tools.sgx_utils import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.constants.web3 import UNTRUSTED_PROVIDERS
+from tools.helper import get_endpoint_call_speed
+from tools.sgx_utils import SGX_CERTIFICATES_FOLDER
 from web.helper import construct_ok_response, g_web3, get_api_url
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,8 @@ def endpoint_info():
     logger.debug(request)
     call_speed = get_endpoint_call_speed(g.web3)
     block_number = g.web3.eth.block_number
-    endpoint = BOOT_ENDPOINT if is_fair() else ENDPOINT
+    st: BaseNodeSettings = g.st
+    endpoint = str(st.endpoint)
     trusted = not any([untrusted in endpoint for untrusted in UNTRUSTED_PROVIDERS])
     try:
         eth_client_version = g.web3.client_version
@@ -95,14 +97,15 @@ def sgx_info():
     status_zmq = False
     status_https = False
     version = None
-    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER, zmq=True)
+    st: ActiveSettings = g.st
+    sgx = SgxClient(str(st.sgx_url), SGX_CERTIFICATES_FOLDER, zmq=True)
     try:
         if sgx.zmq.get_server_status() == 0:
             status_zmq = True
         version = sgx.zmq.get_server_version()
     except Exception as err:
         logger.error(f'Cannot make SGX ZMQ check {err}')
-    sgx_https = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+    sgx_https = SgxClient(str(st.sgx_url), SGX_CERTIFICATES_FOLDER)
     try:
         if sgx_https.get_server_status() == 0:
             status_https = True
@@ -114,7 +117,7 @@ def sgx_info():
     res = {
         'status_zmq': status_zmq,
         'status_https': status_https,
-        'sgx_server_url': SGX_SERVER_URL,
+        'sgx_server_url': str(st.sgx_url),
         'sgx_keyname': g.config.sgx_key_name,
         'sgx_wallet_version': version,
     }

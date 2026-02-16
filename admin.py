@@ -22,7 +22,9 @@ import time
 
 from filelock import FileLock
 from skale import SkaleIma, SkaleManager
+from skale_core.settings import SkaleSettings, get_internal_settings, get_settings
 
+import tools.settings  # noqa: F401
 from core.ima.abi import generate_ima_container_abis
 from core.manager_cache import ManagerCache
 from core.monitoring import update_monitoring_services
@@ -32,9 +34,7 @@ from core.schains.cleaner import run_cleaner
 from core.schains.process import cleanup_schains_pids
 from core.schains.process_manager import run_process_manager
 from core.updates import update_node_config_file
-from tools.configs import BACKUP_RUN, INIT_LOCK_PATH, PULL_CONFIG_FOR_SCHAIN
-from tools.configs.ima import ima_contracts
-from tools.configs.web3 import endpoint, manager_contracts
+from tools.constants import INIT_LOCK_PATH
 from tools.logger import init_admin_logger
 from tools.notifications.messages import cleanup_notification_state
 from tools.resources import rs
@@ -71,23 +71,28 @@ def monitor(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig) -
         time.sleep(SLEEP_INTERVAL)
 
 
-def worker():
+def worker() -> None:
     node_config = NodeConfig()
+    st = get_settings(SkaleSettings)
+    internal_st = get_internal_settings()
     while node_config.id is None:
         logger.info('Waiting for the node_id ...')
         time.sleep(SLEEP_INTERVAL)
-
-    wallet = init_wallet(node_config=node_config, endpoint=endpoint())
-    skale = SkaleManager(endpoint(), manager_contracts(), wallet)
-    skale_ima = SkaleIma(endpoint(), ima_contracts(), wallet)
-    if BACKUP_RUN:
+    wallet = init_wallet(
+        node_config=node_config, endpoint=str(st.endpoint), sgx_server_url=str(st.sgx_url)
+    )
+    skale = SkaleManager(str(st.endpoint), st.manager_contracts, wallet)
+    skale_ima = SkaleIma(str(st.endpoint), st.ima_contracts, wallet)
+    if internal_st.backup_run:
         logger.info('Running sChains in snapshot download mode')
     update_monitoring_services(node_config.ip, node_config.id, skale.manager.address)
     monitor(skale, skale_ima, node_config)
 
 
-def init():
-    skale = SkaleManager(endpoint(), manager_contracts())
+def init() -> None:
+    st = get_settings(SkaleSettings)
+    internal_st = get_internal_settings()
+    skale = SkaleManager(str(st.endpoint), st.manager_contracts)
     node_config = NodeConfig()
     init_lock = FileLock(INIT_LOCK_PATH)
     with init_lock:
@@ -98,12 +103,12 @@ def init():
         run_redis_migrations()
         set_schains_first_run()
         cleanup_schains_pids()
-        if BACKUP_RUN:
+        if internal_st.backup_run:
             set_schains_backup_run()
-        if PULL_CONFIG_FOR_SCHAIN:
-            set_schains_sync_config_run(PULL_CONFIG_FOR_SCHAIN)
+        if internal_st.pull_config_for_schain:
+            set_schains_sync_config_run(internal_st.pull_config_for_schain)
         cleanup_notification_state()
-        generate_ima_container_abis(skale, SkaleIma(endpoint(), ima_contracts()))
+        generate_ima_container_abis(skale, SkaleIma(str(st.endpoint), st.ima_contracts))
 
 
 def main():

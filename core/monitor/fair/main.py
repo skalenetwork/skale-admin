@@ -23,6 +23,7 @@ import time
 from typing import Optional, cast
 
 from apscheduler.schedulers.background import BackgroundScheduler
+from skale_core.settings import get_settings
 
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_fair_chain_name
@@ -35,8 +36,8 @@ from core.redis.chain_record import ChainRecord
 from core.schains.process import ProcessReport
 from core.types.chain import FairChainName
 from core.utils.fair import init_fair_manager
-from tools.configs import PASSIVE_NODE
 from tools.docker_utils import DockerUtils
+from tools.helper import is_passive
 from tools.str_formatters import arguments_list_string
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ class ConfigTask(BaseTask):
 
     def run(self) -> None:
         try:
-            fair_manager_node_config = None if PASSIVE_NODE else self.node_config
+            fair_manager_node_config = None if is_passive() else self.node_config
             fair = init_fair_manager(node_config=fair_manager_node_config)
             run_config_pipeline(
                 chain_name=cast(FairChainName, self.chain_name),
@@ -145,7 +146,8 @@ def start_tasks(
 ) -> bool:
     logger.info('Starting tasks for node_id: %s', node_config.id)
     stream_version = get_skale_node_version()
-    name = get_fair_chain_name()
+    st = get_settings()
+    name = get_fair_chain_name(st.env_type)
 
     init_ts, pid = int(time.time()), os.getpid()
     process_report = ProcessReport(name)

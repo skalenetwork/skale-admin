@@ -21,6 +21,8 @@ import logging
 import time
 from typing import Optional, cast
 
+from skale_core.settings import get_settings
+
 from core.chain.runner import (
     get_container_image,
     get_ima_container_time_frame,
@@ -38,10 +40,9 @@ from core.chain.volume import is_volume_exists
 from core.ima.container import ImaData, get_ima_time_frame
 from core.redis.chain_record import ChainRecord
 from core.types.chain import ChainName
-from tools.configs import PASSIVE_NODE
-from tools.configs.containers import IMA_CONTAINER, MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
+from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
-from tools.helper import is_fair
+from tools.helper import is_fair, is_passive
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,8 @@ def monitor_skaled_container(
 
     if is_skaled_container_failed(chain_name, dutils=dutils):
         restart_count = cast(int, chain_record.restart_count)
-        if restart_count < MAX_SKALED_RESTART_COUNT:
+        st = get_settings()
+        if restart_count < st.max_skaled_restart_count:
             logger.info('Chain %s: restarting container', chain_name)
             restart_container(SKALED_CONTAINER, chain_name, dutils=dutils)
             update_ssl_change_date(chain_record)
@@ -104,7 +106,7 @@ def monitor_skaled_container(
             chain_record.set_failed_rpc_count(0)
         else:
             logger.warning(
-                'Chain %s: max restart count exceeded - %d', chain_name, MAX_SKALED_RESTART_COUNT
+                'Chain %s: max restart count exceeded - %d', chain_name, st.max_skaled_restart_count
             )
     else:
         chain_record.set_restart_count(0)
@@ -119,7 +121,7 @@ def monitor_ima_container(
 ) -> None:
     dutils = dutils or DockerUtils()
 
-    if PASSIVE_NODE or is_fair():
+    if is_passive() or is_fair():
         return
 
     if not ima_data.linked:

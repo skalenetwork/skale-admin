@@ -19,7 +19,7 @@
 
 import os
 
-from tools.configs import NODE_DATA_PATH
+from tools.constants import NODE_DATA_PATH
 
 LOG_FOLDER_NAME = 'log'
 LOG_FOLDER = os.path.join(NODE_DATA_PATH, LOG_FOLDER_NAME)
@@ -32,10 +32,6 @@ API_LOG_PATH = os.path.join(LOG_FOLDER, API_LOG_FILENAME)
 
 DEBUG_LOG_FILENAME = 'debug.log'
 DEBUG_LOG_PATH = os.path.join(LOG_FOLDER, DEBUG_LOG_FILENAME)
-
-SYNC_LOG_FILENAME = 'passive_node.log'
-SYNC_LOG_PATH = os.path.join(LOG_FOLDER, SYNC_LOG_FILENAME)
-
 
 REMOVED_CONTAINERS_FOLDER_NAME = '.removed_containers'
 REMOVED_CONTAINERS_FOLDER_PATH = os.path.join(LOG_FOLDER, REMOVED_CONTAINERS_FOLDER_NAME)

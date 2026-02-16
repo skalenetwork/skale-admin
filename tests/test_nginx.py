@@ -5,8 +5,7 @@ from pathlib import Path
 import pytest
 
 from core.nginx import reload_nginx
-from tools.configs import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
-from tools.configs.nginx import NGINX_CONTAINER_NAME
+from tools.constants import CONFIG_FOLDER, NGINX_CONTAINER_NAME, SSL_CERTIFICATES_FILEPATH
 
 TEMPLATE = """
 limit_req_zone $binary_remote_addr zone=one:10m rate=7r/s;

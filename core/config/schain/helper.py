@@ -21,26 +21,23 @@ import logging
 from typing import Dict, List, Optional
 
 from Crypto.Hash import keccak
+from skale_core.types import EnvType
 from web3 import Web3
 
 from core.config.fair.helper import get_current_nodes as get_fair_current_nodes
 from core.dkg.utils import get_secret_key_share_filepath
-from tools.configs import (
-    ENV_TYPE,
-    FAIR_STATIC_PARAMS_FILEPATH,
-    STATIC_PARAMS_FILEPATH,
-)
+from tools.constants import FAIR_STATIC_PARAMS_FILEPATH, STATIC_PARAMS_FILEPATH
 from tools.helper import is_fair, read_json, safe_load_yml
 
 logger = logging.getLogger(__name__)
 
 
-def get_static_params(env_type=ENV_TYPE, path=STATIC_PARAMS_FILEPATH):
+def get_static_params(env_type: EnvType, path=STATIC_PARAMS_FILEPATH):
     ydata = safe_load_yml(path)
     return ydata['envs'][env_type]
 
 
-def get_static_params_fair(env_type=ENV_TYPE, path=FAIR_STATIC_PARAMS_FILEPATH):
+def get_static_params_fair(env_type: EnvType, path=FAIR_STATIC_PARAMS_FILEPATH):
     ydata = safe_load_yml(path)
     return ydata['envs'][env_type]
 

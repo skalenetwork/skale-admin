@@ -17,24 +17,9 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-
 from eth_typing import HexAddress, HexStr
 
-from tools.configs import NODE_DATA_PATH
-from tools.exceptions import MissingEnvVariableError
-
-ENDPOINT = os.getenv('ENDPOINT')
-BOOT_ENDPOINT = os.getenv('BOOT_ENDPOINT')
-
 UNTRUSTED_PROVIDERS = ['infura.io', 'gateway.pokt.network']
-MANAGER_CONTRACTS = os.getenv('MANAGER_CONTRACTS')
-FAIR_CONTRACTS = os.getenv('FAIR_CONTRACTS')
-STATE_FILENAME = os.getenv('STATE_FILENAME')
-STATE_BASE_PATH = os.path.join(NODE_DATA_PATH, 'eth-state')
-STATE_FILEPATH = None if not STATE_FILENAME else os.path.join(STATE_BASE_PATH, STATE_FILENAME)
-
-NODE_REGISTER_CONFIRMATION_BLOCKS = 5
 
 ZERO_ADDRESS = HexAddress(HexStr('0x0000000000000000000000000000000000000000'))
 
@@ -47,27 +32,3 @@ CACHE_TTL_POLICY = {
     'eth_gasPrice': 5,
     'web3_clientVersion': 600,
 }
-
-
-def endpoint() -> str:
-    if not ENDPOINT:
-        raise MissingEnvVariableError('ENDPOINT is not set.')
-    return ENDPOINT
-
-
-def boot_endpoint() -> str:
-    if not BOOT_ENDPOINT:
-        raise MissingEnvVariableError('BOOT_ENDPOINT is not set.')
-    return BOOT_ENDPOINT
-
-
-def manager_contracts() -> str:
-    if not MANAGER_CONTRACTS:
-        raise MissingEnvVariableError('MANAGER_CONTRACTS environment variable is not set.')
-    return MANAGER_CONTRACTS
-
-
-def fair_contracts() -> str:
-    if not FAIR_CONTRACTS:
-        raise MissingEnvVariableError('FAIR_CONTRACTS environment variable is not set.')
-    return FAIR_CONTRACTS

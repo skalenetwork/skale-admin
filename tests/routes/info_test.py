@@ -3,10 +3,11 @@ from time import sleep
 import pytest
 from flask import Flask, appcontext_pushed, g
 from sgx import SgxClient
+from skale_core.settings import get_settings
 
 from core.node_config import NodeConfig
 from tests.utils import get_bp_data, run_custom_schain_container
-from tools.configs.sgx import SGX_CERTIFICATES_FOLDER, SGX_SERVER_URL
+from tools.constants import SGX_CERTIFICATES_FOLDER
 from web.helper import get_api_url
 from web.models.schain import SChainRecord
 from web.routes.info import info_bp
@@ -25,6 +26,7 @@ def skale_bp(skale, nodes, node_skales, dutils):
         g.docker_utils = dutils
         g.wallet = node_skales[node_index].wallet
         g.config = NodeConfig()
+        g.st = get_settings()
         g.config.id = nodes[node_index]
 
     with appcontext_pushed.connected_to(handler, app):
@@ -44,6 +46,7 @@ def unregistered_skale_bp(skale, dutils):
         g.docker_utils = dutils
         g.wallet = skale.wallet
         g.config = NodeConfig()
+        g.st = get_settings()
         g.config.id = None
 
     with appcontext_pushed.connected_to(handler, app):
@@ -54,16 +57,16 @@ def unregistered_skale_bp(skale, dutils):
             SChainRecord.drop_table()
 
 
-def test_sgx(skale_bp, skale):
+def test_sgx(skale_bp, skale, st):
     config = NodeConfig()
     config.sgx_key_name = TEST_SGX_KEYNAME
 
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'sgx'))
-    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+    sgx = SgxClient(str(st.sgx_url), SGX_CERTIFICATES_FOLDER)
     version = sgx.get_server_version()
     assert data == {
         'payload': {
-            'sgx_server_url': SGX_SERVER_URL,
+            'sgx_server_url': str(st.sgx_url),
             'status_zmq': True,
             'status_https': True,
             'sgx_wallet_version': version,

@@ -23,14 +23,14 @@ import time
 from typing import cast
 
 from requests import Response
+from skale_core.settings import get_settings
 
 from core.chain.runner import is_container_exists, is_container_running, restart_container
 from core.chain.status import SkaledStatus
 from core.redis.chain_record import ChainRecord
 from core.types.chain import ChainName
-from tools.configs import ALLOWED_TIMESTAMP_DIFF
-from tools.configs.containers import MAX_SKALED_RESTART_COUNT, SKALED_CONTAINER
-from tools.configs.schains import (
+from tools.constants.containers import SKALED_CONTAINER
+from tools.constants.schains import (
     DEFAULT_RPC_CHECK_TIMEOUT,
     MAX_SCHAIN_FAILED_RPC_COUNT,
     RPC_CHECK_TIMEOUT_STEP,
@@ -40,6 +40,8 @@ from tools.helper import post_request
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
+
+ALLOWED_TIMESTAMP_DIFF = 120
 
 
 def handle_failed_skaled_rpc(
@@ -85,7 +87,8 @@ def handle_failed_skaled_rpc(
         chain_record.restart_count,
     )
     if rpc_stuck:
-        if cast(int, chain_record.restart_count) < MAX_SKALED_RESTART_COUNT:
+        st = get_settings()
+        if cast(int, chain_record.restart_count) < st.max_skaled_restart_count:
             logger.info(f'Chain {chain_name}: restarting container')
             restart_container(SKALED_CONTAINER, chain_name, dutils=dutils)
             chain_record.set_restart_count(cast(int, chain_record.restart_count) + 1)

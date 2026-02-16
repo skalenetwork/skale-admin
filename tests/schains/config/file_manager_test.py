@@ -2,7 +2,7 @@ import os
 
 from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager
-from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.constants.schains import SCHAINS_DIR_PATH
 
 
 def test_config_file_manager(schain_db, schain_config, upstreams):

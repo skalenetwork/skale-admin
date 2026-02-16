@@ -31,8 +31,7 @@ from core.monitor.schain.action_config import ConfigActionManager
 from core.node import get_current_nodes
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig, ExternalState
-from tools.configs import PASSIVE_NODE
-from tools.helper import no_hyphens
+from tools.helper import is_passive, no_hyphens
 from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 from web.models.schain import SChainRecord
@@ -62,7 +61,7 @@ def run_config_pipeline(
     )
 
     rotation_data = skale.node_rotation.get_rotation(schain.name)
-    ima_linked = not PASSIVE_NODE and skale_ima.linker.has_schain(schain.name)
+    ima_linked = not is_passive() and skale_ima.linker.has_schain(schain.name)
     group_index = skale.schains.name_to_group_id(schain.name)
     last_dkg_successful = skale.dkg.is_last_dkg_successful(cast(SchainHash, group_index))
     current_nodes = get_current_nodes(skale, schain.schain_hash, manager_cache)
@@ -117,7 +116,7 @@ def run_config_pipeline(
     logger.debug('Gathering config status')
     checks_res = config_checks.get_all(log=False, expose=True)
 
-    if PASSIVE_NODE:
+    if is_passive():
         logger.info(
             'Sync node last_dkg_successful %s, rotation_data %s', last_dkg_successful, rotation_data
         )

@@ -3,6 +3,7 @@ from unittest import mock
 
 import pytest
 from apscheduler.schedulers.background import BackgroundScheduler
+from skale_core.settings import BaseNodeSettings
 
 from core.checks.fair import SkaledChecks
 from core.config.schain.static_params import get_fair_chain_name
@@ -10,12 +11,12 @@ from core.monitor.fair.action_skaled import FairSkaledActionManager
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from tests.utils import TEST_TASK_SLEEP
-from tools.configs import PASSIVE_NODE
+from tools.helper import is_passive
 
 
 @pytest.fixture
-def chain_name():
-    return get_fair_chain_name()
+def chain_name(st: BaseNodeSettings):
+    return get_fair_chain_name(st.env_type)
 
 
 @pytest.fixture
@@ -45,7 +46,7 @@ def skaled_checks(chain_name, chain_record, rule_controller, dutils):
         chain_record=chain_record,
         rule_controller=rule_controller,
         dutils=dutils,
-        passive_node=PASSIVE_NODE,
+        passive_node=is_passive(),
     )
 
 

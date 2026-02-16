@@ -23,7 +23,7 @@ import logging
 from ima_predeployed.generator import generate_abi
 from skale import SkaleIma, SkaleManager
 
-from tools.configs.ima import (
+from tools.constants.ima import (
     _IMA_MAINNET_ABI_FILEPATH,
     _IMA_SCHAIN_ABI_FILEPATH,
     _MANAGER_ABI_FILEPATH,

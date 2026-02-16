@@ -18,12 +18,12 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import os
 from abc import ABC, abstractmethod
 
 from eth_utils.hexadecimal import remove_0x_prefix
 from sgx import SgxClient
 from sgx.sgx_rpc_handler import SgxServerError
+from skale_core.settings import FairSettings, SkaleSettings, get_settings
 
 from core.dkg.broadcast_filter import BaseFilter
 from core.dkg.structures import DKGStep
@@ -37,7 +37,7 @@ from core.dkg.utils import (
     generate_chain_poly_name,
     to_verify,
 )
-from tools.configs.sgx import SGX_CERTIFICATES_FOLDER
+from tools.constants import SGX_CERTIFICATES_FOLDER
 from tools.helper import no_hyphens
 from tools.resources import get_statsd_client
 from tools.sgx_utils import sgx_unreachable_retry
@@ -72,9 +72,8 @@ class BaseDKGClient(ABC):
         self.skale = skale
         self.t = t
         self.n = n
-        self.sgx = SgxClient(
-            os.environ['SGX_SERVER_URL'], n=n, t=t, path_to_cert=SGX_CERTIFICATES_FOLDER
-        )
+        st = get_settings((SkaleSettings, FairSettings))
+        self.sgx = SgxClient(str(st.sgx_url), n=n, t=t, path_to_cert=str(SGX_CERTIFICATES_FOLDER))
         self.chain_name = chain_name
         self.eth_key_name = eth_key_name
         self.rotation_id = rotation_id

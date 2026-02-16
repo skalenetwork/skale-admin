@@ -18,31 +18,28 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import os
 import time
 
 from skale import SkaleIma, SkaleManager
 from skale.schain_config.ports_allocation import get_schain_base_port_on_node
 from skale.types.schain import SchainName, SchainStructure
 from skale.utils.helper import schain_name_to_hash
+from skale_core.settings import SkalePassiveSettings, get_settings
 
+import tools.settings  # noqa: F401
 from core.manager_cache import ManagerCache
 from core.node_config import NodeConfig
 from core.schains.process_manager import run_pm_schain
-from tools.configs.ima import ima_contracts
-from tools.configs.web3 import endpoint, manager_contracts
-from tools.logger import init_sync_logger
+from tools.logger import init_admin_logger
 from tools.resources import rs
 from web.migrations import migrate
 from web.models.schain import create_tables
 
-init_sync_logger()
+init_admin_logger()
 logger = logging.getLogger(__name__)
 
 SLEEP_INTERVAL = 360
 WORKER_RESTART_SLEEP_INTERVAL = 2
-
-SCHAIN_NAME = os.environ.get('SCHAIN_NAME')
 
 
 def monitor(
@@ -59,8 +56,9 @@ def monitor(
 
 
 def worker(schain_name: SchainName):
-    skale = SkaleManager(endpoint(), manager_contracts())
-    skale_ima = SkaleIma(endpoint(), ima_contracts())
+    st = get_settings(SkalePassiveSettings)
+    skale = SkaleManager(str(st.endpoint), st.manager_contracts)
+    skale_ima = SkaleIma(str(st.endpoint), st.ima_contracts)
 
     if not skale.schains_internal.is_schain_exist(schain_name):
         logger.error(f'Provided SKALE Chain does not exist: {schain_name}')
@@ -86,13 +84,12 @@ def worker(schain_name: SchainName):
 
 
 def main():
-    if SCHAIN_NAME is None:
-        raise Exception('You should provide SCHAIN_NAME')
+    st = get_settings(SkalePassiveSettings)
     while True:
         try:
             create_tables()
             migrate()
-            worker(SchainName(SCHAIN_NAME))
+            worker(st.schain_name)
         except Exception:
             logger.exception('Sync node worker failed')
         time.sleep(WORKER_RESTART_SLEEP_INTERVAL)

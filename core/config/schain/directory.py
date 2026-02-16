@@ -23,12 +23,14 @@ import os
 from pathlib import Path
 from typing import List
 
-from tools.configs.schains import (
+from skale_core.settings import get_internal_settings
+
+from tools.constants.schains import (
     BASE_SCHAIN_CONFIG_FILEPATH,
     NODE_CLI_STATUS_FILENAME,
-    SCHAIN_SCHECKS_FILENAME,
+    SCHAIN_CHECKS_FILENAME,
+    SCHAINS_DIR_NAME,
     SCHAINS_DIR_PATH,
-    SCHAINS_DIR_PATH_HOST,
     SKALED_STATUS_FILENAME,
 )
 
@@ -42,7 +44,9 @@ def schain_config_dir(name: str) -> str:
 
 def schain_config_dir_host(name: str) -> str:
     """Get sChain config directory path on host"""
-    return os.path.join(SCHAINS_DIR_PATH_HOST, name)
+    internal_st = get_internal_settings()
+    schains_dir_path_host = internal_st.node_data_path_host / SCHAINS_DIR_NAME
+    return os.path.join(schains_dir_path_host, name)
 
 
 def init_schain_config_dir(name: str) -> str:
@@ -64,7 +68,7 @@ def node_cli_status_filepath(name: str) -> str:
 
 def get_schain_check_filepath(schain_name):
     schain_dir_path = schain_config_dir(schain_name)
-    return os.path.join(schain_dir_path, SCHAIN_SCHECKS_FILENAME)
+    return os.path.join(schain_dir_path, SCHAIN_CHECKS_FILENAME)
 
 
 def read_base_config():

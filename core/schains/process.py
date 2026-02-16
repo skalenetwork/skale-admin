@@ -28,7 +28,7 @@ from typing import Tuple
 
 import psutil
 
-from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.helper import check_pid
 
 logger = logging.getLogger(__name__)

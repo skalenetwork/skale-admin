@@ -12,7 +12,7 @@ from core.config.schain.generator import (
 )
 from core.config.schain.predeployed import generate_predeployed_accounts
 from core.schains.limits import get_schain_type
-from tools.configs.schains import BASE_SCHAIN_CONFIG_FILEPATH
+from tools.constants.schains import BASE_SCHAIN_CONFIG_FILEPATH
 from tools.helper import is_address_contract
 
 CHAINS = []

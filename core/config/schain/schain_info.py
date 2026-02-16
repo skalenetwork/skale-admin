@@ -25,7 +25,7 @@ from skale.types.schain import SchainStructure
 from core.config.schain.schain_node import SChainNodeInfo
 from core.schains.limits import get_allocation_type_name, get_schain_limit, get_schain_type
 from core.schains.types import MetricType
-from tools.configs.schains import MAX_HISTORIC_STATE_DB_SIZE
+from tools.constants.schains import MAX_HISTORIC_STATE_DB_SIZE
 
 
 @dataclass

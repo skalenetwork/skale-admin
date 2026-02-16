@@ -10,8 +10,8 @@ from core.config.schain.directory import skaled_status_filepath
 from core.schains.cleaner import remove_schain_volume, remove_skaled_container
 from tests.conftest import rm_schain_dir
 from tests.utils import generate_skaled_status_file
-from tools.configs.containers import CONTAINERS_FILEPATH
-from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.constants import CONTAINERS_FILEPATH
+from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
 
 

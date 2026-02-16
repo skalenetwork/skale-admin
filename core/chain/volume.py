@@ -25,8 +25,8 @@ from skale.types.schain import Schain
 from core.schains.limits import get_schain_limit, get_schain_type
 from core.schains.types import MetricType
 from core.types.chain import ChainName, FairChainName
-from tools.configs.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
-from tools.configs.schains import CHAIN_STATE_PATH, FILESTORAGE_STATIC_PATH
+from tools.constants import CHAIN_STATE_PATH, FILESTORAGE_STATIC_PATH
+from tools.constants.containers import SHARED_SPACE_CONTAINER_PATH, SHARED_SPACE_VOLUME_NAME
 from tools.docker_utils import DockerUtils
 from tools.helper import is_fair
 
@@ -84,7 +84,7 @@ def ensure_data_dir_path(chain_name: ChainName) -> None:
         )
 
 
-def get_schain_volume_config(name, mount_path, mode=None, passive_node=False):
+def get_schain_volume_config(name: str, mount_path: str, mode=None, passive_node=False):
     mode = mode or 'rw'
     if passive_node or is_fair():
         datadir_src = os.path.join(CHAIN_STATE_PATH, name)

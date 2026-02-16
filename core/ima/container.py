@@ -21,9 +21,12 @@ import json
 import logging
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from flask import g
 from skale.dataclasses.skaled_ports import SkaledPorts
+from skale_core.settings import SkaleSettings, get_settings
+from skale_core.types import EnvType
 from websocket import create_connection
 
 from core.config.endpoint import get_chain_ports_from_config
@@ -31,10 +34,14 @@ from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager, SkaledConfigNotFoundError
 from core.config.schain.helper import get_chain_id, get_static_params
 from core.config.schain.node_info import CurrentNodeInfo
-from tools.configs import ENV_TYPE
-from tools.configs.containers import CONTAINERS_INFO, IMA_MIGRATION_PATH
-from tools.configs.db import REDIS_URI
-from tools.configs.ima import (
+from tools.constants import (
+    CONTAINERS_FILEPATH,
+    IMA_MIGRATION_PATH,
+    SGX_SSL_CERT_FILEPATH,
+    SGX_SSL_KEY_FILEPATH,
+)
+from tools.constants.db import REDIS_URI
+from tools.constants.ima import (
     _IMA_MAINNET_ABI_FILEPATH,
     _IMA_SCHAIN_ABI_FILEPATH,
     _MANAGER_ABI_FILEPATH,
@@ -42,10 +49,8 @@ from tools.configs.ima import (
     IMA_NETWORK_BROWSER_FILEPATH,
     IMA_STATE_CONTAINER_PATH,
 )
-from tools.configs.schains import SCHAINS_DIR_PATH
-from tools.configs.sgx import sgx_server_url, sgx_ssl_cert_filepath, sgx_ssl_key_filepath
-from tools.configs.web3 import endpoint
-from tools.helper import safe_load_yml
+from tools.constants.schains import SCHAINS_DIR_PATH
+from tools.helper import read_json, safe_load_yml
 
 logger = logging.getLogger(__name__)
 
@@ -149,6 +154,7 @@ def schain_index_to_node_number(node):
 
 
 def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> ImaEnv:
+    st = get_settings(SkaleSettings)
     schain_config = ConfigFileManager(schain_name).skaled_config
     if schain_config is None:
         raise SkaledConfigNotFoundError(f'Skaled config for schain {schain_name} not found')
@@ -164,20 +170,20 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> Ima
 
     return ImaEnv(
         schain_dir=schain_config_dir(schain_name),
-        manager_abi_path=_MANAGER_ABI_FILEPATH,
-        mainnet_proxy_path=_IMA_MAINNET_ABI_FILEPATH,
-        schain_proxy_path=_IMA_SCHAIN_ABI_FILEPATH,
-        state_file=IMA_STATE_CONTAINER_PATH,
+        manager_abi_path=str(_MANAGER_ABI_FILEPATH),
+        mainnet_proxy_path=str(_IMA_MAINNET_ABI_FILEPATH),
+        schain_proxy_path=str(_IMA_SCHAIN_ABI_FILEPATH),
+        state_file=str(IMA_STATE_CONTAINER_PATH),
         schain_name=schain_name,
         schain_rpc_url=get_localhost_http_endpoint(schain_name),
-        mainnet_rpc_url=endpoint(),
+        mainnet_rpc_url=str(st.endpoint),
         node_number=schain_index,
         nodes_count=len(schain_nodes['nodes']),
-        sgx_url=sgx_server_url(),
+        sgx_url=str(st.sgx_url),
         ecdsa_key_name=node_info['ecdsaKeyName'],
         bls_key_name=bls_key_name,
-        sgx_ssl_key_path=sgx_ssl_key_filepath(),
-        sgx_ssl_cert_path=sgx_ssl_cert_filepath(),
+        sgx_ssl_key_path=str(SGX_SSL_KEY_FILEPATH),
+        sgx_ssl_cert_path=str(SGX_SSL_CERT_FILEPATH),
         node_address=node_address,
         tm_url_mainnet=REDIS_URI,
         cid_main_net=mainnet_chain_id,
@@ -185,12 +191,13 @@ def get_ima_env(schain_name: str, mainnet_chain_id: int, time_frame: int) -> Ima
         monitoring_port=parse_ima_monitoring_port(node_info),
         rpc_port=get_ima_rpc_port(schain_name),
         time_framing=time_frame,
-        network_browser_data_path=IMA_NETWORK_BROWSER_FILEPATH,
+        network_browser_data_path=str(IMA_NETWORK_BROWSER_FILEPATH),
     )
 
 
 def get_ima_version_after_migration() -> str:
-    return CONTAINERS_INFO['ima'].get('new_version') or CONTAINERS_INFO['ima']['version']
+    containers_info = read_json(CONTAINERS_FILEPATH)
+    return containers_info['ima'].get('new_version') or containers_info['ima']['version']
 
 
 def parse_ima_monitoring_port(node_info: CurrentNodeInfo) -> int:
@@ -288,16 +295,17 @@ def get_ima_log_checks():
     return all_ima_healthchecks
 
 
-def get_migration_ts(name: str, path: str = IMA_MIGRATION_PATH, env_type: str = ENV_TYPE) -> int:
-    if os.path.isfile(path):
-        schedule = safe_load_yml(IMA_MIGRATION_PATH)[env_type]
+def get_migration_ts(name: str, env_type: EnvType, path: Path = IMA_MIGRATION_PATH) -> int:
+    if path.is_file():
+        schedule = safe_load_yml(path)[env_type]
         return schedule.get(name, 0)
     else:
         return 0
 
 
 def get_ima_time_frame(name: str, after: bool = False) -> int:
-    params = get_static_params()
+    st = get_settings()
+    params = get_static_params(st.env_type)
     if 'ima' not in params or 'time_frame' not in params['ima']:
         logger.debug(
             'IMA time frame intrerval is not set. Using default value %d', DEFAULT_TIME_FRAME

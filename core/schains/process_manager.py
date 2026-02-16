@@ -34,9 +34,8 @@ from core.schains.process import (
     is_monitor_process_alive,
     terminate_process,
 )
-from tools.configs import PASSIVE_NODE
-from tools.configs.schains import DKG_TIMEOUT_COEFFICIENT
-from tools.helper import is_node_part_of_chain
+from tools.constants.schains import DKG_TIMEOUT_COEFFICIENT
+from tools.helper import is_node_part_of_chain, is_passive
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +68,7 @@ def run_pm_schain(
         allowed_diff = timeout or int(dkg_timeout * DKG_TIMEOUT_COEFFICIENT)
 
     is_rotation_active = skale.node_rotation.is_rotation_active(schain.name)
-    leaving_chain = not PASSIVE_NODE and not is_node_part_of_chain(
+    leaving_chain = not is_passive() and not is_node_part_of_chain(
         skale, schain.name, node_config.id
     )
     if leaving_chain and not is_rotation_active:

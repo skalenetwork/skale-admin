@@ -17,30 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-from typing import Literal
-
-from tools.configs import CONFIG_FOLDER
-from tools.helper import read_json
+from skale_core.types import ImageType
 
 DATA_DIR_CONTAINER_PATH = '/data_dir'
 SHARED_SPACE_CONTAINER_PATH = '/shared-space'
 SHARED_SPACE_VOLUME_NAME = 'shared-space'
 
-ImageType = Literal['ima', 'skaled']
-
 SKALED_CONTAINER: ImageType = 'skaled'
 IMA_CONTAINER: ImageType = 'ima'
 
 CONTAINER_NAME_PREFIX = 'sk'
-CONTAINERS_FILENAME = 'containers.json'
-
-CONTAINERS_FILEPATH = os.path.join(CONFIG_FOLDER, CONTAINERS_FILENAME)
-
-CONTAINERS_INFO = read_json(CONTAINERS_FILEPATH)
-
-IMA_MIGRATION_FILENAME = 'ima_migration_schedule.yaml'
-IMA_MIGRATION_PATH = os.path.join(CONFIG_FOLDER, IMA_MIGRATION_FILENAME)
 
 CONTAINER_NOT_FOUND = 'not_found'
 EXITED_STATUS = 'exited'
@@ -52,15 +38,12 @@ DOCKER_DEFAULT_TAIL_LINES = 10000
 
 DOCKER_DEFAULT_STOP_TIMEOUT = 20
 
-SCHAIN_STOP_TIMEOUT = int(os.getenv('SCHAIN_STOP_TIMEOUT', 300))
-
 DEFAULT_DOCKER_HOST = 'unix:///var/run/skale/docker.sock'
-
-MAX_SKALED_RESTART_COUNT = int(os.getenv('MAX_SKALED_RESTART_COUNT', 5))
 
 CONTAINER_LOGS_SEPARATOR = b'=' * 80 + b'\n'
 
 HISTORIC_STATE_IMAGE_POSTFIX = '-historic'
 FAIR_IMAGE_SUFFIX = '-fair'
+BITE_IMAGE_POSTFIX = '-bite'
 
-SKALED_RESTART_DELAY_SECONDS = int(os.getenv('SKALED_RESTART_DELAY_SECONDS', 300))
+SKALED_RESTART_DELAY_SECONDS = 300

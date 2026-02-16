@@ -15,7 +15,7 @@ from core.node_config import NodeConfig
 from core.schains.process import ProcessReport, cleanup_schains_pids, terminate_process
 from core.schains.process_manager import run_pm_schain
 from tests.utils import get_schain_struct
-from tools.configs.schains import SCHAINS_DIR_PATH
+from tools.constants.schains import SCHAINS_DIR_PATH
 
 logger = logging.getLogger(__name__)
 

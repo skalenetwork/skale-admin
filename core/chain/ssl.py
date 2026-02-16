@@ -22,7 +22,7 @@ import os
 from datetime import datetime
 
 from core.redis.chain_record import ChainRecord
-from tools.configs import SSL_CERT_PATH, SSL_CERTIFICATES_FILEPATH
+from tools.constants import SSL_CERT_PATH, SSL_CERTIFICATES_FILEPATH
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)

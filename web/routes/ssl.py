@@ -27,7 +27,7 @@ from OpenSSL import crypto
 
 from core.chain.ssl import is_ssl_folder_empty
 from core.nginx import reload_nginx
-from tools.configs import SSL_CERTIFICATES_FILEPATH
+from tools.constants import SSL_CERTIFICATES_FILEPATH
 from web.helper import construct_err_response, construct_ok_response, get_api_url
 from web.models.schain import set_schains_need_reload
 
