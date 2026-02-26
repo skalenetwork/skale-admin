@@ -240,7 +240,6 @@ def test_cleanup_schain(
     schain_db,
     node_config,
     schain_on_contracts,
-    current_nodes,
     estate,
     dutils,
     secret_key,
@@ -251,7 +250,6 @@ def test_cleanup_schain(
     cleanup_schain(
         node_config.id,
         schain_name,
-        current_nodes=current_nodes,
         sync_agent_ranges=[],
         last_dkg_successful=True,
         rotation_id=0,
