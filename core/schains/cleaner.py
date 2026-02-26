@@ -29,7 +29,6 @@ from sgx import SgxClient
 from skale import SkaleManager
 from skale.types.node import NodeId
 from skale.types.schain import SchainName, SchainStructure
-from skale.utils.helper import schain_name_to_hash
 from skale_core.settings import FairSettings, SkaleSettings, get_settings
 
 from core.chain.runner import get_container_name, is_exited
@@ -38,7 +37,7 @@ from core.config.schain.directory import schain_config_dir
 from core.dkg.utils import get_secret_key_share_filepath
 from core.firewall.utils import cleanup_firewall_for_schain, get_default_rule_controller
 from core.manager_cache import ManagerCache
-from core.node import get_current_nodes, get_skale_node_version
+from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport, terminate_process
@@ -232,11 +231,9 @@ def remove_schain(
     delete_bls_keys(skale, schain_name)
 
     sync_agent_ranges = manager_cache.sync_ranges
-    schain_hash = schain_name_to_hash(schain_name)
     rotation_data = skale.node_rotation.get_rotation(schain_name)
     rotation_id = rotation_data.rotation_counter
     estate = ExternalConfig(name=schain_name).get()
-    current_nodes = get_current_nodes(skale, schain_hash, manager_cache)
     group_index = skale.schains.name_to_group_id(schain_name)
     last_dkg_successful = skale.dkg.is_last_dkg_successful(group_index)
 
@@ -246,7 +243,6 @@ def remove_schain(
         sync_agent_ranges,
         rotation_id=rotation_id,
         last_dkg_successful=last_dkg_successful,
-        current_nodes=current_nodes,
         estate=estate,
         dutils=dutils,
     )
@@ -258,7 +254,6 @@ def cleanup_schain(
     sync_agent_ranges: list,
     rotation_id: int,
     last_dkg_successful: bool,
-    current_nodes: list,
     estate: ExternalConfig,
     dutils=None,
 ) -> None:
@@ -273,7 +268,7 @@ def cleanup_schain(
         rule_controller=rc,
         stream_version=stream_version,
         schain_record=schain_record,
-        current_nodes=current_nodes,
+        current_nodes=[],
         rotation_id=rotation_id,
         estate=estate,
         last_dkg_successful=last_dkg_successful,
