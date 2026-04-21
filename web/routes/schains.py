@@ -18,9 +18,9 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from dataclasses import asdict
 
 from flask import Blueprint, g, request
+from skale import SkaleManager
 
 from core.chain.status import init_skaled_status
 from core.config.endpoint import get_base_port_from_config
@@ -82,10 +82,11 @@ def schain_config():
 def schains_list():
     logger.debug(request)
     node_id = g.config.id
+    skale: SkaleManager = g.skale
     if node_id is None:
         return construct_err_response(msg='No node installed')
     schains_list = [
-        asdict(s) for s in g.skale.schains.schains_for_node(node_id) if s and s.name != ''
+        s.to_dict() for s in skale.schains.schains_for_node(node_id) if s and s.name != ''
     ]
     return construct_ok_response(schains_list)
 
