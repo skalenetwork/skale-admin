@@ -11,7 +11,7 @@ from skale_core.settings import get_settings
 
 from core.config.schain.file_manager import ConfigFileManager
 from core.node_config import NodeConfig
-from tests.utils import get_bp_data, get_test_rule_controller
+from tests.utils import get_bp_data, get_schain_struct, get_test_rule_controller
 from web.helper import get_api_url
 from web.models.schain import SChainRecord, upsert_schain_record
 from web.routes.schains import schains_bp
@@ -63,6 +63,28 @@ def test_schain_config(skale_bp, skale, schain_config, schain_on_contracts):
 def test_schains_list(skale_bp, skale):
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'list'))
     assert data == {'payload': [], 'status': 'ok'}
+
+
+def test_schains_list_serialization(skale_bp, skale):
+    def schains_for_node_mock(self, node_id):
+        return [
+            get_schain_struct(_test_schain_name='test-schain1'),
+            get_schain_struct(_test_schain_name='test-schain2'),
+            get_schain_struct(_test_schain_name=''),
+        ]
+
+    with mock.patch(
+        'skale.contracts.manager.schains.SChains.schains_for_node',
+        schains_for_node_mock,
+    ):
+        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'list'))
+        assert data['status'] == 'ok'
+        payload = data['payload']
+        assert len(payload) == 2
+        assert payload[0]['name'] == 'test-schain1'
+        assert payload[1]['name'] == 'test-schain2'
+        for schain in payload:
+            assert isinstance(schain['schain_hash'], str)
 
 
 def schain_config_exists_mock(schain):
