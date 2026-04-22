@@ -46,7 +46,6 @@ envs:
       disk: 1900000000000
 
     package:
-      iptables-persistent: 1.0.4
       lvm2: 2.02.0
       btrfs-progs: 4.15.1
       lsof: "4.89"
@@ -87,8 +86,7 @@ envs:
         before: 1800
         after: 900
 
-    schain_cmd:
-      ["-v 2", "--aa no"]
+    schain_cmd: ["-v 2", "--aa no"]
 
     node:
       common:
@@ -152,7 +150,6 @@ envs:
       disk: 200000000000
 
     package:
-      iptables-persistent: 1.0.4
       lvm2: 2.02.0
       btrfs-progs: 4.15.1
       lsof: "4.89"
@@ -188,8 +185,7 @@ envs:
         before: 1800
         after: 900
 
-    schain_cmd:
-      ["-v 2", "--aa no"]
+    schain_cmd: ["-v 2", "--aa no"]
 
     node:
       common:
@@ -253,7 +249,6 @@ envs:
       disk: 200000000000
 
     package:
-      iptables-persistent: 1.0.4
       lvm2: 2.02.0
       btrfs-progs: 4.15.1
       lsof: "4.89"
@@ -289,8 +284,7 @@ envs:
         before: 1800
         after: 900
 
-    schain_cmd:
-      ["-v 2", "--aa no"]
+    schain_cmd: ["-v 2", "--aa no"]
 
     node:
       common:
@@ -356,7 +350,6 @@ envs:
       disk: 80000000000
 
     package:
-      iptables-persistent: 1.0.4
       lvm2: 2.02.0
       btrfs-progs: 4.15.1
       lsof: "4.89"

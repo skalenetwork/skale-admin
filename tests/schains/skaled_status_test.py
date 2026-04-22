@@ -1,10 +1,10 @@
-from core.schains.status import (
-    get_node_cli_status,
-    node_cli_status_filepath,
+from core.chain.status import (
     NodeCliStatus,
     SkaledStatus,
+    get_node_cli_status,
+    node_cli_status_filepath,
 )
-from core.schains.config.directory import skaled_status_filepath
+from core.config.schain.directory import skaled_status_filepath
 
 CURRENT_TS = 1594903080
 

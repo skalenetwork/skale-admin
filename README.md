@@ -6,39 +6,82 @@
 
 This repo contains source code for 3 core SKALE Node containers:
 
-- `skale_admin` - worker that manages sChains creation and node rotation
-- `skale_api` - webserver that provides node API
-- `celery` - distributed task queue
-
-## API reference
-
-SKALE API reference could be found in the docs repo: [SKALE Node API](http://docs.skalenetwork.com/).
+* `skale_admin` - worker that manages sChains creation and node rotation
+* `skale_api` - webserver that provides node API
+* `celery` - distributed task queue
 
 ## Development
 
-### Run tests locally
+### Dependencies
 
-1) Run local ganache, download and deploy SKALE Manager contracts to it
+Install `uv`:
 
 ```bash
-ETH_PRIVATE_KEY=[..] MANAGER_BRANCH=[..] bash ./scripts/deploy_manager.sh
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-- `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
-- `MANAGER_BRANCH` - tag of the SKALE Manager image to use (`$MANAGER_BRANCH-latest` will be used)
-- `SGX_WALLET_TAG` - tag of the SGX simulator to use (optional, `latest` will be used by default)
+Install all dependencies:
 
-List of the available SM tags: https://hub.docker.com/r/skalenetwork/skale-manager/tags  
-List of the available SGX tags: https://hub.docker.com/r/skalenetwork/sgxwalletsim/tags
+```bash
+uv sync --prerelease=allow --all-extras
+```
 
-2) Run SGX wallet simulator and all tests after it
+### Linting and type checking
+
+#### Check linting/formatting issues
+
+```bash
+uv run ruff check
+```
+
+#### Check type issues
+
+```bash
+uv run mypy .
+```
+
+#### Auto-fix ruff issues (linting + formatting)
+
+```bash
+uv run ruff check --fix
+```
+
+# Format code with ruff
+
+```bash
+uv run ruff format
+```
+
+In file `.git/hooks/pre-commit` add:
+
+```shell
+#!/bin/sh
+uv run ruff check
+```
+
+### Run tests locally
+
+1. Run local ganache, download and deploy SKALE Manager contracts to it
+
+   ```bash
+   ETH_PRIVATE_KEY=[..] MANAGER_BRANCH=[..] bash ./scripts/deploy_manager.sh
+   ```
+
+   * `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
+   * `MANAGER_BRANCH` - tag of the SKALE Manager image to use (`$MANAGER_BRANCH-latest` will be used)
+   * `SGX_WALLET_TAG` - tag of the SGX simulator to use (optional, `latest` will be used by default)
+
+   List of the available SM tags: <https://hub.docker.com/r/skalenetwork/skale-manager/tags>\
+   List of the available SGX tags: <https://hub.docker.com/r/skalenetwork/sgxwallet_sim/tags>
+
+2. Run SGX wallet simulator and all tests after it
 
 ```bash
 ETH_PRIVATE_KEY=[...] SCHAIN_TYPE=[...] bash ./scripts/run_tests.sh
 ```
 
-- `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
-- `SCHAIN_TYPE` - type of the chain for the DKG test (could be `test2` - 2 nodes, `test4` - 4 nodes, `tiny` - 16 nodes)
+* `ETH_PRIVATE_KEY` - it could be any valid Ethereum private key (without `0x` prefix!)
+* `SCHAIN_TYPE` - type of the chain for the DKG test (could be `test2` - 2 nodes, `test4` - 4 nodes, `tiny` - 16 nodes)
 
 Test build:
 

@@ -17,14 +17,14 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import logging
 import functools
-from filelock import FileLock
+import logging
+import os
 from json.decoder import JSONDecodeError
 
-from tools.helper import read_json, write_json
+from filelock import FileLock
 
+from tools.helper import read_json, write_json
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,9 @@ def config_setter(config_path, lock_path):
                 config = read_json(config_path)
                 config[field_name] = field_value
                 write_json(config_path, config)
+
         return wrapper_decorator
+
     return real_decorator
 
 
@@ -56,8 +58,9 @@ def config_getter(func):
             log_broken_status_file(filepath)
             return None
         return config.get(field_name)
+
     return wrapper_decorator
 
 
 def log_broken_status_file(filepath: str) -> None:
-    logger.error("skaled status file is not valid JSON: %s", filepath)
+    logger.error('skaled status file is not valid JSON: %s', filepath)

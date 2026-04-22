@@ -1,7 +1,13 @@
 FROM admin:base
 
-RUN apt-get update && apt-get install -y nftables python3-nftables
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-RUN pip3 install -r requirements-dev.txt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends nftables python3-nftables && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml ./
+
+RUN uv pip install --prerelease=allow --system --no-cache ".[test,dev]"
 
 ENV PYTHONPATH=${PYTHONPATH}:/usr/lib/python3/dist-packages/

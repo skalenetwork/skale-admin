@@ -1,0 +1,49 @@
+#   -*- coding: utf-8 -*-
+#
+#   This file is part of SKALE Admin
+#
+#   Copyright (C) 2019 SKALE Labs
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU Affero General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU Affero General Public License for more details.
+#
+#   You should have received a copy of the GNU Affero General Public License
+#   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+from skale_core.types import ImageType
+
+DATA_DIR_CONTAINER_PATH = '/data_dir'
+SHARED_SPACE_CONTAINER_PATH = '/shared-space'
+SHARED_SPACE_VOLUME_NAME = 'shared-space'
+
+SKALED_CONTAINER: ImageType = 'skaled'
+IMA_CONTAINER: ImageType = 'ima'
+
+CONTAINER_NAME_PREFIX = 'sk'
+
+CONTAINER_NOT_FOUND = 'not_found'
+EXITED_STATUS = 'exited'
+CREATED_STATUS = 'created'
+RUNNING_STATUS = 'running'
+
+DOCKER_DEFAULT_HEAD_LINES = 400
+DOCKER_DEFAULT_TAIL_LINES = 10000
+
+DOCKER_DEFAULT_STOP_TIMEOUT = 20
+
+DEFAULT_DOCKER_HOST = 'unix:///var/run/skale/docker.sock'
+
+CONTAINER_LOGS_SEPARATOR = b'=' * 80 + b'\n'
+
+HISTORIC_STATE_IMAGE_POSTFIX = '-historic'
+FAIR_IMAGE_SUFFIX = '-fair'
+BITE_IMAGE_POSTFIX = '-bite'
+
+SKALED_RESTART_DELAY_SECONDS = 300

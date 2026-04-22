@@ -1,7 +1,8 @@
 import time
-from core.schains.exit_scheduler import ExitScheduleFileManager
 
 import pytest
+
+from core.schains.exit_scheduler import ExitScheduleFileManager
 
 
 def test_exit_schedule_fm(secret_key, schain_db):

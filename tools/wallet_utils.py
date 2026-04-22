@@ -19,25 +19,25 @@
 
 import logging
 
-
 from redis import Redis
+from skale.utils.cache import RedisCacheConfig
 from skale.utils.web3_utils import init_web3
 from skale.wallets import BaseWallet, RedisWalletAdapter, SgxWallet
 from skale.wallets.web3_wallet import to_checksum_address
 
-from tools.configs import (
-    DEFAULT_POOL,
-    SGX_CERTIFICATES_FOLDER,
-    SGX_SERVER_URL
-)
-from tools.configs.web3 import ENDPOINT
+from core.node_config import NodeConfig
+from tools.constants import SGX_CERTIFICATES_FOLDER
+from tools.constants.db import REDIS_URI
+from tools.constants.web3 import CACHE_TTL_POLICY
 from tools.resources import rs as grs
 
 logger = logging.getLogger(__name__)
 
 # todo: move to smart contracts
-DEPOSIT_AMOUNT_ETH = 0.2
-DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10 ** 18))
+DEPOSIT_AMOUNT_ETH = 0.02
+DEPOSIT_AMOUNT_ETH_WEI = int(DEPOSIT_AMOUNT_ETH * (10**18))
+
+DEFAULT_POOL = 'transactions'
 
 
 def wallet_with_balance(skale):  # todo: move to the skale.py
@@ -48,7 +48,7 @@ def wallet_with_balance(skale):  # todo: move to the skale.py
         'eth_balance_wei': eth_balance_wei,
         'skale_balance_wei': 0,
         'eth_balance': str(skale.web3.from_wei(eth_balance_wei, 'ether')),
-        'skale_balance': '0'
+        'skale_balance': '0',
     }
 
 
@@ -58,15 +58,23 @@ def check_required_balance(skale):  # todo: move to the skale.py
 
 
 def init_wallet(
-    node_config,
+    node_config: NodeConfig,
+    endpoint: str,
+    sgx_server_url: str,
     rs: Redis = grs,
-    pool: str = DEFAULT_POOL
+    pool: str = DEFAULT_POOL,
 ) -> BaseWallet:
-    web3 = init_web3(ENDPOINT)
+    web3 = init_web3(
+        endpoint,
+        cache_config=RedisCacheConfig(
+            REDIS_URI,
+            method_ttl_policy=CACHE_TTL_POLICY,
+        ),
+    )
     sgx_wallet = SgxWallet(
         web3=web3,
-        sgx_endpoint=SGX_SERVER_URL,
+        sgx_endpoint=sgx_server_url,
         key_name=node_config.sgx_key_name,
-        path_to_cert=SGX_CERTIFICATES_FOLDER
+        path_to_cert=str(SGX_CERTIFICATES_FOLDER),
     )
     return RedisWalletAdapter(rs, pool, sgx_wallet)

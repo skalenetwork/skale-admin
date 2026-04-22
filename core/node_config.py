@@ -18,19 +18,22 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from pathlib import Path
 
-from tools.configs import NODE_CONFIG_FILEPATH
+from skale.types.node import NodeId, Port
+
+from tools.constants import NODE_CONFIG_FILEPATH
 from tools.json_object import JsonObject
 
 logger = logging.getLogger(__name__)
 
 
 class NodeConfig(JsonObject):
-    def __init__(self, filepath: str = NODE_CONFIG_FILEPATH):
+    def __init__(self, filepath: Path = NODE_CONFIG_FILEPATH):
         super().__init__(filepath=filepath)
 
     @property
-    def id(self) -> int:
+    def id(self) -> NodeId:
         return self._get('node_id')
 
     @id.setter
@@ -54,17 +57,17 @@ class NodeConfig(JsonObject):
         return self._set('name', node_name)
 
     @property
-    def sgx_key_name(self) -> int:
+    def sgx_key_name(self) -> str:
         return self._get('sgx_key_name')
 
     @sgx_key_name.setter
-    def sgx_key_name(self, sgx_key_name: int) -> None:
+    def sgx_key_name(self, sgx_key_name: str) -> None:
         return self._set('sgx_key_name', sgx_key_name)
 
     @property
-    def schain_base_port(self) -> int:
-        return self._get('schain_base_port') or -1
+    def schain_base_port(self) -> Port:
+        return self._get('schain_base_port') or Port(-1)
 
     @schain_base_port.setter
-    def schain_base_port(self, schain_port: int) -> None:
+    def schain_base_port(self, schain_port: Port) -> None:
         return self._set('schain_base_port', schain_port)
