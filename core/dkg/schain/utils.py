@@ -260,6 +260,14 @@ def generate_bls_keys(dkg_client):
         common_public_key = dkg_client.get_common_bls_public_key()
     except Exception as err:
         raise DKGKeyGenerationError(err)
+
+    if dkg_client.public_key != bls_public_keys[dkg_client.node_id_dkg]:
+        raise DKGKeyGenerationError(
+            f'sChain {schain_name}: generated DKG public key for node '
+            f'{dkg_client.node_id_dkg} does not match the BLS public key stored '
+            f'in the smart contract.'
+        )
+
     dkg_client.last_completed_step = DKGStep.KEY_GENERATION
     return {
         'common_public_key': common_public_key,
