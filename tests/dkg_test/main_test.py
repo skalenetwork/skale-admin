@@ -322,7 +322,7 @@ def remove_nodes(skale, nodes):
 def filter_own_broadcast_event(remove_own_events):
     """
     Returns a function that can be used to configure DKG client to
-    filter out its own broadcast events, so it will be forced to use 
+    filter out its own broadcast events, so it will be forced to use
     local SGX data instead of data from blockchain.
     """
     def configure(dkg_client):
