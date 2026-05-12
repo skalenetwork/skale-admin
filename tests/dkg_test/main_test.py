@@ -261,6 +261,7 @@ def run_node_dkg(
     index: int,
     node_id: int,
     runs: tuple[DKGRunType] = (DKGRunType.NORMAL,),
+    configure_client=None,
 ):
     init_schain_config_dir(schain_name)
     sgx_key_name = skale.wallet._key_name
@@ -276,6 +277,9 @@ def run_node_dkg(
         with dkg_test_client(
             skale, node_id, schain_name, sgx_key_name, rotation_id, run_type
         ) as dkg_client:
+            # allow per-test custom dkg client configuration
+            if configure_client:
+                configure_client(dkg_client)
             logger.info('ID skale %d', id(dkg_client.skale))
             try:
                 dkg_result = run_dkg(skale, dkg_client, schain_name, rotation_id)
@@ -315,6 +319,29 @@ def remove_nodes(skale, nodes):
         skale.nodes.init_exit(node_id)
         skale.manager.node_exit(node_id)
 
+def filter_own_broadcast_event(remove_own_events):
+    """
+    Returns a function that can be used to configure DKG client to
+    filter out its own broadcast events, so it will be forced to use 
+    local SGX data instead of data from blockchain.
+    """
+    def configure(dkg_client):
+        original_get_events = dkg_client.broadcast_filter.get_events
+
+        def get_events_without_own(*args, **kwargs):
+            events = original_get_events(*args, **kwargs)
+            own_events = [
+                event for event in events if event.nodeIndex == dkg_client.node_id_contract
+            ]
+
+            remove_own_events.extend(own_events)
+            return [
+                event for event in events
+                if event.nodeIndex != dkg_client.node_id_contract
+            ]
+        dkg_client.broadcast_filter.get_events = get_events_without_own
+
+    return configure
 
 class TestDKG:
     @pytest.fixture
@@ -414,6 +441,42 @@ class TestDKG:
 
         restore_dkg_keys_data = sorted([r.keys_data for r in results], key=lambda d: d['n'])
         assert regular_dkg_keys_data == restore_dkg_keys_data
+
+    @pytest.mark.timeout(DKG_TEST_TIMEOUT)
+    @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
+    def test_dkg_uses_local_sgx_data_when_own_broadcast_event_missing(
+        self, skale, schain_creation_data, skale_sgx_instances, nodes, dkg_timeout, schain
+    ):
+        schain_name, _ = schain_creation_data
+        nodes.sort(key=lambda x: x['node_id'])
+        runners = get_dkg_runners(skale, skale_sgx_instances, schain_name, nodes)
+
+        # node that will miss its broadcast & use local sgx data
+        target_index = N_OF_NODES - 1
+        removed_own_events = []
+
+        runners[target_index] = functools.partial(
+            run_node_dkg,
+            skale_sgx_instances[target_index],
+            schain_name,
+            target_index,
+            nodes[target_index]['node_id'],
+            configure_client=filter_own_broadcast_event(removed_own_events),
+        )
+
+        results = exec_dkg_runners(runners)
+
+        assert removed_own_events
+        assert len(results) == N_OF_NODES
+        assert is_last_dkg_finished(skale, schain_name)
+
+        for i, result in enumerate(results):
+            assert result.status.is_done(), f'node {i} failed: {result}'
+            assert result.step == DKGStep.KEY_GENERATION
+            keys_data = result.keys_data
+            assert keys_data is not None
+        gid = schain_name_to_hash(schain_name)
+        assert skale.dkg.is_last_dkg_successful(gid)
 
     @pytest.mark.timeout(DKG_TEST_TIMEOUT)
     @mock.patch('core.dkg.schain.utils.BROADCAST_DATA_SEARCH_SLEEP', TEST_BROADCAST_SLEEP)
