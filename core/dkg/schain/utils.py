@@ -246,6 +246,16 @@ def get_common_bls_public_key(skale, schain_hash: SchainHash) -> list[str]:
     return [elem for coord in raw_common_public_key for elem in coord]
 
 
+def normalize_bls_public_key(public_key) -> str:
+    """
+    Normalizes bls public key from list of strings format to string ':' (colon)
+    separated format.
+    """
+    if isinstance(public_key, str):
+        return public_key
+    return ':'.join(str(elem) for elem in public_key)
+
+
 def generate_bls_keys(dkg_client):
     schain_name = dkg_client.chain_name
     try:
@@ -260,6 +270,18 @@ def generate_bls_keys(dkg_client):
         common_public_key = dkg_client.get_common_bls_public_key()
     except Exception as err:
         raise DKGKeyGenerationError(err)
+
+    local_public_key = normalize_bls_public_key(dkg_client.public_key)
+    if local_public_key != bls_public_keys[dkg_client.node_id_dkg]:
+        raise DKGKeyGenerationError(
+            f'sChain {schain_name}: generated DKG public key mismatch. '
+            f'contract_node_id={dkg_client.node_id_contract}, '
+            f'dkg_index={dkg_client.node_id_dkg}, '
+            f'node_ids_dkg={dkg_client.node_ids_dkg}, '
+            f'local_public_key={local_public_key}, '
+            f'bls_public_keys={bls_public_keys}'
+        )
+
     dkg_client.last_completed_step = DKGStep.KEY_GENERATION
     return {
         'common_public_key': common_public_key,

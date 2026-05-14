@@ -127,10 +127,18 @@ class BaseDKGClient(ABC):
         self.sent_secret_key_contribution = self.sgx.get_secret_key_contribution_v2(
             self.poly_name, self.public_keys
         )
-        self.incoming_secret_key_contribution[self.node_id_dkg] = self.sent_secret_key_contribution[
+
+        chunk = self.sent_secret_key_contribution[
             self.node_id_dkg * 192 : (self.node_id_dkg + 1)  # noqa
             * 192
         ]
+
+        # SGX format comes as:    [secret:64][public:128]
+        # events from SC come as: [public:128][secret:64]
+        # we assume later on every secret key contribution follows format from events, so
+        # we need to convert to it                                [public:128]   [secret:64]
+        self.incoming_secret_key_contribution[self.node_id_dkg] = chunk[64:192] + chunk[:64]
+
         return convert_str_to_key_share(self.sent_secret_key_contribution, self.n)
 
     @sgx_unreachable_retry
