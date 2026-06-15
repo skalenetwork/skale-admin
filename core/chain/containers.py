@@ -59,6 +59,7 @@ def monitor_skaled_container(
     dutils: Optional[DockerUtils] = None,
     passive_node: bool = False,
     historic_state: bool = False,
+    part_of_node: Optional[int] = None,
 ) -> None:
     dutils = dutils or DockerUtils()
     logger.info(f'Monitoring skaled container for {chain_name}')
@@ -83,6 +84,7 @@ def monitor_skaled_container(
             snapshot_from=snapshot_from,
             passive_node=passive_node,
             historic_state=historic_state,
+            part_of_node=part_of_node,
         )
         update_ssl_change_date(chain_record)
         chain_record.reset_failed_counters()
@@ -118,6 +120,7 @@ def monitor_ima_container(
     ima_data: ImaData,
     migration_ts: int = 0,
     dutils: DockerUtils | None = None,
+    part_of_node: Optional[int] = None,
 ) -> None:
     dutils = dutils or DockerUtils()
 
@@ -153,7 +156,12 @@ def monitor_ima_container(
             '%s No IMA container, creating, image %s, time frame %d', chain_name, image, time_frame
         )
         run_ima_container(
-            chain_name, ima_data.chain_id, image=image, time_frame=time_frame, dutils=dutils
+            chain_name,
+            ima_data.chain_id,
+            image=image,
+            time_frame=time_frame,
+            dutils=dutils,
+            part_of_node=part_of_node,
         )
     else:
         logger.debug('Chain %s: IMA container exists, but not running, skipping', chain_name)
