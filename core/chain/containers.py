@@ -1,5 +1,3 @@
-# ABOUTME: Monitors skaled and IMA containers and starts them when required.
-# ABOUTME: Keeps container lifecycle actions aligned with chain state and resource limits.
 #   -*- coding: utf-8 -*-
 #
 #   This file is part of SKALE Admin

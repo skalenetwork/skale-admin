@@ -1,5 +1,3 @@
-# ABOUTME: Builds Docker run arguments for skaled and IMA chain containers.
-# ABOUTME: Applies image, volume, command, and resource settings during startup.
 #   -*- coding: utf-8 -*-
 #
 #   This file is part of SKALE Admin

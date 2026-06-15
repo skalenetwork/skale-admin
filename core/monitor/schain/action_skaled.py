@@ -1,5 +1,3 @@
-# ABOUTME: Runs schain lifecycle actions for skaled, IMA, volumes, and firewall rules.
-# ABOUTME: Connects chain metadata to container monitoring and resource-aware startup.
 #   -*- coding: utf-8 -*-
 #
 #  This file is part of SKALE Admin

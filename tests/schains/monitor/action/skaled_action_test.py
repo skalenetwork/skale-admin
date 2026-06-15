@@ -1,5 +1,3 @@
-# ABOUTME: Exercises schain skaled action manager behavior for containers and related actions.
-# ABOUTME: Verifies action calls propagate chain state into Docker monitor operations.
 import datetime
 import json
 import os
