@@ -1,3 +1,5 @@
+# ABOUTME: Exercises schain skaled action manager behavior for containers and related actions.
+# ABOUTME: Verifies action calls propagate chain state into Docker monitor operations.
 import datetime
 import json
 import os
@@ -40,6 +42,7 @@ def monitor_skaled_container_mock(
     dutils: Optional[DockerUtils] = None,
     passive_node: bool = False,
     historic_state: bool = False,
+    part_of_node: Optional[int] = None,
 ):
     if dutils is None:
         dutils = DockerUtils()
@@ -135,6 +138,7 @@ def test_skaled_container_with_snapshot_action(skaled_am: SkaledActionManager):
             dutils=skaled_am.dutils,
             passive_node=False,
             historic_state=False,
+            part_of_node=skaled_am.schain.part_of_node,
         )
         assert monitor_skaled_container_mock.call_count == 1
     finally:
@@ -161,6 +165,7 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am: SkaledActionMan
             dutils=skaled_am.dutils,
             passive_node=False,
             historic_state=False,
+            part_of_node=skaled_am.schain.part_of_node,
         )
         assert monitor_skaled_container_mock.call_count == 1
     finally:

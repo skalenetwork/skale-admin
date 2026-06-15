@@ -1,3 +1,5 @@
+# ABOUTME: Runs schain lifecycle actions for skaled, IMA, volumes, and firewall rules.
+# ABOUTME: Connects chain metadata to container monitoring and resource-aware startup.
 #   -*- coding: utf-8 -*-
 #
 #  This file is part of SKALE Admin
@@ -127,6 +129,7 @@ class SkaledActionManager(BaseSkaledActionManager):
             dutils=self.dutils,
             passive_node=is_passive(),
             historic_state=self.node_options.historic_state,
+            part_of_node=self.schain.part_of_node,
         )
         time.sleep(self.post_run_delay)
         return True
@@ -206,7 +209,11 @@ class SkaledActionManager(BaseSkaledActionManager):
             ima_data = ImaData(linked=self.econfig.ima_linked, chain_id=self.econfig.chain_id)
             logger.info('Running IMA container watchman')
             monitor_ima_container(
-                self.chain_name, ima_data, migration_ts=migration_ts, dutils=self.dutils
+                self.chain_name,
+                ima_data,
+                migration_ts=migration_ts,
+                dutils=self.dutils,
+                part_of_node=self.schain.part_of_node,
             )
         else:
             logger.info('ima_container - ok')

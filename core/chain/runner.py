@@ -1,3 +1,5 @@
+# ABOUTME: Builds Docker run arguments for skaled and IMA chain containers.
+# ABOUTME: Applies image, volume, command, and resource settings during startup.
 #   -*- coding: utf-8 -*-
 #
 #   This file is part of SKALE Admin
@@ -212,7 +214,7 @@ def run_skaled_container(
 ):
     cpu_limit = None
     mem_limit = None
-    if part_of_node and not passive_node and not is_fair():
+    if part_of_node is not None and not passive_node and not is_fair():
         schain_type = get_schain_type(part_of_node)
         cpu_limit = get_schain_limit(schain_type, MetricType.cpu_shares)
         mem_limit = get_schain_limit(schain_type, MetricType.mem)
@@ -259,7 +261,7 @@ def run_ima_container(
     cpu_limit = None
     mem_limit = None
 
-    if part_of_node:
+    if part_of_node is not None:
         schain_type = get_schain_type(part_of_node)
         cpu_limit = get_ima_limit(schain_type, MetricType.cpu_shares)
         mem_limit = get_ima_limit(schain_type, MetricType.mem)
