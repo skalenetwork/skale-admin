@@ -273,7 +273,6 @@ def normalize_bls_public_key(public_key) -> str:
 
 def generate_bls_keys(dkg_client):
     schain_name = dkg_client.chain_name
-    ensure_schain_exists(dkg_client.skale, schain_name)
     try:
         if not dkg_client.is_bls_key_generated():
             encrypted_bls_key = dkg_client.generate_bls_key()
@@ -287,7 +286,6 @@ def generate_bls_keys(dkg_client):
     except Exception as err:
         raise DKGKeyGenerationError(err)
 
-    ensure_schain_exists(dkg_client.skale, schain_name)
     local_public_key = normalize_bls_public_key(dkg_client.public_key)
     if local_public_key != bls_public_keys[dkg_client.node_id_dkg]:
         raise DKGKeyGenerationError(
