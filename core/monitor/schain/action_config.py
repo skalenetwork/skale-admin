@@ -37,6 +37,7 @@ from core.dkg.schain import (
     run_dkg,
     save_dkg_results,
 )
+from core.dkg.schain.validation import ensure_schain_exists
 from core.monitor.action_base import BaseActionManager
 from core.node import NodeWithChangeIp, calc_reload_ts, get_node_index_in_group
 from core.node_config import NodeConfig
@@ -98,6 +99,7 @@ class ConfigActionManager(BaseActionManager):
         initial_status = self.checks.dkg.status
         with self.statsd_client.timer(f'admin.action.dkg.{no_hyphens(self.name)}'):
             if not initial_status:
+                ensure_schain_exists(self.skale, self.name)
                 logger.info('Initializing dkg client')
                 dkg_client = get_dkg_client(
                     skale=self.skale,
@@ -113,8 +115,10 @@ class ConfigActionManager(BaseActionManager):
                     schain_name=self.name,
                     rotation_id=self.rotation_id,
                 )
+                ensure_schain_exists(self.skale, self.name)
                 logger.info('DKG finished with %s', dkg_result)
                 if dkg_result.status.is_done():
+                    ensure_schain_exists(self.skale, self.name)
                     save_dkg_results(
                         dkg_result.keys_data,
                         get_secret_key_share_filepath(self.name, self.rotation_id),

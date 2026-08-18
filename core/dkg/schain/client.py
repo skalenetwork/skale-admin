@@ -28,6 +28,7 @@ from skale.transactions.result import TransactionFailedError
 from core.dkg.client import BaseDKGClient
 from core.dkg.schain.broadcast_filter import SchainFilter
 from core.dkg.schain.structures import ComplaintReason
+from core.dkg.schain.validation import ensure_schain_exists, require_schain_exists
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
     DkgTransactionError,
@@ -118,6 +119,17 @@ class SchainDKGClient(BaseDKGClient):
                 e,
             )
 
+    @require_schain_exists
+    def _send_complaint_transaction(self, to_node: int, reason: ComplaintReason):
+        if reason == ComplaintReason.BAD_DATA:
+            return self.skale.dkg.complaint_bad_data(
+                self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]
+            )
+        return self.skale.dkg.complaint(
+            self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]
+        )
+
+    @require_schain_exists
     def send_complaint(self, to_node: int, reason: ComplaintReason):
         logger.info(
             f'sChain: {self.chain_name}. '
@@ -147,14 +159,7 @@ class SchainDKGClient(BaseDKGClient):
         }
 
         try:
-            if reason == ComplaintReason.BAD_DATA:
-                tx_res = self.skale.dkg.complaint_bad_data(
-                    self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]
-                )
-            else:
-                tx_res = self.skale.dkg.complaint(
-                    self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]
-                )
+            tx_res = self._send_complaint_transaction(to_node, reason)
             if self.check_complaint_logs(tx_res.receipt['logs'][0]):
                 logger.info(
                     f'sChain: {self.chain_name}. '
@@ -173,6 +178,7 @@ class SchainDKGClient(BaseDKGClient):
             raise DkgTransactionError(e)
 
     @sgx_unreachable_retry
+    @require_schain_exists
     def get_complaint_response(self, to_node_index):
         response = self.sgx.complaint_response(
             self.poly_name, self.node_ids_contract[to_node_index]
@@ -185,6 +191,23 @@ class SchainDKGClient(BaseDKGClient):
         share = G2Point((share[0], share[1]), (share[2], share[3]))
         return share, dh_key, verification_vector_mult
 
+    @require_schain_exists
+    def _send_pre_response_transaction(
+        self, incoming_verification_vector, verification_vector_mult, secret_key_contribution
+    ):
+        self.skale.dkg.pre_response(
+            self.group_index,
+            self.node_id_contract,
+            incoming_verification_vector,
+            verification_vector_mult,
+            secret_key_contribution,
+        )
+
+    @require_schain_exists
+    def _send_response_transaction(self, dh_key, share):
+        self.skale.dkg.response(self.group_index, self.node_id_contract, dh_key, share)
+
+    @require_schain_exists
     def response(self, to_node_index):
         is_pre_response_possible = self.skale.dkg.is_pre_response_possible(
             self.group_index, self.node_id_contract, self.skale.wallet.address
@@ -199,9 +222,7 @@ class SchainDKGClient(BaseDKGClient):
         share, dh_key, verification_vector_mult = self.get_complaint_response(to_node_index)
 
         try:
-            self.skale.dkg.pre_response(
-                self.group_index,
-                self.node_id_contract,
+            self._send_pre_response_transaction(
                 convert_g2_points_to_array(self.incoming_verification_vector[self.node_id_dkg]),
                 convert_g2_points_to_array(verification_vector_mult),
                 convert_str_to_key_share(self.sent_secret_key_contribution, self.n),
@@ -218,7 +239,7 @@ class SchainDKGClient(BaseDKGClient):
                 )
                 return
 
-            self.skale.dkg.response(self.group_index, self.node_id_contract, int(dh_key, 16), share)
+            self._send_response_transaction(int(dh_key, 16), share)
             self.last_completed_step = DKGStep.RESPONSE
             logger.info(f'sChain: {self.chain_name}. {self.node_id_dkg} node sent a response')
         except TransactionFailedError as e:
@@ -237,10 +258,8 @@ class SchainDKGClient(BaseDKGClient):
     def get_broadcast_filter(self):
         return self.broadcast_filter
 
-    def _send_broadcast_transaction(self):
-        verification_vector = self.verification_vector()
-        secret_key_contribution = self.secret_key_contribution()
-
+    @require_schain_exists
+    def _broadcast_transaction(self, verification_vector, secret_key_contribution):
         self.skale.dkg.broadcast(
             self.group_index,
             self.node_id_contract,
@@ -249,6 +268,12 @@ class SchainDKGClient(BaseDKGClient):
             self.rotation_id,
         )
 
+    def _send_broadcast_transaction(self):
+        verification_vector = self.verification_vector()
+        secret_key_contribution = self.secret_key_contribution()
+        self._broadcast_transaction(verification_vector, secret_key_contribution)
+
+    @require_schain_exists
     def _send_alright_transaction(self):
         logger.info(f'sChain {self.chain_name} sending alright transaction')
         self.skale.dkg.alright(
@@ -260,6 +285,7 @@ class SchainDKGClient(BaseDKGClient):
         raw_common_public_key = self.skale.key_storage.get_common_public_key(self.group_index)
         return [elem for coord in raw_common_public_key for elem in coord]
 
+    @require_schain_exists
     def is_broadcast_possible(self) -> bool:
         is_broadcast_possible = self.skale.dkg.contract.functions.isBroadcastPossible(
             self.group_index, self.node_id_contract
@@ -273,6 +299,7 @@ class SchainDKGClient(BaseDKGClient):
             return False
         return True
 
+    @require_schain_exists
     def is_alright_possible(self) -> bool:
         is_alright_possible = self.skale.dkg.is_alright_possible(
             self.group_index, self.node_id_contract, self.skale.wallet.address
@@ -304,6 +331,7 @@ class SchainDKGClient(BaseDKGClient):
         self.public_key = self.sgx.get_bls_public_key(self.bls_name)
         return bls_private_key
 
+    @require_schain_exists
     def fetch_all_broadcasted_data(self):
         dkg_filter = self.get_broadcast_filter()
         events = dkg_filter.get_events()
@@ -315,7 +343,9 @@ class SchainDKGClient(BaseDKGClient):
             logger.info(
                 f'sChain: {self.chain_name}. Received by {self.node_id_dkg} from {from_node}'
             )
+        ensure_schain_exists(self.skale, self.chain_name)
 
+    @require_schain_exists
     def broadcast(self):
         poly_success = self.generate_polynomial(self.poly_name)
         if poly_success == DkgPolyStatus.FAIL:

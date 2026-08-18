@@ -26,6 +26,7 @@ from skale.types.schain import SchainHash
 
 from core.dkg.schain.client import SchainDKGClient
 from core.dkg.schain.structures import ComplaintReason
+from core.dkg.schain.validation import ensure_schain_exists, require_schain_exists
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
     BROADCAST_DATA_SEARCH_SLEEP,
@@ -88,6 +89,7 @@ def init_dkg_client(node_id, schain_name, skale, sgx_eth_key_name, rotation_id):
     return dkg_client
 
 
+@require_schain_exists
 def receive_broadcast_data(dkg_client: SchainDKGClient) -> BroadcastResult:
     n = dkg_client.n
     schain_name = dkg_client.chain_name
@@ -107,6 +109,7 @@ def receive_broadcast_data(dkg_client: SchainDKGClient) -> BroadcastResult:
     logger.info('Fetching broadcasted data')
 
     while False in is_received:
+        ensure_schain_exists(skale, schain_name)
         time_gone = get_latest_block_timestamp(dkg_client.skale) - start_time
         time_left = max(dkg_client.dkg_timeout - time_gone, 0)
         logger.info(
@@ -115,6 +118,7 @@ def receive_broadcast_data(dkg_client: SchainDKGClient) -> BroadcastResult:
         is_received, is_correct, broadcasts_found = sync_broadcast_data(
             dkg_client, dkg_filter, is_received, is_correct, broadcasts_found
         )
+        ensure_schain_exists(skale, schain_name)
         logger.info(
             f'sChain {dkg_client.chain_name}: total received {len(broadcasts_found)} '
             f'broadcasts from nodes {broadcasts_found}'
@@ -123,6 +127,7 @@ def receive_broadcast_data(dkg_client: SchainDKGClient) -> BroadcastResult:
             break
 
         sleep(BROADCAST_DATA_SEARCH_SLEEP)
+    ensure_schain_exists(skale, schain_name)
     return BroadcastResult(correct=is_correct, received=is_received)
 
 
@@ -138,6 +143,7 @@ def broadcast_and_check_data(dkg_client):
     dkg_client.last_completed_step = DKGStep.BROADCAST_VERIFICATION
 
 
+@require_schain_exists
 def send_complaint(dkg_client: SchainDKGClient, index: int, reason: ComplaintReason):
     channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
     reason_to_missing = {
@@ -153,6 +159,7 @@ def send_complaint(dkg_client: SchainDKGClient, index: int, reason: ComplaintRea
         pass
 
 
+@require_schain_exists
 def report_bad_data(dkg_client, index):
     try:
         channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
@@ -171,6 +178,7 @@ def report_bad_data(dkg_client, index):
         pass
 
 
+@require_schain_exists
 def response(dkg_client, to_node_index):
     try:
         dkg_client.response(to_node_index)
@@ -191,6 +199,7 @@ def check_broadcast_result(dkg_client, broadcast_result):
 
 
 def check_failed_dkg(skale, schain_name):
+    ensure_schain_exists(skale, schain_name)
     group_index = skale.schains.name_to_group_id(schain_name)
     if not skale.dkg.is_channel_opened(group_index):
         if (
@@ -201,8 +210,10 @@ def check_failed_dkg(skale, schain_name):
     return True
 
 
+@require_schain_exists
 def check_response(dkg_client):
     complaint_data = dkg_client.skale.dkg.get_complaint_data(dkg_client.group_index)
+    ensure_schain_exists(dkg_client.skale, dkg_client.chain_name)
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
         logger.info(f'sChain: {dkg_client.chain_name}: Complaint received. Sending response ...')
         channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
@@ -213,12 +224,15 @@ def check_response(dkg_client):
         wait_for_fail(dkg_client.skale, dkg_client.chain_name, channel_started_time)
 
 
+@require_schain_exists
 def check_no_complaints(dkg_client):
     complaint_data = dkg_client.skale.dkg.get_complaint_data(dkg_client.group_index)
+    ensure_schain_exists(dkg_client.skale, dkg_client.chain_name)
     return complaint_data[0] == UINT_CONSTANT and complaint_data[1] == UINT_CONSTANT
 
 
 def wait_for_fail(skale, schain_name, channel_started_time, reason=''):
+    ensure_schain_exists(skale, schain_name)
     logger.info(f'sChain: {schain_name}. Will wait for FailedDkg event')
     start_time = get_latest_block_timestamp(skale)
     dkg_timeout = skale.constants_holder.get_dkg_timeout()
@@ -235,6 +249,7 @@ def wait_for_fail(skale, schain_name, channel_started_time, reason=''):
         if channel_started_time != skale.dkg.get_channel_started_time(group_index):
             raise DkgFailedError(f'sChain: {schain_name}. Dkg failed due to event FailedDKG')
         sleep(10)
+    ensure_schain_exists(skale, schain_name)
 
 
 def get_latest_block_timestamp(skale):
@@ -258,6 +273,7 @@ def normalize_bls_public_key(public_key) -> str:
 
 def generate_bls_keys(dkg_client):
     schain_name = dkg_client.chain_name
+    ensure_schain_exists(dkg_client.skale, schain_name)
     try:
         if not dkg_client.is_bls_key_generated():
             encrypted_bls_key = dkg_client.generate_bls_key()
@@ -271,6 +287,7 @@ def generate_bls_keys(dkg_client):
     except Exception as err:
         raise DKGKeyGenerationError(err)
 
+    ensure_schain_exists(dkg_client.skale, schain_name)
     local_public_key = normalize_bls_public_key(dkg_client.public_key)
     if local_public_key != bls_public_keys[dkg_client.node_id_dkg]:
         raise DKGKeyGenerationError(

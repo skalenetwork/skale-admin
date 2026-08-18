@@ -23,6 +23,7 @@ from eth_utils.hexadecimal import remove_0x_prefix
 from web3.exceptions import TransactionNotFound, Web3Exception
 
 from core.dkg.broadcast_filter import BaseFilter, DKGEvent
+from core.dkg.schain.validation import ensure_schain_exists, require_schain_exists
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)
 class SchainFilter(BaseFilter):
     def __init__(self, skale, schain_name, n):
         self.skale = skale
+        self.chain_name = schain_name
         self.group_index = skale.web3.keccak(text=schain_name)
         self.group_index_str = remove_0x_prefix(self.skale.web3.to_hex(self.group_index))
         self.first_unseen_block = -1
@@ -79,6 +81,7 @@ class SchainFilter(BaseFilter):
             **{'nodeIndex': node_index, 'secretKeyContribution': skc, 'verificationVector': vv}
         )
 
+    @require_schain_exists
     def get_events(self, from_channel_started_block=False):
         events = []
         try:
@@ -94,6 +97,7 @@ class SchainFilter(BaseFilter):
                 f'from {start_block} block to {current_block} block'
             )
             for block_number in range(start_block, current_block + 1):
+                ensure_schain_exists(self.skale, self.chain_name)
                 block = self.skale.web3.eth.get_block(block_number, full_transactions=True)
                 txns = block['transactions']
                 for tx in txns:
@@ -117,6 +121,7 @@ class SchainFilter(BaseFilter):
                     except TransactionNotFound:
                         pass
                 self.first_unseen_block = block_number + 1
+            ensure_schain_exists(self.skale, self.chain_name)
             return events
         except (ValueError, Web3Exception) as e:
             logger.info(
