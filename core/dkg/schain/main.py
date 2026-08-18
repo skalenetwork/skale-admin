@@ -39,7 +39,7 @@ from core.dkg.schain.utils import (
 )
 from core.dkg.schain.validation import ensure_schain_exists
 from core.dkg.structures import DKGResult, DKGStatus, DKGStep
-from core.dkg.utils import DKGKeyGenerationError, DkgError
+from core.dkg.utils import DkgError, DKGKeyGenerationError
 
 logger = logging.getLogger(__name__)
 
