@@ -43,6 +43,10 @@ class DkgTransactionError(DkgError):
     pass
 
 
+class SchainNotFoundError(DkgError):
+    pass
+
+
 class DkgVerificationError(DkgError):
     pass
 

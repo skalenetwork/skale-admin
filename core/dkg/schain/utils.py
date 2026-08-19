@@ -26,6 +26,7 @@ from skale.types.schain import SchainHash
 
 from core.dkg.schain.client import SchainDKGClient
 from core.dkg.schain.structures import ComplaintReason
+from core.dkg.schain.validation import ensure_schain_exists, require_schain_exists
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
     BROADCAST_DATA_SEARCH_SLEEP,
@@ -107,6 +108,7 @@ def receive_broadcast_data(dkg_client: SchainDKGClient) -> BroadcastResult:
     logger.info('Fetching broadcasted data')
 
     while False in is_received:
+        ensure_schain_exists(skale, schain_name)
         time_gone = get_latest_block_timestamp(dkg_client.skale) - start_time
         time_left = max(dkg_client.dkg_timeout - time_gone, 0)
         logger.info(
@@ -138,6 +140,7 @@ def broadcast_and_check_data(dkg_client):
     dkg_client.last_completed_step = DKGStep.BROADCAST_VERIFICATION
 
 
+@require_schain_exists
 def send_complaint(dkg_client: SchainDKGClient, index: int, reason: ComplaintReason):
     channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
     reason_to_missing = {
@@ -153,6 +156,7 @@ def send_complaint(dkg_client: SchainDKGClient, index: int, reason: ComplaintRea
         pass
 
 
+@require_schain_exists
 def report_bad_data(dkg_client, index):
     try:
         channel_started_time = dkg_client.skale.dkg.get_channel_started_time(dkg_client.group_index)
@@ -171,6 +175,7 @@ def report_bad_data(dkg_client, index):
         pass
 
 
+@require_schain_exists
 def response(dkg_client, to_node_index):
     try:
         dkg_client.response(to_node_index)
@@ -191,6 +196,7 @@ def check_broadcast_result(dkg_client, broadcast_result):
 
 
 def check_failed_dkg(skale, schain_name):
+    ensure_schain_exists(skale, schain_name)
     group_index = skale.schains.name_to_group_id(schain_name)
     if not skale.dkg.is_channel_opened(group_index):
         if (
@@ -201,6 +207,7 @@ def check_failed_dkg(skale, schain_name):
     return True
 
 
+@require_schain_exists
 def check_response(dkg_client):
     complaint_data = dkg_client.skale.dkg.get_complaint_data(dkg_client.group_index)
     if complaint_data[0] != complaint_data[1] and complaint_data[1] == dkg_client.node_id_contract:
@@ -213,6 +220,7 @@ def check_response(dkg_client):
         wait_for_fail(dkg_client.skale, dkg_client.chain_name, channel_started_time)
 
 
+@require_schain_exists
 def check_no_complaints(dkg_client):
     complaint_data = dkg_client.skale.dkg.get_complaint_data(dkg_client.group_index)
     return complaint_data[0] == UINT_CONSTANT and complaint_data[1] == UINT_CONSTANT

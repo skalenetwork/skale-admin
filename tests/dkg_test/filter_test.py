@@ -4,13 +4,12 @@ import pytest
 
 from core.dkg.schain.broadcast_filter import SchainFilter
 
-SCHAIN_NAME = 'test'
 N = 16
 
 
 @pytest.fixture
-def filter_mock(skale):
-    filter = SchainFilter(skale, SCHAIN_NAME, N)
+def filter_mock(skale, schain_on_contracts):
+    filter = SchainFilter(skale, schain_on_contracts, N)
     filter.first_unseen_block = max(0, skale.web3.eth.get_block('latest')['number'] - 100)
     return filter
 
