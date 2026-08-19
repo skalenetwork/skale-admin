@@ -142,6 +142,17 @@ def init_skaled_status(schain_name: str) -> SkaledStatus:
     return SkaledStatus(status_filepath)
 
 
+def rm_skaled_status(schain_name: str) -> None:
+    """
+    Remove skaled.status file. It lives outside of the data volume,
+    so it outlives the container it describes and has to be dropped explicitly
+    """
+    status_filepath = skaled_status_filepath(schain_name)
+    if os.path.isfile(status_filepath):
+        logger.info('Removing skaled status file %s', status_filepath)
+        os.remove(status_filepath)
+
+
 def get_skaled_status(schain_name: str) -> Optional[SkaledStatus]:
     status_path = skaled_status_filepath(schain_name)
     if os.path.isfile(status_path):

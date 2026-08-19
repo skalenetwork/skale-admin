@@ -96,7 +96,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
         else:
             logger.info('Skaled start mode: regular')
 
-        monitor_skaled_container(
+        started = monitor_skaled_container(
             self.chain_name,
             chain_record=self.chain_record,
             skaled_status=self.skaled_status,
@@ -108,7 +108,7 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             historic_state=self.node_options.historic_state,
         )
         time.sleep(self.post_run_delay)
-        return True
+        return started
 
     @BaseActionManager.monitor_block
     def volume(self) -> bool:
