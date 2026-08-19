@@ -61,10 +61,6 @@ def monitor_skaled_container(
     historic_state: bool = False,
     part_of_node: Optional[int] = None,
 ) -> bool:
-    """
-    Returns True if skaled container is present after the run,
-    False if starting the container was skipped
-    """
     dutils = dutils or DockerUtils()
     logger.info(f'Monitoring skaled container for {chain_name}')
 
