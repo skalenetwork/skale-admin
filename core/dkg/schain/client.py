@@ -28,7 +28,7 @@ from skale.transactions.result import TransactionFailedError
 from core.dkg.client import BaseDKGClient
 from core.dkg.schain.broadcast_filter import SchainFilter
 from core.dkg.schain.structures import ComplaintReason
-from core.dkg.schain.validation import ensure_schain_exists, require_schain_exists
+from core.dkg.schain.validation import require_schain_exists
 from core.dkg.structures import DKGStep
 from core.dkg.utils import (
     DkgTransactionError,
@@ -129,7 +129,6 @@ class SchainDKGClient(BaseDKGClient):
             self.group_index, self.node_id_contract, self.node_ids_dkg[to_node]
         )
 
-    @require_schain_exists
     def send_complaint(self, to_node: int, reason: ComplaintReason):
         logger.info(
             f'sChain: {self.chain_name}. '
@@ -207,7 +206,6 @@ class SchainDKGClient(BaseDKGClient):
     def _send_response_transaction(self, dh_key, share):
         self.skale.dkg.response(self.group_index, self.node_id_contract, dh_key, share)
 
-    @require_schain_exists
     def response(self, to_node_index):
         is_pre_response_possible = self.skale.dkg.is_pre_response_possible(
             self.group_index, self.node_id_contract, self.skale.wallet.address
@@ -285,7 +283,6 @@ class SchainDKGClient(BaseDKGClient):
         raw_common_public_key = self.skale.key_storage.get_common_public_key(self.group_index)
         return [elem for coord in raw_common_public_key for elem in coord]
 
-    @require_schain_exists
     def is_broadcast_possible(self) -> bool:
         is_broadcast_possible = self.skale.dkg.contract.functions.isBroadcastPossible(
             self.group_index, self.node_id_contract
@@ -299,7 +296,6 @@ class SchainDKGClient(BaseDKGClient):
             return False
         return True
 
-    @require_schain_exists
     def is_alright_possible(self) -> bool:
         is_alright_possible = self.skale.dkg.is_alright_possible(
             self.group_index, self.node_id_contract, self.skale.wallet.address
@@ -343,7 +339,6 @@ class SchainDKGClient(BaseDKGClient):
             logger.info(
                 f'sChain: {self.chain_name}. Received by {self.node_id_dkg} from {from_node}'
             )
-        ensure_schain_exists(self.skale, self.chain_name)
 
     @require_schain_exists
     def broadcast(self):

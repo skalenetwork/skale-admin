@@ -132,9 +132,7 @@ def init_bls(dkg_client, rotation_id=0):
     if not check_no_complaints(dkg_client):
         check_response(dkg_client)
 
-        ensure_schain_exists(skale, schain_name)
         complaint_data = skale.dkg.get_complaint_data(dkg_client.group_index)
-        ensure_schain_exists(skale, schain_name)
         complainted_node_index = dkg_client.node_ids_contract[complaint_data[1]]
 
         wait_for_fail(skale, schain_name, channel_started_time, 'correct data')
@@ -165,7 +163,6 @@ def is_last_dkg_finished(skale: SkaleManager, schain_name: SchainName) -> bool:
 def run_dkg(skale, dkg_client, schain_name, rotation_id) -> DKGResult:
     keys_data, status = None, None
     try:
-        ensure_schain_exists(skale, schain_name)
         if is_last_dkg_finished(skale, schain_name):
             logger.info(f'Dkg for {schain_name} is completed. Fetching data')
             dkg_client.fetch_all_broadcasted_data()
@@ -187,7 +184,6 @@ def run_dkg(skale, dkg_client, schain_name, rotation_id) -> DKGResult:
         try:
             ensure_schain_exists(skale, schain_name)
             keys_data = generate_bls_keys(dkg_client)
-            ensure_schain_exists(skale, schain_name)
         except DKGKeyGenerationError as e:
             logger.info(f'sChain {schain_name} DKG failed during key generation, err {e}')
             status = DKGStatus.KEY_GENERATION_ERROR
