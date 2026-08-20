@@ -1,7 +1,7 @@
 [project]
 name = "skale-admin"
 version = "3.3.1"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 dependencies = [
     "peewee==3.19.0",
     "Flask==3.1.2",
@@ -31,6 +31,7 @@ dependencies = [
     "APScheduler==3.11.0",
     "pydantic-settings==2.12.0",
     "pyyaml==6.0.3",
+    "jsonschema==4.26.0",                   # required by the nftables bindings
     "setuptools==80.9.0",                   # required by predeployed packages
 ]
 
@@ -65,7 +66,7 @@ select = ["E", "W", "F", "I"]
 quote-style = "single"
 
 [tool.mypy]
-python_version = ">=3.13"
+python_version = ">=3.14"
 warn_unused_configs = true
 ignore_missing_imports = true
 # todo: uncomment when types are added to all modules
