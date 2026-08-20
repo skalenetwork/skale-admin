@@ -21,7 +21,6 @@ import glob
 import logging
 import os
 import shutil
-from multiprocessing import Process
 from pathlib import Path
 from typing import Optional
 
@@ -40,7 +39,7 @@ from core.manager_cache import ManagerCache
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig
-from core.schains.process import ProcessReport, terminate_process
+from core.schains.process import FORK_CONTEXT, ProcessReport, terminate_process
 from core.schains.types import ContainerType
 from tools.constants import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER
 from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
@@ -58,7 +57,9 @@ FAIR_NFT_CHAIN_NAMES = ['fair-network', 'fair-committee']
 
 
 def run_cleaner(skale: SkaleManager, node_config: NodeConfig, manager_cache: ManagerCache) -> None:
-    process = Process(name='cleaner', target=monitor, args=(skale, node_config, manager_cache))
+    process = FORK_CONTEXT.Process(
+        name='cleaner', target=monitor, args=(skale, node_config, manager_cache)
+    )
     process.start()
     logger.info('Cleaner process started')
     process.join(JOIN_TIMEOUT)

@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import multiprocessing
 import time
 
 from filelock import FileLock
@@ -191,11 +190,6 @@ def run_passive() -> None:
 
 
 def main() -> None:
-    # Monitor and cleaner processes receive Skale clients holding unpicklable
-    # web3 state and rely on inheriting module level locks, both of which only
-    # work when children are forked. Those locks pick a context as soon as they
-    # are imported, so the start method has to be forced.
-    multiprocessing.set_start_method('fork', force=True)
     internal_st = get_internal_settings()
     if internal_st.node_mode == 'passive':
         run_passive()
