@@ -75,11 +75,15 @@ class SnapshotSkaledMonitor(BaseSChainSkaledMonitor):
             self.am.firewall_rules()
         if not self.checks.volume:
             self.am.volume()
+        skaled_started = True
         if not self.checks.skaled_container:
-            self.am.skaled_container(download_snapshot=True)
+            skaled_started = self.am.skaled_container(download_snapshot=True, abort_on_exit=False)
         else:
             self.am.reset_restart_counter()
-        self.am.update_repair_ts(new_ts=int(time.time()))
+        if skaled_started:
+            self.am.update_repair_ts(new_ts=int(time.time()))
+        else:
+            logger.warning('Skaled was not started, keeping repair request')
 
 
 class RepairSkaledMonitor(BaseSChainSkaledMonitor):
@@ -95,15 +99,20 @@ class RepairSkaledMonitor(BaseSChainSkaledMonitor):
         )
         self.am.notify_repair_mode()
         self.am.cleanup_schain_docker_entity()
+        self.am.cleanup_skaled_state_files()
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
         if not self.checks.volume:
             self.am.volume()
+        skaled_started = True
         if not self.checks.skaled_container:
-            self.am.skaled_container(download_snapshot=True)
+            skaled_started = self.am.skaled_container(download_snapshot=True, abort_on_exit=False)
         else:
             self.am.reset_restart_counter()
-        self.am.update_repair_ts(new_ts=int(time.time()))
+        if skaled_started:
+            self.am.update_repair_ts(new_ts=int(time.time()))
+        else:
+            logger.warning('Skaled was not started, keeping repair request')
 
 
 class BackupSkaledMonitor(BaseSChainSkaledMonitor):
@@ -117,13 +126,17 @@ class BackupSkaledMonitor(BaseSChainSkaledMonitor):
             self.am.volume()
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
+        skaled_started = True
         if not self.checks.skaled_container:
-            self.am.skaled_container(download_snapshot=True)
+            skaled_started = self.am.skaled_container(download_snapshot=True, abort_on_exit=False)
         else:
             self.am.reset_restart_counter()
         if not self.checks.ima_container:
             self.am.ima_container()
-        self.am.disable_backup_run()
+        if skaled_started:
+            self.am.disable_backup_run()
+        else:
+            logger.warning('Skaled was not started, keeping backup mode')
 
 
 class RecreateSkaledMonitor(BaseSChainSkaledMonitor):
@@ -224,7 +237,11 @@ class NewNodeSkaledMonitor(BaseSChainSkaledMonitor):
         if not self.checks.firewall_rules:
             self.am.firewall_rules()
         if not self.checks.skaled_container:
-            self.am.skaled_container(download_snapshot=True, start_ts=self.am.upstream_finish_ts)
+            self.am.skaled_container(
+                download_snapshot=True,
+                start_ts=self.am.upstream_finish_ts,
+                abort_on_exit=False,
+            )
         else:
             self.am.reset_restart_counter()
         if not self.checks.ima_container:
