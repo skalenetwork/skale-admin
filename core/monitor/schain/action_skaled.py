@@ -116,7 +116,7 @@ class SkaledActionManager(BaseSkaledActionManager):
             start_ts,
         )
         snapshot_from = self.ncli_status.snapshot_from if self.ncli_status else None
-        monitor_skaled_container(
+        started = monitor_skaled_container(
             self.chain_name,
             chain_record=self.chain_record,
             skaled_status=self.skaled_status,
@@ -130,7 +130,7 @@ class SkaledActionManager(BaseSkaledActionManager):
             part_of_node=self.schain.part_of_node,
         )
         time.sleep(self.post_run_delay)
-        return True
+        return started
 
     @BaseActionManager.monitor_block
     def volume(self) -> bool:
