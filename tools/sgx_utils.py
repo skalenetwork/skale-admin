@@ -21,6 +21,8 @@ import functools
 import logging
 import time
 
+from eth_account import Account
+from eth_typing import Hash32
 from sgx import SgxClient
 from sgx.http import SgxUnreachableError
 from skale_core.settings import FairSettings, SkaleSettings, get_settings
@@ -32,6 +34,9 @@ logger = logging.getLogger(__name__)
 
 RETRY_ATTEMPTS = 14
 TIMEOUTS = [2**p for p in range(RETRY_ATTEMPTS)]
+
+# Constant 32 byte hash used to probe the sgx signing path
+SIGNING_CHECK_HASH = Hash32(bytes.fromhex('11' * 32))
 
 
 class EmptySgxUrlError(Exception):
@@ -72,3 +77,28 @@ def generate_sgx_key(config):
             )
         )
         config.sgx_key_name = key_info.name
+
+
+def get_sgx_key_address(sgx: SgxClient, key_name: str) -> str | None:
+    """Returns address of the node key or None if sgx server cannot read the key"""
+    try:
+        return sgx.get_account(key_name).address
+    except Exception as err:
+        logger.error(f'Cannot read sgx key {key_name}: {err}')
+        return None
+
+
+def check_sgx_signing(sgx: SgxClient, key_name: str, address: str) -> bool:
+    """Checks that node key signs a hash and the signature recovers to the key address"""
+    try:
+        signed_hash = sgx.sign_hash(SIGNING_CHECK_HASH, key_name, None)
+        signer = Account._recover_hash(
+            SIGNING_CHECK_HASH, vrs=(signed_hash.v, signed_hash.r, signed_hash.s)
+        )
+    except Exception as err:
+        logger.error(f'Cannot sign with sgx key {key_name}: {err}')
+        return False
+    if signer != address:
+        logger.error(f'Sgx key {key_name} signed as {signer}, expected {address}')
+        return False
+    return True
