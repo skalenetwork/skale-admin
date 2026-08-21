@@ -26,7 +26,12 @@ from skale_core.settings import ActiveSettings, BaseNodeSettings
 from core.node import get_btrfs_info, get_check_report, get_meta_info, get_node_hardware_info
 from tools.constants.web3 import UNTRUSTED_PROVIDERS
 from tools.helper import get_endpoint_call_speed
-from tools.sgx_utils import SGX_CERTIFICATES_FOLDER
+from tools.sgx_utils import (
+    SGX_CERTIFICATES_FOLDER,
+    SGX_CHECK_ERRORS,
+    check_sgx_signing,
+    get_sgx_key_address,
+)
 from web.helper import construct_ok_response, g_web3, get_api_url
 
 logger = logging.getLogger(__name__)
@@ -103,7 +108,7 @@ def sgx_info():
         if sgx.zmq.get_server_status() == 0:
             status_zmq = True
         version = sgx.zmq.get_server_version()
-    except Exception as err:
+    except SGX_CHECK_ERRORS as err:
         logger.error(f'Cannot make SGX ZMQ check {err}')
     sgx_https = SgxClient(str(st.sgx_url), SGX_CERTIFICATES_FOLDER)
     try:
@@ -111,14 +116,29 @@ def sgx_info():
             status_https = True
         if version is None:
             version = sgx_https.get_server_version()
-    except Exception as err:
+    except SGX_CHECK_ERRORS as err:
         logger.error(f'Cannot make SGX HTTPS check {err}')
+
+    key_name = g.config.sgx_key_name
+    status_key: bool | None = None
+    status_signing: bool | None = None
+    if key_name is None:
+        logger.warning('Sgx key name is not set, skipping sgx key checks')
+    elif not status_https:
+        logger.error('Sgx https endpoint is not available, skipping sgx key checks')
+        status_key, status_signing = False, False
+    else:
+        address = get_sgx_key_address(sgx_https, key_name)
+        status_key = address is not None
+        status_signing = status_key and check_sgx_signing(sgx_https, key_name, address)
 
     res = {
         'status_zmq': status_zmq,
         'status_https': status_https,
+        'status_key': status_key,
+        'status_signing': status_signing,
         'sgx_server_url': str(st.sgx_url),
-        'sgx_keyname': g.config.sgx_key_name,
+        'sgx_keyname': key_name,
         'sgx_wallet_version': version,
     }
     return construct_ok_response(data=res)

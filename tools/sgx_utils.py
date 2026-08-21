@@ -21,9 +21,14 @@ import functools
 import logging
 import time
 
+from eth_keys.datatypes import Signature
+from eth_keys.exceptions import BadSignature
+from eth_utils import ValidationError
 from sgx import SgxClient
 from sgx.http import SgxUnreachableError
+from sgx.utils import SgxError
 from skale_core.settings import FairSettings, SkaleSettings, get_settings
+from zmq.error import ZMQBaseError
 
 from tools.constants import SGX_CERTIFICATES_FOLDER
 from tools.str_formatters import arguments_list_string
@@ -32,6 +37,23 @@ logger = logging.getLogger(__name__)
 
 RETRY_ATTEMPTS = 14
 TIMEOUTS = [2**p for p in range(RETRY_ATTEMPTS)]
+
+# Constant 32 byte hash used to probe the sgx signing path
+SIGNING_CHECK_HASH = bytes.fromhex('11' * 32)
+
+# Offset added to the recovery id by eth_account when signing without a chain id
+SIGNATURE_V_OFFSET = 27
+
+SGX_CHECK_ERRORS = (
+    SgxError,
+    ZMQBaseError,
+    OSError,
+    ValueError,
+    KeyError,
+    TypeError,
+    AttributeError,
+)
+SGX_SIGNING_ERRORS = (*SGX_CHECK_ERRORS, BadSignature, ValidationError)
 
 
 class EmptySgxUrlError(Exception):
@@ -72,3 +94,28 @@ def generate_sgx_key(config):
             )
         )
         config.sgx_key_name = key_info.name
+
+
+def get_sgx_key_address(sgx: SgxClient, key_name: str) -> str | None:
+    try:
+        return sgx.get_account(key_name).address
+    except SGX_CHECK_ERRORS as err:
+        logger.error(f'Cannot read sgx key {key_name}: {err}')
+        return None
+
+
+def check_sgx_signing(sgx: SgxClient, key_name: str, address: str) -> bool:
+    try:
+        signed_hash = sgx.sign_hash(SIGNING_CHECK_HASH, key_name, None)
+        signature = Signature(
+            vrs=(signed_hash.v - SIGNATURE_V_OFFSET, signed_hash.r, signed_hash.s)
+        )
+        public_key = signature.recover_public_key_from_msg_hash(SIGNING_CHECK_HASH)
+        signer = public_key.to_checksum_address()
+    except SGX_SIGNING_ERRORS as err:
+        logger.error(f'Cannot sign with sgx key {key_name}: {err}')
+        return False
+    if signer != address:
+        logger.error(f'Sgx key {key_name} signed as {signer}, expected {address}')
+        return False
+    return True
