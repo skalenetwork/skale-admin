@@ -62,7 +62,6 @@ logger = logging.getLogger(__name__)
 ACTIVE_SLEEP_INTERVAL = 240
 PASSIVE_SLEEP_INTERVAL = 360
 WORKER_RESTART_SLEEP_INTERVAL = 2
-ERROR_SLEEP_INTERVAL = 1
 
 
 def init_db() -> None:
@@ -80,7 +79,10 @@ def monitor_active(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeCo
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {ACTIVE_SLEEP_INTERVAL}s after run_process_manager')
         time.sleep(ACTIVE_SLEEP_INTERVAL)
-        run_cleaner(skale, node_config, manager_cache)
+        try:
+            run_cleaner(skale, node_config, manager_cache)
+        except Exception:
+            logger.exception('Cleaner procedure failed!')
         logger.info(f'Sleeping for {ACTIVE_SLEEP_INTERVAL}s after run_cleaner')
         time.sleep(ACTIVE_SLEEP_INTERVAL)
 
@@ -167,14 +169,13 @@ def init_active() -> None:
 
 def run_active() -> None:
     logger.info('Starting active node worker')
-    try:
-        init_active()
-        while True:
+    while True:
+        try:
+            init_active()
             worker_active()
-            time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
-    except Exception:
-        logger.exception('Admin worker failed')
-        time.sleep(ERROR_SLEEP_INTERVAL)
+        except Exception:
+            logger.exception('Admin worker failed')
+        time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
 
 
 def run_passive() -> None:
