@@ -61,7 +61,6 @@ logger = logging.getLogger(__name__)
 
 ACTIVE_SLEEP_INTERVAL = 240
 PASSIVE_SLEEP_INTERVAL = 360
-WORKER_RESTART_SLEEP_INTERVAL = 2
 
 
 def init_db() -> None:
@@ -79,10 +78,7 @@ def monitor_active(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeCo
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {ACTIVE_SLEEP_INTERVAL}s after run_process_manager')
         time.sleep(ACTIVE_SLEEP_INTERVAL)
-        try:
-            run_cleaner(skale, node_config, manager_cache)
-        except Exception:
-            logger.exception('Cleaner procedure failed!')
+        run_cleaner(skale, node_config, manager_cache)
         logger.info(f'Sleeping for {ACTIVE_SLEEP_INTERVAL}s after run_cleaner')
         time.sleep(ACTIVE_SLEEP_INTERVAL)
 
@@ -169,25 +165,23 @@ def init_active() -> None:
 
 def run_active() -> None:
     logger.info('Starting active node worker')
-    while True:
-        try:
-            init_active()
-            worker_active()
-        except Exception:
-            logger.exception('Admin worker failed')
-        time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
+    try:
+        init_active()
+        worker_active()
+    except Exception:
+        logger.exception('Admin worker failed')
+        exit(1)
 
 
 def run_passive() -> None:
     logger.info('Starting passive node worker')
     st = get_settings(SkalePassiveSettings)
-    while True:
-        try:
-            init_db()
-            worker_passive(st.schain_name)
-        except Exception:
-            logger.exception('Sync node worker failed')
-        time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
+    try:
+        init_db()
+        worker_passive(st.schain_name)
+    except Exception:
+        logger.exception('Sync node worker failed')
+        exit(1)
 
 
 def main() -> None:
