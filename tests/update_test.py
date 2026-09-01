@@ -13,6 +13,7 @@ def test_update_node_config_file(skale):
     config.id = 0
     config.name = None
     config.ip = None
+    config.node_base_port = None
 
     assert config.id == 0
     assert config.name is None
