@@ -143,7 +143,7 @@ class Node:
 
         self.config.name = name
         self.config.ip = ip
-        self.config.schain_base_port = int(port)
+        self.config.node_base_port = int(port)
 
         update_monitoring_services(public_ip, self.config.id, self.skale.manager.address)
         return self._ok(data=self.config.all())

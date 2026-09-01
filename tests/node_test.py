@@ -77,7 +77,9 @@ def test_register_info(unregistered_node: Node):
     # Register new node and check that it successfully created on contracts
     with mock.patch('core.node.update_monitoring_services'):
         res = unregistered_node.register(ip, public_ip, port, name, domain_name=DEFAULT_DOMAIN_NAME)
-        assert unregistered_node.config.schain_base_port == int(port)
+        # schain_base_port keeps its passive-mode meaning and stays unset
+        assert unregistered_node.config.schain_base_port == -1
+        assert unregistered_node.config.node_base_port == int(port)
     assert res['status'] == 'ok'
     res_data = res.get('data')
 

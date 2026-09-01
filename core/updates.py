@@ -37,15 +37,18 @@ def update_node_config_file(skale: SkaleManager, node_config: NodeConfig) -> Non
 
     - Ensure node config name field
     - Ensure node config ip field
+    - Ensure node config base port field
     """
     if node_config.id is not None:
         node_info = skale.nodes.get(node_config.id)
-        ip_bytes, name = node_info['ip'], node_info['name']
+        ip_bytes, name, port = node_info['ip'], node_info['name'], node_info['port']
         ip = ip_from_bytes(ip_bytes)
         if node_config.ip != ip:
             node_config.ip = ip
         if node_config.name != name:
             node_config.name = name
+        if node_config.node_base_port != port:
+            node_config.node_base_port = port
 
 
 def update_unsafe_for_schains(skale: SkaleManager, dutils: DockerUtils) -> list[str]:

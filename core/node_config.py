@@ -71,3 +71,11 @@ class NodeConfig(JsonObject):
     @schain_base_port.setter
     def schain_base_port(self, schain_port: Port) -> None:
         return self._set('schain_base_port', schain_port)
+
+    @property
+    def node_base_port(self) -> Port:
+        return self._get('node_base_port') or Port(-1)
+
+    @node_base_port.setter
+    def node_base_port(self, port: Port) -> None:
+        return self._set('node_base_port', port)
