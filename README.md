@@ -10,52 +10,6 @@ This repo contains source code for 3 core SKALE Node containers:
 * `skale_api` - webserver that provides node API
 * `celery` - distributed task queue
 
-## Local CLI authentication
-
-State-changing API routes and `GET /api/v1/node/signature` require an
-`Authorization: Bearer <token>` header. This applies to the SKALE and FAIR API
-applications, including passive FAIR setup. Read-only routes remain accessible
-without credentials, including the two FAIR staking query routes that use POST.
-
-Node CLI generates a random per-node credential before starting services. It is
-stored on the host at `~<node-user>/.skale/auth/admin-api.token` and read by
-the API at `${SKALE_VOLUME_PATH}/auth/admin-api.token` (normally
-`/skale_vol/auth/admin-api.token`). The API's existing `.skale` mount exposes this
-folder. The CLI gives the `auth` directory mode `0700` and the token mode `0600`,
-both owned by the configured node user. The API container must run as root or the
-file owner's UID.
-
-Containers mounting only `node_data` do not receive the credential. Some node
-services mount all of `.skale`, which also exposes `auth`; to isolate the token
-from these services, replace their broad mounts with the specific directories
-they need. Moving the token alone does not restrict those containers.
-
-Authentication runs before node initialization waits, database connections, and
-wallet setup. Missing or invalid client credentials return HTTP 401. A missing,
-unreadable, malformed, symlinked, or incorrectly permissioned server token returns
-HTTP 503 for protected routes; it never disables authentication. Errors retain
-the normal `status`/`payload` JSON format.
-
-Upgrade Node CLI first, then use it to update/start the node services. Existing
-tokens in `auth` are preserved. CLI backups exclude the entire `auth` directory,
-including temporary token files, so restoring onto a fresh host generates a new
-credential. Both sides read the file for each request,
-allowing an operator to rotate it by atomically replacing it with a newly
-generated 64-character lowercase hex token, preserving ownership and mode 0600.
-
-If using the earlier `node_data/admin-api.token` layout, the updated CLI creates
-a fresh token in `auth` before starting services. The API does not accept the old
-token from `node_data` or fall back to that location.
-
-Keep the API bound to loopback (`127.0.0.1:3007`). This authenticates the local
-operator's credential, not the CLI executable: root, the node user, and privileged
-containers able to read the shared volume can also use it with other clients.
-
-To protect another endpoint, place `@cli_only` from `web.auth` immediately below
-its route decorator and above resource initialization decorators such as
-`@g_skale`. Both API entry points must register `init_cli_auth(app)` before their
-resource initialization hooks.
-
 ## Development
 
 ### Dependencies
