@@ -31,8 +31,8 @@ from core.node import get_btrfs_info, get_check_report, get_meta_info, get_node_
 from tools.constants.web3 import UNTRUSTED_PROVIDERS
 from tools.helper import get_endpoint_call_speed
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER
-from web.helper import construct_err_response, construct_ok_response, g_web3, get_api_url
 from web.auth import cli_only
+from web.helper import construct_err_response, construct_ok_response, g_web3, get_api_url
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'info'
