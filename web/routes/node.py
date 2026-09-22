@@ -28,6 +28,7 @@ from core.node import Node, NodeStatus, check_validator_nodes
 from core.updates import update_unsafe_for_schains
 from tools.custom_thread import CustomThread
 from tools.notifications.messages import send_message, tg_notifications_enabled
+from web.auth import cli_only
 from web.helper import construct_err_response, construct_ok_response, g_skale, get_api_url
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ def info():
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'register'), methods=['POST'])
+@cli_only
 @g_skale
 def register():
     logger.debug(request)
@@ -76,6 +78,7 @@ def register():
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'signature'), methods=['GET'])
+@cli_only
 @g_skale
 def signature():
     logger.debug(request)
@@ -85,6 +88,7 @@ def signature():
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-on'), methods=['POST'])
+@cli_only
 @g_skale
 def set_node_maintenance_on():
     logger.debug(request)
@@ -96,6 +100,7 @@ def set_node_maintenance_on():
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'maintenance-off'), methods=['POST'])
+@cli_only
 @g_skale
 def set_node_maintenance_off():
     logger.debug(request)
@@ -107,6 +112,7 @@ def set_node_maintenance_off():
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'send-tg-notification'), methods=['POST'])
+@cli_only
 def send_tg_notification():
     logger.debug(request)
     message = request.json.get('message')
@@ -123,6 +129,7 @@ def send_tg_notification():
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/start'), methods=['POST'])
+@cli_only
 @g_skale
 def exit_start():
     node = Node(g.skale, g.config)
@@ -142,6 +149,7 @@ def exit_status():
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'set-domain-name'), methods=['POST'])
+@cli_only
 @g_skale
 def set_domain_name():
     logger.debug(request)

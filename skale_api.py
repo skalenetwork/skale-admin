@@ -33,6 +33,7 @@ from tools.docker_utils import DockerUtils
 from tools.helper import wait_until_admin_inited
 from tools.logger import init_api_logger
 from tools.resources import get_database
+from web.auth import init_cli_auth
 from web.helper import construct_err_response
 from web.routes.health import health_bp
 from web.routes.info import info_bp
@@ -48,6 +49,7 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+init_cli_auth(app)
 app.register_blueprint(node_bp)
 app.register_blueprint(schains_bp)
 app.register_blueprint(wallet_bp)
@@ -71,9 +73,10 @@ def before_request():
 
 @app.teardown_request
 def teardown_request(response):
-    elapsed = int(time.time() - g.request_start_time)
-    logger.info(f'Request finished {g.request_id}, time elapsed: {elapsed}s')
-    if not g.db.is_closed():
+    if hasattr(g, 'request_start_time') and hasattr(g, 'request_id'):
+        elapsed = int(time.time() - g.request_start_time)
+        logger.info(f'Request finished {g.request_id}, time elapsed: {elapsed}s')
+    if hasattr(g, 'db') and not g.db.is_closed():
         g.db.close()
     return response
 
