@@ -27,7 +27,7 @@ dependencies = [
     "python-dateutil==2.8.2",
     "python-telegram-bot==22.5",
     "sh==2.2.2",
-    "skale.py==7.14.dev3",
+    "skale.py==7.14dev4",
     "APScheduler==3.11.0",
     "pydantic-settings==2.14.2",
     "pyyaml==6.0.3",
