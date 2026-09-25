@@ -1,5 +1,3 @@
-"""Authentication for endpoints reserved for the local node operator."""
-
 import os
 import re
 import secrets
@@ -17,7 +15,6 @@ F = TypeVar('F', bound=Callable)
 
 
 def cli_only(view: F) -> F:
-    """Mark a view for authentication before application resources are initialized."""
     view.cli_only = True  # type: ignore[attr-defined]
     return view
 
