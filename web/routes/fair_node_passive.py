@@ -24,6 +24,7 @@ from flask import Blueprint, abort, g, request
 from skale import FairManager
 
 from core.node_config import NodeConfig
+from web.auth import cli_only
 from web.helper import (
     construct_err_response,
     construct_ok_response,
@@ -52,6 +53,7 @@ def info():
 
 
 @fair_node_passive_bp.route(get_api_url(BLUEPRINT_NAME, 'setup'), methods=['POST'])
+@cli_only
 @g_fair_no_wallet
 def setup():
     logger.debug(request)

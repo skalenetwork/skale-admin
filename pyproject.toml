@@ -1,6 +1,6 @@
 [project]
 name = "skale-admin"
-version = "3.3.1"
+version = "3.3.2"
 requires-python = ">=3.14"
 dependencies = [
     "peewee==3.19.0",
@@ -27,9 +27,9 @@ dependencies = [
     "python-dateutil==2.8.2",
     "python-telegram-bot==22.5",
     "sh==2.2.2",
-    "skale.py==7.13.dev1",
+    "skale.py==7.14dev4",
     "APScheduler==3.11.0",
-    "pydantic-settings==2.12.0",
+    "pydantic-settings==2.14.2",
     "pyyaml==6.0.3",
     "jsonschema==4.26.0",                   # required by the nftables bindings
     "setuptools==80.9.0",                   # required by predeployed packages
