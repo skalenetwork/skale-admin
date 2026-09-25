@@ -27,6 +27,7 @@ from skale.transactions.exceptions import TransactionError
 from skale.utils.web3_utils import to_checksum_address
 
 from core.node_config import NodeConfig
+from web.auth import cli_only
 from web.helper import (
     construct_err_response,
     construct_key_error_response,
@@ -59,6 +60,7 @@ def _node_id_or_error(node_config: NodeConfig) -> tuple[int | None, Response | N
 
 
 @fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'add-receiver'), methods=['POST'])
+@cli_only
 @g_fair
 def add_receiver() -> Response:
     body, err = _get_body(['receiver'])
@@ -80,6 +82,7 @@ def add_receiver() -> Response:
 
 
 @fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'remove-receiver'), methods=['POST'])
+@cli_only
 @g_fair
 def remove_receiver() -> Response:
     body, err = _get_body(['receiver'])
@@ -100,6 +103,7 @@ def remove_receiver() -> Response:
 
 
 @fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'set-fee-rate'), methods=['POST'])
+@cli_only
 @g_fair
 def set_fee_rate() -> Response:
     body, err = _get_body(['feeRate'])
@@ -120,6 +124,7 @@ def set_fee_rate() -> Response:
 
 
 @fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'request-fees'), methods=['POST'])
+@cli_only
 @g_fair
 def request_fees() -> Response:
     body, err = _get_body()
@@ -146,6 +151,7 @@ def request_fees() -> Response:
 
 
 @fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'request-send-fees'), methods=['POST'])
+@cli_only
 @g_fair
 def request_send_fees() -> Response:
     body, err = _get_body(['to'])
@@ -173,6 +179,7 @@ def request_send_fees() -> Response:
 
 
 @fair_staking_bp.route(get_api_url(BLUEPRINT_NAME, 'claim-request'), methods=['POST'])
+@cli_only
 @g_fair
 def claim_request() -> Response:
     body, err = _get_body(['requestId'])
