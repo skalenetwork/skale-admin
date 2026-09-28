@@ -25,6 +25,7 @@ from skale import FairManager
 from skale.transactions.exceptions import TransactionError
 
 from core.node_config import NodeConfig
+from web.auth import cli_only
 from web.helper import construct_err_response, construct_ok_response, g_fair, get_api_url
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,7 @@ def info():
 
 
 @fair_node_bp.route(get_api_url(BLUEPRINT_NAME, 'register'), methods=['POST'])
+@cli_only
 @g_fair
 def register():
     logger.debug(request)
@@ -75,6 +77,7 @@ def register():
 
 
 @fair_node_bp.route(get_api_url(BLUEPRINT_NAME, 'set-domain-name'), methods=['POST'])
+@cli_only
 @g_fair
 def set_domain_name():
     logger.debug(request)
@@ -104,6 +107,7 @@ def set_domain_name():
 
 
 @fair_node_bp.route(get_api_url(BLUEPRINT_NAME, 'change-ip'), methods=['POST'])
+@cli_only
 @g_fair
 def change_ip():
     logger.debug(request)
@@ -138,6 +142,7 @@ def change_ip():
 
 
 @fair_node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit'), methods=['POST'])
+@cli_only
 @g_fair
 def exit():
     logger.debug(request)

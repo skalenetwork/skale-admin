@@ -23,6 +23,7 @@ from flask import Blueprint, g, request
 from skale.utils.account_tools import send_eth as send_eth_
 from skale.utils.web3_utils import to_checksum_address
 
+from web.auth import cli_only
 from web.helper import construct_err_response, construct_ok_response, g_fair, get_api_url
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ def info():
 
 
 @wallet_bp.route(get_api_url(BLUEPRINT_NAME, 'send-eth'), methods=['POST'])
+@cli_only
 @g_fair
 def send_eth():
     logger.debug(request)

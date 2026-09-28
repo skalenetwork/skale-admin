@@ -28,6 +28,7 @@ from OpenSSL import crypto
 from core.chain.ssl import is_ssl_folder_empty
 from core.nginx import reload_nginx
 from tools.constants import SSL_CERTIFICATES_FILEPATH
+from web.auth import cli_only
 from web.helper import construct_err_response, construct_ok_response, get_api_url
 from web.models.schain import set_schains_need_reload
 
@@ -94,6 +95,7 @@ def status():
 
 # TODO: remove in the next version
 @ssl_bp.route(get_api_url(BLUEPRINT_NAME, 'upload'), methods=['POST'])
+@cli_only
 def upload():
     request_json = json.loads(request.form['json'])
     force = request_json.get('force') is True
