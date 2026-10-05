@@ -18,16 +18,21 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from dataclasses import asdict
+from datetime import datetime
+from enum import Enum
 
 from flask import Blueprint, g, request
 from sgx import SgxClient
+from sgx.utils import SgxError
 from skale_core.settings import ActiveSettings, BaseNodeSettings
 
 from core.node import get_btrfs_info, get_check_report, get_meta_info, get_node_hardware_info
 from tools.constants.web3 import UNTRUSTED_PROVIDERS
 from tools.helper import get_endpoint_call_speed
 from tools.sgx_utils import SGX_CERTIFICATES_FOLDER
-from web.helper import construct_ok_response, g_web3, get_api_url
+from web.auth import cli_only
+from web.helper import construct_err_response, construct_ok_response, g_web3, get_api_url
 
 logger = logging.getLogger(__name__)
 BLUEPRINT_NAME = 'info'
@@ -124,6 +129,37 @@ def sgx_info():
     return construct_ok_response(data=res)
 
 
+@info_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx-certificates'), methods=['GET'])
+@cli_only
+def sgx_certificates():
+    logger.debug(request)
+    expected_number = request.args.get('expected_number', type=int)
+    if expected_number is None and 'expected_number' in request.args:
+        return construct_err_response('Invalid expected_number')
+    st: ActiveSettings = g.st
+    try:
+        sgx = SgxClient(str(st.sgx_url), SGX_CERTIFICATES_FOLDER, allow_registration=False)
+        check = sgx.check_local_certificate(expected_number)
+    except SgxError as err:
+        logger.error(f'Cannot check SGX certificate {err}')
+        return construct_err_response(str(err))
+    return construct_ok_response(data=asdict(check, dict_factory=_json_dict))
+
+
+@info_bp.route(get_api_url(BLUEPRINT_NAME, 'sgx-options'), methods=['GET'])
+@cli_only
+def sgx_options():
+    logger.debug(request)
+    st: ActiveSettings = g.st
+    try:
+        sgx = SgxClient(str(st.sgx_url), SGX_CERTIFICATES_FOLDER, allow_registration=False)
+        options = sgx.get_server_options()
+    except SgxError as err:
+        logger.error(f'Cannot get SGX server options {err}')
+        return construct_err_response(str(err))
+    return construct_ok_response(data=asdict(options, dict_factory=_json_dict))
+
+
 @info_bp.route(get_api_url(BLUEPRINT_NAME, 'check-report'), methods=['GET'])
 def check_report():
     logger.debug(request)
@@ -140,3 +176,17 @@ def containers():
         all=all, name_filter=name_filter, format=True
     )
     return construct_ok_response(containers_list)
+
+
+def _json_dict(items):
+    return {key: _json_value(value) for key, value in items}
+
+
+def _json_value(value):
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, bytes):
+        return value.hex()
+    if isinstance(value, datetime):
+        return value.isoformat()
+    return value

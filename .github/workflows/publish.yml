@@ -45,6 +45,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
           name: ${{ env.VERSION }}
           draft: false
           prerelease: ${{ github.base_ref != 'stable' }}
