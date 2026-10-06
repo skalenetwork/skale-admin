@@ -41,6 +41,7 @@ from core.monitor.action_base import (
 )
 from core.node_config import NodeConfig
 from core.types.chain import FairChainName
+from core.utils.fair import update_local_skaled_endpoint
 from tools.constants.containers import SKALED_RESTART_DELAY_SECONDS
 from tools.constants.fair import SKALED_RESTART_JOB_NAME
 from tools.docker_utils import DockerUtils
@@ -107,6 +108,8 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             passive_node=passive_node,
             historic_state=self.node_options.historic_state,
         )
+        # the http port depends on the port mode this container was started with
+        update_local_skaled_endpoint()
         time.sleep(self.post_run_delay)
         return started
 

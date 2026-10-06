@@ -31,6 +31,26 @@ envs:
 
     skaled_cmd: ["-v 2", "--aa no"]
 
+    nginx:
+      rpc_proxy: false
+      njs: false
+      exempt_hosts: [api.skalenodes.com, testnet-api.skalenodes.com]
+      limits:
+        per_client_rps: 1000
+        burst: 200
+        per_client_sustained_rps: 600
+        sustained_burst: 24000
+        global_rps: 5000
+        global_burst: 2000
+        conn_per_client: 64
+        ws_handshake_burst: 50
+        ws_conn_per_client: 32
+        ws_conn_total: 20000
+        max_batch: 128
+        heavy_rps: 100
+        ban_short_s: 10
+        ban_long_s: 30
+
     node:
       bindIP: "0.0.0.0"
       logLevel: "info"
@@ -78,6 +98,26 @@ envs:
       maxConsensusStorageBytes: 79919972352
 
     skaled_cmd: ["-v 2", "--aa no"]
+
+    nginx:
+      rpc_proxy: false
+      njs: false
+      exempt_hosts: [api.skalenodes.com, testnet-api.skalenodes.com]
+      limits:
+        per_client_rps: 1000
+        burst: 200
+        per_client_sustained_rps: 600
+        sustained_burst: 24000
+        global_rps: 5000
+        global_burst: 2000
+        conn_per_client: 64
+        ws_handshake_burst: 50
+        ws_conn_per_client: 32
+        ws_conn_total: 20000
+        max_batch: 128
+        heavy_rps: 100
+        ban_short_s: 10
+        ban_long_s: 30
 
     node:
       bindIP: "0.0.0.0"
@@ -127,6 +167,26 @@ envs:
 
     skaled_cmd: ["-v 2", "--aa no"]
 
+    nginx:
+      rpc_proxy: false
+      njs: false
+      exempt_hosts: [api.skalenodes.com, testnet-api.skalenodes.com]
+      limits:
+        per_client_rps: 1000
+        burst: 200
+        per_client_sustained_rps: 600
+        sustained_burst: 24000
+        global_rps: 5000
+        global_burst: 2000
+        conn_per_client: 64
+        ws_handshake_burst: 50
+        ws_conn_per_client: 32
+        ws_conn_total: 20000
+        max_batch: 128
+        heavy_rps: 100
+        ban_short_s: 10
+        ban_long_s: 30
+
     node:
       bindIP: "0.0.0.0"
       logLevel: "info"
@@ -175,6 +235,26 @@ envs:
 
     skaled_cmd:
       ["-v 3", "--web3-trace", "--enable-debug-behavior-apis", "--aa no"]
+
+    nginx:
+      rpc_proxy: false
+      njs: false
+      exempt_hosts: [api.skalenodes.com, testnet-api.skalenodes.com]
+      limits:
+        per_client_rps: 1000
+        burst: 200
+        per_client_sustained_rps: 600
+        sustained_burst: 24000
+        global_rps: 5000
+        global_burst: 2000
+        conn_per_client: 64
+        ws_handshake_burst: 50
+        ws_conn_per_client: 32
+        ws_conn_total: 20000
+        max_batch: 128
+        heavy_rps: 100
+        ban_short_s: 10
+        ban_long_s: 30
 
     node:
       bindIP: "0.0.0.0"

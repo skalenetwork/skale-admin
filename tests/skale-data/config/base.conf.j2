@@ -1,0 +1,82 @@
+# node base config, rendered by node-cli and skale-admin: fingerprint {{ fingerprint }}
+
+limit_req_zone $binary_remote_addr zone=one:10m rate=7r/s;
+
+# shared by the sChain RPC servers in chains/*.conf
+log_format rpc '$remote_addr $time_iso8601 $server_port $status $request_time $body_bytes_sent';
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 3009;
+
+    {% if ssl %}
+    listen 311 ssl;
+    ssl_certificate     /ssl/ssl_cert;
+    ssl_certificate_key /ssl/ssl_key;
+    {% endif %}
+
+    proxy_connect_timeout 3s;
+    proxy_read_timeout 35s;
+
+    error_log /var/log/nginx/error.log warn;
+    client_max_body_size 1k;
+
+    server_name localhost;
+    limit_req zone=one burst=10;
+
+    location / {
+        proxy_pass http://127.0.0.1:3010;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /nginx-status {
+        stub_status;
+        allow 127.0.0.1;
+        deny all;
+    }
+
+    # read after a reload: nginx answers it only once it runs this file
+    location = /.skale-proxy {
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+        default_type text/plain;
+        return 200 'base {{ fingerprint }}';
+    }
+}
+
+{% if skale_node %}
+server {
+    listen 80;
+
+    {% if ssl %}
+    listen 443 ssl;
+    ssl_certificate     /ssl/ssl_cert;
+    ssl_certificate_key /ssl/ssl_key;
+    {% endif %}
+
+    error_log /var/log/nginx/error.log warn;
+    client_max_body_size 20m;
+    server_name localhost;
+    limit_req zone=one burst=50;
+
+    location / {
+        root /filestorage;
+    }
+
+    # read after a reload: nginx answers it only once it runs this file
+    location = /.skale-proxy {
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+        default_type text/plain;
+        return 200 'base {{ fingerprint }}';
+    }
+}
+{% endif %}
+
+include /etc/nginx/conf.d/chains/*.conf;

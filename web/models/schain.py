@@ -81,6 +81,7 @@ class SChainRecord(BaseModel):
     snapshot_from = CharField(default='')
     restart_count = IntegerField(default=0)
     failed_rpc_count = IntegerField(default=0)
+    rpc_proxy_mode = BooleanField(default=False)
 
     ssl_change_date = DateTimeField(default=datetime.now())
 
@@ -138,6 +139,7 @@ class SChainRecord(BaseModel):
             'snapshot_from': record.snapshot_from,
             'restart_count': record.restart_count,
             'failed_rpc_count': record.failed_rpc_count,
+            'rpc_proxy_mode': record.rpc_proxy_mode,
         }
 
     def dkg_started(self):
@@ -219,6 +221,11 @@ class SChainRecord(BaseModel):
     def set_ssl_change_date(self, value: datetime) -> None:
         logger.info(f'Changing ssl_change_date for {self.name} to {value}')
         self.ssl_change_date = value
+        self.save()
+
+    def set_rpc_proxy_mode(self, value: bool) -> None:
+        logger.info(f'Changing rpc_proxy_mode for {self.name} to {value}')
+        self.rpc_proxy_mode = value
         self.save()
 
     def set_force_skaled_start(self, value: bool) -> None:

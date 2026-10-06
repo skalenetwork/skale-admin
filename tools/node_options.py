@@ -40,3 +40,8 @@ class NodeOptions(JsonObject):
     @property
     def historic_state(self) -> bool:
         return bool(self._get('historic_state'))
+
+    @property
+    def rpc_proxy(self) -> bool | None:
+        """node-cli override of the static params rpc_proxy flag, None follows the flag"""
+        return self._get('rpc_proxy')

@@ -28,6 +28,8 @@ from skale.dataclasses.skaled_ports import SkaledPorts  # noqa
 from skale.schain_config import PORTS_PER_SCHAIN  # noqa
 
 LOOPBACK_INTERFACE = 'lo'
+# libconsensus port_type::BITE_SERVER of FAIR skaled, skale.py's SkaledPorts lacks it
+BITE_SERVER_PORT_OFFSET = 11
 
 
 class Action(IntEnum):

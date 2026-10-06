@@ -397,6 +397,34 @@ def test_get_skaled_monitor_recreate(
         assert mon == RecreateSkaledMonitor
 
 
+def test_get_skaled_monitor_rpc_proxy_switch(
+    skaled_am, skaled_checks, schain_db, skaled_status, ncli_status
+):
+    schain_record = SChainRecord.get_by_name(schain_db)
+    status = skaled_checks.get_all()
+    status['skaled_container'] = True
+    mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
+    assert mon == RegularSkaledMonitor
+
+    with mock.patch('core.nginx.mode.is_rpc_proxy_enabled', return_value=True):
+        # nothing to take over the public ports, skaled stays where it is
+        with mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=False):
+            mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
+            assert mon == RegularSkaledMonitor
+        with mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=True):
+            mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
+            assert mon == RecreateSkaledMonitor
+            # a stopped container is simply started on the new ports
+            status['skaled_container'] = False
+            mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
+            assert mon == RegularSkaledMonitor
+
+    schain_record.set_rpc_proxy_mode(True)
+    status['skaled_container'] = True
+    mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
+    assert mon == RecreateSkaledMonitor
+
+
 def test_regular_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):
     mon = RegularSkaledMonitor(skaled_am, skaled_checks)
     mon.run()

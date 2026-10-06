@@ -23,7 +23,11 @@ from abc import abstractmethod
 from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Optional, TypeVar, cast
 
+from core.chain.ssl import is_ssl_on
+from core.config.endpoint import RPC_PROXY_PORT_SHIFT
+
 from ..base.types import (
+    BITE_SERVER_PORT_OFFSET,
     LOOPBACK_INTERFACE,
     PORTS_PER_SCHAIN,
     Action,
@@ -153,7 +157,7 @@ class FairController(IRuleController):
 
 class FairNetworkScopeRuleController(FairController):
     @property
-    def public_ports(self) -> Iterable[int]:
+    def rpc_ports(self) -> Iterable[int]:
         return (
             self.base_port + offset.value
             for offset in (
@@ -163,6 +167,21 @@ class FairNetworkScopeRuleController(FairController):
                 self.port_allocation.WSS_JSON,
             )
         )
+
+    @property
+    def closed_tls_ports(self) -> list[int]:
+        """Nothing serves the TLS ports without certificates, so they are shut until then"""
+        if is_ssl_on():
+            return []
+        return [
+            self.base_port + offset.value
+            for offset in (self.port_allocation.HTTPS_JSON, self.port_allocation.WSS_JSON)
+        ]
+
+    @property
+    def public_ports(self) -> Iterable[int]:
+        closed = self.closed_tls_ports
+        return (port for port in self.rpc_ports if port not in closed)
 
     @property
     def public_rules(self) -> Iterable[SChainRule]:
@@ -176,6 +195,11 @@ class FairNetworkScopeRuleController(FairController):
         )
 
     @property
+    def proxied_ports(self) -> Iterable[int]:
+        """skaled's own RPC listeners behind nginx, FAIR has no block-wide drop to hide them"""
+        return (port + RPC_PROXY_PORT_SHIFT for port in self.rpc_ports)
+
+    @property
     def drop_rules(self) -> Iterable[SChainRule]:
         return [
             SChainRule(
@@ -183,7 +207,7 @@ class FairNetworkScopeRuleController(FairController):
                 action=Action.DROP,
                 interface_exception=LOOPBACK_INTERFACE,
             )
-            for port in self.network_scope_ports
+            for port in (*self.network_scope_ports, *self.proxied_ports, *self.closed_tls_ports)
         ]
 
     @property
@@ -206,11 +230,13 @@ class FairNetworkScopeRuleController(FairController):
 class FairCommitteeScopeRuleController(FairController):
     @property
     def committee_scope_ports(self) -> Iterable[int]:
+        # the BITE server authenticates no caller, so only the committee may reach it
         return (
-            self.base_port + offset.value
+            self.base_port + offset
             for offset in (
-                self.port_allocation.PROPOSAL,
-                self.port_allocation.BINARY_CONSENSUS,
+                self.port_allocation.PROPOSAL.value,
+                self.port_allocation.BINARY_CONSENSUS.value,
+                BITE_SERVER_PORT_OFFSET,
             )
         )
 

@@ -129,6 +129,8 @@ class SkaledActionManager(BaseSkaledActionManager):
             historic_state=self.node_options.historic_state,
             part_of_node=self.schain.part_of_node,
         )
+        # the checks' record was read before this start, which may have changed the port mode
+        self.checks.chain_record.rpc_proxy_mode = self.chain_record.rpc_proxy_mode
         time.sleep(self.post_run_delay)
         return started
 

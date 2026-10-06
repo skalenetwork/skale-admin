@@ -19,6 +19,9 @@
 
 from typing import Dict
 
+# skaled RPC listeners move this far up inside the chain's port block when nginx serves them
+RPC_PROXY_PORT_SHIFT = 32
+
 
 def get_base_port_from_config(config: Dict | None) -> int:
     if config is None:
@@ -38,11 +41,19 @@ def get_chain_ports_from_config(config: Dict | None):
     }
 
 
+def get_internal_chain_ports(ports: dict) -> dict:
+    """Ports skaled listens on while nginx holds the public ones"""
+    return {role: port + RPC_PROXY_PORT_SHIFT for role, port in ports.items()}
+
+
 def _get_chain_rpc_ports_from_config(config: dict) -> tuple[int, int]:
     node_info = config['skaleConfig']['nodeInfo']
     return int(node_info['httpRpcPort']), int(node_info['wsRpcPort'])
 
 
-def get_local_chain_http_endpoint_from_config(config: dict) -> str:
+def get_local_chain_http_endpoint_from_config(config: dict, rpc_proxy_mode: bool = False) -> str:
+    """Local skaled endpoint, bypassing nginx when skaled runs on the internal ports"""
     http_port, _ = _get_chain_rpc_ports_from_config(config)
+    if rpc_proxy_mode:
+        http_port += RPC_PROXY_PORT_SHIFT
     return f'http://127.0.0.1:{http_port}'

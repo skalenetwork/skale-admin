@@ -8,9 +8,15 @@ from skale_core.settings import BaseNodeSettings
 from core.checks.fair import SkaledChecks
 from core.config.schain.static_params import get_fair_chain_name
 from core.monitor.fair.action_skaled import FairSkaledActionManager
+from core.monitor.fair.monitor_skaled import (
+    ProxySwitchSkaledMonitor,
+    RegularSkaledMonitor,
+    get_skaled_monitor,
+)
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from tests.utils import TEST_TASK_SLEEP
+from tools.constants.fair import SKALED_RESTART_JOB_NAME
 from tools.helper import is_passive
 
 
@@ -100,3 +106,28 @@ def test_fair_skaled_action_manager_recreated_skaled_container(
         assert skaled_am.recreated_skaled_container()
         monitor_skaled_container_mock.assert_called()
     assert skaled_am.chain_record.restart_ts == 0
+
+
+def test_get_skaled_monitor_rpc_proxy_switch(skaled_am: FairSkaledActionManager, chain_record):
+    chain_record.set_rpc_proxy_mode(False)
+    status = {'config': True, 'volume': True, 'config_updated': True, 'skaled_container': True}
+    mon = get_skaled_monitor(skaled_am, status, chain_record, None)
+    assert mon == RegularSkaledMonitor
+    with mock.patch('core.nginx.mode.is_rpc_proxy_enabled', return_value=True):
+        with mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=False):
+            mon = get_skaled_monitor(skaled_am, status, chain_record, None)
+            assert mon == RegularSkaledMonitor
+        with mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=True):
+            mon = get_skaled_monitor(skaled_am, status, chain_record, None)
+            assert mon == ProxySwitchSkaledMonitor
+
+
+def test_proxy_switch_monitor_schedules_restart(skaled_am: FairSkaledActionManager):
+    with (
+        mock.patch.object(RegularSkaledMonitor, 'execute'),
+        mock.patch('core.nginx.mode.is_rpc_proxy_enabled', return_value=True),
+    ):
+        ProxySwitchSkaledMonitor(skaled_am).execute()
+    job = skaled_am.scheduler.get_job(SKALED_RESTART_JOB_NAME)
+    assert job is not None
+    assert -5 <= skaled_am.chain_record.restart_ts - int(datetime.now().timestamp()) <= 3600

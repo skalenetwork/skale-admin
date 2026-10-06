@@ -1,0 +1,152 @@
+# sChain {{ chain }}, rendered by skale-admin: http {{ http_port }} fingerprint {{ fingerprint }}
+
+upstream {{ id }}_http {
+    server 127.0.0.1:{{ http_internal }};
+    keepalive 64;
+}
+
+upstream {{ id }}_ws {
+    server 127.0.0.1:{{ ws_internal }};
+}
+
+# peers are node IPs and sync ranges, they bypass limits and njs; exempt clients bypass limits
+geo $rpc_class_{{ id }} {
+    default public;
+{% for ip in exempt_ips %}
+    {{ ip }}/32 exempt;
+{% endfor %}
+{% for cidr in peers %}
+    {{ cidr }} peer;
+{% endfor %}
+}
+
+map $rpc_class_{{ id }} $rpc_client_{{ id }} {
+    public  $binary_remote_addr;
+    default "";
+}
+
+map $rpc_class_{{ id }} $rpc_all_{{ id }} {
+    public  all;
+    default "";
+}
+
+limit_req_zone  $rpc_client_{{ id }} zone={{ id }}_burst:{{ client_zone_size }} rate={{ limits.per_client_rps }}r/s;
+limit_req_zone  $rpc_client_{{ id }} zone={{ id }}_sustained:{{ client_zone_size }} rate={{ limits.per_client_sustained_rps }}r/s;
+limit_req_zone  $rpc_all_{{ id }} zone={{ id }}_global:1m rate={{ limits.global_rps }}r/s;
+limit_conn_zone $rpc_client_{{ id }} zone={{ id }}_conn:{{ client_zone_size }};
+limit_conn_zone $rpc_client_{{ id }} zone={{ id }}_ws_conn:{{ client_zone_size }};
+limit_conn_zone $rpc_all_{{ id }} zone={{ id }}_ws_total:1m;
+
+server {
+    listen {{ http_port }};
+{% if ssl %}
+    listen {{ https_port }} ssl;
+    ssl_certificate     /ssl/ssl_cert;
+    ssl_certificate_key /ssl/ssl_key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+{% endif %}
+
+    access_log /dev/stdout rpc buffer=64k flush=5s;
+    client_max_body_size 2m;
+    client_body_buffer_size 2m;
+    client_body_timeout 10s;
+    limit_req_status  429;
+    limit_conn_status 429;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+{% if njs %}
+
+    set $rpc_chain       {{ id }};
+    set $rpc_class       $rpc_class_{{ id }};
+    set $rpc_max_batch   {{ limits.max_batch }};
+    set $rpc_client_rps  {{ limits.per_client_rps }};
+    set $rpc_client_rpm  {{ client_rpm }};
+    set $rpc_global_rps  {{ limits.global_rps }};
+    set $rpc_global_rpm  {{ global_rpm }};
+    set $rpc_heavy_rps   {{ limits.heavy_rps }};
+    set $rpc_ban_short   {{ limits.ban_short_s }};
+    set $rpc_ban_long    {{ limits.ban_long_s }};
+{% endif %}
+
+    location / {
+        # peers leave here before any limit or njs step, see @rpc_peer
+        error_page 418 = @rpc_peer;
+        if ($rpc_class_{{ id }} = peer) {
+            return 418;
+        }
+        # nginx refuses burst=0, a zero burst is written as no burst
+        limit_req zone={{ id }}_burst {% if limits.burst %}burst={{ limits.burst }} {% endif %}nodelay;
+        limit_req zone={{ id }}_sustained {% if limits.sustained_burst %}burst={{ limits.sustained_burst }} {% endif %}nodelay;
+        limit_req zone={{ id }}_global {% if limits.global_burst %}burst={{ limits.global_burst }} {% endif %}nodelay;
+        limit_conn {{ id }}_conn {{ limits.conn_per_client }};
+        error_page 429 = @rpc_429;
+{% if njs %}
+        js_content rpc.handle;
+    }
+
+    location = /_upstream {
+        internal;
+        subrequest_output_buffer_size 8m;
+        proxy_pass http://{{ id }}_http/;
+{% else %}
+        proxy_pass http://{{ id }}_http;
+{% endif %}
+        proxy_read_timeout 120s;
+    }
+
+    # skale-admin reads this after a reload: nginx answers it only once it runs this file
+    location = {{ probe_path }} {
+        access_log off;
+        allow 127.0.0.1;
+        deny all;
+        default_type text/plain;
+        return 200 '{{ chain }} {{ fingerprint }}';
+    }
+
+    # snapshot chunks are up to 100 MiB, and skaled allows 30 minutes of idle time
+    location @rpc_peer {
+        proxy_pass http://{{ id }}_http;
+        proxy_buffering off;
+        proxy_read_timeout 1800s;
+        proxy_send_timeout 1800s;
+        send_timeout 1800s;
+    }
+
+    location @rpc_429 {
+        default_type application/json;
+        add_header Access-Control-Allow-Origin * always;
+        add_header Retry-After 1 always;
+        return 429 '{"jsonrpc":"2.0","id":null,"error":{"code":-32005,"message":"rate limited"}}';
+    }
+}
+
+server {
+    listen {{ ws_port }};
+{% if ssl %}
+    listen {{ wss_port }} ssl;
+    ssl_certificate     /ssl/ssl_cert;
+    ssl_certificate_key /ssl/ssl_key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+{% endif %}
+
+    access_log /dev/stdout rpc buffer=64k flush=5s;
+    limit_req_status  429;
+    limit_conn_status 429;
+
+    location / {
+        # counts handshakes only, messages inside a session are not visible here
+        limit_req zone={{ id }}_burst {% if limits.ws_handshake_burst %}burst={{ limits.ws_handshake_burst }} {% endif %}nodelay;
+        limit_conn {{ id }}_ws_conn {{ limits.ws_conn_per_client }};
+        limit_conn {{ id }}_ws_total {{ limits.ws_conn_total }};
+        proxy_pass http://{{ id }}_ws;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+}

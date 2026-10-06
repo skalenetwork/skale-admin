@@ -100,6 +100,7 @@ def test_schains_checks(
                 'blocks': False,
                 'process': False,
                 'ima_container': False,
+                'nginx_config': True,
             }
 
             request_params = {'checks_filter': 'skaled_container,volume,config'}

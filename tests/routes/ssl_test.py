@@ -12,7 +12,7 @@ from flask import Flask, appcontext_pushed, g
 from tests.utils import generate_cert, get_bp_data
 from tools.constants import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
 from web.helper import get_api_url
-from web.routes.ssl import ssl_bp
+from web.routes.ssl import CERTS_NOT_SERVED, ssl_bp
 
 BLUEPRINT_NAME = 'ssl'
 
@@ -108,7 +108,7 @@ def test_upload(skale_bp, ssl_folder, db, cert_key_pair_host):
     cert_path, key_path = cert_key_pair_host
     with (
         mock.patch('web.routes.ssl.set_schains_need_reload'),
-        mock.patch('web.routes.ssl.reload_nginx'),
+        mock.patch('web.routes.ssl.reload_node_proxy'),
     ):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(
@@ -121,11 +121,24 @@ def test_upload(skale_bp, ssl_folder, db, cert_key_pair_host):
     assert filecmp.cmp(key_path, uploaded_key_path)
 
 
+def test_upload_not_served(skale_bp, ssl_folder, db, cert_key_pair_host):
+    cert_path, key_path = cert_key_pair_host
+    with (
+        mock.patch('web.routes.ssl.set_schains_need_reload'),
+        mock.patch('web.routes.ssl.reload_node_proxy', return_value=False),
+    ):
+        with files_data(cert_path, key_path, force=False) as data:
+            response = post_bp_files_data(
+                skale_bp, get_api_url(BLUEPRINT_NAME, 'upload'), file_data=data
+            )
+    assert response == {'status': 'error', 'payload': CERTS_NOT_SERVED}
+
+
 def test_upload_bad_cert(skale_bp, db, ssl_folder, bad_cert_host):
     cert_path, key_path = bad_cert_host
     with (
         mock.patch('web.routes.ssl.set_schains_need_reload'),
-        mock.patch('core.nginx.restart_nginx_container'),
+        mock.patch('web.routes.ssl.reload_node_proxy'),
     ):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(
@@ -138,7 +151,7 @@ def test_upload_cert_exist(skale_bp, db, cert_key_pair_host, cert_key_pair):
     cert_path, key_path = cert_key_pair_host
     with (
         mock.patch('web.routes.ssl.set_schains_need_reload'),
-        mock.patch('web.routes.ssl.reload_nginx'),
+        mock.patch('web.routes.ssl.reload_node_proxy'),
     ):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(

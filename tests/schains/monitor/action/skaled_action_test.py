@@ -170,6 +170,44 @@ def test_skaled_container_snapshot_delay_start_action(skaled_am: SkaledActionMan
         skaled_am.cleanup_schain_docker_entity()
 
 
+def test_skaled_container_action_refreshes_checks_port_mode(
+    skaled_am: SkaledActionManager, skaled_checks: SkaledChecks
+):
+    def start_behind_proxy(chain_name: ChainName, chain_record: SChainRecord, **kwargs) -> bool:
+        chain_record.set_rpc_proxy_mode(True)
+        return True
+
+    skaled_am.chain_record.set_restart_count(5)
+    with mock.patch(
+        'core.monitor.schain.action_skaled.monitor_skaled_container',
+        side_effect=start_behind_proxy,
+    ):
+        skaled_am.skaled_container()
+    assert skaled_checks.chain_record.rpc_proxy_mode is True
+    # only the port mode is taken, and the checks' older copy is never written back
+    assert skaled_checks.chain_record.restart_count == 0
+    assert SChainRecord.get_by_name(skaled_am.name).restart_count == 5
+
+    # a start that did not happen keeps the mode of the ports skaled was last started on
+    with mock.patch(
+        'core.monitor.schain.action_skaled.monitor_skaled_container', return_value=False
+    ):
+        skaled_am.skaled_container()
+    assert skaled_checks.chain_record.rpc_proxy_mode is True
+
+
+def test_nginx_config_action_starts_nginx_for_pending_proxy(skaled_am: SkaledActionManager):
+    with (
+        mock.patch('core.checks.base.is_rpc_proxy_enabled', return_value=True),
+        mock.patch('core.monitor.action_base.is_rpc_proxy_enabled', return_value=True),
+        mock.patch('core.monitor.action_base.ChainProxyManager') as manager,
+    ):
+        # skaled is still on the public ports, so there is no chain file yet
+        assert not skaled_am.nginx_config()
+    manager.return_value.start_nginx.assert_called_once_with()
+    manager.return_value.sync.assert_called_once_with(None)
+
+
 def test_recreated_skaled_container_action_exit_reached(
     skaled_am: SkaledActionManager,
     skaled_checks: SkaledChecks,
@@ -452,8 +490,5 @@ def test_firewall_rules_action(
         SChainRule(first_port=10005, first_ip='1.1.1.1', last_ip='2.2.2.2'),
         SChainRule(first_port=10005, first_ip='127.0.0.2', last_ip='127.0.0.2'),
         SChainRule(first_port=10005, first_ip='3.3.3.3', last_ip='4.4.4.4'),
-        SChainRule(first_port=10007),
-        SChainRule(first_port=10008),
-        SChainRule(first_port=10009),
         SChainRule(first_port=10010, first_ip='127.0.0.2', last_ip='127.0.0.2'),
     ]

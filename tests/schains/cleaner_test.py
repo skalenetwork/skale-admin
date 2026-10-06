@@ -263,3 +263,33 @@ def test_cleanup_schain(
     assert not os.path.isdir(schain_dir_path)
     record = SChainRecord.get_by_name(schain_name)
     assert record.is_deleted is True
+
+
+@mock.patch('core.schains.cleaner.cleanup_firewall_for_schain')
+def test_cleanup_schain_retries_while_nginx_keeps_ports(
+    cleanup_firewall_rules,
+    schain_db,
+    node_config,
+    schain_on_contracts,
+    estate,
+    dutils,
+    secret_key,
+):
+    schain_name = schain_db
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
+    options = {
+        'sync_agent_ranges': [],
+        'last_dkg_successful': True,
+        'rotation_id': 0,
+        'estate': estate,
+        'dutils': dutils,
+    }
+    with mock.patch('core.schains.cleaner.ChainProxyManager.remove', return_value=False):
+        cleanup_schain(node_config.id, schain_name, **options)
+    # the dir and the record keep the chain on the node, so the next run finds it again
+    assert os.path.isdir(schain_dir_path)
+    assert SChainRecord.get_by_name(schain_name).is_deleted is False
+
+    cleanup_schain(node_config.id, schain_name, **options)
+    assert not os.path.isdir(schain_dir_path)
+    assert SChainRecord.get_by_name(schain_name).is_deleted is True

@@ -36,6 +36,7 @@ from core.config.schain.directory import schain_config_dir
 from core.dkg.utils import get_secret_key_share_filepath
 from core.firewall.utils import cleanup_firewall_for_schain, get_default_rule_controller
 from core.manager_cache import ManagerCache
+from core.nginx import ChainProxyManager
 from core.node import get_skale_node_version
 from core.node_config import NodeConfig
 from core.schains.external_config import ExternalConfig
@@ -283,6 +284,10 @@ def cleanup_schain(
         remove_skaled_container(schain_name, dutils=dutils)
     if check_status['volume']:
         remove_schain_volume(schain_name, dutils=dutils)
+    # nginx has to let go of the chain ports before the firewall block disappears
+    if not ChainProxyManager(schain_name, dutils=dutils).remove():
+        logger.error('%s: nginx keeps the chain ports, the next cleaner run retries', schain_name)
+        return
     if any(checks.firewall_rules.data):
         logger.info('Cleaning firewall for %s', schain_name)
         cleanup_firewall_for_schain(schain_name)

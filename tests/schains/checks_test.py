@@ -15,7 +15,10 @@ from core.chain.skaled_exit_codes import SkaledExitCodes
 from core.checks.schain import CheckRes, ConfigChecks, SChainChecks
 from core.config.schain.directory import get_schain_check_filepath, schain_config_dir
 from core.config.schain.file_manager import UpstreamConfigFilename
+from core.config.schain.helper import get_node_ips_from_config
 from core.config.schain.schain_node import generate_schain_nodes
+from core.firewall import IpRange
+from core.schains.external_config import ExternalConfig, ExternalState
 from tests.utils import (
     CONFIG_STREAM,
     generate_schain_config,
@@ -66,6 +69,23 @@ ETH_GET_BLOCK_RESULT = {
 }
 
 SchainRecordMock = namedtuple('SchainRecord', ['config_version'])
+
+NGINX_LIMITS = {
+    'per_client_rps': 1000,
+    'burst': 200,
+    'per_client_sustained_rps': 600,
+    'sustained_burst': 24000,
+    'global_rps': 5000,
+    'global_burst': 2000,
+    'conn_per_client': 64,
+    'ws_handshake_burst': 50,
+    'ws_conn_per_client': 32,
+    'ws_conn_total': 20000,
+    'max_batch': 128,
+    'heavy_rps': 100,
+    'ban_short_s': 10,
+    'ban_long_s': 30,
+}
 
 
 class SChainChecksMock(SChainChecks):
@@ -250,6 +270,123 @@ def test_rpc_check(schain_checks, schain_db):
             cookies=None,
             timeout=expected_timeout,
         )
+
+
+def test_rpc_check_rpc_proxy_mode(schain_checks, schain_db):
+    ok_result = response_mock(HTTPStatus.OK, {'id': 83, 'jsonrpc': '2.0', 'result': '0x4b7'})
+    rmock = request_mock(ok_result)
+    schain_checks.schain_record.set_rpc_proxy_mode(True)
+    with mock.patch('requests.post', rmock):
+        assert schain_checks.rpc.status
+        # admin checks reach skaled directly, an nginx outage must not look like a dead skaled
+        assert rmock.call_args.args == ('http://127.0.0.1:10035',)
+
+
+def test_nginx_config_check(schain_checks, schain_db, tmp_path):
+    chains_path = tmp_path / 'chains'
+    chains_path.mkdir()
+    chain_file = chains_path / f'{schain_checks.name}.conf'
+    record = schain_checks.schain_record
+    params = {'rpc_proxy': True, 'njs': False, 'exempt_hosts': [], 'limits': NGINX_LIMITS}
+    with (
+        mock.patch('core.nginx.manager.NGINX_CHAINS_PATH', chains_path),
+        mock.patch('core.nginx.params.NGINX_CHAINS_PATH', chains_path),
+    ):
+        assert schain_checks.nginx_config.status
+        chain_file.write_text('stale')
+        assert not schain_checks.nginx_config.status
+        chain_file.unlink()
+
+        with (
+            mock.patch('core.nginx.params.get_nginx_params', return_value=params),
+            mock.patch('core.nginx.config.get_nginx_params', return_value=params),
+            mock.patch('core.checks.base.get_nginx_params', return_value=params),
+        ):
+            with mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=True):
+                # flag on, container still on the public ports: nothing to serve, switch pending
+                res = schain_checks.nginx_config
+                assert not res.status
+                assert res.data == {'synced': True, 'mode': False}
+            with mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=False):
+                # skaled keeps the public ports while nginx is down, the move stays pending
+                res = schain_checks.nginx_config
+                assert not res.status
+                assert res.data == {'synced': True, 'mode': False}
+
+            record.set_rpc_proxy_mode(True)
+            expected = schain_checks.expected_nginx_config()
+            assert 'server 127.0.0.1:10035;' in expected
+            assert not schain_checks.nginx_config.status
+            chain_file.write_text(expected)
+            with (
+                mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=True),
+                mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=True),
+            ):
+                assert schain_checks.nginx_config.status
+            # on disk but not what nginx runs, e.g. a reload that nginx rejected
+            with (
+                mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=True),
+                mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=False),
+            ):
+                assert not schain_checks.nginx_config.status
+            # nginx down means the chain is not served
+            with mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=False):
+                assert not schain_checks.nginx_config.status
+
+        # flag off, skaled still on the internal ports: nginx serves it until the restart
+        params['rpc_proxy'] = False
+        with (
+            mock.patch('core.nginx.params.get_nginx_params', return_value=params),
+            mock.patch('core.nginx.config.get_nginx_params', return_value=params),
+            mock.patch('core.checks.base.get_nginx_params', return_value=params),
+            mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=True),
+            mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=True),
+        ):
+            assert schain_checks.expected_nginx_config() == expected
+            res = schain_checks.nginx_config
+            assert res.data == {'synced': True, 'mode': False}
+
+
+def test_nginx_proxy_peers_include_sync_ranges(schain_checks, schain_config, schain_db, tmp_path):
+    # SyncManager ranges reach the external config, where the firewall rules read them too
+    econfig = ExternalConfig(schain_db)
+    ranges = [IpRange('10.0.0.0', '10.0.0.3'), IpRange('10.0.1.5', '10.0.1.6')]
+    econfig.update(ExternalState(chain_id=1, ima_linked=True, ranges=ranges))
+    range_cidrs = ['10.0.0.0/30', '10.0.1.5/32', '10.0.1.6/32']
+    node_cidrs = [f'{ip}/32' for ip in get_node_ips_from_config(schain_config)]
+
+    assert sorted(schain_checks.proxy_peers(schain_config)) == sorted(node_cidrs + range_cidrs)
+
+    chains_path = tmp_path / 'chains'
+    chains_path.mkdir()
+    params = {'rpc_proxy': True, 'njs': True, 'exempt_hosts': [], 'limits': NGINX_LIMITS}
+    schain_checks.schain_record.set_rpc_proxy_mode(True)
+    with (
+        mock.patch('core.nginx.manager.NGINX_CHAINS_PATH', chains_path),
+        mock.patch('core.nginx.params.NGINX_CHAINS_PATH', chains_path),
+        mock.patch('core.nginx.params.get_nginx_params', return_value=params),
+        mock.patch('core.nginx.config.get_nginx_params', return_value=params),
+        mock.patch('core.checks.base.get_nginx_params', return_value=params),
+        mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=True),
+        mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=True),
+    ):
+        # sync ranges reach the nginx peer map: no limits, no njs, snapshot chunks served
+        expected = schain_checks.expected_nginx_config()
+        for cidr in range_cidrs:
+            assert f'    {cidr} peer;' in expected
+        (chains_path / f'{schain_db}.conf').write_text(expected)
+        assert schain_checks.nginx_config.status
+
+        # a range added on SyncManager changes the file on the next check, as for the firewall
+        econfig.update(
+            ExternalState(
+                chain_id=1, ima_linked=True, ranges=[*ranges, IpRange('10.0.2.0', '10.0.2.255')]
+            )
+        )
+        res = schain_checks.nginx_config
+        assert not res.status
+        assert res.data['synced'] is False
+        assert '    10.0.2.0/24 peer;' in schain_checks.expected_nginx_config()
 
 
 def test_blocks_check(schain_checks):

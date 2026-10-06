@@ -40,6 +40,12 @@ from core.config.schain.main import (
     get_upstream_config_rotation_ids,
 )
 from core.firewall import IRuleController
+from core.nginx import (
+    ChainProxyManager,
+    build_chain_proxy_config,
+    get_nginx_params,
+    is_rpc_proxy_enabled,
+)
 from core.redis.chain_record import ChainRecord
 from core.types.chain import ChainName
 from tools.constants.containers import SKALED_CONTAINER
@@ -64,6 +70,7 @@ API_ALLOWED_CHECKS = [
     'blocks',
     'process',
     'ima_container',
+    'nginx_config',
 ]
 
 TG_ALLOWED_CHECKS = [
@@ -75,6 +82,7 @@ TG_ALLOWED_CHECKS = [
     'blocks',
     'process',
     'ima_container',
+    'nginx_config',
 ]
 
 
@@ -212,7 +220,9 @@ class BaseSkaledChecks(IChecks):
                     f'Config for sChain {self.name} is not found. '
                     'Please check if the chain is initialized.'
                 )
-            http_endpoint = get_local_chain_http_endpoint_from_config(config)
+            http_endpoint = get_local_chain_http_endpoint_from_config(
+                config, self.chain_record.rpc_proxy_mode
+            )
             timeout = get_endpoint_alive_check_timeout(self.chain_record.failed_rpc_count)
             res = check_endpoint_alive(http_endpoint, timeout=timeout)
         return CheckRes(res)
@@ -227,9 +237,35 @@ class BaseSkaledChecks(IChecks):
                     f'Config for sChain {self.name} is not found. '
                     'Please check if the chain is initialized.'
                 )
-            http_endpoint = get_local_chain_http_endpoint_from_config(config)
+            http_endpoint = get_local_chain_http_endpoint_from_config(
+                config, self.chain_record.rpc_proxy_mode
+            )
             return CheckRes(check_endpoint_blocks(http_endpoint))
         return CheckRes(False)
+
+    @property
+    def nginx_config(self) -> CheckRes:
+        """Checks that skaled uses the ports the flag asks for and nginx serves it exactly then"""
+        manager = ChainProxyManager(self.name, dutils=self.dutils)
+        data = {
+            'synced': manager.is_synced(self.expected_nginx_config()),
+            'mode': self.chain_record.rpc_proxy_mode == is_rpc_proxy_enabled(),
+        }
+        return CheckRes(all(data.values()), data=data)
+
+    def expected_nginx_config(self) -> str | None:
+        """Chain file for the ports the running container uses, None when skaled is public"""
+        # not the flag: the start guard removes the file right before a public start
+        if not self.chain_record.rpc_proxy_mode or not get_nginx_params():
+            return None
+        config = self.cfm.skaled_config
+        if config is None:
+            return None
+        return build_chain_proxy_config(self.name, config, self.proxy_peers(config)).render()
+
+    @abstractmethod
+    def proxy_peers(self, config: dict) -> list[str]:
+        """Networks that skip the limits: the lists the firewall rules are built from"""
 
     @property
     def exit_zero(self) -> CheckRes:
