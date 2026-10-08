@@ -11,7 +11,7 @@ from jinja2 import Environment
 
 from core.nginx import ChainProxyConfig, ChainProxyManager, reload_node_proxy
 from core.nginx.manager import base_fingerprint, wait_for
-from tools.constants import CONFIG_FOLDER, NGINX_CONTAINER_NAME
+from tools.constants import CONFIG_FOLDER, NGINX_CONTAINER_NAME, NGINX_TEMPLATE_DIR
 
 NGINX_IMAGE = 'nginx:1.29.5'
 CHAIN = 'test-chain'
@@ -75,8 +75,8 @@ def nginx_dir():
         ('nginx.conf.j2', path / 'nginx.conf', {}),
         ('base.conf.j2', path / 'conf.d' / 'base.conf', {'ssl': False, 'skale_node': True}),
     ):
-        dest.write_text(env.from_string((config_folder / template).read_text()).render(data))
-    shutil.copy(config_folder / 'njs' / 'rpc.js', path / 'njs' / 'rpc.js')
+        dest.write_text(env.from_string((NGINX_TEMPLATE_DIR / template).read_text()).render(data))
+    shutil.copy(NGINX_TEMPLATE_DIR / 'njs' / 'rpc.js', path / 'njs' / 'rpc.js')
     (path / 'conf.d' / 'fake_skaled.conf').write_text(FAKE_SKALED)
     (path / 'conf.d' / 'fake_skaled.js').write_text(FAKE_SKALED_JS)
     try:
