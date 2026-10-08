@@ -1,5 +1,3 @@
-import socket
-import time
 from pathlib import Path
 from unittest import mock
 
@@ -23,12 +21,9 @@ from core.nginx import (
     reload_node_proxy,
     target_rpc_proxy_mode,
 )
-from core.nginx import params as nginx_params
 from core.nginx.config import render_base_config
-from core.nginx.manager import NginxReloadError, base_fingerprint, base_probe_urls, chain_probe
-from tools.constants import CONFIG_FOLDER
+from core.nginx.manager import BASE_PROBE_URL, NginxReloadError, base_fingerprint, chain_probe
 
-TEMPLATE = Path(CONFIG_FOLDER) / 'chain.conf.j2'
 PORTS = {'http': 10003, 'ws': 10002, 'https': 10008, 'wss': 10007}
 LIMITS = {
     'per_client_rps': 1000,
@@ -43,8 +38,7 @@ LIMITS = {
     'ws_conn_total': 20000,
     'max_batch': 128,
     'heavy_rps': 100,
-    'ban_short_s': 10,
-    'ban_long_s': 30,
+    'ban_s': 10,
 }
 
 
@@ -53,7 +47,6 @@ def make_config(**kwargs) -> ChainProxyConfig:
         'chain_name': 'elated-tan-skat',
         'ports': PORTS,
         'peers': ['1.1.1.1/32'],
-        'exempt_ips': [],
         'ssl': False,
         'njs': False,
         'limits': LIMITS,
@@ -68,7 +61,7 @@ def chain_answers(text: str) -> dict[str, str]:
 
 
 def base_answers(text: str) -> dict[str, str]:
-    return {url: f'base {base_fingerprint(text)}' for url in base_probe_urls(False, True)}
+    return {BASE_PROBE_URL: f'base {base_fingerprint(text)}'}
 
 
 class FakeNginx:
@@ -79,6 +72,8 @@ class FakeNginx:
         self.answers_for = answers_for
         self.running = True
         self.can_start = True
+        # the container runs before its nginx master does
+        self.ready = True
         self.config_ok = True
         # a listener port held elsewhere: `nginx -s reload` exits 0, nginx keeps its old config
         self.port_busy = False
@@ -91,11 +86,14 @@ class FakeNginx:
     def is_running(self) -> bool:
         return self.running
 
+    def is_ready(self) -> bool:
+        return self.running and self.ready
+
     def ensure_running(self) -> bool:
         if not self.running and self.can_start:
             self.running = True
             self._load()
-        return self.running
+        return self.running and self.ready
 
     def reload(self) -> None:
         self.reloads += 1
@@ -124,7 +122,11 @@ def proxy_manager(tmp_path):
     with (
         mock.patch('core.nginx.manager.APPLY_TIMEOUT_SECONDS', 0.2),
         mock.patch('core.nginx.manager.POLL_INTERVAL_SECONDS', 0.05),
+        mock.patch('core.nginx.manager.ConfigFileManager') as cfm,
     ):
+        cfm.return_value.skaled_config = {
+            'skaleConfig': {'nodeInfo': {'httpRpcPort': PORTS['http'], 'wsRpcPort': PORTS['ws']}}
+        }
         yield manager
 
 
@@ -163,61 +165,51 @@ def test_ranges_to_cidrs():
 def test_template_data():
     data = make_config(
         peers=['2.2.2.2/32', '1.1.1.1/32', '2.2.2.2/32', '10.0.0.0/30'],
-        exempt_ips=['10.0.0.1', '3.3.3.3', '3.3.3.3'],
     ).template_data()
     assert data['id'] == 'elated_tan_skat'
     assert (data['http_port'], data['ws_port']) == (10003, 10002)
     assert (data['http_internal'], data['ws_internal']) == (10035, 10034)
     assert data['peers'] == ['1.1.1.1/32', '2.2.2.2/32', '10.0.0.0/30']
-    # an exempt address inside a peer network stays a peer
-    assert data['exempt_ips'] == ['127.0.0.1', '3.3.3.3']
-    assert data['client_rpm'] == 60000
-    assert data['global_rpm'] == 300000
 
 
 def test_render():
-    text = make_config(exempt_ips=['3.3.3.3']).render(TEMPLATE)
+    text = make_config().render()
     assert 'server 127.0.0.1:10035;' in text
     assert 'server 127.0.0.1:10034;' in text
     assert 'listen 10003;' in text
     assert 'listen 10002;' in text
     assert '1.1.1.1/32 peer;' in text
-    assert '3.3.3.3/32 exempt;' in text
     assert '127.0.0.1/32 exempt;' in text
     assert 'ssl' not in text
-    assert 'js_content' not in text
+    # njs checks every call, the limits stay off
+    assert 'js_content rpc.handle;' in text
+    assert 'set $rpc_limits      off;' in text
+    assert '$rpc_max_batch' not in text
     assert 'proxy_pass http://elated_tan_skat_http;' in text
-    assert 'if ($rpc_class_elated_tan_skat = peer) {' in text
-    assert 'location @rpc_peer {' in text
 
-    text = make_config(ssl=True, njs=True).render(TEMPLATE)
-    # peers never reach njs, whose subrequest buffer is far below a snapshot chunk
-    assert 'location @rpc_peer {' in text
+    text = make_config(ssl=True, njs=True).render()
     assert 'listen 10008 ssl;' in text
     assert 'listen 10007 ssl;' in text
-    assert 'js_content rpc.handle;' in text
-    assert 'proxy_pass http://elated_tan_skat_http/;' in text
-    assert 'set $rpc_client_rpm  60000;' in text
+    assert 'set $rpc_limits      on;' in text
+    assert 'set $rpc_ban         10;' in text
 
 
-def test_build_chain_proxy_config(tmp_path):
+def test_build_chain_proxy_config():
     node_info = {
         'httpRpcPort': 10003,
         'wsRpcPort': 10002,
         'httpsRpcPort': 10008,
         'wssRpcPort': 10007,
     }
-    params = {'njs': True, 'exempt_hosts': ['a.example'], 'limits': LIMITS}
+    params = {'njs': True, 'limits': LIMITS}
     with (
         mock.patch('core.nginx.config.get_nginx_params', return_value=params),
-        mock.patch('core.nginx.config.resolve_exempt_hosts', return_value=['3.3.3.3']) as resolve,
-        mock.patch('core.nginx.config.SSL_CERT_PATH', tmp_path / 'ssl_cert'),
+        mock.patch('core.nginx.config.is_ssl_on', return_value=False),
     ):
         config = build_chain_proxy_config(
             'elated-tan-skat', {'skaleConfig': {'nodeInfo': node_info}}, ips_to_cidrs(['1.1.1.1'])
         )
-    assert config == make_config(exempt_ips=['3.3.3.3'], njs=True)
-    resolve.assert_called_once_with(['a.example'])
+    assert config == make_config(njs=True)
 
 
 def test_get_nginx_params():
@@ -280,26 +272,9 @@ def test_target_rpc_proxy_mode(current, enabled, nginx_running, target):
         assert is_rpc_proxy_mode_changed(record, dutils=mock.Mock()) is (current != target)
 
 
-def test_resolve_exempt_hosts():
-    nginx_params._resolved_hosts.clear()
-    addrinfo = [(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('1.2.3.4', 0))] * 2
-    with mock.patch('core.nginx.params.socket.getaddrinfo', return_value=addrinfo) as resolve:
-        assert nginx_params.resolve_exempt_hosts(['a.example']) == ['1.2.3.4']
-        assert nginx_params.resolve_exempt_hosts(['a.example']) == ['1.2.3.4']
-        assert resolve.call_count == 1
-    later = time.monotonic() + 2 * nginx_params.EXEMPT_HOSTS_TTL_SECONDS
-    with (
-        mock.patch('core.nginx.params.socket.getaddrinfo', side_effect=socket.gaierror),
-        mock.patch('core.nginx.params.time.monotonic', return_value=later),
-    ):
-        # the last answer is kept while DNS fails, an unknown host is skipped
-        assert nginx_params.resolve_exempt_hosts(['a.example', 'b.example']) == ['1.2.3.4']
-    nginx_params._resolved_hosts.clear()
-
-
 def test_sync_writes_and_reloads(proxy_manager):
     nginx = proxy_manager.nginx
-    text = make_config().render(TEMPLATE)
+    text = make_config().render()
     assert proxy_manager.is_synced(None)
     assert proxy_manager.remove()
     assert nginx.reloads == 0
@@ -309,27 +284,35 @@ def test_sync_writes_and_reloads(proxy_manager):
     assert nginx.reloads == 1
     assert proxy_manager.sync(text)
     assert nginx.reloads == 1
+    nginx.ready = False
+    # a reload before the nginx master is up fails, so removal waits for it
+    assert not proxy_manager.remove()
+    assert proxy_manager.current() == text
+    assert nginx.reloads == 1
+    nginx.ready = True
     assert proxy_manager.remove()
     assert proxy_manager.current() is None
     assert nginx.loaded is None
     assert nginx.reloads == 2
+    nginx.ready = False
+    assert not proxy_manager.remove()
 
 
 def test_rendered_file_names_its_probe():
-    text = make_config().render(TEMPLATE)
+    text = make_config().render()
     url, answer = chain_probe(text)
     assert url == 'http://127.0.0.1:10003/.skale-proxy'
     assert f"return 200 '{answer}';" in text
     # any change to the file changes what nginx has to answer
-    other = make_config(peers=['2.2.2.2/32']).render(TEMPLATE)
+    other = make_config(peers=['2.2.2.2/32']).render()
     assert chain_probe(other)[1] != answer
 
 
 def test_sync_rolls_back_when_config_test_fails(proxy_manager):
-    text = make_config().render(TEMPLATE)
+    text = make_config().render()
     assert proxy_manager.sync(text)
     proxy_manager.nginx.config_ok = False
-    assert not proxy_manager.sync(make_config(peers=['2.2.2.2/32']).render(TEMPLATE))
+    assert not proxy_manager.sync(make_config(peers=['2.2.2.2/32']).render())
     assert proxy_manager.current() == text
     # removal is rolled back too, so the next attempt reloads again
     assert not proxy_manager.remove()
@@ -338,7 +321,7 @@ def test_sync_rolls_back_when_config_test_fails(proxy_manager):
 
 def test_sync_detects_reload_nginx_rejected(proxy_manager):
     nginx = proxy_manager.nginx
-    text = make_config().render(TEMPLATE)
+    text = make_config().render()
     nginx.port_busy = True
     # the reload signal succeeds, but nginx never serves the file
     assert not proxy_manager.sync(text)
@@ -356,7 +339,7 @@ def test_sync_detects_reload_nginx_rejected(proxy_manager):
 
 def test_sync_reapplies_file_nginx_does_not_serve(proxy_manager):
     nginx = proxy_manager.nginx
-    text = make_config().render(TEMPLATE)
+    text = make_config().render()
     # on disk but never loaded, as left by a reload that nginx rejected
     proxy_manager.filepath.write_text(text)
     assert not proxy_manager.is_synced(text)
@@ -372,7 +355,7 @@ def test_sync_reapplies_file_nginx_does_not_serve(proxy_manager):
 
 def test_sync_starts_stopped_nginx(proxy_manager):
     nginx = proxy_manager.nginx
-    text = make_config().render(TEMPLATE)
+    text = make_config().render()
     assert proxy_manager.sync(text)
     nginx.running = False
     assert not proxy_manager.is_synced(text)
@@ -382,9 +365,58 @@ def test_sync_starts_stopped_nginx(proxy_manager):
     assert proxy_manager.is_synced(text)
 
     nginx.running = False
-    other = make_config(peers=['2.2.2.2/32']).render(TEMPLATE)
+    other = make_config(peers=['2.2.2.2/32']).render()
     assert proxy_manager.sync(other)
     assert proxy_manager.is_synced(other)
+
+
+def test_sync_repairs_config_before_start(proxy_manager):
+    nginx = proxy_manager.nginx
+    proxy_manager.filepath.write_text('invalid config')
+    nginx.running = False
+    text = make_config().render()
+    original_start = nginx.ensure_running
+
+    def start():
+        assert proxy_manager.current() == text
+        return original_start()
+
+    with mock.patch.object(nginx, 'ensure_running', side_effect=start):
+        assert proxy_manager.sync(text)
+    assert proxy_manager.is_synced(text)
+
+
+def test_sync_restores_previous_config_when_start_fails(proxy_manager):
+    proxy_manager.filepath.write_text('previous config')
+    proxy_manager.nginx.running = False
+    proxy_manager.nginx.can_start = False
+    assert not proxy_manager.sync(make_config().render())
+    assert proxy_manager.current() == 'previous config'
+
+
+def test_remove_missing_file_unloads_live_listener(proxy_manager):
+    nginx = proxy_manager.nginx
+    text = make_config().render()
+    assert proxy_manager.sync(text)
+    proxy_manager.filepath.unlink()
+    assert not proxy_manager.is_synced(None)
+    nginx.port_busy = True
+    assert not proxy_manager.remove()
+    assert nginx.loaded == text
+    nginx.port_busy = False
+    assert proxy_manager.remove()
+    assert nginx.loaded is None
+    assert proxy_manager.is_synced(None)
+
+
+def test_remove_without_port_information_waits_for_nginx_to_stop(proxy_manager):
+    with mock.patch('core.nginx.manager.ConfigFileManager') as cfm:
+        cfm.return_value.skaled_config = None
+        assert not proxy_manager.is_synced(None)
+        assert not proxy_manager.remove()
+        proxy_manager.nginx.running = False
+        assert proxy_manager.remove()
+        assert proxy_manager.is_synced(None)
 
 
 def test_start_nginx(proxy_manager):
@@ -401,7 +433,7 @@ def test_sync_with_nginx_that_cannot_start(proxy_manager):
     nginx = proxy_manager.nginx
     nginx.running = False
     nginx.can_start = False
-    text = make_config().render(TEMPLATE)
+    text = make_config().render()
     assert not proxy_manager.sync(text)
     assert proxy_manager.current() is None
     proxy_manager.filepath.write_text(text)
@@ -428,7 +460,7 @@ def test_sync_gives_up_on_held_lock(proxy_manager):
         FileLock(proxy_manager.lock_path),
         mock.patch('core.nginx.manager.LOCK_TIMEOUT_SECONDS', 0.1),
     ):
-        assert not proxy_manager.sync(make_config().render(TEMPLATE))
+        assert not proxy_manager.sync(make_config().render())
     assert proxy_manager.current() is None
 
 
@@ -468,31 +500,27 @@ def test_nginx_container_reload_and_answers():
 
 def test_nginx_container_ensure_running():
     dutils = mock.Mock()
-    restart = dutils.client.containers.get.return_value.restart
+    container = dutils.client.containers.get.return_value
+    status = exec_result(0, b'Active connections: 1')
     nginx = NginxContainer(dutils=dutils)
     dutils.is_container_running.side_effect = [True]
+    container.exec_run.side_effect = [status]
     assert nginx.ensure_running()
-    restart.assert_not_called()
+    container.restart.assert_not_called()
 
-    # a failing status check counts as not running yet
-    dutils.is_container_running.side_effect = [False, docker.errors.APIError(''), True]
+    # the container runs before its nginx master does
+    dutils.is_container_running.side_effect = [False]
+    container.exec_run.side_effect = [docker.errors.APIError(''), exec_result(7), status]
     with mock.patch('core.nginx.manager.POLL_INTERVAL_SECONDS', 0.01):
         assert nginx.ensure_running()
-    restart.assert_called_once()
+    container.restart.assert_called_once()
+    assert container.exec_run.call_args == mock.call(
+        ['curl', '-skf', '-m', '2', 'http://127.0.0.1:3009/nginx-status']
+    )
 
     dutils.is_container_running.side_effect = [False]
-    restart.side_effect = docker.errors.APIError('')
+    container.restart.side_effect = docker.errors.APIError('')
     assert not nginx.ensure_running()
-
-
-def test_base_probe_urls():
-    assert base_probe_urls(False, False) == ['http://127.0.0.1:3009/.skale-proxy']
-    assert base_probe_urls(True, True) == [
-        'http://127.0.0.1:3009/.skale-proxy',
-        'https://127.0.0.1:311/.skale-proxy',
-        'http://127.0.0.1:80/.skale-proxy',
-        'https://127.0.0.1:443/.skale-proxy',
-    ]
 
 
 def test_render_base_config(tmp_path):
@@ -531,18 +559,23 @@ def base_nginx(tmp_path):
 
 def test_reload_node_proxy(base_nginx):
     stale = render_base_config(ssl_on=False, skale_node=False)
+    text = render_base_config(ssl_on=False, skale_node=True)
     base_nginx.filepath.write_text(stale)
     base_nginx.loaded = stale
     base_nginx.port_busy = True
     # nginx keeps the file it runs, and so does the disk
     assert not reload_node_proxy()
     assert base_nginx.filepath.read_text() == stale
+    # the render is on disk but nginx runs the stale file: base.conf is never dropped
+    base_nginx.filepath.write_text(text)
+    assert not reload_node_proxy()
+    assert base_nginx.filepath.read_text() == text
 
     base_nginx.port_busy = False
     assert reload_node_proxy()
-    assert base_nginx.loaded == base_nginx.filepath.read_text() != stale
+    assert base_nginx.loaded == text
     assert reload_node_proxy()
-    assert base_nginx.reloads == 2
+    assert base_nginx.reloads == 3
 
     with (
         FileLock(base_nginx.filepath.parent.parent / '.chains.lock'),

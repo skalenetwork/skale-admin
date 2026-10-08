@@ -27,6 +27,8 @@ from typing import Callable
 from filelock import FileLock, Timeout
 
 from core.chain.ssl import is_ssl_on
+from core.config.endpoint import get_local_chain_http_endpoint_from_config
+from core.config.schain.file_manager import ConfigFileManager
 from core.nginx.config import PROBE_PATH, render_base_config
 from tools.constants import (
     NGINX_BASE_CONFIG_FILEPATH,
@@ -45,9 +47,11 @@ APPLY_TIMEOUT_SECONDS = 10
 START_TIMEOUT_SECONDS = 20
 POLL_INTERVAL_SECONDS = 0.5
 
-# base.conf.j2 listeners: watchdog 3009 and 311, filestorage 80 and 443 on SKALE nodes
-WATCHDOG_HTTP_PORT, WATCHDOG_HTTPS_PORT = 3009, 311
-FILESTORAGE_HTTP_PORT, FILESTORAGE_HTTPS_PORT = 80, 443
+WATCHDOG_HTTP_PORT = 3009
+# stub_status in base.conf, the compose healthcheck asks it too
+STATUS_URL = f'http://127.0.0.1:{WATCHDOG_HTTP_PORT}/nginx-status'
+# nginx binds all listeners of a new config or none, so one base.conf server speaks for all
+BASE_PROBE_URL = f'http://127.0.0.1:{WATCHDOG_HTTP_PORT}{PROBE_PATH}'
 BASE_HEADER = '# node base config, rendered by node-cli and skale-admin: fingerprint '
 
 CHAIN_HEADER = re.compile(
@@ -79,15 +83,11 @@ def _write(path: Path, text: str | None) -> None:
 
 def wait_for(predicate: Callable[[], bool], timeout: float) -> bool:
     deadline = time.monotonic() + timeout
-    while True:
-        try:
-            if predicate():
-                return True
-        except Exception:
-            logger.debug('Condition check failed', exc_info=True)
+    while not predicate():
         if time.monotonic() >= deadline:
             return False
         time.sleep(POLL_INTERVAL_SECONDS)
+    return True
 
 
 def locked(lock_path: Path, action: Callable[[], bool]) -> bool:
@@ -122,17 +122,19 @@ class NginxContainer:
         result = self.dutils.client.containers.get(self.name).exec_run(cmd)
         return result.exit_code, result.output.decode(errors='replace')
 
+    def is_ready(self) -> bool:
+        return self.answers(STATUS_URL) is not None
+
     def ensure_running(self) -> bool:
-        """Start a stopped nginx; it loads the files on disk, which it accepted before"""
-        if self.is_running():
-            return True
-        logger.warning('%s is not running, starting it', self.name)
-        try:
-            self.dutils.client.containers.get(self.name).restart()
-        except Exception:
-            logger.exception('Could not start %s', self.name)
-            return False
-        return wait_for(self.is_running, START_TIMEOUT_SECONDS)
+        """Start nginx if it is down and wait for its master: a reload before that fails"""
+        if not self.is_running():
+            logger.warning('%s is not running, starting it', self.name)
+            try:
+                self.dutils.client.containers.get(self.name).restart()
+            except Exception:
+                logger.exception('Could not start %s', self.name)
+                return False
+        return wait_for(self.is_ready, START_TIMEOUT_SECONDS)
 
     def reload(self) -> None:
         """nginx -t and a graceful reload; exit 0 does not mean nginx took the new config"""
@@ -163,15 +165,16 @@ def apply_config(
     """Write or remove a file and reload, rolling back unless `applied` confirms nginx runs it"""
     previous = _read(path)
     if text is None and not nginx.is_running():
-        # nothing holds the ports, and nginx loads what is on disk when it starts
         _write(path, None)
         return True
-    if text is not None and not nginx.ensure_running():
-        return False
-    if previous == text and applied():
+    if previous == text and nginx.is_running() and applied():
         return True
-    _write(path, text)
     try:
+        if not nginx.is_running():
+            _write(path, text)
+        if not nginx.ensure_running():
+            raise NginxReloadError('nginx did not start')
+        _write(path, text)
         nginx.reload()
         if not wait_for(applied, APPLY_TIMEOUT_SECONDS):
             raise NginxReloadError(f'nginx did not apply {path}')
@@ -210,7 +213,7 @@ class ChainProxyManager:
     def is_synced(self, expected: str | None) -> bool:
         if self.current() != expected:
             return False
-        return expected is None or (self.nginx.is_running() and self.serves(expected))
+        return self._applied(expected)()
 
     def sync(self, expected: str | None) -> bool:
         """Write the chain file (remove it for None) and reload nginx, serialised across chains"""
@@ -229,26 +232,24 @@ class ChainProxyManager:
     def _applied(self, expected: str | None) -> Callable[[], bool]:
         if expected is not None:
             return lambda: self.serves(expected)
-        # removed: nginx must stop answering for the file that was there
         probe = chain_probe(self.current())
-        if probe is None:
-            return lambda: True
-        return lambda: self.nginx.answers(probe[0]) != probe[1]
+        if probe is not None:
+            url = probe[0]
+        else:
+            config = ConfigFileManager(self.chain_name).skaled_config
+            if config is None:
+                return lambda: True
+            url = get_local_chain_http_endpoint_from_config(config) + PROBE_PATH
+        return lambda: (
+            not self.nginx.is_running()
+            or (
+                self.nginx.is_ready()
+                and not (self.nginx.answers(url) or '').startswith(f'{self.chain_name} ')
+            )
+        )
 
     def remove(self) -> bool:
         return self.sync(None)
-
-
-def base_probe_urls(ssl_on: bool, skale_node: bool) -> list[str]:
-    """Every listener in base.conf, each has to answer before a change counts"""
-    ports = [('http', WATCHDOG_HTTP_PORT)]
-    if ssl_on:
-        ports.append(('https', WATCHDOG_HTTPS_PORT))
-    if skale_node:
-        ports.append(('http', FILESTORAGE_HTTP_PORT))
-        if ssl_on:
-            ports.append(('https', FILESTORAGE_HTTPS_PORT))
-    return [f'{scheme}://127.0.0.1:{port}{PROBE_PATH}' for scheme, port in ports]
 
 
 def base_fingerprint(text: str) -> str | None:
@@ -264,7 +265,6 @@ def reload_node_proxy(dutils: DockerUtils | None = None) -> bool:
     ssl_on, skale_node = is_ssl_on(), not is_fair()
     text = render_base_config(ssl_on, skale_node)
     answer = f'base {base_fingerprint(text)}'
-    urls = base_probe_urls(ssl_on, skale_node)
     nginx = NginxContainer(dutils=dutils)
     return locked(
         NGINX_LOCK_PATH,
@@ -272,7 +272,7 @@ def reload_node_proxy(dutils: DockerUtils | None = None) -> bool:
             nginx,
             NGINX_BASE_CONFIG_FILEPATH,
             text,
-            applied=lambda: all(nginx.answers(url) == answer for url in urls),
+            applied=lambda: nginx.answers(BASE_PROBE_URL) == answer,
             drop_unserved=False,
         ),
     )

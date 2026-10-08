@@ -21,7 +21,6 @@ import hashlib
 import ipaddress
 import re
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Iterable
 
 from jinja2 import Environment, StrictUndefined, Template
@@ -29,7 +28,7 @@ from jinja2 import Environment, StrictUndefined, Template
 from core.chain.ssl import is_ssl_on
 from core.config.endpoint import get_chain_ports_from_config, get_internal_chain_ports
 from core.firewall import IpRange
-from core.nginx.params import get_nginx_params, resolve_exempt_hosts
+from core.nginx.params import get_nginx_params
 from tools.constants import (
     NGINX_BASE_TEMPLATE_FILEPATH,
     NGINX_CHAIN_TEMPLATE_FILEPATH,
@@ -37,7 +36,6 @@ from tools.constants import (
 )
 
 CLIENT_ZONE_SIZE = '8m'
-LOOPBACK = '127.0.0.1'
 # loopback-only location in each chain file that answers with the file's fingerprint
 PROBE_PATH = '/.skale-proxy'
 
@@ -67,11 +65,9 @@ def render_fingerprinted(template: Template, data: dict, salt: bytes = b'') -> s
     return template.render(data, fingerprint=fingerprint)
 
 
-def render_base_config(
-    ssl_on: bool, skale_node: bool, template_path: Path = NGINX_BASE_TEMPLATE_FILEPATH
-) -> str:
+def render_base_config(ssl_on: bool, skale_node: bool) -> str:
     """base.conf fingerprinted with its certificate, byte-identical to node-cli's render"""
-    template = Environment().from_string(template_path.read_text())
+    template = Environment().from_string(NGINX_BASE_TEMPLATE_FILEPATH.read_text())
     cert = SSL_CERT_PATH.read_bytes() if ssl_on and SSL_CERT_PATH.is_file() else b''
     return render_fingerprinted(template, {'ssl': ssl_on, 'skale_node': skale_node}, cert)
 
@@ -81,54 +77,36 @@ class ChainProxyConfig:
     chain_name: str
     ports: dict
     peers: list[str]
-    exempt_ips: list[str]
     ssl: bool
     njs: bool
     limits: dict
 
     def template_data(self) -> dict:
         peers = sorted({ipaddress.IPv4Network(cidr, strict=False) for cidr in self.peers})
-        # an exempt address inside a peer network would lose its peer rights to the longer prefix
-        exempt_ips = sorted(
-            {
-                ip
-                for ip in (LOOPBACK, *self.exempt_ips)
-                if not any(ipaddress.IPv4Address(ip) in net for net in peers)
-            }
-        )
         internal = get_internal_chain_ports(self.ports)
         return {
             'chain': self.chain_name,
             'id': chain_ident(self.chain_name),
             'http_port': self.ports['http'],
-            'ws_port': self.ports['ws'],
             'https_port': self.ports['https'],
-            'wss_port': self.ports['wss'],
             'http_internal': internal['http'],
-            'ws_internal': internal['ws'],
             'peers': [str(net) for net in peers],
-            'exempt_ips': exempt_ips,
             'ssl': self.ssl,
             'njs': self.njs,
             'limits': self.limits,
             'client_zone_size': CLIENT_ZONE_SIZE,
             'probe_path': PROBE_PATH,
-            # unddos per-minute budgets, as the sustained zone allows them over one minute
-            'client_rpm': self.limits['per_client_sustained_rps'] * 60
-            + self.limits['sustained_burst'],
-            'global_rpm': self.limits['global_rps'] * 60,
         }
 
-    def render(self, template_path: Path = NGINX_CHAIN_TEMPLATE_FILEPATH) -> str:
+    def render(self) -> str:
         env = Environment(
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
             undefined=StrictUndefined,
         )
-        return render_fingerprinted(
-            env.from_string(template_path.read_text()), self.template_data()
-        )
+        template = env.from_string(NGINX_CHAIN_TEMPLATE_FILEPATH.read_text())
+        return render_fingerprinted(template, self.template_data())
 
 
 def build_chain_proxy_config(
@@ -139,7 +117,6 @@ def build_chain_proxy_config(
         chain_name=chain_name,
         ports=get_chain_ports_from_config(skaled_config),
         peers=peers,
-        exempt_ips=resolve_exempt_hosts(params.get('exempt_hosts', [])),
         ssl=is_ssl_on(),
         njs=bool(params.get('njs', False)),
         limits=params['limits'],

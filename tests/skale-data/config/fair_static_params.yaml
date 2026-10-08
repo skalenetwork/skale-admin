@@ -34,7 +34,6 @@ envs:
     nginx:
       rpc_proxy: false
       njs: false
-      exempt_hosts: [api.skalenodes.com, testnet-api.skalenodes.com]
       limits:
         per_client_rps: 1000
         burst: 200
@@ -48,8 +47,7 @@ envs:
         ws_conn_total: 20000
         max_batch: 128
         heavy_rps: 100
-        ban_short_s: 10
-        ban_long_s: 30
+        ban_s: 10
 
     node:
       bindIP: "0.0.0.0"
@@ -102,7 +100,6 @@ envs:
     nginx:
       rpc_proxy: false
       njs: false
-      exempt_hosts: [api.skalenodes.com, testnet-api.skalenodes.com]
       limits:
         per_client_rps: 1000
         burst: 200
@@ -116,8 +113,7 @@ envs:
         ws_conn_total: 20000
         max_batch: 128
         heavy_rps: 100
-        ban_short_s: 10
-        ban_long_s: 30
+        ban_s: 10
 
     node:
       bindIP: "0.0.0.0"
@@ -170,7 +166,6 @@ envs:
     nginx:
       rpc_proxy: false
       njs: false
-      exempt_hosts: [api.skalenodes.com, testnet-api.skalenodes.com]
       limits:
         per_client_rps: 1000
         burst: 200
@@ -184,8 +179,7 @@ envs:
         ws_conn_total: 20000
         max_batch: 128
         heavy_rps: 100
-        ban_short_s: 10
-        ban_long_s: 30
+        ban_s: 10
 
     node:
       bindIP: "0.0.0.0"
@@ -239,7 +233,6 @@ envs:
     nginx:
       rpc_proxy: false
       njs: false
-      exempt_hosts: [api.skalenodes.com, testnet-api.skalenodes.com]
       limits:
         per_client_rps: 1000
         burst: 200
@@ -253,8 +246,7 @@ envs:
         ws_conn_total: 20000
         max_batch: 128
         heavy_rps: 100
-        ban_short_s: 10
-        ban_long_s: 30
+        ban_s: 10
 
     node:
       bindIP: "0.0.0.0"

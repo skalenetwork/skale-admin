@@ -5,8 +5,9 @@ import pytest
 from apscheduler.schedulers.background import BackgroundScheduler
 from skale_core.settings import BaseNodeSettings
 
-from core.checks.fair import SkaledChecks
+from core.checks.fair import SkaledChecks, get_network_scope_ips_from_firewall
 from core.config.schain.static_params import get_fair_chain_name
+from core.firewall import Action, SChainRule
 from core.monitor.fair.action_skaled import FairSkaledActionManager
 from core.monitor.fair.monitor_skaled import (
     ProxySwitchSkaledMonitor,
@@ -15,6 +16,8 @@ from core.monitor.fair.monitor_skaled import (
 )
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
+from core.redis.node_config_fair import NodeConfigFair
+from core.utils.fair import get_local_skaled_endpoint_fair, update_local_skaled_endpoint
 from tests.utils import TEST_TASK_SLEEP
 from tools.constants.fair import SKALED_RESTART_JOB_NAME
 from tools.helper import is_passive
@@ -110,6 +113,7 @@ def test_fair_skaled_action_manager_recreated_skaled_container(
 
 def test_get_skaled_monitor_rpc_proxy_switch(skaled_am: FairSkaledActionManager, chain_record):
     chain_record.set_rpc_proxy_mode(False)
+    chain_record.set_restart_ts(0)
     status = {'config': True, 'volume': True, 'config_updated': True, 'skaled_container': True}
     mon = get_skaled_monitor(skaled_am, status, chain_record, None)
     assert mon == RegularSkaledMonitor
@@ -125,9 +129,54 @@ def test_get_skaled_monitor_rpc_proxy_switch(skaled_am: FairSkaledActionManager,
 def test_proxy_switch_monitor_schedules_restart(skaled_am: FairSkaledActionManager):
     with (
         mock.patch.object(RegularSkaledMonitor, 'execute'),
-        mock.patch('core.nginx.mode.is_rpc_proxy_enabled', return_value=True),
+        mock.patch(
+            'core.monitor.fair.action_skaled.random_timestamp_between',
+            side_effect=lambda start, end: end,
+        ),
     ):
         ProxySwitchSkaledMonitor(skaled_am).execute()
     job = skaled_am.scheduler.get_job(SKALED_RESTART_JOB_NAME)
     assert job is not None
-    assert -5 <= skaled_am.chain_record.restart_ts - int(datetime.now().timestamp()) <= 3600
+    # the latest restart lands an hour out, so the committee spreads over that window
+    assert 3595 <= skaled_am.chain_record.restart_ts - int(datetime.now().timestamp()) <= 3600
+
+
+def test_proxy_peers(skaled_checks: SkaledChecks):
+    config = {
+        'skaleConfig': {
+            'sChain': {
+                'nodes': {
+                    '1': {'group': [{'ip': '10.2.0.1'}]},
+                    '2': {'group': [{'ip': '10.2.0.2'}, {'ip': '10.1.0.1'}]},
+                }
+            }
+        }
+    }
+    rules = [
+        SChainRule(first_port=10001, first_ip='10.1.0.1'),
+        SChainRule(first_port=10001, first_ip='10.1.0.4'),
+        SChainRule(first_port=10003),
+        SChainRule(first_port=10001, first_ip='10.1.0.3', action=Action.DROP),
+    ]
+    with mock.patch('core.checks.fair.NFTablesController') as nft:
+        nft.return_value.rules = rules
+        assert get_network_scope_ips_from_firewall() == ['10.1.0.1', '10.1.0.4']
+        # the committee that took over at timestamp 2 and the network the firewall accepts
+        assert sorted(skaled_checks.proxy_peers(config)) == [
+            '10.1.0.1/32',
+            '10.1.0.4/32',
+            '10.2.0.2/32',
+        ]
+
+
+def test_local_endpoint_follows_rpc_proxy_mode(chain_record):
+    config = {'skaleConfig': {'nodeInfo': {'httpRpcPort': 1234, 'wsRpcPort': 1233}}}
+    with mock.patch('core.utils.fair.ConfigFileManager') as cfm:
+        cfm.return_value.skaled_config = config
+        chain_record.set_rpc_proxy_mode(False)
+        assert get_local_skaled_endpoint_fair() == 'http://127.0.0.1:1234'
+        chain_record.set_rpc_proxy_mode(True)
+        update_local_skaled_endpoint()
+    # transaction-manager reads it from there
+    assert NodeConfigFair().local_endpoint == 'http://127.0.0.1:1266'
+    chain_record.set_rpc_proxy_mode(False)

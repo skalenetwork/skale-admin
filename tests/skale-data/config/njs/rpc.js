@@ -1,6 +1,7 @@
-// Per-chain JSON-RPC limits on top of limit_req: batch weight, bans, heavy methods, gating.
-// The chain server sets rpc_chain, rpc_class and the limits; peers never reach this handler.
+// skaled trusts loopback for some methods, and every proxied call reaches it from loopback.
+// With $rpc_limits on, non-peer calls also get gating and a batch cap, public ones budgets too.
 
+const LOOPBACK_TRUSTED_METHODS = ['setSchainExitTime'];
 const GATED_METHODS = [
     'skale_getSnapshot',
     'skale_downloadSnapshotFragment',
@@ -9,11 +10,9 @@ const GATED_METHODS = [
 ];
 const GATED_PREFIXES = ['debug_', 'admin_', 'personal_', 'miner_', 'skale_performanceTracking'];
 const HEAVY_METHODS = ['eth_getLogs', 'eth_call', 'eth_estimateGas'];
-const HEAVY_PREFIXES = ['debug_'];
-const HOP_BY_HOP = ['connection', 'keep-alive', 'transfer-encoding', 'content-length'];
 
-function matches(method, names, prefixes) {
-    return names.includes(method) || prefixes.some((prefix) => method.startsWith(prefix));
+function isGated(method) {
+    return GATED_METHODS.includes(method) || GATED_PREFIXES.some((prefix) => method.startsWith(prefix));
 }
 
 function limit(r, name) {
@@ -34,20 +33,9 @@ function reject(r, status, id, code, message) {
     r.return(status, JSON.stringify(error));
 }
 
-async function relay(r, options) {
-    const reply = await r.subrequest('/_upstream', options);
-    for (const name in reply.headersOut) {
-        if (!HOP_BY_HOP.includes(name.toLowerCase())) {
-            r.headersOut[name] = reply.headersOut[name];
-        }
-    }
-    r.return(reply.status, reply.responseBuffer);
-}
-
-// Returns true when the public client is over a limit; over a per-client limit also bans it.
-function limited(r, weight, heavy) {
+// True when the client is over a budget; going over its own budget also bans it.
+function limited(r, calls, heavy) {
     const now = Math.floor(Date.now() / 1000);
-    const minute = Math.floor(now / 60);
     const chain = r.variables.rpc_chain;
     const client = `${chain}:${r.remoteAddress}`;
     const bans = ngx.shared.rpc_bans;
@@ -55,62 +43,56 @@ function limited(r, weight, heavy) {
     if ((bans.get(client) || 0) > now) {
         return true;
     }
-    // the chain-wide cap rejects without banning anyone, skaled's own global limit backs it up
-    if (
-        exceeded(r, `${chain}:*:s:${now}`, weight, 'rpc_global_rps') ||
-        exceeded(r, `${chain}:*:m:${minute}`, weight, 'rpc_global_rpm')
-    ) {
+    // the chain-wide cap bans no one, skaled's own global limit backs it up
+    if (exceeded(r, `${chain}:*:${now}`, calls, 'rpc_global_rps')) {
         return true;
     }
-    let seconds = 0;
-    if (exceeded(r, `${client}:s:${now}`, weight, 'rpc_client_rps')) {
-        seconds = limit(r, 'rpc_ban_short');
-    } else if (exceeded(r, `${client}:m:${minute}`, weight, 'rpc_client_rpm')) {
-        seconds = limit(r, 'rpc_ban_long');
-    } else if (heavy > 0 && exceeded(r, `${client}:h:${now}`, heavy, 'rpc_heavy_rps')) {
-        seconds = limit(r, 'rpc_ban_short');
-    }
-    if (seconds > 0) {
-        bans.set(client, now + seconds);
+    if (exceeded(r, `${client}:${now}`, calls, 'rpc_client_rps') ||
+        (heavy > 0 && exceeded(r, `${client}:h:${now}`, heavy, 'rpc_heavy_rps'))) {
+        bans.set(client, now + limit(r, 'rpc_ban'));
         return true;
     }
     return false;
 }
 
-async function handle(r) {
-    if (r.method !== 'POST') {
-        // CORS preflight and anything else skaled answers itself
-        return relay(r, { method: r.method });
+function handle(r) {
+    const peer = r.variables.rpc_class === 'peer';
+    const upstream = peer ? '@rpc_peer' : '@rpc_upstream';
+    if (r.method === 'OPTIONS') {
+        // CORS preflight, skaled answers it without reading a body
+        return r.internalRedirect(upstream);
     }
 
     let body;
     try {
         body = JSON.parse(r.requestText);
     } catch (e) {
+        // skaled may read what njs cannot, so nothing unchecked goes through
         return reject(r, 400, null, -32700, 'parse error');
     }
     const calls = Array.isArray(body) ? body : [body];
-    if (calls.length === 0 || calls.length > limit(r, 'rpc_max_batch')) {
+    const limits = r.variables.rpc_limits === 'on' && !peer;
+    if (limits && (calls.length === 0 || calls.length > limit(r, 'rpc_max_batch'))) {
         return reject(r, 400, null, -32600, 'invalid batch size');
     }
 
     let heavy = 0;
     for (let i = 0; i < calls.length; i++) {
         const call = calls[i];
-        const method = call && typeof call.method === 'string' ? call.method : '';
-        if (matches(method, GATED_METHODS, GATED_PREFIXES)) {
+        // skaled reads the method as a C string, up to the first NUL
+        const method = call && typeof call.method === 'string' ? call.method.split('\0')[0] : '';
+        if (LOOPBACK_TRUSTED_METHODS.includes(method) || (limits && isGated(method))) {
             return reject(r, 403, call.id, -32601, 'method not allowed');
         }
-        if (matches(method, HEAVY_METHODS, HEAVY_PREFIXES)) {
+        if (HEAVY_METHODS.includes(method)) {
             heavy += 1;
         }
     }
 
-    if (r.variables.rpc_class === 'public' && limited(r, calls.length, heavy)) {
+    if (limits && r.variables.rpc_class === 'public' && limited(r, calls.length, heavy)) {
         return reject(r, 429, null, -32005, 'rate limited');
     }
-
-    return relay(r, { method: 'POST', body: r.requestText });
+    r.internalRedirect(upstream);
 }
 
 export default { handle: handle };

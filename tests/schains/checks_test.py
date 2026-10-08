@@ -83,8 +83,7 @@ NGINX_LIMITS = {
     'ws_conn_total': 20000,
     'max_batch': 128,
     'heavy_rps': 100,
-    'ban_short_s': 10,
-    'ban_long_s': 30,
+    'ban_s': 10,
 }
 
 
@@ -287,7 +286,7 @@ def test_nginx_config_check(schain_checks, schain_db, tmp_path):
     chains_path.mkdir()
     chain_file = chains_path / f'{schain_checks.name}.conf'
     record = schain_checks.schain_record
-    params = {'rpc_proxy': True, 'njs': False, 'exempt_hosts': [], 'limits': NGINX_LIMITS}
+    params = {'rpc_proxy': True, 'njs': False, 'limits': NGINX_LIMITS}
     with (
         mock.patch('core.nginx.manager.NGINX_CHAINS_PATH', chains_path),
         mock.patch('core.nginx.params.NGINX_CHAINS_PATH', chains_path),
@@ -314,23 +313,22 @@ def test_nginx_config_check(schain_checks, schain_db, tmp_path):
                 assert res.data == {'synced': True, 'mode': False}
 
             record.set_rpc_proxy_mode(True)
+            # a stream released before the proxy has no nginx section
+            with mock.patch('core.checks.base.get_nginx_params', return_value={}):
+                assert schain_checks.expected_nginx_config() is None
+            with mock.patch.object(schain_checks.cfm, 'skaled_config_exists', return_value=False):
+                assert schain_checks.expected_nginx_config() is None
             expected = schain_checks.expected_nginx_config()
             assert 'server 127.0.0.1:10035;' in expected
             assert not schain_checks.nginx_config.status
             chain_file.write_text(expected)
-            with (
-                mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=True),
-                mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=True),
-            ):
+            with mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=True):
                 assert schain_checks.nginx_config.status
             # on disk but not what nginx runs, e.g. a reload that nginx rejected
-            with (
-                mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=True),
-                mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=False),
-            ):
+            with mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=False):
                 assert not schain_checks.nginx_config.status
-            # nginx down means the chain is not served
-            with mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=False):
+            # nginx down answers nothing, so the chain is not served
+            with mock.patch('core.nginx.manager.NginxContainer.answers', return_value=None):
                 assert not schain_checks.nginx_config.status
 
         # flag off, skaled still on the internal ports: nginx serves it until the restart
@@ -339,7 +337,6 @@ def test_nginx_config_check(schain_checks, schain_db, tmp_path):
             mock.patch('core.nginx.params.get_nginx_params', return_value=params),
             mock.patch('core.nginx.config.get_nginx_params', return_value=params),
             mock.patch('core.checks.base.get_nginx_params', return_value=params),
-            mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=True),
             mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=True),
         ):
             assert schain_checks.expected_nginx_config() == expected
@@ -359,7 +356,7 @@ def test_nginx_proxy_peers_include_sync_ranges(schain_checks, schain_config, sch
 
     chains_path = tmp_path / 'chains'
     chains_path.mkdir()
-    params = {'rpc_proxy': True, 'njs': True, 'exempt_hosts': [], 'limits': NGINX_LIMITS}
+    params = {'rpc_proxy': True, 'njs': True, 'limits': NGINX_LIMITS}
     schain_checks.schain_record.set_rpc_proxy_mode(True)
     with (
         mock.patch('core.nginx.manager.NGINX_CHAINS_PATH', chains_path),
@@ -367,7 +364,6 @@ def test_nginx_proxy_peers_include_sync_ranges(schain_checks, schain_config, sch
         mock.patch('core.nginx.params.get_nginx_params', return_value=params),
         mock.patch('core.nginx.config.get_nginx_params', return_value=params),
         mock.patch('core.checks.base.get_nginx_params', return_value=params),
-        mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=True),
         mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=True),
     ):
         # sync ranges reach the nginx peer map: no limits, no njs, snapshot chunks served

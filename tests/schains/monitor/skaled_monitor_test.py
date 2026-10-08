@@ -414,7 +414,18 @@ def test_get_skaled_monitor_rpc_proxy_switch(
         with mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=True):
             mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
             assert mon == RecreateSkaledMonitor
-            # a stopped container is simply started on the new ports
+            # a node rotating in keeps its snapshot start, the switch waits for it
+            with mock.patch.object(
+                SkaledActionManager,
+                'finish_ts',
+                new_callable=mock.PropertyMock,
+                return_value=int(time.time()) + 60,
+            ):
+                mon = get_skaled_monitor(
+                    skaled_am, status, schain_record, skaled_status, ncli_status
+                )
+                assert mon == NewNodeSkaledMonitor
+            # a missing container starts on the new ports, a stopped one moves once it runs again
             status['skaled_container'] = False
             mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
             assert mon == RegularSkaledMonitor

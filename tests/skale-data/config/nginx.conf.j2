@@ -27,7 +27,7 @@ http {
     keepalive_timeout  65;
     server_tokens off;
 
-    # tier 2 sChain RPC limiting, used by chain servers rendered with njs on
+    # sChain RPC call checks, see njs/rpc.js
     js_import rpc from /etc/nginx/njs/rpc.js;
     js_shared_dict_zone zone=rpc_counters:16m timeout=60s type=number evict;
     js_shared_dict_zone zone=rpc_bans:4m timeout=60s type=number evict;

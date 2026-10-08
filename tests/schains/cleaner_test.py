@@ -289,7 +289,9 @@ def test_cleanup_schain_retries_while_nginx_keeps_ports(
     # the dir and the record keep the chain on the node, so the next run finds it again
     assert os.path.isdir(schain_dir_path)
     assert SChainRecord.get_by_name(schain_name).is_deleted is False
+    cleanup_firewall_rules.assert_not_called()
 
     cleanup_schain(node_config.id, schain_name, **options)
     assert not os.path.isdir(schain_dir_path)
     assert SChainRecord.get_by_name(schain_name).is_deleted is True
+    cleanup_firewall_rules.assert_called_once_with(schain_name)

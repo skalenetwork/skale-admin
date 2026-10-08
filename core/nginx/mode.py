@@ -27,17 +27,15 @@ logger = logging.getLogger(__name__)
 
 
 def target_rpc_proxy_mode(current: bool, dutils: DockerUtils | None = None) -> bool:
-    """Moving behind nginx needs it running, leaving follows only the flag"""
+    """The flag decides, except that moving behind nginx waits until nginx runs"""
     enabled = is_rpc_proxy_enabled()
-    if current or not enabled:
-        return enabled
-    if not NginxContainer(dutils=dutils).is_running():
+    if enabled and not current and not NginxContainer(dutils=dutils).is_running():
         logger.warning('RPC proxy is on but nginx is not running, skaled keeps the public ports')
         return False
-    return True
+    return enabled
 
 
 def is_rpc_proxy_mode_changed(chain_record, dutils: DockerUtils | None = None) -> bool:
     """The running container uses other ports than the ones it should use now"""
-    current = bool(chain_record.rpc_proxy_mode)
+    current = chain_record.rpc_proxy_mode
     return current != target_rpc_proxy_mode(current, dutils=dutils)

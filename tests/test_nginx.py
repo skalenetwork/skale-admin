@@ -1,4 +1,5 @@
 import contextlib
+import json
 import shutil
 import time
 from pathlib import Path
@@ -9,7 +10,7 @@ import pytest
 from jinja2 import Environment
 
 from core.nginx import ChainProxyConfig, ChainProxyManager, reload_node_proxy
-from core.nginx.manager import base_fingerprint
+from core.nginx.manager import base_fingerprint, wait_for
 from tools.constants import CONFIG_FOLDER, NGINX_CONTAINER_NAME
 
 NGINX_IMAGE = 'nginx:1.29.5'
@@ -29,10 +30,10 @@ LIMITS = {
     'ws_conn_total': 20000,
     'max_batch': 128,
     'heavy_rps': 100,
-    'ban_short_s': 10,
-    'ban_long_s': 30,
+    'ban_s': 10,
 }
-# stands in for skaled on the internal http port
+EXIT_TIME_CALL = '{"method":"setSchainExitTime","params":{"finishTime":1}}'
+# stands in for skaled on the internal http and ws ports
 FAKE_SKALED = """
 js_import fake_skaled from /etc/nginx/conf.d/fake_skaled.js;
 server {
@@ -41,12 +42,18 @@ server {
         js_content fake_skaled.handle;
     }
 }
+server {
+    listen 127.0.0.1:10034;
+    location / {
+        return 200 '$http_upgrade $http_connection';
+    }
+}
 """
-# snapshot fragments are as large as the request asks, like skaled's 100 MiB chunks
+# answers are as large as the request asks, like skaled's 100 MiB snapshot chunks
 FAKE_SKALED_JS = """
 function handle(r) {
     const body = JSON.parse(r.requestText || '{}');
-    if (body.method === 'skale_downloadSnapshotFragment') {
+    if (body.params && body.params.size) {
         r.return(200, 'x'.repeat(body.params.size));
         return;
     }
@@ -115,21 +122,30 @@ def render(njs: bool = False, peers: tuple[str, ...] = ('10.1.1.1/32',)) -> str:
         chain_name=CHAIN,
         ports=PORTS,
         peers=list(peers),
-        exempt_ips=[],
         ssl=False,
         njs=njs,
         limits=LIMITS,
     ).render()
 
 
-def post(container, host: str, body: str = '{"method":"eth_chainId"}', times: int = 1) -> list:
+def post(
+    container,
+    host: str,
+    body: str = '{"method":"eth_chainId"}',
+    times: int = 1,
+    method: str = 'POST',
+) -> list:
     """HTTP codes of quick requests to the chain's public http port, made inside the container"""
     curl = (
-        f"curl -s -o /dev/null -w '%{{http_code}} ' -H 'Content-Type: application/json' "
-        f"-d '{body}' http://{host}:10003/"
+        f"curl -s -o /dev/null -w '%{{http_code}} ' -X {method} "
+        f"-H 'Content-Type: application/json' -d '{body}' http://{host}:10003/"
     )
     result = container.exec_run(['sh', '-c', f'for i in $(seq {times}); do {curl}; done'])
     return result.output.decode().split()
+
+
+def curl(container, url: str, *options: str) -> str:
+    return container.exec_run(['curl', '-s', *options, url]).output.decode()
 
 
 def container_ip(container) -> str:
@@ -142,9 +158,26 @@ def test_chain_proxy_serves_and_limits(nginx_container, manager):
     assert manager.sync(text)
     assert manager.is_synced(text)
 
-    assert post(nginx_container, container_ip(nginx_container), times=3) == ['200', '429', '429']
+    ip = container_ip(nginx_container)
+    assert post(nginx_container, ip, times=3) == ['200', '429', '429']
+    assert json.loads(curl(nginx_container, f'http://{ip}:10003/', '-d', '{}')) == {
+        'jsonrpc': '2.0',
+        'id': None,
+        'error': {'code': -32005, 'message': 'rate limited'},
+    }
     # loopback is exempt from every zone
     assert post(nginx_container, '127.0.0.1', times=3) == ['200', '200', '200']
+    assert (
+        curl(
+            nginx_container,
+            f'http://{ip}:10003/.skale-proxy',
+            '-o',
+            '/dev/null',
+            '-w',
+            '%{http_code}',
+        )
+        == '403'
+    )
 
 
 def test_chain_proxy_keeps_last_good_config(nginx_container, manager):
@@ -168,26 +201,93 @@ def test_chain_proxy_remove_frees_ports(nginx_container, manager):
     assert codes == ['000']
 
 
+def test_chain_proxy_removes_listener_after_file_loss(nginx_container, manager):
+    assert manager.sync(render())
+    manager.filepath.unlink()
+    config = {'skaleConfig': {'nodeInfo': {'httpRpcPort': 10003, 'wsRpcPort': 10002}}}
+    with mock.patch('core.nginx.manager.ConfigFileManager') as cfm:
+        cfm.return_value.skaled_config = config
+        assert not manager.is_synced(None)
+        assert manager.remove()
+        assert manager.is_synced(None)
+    assert post(nginx_container, '127.0.0.1') == ['000']
+
+
+def test_chain_proxy_repairs_config_that_prevents_start(nginx_container, manager):
+    assert manager.sync(render())
+    nginx_container.stop(timeout=1)
+    manager.filepath.write_text(
+        'server { listen 10008 ssl; ssl_certificate /missing; ssl_certificate_key /missing; }'
+    )
+    text = render()
+    assert manager.sync(text)
+    assert manager.is_synced(text)
+    assert post(nginx_container, '127.0.0.1') == ['200']
+
+
+@pytest.mark.parametrize('peer', [False, True])
+def test_chain_proxy_blocks_loopback_trusted_method(nginx_container, manager, peer):
+    ip = container_ip(nginx_container)
+    assert manager.sync(render(peers=(f'{ip}/32',) if peer else ()))
+    # skaled trusts loopback callers, and every proxied call reaches it from loopback
+    assert post(nginx_container, ip, body=EXIT_TIME_CALL) == ['403']
+    batch = f'[{{"method":"eth_chainId"}},{EXIT_TIME_CALL}]'
+    assert post(nginx_container, '127.0.0.1', body=batch) == ['403']
+    assert post(nginx_container, '127.0.0.1', body=EXIT_TIME_CALL, method='PUT') == ['403']
+    # what njs cannot read is never passed on
+    assert post(nginx_container, '127.0.0.1', body='not json') == ['400']
+    assert post(nginx_container, '127.0.0.1', method='OPTIONS') == ['200']
+
+
 def test_chain_proxy_njs_gates_methods(nginx_container, manager):
     assert manager.sync(render(njs=True))
     ip = container_ip(nginx_container)
     assert post(nginx_container, ip, body='{"method":"skale_getSnapshot"}') == ['403']
+    gated = '{"method":"skale_getSnapshot"}'
+    assert post(nginx_container, '127.0.0.1', body=gated, method='PUT') == ['403']
     assert post(nginx_container, '127.0.0.1', body='{"method":"eth_chainId"}') == ['200']
+    calls = ','.join(['{"method":"eth_chainId"}'] * (LIMITS['max_batch'] + 1))
+    assert post(nginx_container, '127.0.0.1', body=f'[{calls}]') == ['400']
+
+
+def test_chain_proxy_njs_bans_over_budget(nginx_container, manager):
+    assert manager.sync(render(njs=True))
+    ip = container_ip(nginx_container)
+    two_calls = '[{"method":"eth_chainId"},{"method":"eth_chainId"}]'
+    # one request for limit_req, two calls for the njs budget of one per second
+    assert post(nginx_container, ip, body=two_calls) == ['429']
+    time.sleep(1.1)
+    assert post(nginx_container, ip) == ['429']
+    # loopback skips the budgets
+    assert post(nginx_container, '127.0.0.1', body=two_calls) == ['200']
 
 
 @pytest.mark.parametrize('njs', [False, True])
-def test_chain_proxy_peer_gets_large_snapshot_chunk(nginx_container, manager, njs):
+@pytest.mark.parametrize('peer', [False, True])
+def test_chain_proxy_streams_large_answers(nginx_container, manager, njs, peer):
     ip = container_ip(nginx_container)
-    # the container reaches itself from its own address, which is now a peer
-    assert manager.sync(render(njs=njs, peers=(f'{ip}/32',)))
-    size = 12 * 1024 * 1024  # above the 8m njs subrequest buffer
-    body = f'{{"method":"skale_downloadSnapshotFragment","params":{{"size":{size}}}}}'
-    curl = (
-        "curl -s -o /dev/null -w '%{http_code} %{size_download}' "
-        f"-H 'Content-Type: application/json' -d '{body}' http://{ip}:10003/"
+    # the container reaches itself from its own address, a peer when listed
+    assert manager.sync(render(njs=njs, peers=(f'{ip}/32',) if peer else ()))
+    method = 'skale_downloadSnapshotFragment' if peer else 'eth_getBlockByNumber'
+    size = 12 * 1024 * 1024
+    body = f'{{"method":"{method}","params":{{"size":{size}}}}}'
+    answer = curl(
+        nginx_container,
+        f'http://{ip}:10003/',
+        '-o',
+        '/dev/null',
+        '-w',
+        '%{http_code} %{size_download}',
+        '-d',
+        body,
     )
-    result = nginx_container.exec_run(['sh', '-c', curl])
-    assert result.output.decode().split() == ['200', str(size)]
+    assert answer.split() == ['200', str(size)]
+
+
+def test_chain_proxy_upgrades_websockets(nginx_container, manager):
+    assert manager.sync(render())
+    upgrade = ('-H', 'Upgrade: websocket', '-H', 'Connection: Upgrade')
+    assert curl(nginx_container, 'http://127.0.0.1:10002/', *upgrade) == 'websocket upgrade'
 
 
 @pytest.fixture
@@ -200,7 +300,8 @@ def port_holder(nginx_container, dutils):
         network_mode=f'container:{NGINX_CONTAINER_NAME}',
         command=['sh', '-c', 'while true; do nc -l -p 10003 > /dev/null; done'],
     )
-    time.sleep(1)
+    listening = ['sh', '-c', 'netstat -ltn | grep -q ":10003 "']
+    assert wait_for(lambda: holder.exec_run(listening).exit_code == 0, 10)
     try:
         yield holder
     finally:
@@ -245,6 +346,15 @@ def test_node_proxy_reload_is_verified(nginx_container, nginx_dir, dutils):
     ):
         assert reload_node_proxy(dutils)
     answer = f'base {base_fingerprint(filepath.read_text())}'
+    ip = container_ip(nginx_container)
     for port in (3009, 80):
-        probe = nginx_container.exec_run(['curl', '-s', f'http://127.0.0.1:{port}/.skale-proxy'])
-        assert probe.output.decode() == answer
+        assert curl(nginx_container, f'http://127.0.0.1:{port}/.skale-proxy') == answer
+        code = curl(
+            nginx_container,
+            f'http://{ip}:{port}/.skale-proxy',
+            '-o',
+            '/dev/null',
+            '-w',
+            '%{http_code}',
+        )
+        assert code == '403'

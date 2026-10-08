@@ -141,15 +141,17 @@ class FairSkaledActionManager(BaseSkaledActionManager):
 
     @BaseActionManager.monitor_block
     def schedule_skaled_restart(self, restart_deadline: int) -> bool:
+        earliest_possible_restart_ts = int(time.time())
+        latest_possible_restart_ts = max(
+            earliest_possible_restart_ts, restart_deadline - SKALED_RESTART_DELAY_SECONDS
+        )
         job = self.scheduler.get_job(SKALED_RESTART_JOB_NAME)
-        if job:
+        if job and job.next_run_time.timestamp() <= latest_possible_restart_ts:
             logger.warning(
                 f'skaled restart job already scheduled at {self.chain_record.restart_ts}'
             )
             return False
         logger.info('Scheduling skaled restart')
-        earliest_possible_restart_ts = int(time.time())
-        latest_possible_restart_ts = restart_deadline - SKALED_RESTART_DELAY_SECONDS
         logger.info(
             'Scheduling skaled restart between %d and %d, restart_deadline: %d',
             earliest_possible_restart_ts,
@@ -159,15 +161,21 @@ class FairSkaledActionManager(BaseSkaledActionManager):
         restart_ts = random_timestamp_between(
             earliest_possible_restart_ts, latest_possible_restart_ts
         )
-        self.chain_record.set_restart_ts(restart_ts)
         logger.info(
             'Scheduling skaled restart at %d, job id: %s', restart_ts, SKALED_RESTART_JOB_NAME
         )
-        self.scheduler.add_job(
-            func=self.recreated_skaled_container,
-            trigger='date',
-            run_date=datetime.fromtimestamp(restart_ts, tz=timezone.utc),
-            id=SKALED_RESTART_JOB_NAME,
-            name='skaled restart job',
-        )
+        previous_restart_ts = self.chain_record.restart_ts
+        self.chain_record.set_restart_ts(restart_ts)
+        try:
+            self.scheduler.add_job(
+                func=self.recreated_skaled_container,
+                trigger='date',
+                run_date=datetime.fromtimestamp(restart_ts, tz=timezone.utc),
+                id=SKALED_RESTART_JOB_NAME,
+                name='skaled restart job',
+                replace_existing=True,
+            )
+        except Exception:
+            self.chain_record.set_restart_ts(previous_restart_ts)
+            raise
         return True
