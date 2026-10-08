@@ -238,7 +238,7 @@ class ChainProxyManager:
         else:
             config = ConfigFileManager(self.chain_name).skaled_config
             if config is None:
-                return lambda: True
+                return lambda: not self.nginx.is_running()
             url = get_local_chain_http_endpoint_from_config(config) + PROBE_PATH
         return lambda: (
             not self.nginx.is_running()

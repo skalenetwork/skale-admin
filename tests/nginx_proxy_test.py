@@ -141,9 +141,9 @@ def nginx_layout(tmp_path):
 def test_internal_ports_and_local_endpoint(schain_config):
     assert get_internal_chain_ports(PORTS) == {
         'http': 10035,
-        'ws': 10034,
+        'ws': 10002,
         'https': 10040,
-        'wss': 10039,
+        'wss': 10007,
     }
     assert get_local_chain_http_endpoint_from_config(schain_config) == 'http://127.0.0.1:10003'
     assert (
@@ -167,17 +167,18 @@ def test_template_data():
         peers=['2.2.2.2/32', '1.1.1.1/32', '2.2.2.2/32', '10.0.0.0/30'],
     ).template_data()
     assert data['id'] == 'elated_tan_skat'
-    assert (data['http_port'], data['ws_port']) == (10003, 10002)
-    assert (data['http_internal'], data['ws_internal']) == (10035, 10034)
+    assert (data['http_port'], data['https_port'], data['http_internal']) == (10003, 10008, 10035)
+    assert 'ws_port' not in data
+    assert 'ws_internal' not in data
     assert data['peers'] == ['1.1.1.1/32', '2.2.2.2/32', '10.0.0.0/30']
 
 
 def test_render():
     text = make_config().render()
     assert 'server 127.0.0.1:10035;' in text
-    assert 'server 127.0.0.1:10034;' in text
+    assert 'server 127.0.0.1:10034;' not in text
     assert 'listen 10003;' in text
-    assert 'listen 10002;' in text
+    assert 'listen 10002;' not in text
     assert '1.1.1.1/32 peer;' in text
     assert '127.0.0.1/32 exempt;' in text
     assert 'ssl' not in text
@@ -189,7 +190,7 @@ def test_render():
 
     text = make_config(ssl=True, njs=True).render()
     assert 'listen 10008 ssl;' in text
-    assert 'listen 10007 ssl;' in text
+    assert 'listen 10007 ssl;' not in text
     assert 'set $rpc_limits      on;' in text
     assert 'set $rpc_ban         10;' in text
 
@@ -410,6 +411,8 @@ def test_remove_missing_file_unloads_live_listener(proxy_manager):
 
 
 def test_remove_without_port_information_waits_for_nginx_to_stop(proxy_manager):
+    assert proxy_manager.sync(make_config().render())
+    proxy_manager.filepath.unlink()
     with mock.patch('core.nginx.manager.ConfigFileManager') as cfm:
         cfm.return_value.skaled_config = None
         assert not proxy_manager.is_synced(None)
@@ -534,7 +537,7 @@ def test_render_base_config(tmp_path):
     assert 'listen 80;' not in fair
     assert 'listen 443 ssl;' in first
     fingerprint = base_fingerprint(first)
-    assert first.count(f"return 200 'base {fingerprint}';") == 2
+    assert first.count(f"return 200 'base {fingerprint}';") == 1
     # a new certificate is a new file for nginx to answer for
     assert base_fingerprint(second) != fingerprint
     assert base_fingerprint('server {}') is None

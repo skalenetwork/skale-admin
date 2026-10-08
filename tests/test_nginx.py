@@ -10,7 +10,7 @@ import pytest
 from jinja2 import Environment
 
 from core.nginx import ChainProxyConfig, ChainProxyManager, reload_node_proxy
-from core.nginx.manager import base_fingerprint, wait_for
+from core.nginx.manager import BASE_PROBE_URL, base_fingerprint, wait_for
 from tools.constants import CONFIG_FOLDER, NGINX_CONTAINER_NAME, NGINX_TEMPLATE_DIR
 
 NGINX_IMAGE = 'nginx:1.29.5'
@@ -33,19 +33,13 @@ LIMITS = {
     'ban_s': 10,
 }
 EXIT_TIME_CALL = '{"method":"setSchainExitTime","params":{"finishTime":1}}'
-# stands in for skaled on the internal http and ws ports
+# stands in for skaled on the internal HTTP port
 FAKE_SKALED = """
 js_import fake_skaled from /etc/nginx/conf.d/fake_skaled.js;
 server {
     listen 127.0.0.1:10035;
     location / {
         js_content fake_skaled.handle;
-    }
-}
-server {
-    listen 127.0.0.1:10034;
-    location / {
-        return 200 '$http_upgrade $http_connection';
     }
 }
 """
@@ -284,10 +278,12 @@ def test_chain_proxy_streams_large_answers(nginx_container, manager, njs, peer):
     assert answer.split() == ['200', str(size)]
 
 
-def test_chain_proxy_upgrades_websockets(nginx_container, manager):
+def test_chain_proxy_leaves_websocket_ports_to_skaled(nginx_container, manager):
     assert manager.sync(render())
-    upgrade = ('-H', 'Upgrade: websocket', '-H', 'Connection: Upgrade')
-    assert curl(nginx_container, 'http://127.0.0.1:10002/', *upgrade) == 'websocket upgrade'
+    assert post(nginx_container, '127.0.0.1') == ['200']
+    for port in (PORTS['ws'], PORTS['wss']):
+        result = nginx_container.exec_run(['curl', '-s', '-m', '2', f'http://127.0.0.1:{port}/'])
+        assert result.exit_code == 7
 
 
 @pytest.fixture
@@ -347,8 +343,8 @@ def test_node_proxy_reload_is_verified(nginx_container, nginx_dir, dutils):
         assert reload_node_proxy(dutils)
     answer = f'base {base_fingerprint(filepath.read_text())}'
     ip = container_ip(nginx_container)
-    for port in (3009, 80):
-        assert curl(nginx_container, f'http://127.0.0.1:{port}/.skale-proxy') == answer
+    assert curl(nginx_container, BASE_PROBE_URL) == answer
+    for port, expected_code in ((3009, '403'), (80, '404')):
         code = curl(
             nginx_container,
             f'http://{ip}:{port}/.skale-proxy',
@@ -357,4 +353,4 @@ def test_node_proxy_reload_is_verified(nginx_container, nginx_dir, dutils):
             '-w',
             '%{http_code}',
         )
-        assert code == '403'
+        assert code == expected_code

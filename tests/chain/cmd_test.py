@@ -90,7 +90,7 @@ def test_get_skaled_container_cmd_passive_node(schain_config, cert_key_pair, st)
 def test_get_skaled_container_cmd_rpc_proxy(schain_config, cert_key_pair, st):
     schain_name = schain_config['skaleConfig']['sChain']['schainName']
     container_opts = get_skaled_container_cmd(schain_name, rpc_proxy=True)
-    assert '--http-port 10035 --https-port 10040 --ws-port 10034 --wss-port 10039' in container_opts
+    assert '--http-port 10035 --https-port 10040 --ws-port 10002 --wss-port 10007' in container_opts
     public_opts = get_skaled_container_cmd(schain_name)
     assert '--http-port 10003 --https-port 10008 --ws-port 10002 --wss-port 10007' in public_opts
 

@@ -12,7 +12,7 @@ from skale.schain_config.generator import get_schain_nodes_with_schain_hashes
 
 from core.chain.runner import get_container_info, get_image_name, run_ima_container
 from core.chain.skaled_exit_codes import SkaledExitCodes
-from core.checks.schain import CheckRes, ConfigChecks, SChainChecks
+from core.checks.schain import CheckRes, ConfigChecks, SChainChecks, SkaledChecks
 from core.config.schain.directory import get_schain_check_filepath, schain_config_dir
 from core.config.schain.file_manager import UpstreamConfigFilename
 from core.config.schain.helper import get_node_ips_from_config
@@ -281,15 +281,19 @@ def test_rpc_check_rpc_proxy_mode(schain_checks, schain_db):
         assert rmock.call_args.args == ('http://127.0.0.1:10035',)
 
 
-def test_nginx_config_check(schain_checks, schain_db, tmp_path):
+def test_nginx_config_check(schain_db, schain_config, tmp_path):
+    record = SChainRecord.get_by_name(schain_db)
+    schain_checks = SkaledChecks(schain_db, record, rule_controller=mock.Mock(), dutils=mock.Mock())
     chains_path = tmp_path / 'chains'
     chains_path.mkdir()
     chain_file = chains_path / f'{schain_checks.name}.conf'
-    record = schain_checks.schain_record
     params = {'rpc_proxy': True, 'njs': False, 'limits': NGINX_LIMITS}
     with (
         mock.patch('core.nginx.manager.NGINX_CHAINS_PATH', chains_path),
         mock.patch('core.nginx.params.NGINX_CHAINS_PATH', chains_path),
+        mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=False),
+        mock.patch('core.nginx.manager.NginxContainer.is_ready', return_value=True),
+        mock.patch('core.nginx.manager.NginxContainer.answers', return_value=None),
     ):
         assert schain_checks.nginx_config.status
         chain_file.write_text('stale')
@@ -306,6 +310,13 @@ def test_nginx_config_check(schain_checks, schain_db, tmp_path):
                 res = schain_checks.nginx_config
                 assert not res.status
                 assert res.data == {'synced': True, 'mode': False}
+                with mock.patch('core.nginx.manager.NginxContainer.is_ready', return_value=False):
+                    assert schain_checks.nginx_config.data['synced'] is False
+                with mock.patch(
+                    'core.nginx.manager.NginxContainer.answers',
+                    return_value=f'{schain_db} stale-fingerprint',
+                ):
+                    assert schain_checks.nginx_config.data['synced'] is False
             with mock.patch('core.nginx.manager.NginxContainer.is_running', return_value=False):
                 # skaled keeps the public ports while nginx is down, the move stays pending
                 res = schain_checks.nginx_config
