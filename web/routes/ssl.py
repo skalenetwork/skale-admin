@@ -26,7 +26,8 @@ from flask import Blueprint, request
 from OpenSSL import crypto
 
 from core.chain.ssl import is_ssl_folder_empty
-from core.nginx import reload_nginx
+from core.firewall.tls import open_tls_ports
+from core.nginx import reload_node_proxy
 from tools.constants import SSL_CERTIFICATES_FILEPATH
 from web.auth import cli_only
 from web.helper import construct_err_response, construct_ok_response, get_api_url
@@ -37,6 +38,8 @@ logger = logging.getLogger(__name__)
 CERTS_UPLOADED_ERR_MSG = 'SSL Certificates are already uploaded'
 NO_REQUIRED_FILES_ERR_MSG = 'No required files added'
 CERTS_HAS_INVALID_FORMAT = 'Certificates have invalid format'
+CERTS_NOT_SERVED = 'Certificates are saved, but nginx is not serving them, see docker logs sk_nginx'
+CERTS_FIREWALL_ERROR = 'Certificates are saved, but the firewall may still block the TLS ports'
 
 SSL_KEY_NAME = 'ssl_key'
 SSL_CRT_NAME = 'ssl_cert'
@@ -113,5 +116,12 @@ def upload():
 
     save_cert_key_pair(cert, key)
     set_schains_need_reload()
-    reload_nginx()
+    # chain files and firewall rules pick up the new TLS state through their checks
+    if not reload_node_proxy():
+        return construct_err_response(msg=CERTS_NOT_SERVED)
+    try:
+        open_tls_ports()
+    except Exception:
+        logger.exception('Could not open TLS service ports')
+        return construct_err_response(msg=CERTS_FIREWALL_ERROR)
     return construct_ok_response()

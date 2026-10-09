@@ -209,6 +209,7 @@ def run_skaled_container(
     passive_node=False,
     historic_state=False,
     part_of_node: Optional[int] = None,
+    rpc_proxy: bool = False,
 ):
     cpu_limit = None
     mem_limit = None
@@ -230,6 +231,7 @@ def run_skaled_container(
         enable_ssl=enable_ssl,
         passive_node=passive_node,
         snapshot_from=snapshot_from,
+        rpc_proxy=rpc_proxy,
     )
     run_container(
         SKALED_CONTAINER,
@@ -345,3 +347,8 @@ def get_ima_container_time_frame(schain_name: str, dutils: DockerUtils) -> int:
         return int(ima_time_framing)
     else:
         return 0
+
+
+def get_ima_container_rpc_url(schain_name: str, dutils: DockerUtils) -> Optional[str]:
+    container_name = get_container_name(IMA_CONTAINER, schain_name)
+    return dutils.get_container_env_value(container_name, 'SCHAIN_RPC_URL')

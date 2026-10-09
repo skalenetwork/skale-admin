@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 from typing import Type, cast
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -30,10 +31,12 @@ from core.config.fair.committee_nodes import get_last_group_start_timestamp_from
 from core.firewall.utils import get_fair_committee_scope_rule_controller
 from core.monitor.fair.action_skaled import FairSkaledActionManager
 from core.monitor.monitor_base import BaseSkaledMonitor
+from core.nginx import is_rpc_proxy_mode_changed
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.types.chain import FairChainName
-from tools.constants.fair import SKALED_RESTART_JOB_NAME
+from tools.constants.containers import SKALED_RESTART_DELAY_SECONDS
+from tools.constants.fair import RPC_PROXY_SWITCH_WINDOW_SECONDS, SKALED_RESTART_JOB_NAME
 from tools.docker_utils import DockerUtils
 from tools.helper import is_passive, no_hyphens
 from tools.notifications.messages import notify_checks
@@ -126,8 +129,19 @@ class RegularSkaledMonitor(BaseFairSkaledMonitor):
             self.am.skaled_container(passive_node=is_passive())
         else:
             self.am.reset_restart_counter()
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
         if not self.checks.rpc:
             self.am.skaled_rpc()
+
+
+class ProxySwitchSkaledMonitor(RegularSkaledMonitor):
+    """Regular duties plus a skaled restart at a random time, so committee nodes restart apart"""
+
+    def execute(self) -> None:
+        super().execute()
+        deadline = int(time.time()) + RPC_PROXY_SWITCH_WINDOW_SECONDS + SKALED_RESTART_DELAY_SECONDS
+        self.am.schedule_skaled_restart(deadline)
 
 
 class NoConfigSkaledMonitor(BaseFairSkaledMonitor):
@@ -153,6 +167,8 @@ class StartupSkaledMonitor(BaseFairSkaledMonitor):
             self.am.skaled_container(download_snapshot=download_snapshot, passive_node=passive_node)
         else:
             self.am.reset_restart_counter()
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
         if not self.checks.rpc:
             self.am.skaled_rpc()
 
@@ -163,6 +179,8 @@ class UpdateConfigSkaledMonitor(BaseFairSkaledMonitor):
             self.am.update_config()
         if not self.checks.committee_scope_firewall_rules:
             self.am.committee_scope_firewall_rules()
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
         last_group_start_timestamp = get_last_group_start_timestamp_from_config(
             self.am.cfm.latest_upstream_config
         )
@@ -206,4 +224,8 @@ def get_skaled_monitor(
         mon_type = StartupSkaledMonitor
     elif not check_status['config_updated']:
         mon_type = UpdateConfigSkaledMonitor
+    elif check_status['skaled_container'] and is_rpc_proxy_mode_changed(
+        chain_record, dutils=action_manager.dutils
+    ):
+        mon_type = ProxySwitchSkaledMonitor
     return mon_type

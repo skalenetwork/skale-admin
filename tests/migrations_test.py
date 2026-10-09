@@ -17,7 +17,9 @@ from web.migrations import (
     add_repair_date_field,
     add_repair_mode_field,
     add_restart_count_field,
+    add_rpc_proxy_mode_field,
     add_ssl_change_date_field,
+    find_column,
 )
 
 TEST_DB_FILE = 'test-skale.db'
@@ -122,3 +124,13 @@ def test_add_repair_date_field(upserted_db, migrator, model):
     add_repair_date_field(upserted_db, migrator)
     for r in model.select().execute():
         r.repair_date < datetime.now()
+
+
+def test_add_rpc_proxy_mode_field(test_db, migrator, model):
+    model.create(name='old')
+    add_rpc_proxy_mode_field(test_db, migrator)
+    assert find_column(test_db, 'SChainRecord', 'rpc_proxy_mode')
+    # a second run finds the column and does nothing
+    add_rpc_proxy_mode_field(test_db, migrator)
+    # containers started before the proxy existed run on the public ports
+    assert test_db.execute_sql('SELECT rpc_proxy_mode FROM schainrecord').fetchall() == [(0,)]

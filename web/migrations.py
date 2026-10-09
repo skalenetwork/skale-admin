@@ -68,6 +68,9 @@ def run_migrations(db, migrator):
     # 2.7 -> 2.8 update fields
     add_repair_date_field(db, migrator)
 
+    # 3.3 -> 3.4 update fields
+    add_rpc_proxy_mode_field(db, migrator)
+
 
 def add_new_schain_field(db, migrator):
     add_column(db, migrator, 'SChainRecord', 'new_schain', BooleanField(default=True))
@@ -127,6 +130,10 @@ def add_dkg_step_field(db, migrator):
 
 def add_repair_date_field(db, migrator):
     add_column(db, migrator, 'SChainRecord', 'repair_date', DateTimeField(default=datetime.now()))
+
+
+def add_rpc_proxy_mode_field(db, migrator):
+    add_column(db, migrator, 'SChainRecord', 'rpc_proxy_mode', BooleanField(default=False))
 
 
 def find_column(db, table_name, column_name):

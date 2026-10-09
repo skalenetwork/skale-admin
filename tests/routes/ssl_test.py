@@ -7,26 +7,28 @@ from contextlib import contextmanager
 from unittest import mock
 
 import pytest
-from flask import Flask, appcontext_pushed, g
+from flask import Flask
 
 from tests.utils import generate_cert, get_bp_data
 from tools.constants import CONFIG_FOLDER, SSL_CERTIFICATES_FILEPATH
 from web.helper import get_api_url
-from web.routes.ssl import ssl_bp
+from web.routes.ssl import CERTS_FIREWALL_ERROR, CERTS_NOT_SERVED, ssl_bp
 
 BLUEPRINT_NAME = 'ssl'
 
 
+@pytest.fixture(autouse=True)
+def tls_firewall():
+    with mock.patch('web.routes.ssl.open_tls_ports') as firewall:
+        yield firewall
+
+
 @pytest.fixture
-def skale_bp(skale, dutils):
+def skale_bp():
     app = Flask(__name__)
     app.register_blueprint(ssl_bp)
-
-    def handler(sender, **kwargs):
-        g.docker_utils = dutils
-
-    with appcontext_pushed.connected_to(handler, app):
-        yield app.test_client()
+    with app.test_client() as client:
+        yield client
 
 
 @pytest.fixture
@@ -104,28 +106,61 @@ def post_bp_files_data(bp, request, file_data, full_response=False, **kwargs):
     return json.loads(data.decode('utf-8'))
 
 
-def test_upload(skale_bp, ssl_folder, db, cert_key_pair_host):
+def test_upload(skale_bp, ssl_folder, cert_key_pair_host, tls_firewall):
     cert_path, key_path = cert_key_pair_host
+    uploaded_cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+    uploaded_key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+
+    def reload_node_proxy():
+        assert filecmp.cmp(cert_path, uploaded_cert_path)
+        tls_firewall.assert_not_called()
+        return True
+
     with (
         mock.patch('web.routes.ssl.set_schains_need_reload'),
-        mock.patch('web.routes.ssl.reload_nginx'),
+        mock.patch('web.routes.ssl.reload_node_proxy', side_effect=reload_node_proxy),
     ):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(
                 skale_bp, get_api_url(BLUEPRINT_NAME, 'upload'), file_data=data
             )
     assert response == {'status': 'ok', 'payload': {}}
-    uploaded_cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    uploaded_key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+    tls_firewall.assert_called_once_with()
     assert filecmp.cmp(cert_path, uploaded_cert_path)
     assert filecmp.cmp(key_path, uploaded_key_path)
 
 
-def test_upload_bad_cert(skale_bp, db, ssl_folder, bad_cert_host):
+def test_upload_not_served(skale_bp, ssl_folder, cert_key_pair_host, tls_firewall):
+    cert_path, key_path = cert_key_pair_host
+    with (
+        mock.patch('web.routes.ssl.set_schains_need_reload'),
+        mock.patch('web.routes.ssl.reload_node_proxy', return_value=False),
+    ):
+        with files_data(cert_path, key_path, force=False) as data:
+            response = post_bp_files_data(
+                skale_bp, get_api_url(BLUEPRINT_NAME, 'upload'), file_data=data
+            )
+    assert response == {'status': 'error', 'payload': CERTS_NOT_SERVED}
+    tls_firewall.assert_not_called()
+
+
+def test_upload_firewall_failure(skale_bp, ssl_folder, cert_key_pair_host, tls_firewall):
+    cert_path, key_path = cert_key_pair_host
+    tls_firewall.side_effect = RuntimeError('nft failed')
+    with (
+        mock.patch('web.routes.ssl.set_schains_need_reload'),
+        mock.patch('web.routes.ssl.reload_node_proxy', return_value=True),
+        files_data(cert_path, key_path) as data,
+    ):
+        response = post_bp_files_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'upload'), data)
+    assert response == {'status': 'error', 'payload': CERTS_FIREWALL_ERROR}
+
+
+def test_upload_bad_cert(skale_bp, ssl_folder, bad_cert_host):
     cert_path, key_path = bad_cert_host
     with (
         mock.patch('web.routes.ssl.set_schains_need_reload'),
-        mock.patch('core.nginx.restart_nginx_container'),
+        mock.patch('web.routes.ssl.reload_node_proxy'),
     ):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(
@@ -134,11 +169,11 @@ def test_upload_bad_cert(skale_bp, db, ssl_folder, bad_cert_host):
             assert response == {'status': 'error', 'payload': 'Certificates have invalid format'}
 
 
-def test_upload_cert_exist(skale_bp, db, cert_key_pair_host, cert_key_pair):
+def test_upload_cert_exist(skale_bp, cert_key_pair_host, cert_key_pair):
     cert_path, key_path = cert_key_pair_host
     with (
         mock.patch('web.routes.ssl.set_schains_need_reload'),
-        mock.patch('web.routes.ssl.reload_nginx'),
+        mock.patch('web.routes.ssl.reload_node_proxy'),
     ):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(
