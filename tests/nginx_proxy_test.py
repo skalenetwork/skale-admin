@@ -217,34 +217,18 @@ def test_get_nginx_params():
     assert params['limits']['max_batch'] == 128
 
 
-def test_is_rpc_proxy_enabled(nginx_layout):
+def test_is_rpc_proxy_enabled(tmp_path, nginx_layout):
     params = {'rpc_proxy': False, 'limits': LIMITS}
-    with (
-        mock.patch('core.nginx.params.get_nginx_params', return_value=params),
-        mock.patch('core.nginx.params.NodeOptions') as node_options,
-    ):
-        node_options.return_value.rpc_proxy = None
+    with mock.patch('core.nginx.params.get_nginx_params', return_value=params):
         assert not is_rpc_proxy_enabled()
         params['rpc_proxy'] = True
         assert is_rpc_proxy_enabled()
-        # the per-node override wins in both directions
-        node_options.return_value.rpc_proxy = False
+        # the flag needs the node-cli nginx layout
+        with mock.patch('core.nginx.params.NGINX_CHAINS_PATH', tmp_path / 'missing'):
+            assert not is_rpc_proxy_enabled()
+    # streams released before the proxy have no nginx section
+    with mock.patch('core.nginx.params.get_nginx_params', return_value={}):
         assert not is_rpc_proxy_enabled()
-        params['rpc_proxy'] = False
-        node_options.return_value.rpc_proxy = True
-        assert is_rpc_proxy_enabled()
-
-
-def test_is_rpc_proxy_enabled_needs_layout_and_params(tmp_path, nginx_layout):
-    with mock.patch('core.nginx.params.NodeOptions') as node_options:
-        node_options.return_value.rpc_proxy = True
-        with mock.patch('core.nginx.params.get_nginx_params', return_value={}):
-            assert not is_rpc_proxy_enabled()
-        with (
-            mock.patch('core.nginx.params.get_nginx_params', return_value={'limits': LIMITS}),
-            mock.patch('core.nginx.params.NGINX_CHAINS_PATH', tmp_path / 'missing'),
-        ):
-            assert not is_rpc_proxy_enabled()
 
 
 @pytest.mark.parametrize(

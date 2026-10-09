@@ -22,7 +22,6 @@ from skale_core.settings import get_settings
 from core.config.schain.helper import get_static_params, get_static_params_fair
 from tools.constants import NGINX_CHAINS_PATH
 from tools.helper import is_fair
-from tools.node_options import NodeOptions
 
 
 def get_nginx_params() -> dict:
@@ -34,10 +33,4 @@ def get_nginx_params() -> dict:
 
 def is_rpc_proxy_enabled() -> bool:
     """Whether skaled should run on the internal ports with nginx serving the public ones"""
-    params = get_nginx_params()
-    if not params or not NGINX_CHAINS_PATH.is_dir():
-        return False
-    override = NodeOptions().rpc_proxy
-    if override is not None:
-        return override
-    return bool(params.get('rpc_proxy', False))
+    return bool(get_nginx_params().get('rpc_proxy')) and NGINX_CHAINS_PATH.is_dir()
