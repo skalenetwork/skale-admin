@@ -25,14 +25,16 @@ LIMITS = {
     'global_rps': 5000,
     'global_burst': 2000,
     'conn_per_client': 64,
-    'ws_handshake_burst': 50,
-    'ws_conn_per_client': 32,
-    'ws_conn_total': 20000,
     'max_batch': 128,
     'heavy_rps': 100,
     'ban_s': 10,
 }
-EXIT_TIME_CALL = '{"method":"setSchainExitTime","params":{"finishTime":1}}'
+EXIT_TIME_CALL = '{"jsonrpc":"2.0","id":7,"method":"setSchainExitTime","params":{"finishTime":1}}'
+# skaled's answer since it no longer serves the method
+EXIT_TIME_ANSWER = (
+    '{"error":{"code":-32601,"message":"METHOD_NOT_FOUND: '
+    'The method being requested is not available on this server"},"id":7,"jsonrpc":"2.0"}'
+)
 # stands in for skaled on the internal HTTP port
 FAKE_SKALED = """
 js_import fake_skaled from /etc/nginx/conf.d/fake_skaled.js;
@@ -111,14 +113,16 @@ def manager(nginx_dir, dutils):
     )
 
 
-def render(njs: bool = False, peers: tuple[str, ...] = ('10.1.1.1/32',)) -> str:
+def render(
+    njs: bool = False, peers: tuple[str, ...] = ('10.1.1.1/32',), limits: dict = LIMITS
+) -> str:
     return ChainProxyConfig(
         chain_name=CHAIN,
         ports=PORTS,
         peers=list(peers),
         ssl=False,
         njs=njs,
-        limits=LIMITS,
+        limits=limits,
     ).render()
 
 
@@ -220,14 +224,30 @@ def test_chain_proxy_repairs_config_that_prevents_start(nginx_container, manager
 
 
 @pytest.mark.parametrize('peer', [False, True])
-def test_chain_proxy_blocks_loopback_trusted_method(nginx_container, manager, peer):
+def test_chain_proxy_answers_loopback_trusted_method_as_not_found(nginx_container, manager, peer):
     ip = container_ip(nginx_container)
     assert manager.sync(render(peers=(f'{ip}/32',) if peer else ()))
-    # skaled trusts loopback callers, and every proxied call reaches it from loopback
-    assert post(nginx_container, ip, body=EXIT_TIME_CALL) == ['403']
-    batch = f'[{{"method":"eth_chainId"}},{EXIT_TIME_CALL}]'
-    assert post(nginx_container, '127.0.0.1', body=batch) == ['403']
-    assert post(nginx_container, '127.0.0.1', body=EXIT_TIME_CALL, method='PUT') == ['403']
+
+    def answer(body: str, *options: str, url: str = 'http://127.0.0.1:10003/') -> str:
+        return curl(nginx_container, url, '-w', ' %{http_code}', '-d', body, *options)
+
+    not_found = f'{EXIT_TIME_ANSWER} 200'
+    # older skaled trusts loopback callers, and every proxied call reaches it from loopback
+    assert answer(EXIT_TIME_CALL, url=f'http://{ip}:10003/') == not_found
+    # skaled stops reading the method at a NUL
+    assert answer(EXIT_TIME_CALL.replace('ExitTime"', 'ExitTime\\u0000"')) == not_found
+    assert answer(f'[{{"method":"eth_chainId"}},{EXIT_TIME_CALL}]') == not_found
+    assert answer(EXIT_TIME_CALL, '-X', 'PUT') == not_found
+    assert answer(EXIT_TIME_CALL, '-X', 'GET') == not_found
+    # njs and skaled both take the last of duplicate keys and decode escapes
+    for body in (
+        EXIT_TIME_CALL.replace('{', '{"method":"eth_chainId",', 1),
+        EXIT_TIME_CALL.replace('ExitTime', 'Exit\\u0054ime'),
+        EXIT_TIME_CALL.replace('"method"', '"me\\u0074hod"'),
+    ):
+        assert answer(body) == not_found
+    assert answer(EXIT_TIME_CALL, url='http://127.0.0.1:10003/any/path') == not_found
+    assert answer(EXIT_TIME_CALL, '-H', 'Transfer-Encoding: chunked') == not_found
     # what njs cannot read is never passed on
     assert post(nginx_container, '127.0.0.1', body='not json') == ['400']
     assert post(nginx_container, '127.0.0.1', method='OPTIONS') == ['200']
@@ -254,6 +274,15 @@ def test_chain_proxy_njs_bans_over_budget(nginx_container, manager):
     assert post(nginx_container, ip) == ['429']
     # loopback skips the budgets
     assert post(nginx_container, '127.0.0.1', body=two_calls) == ['200']
+
+
+def test_chain_proxy_njs_budgets_heavy_calls(nginx_container, manager):
+    assert manager.sync(render(njs=True, limits={**LIMITS, 'per_client_rps': 100, 'heavy_rps': 1}))
+    ip = container_ip(nginx_container)
+    light = '[{"method":"eth_chainId"},{"method":"eth_chainId"}]'
+    assert post(nginx_container, ip, body=light) == ['200']
+    heavy = '[{"method":"eth_getLogs"},{"method":"eth_getFilterLogs"}]'
+    assert post(nginx_container, ip, body=heavy) == ['429']
 
 
 @pytest.mark.parametrize('njs', [False, True])

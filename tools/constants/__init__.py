@@ -89,7 +89,8 @@ INTERNAL_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'internal.toml'
 ## path - firewall
 
 NFT_CHAIN_BASE_PATH = '/etc/nft.conf.d/skale/chains'
-NFT_CHAIN_CONFIG_WILDCARD = os.path.join(NFT_CHAIN_BASE_PATH, '*')
+# sChain files only: node-cli keeps other files, such as tls-ports.conf, in the same folder
+NFT_CHAIN_CONFIG_WILDCARD = os.path.join(NFT_CHAIN_BASE_PATH, 'skale-*.conf')
 
 # path - nginx
 

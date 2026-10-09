@@ -206,7 +206,10 @@ class SkaledChecks(BaseSkaledChecks):
         return CheckRes(status=False, data=data)
 
     def proxy_peers(self, config: dict) -> list[str]:
-        return ips_to_cidrs(get_node_ips_from_config(config)) + ranges_to_cidrs(self.econfig.ranges)
+        # nodes joining by rotation fetch their snapshot before the switch to the upstream config
+        upstream = self.cfm.latest_upstream_config or config
+        node_ips = {*get_node_ips_from_config(config), *get_node_ips_from_config(upstream)}
+        return ips_to_cidrs(node_ips) + ranges_to_cidrs(self.econfig.ranges)
 
     @property
     def ima_container(self) -> CheckRes:

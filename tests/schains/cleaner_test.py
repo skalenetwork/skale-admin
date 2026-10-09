@@ -17,6 +17,7 @@ from core.node_config import NodeConfig
 from core.schains.cleaner import (
     cleanup_schain,
     delete_bls_keys,
+    get_schains_firewall_configs,
     get_schains_on_node,
     monitor,
     remove_config_dir,
@@ -26,6 +27,7 @@ from core.schains.cleaner import (
     remove_skaled_container,
 )
 from tests.utils import get_schain_struct, run_simple_ima_container, run_simple_skaled_container
+from tools.constants import NFT_CHAIN_CONFIG_WILDCARD
 from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
@@ -205,6 +207,15 @@ def test_get_schains_on_node(
     assert set([TEST_SCHAIN_NAME_1, TEST_SCHAIN_NAME_2, PHANTOM_SCHAIN_NAME, schain_name]).issubset(
         set(result)
     )
+
+
+def test_get_schains_firewall_configs(tmp_path):
+    for name in ('skale-foo.conf', 'fair-network.conf', 'tls-ports.conf', 'tls-ports.lock'):
+        (tmp_path / name).touch()
+    pattern = str(tmp_path / Path(NFT_CHAIN_CONFIG_WILDCARD).name)
+    with mock.patch('core.schains.cleaner.NFT_CHAIN_CONFIG_WILDCARD', pattern):
+        # node-cli files next to the sChain ones are no chains to clean up
+        assert get_schains_firewall_configs() == ['skale-foo']
 
 
 @mock.patch('core.schains.cleaner.cleanup_firewall_for_schain')

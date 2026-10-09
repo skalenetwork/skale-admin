@@ -33,7 +33,7 @@ envs:
 
     nginx:
       rpc_proxy: false
-      njs: false
+      njs: true
       limits:
         per_client_rps: 1000
         burst: 200
@@ -42,9 +42,6 @@ envs:
         global_rps: 5000
         global_burst: 2000
         conn_per_client: 64
-        ws_handshake_burst: 50
-        ws_conn_per_client: 32
-        ws_conn_total: 20000
         max_batch: 128
         heavy_rps: 100
         ban_s: 10
@@ -99,7 +96,7 @@ envs:
 
     nginx:
       rpc_proxy: false
-      njs: false
+      njs: true
       limits:
         per_client_rps: 1000
         burst: 200
@@ -108,9 +105,6 @@ envs:
         global_rps: 5000
         global_burst: 2000
         conn_per_client: 64
-        ws_handshake_burst: 50
-        ws_conn_per_client: 32
-        ws_conn_total: 20000
         max_batch: 128
         heavy_rps: 100
         ban_s: 10
@@ -165,7 +159,7 @@ envs:
 
     nginx:
       rpc_proxy: false
-      njs: false
+      njs: true
       limits:
         per_client_rps: 1000
         burst: 200
@@ -174,9 +168,6 @@ envs:
         global_rps: 5000
         global_burst: 2000
         conn_per_client: 64
-        ws_handshake_burst: 50
-        ws_conn_per_client: 32
-        ws_conn_total: 20000
         max_batch: 128
         heavy_rps: 100
         ban_s: 10
@@ -232,7 +223,7 @@ envs:
 
     nginx:
       rpc_proxy: false
-      njs: false
+      njs: true
       limits:
         per_client_rps: 1000
         burst: 200
@@ -241,9 +232,6 @@ envs:
         global_rps: 5000
         global_burst: 2000
         conn_per_client: 64
-        ws_handshake_burst: 50
-        ws_conn_per_client: 32
-        ws_conn_total: 20000
         max_batch: 128
         heavy_rps: 100
         ban_s: 10

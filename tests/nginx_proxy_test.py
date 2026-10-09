@@ -33,9 +33,6 @@ LIMITS = {
     'global_rps': 5000,
     'global_burst': 2000,
     'conn_per_client': 64,
-    'ws_handshake_burst': 50,
-    'ws_conn_per_client': 32,
-    'ws_conn_total': 20000,
     'max_batch': 128,
     'heavy_rps': 100,
     'ban_s': 10,
@@ -216,6 +213,7 @@ def test_build_chain_proxy_config():
 def test_get_nginx_params():
     params = get_nginx_params()
     assert params['rpc_proxy'] is False
+    assert params['njs'] is True
     assert params['limits']['max_batch'] == 128
 
 
@@ -387,12 +385,52 @@ def test_sync_repairs_config_before_start(proxy_manager):
     assert proxy_manager.is_synced(text)
 
 
-def test_sync_restores_previous_config_when_start_fails(proxy_manager):
+def test_sync_drops_config_when_nginx_cannot_start(proxy_manager):
     proxy_manager.filepath.write_text('previous config')
     proxy_manager.nginx.running = False
     proxy_manager.nginx.can_start = False
     assert not proxy_manager.sync(make_config().render())
+    assert proxy_manager.current() is None
+
+
+def test_sync_restores_config_when_nginx_state_is_unknown(proxy_manager):
+    proxy_manager.filepath.write_text('previous config')
+    nginx = proxy_manager.nginx
+    nginx.running = False
+    nginx.can_start = False
+    docker_error = RuntimeError('docker is unavailable')
+    with mock.patch.object(nginx, 'is_running', side_effect=[False, docker_error]):
+        assert not proxy_manager.sync(make_config().render())
     assert proxy_manager.current() == 'previous config'
+
+
+class PickyNginx(FakeNginx):
+    """Starts only when no chain file next to its own is broken, like nginx"""
+
+    def ensure_running(self) -> bool:
+        files = self.filepath.parent.glob('*.conf')
+        self.can_start = all(path.read_text() != 'broken' for path in files)
+        return super().ensure_running()
+
+
+def test_sync_unblocks_start_held_by_broken_files(tmp_path):
+    chains_path = tmp_path / 'chains'
+    chains_path.mkdir()
+    managers = {}
+    for name in ('a-chain', 'b-chain'):
+        manager = ChainProxyManager(
+            name, dutils=mock.Mock(), chains_path=chains_path, lock_path=tmp_path / '.lock'
+        )
+        manager.filepath.write_text('broken')
+        manager.nginx = PickyNginx(manager.filepath)
+        manager.nginx.running = False
+        managers[name] = manager
+    a_text = make_config(chain_name='a-chain').render()
+    # each failed start drops its own file, so the next chain can bring nginx up
+    assert not managers['a-chain'].sync(a_text)
+    assert managers['a-chain'].current() is None
+    assert managers['b-chain'].sync(make_config(chain_name='b-chain').render())
+    assert managers['a-chain'].sync(a_text)
 
 
 def test_remove_missing_file_unloads_live_listener(proxy_manager):
@@ -410,16 +448,14 @@ def test_remove_missing_file_unloads_live_listener(proxy_manager):
     assert proxy_manager.is_synced(None)
 
 
-def test_remove_without_port_information_waits_for_nginx_to_stop(proxy_manager):
+def test_remove_without_file_and_config(proxy_manager):
     assert proxy_manager.sync(make_config().render())
     proxy_manager.filepath.unlink()
     with mock.patch('core.nginx.manager.ConfigFileManager') as cfm:
         cfm.return_value.skaled_config = None
-        assert not proxy_manager.is_synced(None)
-        assert not proxy_manager.remove()
-        proxy_manager.nginx.running = False
-        assert proxy_manager.remove()
         assert proxy_manager.is_synced(None)
+        assert proxy_manager.remove()
+    assert proxy_manager.nginx.reloads == 1
 
 
 def test_start_nginx(proxy_manager):

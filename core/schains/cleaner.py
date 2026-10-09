@@ -54,8 +54,6 @@ logger = logging.getLogger(__name__)
 
 JOIN_TIMEOUT = 1800
 
-FAIR_NFT_CHAIN_NAMES = ['fair-network', 'fair-committee']
-
 
 def run_cleaner(skale: SkaleManager, node_config: NodeConfig, manager_cache: ManagerCache) -> None:
     process = FORK_CONTEXT.Process(
@@ -142,12 +140,7 @@ def get_schains_with_containers(dutils=None):
 
 
 def get_schains_firewall_configs() -> list:
-    return list(
-        filter(
-            lambda name: name not in FAIR_NFT_CHAIN_NAMES,
-            map(lambda path: Path(path).stem, glob.glob(NFT_CHAIN_CONFIG_WILDCARD)),
-        )
-    )
+    return [Path(path).stem for path in glob.glob(NFT_CHAIN_CONFIG_WILDCARD)]
 
 
 def get_schains_on_node(dutils=None):

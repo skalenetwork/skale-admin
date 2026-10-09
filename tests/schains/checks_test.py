@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import time
@@ -78,9 +79,6 @@ NGINX_LIMITS = {
     'global_rps': 5000,
     'global_burst': 2000,
     'conn_per_client': 64,
-    'ws_handshake_burst': 50,
-    'ws_conn_per_client': 32,
-    'ws_conn_total': 20000,
     'max_batch': 128,
     'heavy_rps': 100,
     'ban_s': 10,
@@ -327,7 +325,10 @@ def test_nginx_config_check(schain_db, schain_config, tmp_path):
             # a stream released before the proxy has no nginx section
             with mock.patch('core.checks.base.get_nginx_params', return_value={}):
                 assert schain_checks.expected_nginx_config() is None
-            with mock.patch.object(schain_checks.cfm, 'skaled_config_exists', return_value=False):
+            with mock.patch(
+                'core.config.schain.file_manager.ConfigFileManager.skaled_config_exists',
+                return_value=False,
+            ):
                 assert schain_checks.expected_nginx_config() is None
             expected = schain_checks.expected_nginx_config()
             assert 'server 127.0.0.1:10035;' in expected
@@ -355,20 +356,24 @@ def test_nginx_config_check(schain_db, schain_config, tmp_path):
             assert res.data == {'synced': True, 'mode': False}
 
 
-def test_nginx_proxy_peers_include_sync_ranges(schain_checks, schain_config, schain_db, tmp_path):
+def test_nginx_proxy_peers_follow_nodes_and_sync_ranges(
+    schain_config, schain_db, rule_controller, dutils, tmp_path
+):
     # SyncManager ranges reach the external config, where the firewall rules read them too
     econfig = ExternalConfig(schain_db)
     ranges = [IpRange('10.0.0.0', '10.0.0.3'), IpRange('10.0.1.5', '10.0.1.6')]
     econfig.update(ExternalState(chain_id=1, ima_linked=True, ranges=ranges))
+    record = SChainRecord.get_by_name(schain_db)
+    checks = SkaledChecks(schain_db, record, rule_controller, econfig=econfig, dutils=dutils)
     range_cidrs = ['10.0.0.0/30', '10.0.1.5/32', '10.0.1.6/32']
     node_cidrs = [f'{ip}/32' for ip in get_node_ips_from_config(schain_config)]
 
-    assert sorted(schain_checks.proxy_peers(schain_config)) == sorted(node_cidrs + range_cidrs)
+    assert sorted(checks.proxy_peers(schain_config)) == sorted(node_cidrs + range_cidrs)
 
     chains_path = tmp_path / 'chains'
     chains_path.mkdir()
     params = {'rpc_proxy': True, 'njs': True, 'limits': NGINX_LIMITS}
-    schain_checks.schain_record.set_rpc_proxy_mode(True)
+    checks.chain_record.set_rpc_proxy_mode(True)
     with (
         mock.patch('core.nginx.manager.NGINX_CHAINS_PATH', chains_path),
         mock.patch('core.nginx.params.NGINX_CHAINS_PATH', chains_path),
@@ -378,11 +383,11 @@ def test_nginx_proxy_peers_include_sync_ranges(schain_checks, schain_config, sch
         mock.patch('core.nginx.manager.ChainProxyManager.serves', return_value=True),
     ):
         # sync ranges reach the nginx peer map: no limits, no njs, snapshot chunks served
-        expected = schain_checks.expected_nginx_config()
+        expected = checks.expected_nginx_config()
         for cidr in range_cidrs:
             assert f'    {cidr} peer;' in expected
         (chains_path / f'{schain_db}.conf').write_text(expected)
-        assert schain_checks.nginx_config.status
+        assert checks.nginx_config.status
 
         # a range added on SyncManager changes the file on the next check, as for the firewall
         econfig.update(
@@ -390,10 +395,22 @@ def test_nginx_proxy_peers_include_sync_ranges(schain_checks, schain_config, sch
                 chain_id=1, ima_linked=True, ranges=[*ranges, IpRange('10.0.2.0', '10.0.2.255')]
             )
         )
-        res = schain_checks.nginx_config
+        res = checks.nginx_config
         assert not res.status
         assert res.data['synced'] is False
-        assert '    10.0.2.0/24 peer;' in schain_checks.expected_nginx_config()
+        assert '    10.0.2.0/24 peer;' in checks.expected_nginx_config()
+
+        # a joining node is a peer once the upstream config lists it, a leaving one until the switch
+        upstream = copy.deepcopy(schain_config)
+        node = upstream['skaleConfig']['sChain']['nodes'][-1]
+        leaving_peer = f'    {node["ip"]}/32 peer;'
+        node['ip'] = '10.9.9.9'
+        checks.cfm.save_new_upstream(1, upstream)
+        expected = checks.expected_nginx_config()
+        assert '    10.9.9.9/32 peer;' in expected
+        assert leaving_peer in expected
+        checks.cfm.save_skaled_config(upstream)
+        assert leaving_peer not in checks.expected_nginx_config()
 
 
 def test_blocks_check(schain_checks):

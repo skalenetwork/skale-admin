@@ -425,6 +425,11 @@ def test_get_skaled_monitor_rpc_proxy_switch(
                     skaled_am, status, schain_record, skaled_status, ncli_status
                 )
                 assert mon == NewNodeSkaledMonitor
+            with mock.patch('core.monitor.schain.monitor_skaled.is_passive', return_value=True):
+                mon = get_skaled_monitor(
+                    skaled_am, status, schain_record, skaled_status, ncli_status
+                )
+                assert mon == RecreateSkaledMonitor
             # a missing container starts on the new ports, a stopped one moves once it runs again
             status['skaled_container'] = False
             mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)

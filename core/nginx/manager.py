@@ -21,6 +21,7 @@ import logging
 import os
 import re
 import time
+from contextlib import suppress
 from pathlib import Path
 from typing import Callable
 
@@ -180,8 +181,11 @@ def apply_config(
             raise NginxReloadError(f'nginx did not apply {path}')
     except Exception:
         logger.exception('Rolling back %s', path)
-        # a file nginx never ran must not stay on disk: at its next start it could stop nginx
-        _write(path, None if previous == text and drop_unserved else previous)
+        unserved = previous == text
+        with suppress(Exception):
+            # a file nginx does not run can only block its next start, for every chain on the node
+            unserved = unserved or not nginx.is_running()
+        _write(path, None if unserved and drop_unserved else previous)
         return False
     logger.info('%s %s', 'Removed' if text is None else 'Applied', path)
     return True
@@ -238,7 +242,8 @@ class ChainProxyManager:
         else:
             config = ConfigFileManager(self.chain_name).skaled_config
             if config is None:
-                return lambda: not self.nginx.is_running()
+                # no port to probe; without its file nginx drops the chain at the next reload
+                return lambda: True
             url = get_local_chain_http_endpoint_from_config(config) + PROBE_PATH
         return lambda: (
             not self.nginx.is_running()

@@ -41,9 +41,7 @@ def test_network_scope_rule_controller(nft_chain_folder, ssl_on):
     fair_network_expected_rules = [
         SChainRule(first_port=10001, action=Action.DROP, interface_exception='lo'),
         SChainRule(first_port=10005, action=Action.DROP, interface_exception='lo'),
-        SChainRule(first_port=10034, action=Action.DROP, interface_exception='lo'),
         SChainRule(first_port=10035, action=Action.DROP, interface_exception='lo'),
-        SChainRule(first_port=10039, action=Action.DROP, interface_exception='lo'),
         SChainRule(first_port=10040, action=Action.DROP, interface_exception='lo'),
         SChainRule(first_ip='1.1.1.1', first_port=10001, action=Action.ACCEPT),
         SChainRule(first_ip='2.2.2.2', first_port=10001, action=Action.ACCEPT),
@@ -72,7 +70,7 @@ def test_network_scope_rule_controller(nft_chain_folder, ssl_on):
         SChainRule(first_ip='4.4.4.4', first_port=10011, action=Action.ACCEPT),
     ]
 
-    fair_network_expected_chain = 'chain fair-network {\n\ttype filter hook input priority filter; policy accept;\n\ttcp dport 10008 counter accept\n\ttcp dport 10007 counter accept\n\tip saddr 4.4.4.4 tcp dport 10005 counter accept\n\tip saddr 2.2.2.2 tcp dport 10005 counter accept\n\tip saddr 1.1.1.1 tcp dport 10005 counter accept\n\ttcp dport 10003 counter accept\n\ttcp dport 10002 counter accept\n\tip saddr 4.4.4.4 tcp dport 10001 counter accept\n\tip saddr 2.2.2.2 tcp dport 10001 counter accept\n\tip saddr 1.1.1.1 tcp dport 10001 counter accept\n\ttcp dport 10001 iifname != "lo" counter drop\n\ttcp dport 10005 iifname != "lo" counter drop\n\ttcp dport 10034 iifname != "lo" counter drop\n\ttcp dport 10035 iifname != "lo" counter drop\n\ttcp dport 10039 iifname != "lo" counter drop\n\ttcp dport 10040 iifname != "lo" counter drop\n}\n'  # noqa
+    fair_network_expected_chain = 'chain fair-network {\n\ttype filter hook input priority filter; policy accept;\n\ttcp dport 10008 counter accept\n\ttcp dport 10007 counter accept\n\tip saddr 4.4.4.4 tcp dport 10005 counter accept\n\tip saddr 2.2.2.2 tcp dport 10005 counter accept\n\tip saddr 1.1.1.1 tcp dport 10005 counter accept\n\ttcp dport 10003 counter accept\n\ttcp dport 10002 counter accept\n\tip saddr 4.4.4.4 tcp dport 10001 counter accept\n\tip saddr 2.2.2.2 tcp dport 10001 counter accept\n\tip saddr 1.1.1.1 tcp dport 10001 counter accept\n\ttcp dport 10001 iifname != "lo" counter drop\n\ttcp dport 10005 iifname != "lo" counter drop\n\ttcp dport 10035 iifname != "lo" counter drop\n\ttcp dport 10040 iifname != "lo" counter drop\n}\n'  # noqa
 
     fair_committee_expected_chain = 'chain fair-committee {\n\ttype filter hook input priority filter; policy accept;\n\tip saddr 4.4.4.4 tcp dport 10011 counter accept\n\tip saddr 2.2.2.2 tcp dport 10011 counter accept\n\tip saddr 1.1.1.1 tcp dport 10011 counter accept\n\tip saddr 4.4.4.4 tcp dport 10004 counter accept\n\tip saddr 2.2.2.2 tcp dport 10004 counter accept\n\tip saddr 1.1.1.1 tcp dport 10004 counter accept\n\tip saddr 4.4.4.4 tcp dport 10000 counter accept\n\tip saddr 2.2.2.2 tcp dport 10000 counter accept\n\tip saddr 1.1.1.1 tcp dport 10000 counter accept\n\ttcp dport 10000 iifname != "lo" counter drop\n\ttcp dport 10004 iifname != "lo" counter drop\n\ttcp dport 10011 iifname != "lo" counter drop\n}\n'  # noqa
 
@@ -135,7 +133,7 @@ def test_network_scope_tls_ports_follow_certificates(nft_chain_folder):
     # skaled's own listeners behind nginx stay hidden whatever the certificates are
     proxied_drops = {
         SChainRule(first_port=port, action=Action.DROP, interface_exception='lo')
-        for port in (10034, 10035, 10039, 10040)
+        for port in (10035, 10040)
     }
 
     with mock.patch(SSL_ON, return_value=False):

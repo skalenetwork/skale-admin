@@ -265,7 +265,7 @@ class BaseSkaledChecks(IChecks):
 
     @abstractmethod
     def proxy_peers(self, config: dict) -> list[str]:
-        """Networks that skip the limits: the lists the firewall rules are built from"""
+        """Node and sync networks, which skip the limits and the method gating"""
 
     @property
     def exit_zero(self) -> CheckRes:

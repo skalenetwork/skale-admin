@@ -174,6 +174,8 @@ class FairSkaledActionManager(BaseSkaledActionManager):
                 id=SKALED_RESTART_JOB_NAME,
                 name='skaled restart job',
                 replace_existing=True,
+                # an expired deadline schedules the current second, which may already be past
+                misfire_grace_time=None,
             )
         except Exception:
             self.chain_record.set_restart_ts(previous_restart_ts)

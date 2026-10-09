@@ -108,9 +108,17 @@ def post_bp_files_data(bp, request, file_data, full_response=False, **kwargs):
 
 def test_upload(skale_bp, ssl_folder, cert_key_pair_host, tls_firewall):
     cert_path, key_path = cert_key_pair_host
+    uploaded_cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
+    uploaded_key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
+
+    def reload_node_proxy():
+        assert filecmp.cmp(cert_path, uploaded_cert_path)
+        tls_firewall.assert_not_called()
+        return True
+
     with (
         mock.patch('web.routes.ssl.set_schains_need_reload'),
-        mock.patch('web.routes.ssl.reload_node_proxy'),
+        mock.patch('web.routes.ssl.reload_node_proxy', side_effect=reload_node_proxy),
     ):
         with files_data(cert_path, key_path, force=False) as data:
             response = post_bp_files_data(
@@ -118,8 +126,6 @@ def test_upload(skale_bp, ssl_folder, cert_key_pair_host, tls_firewall):
             )
     assert response == {'status': 'ok', 'payload': {}}
     tls_firewall.assert_called_once_with()
-    uploaded_cert_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_cert')
-    uploaded_key_path = os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key')
     assert filecmp.cmp(cert_path, uploaded_cert_path)
     assert filecmp.cmp(key_path, uploaded_key_path)
 
