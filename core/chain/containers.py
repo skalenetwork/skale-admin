@@ -59,19 +59,20 @@ def monitor_skaled_container(
     dutils: Optional[DockerUtils] = None,
     passive_node: bool = False,
     historic_state: bool = False,
-) -> None:
+    part_of_node: Optional[int] = None,
+) -> bool:
     dutils = dutils or DockerUtils()
     logger.info(f'Monitoring skaled container for {chain_name}')
 
     if not is_volume_exists(chain_name, passive_node=passive_node, dutils=dutils):
         logger.error(f'Data volume for chain {chain_name} does not exist')
-        return
+        return False
 
     if skaled_status.exit_time_reached and abort_on_exit:
         logger.info(f'{chain_name} - Skipping container monitor: exit time reached')
         skaled_status.log()
         chain_record.reset_failed_counters()
-        return
+        return False
 
     if not is_container_exists(chain_name, dutils=dutils):
         logger.info(f"Chain {chain_name}: container doesn't exist")
@@ -83,17 +84,18 @@ def monitor_skaled_container(
             snapshot_from=snapshot_from,
             passive_node=passive_node,
             historic_state=historic_state,
+            part_of_node=part_of_node,
         )
         update_ssl_change_date(chain_record)
         chain_record.reset_failed_counters()
         chain_record.set_force_skaled_start(False)
-        return
+        return True
 
     if skaled_status.clear_data_dir and skaled_status.start_from_snapshot:
         logger.info(f'{chain_name} - Skipping container monitor: skaled should be repaired')
         skaled_status.log()
         chain_record.reset_failed_counters()
-        return
+        return False
 
     if is_skaled_container_failed(chain_name, dutils=dutils):
         restart_count = cast(int, chain_record.restart_count)
@@ -111,6 +113,7 @@ def monitor_skaled_container(
     else:
         chain_record.set_restart_count(0)
         chain_record.set_snapshot_from('')
+    return True
 
 
 def monitor_ima_container(
@@ -118,6 +121,7 @@ def monitor_ima_container(
     ima_data: ImaData,
     migration_ts: int = 0,
     dutils: DockerUtils | None = None,
+    part_of_node: Optional[int] = None,
 ) -> None:
     dutils = dutils or DockerUtils()
 
@@ -153,7 +157,12 @@ def monitor_ima_container(
             '%s No IMA container, creating, image %s, time frame %d', chain_name, image, time_frame
         )
         run_ima_container(
-            chain_name, ima_data.chain_id, image=image, time_frame=time_frame, dutils=dutils
+            chain_name,
+            ima_data.chain_id,
+            image=image,
+            time_frame=time_frame,
+            dutils=dutils,
+            part_of_node=part_of_node,
         )
     else:
         logger.debug('Chain %s: IMA container exists, but not running, skipping', chain_name)

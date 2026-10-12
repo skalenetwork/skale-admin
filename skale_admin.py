@@ -61,8 +61,6 @@ logger = logging.getLogger(__name__)
 
 ACTIVE_SLEEP_INTERVAL = 240
 PASSIVE_SLEEP_INTERVAL = 360
-WORKER_RESTART_SLEEP_INTERVAL = 2
-ERROR_SLEEP_INTERVAL = 1
 
 
 def init_db() -> None:
@@ -169,24 +167,21 @@ def run_active() -> None:
     logger.info('Starting active node worker')
     try:
         init_active()
-        while True:
-            worker_active()
-            time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
+        worker_active()
     except Exception:
         logger.exception('Admin worker failed')
-        time.sleep(ERROR_SLEEP_INTERVAL)
+        exit(1)
 
 
 def run_passive() -> None:
     logger.info('Starting passive node worker')
     st = get_settings(SkalePassiveSettings)
-    while True:
-        try:
-            init_db()
-            worker_passive(st.schain_name)
-        except Exception:
-            logger.exception('Sync node worker failed')
-        time.sleep(WORKER_RESTART_SLEEP_INTERVAL)
+    try:
+        init_db()
+        worker_passive(st.schain_name)
+    except Exception:
+        logger.exception('Sync node worker failed')
+        exit(1)
 
 
 def main() -> None:

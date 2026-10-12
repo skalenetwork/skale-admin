@@ -26,7 +26,7 @@ from typing import Any, Dict, Optional
 
 from core.chain.rpc import handle_failed_skaled_rpc
 from core.chain.runner import get_container_name, is_container_exists
-from core.chain.status import init_skaled_status
+from core.chain.status import init_skaled_status, rm_skaled_status
 from core.checks.base import BaseSkaledChecks
 from core.config.schain.file_manager import ConfigFileManager
 from core.firewall import IRuleController
@@ -185,6 +185,15 @@ class BaseSkaledActionManager(BaseActionManager):
         remove_skaled_container(self.name, dutils=self.dutils)
         time.sleep(self.schain_cleanup_timeout)
         remove_schain_volume(self.name, dutils=self.dutils)
+        return True
+
+    @BaseActionManager.monitor_block
+    def cleanup_skaled_state_files(self) -> bool:
+        """Drop skaled status and exit schedule left from the removed container"""
+        logger.info('Removing skaled state files')
+        rm_skaled_status(self.name)
+        if self.esfm.exists():
+            self.esfm.rm()
         return True
 
     @BaseActionManager.monitor_block

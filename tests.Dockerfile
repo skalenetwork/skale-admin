@@ -9,5 +9,3 @@ RUN apt-get update && \
 COPY pyproject.toml ./
 
 RUN uv pip install --prerelease=allow --system --no-cache ".[test,dev]"
-
-ENV PYTHONPATH=${PYTHONPATH}:/usr/lib/python3/dist-packages/

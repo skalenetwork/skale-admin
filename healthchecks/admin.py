@@ -20,12 +20,17 @@
 import os
 import time
 
+from tools.constants.logs import ADMIN_LOG_PATH
+
 MAX_ALLOWED_LOG_TIME_DIFF = os.getenv('MAX_ALLOWED_LOG_TIME_DIFF', 600)
-ADMIN_LOG_FILEPATH = '/skale_node_data/log/admin.log'
 
 
 def run_healthcheck():
-    modification_time = os.path.getmtime(ADMIN_LOG_FILEPATH)
+    try:
+        modification_time = os.path.getmtime(ADMIN_LOG_PATH)
+    except OSError as err:
+        print(f'Cannot stat {ADMIN_LOG_PATH}: {err}')
+        exit(4)
     current_time = time.time()
     time_diff = current_time - modification_time
 

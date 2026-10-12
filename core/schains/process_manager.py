@@ -19,7 +19,6 @@
 
 import logging
 import time
-from multiprocessing import Process
 from typing import Optional
 
 from skale import SkaleIma, SkaleManager
@@ -30,6 +29,7 @@ from core.monitor.schain.main import start_tasks
 from core.node_config import NodeConfig
 from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process import (
+    FORK_CONTEXT,
     get_schain_process_info,
     is_monitor_process_alive,
     terminate_process,
@@ -83,7 +83,7 @@ def run_pm_schain(
         else:
             logger.info('%s Process is running: PID = %d', log_prefix, pid)
     else:
-        process = Process(
+        process = FORK_CONTEXT.Process(
             name=schain.name, target=start_tasks, args=(schain, node_config, skale_ima)
         )
         process.start()

@@ -27,7 +27,6 @@ from skale.utils.helper import schain_name_to_hash
 
 from core.dkg.schain.structures import ComplaintReason
 from core.dkg.schain.utils import (
-    DkgError,
     broadcast_and_check_data,
     check_failed_dkg,
     check_no_complaints,
@@ -38,8 +37,9 @@ from core.dkg.schain.utils import (
     send_complaint,
     wait_for_fail,
 )
+from core.dkg.schain.validation import ensure_schain_exists
 from core.dkg.structures import DKGResult, DKGStatus, DKGStep
-from core.dkg.utils import DKGKeyGenerationError
+from core.dkg.utils import DkgError, DKGKeyGenerationError
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +52,12 @@ def get_dkg_client(
     rotation_id: int,
 ):
     dkg_client = None
+    ensure_schain_exists(skale, schain_name)
     try:
         dkg_client = init_dkg_client(node_id, schain_name, skale, sgx_key_name, rotation_id)
     except DkgError as e:
         logger.exception(e)
+        ensure_schain_exists(skale, schain_name)
         channel_started_time = skale.dkg.get_channel_started_time(
             skale.schains.name_to_group_id(schain_name)
         )
@@ -68,6 +70,7 @@ def get_dkg_client(
 
 def init_bls(dkg_client, rotation_id=0):
     skale, schain_name = dkg_client.skale, dkg_client.chain_name
+    ensure_schain_exists(skale, schain_name)
     n = dkg_client.n
 
     channel_started_time = skale.dkg.get_channel_started_time(dkg_client.group_index)
@@ -151,6 +154,7 @@ def init_bls(dkg_client, rotation_id=0):
 
 
 def is_last_dkg_finished(skale: SkaleManager, schain_name: SchainName) -> bool:
+    ensure_schain_exists(skale, schain_name)
     num_of_nodes = len(skale.schains_internal.node_ids_for_schain(schain_name))
     schain_hash = schain_name_to_hash(schain_name)
     return skale.dkg.get_number_of_completed(schain_hash) == num_of_nodes
@@ -178,10 +182,15 @@ def run_dkg(skale, dkg_client, schain_name, rotation_id) -> DKGResult:
 
     if status != DKGStatus.FAILED:
         try:
+            ensure_schain_exists(skale, schain_name)
             keys_data = generate_bls_keys(dkg_client)
         except DKGKeyGenerationError as e:
             logger.info(f'sChain {schain_name} DKG failed during key generation, err {e}')
             status = DKGStatus.KEY_GENERATION_ERROR
+        except DkgError as e:
+            logger.info(f'sChain {schain_name} DKG stopped with {e}')
+            keys_data = None
+            status = DKGStatus.FAILED
 
     if keys_data:
         status = DKGStatus.DONE

@@ -58,22 +58,36 @@ def unregistered_skale_bp(skale, dutils):
 
 
 def test_sgx(skale_bp, skale, st):
+    sgx = SgxClient(str(st.sgx_url), SGX_CERTIFICATES_FOLDER)
+    account = sgx.generate_key()
     config = NodeConfig()
-    config.sgx_key_name = TEST_SGX_KEYNAME
+    config.sgx_key_name = account.name
 
     data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'sgx'))
-    sgx = SgxClient(str(st.sgx_url), SGX_CERTIFICATES_FOLDER)
     version = sgx.get_server_version()
     assert data == {
         'payload': {
             'sgx_server_url': str(st.sgx_url),
             'status_zmq': True,
             'status_https': True,
+            'status_key': True,
+            'status_signing': True,
             'sgx_wallet_version': version,
-            'sgx_keyname': TEST_SGX_KEYNAME,
+            'sgx_keyname': account.name,
         },
         'status': 'ok',
     }
+
+
+def test_sgx_unknown_key(skale_bp, skale, st):
+    config = NodeConfig()
+    config.sgx_key_name = TEST_SGX_KEYNAME
+
+    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'sgx'))
+    payload = data['payload']
+    assert payload['status_https'] is True
+    assert payload['status_key'] is False
+    assert payload['status_signing'] is False
 
 
 def test_endpoint_info(skale_bp, skale):

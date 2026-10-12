@@ -1,5 +1,3 @@
-"""Exercise real route registration and request teardown without external services."""
-
 import importlib.util
 import tempfile
 import unittest
@@ -100,7 +98,6 @@ class APIAuthApplicationsTest(unittest.TestCase):
     def test_authenticated_sgx_options_delegate_to_sgx(self):
         from web.routes import info
 
-        # Exercise nested dataclass/enum serialization as returned by the SGX SDK.
         level = Enum('Level', {'INFO': 2})
         flags = make_dataclass('Flags', ['auto_sign', 'log_level'])(False, level.INFO)
         options = make_dataclass('Options', ['flags', 'build'])(flags, None)

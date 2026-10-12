@@ -19,6 +19,7 @@
 
 import json
 import logging
+import multiprocessing
 import os
 import pathlib
 import shutil
@@ -34,6 +35,11 @@ from tools.helper import check_pid
 logger = logging.getLogger(__name__)
 
 P_KILL_WAIT_TIMEOUT = 60
+
+# Children receive Skale clients holding unpicklable web3 state, rely on
+# inheriting module level locks and are left unjoined for the caller to reap,
+# none of which work unless they are forked.
+FORK_CONTEXT = multiprocessing.get_context('fork')
 
 
 def is_schain_process_report_exist(schain_name: str) -> bool:
