@@ -1,17 +1,17 @@
-FROM python:3.14.7-slim-trixie AS builder
+FROM python:3.14.10-slim-trixie AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /bin/uv
 
 WORKDIR /usr/src/admin
 
 COPY pyproject.toml ./
 
-RUN uv pip install --prerelease=allow --system --no-cache .
+RUN uv pip install --system --no-cache -r pyproject.toml
 
-FROM python:3.14.7-slim-trixie
+FROM python:3.14.10-slim-trixie
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends wget kmod nftables git python3-nftables && \
+    apt-get install -y --no-install-recommends nftables python3-nftables && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/admin
