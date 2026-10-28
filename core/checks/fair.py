@@ -34,14 +34,21 @@ from core.config.fair.firewall import (
 )
 from core.config.schain.file_manager import ConfigFileManager
 from core.dkg.utils import get_secret_key_share_filepath
-from core.firewall import get_fair_network_scope_rule_controller, get_network_scope_node_ips
+from core.firewall import (
+    Action,
+    NFTablesController,
+    get_fair_network_scope_rule_controller,
+    get_network_scope_node_ips,
+)
 from core.firewall.fair import (
     FairCommitteeScopeRuleController,
     FairNetworkScopeRuleController,
 )
+from core.nginx import ips_to_cidrs
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.types.chain import FairChainName
+from tools.constants.fair import NFT_NETWORK_SCOPE_CHAIN
 from tools.helper import cast_manager_to_fair_node_id
 from tools.resources import get_statsd_client
 
@@ -146,7 +153,17 @@ class FairConfigChecks(IChecks):
             return CheckRes(status=status, data=data)
 
 
+def get_network_scope_ips_from_firewall() -> list[str]:
+    """Node IPs the network scope firewall currently accepts, without a FairManager call"""
+    rules = NFTablesController(chain=NFT_NETWORK_SCOPE_CHAIN, prefix='fair').rules
+    return sorted({r.first_ip for r in rules if r.action == Action.ACCEPT and r.first_ip})
+
+
 class SkaledChecks(BaseSkaledChecks):
+    def proxy_peers(self, config: dict) -> list[str]:
+        committee_ips = get_node_ips_from_config(config, int(time.time()))
+        return ips_to_cidrs({*committee_ips, *get_network_scope_ips_from_firewall()})
+
     @property
     def committee_scope_firewall_rules(self) -> CheckRes:
         """Checks that committee scope firewall rules are set correctly"""

@@ -89,13 +89,19 @@ INTERNAL_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'internal.toml'
 ## path - firewall
 
 NFT_CHAIN_BASE_PATH = '/etc/nft.conf.d/skale/chains'
-NFT_CHAIN_CONFIG_WILDCARD = os.path.join(NFT_CHAIN_BASE_PATH, '*')
+# sChain files only: node-cli keeps other files, such as tls-ports.conf, in the same folder
+NFT_CHAIN_CONFIG_WILDCARD = os.path.join(NFT_CHAIN_BASE_PATH, 'skale-*.conf')
 
 # path - nginx
 
 NGINX_CONTAINER_NAME: str = 'sk_nginx'
-NGINX_TEMPLATE_FILEPATH: Path = CONFIG_FOLDER / 'nginx.conf.j2'
-NGINX_CONFIG_FILEPATH: Path = NODE_DATA_PATH / 'nginx.conf'
+NGINX_TEMPLATE_DIR: Path = CONFIG_FOLDER / 'nginx'
+NGINX_BASE_TEMPLATE_FILEPATH: Path = NGINX_TEMPLATE_DIR / 'base.conf.j2'
+NGINX_CHAIN_TEMPLATE_FILEPATH: Path = NGINX_TEMPLATE_DIR / 'chain.conf.j2'
+NGINX_DIR: Path = NODE_DATA_PATH / 'nginx'
+NGINX_BASE_CONFIG_FILEPATH: Path = NGINX_DIR / 'conf.d' / 'base.conf'
+NGINX_CHAINS_PATH: Path = NGINX_DIR / 'conf.d' / 'chains'
+NGINX_LOCK_PATH: Path = NGINX_DIR / '.chains.lock'
 
 # path - sgx
 

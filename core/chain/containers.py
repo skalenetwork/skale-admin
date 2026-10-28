@@ -25,6 +25,7 @@ from skale_core.settings import get_settings
 
 from core.chain.runner import (
     get_container_image,
+    get_ima_container_rpc_url,
     get_ima_container_time_frame,
     get_image_name,
     is_container_exists,
@@ -37,7 +38,8 @@ from core.chain.runner import (
 from core.chain.ssl import update_ssl_change_date
 from core.chain.status import SkaledStatus
 from core.chain.volume import is_volume_exists
-from core.ima.container import ImaData, get_ima_time_frame
+from core.ima.container import ImaData, get_ima_time_frame, get_localhost_http_endpoint
+from core.nginx import ChainProxyManager, target_rpc_proxy_mode
 from core.redis.chain_record import ChainRecord
 from core.types.chain import ChainName
 from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
@@ -76,6 +78,12 @@ def monitor_skaled_container(
 
     if not is_container_exists(chain_name, dutils=dutils):
         logger.info(f"Chain {chain_name}: container doesn't exist")
+        # a new container goes behind nginx only if nginx is there to serve the public ports
+        rpc_proxy = target_rpc_proxy_mode(current=False, dutils=dutils)
+        if not rpc_proxy and not ChainProxyManager(chain_name, dutils=dutils).remove():
+            # skaled binds the public ports itself, so nginx has to let go of them first
+            logger.error('Chain %s: nginx still serves the public ports, not starting', chain_name)
+            return False
         run_skaled_container(
             chain_name=chain_name,
             download_snapshot=download_snapshot,
@@ -85,7 +93,9 @@ def monitor_skaled_container(
             passive_node=passive_node,
             historic_state=historic_state,
             part_of_node=part_of_node,
+            rpc_proxy=rpc_proxy,
         )
+        chain_record.set_rpc_proxy_mode(rpc_proxy)
         update_ssl_change_date(chain_record)
         chain_record.reset_failed_counters()
         chain_record.set_force_skaled_start(False)
@@ -151,6 +161,13 @@ def monitor_ima_container(
         time_frame = get_ima_time_frame(chain_name, after=False)
         image = get_image_name(image_type=IMA_CONTAINER, new=False)
     logger.debug('IMA time frame %d', time_frame)
+
+    if container_exists:
+        rpc_url = get_localhost_http_endpoint(chain_name)
+        if get_ima_container_rpc_url(chain_name, dutils) != rpc_url:
+            logger.info('%s Removing IMA container, skaled moved to other RPC ports', chain_name)
+            remove_container(chain_name, IMA_CONTAINER, dutils)
+            container_exists = False
 
     if not container_exists:
         logger.info(

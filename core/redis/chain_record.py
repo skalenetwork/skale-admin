@@ -43,6 +43,7 @@ RECORD_FIELDS: dict[str, FieldInfo] = {
     'snapshot_from': FieldInfo('snapshot_from', str, None),
     'restart_ts': FieldInfo('restart_ts', int, None),
     'force_skaled_start': FieldInfo('force_skaled_start', bool, False),
+    'rpc_proxy_mode': FieldInfo('rpc_proxy_mode', bool, False),
 }
 
 
@@ -69,6 +70,11 @@ class ChainRecord(FlatRedisRecord):
     @property
     def force_skaled_start(self) -> bool:
         return cast(bool, self._get_field('force_skaled_start'))
+
+    @property
+    def rpc_proxy_mode(self) -> bool:
+        # records created before the field existed have no key, and those containers are public
+        return bool(self._get_field('rpc_proxy_mode'))
 
     @property
     def restart_count(self) -> int:
@@ -138,6 +144,9 @@ class ChainRecord(FlatRedisRecord):
 
     def set_force_skaled_start(self, value: bool) -> None:
         self._set_field('force_skaled_start', value)
+
+    def set_rpc_proxy_mode(self, value: bool) -> None:
+        self._set_field('rpc_proxy_mode', value)
 
     def set_snapshot_from(self, value: str | None) -> None:
         self._set_field('snapshot_from', value)

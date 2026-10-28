@@ -27,6 +27,8 @@ from core.checks.schain import SkaledChecks
 from core.config.schain.main import get_number_of_secret_shares
 from core.monitor.monitor_base import BaseSkaledMonitor
 from core.monitor.schain.action_skaled import SkaledActionManager
+from core.nginx import is_rpc_proxy_mode_changed
+from tools.docker_utils import DockerUtils
 from tools.helper import is_passive
 from tools.resources import get_statsd_client
 from web.models.schain import SChainRecord
@@ -59,6 +61,8 @@ class RegularSkaledMonitor(BaseSChainSkaledMonitor):
             self.am.skaled_container()
         else:
             self.am.reset_restart_counter()
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
         if not self.checks.rpc:
             self.am.skaled_rpc()
         if not self.checks.ima_container and not is_passive():
@@ -80,6 +84,8 @@ class SnapshotSkaledMonitor(BaseSChainSkaledMonitor):
             skaled_started = self.am.skaled_container(download_snapshot=True, abort_on_exit=False)
         else:
             self.am.reset_restart_counter()
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
         if skaled_started:
             self.am.update_repair_ts(new_ts=int(time.time()))
         else:
@@ -109,6 +115,8 @@ class RepairSkaledMonitor(BaseSChainSkaledMonitor):
             skaled_started = self.am.skaled_container(download_snapshot=True, abort_on_exit=False)
         else:
             self.am.reset_restart_counter()
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
         if skaled_started:
             self.am.update_repair_ts(new_ts=int(time.time()))
         else:
@@ -131,6 +139,8 @@ class BackupSkaledMonitor(BaseSChainSkaledMonitor):
             skaled_started = self.am.skaled_container(download_snapshot=True, abort_on_exit=False)
         else:
             self.am.reset_restart_counter()
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
         if not self.checks.ima_container:
             self.am.ima_container()
         if skaled_started:
@@ -141,8 +151,8 @@ class BackupSkaledMonitor(BaseSChainSkaledMonitor):
 
 class RecreateSkaledMonitor(BaseSChainSkaledMonitor):
     """
-    When recreate requested from node-cli (currently only for new SSL certs) -
-    safely remove skaled container and start again
+    When new SSL certs arrive or the RPC proxy flag changes -
+    safely remove skaled container and start again on the ports the flag asks for
     """
 
     def execute(self) -> None:
@@ -167,6 +177,8 @@ class UpdateConfigSkaledMonitor(BaseSChainSkaledMonitor):
             self.am.volume()
         self.am.reset_exit_schedule()
         self.am.recreated_chain_containers(abort_on_exit=False)
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
 
 
 class ReloadGroupSkaledMonitor(BaseSChainSkaledMonitor):
@@ -183,6 +195,8 @@ class ReloadGroupSkaledMonitor(BaseSChainSkaledMonitor):
             self.am.skaled_container()
         else:
             self.am.reset_restart_counter()
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
         if not self.checks.rpc:
             self.am.skaled_rpc()
         if not self.checks.ima_container:
@@ -204,6 +218,8 @@ class ReloadIpSkaledMonitor(BaseSChainSkaledMonitor):
             self.am.skaled_container()
         else:
             self.am.reset_restart_counter()
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
         if not self.checks.rpc:
             self.am.skaled_rpc()
         if not self.checks.ima_container:
@@ -244,6 +260,8 @@ class NewNodeSkaledMonitor(BaseSChainSkaledMonitor):
             )
         else:
             self.am.reset_restart_counter()
+        if not self.checks.nginx_config:
+            self.am.nginx_config()
         if not self.checks.ima_container:
             self.am.ima_container()
 
@@ -288,6 +306,12 @@ def is_recreate_mode(status: Dict, schain_record: SChainRecord) -> bool:
     return status['skaled_container'] and ssl_reload_needed(schain_record)
 
 
+def is_rpc_proxy_switch_mode(
+    status: Dict, schain_record: SChainRecord, dutils: DockerUtils | None = None
+) -> bool:
+    return status['skaled_container'] and is_rpc_proxy_mode_changed(schain_record, dutils=dutils)
+
+
 def is_new_node_mode(schain_record: SChainRecord, finish_ts: Optional[int]) -> bool:
     ts = int(time.time())
     secret_shares_number = get_number_of_secret_shares(schain_record.name)
@@ -325,7 +349,9 @@ def get_skaled_monitor(
     if is_passive():
         if no_config(check_status):
             mon_type = NoConfigSkaledMonitor
-        elif is_recreate_mode(check_status, schain_record):
+        elif is_recreate_mode(check_status, schain_record) or is_rpc_proxy_switch_mode(
+            check_status, schain_record, action_manager.dutils
+        ):
             mon_type = RecreateSkaledMonitor
         elif is_repair_mode(schain_record, check_status, skaled_status, ncli_status, False):
             mon_type = SnapshotSkaledMonitor
@@ -347,6 +373,8 @@ def get_skaled_monitor(
         mon_type = RecreateSkaledMonitor
     elif is_new_node_mode(schain_record, action_manager.finish_ts):
         mon_type = NewNodeSkaledMonitor
+    elif is_rpc_proxy_switch_mode(check_status, schain_record, action_manager.dutils):
+        mon_type = RecreateSkaledMonitor
     elif is_config_update_time(check_status, skaled_status):
         mon_type = UpdateConfigSkaledMonitor
     elif is_reload_group_mode(check_status, action_manager.upstream_finish_ts):
