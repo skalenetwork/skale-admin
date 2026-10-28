@@ -1,6 +1,6 @@
 [project]
 name = "skale-admin"
-version = "3.3.3"
+version = "3.4.0"
 requires-python = ">=3.14"
 dependencies = [
     "peewee==4.5.3",
