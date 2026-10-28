@@ -52,11 +52,6 @@ logger = logging.getLogger(__name__)
 WATCHDOG_PORT = 3009
 CHANGE_IP_DELAY = 300
 
-try:
-    from sh import lsmod
-except ImportError:
-    logger.warning('Could not import lsmod from sh package')
-
 
 class NodeStatus(Enum):
     """This class contains possible node statuses"""
@@ -326,9 +321,9 @@ def get_skale_node_version():
     return get_meta_info()['config_stream']
 
 
-def is_btrfs_loaded():
-    modules = list(filter(lambda s: s.startswith('btrfs'), lsmod().split('\n')))
-    return modules != []
+def is_btrfs_loaded() -> bool:
+    with open('/proc/modules') as modules:
+        return any(line.startswith('btrfs') for line in modules)
 
 
 def get_btrfs_info() -> dict:

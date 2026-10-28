@@ -23,7 +23,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 Install all dependencies:
 
 ```bash
-uv sync --prerelease=allow --all-extras
+uv sync --all-extras
 ```
 
 ### Linting and type checking
