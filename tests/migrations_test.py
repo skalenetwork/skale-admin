@@ -6,7 +6,6 @@ from peewee import CharField, Model, SqliteDatabase
 from playhouse.migrate import SqliteMigrator
 
 from tests.utils import generate_random_name
-from tools.constants.db import DB_PRAGMAS
 from web.migrations import (
     add_config_version_field,
     add_failed_rpc_count_field,
@@ -27,7 +26,7 @@ NUMBER_OF_RECORDS = 5
 
 @pytest.fixture
 def test_db():
-    db = SqliteDatabase(TEST_DB_FILE, DB_PRAGMAS)
+    db = SqliteDatabase(TEST_DB_FILE)
     with db:
         yield db
     os.remove(TEST_DB_FILE)
