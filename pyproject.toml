@@ -21,7 +21,7 @@ dependencies = [
     "statsd==4.0.1",
     "psutil==7.2.2",
     "colorful==0.5.8",
-    "celery==5.6.3",
+    "celery[redis]==5.6.3",
     "filelock==4.2.4",
     "python-telegram-bot==22.8",
     "skale.py==8.0dev0",
