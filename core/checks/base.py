@@ -66,17 +66,6 @@ API_ALLOWED_CHECKS = [
     'ima_container',
 ]
 
-TG_ALLOWED_CHECKS = [
-    'volume',
-    'firewall_rules',
-    'skaled_container',
-    'exit_code_ok',
-    'rpc',
-    'blocks',
-    'process',
-    'ima_container',
-]
-
 
 class CheckRes:
     def __init__(self, status: bool, data: dict | None = None):
@@ -238,10 +227,6 @@ class BaseSkaledChecks(IChecks):
             return CheckRes(False)
         exit_code = self.dutils.container_exit_code(self.container_name)
         return CheckRes(exit_code == SkaledExitCodes.EC_SUCCESS)
-
-
-def get_api_checks_status(status: Dict, allowed: List = API_ALLOWED_CHECKS) -> Dict:
-    return dict(filter(lambda r: r[0] in allowed, status.items()))
 
 
 def save_checks_dict(schain_name, checks_dict):

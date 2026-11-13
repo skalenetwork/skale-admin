@@ -44,7 +44,6 @@ from core.schains.process_manager import run_pm_schain, run_process_manager
 from core.updates import update_node_config_file
 from tools.constants import INIT_LOCK_PATH
 from tools.logger import init_admin_logger
-from tools.notifications.messages import cleanup_notification_state
 from tools.resources import rs
 from tools.sgx_utils import generate_sgx_key
 from tools.wallet_utils import init_wallet
@@ -159,7 +158,6 @@ def init_active() -> None:
             set_schains_backup_run()
         if internal_st.pull_config_for_schain:
             set_schains_sync_config_run(internal_st.pull_config_for_schain)
-        cleanup_notification_state()
         generate_ima_container_abis(skale, SkaleIma(str(st.endpoint), st.ima_contracts))
 
 

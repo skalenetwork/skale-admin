@@ -97,7 +97,6 @@ class RepairSkaledMonitor(BaseSChainSkaledMonitor):
             'Repair mode execution, exit_code_ok: %s',
             self.checks.exit_code_ok.status,
         )
-        self.am.notify_repair_mode()
         self.am.cleanup_schain_docker_entity()
         self.am.cleanup_skaled_state_files()
         if not self.checks.firewall_rules:

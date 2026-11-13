@@ -24,19 +24,16 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from core.chain.ssl import ssl_reload_needed
 from core.chain.status import SkaledStatus, get_skaled_status
-from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
 from core.checks.fair import SkaledChecks
 from core.config.fair.committee_nodes import get_last_group_start_timestamp_from_config
 from core.firewall.utils import get_fair_committee_scope_rule_controller
 from core.monitor.fair.action_skaled import FairSkaledActionManager
 from core.monitor.monitor_base import BaseSkaledMonitor
-from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.types.chain import FairChainName
 from tools.constants.fair import SKALED_RESTART_JOB_NAME
 from tools.docker_utils import DockerUtils
 from tools.helper import is_passive, no_hyphens
-from tools.notifications.messages import notify_checks
 from tools.resources import get_statsd_client
 
 logger = logging.getLogger(__name__)
@@ -44,7 +41,6 @@ logger = logging.getLogger(__name__)
 
 def run_skaled_pipeline(
     chain_name: FairChainName,
-    node_config: NodeConfig,
     scheduler: BackgroundScheduler,
     dutils: DockerUtils | None = None,
 ) -> None:
@@ -74,17 +70,12 @@ def run_skaled_pipeline(
         chain_name=chain_name,
         rule_controller=rule_controller,
         checks=skaled_checks,
-        node_config=node_config,
         scheduler=scheduler,
         dutils=dutils,
     )
 
     logger.debug('Gathering skaled status')
     check_status = skaled_checks.get_all(log=False, expose=True)
-
-    logger.debug('Get automatic repair option')
-    api_status = get_api_checks_status(status=check_status, allowed=TG_ALLOWED_CHECKS)
-    notify_checks(chain_name, node_config.all(), api_status)
 
     logger.debug('Skaled check status: %s', check_status)
     logger.info('Upstream config: %s', skaled_am.upstream_config_path)
