@@ -52,6 +52,12 @@ def test_get_skaled_container_cmd(schain_config, cert_key_pair, st):
     assert container_opts == expected_opts
 
 
+def test_get_skaled_container_cmd_without_certificates(schain_config, ssl_folder, st):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    # skaled drops options with a NULL value, and then listens on no TLS port
+    assert get_skaled_container_cmd(schain_name).endswith('--ssl-key NULL --ssl-cert NULL')
+
+
 def test_get_snapshot_opts():
     sync_opts = get_snapshot_opts(start_ts=123)
     assert sync_opts == ['--download-snapshot readfromconfig', '--start-timestamp 123']
@@ -70,3 +76,16 @@ def test_get_skaled_container_cmd_passive_node(schain_config, cert_key_pair, st)
         f'-v 3 --web3-trace --enable-debug-behavior-apis --aa no'
     )
     assert container_opts == expected_opts
+
+
+def test_get_skaled_container_cmd_rpc_proxy(schain_config, cert_key_pair, st):
+    schain_name = schain_config['skaleConfig']['sChain']['schainName']
+    container_opts = get_skaled_container_cmd(schain_name, rpc_proxy=True)
+    proxied = '--http-port 10035 --https-port 10040 --ws-port 10034 --wss-port 10039 --rpc-loopback'
+    assert proxied in container_opts
+    # nginx terminates TLS
+    assert '--ssl-' not in container_opts
+    public_opts = get_skaled_container_cmd(schain_name)
+    assert '--http-port 10003 --https-port 10008 --ws-port 10002 --wss-port 10007' in public_opts
+    assert '--rpc-loopback' not in public_opts
+    assert '--ssl-key' in public_opts

@@ -17,6 +17,7 @@ from core.node_config import NodeConfig
 from core.schains.cleaner import (
     cleanup_schain,
     delete_bls_keys,
+    get_schains_firewall_configs,
     get_schains_on_node,
     monitor,
     remove_config_dir,
@@ -26,6 +27,7 @@ from core.schains.cleaner import (
     remove_skaled_container,
 )
 from tests.utils import get_schain_struct, run_simple_ima_container, run_simple_skaled_container
+from tools.constants import NFT_CHAIN_CONFIG_WILDCARD
 from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
@@ -207,6 +209,15 @@ def test_get_schains_on_node(
     )
 
 
+def test_get_schains_firewall_configs(tmp_path):
+    for name in ('skale-foo.conf', 'fair-network.conf', 'tls-ports.conf', 'tls-ports.lock'):
+        (tmp_path / name).touch()
+    pattern = str(tmp_path / Path(NFT_CHAIN_CONFIG_WILDCARD).name)
+    with mock.patch('core.schains.cleaner.NFT_CHAIN_CONFIG_WILDCARD', pattern):
+        # node-cli files next to the sChain ones are no chains to clean up
+        assert get_schains_firewall_configs() == ['skale-foo']
+
+
 @mock.patch('core.schains.cleaner.cleanup_firewall_for_schain')
 def test_remove_schain(
     cleanup_firewall_for_schain,
@@ -263,3 +274,35 @@ def test_cleanup_schain(
     assert not os.path.isdir(schain_dir_path)
     record = SChainRecord.get_by_name(schain_name)
     assert record.is_deleted is True
+
+
+@mock.patch('core.schains.cleaner.cleanup_firewall_for_schain')
+def test_cleanup_schain_retries_while_nginx_keeps_ports(
+    cleanup_firewall_rules,
+    schain_db,
+    node_config,
+    schain_on_contracts,
+    estate,
+    dutils,
+    secret_key,
+):
+    schain_name = schain_db
+    schain_dir_path = os.path.join(SCHAINS_DIR_PATH, schain_name)
+    options = {
+        'sync_agent_ranges': [],
+        'last_dkg_successful': True,
+        'rotation_id': 0,
+        'estate': estate,
+        'dutils': dutils,
+    }
+    with mock.patch('core.schains.cleaner.ChainProxyManager.remove', return_value=False):
+        cleanup_schain(node_config.id, schain_name, **options)
+    # the dir and the record keep the chain on the node, so the next run finds it again
+    assert os.path.isdir(schain_dir_path)
+    assert SChainRecord.get_by_name(schain_name).is_deleted is False
+    cleanup_firewall_rules.assert_not_called()
+
+    cleanup_schain(node_config.id, schain_name, **options)
+    assert not os.path.isdir(schain_dir_path)
+    assert SChainRecord.get_by_name(schain_name).is_deleted is True
+    cleanup_firewall_rules.assert_called_once_with(schain_name)

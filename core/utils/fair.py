@@ -28,6 +28,8 @@ from core.config.endpoint import get_local_chain_http_endpoint_from_config
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_fair_chain_name
 from core.node_config import NodeConfig
+from core.redis.chain_record import ChainRecord
+from core.redis.node_config_fair import NodeConfigFair
 from tools.exceptions import LocalEndpointUnreachableError
 from tools.wallet_utils import init_wallet
 
@@ -39,10 +41,22 @@ def get_local_skaled_endpoint_fair() -> str | None:
     chain_name = get_fair_chain_name(st.env_type)
     cfm = ConfigFileManager(chain_name=chain_name)
     if cfm.skaled_config:
-        local_endpoint = get_local_chain_http_endpoint_from_config(cfm.skaled_config)
+        rpc_proxy_mode = ChainRecord(chain_name).rpc_proxy_mode
+        local_endpoint = get_local_chain_http_endpoint_from_config(
+            cfm.skaled_config, rpc_proxy_mode
+        )
         logger.info(f'Found local skaled endpoint: {local_endpoint}')
         return local_endpoint
     return None
+
+
+def update_local_skaled_endpoint() -> None:
+    """Publish the endpoint to redis, where transaction-manager picks it up"""
+    local_endpoint = get_local_skaled_endpoint_fair()
+    if local_endpoint:
+        NodeConfigFair().set_local_endpoint(local_endpoint)
+    else:
+        logger.info('Local skaled endpoint is not set, skipping node_config_fair update')
 
 
 def get_fair_endpoints() -> list[str]:

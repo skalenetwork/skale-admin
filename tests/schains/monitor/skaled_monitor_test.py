@@ -21,6 +21,7 @@ from core.monitor.schain.monitor_skaled import (
     ReloadGroupSkaledMonitor,
     ReloadIpSkaledMonitor,
     RepairSkaledMonitor,
+    SnapshotSkaledMonitor,
     UpdateConfigSkaledMonitor,
     get_skaled_monitor,
 )
@@ -395,6 +396,70 @@ def test_get_skaled_monitor_recreate(
         status['skaled_container'] = True
         mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
         assert mon == RecreateSkaledMonitor
+
+
+def test_get_skaled_monitor_rpc_proxy_switch(
+    skaled_am, skaled_checks, schain_db, skaled_status, ncli_status
+):
+    schain_record = SChainRecord.get_by_name(schain_db)
+    status = skaled_checks.get_all()
+    status['skaled_container'] = True
+    mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
+    assert mon == RegularSkaledMonitor
+
+    with mock.patch('core.nginx.mode.is_rpc_proxy_enabled', return_value=True):
+        # nothing to take over the public ports, skaled stays where it is
+        with mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=False):
+            mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
+            assert mon == RegularSkaledMonitor
+        with mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=True):
+            mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
+            assert mon == RecreateSkaledMonitor
+            # a node rotating in keeps its snapshot start, the switch waits for it
+            with mock.patch.object(
+                SkaledActionManager,
+                'finish_ts',
+                new_callable=mock.PropertyMock,
+                return_value=int(time.time()) + 60,
+            ):
+                mon = get_skaled_monitor(
+                    skaled_am, status, schain_record, skaled_status, ncli_status
+                )
+                assert mon == NewNodeSkaledMonitor
+            with mock.patch('core.monitor.schain.monitor_skaled.is_passive', return_value=True):
+                mon = get_skaled_monitor(
+                    skaled_am, status, schain_record, skaled_status, ncli_status
+                )
+                assert mon == RecreateSkaledMonitor
+            # a missing container starts on the new ports, a stopped one moves once it runs again
+            status['skaled_container'] = False
+            mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
+            assert mon == RegularSkaledMonitor
+
+    schain_record.set_rpc_proxy_mode(True)
+    status['skaled_container'] = True
+    mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
+    assert mon == RecreateSkaledMonitor
+
+
+@pytest.mark.parametrize(
+    'monitor',
+    [
+        RegularSkaledMonitor,
+        SnapshotSkaledMonitor,
+        RepairSkaledMonitor,
+        BackupSkaledMonitor,
+        UpdateConfigSkaledMonitor,
+        ReloadGroupSkaledMonitor,
+        ReloadIpSkaledMonitor,
+        NewNodeSkaledMonitor,
+    ],
+)
+def test_monitors_follow_nginx_config_check(monitor):
+    for synced in (True, False):
+        am = mock.Mock()
+        monitor(am, mock.Mock(nginx_config=CheckRes(synced))).execute()
+        assert am.nginx_config.called is not synced
 
 
 def test_regular_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):

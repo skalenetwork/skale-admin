@@ -27,6 +27,7 @@ from skale_core.settings import get_settings
 
 from core.chain.runner import (
     get_container_name,
+    get_ima_container_rpc_url,
     get_ima_container_time_frame,
     get_image_name,
     is_new_image_pulled,
@@ -47,8 +48,9 @@ from core.config.schain.helper import (
 )
 from core.dkg.utils import get_secret_key_share_filepath
 from core.firewall import IRuleController
-from core.ima.container import get_ima_time_frame
+from core.ima.container import get_ima_time_frame, get_localhost_http_endpoint
 from core.ima.container import get_migration_ts as get_ima_migration_ts
+from core.nginx import ips_to_cidrs, ranges_to_cidrs
 from core.node import NodeWithChangeIp, get_current_ips
 from core.schains.external_config import ExternalConfig, ExternalState
 from tools.constants.containers import IMA_CONTAINER
@@ -203,6 +205,12 @@ class SkaledChecks(BaseSkaledChecks):
             return CheckRes(status=status, data=data)
         return CheckRes(status=False, data=data)
 
+    def proxy_peers(self, config: dict) -> list[str]:
+        # nodes joining by rotation fetch their snapshot before the switch to the upstream config
+        upstream = self.cfm.latest_upstream_config or config
+        node_ips = {*get_node_ips_from_config(config), *get_node_ips_from_config(upstream)}
+        return ips_to_cidrs(node_ips) + ranges_to_cidrs(self.econfig.ranges)
+
     @property
     def ima_container(self) -> CheckRes:
         """Checks that IMA container is running"""
@@ -217,7 +225,7 @@ class SkaledChecks(BaseSkaledChecks):
 
         container_running = self.dutils.is_container_running(container_name)
 
-        updated_image, updated_time_frame = False, False
+        updated_image, updated_time_frame, updated_rpc_url = False, False, False
         if container_running:
             expected_image = get_image_name(image_type=IMA_CONTAINER, new=after)
             image = self.dutils.get_container_image_name(container_name)
@@ -227,6 +235,8 @@ class SkaledChecks(BaseSkaledChecks):
             container_time_frame = get_ima_container_time_frame(self.name, self.dutils)
 
             updated_time_frame = time_frame == container_time_frame
+            rpc_url = get_ima_container_rpc_url(self.name, self.dutils)
+            updated_rpc_url = rpc_url == get_localhost_http_endpoint(self.name)
             logger.debug(
                 'IMA image %s, container image %s, time frame %d, container_time_frame %d',
                 expected_image,
@@ -240,6 +250,7 @@ class SkaledChecks(BaseSkaledChecks):
             'updated_image': updated_image,
             'new_image_pulled': new_image_pulled,
             'updated_time_frame': updated_time_frame,
+            'updated_rpc_url': updated_rpc_url,
         }
         logger.debug('%s, IMA check - %s', self.name, data)
         result: bool = all(data.values())

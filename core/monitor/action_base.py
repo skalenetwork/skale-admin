@@ -30,6 +30,7 @@ from core.chain.status import init_skaled_status, rm_skaled_status
 from core.checks.base import BaseSkaledChecks
 from core.config.schain.file_manager import ConfigFileManager
 from core.firewall import IRuleController
+from core.nginx import ChainProxyManager, is_rpc_proxy_due, is_rpc_proxy_enabled
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.schains.cleaner import remove_schain_volume, remove_skaled_container
@@ -160,6 +161,38 @@ class BaseSkaledActionManager(BaseActionManager):
         if type(self.chain_record) is ChainRecord:  # todo: remove after migration to ChainRecord
             self.chain_record.set_restart_ts(0)
         initial_status = self.skaled_container(abort_on_exit=abort_on_exit)
+        # scheduled FAIR restarts run outside a monitor, nginx has to follow the new ports here
+        self.nginx_config()
+        return initial_status
+
+    @BaseActionManager.monitor_block
+    def nginx_config(self) -> bool:
+        initial_status = self.checks.nginx_config.status
+        if not initial_status:
+            expected = self.checks.expected_nginx_config()
+            if self.chain_record.rpc_proxy_mode and expected is None:
+                logger.error(
+                    'Cannot generate nginx config for %s: '
+                    'chain config or nginx parameters are missing',
+                    self.chain_name,
+                )
+                return False
+            enabled = is_rpc_proxy_enabled()
+            if is_rpc_proxy_due() and not enabled:
+                logger.error(
+                    'Cannot generate nginx config for %s: '
+                    'nginx layout is missing; update the node with node-cli',
+                    self.chain_name,
+                )
+                return False
+            logger.info('Syncing chain nginx config')
+            manager = ChainProxyManager(self.chain_name, dutils=self.dutils)
+            if enabled:
+                # skaled moves behind nginx only once it runs, the monitor then makes the move
+                manager.start_nginx()
+            manager.sync(expected)
+        else:
+            logger.info('nginx_config - ok')
         return initial_status
 
     @BaseActionManager.monitor_block

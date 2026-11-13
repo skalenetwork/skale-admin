@@ -13,3 +13,10 @@ def test_ssl_change_date_matches(schain_db, cert_key_pair):
     assert ssl_reload_needed(schain_record)
     update_ssl_change_date(schain_record)
     assert not ssl_reload_needed(schain_record)
+
+
+def test_ssl_change_needs_no_reload_behind_nginx(schain_db, cert_key_pair):
+    schain_record = SChainRecord.get_by_name(schain_db)
+    schain_record.set_rpc_proxy_mode(True)
+    # nginx serves the new certificate, skaled has none
+    assert not ssl_reload_needed(schain_record)

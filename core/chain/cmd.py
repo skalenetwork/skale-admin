@@ -22,7 +22,7 @@ from typing import Optional
 from skale_core.settings import BaseNodeSettings, FairSettings, SkaleSettings, get_settings
 
 from core.chain.ssl import get_ssl_filepath
-from core.config.endpoint import get_chain_ports_from_config
+from core.config.endpoint import get_chain_ports_from_config, get_internal_chain_ports
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.main import get_skaled_container_config_path
 from core.config.schain.static_params import get_static_schain_cmd, get_static_skaled_cmd_fair
@@ -40,10 +40,11 @@ def get_skaled_container_cmd(
     enable_ssl: bool = True,
     passive_node: bool = False,
     snapshot_from: Optional[str] = None,
+    rpc_proxy: bool = False,
 ) -> str:
     """Returns parameters that will be passed to skaled binary in the Chain container"""
     opts = get_chain_container_base_opts(
-        chain_name, enable_ssl=enable_ssl, passive_node=passive_node
+        chain_name, enable_ssl=enable_ssl, passive_node=passive_node, rpc_proxy=rpc_proxy
     )
     if snapshot_from:
         opts.extend(['--no-snapshot-majority', snapshot_from])
@@ -61,13 +62,16 @@ def get_snapshot_opts(start_ts: int | None = None) -> list:
 
 
 def get_chain_container_base_opts(
-    chain_name: str, enable_ssl: bool = True, passive_node: bool = False
+    chain_name: str, enable_ssl: bool = True, passive_node: bool = False, rpc_proxy: bool = False
 ) -> list:
     st = get_settings()
     config_filepath = get_skaled_container_config_path(chain_name)
     ssl_key, ssl_cert = get_ssl_filepath()
     config = ConfigFileManager(chain_name=chain_name).skaled_config
     ports = get_chain_ports_from_config(config)
+    if rpc_proxy:
+        # only the command line moves: skale_nodesRpcInfo and IMA read the config ports
+        ports = get_internal_chain_ports(ports)
 
     static_chain_cmd = None
     if is_fair():
@@ -84,6 +88,9 @@ def get_chain_container_base_opts(
         f'--ws-port {ports["ws"]}',
         f'--wss-port {ports["wss"]}',
     ]
+    if rpc_proxy:
+        # consensus keeps listening on bindIP
+        cmd.append('--rpc-loopback')
 
     if not is_fair():
         st = get_settings((SkaleSettings, BaseNodeSettings))
@@ -101,6 +108,7 @@ def get_chain_container_base_opts(
     if static_chain_cmd:
         cmd.extend(static_chain_cmd)
 
-    if enable_ssl:
+    # behind nginx TLS ends at nginx, so a new certificate needs no skaled restart
+    if enable_ssl and not rpc_proxy:
         cmd.extend([f'--ssl-key {ssl_key}', f'--ssl-cert {ssl_cert}'])
     return cmd
