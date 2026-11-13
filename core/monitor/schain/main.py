@@ -20,13 +20,11 @@
 import logging
 import os
 import time
-from importlib import reload
 from typing import Optional
 
 from skale import SkaleIma
 from skale.types.schain import SchainStructure
 from skale_core.settings import SkaleSettings, get_settings
-from web3._utils import http_session_manager
 
 from core.chain.status import get_node_cli_status, get_skaled_status
 from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
@@ -224,8 +222,6 @@ def start_tasks(
     skale_ima: SkaleIma,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
-    reload(http_session_manager)
-
     name = schain.name
     init_ts, pid = int(time.time()), os.getpid()
     logger.info('Initializing process report %d %d', pid, init_ts)

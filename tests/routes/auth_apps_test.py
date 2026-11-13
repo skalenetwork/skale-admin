@@ -111,7 +111,7 @@ class APIAuthApplicationsTest(unittest.TestCase):
                 stack.enter_context(patch.object(api, 'DockerUtils'))
                 if hasattr(api, 'get_database'):
                     stack.enter_context(patch.object(api, 'get_database'))
-                client = stack.enter_context(patch.object(info, 'SgxClient'))
+                client = stack.enter_context(patch.object(info, 'SgxClient', autospec=True))
                 client.return_value.get_server_options.return_value = options
                 response = api.app.test_client().get(
                     '/api/v1/info/sgx-options', headers={'Authorization': f'Bearer {TOKEN}'}
