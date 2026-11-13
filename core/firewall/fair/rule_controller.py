@@ -196,10 +196,10 @@ class FairNetworkScopeRuleController(FairController):
 
     @property
     def proxied_ports(self) -> Iterable[int]:
-        """skaled's http and https listeners behind nginx, FAIR has no block-wide drop for them"""
+        """skaled's http and ws listeners behind nginx, FAIR has no block-wide drop for them"""
         return (
             self.base_port + offset.value + RPC_PROXY_PORT_SHIFT
-            for offset in (self.port_allocation.HTTP_JSON, self.port_allocation.HTTPS_JSON)
+            for offset in (self.port_allocation.HTTP_JSON, self.port_allocation.WS_JSON)
         )
 
     @property

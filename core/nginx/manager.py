@@ -91,13 +91,13 @@ def wait_for(predicate: Callable[[], bool], timeout: float) -> bool:
     return True
 
 
-def locked(lock_path: Path, action: Callable[[], bool]) -> bool:
-    """Runs action under the lock that serialises nginx changes across chains"""
+def locked(action: Callable[[], bool]) -> bool:
+    """Runs action under the lock that serialises nginx changes with node-cli and other chains"""
     try:
-        with FileLock(lock_path, timeout=LOCK_TIMEOUT_SECONDS):
+        with FileLock(NGINX_LOCK_PATH, timeout=LOCK_TIMEOUT_SECONDS):
             return action()
     except Timeout:
-        logger.error('Timed out waiting for %s', lock_path)
+        logger.error('Timed out waiting for %s', NGINX_LOCK_PATH)
         return False
 
 
@@ -165,17 +165,16 @@ def apply_config(
 ) -> bool:
     """Write or remove a file and reload, rolling back unless `applied` confirms nginx runs it"""
     previous = _read(path)
-    if text is None and not nginx.is_running():
+    running = nginx.is_running()
+    if text is None and not running:
         _write(path, None)
         return True
-    if previous == text and nginx.is_running() and applied():
+    if previous == text and running and applied():
         return True
     try:
-        if not nginx.is_running():
-            _write(path, text)
+        _write(path, text)
         if not nginx.ensure_running():
             raise NginxReloadError('nginx did not start')
-        _write(path, text)
         nginx.reload()
         if not wait_for(applied, APPLY_TIMEOUT_SECONDS):
             raise NginxReloadError(f'nginx did not apply {path}')
@@ -194,16 +193,9 @@ def apply_config(
 class ChainProxyManager:
     """Owns conf.d/chains/<chain>.conf; a change counts only once nginx serves it"""
 
-    def __init__(
-        self,
-        chain_name: str,
-        dutils: DockerUtils | None = None,
-        chains_path: Path | None = None,
-        lock_path: Path | None = None,
-    ) -> None:
+    def __init__(self, chain_name: str, dutils: DockerUtils | None = None) -> None:
         self.chain_name = chain_name
-        self.filepath = (chains_path or NGINX_CHAINS_PATH) / f'{chain_name}.conf'
-        self.lock_path = lock_path or NGINX_LOCK_PATH
+        self.filepath = NGINX_CHAINS_PATH / f'{chain_name}.conf'
         self.nginx = NginxContainer(dutils=dutils)
 
     def current(self) -> str | None:
@@ -225,13 +217,12 @@ class ChainProxyManager:
             # node-cli has not created the layout, so there is nothing to remove or to serve
             return expected is None
         return locked(
-            self.lock_path,
-            lambda: apply_config(self.nginx, self.filepath, expected, self._applied(expected)),
+            lambda: apply_config(self.nginx, self.filepath, expected, self._applied(expected))
         )
 
     def start_nginx(self) -> bool:
         """Start a stopped nginx, which a chain waiting to move behind it needs first"""
-        return locked(self.lock_path, self.nginx.ensure_running)
+        return locked(self.nginx.ensure_running)
 
     def _applied(self, expected: str | None) -> Callable[[], bool]:
         if expected is not None:
@@ -272,12 +263,11 @@ def reload_node_proxy(dutils: DockerUtils | None = None) -> bool:
     answer = f'base {base_fingerprint(text)}'
     nginx = NginxContainer(dutils=dutils)
     return locked(
-        NGINX_LOCK_PATH,
         lambda: apply_config(
             nginx,
             NGINX_BASE_CONFIG_FILEPATH,
             text,
             applied=lambda: nginx.answers(BASE_PROBE_URL) == answer,
             drop_unserved=False,
-        ),
+        )
     )

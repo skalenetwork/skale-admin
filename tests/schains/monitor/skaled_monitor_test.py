@@ -21,6 +21,7 @@ from core.monitor.schain.monitor_skaled import (
     ReloadGroupSkaledMonitor,
     ReloadIpSkaledMonitor,
     RepairSkaledMonitor,
+    SnapshotSkaledMonitor,
     UpdateConfigSkaledMonitor,
     get_skaled_monitor,
 )
@@ -439,6 +440,26 @@ def test_get_skaled_monitor_rpc_proxy_switch(
     status['skaled_container'] = True
     mon = get_skaled_monitor(skaled_am, status, schain_record, skaled_status, ncli_status)
     assert mon == RecreateSkaledMonitor
+
+
+@pytest.mark.parametrize(
+    'monitor',
+    [
+        RegularSkaledMonitor,
+        SnapshotSkaledMonitor,
+        RepairSkaledMonitor,
+        BackupSkaledMonitor,
+        UpdateConfigSkaledMonitor,
+        ReloadGroupSkaledMonitor,
+        ReloadIpSkaledMonitor,
+        NewNodeSkaledMonitor,
+    ],
+)
+def test_monitors_follow_nginx_config_check(monitor):
+    for synced in (True, False):
+        am = mock.Mock()
+        monitor(am, mock.Mock(nginx_config=CheckRes(synced))).execute()
+        assert am.nginx_config.called is not synced
 
 
 def test_regular_skaled_monitor(skaled_am, skaled_checks, clean_docker, dutils):

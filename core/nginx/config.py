@@ -35,7 +35,6 @@ from tools.constants import (
     SSL_CERT_PATH,
 )
 
-CLIENT_ZONE_SIZE = '8m'
 # loopback-only location in each chain file that answers with the file's fingerprint
 PROBE_PATH = '/.skale-proxy'
 
@@ -89,12 +88,14 @@ class ChainProxyConfig:
             'id': chain_ident(self.chain_name),
             'http_port': self.ports['http'],
             'https_port': self.ports['https'],
+            'ws_port': self.ports['ws'],
+            'wss_port': self.ports['wss'],
             'http_internal': internal['http'],
+            'ws_internal': internal['ws'],
             'peers': [str(net) for net in peers],
             'ssl': self.ssl,
             'njs': self.njs,
             'limits': self.limits,
-            'client_zone_size': CLIENT_ZONE_SIZE,
             'probe_path': PROBE_PATH,
         }
 
@@ -111,8 +112,11 @@ class ChainProxyConfig:
 
 def build_chain_proxy_config(
     chain_name: str, skaled_config: dict, peers: list[str]
-) -> ChainProxyConfig:
+) -> ChainProxyConfig | None:
+    """None when the stream has no nginx parameters"""
     params = get_nginx_params()
+    if not params:
+        return None
     return ChainProxyConfig(
         chain_name=chain_name,
         ports=get_chain_ports_from_config(skaled_config),

@@ -16,7 +16,7 @@ def test_tls_ports_are_saved_and_retries_are_idempotent(tmp_path):
         controller.return_value.run_cmd.return_value = (0, '', '')
         open_tls_ports()
         saved = path.read_text()
-        assert 'elements = { 311, 443 }' in saved
+        assert 'elements = { 443, 311 }' in saved
         open_tls_ports()
         assert path.read_text() == saved
         controller.return_value.run_cmd.return_value = (1, '', 'set missing')

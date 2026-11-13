@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 from unittest import mock
 
@@ -7,6 +8,7 @@ from filelock import FileLock
 
 from core.config.endpoint import get_internal_chain_ports, get_local_chain_http_endpoint_from_config
 from core.firewall import IpRange
+from core.monitor.action_base import BaseSkaledActionManager
 from core.nginx import (
     ChainProxyConfig,
     ChainProxyManager,
@@ -106,15 +108,20 @@ class FakeNginx:
 
 
 @pytest.fixture
-def proxy_manager(tmp_path):
+def nginx_layout(tmp_path):
     chains_path = tmp_path / 'chains'
     chains_path.mkdir()
-    manager = ChainProxyManager(
-        'elated-tan-skat',
-        dutils=mock.Mock(),
-        chains_path=chains_path,
-        lock_path=tmp_path / '.chains.lock',
-    )
+    with (
+        mock.patch('core.nginx.manager.NGINX_CHAINS_PATH', chains_path),
+        mock.patch('core.nginx.manager.NGINX_LOCK_PATH', tmp_path / '.chains.lock'),
+        mock.patch('core.nginx.params.NGINX_CHAINS_PATH', chains_path),
+    ):
+        yield chains_path
+
+
+@pytest.fixture
+def proxy_manager(nginx_layout):
+    manager = ChainProxyManager('elated-tan-skat', dutils=mock.Mock())
     manager.nginx = FakeNginx(manager.filepath)
     with (
         mock.patch('core.nginx.manager.APPLY_TIMEOUT_SECONDS', 0.2),
@@ -127,20 +134,12 @@ def proxy_manager(tmp_path):
         yield manager
 
 
-@pytest.fixture
-def nginx_layout(tmp_path):
-    chains_path = tmp_path / 'chains'
-    chains_path.mkdir()
-    with mock.patch('core.nginx.params.NGINX_CHAINS_PATH', chains_path):
-        yield chains_path
-
-
 def test_internal_ports_and_local_endpoint(schain_config):
     assert get_internal_chain_ports(PORTS) == {
         'http': 10035,
-        'ws': 10002,
+        'ws': 10034,
         'https': 10040,
-        'wss': 10007,
+        'wss': 10039,
     }
     assert get_local_chain_http_endpoint_from_config(schain_config) == 'http://127.0.0.1:10003'
     assert (
@@ -165,17 +164,16 @@ def test_template_data():
     ).template_data()
     assert data['id'] == 'elated_tan_skat'
     assert (data['http_port'], data['https_port'], data['http_internal']) == (10003, 10008, 10035)
-    assert 'ws_port' not in data
-    assert 'ws_internal' not in data
+    assert (data['ws_port'], data['wss_port'], data['ws_internal']) == (10002, 10007, 10034)
     assert data['peers'] == ['1.1.1.1/32', '2.2.2.2/32', '10.0.0.0/30']
 
 
 def test_render():
     text = make_config().render()
     assert 'server 127.0.0.1:10035;' in text
-    assert 'server 127.0.0.1:10034;' not in text
     assert 'listen 10003;' in text
-    assert 'listen 10002;' not in text
+    assert 'listen 10002;' in text
+    assert 'proxy_pass http://127.0.0.1:10034;' in text
     assert '1.1.1.1/32 peer;' in text
     assert '127.0.0.1/32 exempt;' in text
     assert 'ssl' not in text
@@ -187,7 +185,7 @@ def test_render():
 
     text = make_config(ssl=True, njs=True).render()
     assert 'listen 10008 ssl;' in text
-    assert 'listen 10007 ssl;' not in text
+    assert 'listen 10007 ssl;' in text
     assert 'set $rpc_limits      on;' in text
     assert 'set $rpc_ban         10;' in text
 
@@ -199,36 +197,60 @@ def test_build_chain_proxy_config():
         'httpsRpcPort': 10008,
         'wssRpcPort': 10007,
     }
+    skaled_config = {'skaleConfig': {'nodeInfo': node_info}}
     params = {'njs': True, 'limits': LIMITS}
     with (
         mock.patch('core.nginx.config.get_nginx_params', return_value=params),
         mock.patch('core.nginx.config.is_ssl_on', return_value=False),
     ):
         config = build_chain_proxy_config(
-            'elated-tan-skat', {'skaleConfig': {'nodeInfo': node_info}}, ips_to_cidrs(['1.1.1.1'])
+            'elated-tan-skat', skaled_config, ips_to_cidrs(['1.1.1.1'])
         )
     assert config == make_config(njs=True)
+    with mock.patch('core.nginx.config.get_nginx_params', return_value={}):
+        assert build_chain_proxy_config('elated-tan-skat', skaled_config, []) is None
 
 
 def test_get_nginx_params():
     params = get_nginx_params()
-    assert params['rpc_proxy'] is False
+    assert params['rpc_proxy_timestamp'] == 0
     assert params['njs'] is True
     assert params['limits']['max_batch'] == 128
 
 
 def test_is_rpc_proxy_enabled(tmp_path, nginx_layout):
-    params = {'rpc_proxy': False, 'limits': LIMITS}
+    params = {'rpc_proxy_timestamp': 0, 'limits': LIMITS}
+    now = int(time.time())
     with mock.patch('core.nginx.params.get_nginx_params', return_value=params):
         assert not is_rpc_proxy_enabled()
-        params['rpc_proxy'] = True
+        params['rpc_proxy_timestamp'] = now + 3600
+        assert not is_rpc_proxy_enabled()
+        params['rpc_proxy_timestamp'] = now
         assert is_rpc_proxy_enabled()
-        # the flag needs the node-cli nginx layout
+        # the time needs the node-cli nginx layout
         with mock.patch('core.nginx.params.NGINX_CHAINS_PATH', tmp_path / 'missing'):
             assert not is_rpc_proxy_enabled()
-    # streams released before the proxy have no nginx section
+        for invalid in (True, str(now), {'default': now}):
+            params['rpc_proxy_timestamp'] = invalid
+            assert not is_rpc_proxy_enabled()
+    # a stream without an nginx section
     with mock.patch('core.nginx.params.get_nginx_params', return_value={}):
         assert not is_rpc_proxy_enabled()
+
+
+@pytest.mark.parametrize('proxied, enabled', [(True, True), (False, False)])
+def test_nginx_action_preserves_config_when_prerequisites_are_missing(proxied, enabled):
+    action = mock.Mock(executed_blocks={})
+    action.chain_record.rpc_proxy_mode = proxied
+    action.checks.nginx_config.status = False
+    action.checks.expected_nginx_config.return_value = None
+    with (
+        mock.patch('core.monitor.action_base.is_rpc_proxy_due', return_value=True),
+        mock.patch('core.monitor.action_base.is_rpc_proxy_enabled', return_value=enabled),
+        mock.patch('core.monitor.action_base.ChainProxyManager') as manager,
+    ):
+        assert not BaseSkaledActionManager.nginx_config(action)
+    manager.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -397,14 +419,10 @@ class PickyNginx(FakeNginx):
         return super().ensure_running()
 
 
-def test_sync_unblocks_start_held_by_broken_files(tmp_path):
-    chains_path = tmp_path / 'chains'
-    chains_path.mkdir()
+def test_sync_unblocks_start_held_by_broken_files(nginx_layout):
     managers = {}
     for name in ('a-chain', 'b-chain'):
-        manager = ChainProxyManager(
-            name, dutils=mock.Mock(), chains_path=chains_path, lock_path=tmp_path / '.lock'
-        )
+        manager = ChainProxyManager(name, dutils=mock.Mock())
         manager.filepath.write_text('broken')
         manager.nginx = PickyNginx(manager.filepath)
         manager.nginx.running = False
@@ -468,19 +486,15 @@ def test_sync_with_nginx_that_cannot_start(proxy_manager):
 
 
 def test_sync_without_layout(tmp_path):
-    manager = ChainProxyManager(
-        'elated-tan-skat',
-        dutils=mock.Mock(),
-        chains_path=tmp_path / 'missing',
-        lock_path=tmp_path / 'missing' / '.chains.lock',
-    )
+    with mock.patch('core.nginx.manager.NGINX_CHAINS_PATH', tmp_path / 'missing'):
+        manager = ChainProxyManager('elated-tan-skat', dutils=mock.Mock())
     assert manager.remove()
     assert not manager.sync('a')
 
 
-def test_sync_gives_up_on_held_lock(proxy_manager):
+def test_sync_gives_up_on_held_lock(proxy_manager, tmp_path):
     with (
-        FileLock(proxy_manager.lock_path),
+        FileLock(tmp_path / '.chains.lock'),
         mock.patch('core.nginx.manager.LOCK_TIMEOUT_SECONDS', 0.1),
     ):
         assert not proxy_manager.sync(make_config().render())

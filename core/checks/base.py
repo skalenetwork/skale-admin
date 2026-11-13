@@ -40,12 +40,7 @@ from core.config.schain.main import (
     get_upstream_config_rotation_ids,
 )
 from core.firewall import IRuleController
-from core.nginx import (
-    ChainProxyManager,
-    build_chain_proxy_config,
-    get_nginx_params,
-    is_rpc_proxy_enabled,
-)
+from core.nginx import ChainProxyManager, build_chain_proxy_config, is_rpc_proxy_due
 from core.redis.chain_record import ChainRecord
 from core.types.chain import ChainName
 from tools.constants.containers import SKALED_CONTAINER
@@ -247,21 +242,24 @@ class BaseSkaledChecks(IChecks):
     def nginx_config(self) -> CheckRes:
         """Checks that skaled uses the ports the flag asks for and nginx serves it exactly then"""
         manager = ChainProxyManager(self.name, dutils=self.dutils)
+        expected = self.expected_nginx_config()
+        proxied = self.chain_record.rpc_proxy_mode
         data = {
-            'synced': manager.is_synced(self.expected_nginx_config()),
-            'mode': self.chain_record.rpc_proxy_mode == is_rpc_proxy_enabled(),
+            'synced': (not proxied or expected is not None) and manager.is_synced(expected),
+            'mode': proxied == is_rpc_proxy_due(),
         }
         return CheckRes(all(data.values()), data=data)
 
     def expected_nginx_config(self) -> str | None:
         """Chain file for the ports the running container uses, None when skaled is public"""
         # not the flag: the start guard removes the file right before a public start
-        if not self.chain_record.rpc_proxy_mode or not get_nginx_params():
+        if not self.chain_record.rpc_proxy_mode:
             return None
         config = self.cfm.skaled_config
         if config is None:
             return None
-        return build_chain_proxy_config(self.name, config, self.proxy_peers(config)).render()
+        proxy_config = build_chain_proxy_config(self.name, config, self.proxy_peers(config))
+        return proxy_config.render() if proxy_config else None
 
     @abstractmethod
     def proxy_peers(self, config: dict) -> list[str]:

@@ -26,4 +26,4 @@ from .config import (  # noqa
 )
 from .manager import ChainProxyManager, NginxContainer, reload_node_proxy  # noqa
 from .mode import is_rpc_proxy_mode_changed, target_rpc_proxy_mode  # noqa
-from .params import get_nginx_params, is_rpc_proxy_enabled  # noqa
+from .params import get_nginx_params, is_rpc_proxy_due, is_rpc_proxy_enabled  # noqa

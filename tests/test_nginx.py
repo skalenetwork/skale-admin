@@ -1,4 +1,5 @@
 import contextlib
+import itertools
 import json
 import shutil
 import time
@@ -11,10 +12,12 @@ from jinja2 import Environment
 
 from core.nginx import ChainProxyConfig, ChainProxyManager, reload_node_proxy
 from core.nginx.manager import BASE_PROBE_URL, base_fingerprint, wait_for
+from tests.utils import generate_cert
 from tools.constants import CONFIG_FOLDER, NGINX_CONTAINER_NAME, NGINX_TEMPLATE_DIR
+from tools.docker_utils import DockerUtils
 
+CHAIN_NUMBERS = itertools.count()
 NGINX_IMAGE = 'nginx:1.29.5'
-CHAIN = 'test-chain'
 PORTS = {'http': 10003, 'ws': 10002, 'https': 10008, 'wss': 10007}
 # one request per second without burst, so the second quick request is rejected
 LIMITS = {
@@ -30,7 +33,7 @@ LIMITS = {
     'ban_s': 10,
 }
 EXIT_TIME_CALL = '{"jsonrpc":"2.0","id":7,"method":"setSchainExitTime","params":{"finishTime":1}}'
-# skaled's answer since it no longer serves the method
+# skaled's answer for a method it does not serve
 EXIT_TIME_ANSWER = (
     '{"error":{"code":-32601,"message":"METHOD_NOT_FOUND: '
     'The method being requested is not available on this server"},"id":7,"jsonrpc":"2.0"}'
@@ -45,6 +48,26 @@ server {
     }
 }
 """
+# stands in for skaled on the internal ws port: accepts an upgrade like skaled, answers with
+# the X-Real-IP it got, then echoes the session
+FAKE_WS_SKALED = r"""
+while IFS= read -r line; do
+    line=$(printf %s "$line" | tr -d '\r' | tr A-Z a-z)
+    [ -n "$line" ] || break
+    case "$line" in
+        'x-real-ip: '*) real_ip=${line#*: } ;;
+        'upgrade: websocket' | 'connection: upgrade') handshake="$handshake+" ;;
+    esac
+done
+[ "$handshake" = ++ ] || { printf 'HTTP/1.1 400 Bad Request\r\n\r\n'; exit; }
+printf 'HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
+printf 'X-Seen-Real-IP: %s\r\n\r\n' "$real_ip"
+exec cat
+"""
+UPGRADE = (
+    'GET / HTTP/1.1\r\nHost: chain\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
+    'X-Real-IP: 6.6.6.6\r\n\r\n'
+)
 # answers are as large as the request asks, like skaled's 100 MiB snapshot chunks
 FAKE_SKALED_JS = """
 function handle(r) {
@@ -60,12 +83,13 @@ export default { handle: handle };
 """
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def nginx_dir():
     config_folder = Path(CONFIG_FOLDER)
     path = config_folder / 'test-nginx'
     (path / 'conf.d' / 'chains').mkdir(parents=True)
     (path / 'njs').mkdir()
+    (path / 'ssl').mkdir()
     env = Environment()
     for template, dest, data in (
         ('nginx.conf.j2', path / 'nginx.conf', {}),
@@ -81,8 +105,9 @@ def nginx_dir():
         shutil.rmtree(path, ignore_errors=True)
 
 
-@pytest.fixture
-def nginx_container(nginx_dir, dutils):
+@pytest.fixture(scope='module')
+def nginx_container(nginx_dir):
+    dutils = DockerUtils(volume_driver='local', host='unix://var/run/docker.sock')
     dutils.safe_rm(NGINX_CONTAINER_NAME)
     container = dutils.run_container(
         NGINX_IMAGE,
@@ -91,12 +116,10 @@ def nginx_container(nginx_dir, dutils):
             str(nginx_dir / 'nginx.conf'): {'bind': '/etc/nginx/nginx.conf', 'mode': 'ro'},
             str(nginx_dir / 'conf.d'): {'bind': '/etc/nginx/conf.d', 'mode': 'ro'},
             str(nginx_dir / 'njs'): {'bind': '/etc/nginx/njs', 'mode': 'ro'},
+            str(nginx_dir / 'ssl'): {'bind': '/ssl', 'mode': 'ro'},
         },
     )
-    for _ in range(20):
-        if dutils.is_container_running(NGINX_CONTAINER_NAME):
-            break
-        time.sleep(0.5)
+    assert wait_for(lambda: dutils.is_container_running(NGINX_CONTAINER_NAME), 10)
     try:
         yield container
     finally:
@@ -104,23 +127,30 @@ def nginx_container(nginx_dir, dutils):
 
 
 @pytest.fixture
-def manager(nginx_dir, dutils):
-    return ChainProxyManager(
-        CHAIN,
-        dutils=dutils,
-        chains_path=nginx_dir / 'conf.d' / 'chains',
-        lock_path=nginx_dir / '.chains.lock',
-    )
+def manager(nginx_dir, nginx_container, dutils):
+    # limit zones and njs counters are per chain, so each test gets a chain of its own
+    with (
+        mock.patch('core.nginx.manager.NGINX_CHAINS_PATH', nginx_dir / 'conf.d' / 'chains'),
+        mock.patch('core.nginx.manager.NGINX_LOCK_PATH', nginx_dir / '.chains.lock'),
+    ):
+        chain_manager = ChainProxyManager(f'test-chain-{next(CHAIN_NUMBERS)}', dutils=dutils)
+        yield chain_manager
+        # chains of the module share ports, as no two chains of a node do
+        chain_manager.remove()
 
 
 def render(
-    njs: bool = False, peers: tuple[str, ...] = ('10.1.1.1/32',), limits: dict = LIMITS
+    manager: ChainProxyManager,
+    njs: bool = False,
+    peers: tuple[str, ...] = ('10.1.1.1/32',),
+    limits: dict = LIMITS,
+    ssl: bool = False,
 ) -> str:
     return ChainProxyConfig(
-        chain_name=CHAIN,
+        chain_name=manager.chain_name,
         ports=PORTS,
         peers=list(peers),
-        ssl=False,
+        ssl=ssl,
         njs=njs,
         limits=limits,
     ).render()
@@ -152,7 +182,7 @@ def container_ip(container) -> str:
 
 
 def test_chain_proxy_serves_and_limits(nginx_container, manager):
-    text = render()
+    text = render(manager)
     assert manager.sync(text)
     assert manager.is_synced(text)
 
@@ -179,7 +209,7 @@ def test_chain_proxy_serves_and_limits(nginx_container, manager):
 
 
 def test_chain_proxy_keeps_last_good_config(nginx_container, manager):
-    text = render()
+    text = render(manager)
     assert manager.sync(text)
     assert not manager.sync('server { listen 10003; not_a_directive; }')
     assert manager.current() == text
@@ -187,7 +217,7 @@ def test_chain_proxy_keeps_last_good_config(nginx_container, manager):
 
 
 def test_chain_proxy_remove_frees_ports(nginx_container, manager):
-    assert manager.sync(render())
+    assert manager.sync(render(manager))
     assert manager.remove()
     assert manager.current() is None
     codes = []
@@ -200,7 +230,7 @@ def test_chain_proxy_remove_frees_ports(nginx_container, manager):
 
 
 def test_chain_proxy_removes_listener_after_file_loss(nginx_container, manager):
-    assert manager.sync(render())
+    assert manager.sync(render(manager))
     manager.filepath.unlink()
     config = {'skaleConfig': {'nodeInfo': {'httpRpcPort': 10003, 'wsRpcPort': 10002}}}
     with mock.patch('core.nginx.manager.ConfigFileManager') as cfm:
@@ -212,12 +242,12 @@ def test_chain_proxy_removes_listener_after_file_loss(nginx_container, manager):
 
 
 def test_chain_proxy_repairs_config_that_prevents_start(nginx_container, manager):
-    assert manager.sync(render())
+    assert manager.sync(render(manager))
     nginx_container.stop(timeout=1)
     manager.filepath.write_text(
         'server { listen 10008 ssl; ssl_certificate /missing; ssl_certificate_key /missing; }'
     )
-    text = render()
+    text = render(manager)
     assert manager.sync(text)
     assert manager.is_synced(text)
     assert post(nginx_container, '127.0.0.1') == ['200']
@@ -226,17 +256,26 @@ def test_chain_proxy_repairs_config_that_prevents_start(nginx_container, manager
 @pytest.mark.parametrize('peer', [False, True])
 def test_chain_proxy_answers_loopback_trusted_method_as_not_found(nginx_container, manager, peer):
     ip = container_ip(nginx_container)
-    assert manager.sync(render(peers=(f'{ip}/32',) if peer else ()))
+    assert manager.sync(render(manager, peers=(f'{ip}/32',) if peer else ()))
 
     def answer(body: str, *options: str, url: str = 'http://127.0.0.1:10003/') -> str:
         return curl(nginx_container, url, '-w', ' %{http_code}', '-d', body, *options)
 
     not_found = f'{EXIT_TIME_ANSWER} 200'
-    # older skaled trusts loopback callers, and every proxied call reaches it from loopback
+    # skaled trusts loopback callers of the method, and every proxied call comes from loopback
     assert answer(EXIT_TIME_CALL, url=f'http://{ip}:10003/') == not_found
     # skaled stops reading the method at a NUL
     assert answer(EXIT_TIME_CALL.replace('ExitTime"', 'ExitTime\\u0000"')) == not_found
-    assert answer(f'[{{"method":"eth_chainId"}},{EXIT_TIME_CALL}]') == not_found
+    # a batch gets an answer for every call, the others are not executed
+    batch = f'[{{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}},{EXIT_TIME_CALL}]'
+    not_executed = (
+        '{"error":{"code":-32000,"message":"not executed: the batch has a refused call"},'
+        '"id":1,"jsonrpc":"2.0"}'
+    )
+    assert answer(batch) == f'[{not_executed},{EXIT_TIME_ANSWER}] 200'
+    # an id a JS number cannot hold exactly is answered as null, never rounded
+    huge_id = EXIT_TIME_CALL.replace('"id":7', '"id":9007199254740993')
+    assert answer(huge_id) == EXIT_TIME_ANSWER.replace('"id":7', '"id":null') + ' 200'
     assert answer(EXIT_TIME_CALL, '-X', 'PUT') == not_found
     assert answer(EXIT_TIME_CALL, '-X', 'GET') == not_found
     # njs and skaled both take the last of duplicate keys and decode escapes
@@ -254,7 +293,7 @@ def test_chain_proxy_answers_loopback_trusted_method_as_not_found(nginx_containe
 
 
 def test_chain_proxy_njs_gates_methods(nginx_container, manager):
-    assert manager.sync(render(njs=True))
+    assert manager.sync(render(manager, njs=True))
     ip = container_ip(nginx_container)
     assert post(nginx_container, ip, body='{"method":"skale_getSnapshot"}') == ['403']
     gated = '{"method":"skale_getSnapshot"}'
@@ -262,22 +301,49 @@ def test_chain_proxy_njs_gates_methods(nginx_container, manager):
     assert post(nginx_container, '127.0.0.1', body='{"method":"eth_chainId"}') == ['200']
     calls = ','.join(['{"method":"eth_chainId"}'] * (LIMITS['max_batch'] + 1))
     assert post(nginx_container, '127.0.0.1', body=f'[{calls}]') == ['400']
+    batch = '[{"id":1,"method":"eth_chainId"},{"id":2,"method":"skale_getSnapshot"}]'
+    body, code = curl(
+        nginx_container, 'http://127.0.0.1:10003/', '-w', ' %{http_code}', '-d', batch
+    ).rsplit(' ', 1)
+    assert code == '403'
+    assert [(call['id'], call['error']['code']) for call in json.loads(body)] == [
+        (1, -32000),
+        (2, -32601),
+    ]
 
 
 def test_chain_proxy_njs_bans_over_budget(nginx_container, manager):
-    assert manager.sync(render(njs=True))
+    assert manager.sync(render(manager, njs=True, limits={**LIMITS, 'ban_s': 2}))
     ip = container_ip(nginx_container)
     two_calls = '[{"method":"eth_chainId"},{"method":"eth_chainId"}]'
     # one request for limit_req, two calls for the njs budget of one per second
     assert post(nginx_container, ip, body=two_calls) == ['429']
     time.sleep(1.1)
     assert post(nginx_container, ip) == ['429']
+    time.sleep(1.2)
+    assert post(nginx_container, ip) == ['200']
     # loopback skips the budgets
     assert post(nginx_container, '127.0.0.1', body=two_calls) == ['200']
 
 
+def test_chain_proxy_njs_spares_chain_budget_from_refused_calls(nginx_container, manager):
+    assert manager.sync(
+        render(manager, njs=True, limits={**LIMITS, 'per_client_rps': 2, 'global_rps': 3})
+    )
+    ip = container_ip(nginx_container)
+    three = '[{"method":"eth_chainId"},{"method":"eth_chainId"},{"method":"eth_chainId"}]'
+    two = '[{"method":"eth_chainId"},{"method":"eth_chainId"}]'
+    # budgets count per second
+    time.sleep(1.05 - time.time() % 1)
+    assert post(nginx_container, ip, body=three) == ['429']
+    other = ['--interface', '127.0.0.2', '-o', '/dev/null', '-w', '%{http_code}', '-d', two]
+    assert curl(nginx_container, 'http://127.0.0.1:10003/', *other) == '200'
+
+
 def test_chain_proxy_njs_budgets_heavy_calls(nginx_container, manager):
-    assert manager.sync(render(njs=True, limits={**LIMITS, 'per_client_rps': 100, 'heavy_rps': 1}))
+    assert manager.sync(
+        render(manager, njs=True, limits={**LIMITS, 'per_client_rps': 100, 'heavy_rps': 1})
+    )
     ip = container_ip(nginx_container)
     light = '[{"method":"eth_chainId"},{"method":"eth_chainId"}]'
     assert post(nginx_container, ip, body=light) == ['200']
@@ -290,7 +356,7 @@ def test_chain_proxy_njs_budgets_heavy_calls(nginx_container, manager):
 def test_chain_proxy_streams_large_answers(nginx_container, manager, njs, peer):
     ip = container_ip(nginx_container)
     # the container reaches itself from its own address, a peer when listed
-    assert manager.sync(render(njs=njs, peers=(f'{ip}/32',) if peer else ()))
+    assert manager.sync(render(manager, njs=njs, peers=(f'{ip}/32',) if peer else ()))
     method = 'skale_downloadSnapshotFragment' if peer else 'eth_getBlockByNumber'
     size = 12 * 1024 * 1024
     body = f'{{"method":"{method}","params":{{"size":{size}}}}}'
@@ -307,12 +373,72 @@ def test_chain_proxy_streams_large_answers(nginx_container, manager, njs, peer):
     assert answer.split() == ['200', str(size)]
 
 
-def test_chain_proxy_leaves_websocket_ports_to_skaled(nginx_container, manager):
-    assert manager.sync(render())
-    assert post(nginx_container, '127.0.0.1') == ['200']
-    for port in (PORTS['ws'], PORTS['wss']):
-        result = nginx_container.exec_run(['curl', '-s', '-m', '2', f'http://127.0.0.1:{port}/'])
-        assert result.exit_code == 7
+@pytest.fixture
+def ws_skaled(nginx_container, dutils):
+    """skaled's internal ws port in nginx's network namespace, also used as a WebSocket client"""
+    container = dutils.client.containers.run(
+        'alpine:latest',
+        name='test-ws-skaled',
+        detach=True,
+        network_mode=f'container:{NGINX_CONTAINER_NAME}',
+        environment={'SCRIPT': FAKE_WS_SKALED},
+        command=[
+            'sh',
+            '-c',
+            'printf %s "$SCRIPT" > /ws.sh && exec nc -lk -s 127.0.0.1 -p 10034 -e sh /ws.sh',
+        ],
+    )
+    listening = ['sh', '-c', 'netstat -ltn | grep -q "127.0.0.1:10034 "']
+    assert wait_for(lambda: container.exec_run(listening).exit_code == 0, 10)
+    try:
+        yield container
+    finally:
+        with contextlib.suppress(docker.errors.NotFound):
+            container.remove(force=True)
+
+
+def ws_client(container, host: str, script: str) -> str:
+    """Runs a client script with $SESSION opening a WebSocket session to the chain's ws port"""
+    session = f'nc -w 2 {host} {PORTS["ws"]}'
+    environment = {'REQUEST': UPGRADE, 'SESSION': session}
+    return container.exec_run(['sh', '-c', script], environment=environment).output.decode()
+
+
+def test_chain_proxy_tunnels_websocket_with_client_address(nginx_container, manager, ws_skaled):
+    assert manager.sync(render(manager))
+    ip = container_ip(nginx_container)
+    script = '(printf %s "$REQUEST"; sleep 1; printf ping; sleep 1) | $SESSION'
+    head, _, echo = ws_client(ws_skaled, ip, script).partition('\r\n\r\n')
+    assert head.startswith('HTTP/1.1 101 ')
+    # nginx replaces the address a client claims with the one it connects from
+    assert f'X-Seen-Real-IP: {ip}' in head.split('\r\n')
+    assert echo == 'ping'
+
+
+def test_chain_proxy_terminates_tls_for_websocket(nginx_container, nginx_dir, manager, ws_skaled):
+    generate_cert(str(nginx_dir / 'ssl' / 'ssl_cert'), str(nginx_dir / 'ssl' / 'ssl_key'))
+    assert manager.sync(render(manager, ssl=True))
+    ip = container_ip(nginx_container)
+    upgrade = ('-H', 'Upgrade: websocket', '-H', 'Connection: Upgrade')
+    url = f'https://{ip}:{PORTS["wss"]}/'
+    # curl takes the 101 for a final answer and waits for the end of the session
+    head = curl(nginx_container, url, '-k', '-m', '1', '-D', '-', '-o', '/dev/null', *upgrade)
+    assert head.startswith('HTTP/1.1 101 ')
+    assert f'X-Seen-Real-IP: {ip}' in head.split('\r\n')
+
+
+def test_chain_proxy_limits_websocket_sessions(nginx_container, manager, ws_skaled):
+    assert manager.sync(
+        render(manager, limits={**LIMITS, 'per_client_rps': 100, 'conn_per_client': 1})
+    )
+    # the second session opens while the first is still held
+    script = (
+        '(printf %s "$REQUEST"; sleep 3) | $SESSION > /dev/null & sleep 1; '
+        '(printf %s "$REQUEST"; sleep 1) | $SESSION | head -1'
+    )
+    ip = container_ip(nginx_container)
+    assert ws_client(ws_skaled, ip, script).startswith('HTTP/1.1 429 ')
+    assert ws_client(ws_skaled, '127.0.0.1', script).startswith('HTTP/1.1 101 ')
 
 
 @pytest.fixture
@@ -335,7 +461,7 @@ def port_holder(nginx_container, dutils):
 
 
 def test_chain_proxy_reload_nginx_rejects_is_not_synced(nginx_container, manager, port_holder):
-    text = render()
+    text = render(manager)
     # nginx -t and nginx -s reload both succeed, nginx keeps its old config
     assert not manager.sync(text)
     assert manager.current() is None
@@ -350,7 +476,7 @@ def test_chain_proxy_reload_nginx_rejects_is_not_synced(nginx_container, manager
 
 
 def test_chain_proxy_starts_stopped_nginx(nginx_container, manager, dutils):
-    text = render()
+    text = render(manager)
     assert manager.sync(text)
     nginx_container.stop(timeout=1)
     assert not manager.is_synced(text)

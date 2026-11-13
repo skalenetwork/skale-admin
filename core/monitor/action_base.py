@@ -30,7 +30,7 @@ from core.chain.status import init_skaled_status, rm_skaled_status
 from core.checks.base import BaseSkaledChecks
 from core.config.schain.file_manager import ConfigFileManager
 from core.firewall import IRuleController
-from core.nginx import ChainProxyManager, is_rpc_proxy_enabled
+from core.nginx import ChainProxyManager, is_rpc_proxy_due, is_rpc_proxy_enabled
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.schains.cleaner import remove_schain_volume, remove_skaled_container
@@ -169,12 +169,28 @@ class BaseSkaledActionManager(BaseActionManager):
     def nginx_config(self) -> bool:
         initial_status = self.checks.nginx_config.status
         if not initial_status:
+            expected = self.checks.expected_nginx_config()
+            if self.chain_record.rpc_proxy_mode and expected is None:
+                logger.error(
+                    'Cannot generate nginx config for %s: '
+                    'chain config or nginx parameters are missing',
+                    self.chain_name,
+                )
+                return False
+            enabled = is_rpc_proxy_enabled()
+            if is_rpc_proxy_due() and not enabled:
+                logger.error(
+                    'Cannot generate nginx config for %s: '
+                    'nginx layout is missing; update the node with node-cli',
+                    self.chain_name,
+                )
+                return False
             logger.info('Syncing chain nginx config')
             manager = ChainProxyManager(self.chain_name, dutils=self.dutils)
-            if is_rpc_proxy_enabled():
+            if enabled:
                 # skaled moves behind nginx only once it runs, the monitor then makes the move
                 manager.start_nginx()
-            manager.sync(self.checks.expected_nginx_config())
+            manager.sync(expected)
         else:
             logger.info('nginx_config - ok')
         return initial_status

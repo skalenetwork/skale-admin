@@ -65,6 +65,9 @@ def update_ssl_change_date(chain_record: SChainRecord | ChainRecord) -> bool:
 
 
 def ssl_reload_needed(chain_record: SChainRecord | ChainRecord) -> bool:
+    if chain_record.rpc_proxy_mode:
+        # nginx serves TLS for the chain, its skaled has no certificates
+        return False
     ssl_files_change_date = get_ssl_files_change_date()
     if not ssl_files_change_date:
         logger.warning(

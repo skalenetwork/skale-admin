@@ -5,6 +5,7 @@ import pytest
 from apscheduler.schedulers.background import BackgroundScheduler
 from skale_core.settings import BaseNodeSettings
 
+from core.checks.base import CheckRes
 from core.checks.fair import SkaledChecks, get_network_scope_ips_from_firewall
 from core.config.schain.static_params import get_fair_chain_name
 from core.firewall import Action, SChainRule
@@ -12,6 +13,8 @@ from core.monitor.fair.action_skaled import FairSkaledActionManager
 from core.monitor.fair.monitor_skaled import (
     ProxySwitchSkaledMonitor,
     RegularSkaledMonitor,
+    StartupSkaledMonitor,
+    UpdateConfigSkaledMonitor,
     get_skaled_monitor,
 )
 from core.node_config import NodeConfig
@@ -124,6 +127,18 @@ def test_get_skaled_monitor_rpc_proxy_switch(skaled_am: FairSkaledActionManager,
         with mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=True):
             mon = get_skaled_monitor(skaled_am, status, chain_record, None)
             assert mon == ProxySwitchSkaledMonitor
+
+
+@pytest.mark.parametrize(
+    'monitor', [RegularSkaledMonitor, StartupSkaledMonitor, UpdateConfigSkaledMonitor]
+)
+def test_monitors_follow_nginx_config_check(monitor):
+    for synced in (True, False):
+        am = mock.Mock()
+        am.checks.nginx_config = CheckRes(synced)
+        am.cfm.latest_upstream_config = None
+        monitor(am).execute()
+        assert am.nginx_config.called is not synced
 
 
 def test_proxy_switch_monitor_schedules_restart(skaled_am: FairSkaledActionManager):

@@ -185,7 +185,7 @@ def test_skaled_container_action_refreshes_checks_port_mode(
     ):
         skaled_am.skaled_container()
     assert skaled_checks.chain_record.rpc_proxy_mode is True
-    # only the port mode is taken, and the checks' older copy is never written back
+    # only the port mode is taken, and the checks' stale copy is never written back
     assert skaled_checks.chain_record.restart_count == 0
     assert SChainRecord.get_by_name(skaled_am.name).restart_count == 5
 
@@ -199,7 +199,7 @@ def test_skaled_container_action_refreshes_checks_port_mode(
 
 def test_nginx_config_action_starts_nginx_for_pending_proxy(skaled_am: SkaledActionManager):
     with (
-        mock.patch('core.checks.base.is_rpc_proxy_enabled', return_value=True),
+        mock.patch('core.checks.base.is_rpc_proxy_due', return_value=True),
         mock.patch('core.monitor.action_base.is_rpc_proxy_enabled', return_value=True),
         mock.patch('core.monitor.action_base.ChainProxyManager') as manager,
     ):

@@ -73,7 +73,7 @@ class ChainRecord(FlatRedisRecord):
 
     @property
     def rpc_proxy_mode(self) -> bool:
-        # records created before the field existed have no key, and those containers are public
+        # a record without the key has a container on the public ports
         return bool(self._get_field('rpc_proxy_mode'))
 
     @property

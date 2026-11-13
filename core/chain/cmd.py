@@ -61,10 +61,6 @@ def get_snapshot_opts(start_ts: int | None = None) -> list:
     return snapshot_opts
 
 
-class RpcProxyAcceptorsError(Exception):
-    pass
-
-
 def get_chain_container_base_opts(
     chain_name: str, enable_ssl: bool = True, passive_node: bool = False, rpc_proxy: bool = False
 ) -> list:
@@ -92,6 +88,9 @@ def get_chain_container_base_opts(
         f'--ws-port {ports["ws"]}',
         f'--wss-port {ports["wss"]}',
     ]
+    if rpc_proxy:
+        # consensus keeps listening on bindIP
+        cmd.append('--rpc-loopback')
 
     if not is_fair():
         st = get_settings((SkaleSettings, BaseNodeSettings))
@@ -109,19 +108,7 @@ def get_chain_container_base_opts(
     if static_chain_cmd:
         cmd.extend(static_chain_cmd)
 
-    if rpc_proxy and get_acceptors_count(config, cmd) != 1:
-        # acceptor N binds port + N, and only the first internal ports are reserved and hidden
-        raise RpcProxyAcceptorsError(f'{chain_name}: the RPC proxy needs exactly one acceptor')
-
-    if enable_ssl:
+    # behind nginx TLS ends at nginx, so a new certificate needs no skaled restart
+    if enable_ssl and not rpc_proxy:
         cmd.extend([f'--ssl-key {ssl_key}', f'--ssl-cert {ssl_cert}'])
     return cmd
-
-
-def get_acceptors_count(config: dict, cmd: list) -> int:
-    """skaled takes acceptors from the command line first, then the config, default 1"""
-    for opt in cmd:
-        name, _, value = opt.partition(' ')
-        if name == '--acceptors':
-            return int(value)
-    return int(config['skaleConfig']['nodeInfo'].get('acceptors', 1))
