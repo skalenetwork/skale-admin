@@ -131,7 +131,6 @@ class SkaledTask(BaseTask):
         try:
             run_skaled_pipeline(
                 chain_name=cast(FairChainName, self.chain_name),
-                node_config=self.node_config,
                 scheduler=self.scheduler,
                 dutils=self.dutils,
             )

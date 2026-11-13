@@ -16,7 +16,6 @@ from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import UpstreamConfigFilename
 from core.firewall import LOOPBACK_INTERFACE, Action, IRuleController, SChainRule
 from core.monitor.schain.action_skaled import SkaledActionManager
-from core.node_config import NodeConfig
 from core.schains.cleaner import remove_ima_container
 from core.schains.external_config import ExternalConfig
 from core.types.chain import ChainName
@@ -71,7 +70,6 @@ def skaled_checks(
 @pytest.fixture
 def skaled_am(
     schain_structure: SchainStructure,
-    node_config: NodeConfig,
     rule_controller: IRuleController,
     secret_key,
     ssl_folder,
@@ -84,7 +82,6 @@ def skaled_am(
         schain=schain_structure,
         rule_controller=rule_controller,
         checks=skaled_checks,
-        node_config=node_config,
         ncli_status=ncli_status,
         dutils=dutils,
         post_run_delay=TEST_TASK_SLEEP,
