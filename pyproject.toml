@@ -6,7 +6,7 @@ dependencies = [
     "peewee==4.5.3",
     "Flask==3.1.3",
     "Werkzeug==3.1.9",
-    "gunicorn==26.2.0",
+    "gunicorn==27.0.1",
     "Jinja2==3.1.6",
     "docker==7.2.0",
     "websocket-client==1.9.2",
@@ -21,8 +21,8 @@ dependencies = [
     "statsd==4.0.1",
     "psutil==7.2.2",
     "colorful==0.5.8",
-    "filelock==4.2.4",
-    "skale.py==8.0dev0",
+    "filelock==4.2.11",
+    "skale.py==8.0dev3",
     "APScheduler==3.11.3",
     "pyyaml==6.0.3",
     "jsonschema==4.26.0",                   # required by the nftables bindings
@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["ruff==0.17.3", "mypy==2.4.0"]
+dev = ["ruff==0.17.5", "mypy==2.4.1"]
 test = [
     "pytest==9.2.0",
     "pytest-cov==7.1.0",

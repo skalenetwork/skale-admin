@@ -3,13 +3,13 @@ name: Test
 on: [push]
 
 env:
-  MANAGER_TAG: 1.12.0-develop.23
+  MANAGER_TAG: 1.14.0-stable.0
   IMA_TAG: 2.3.0-beta.3
-  SGX_WALLET_TAG: e548b375cae741af8fd11db54d6925c27a947af9
+  SGX_WALLET_TAG: 1.10.4-beta.0
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         type: [core, dkg, fair]
@@ -20,7 +20,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.3
         with:
-          version: "0.13.6"
+          version: "0.13.8"
           enable-cache: true
       - name: Set up Python 3.14
         run: uv python install 3.14
@@ -121,7 +121,7 @@ jobs:
           if-no-files-found: warn
 
   codecov:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: test
     steps:
       - uses: actions/checkout@v7
@@ -131,7 +131,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.3
         with:
-          version: "0.13.6"
+          version: "0.13.8"
           enable-cache: true
 
       - name: Set up Python 3.14

@@ -1,6 +1,6 @@
 FROM python:3.14.10-slim-trixie AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.8 /uv /bin/uv
 
 WORKDIR /usr/src/admin
 

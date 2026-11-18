@@ -155,11 +155,13 @@ def test_exit_status_active_forzen(skale, node):
 
     skale.nodes.init_exit(node.config.id)
     node.exit({})
-    exit_status_data = node.get_exit_status()
-    assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
-    assert exit_status_data['status'] == NodeExitStatus.COMPLETED.name
-    assert exit_status_data['exit_time'] != 0
-    assert node.info['status'] == NodeStatus.LEFT.value
+    with mock.patch('core.node.time') as time_mock:
+        time_mock.time.return_value = skale.nodes.node_finish_time(node.config.id) + 1
+        exit_status_data = node.get_exit_status()
+        assert list(exit_status_data.keys()) == ['status', 'data', 'exit_time']
+        assert exit_status_data['status'] == NodeExitStatus.COMPLETED.name
+        assert exit_status_data['exit_time'] != 0
+        assert node.info['status'] == NodeStatus.LEFT.value
 
     future_ts = int(time.time()) + 1000
     node.skale.nodes.node_finish_time = mock.Mock(return_value=future_ts)
