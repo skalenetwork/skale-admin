@@ -4,11 +4,10 @@
 ![Build and publish](https://github.com/skalenetwork/skale-admin/workflows/Build%20and%20publish/badge.svg)
 [![Discord](https://img.shields.io/discord/534485763354787851.svg)](https://discord.gg/vvUtWJB)
 
-This repo contains source code for 3 core SKALE Node containers:
+This repo contains source code for 2 core SKALE Node containers:
 
 * `skale_admin` - worker that manages sChains creation and node rotation
 * `skale_api` - webserver that provides node API
-* `celery` - distributed task queue
 
 ## Development
 
