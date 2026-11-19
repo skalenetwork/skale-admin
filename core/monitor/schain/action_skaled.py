@@ -51,7 +51,6 @@ from core.monitor.action_base import (
     BaseActionManager,
     BaseSkaledActionManager,
 )
-from core.node_config import NodeConfig
 from core.schains.cleaner import remove_ima_container, remove_skaled_container
 from core.schains.external_config import ExternalConfig
 from core.schains.limits import get_schain_type
@@ -71,7 +70,6 @@ class SkaledActionManager(BaseSkaledActionManager):
         schain: Schain,
         rule_controller: IRuleController,
         checks: SkaledChecks,
-        node_config: NodeConfig,
         ncli_status: NodeCliStatus,
         econfig: Optional[ExternalConfig] = None,
         dutils: DockerUtils | None = None,
@@ -83,7 +81,6 @@ class SkaledActionManager(BaseSkaledActionManager):
             chain_name=schain.name,
             rule_controller=rule_controller,
             checks=checks,
-            node_config=node_config,
             dutils=dutils,
             node_options=node_options,
             post_run_delay=post_run_delay,

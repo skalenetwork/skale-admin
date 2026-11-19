@@ -25,7 +25,6 @@ from core.monitor.schain.monitor_skaled import (
     UpdateConfigSkaledMonitor,
     get_skaled_monitor,
 )
-from core.node_config import NodeConfig
 from core.schains.exit_scheduler import ExitScheduleFileManager
 from core.schains.external_config import ExternalConfig
 from tests.utils import CURRENT_TS, TEST_TASK_SLEEP
@@ -57,7 +56,6 @@ def skaled_checks(schain_db, rule_controller, dutils):
 @pytest.fixture
 def skaled_am(
     schain_structure: SchainStructure,
-    node_config: NodeConfig,
     rule_controller: IRuleController,
     rotation_data,
     secret_key,
@@ -70,7 +68,6 @@ def skaled_am(
     return SkaledActionManager(
         schain=schain_structure,
         rule_controller=rule_controller,
-        node_config=node_config,
         ncli_status=ncli_status,
         checks=skaled_checks,
         dutils=dutils,
@@ -232,7 +229,6 @@ def test_get_skaled_monitor_reload_group(
     skaled_checks_new_config: SkaledChecks,
     schain_structure: SchainStructure,
     skaled_status: SkaledStatus,
-    node_config: NodeConfig,
     rule_controller: IRuleController,
     rotation_data,
     secret_keys,
@@ -254,7 +250,6 @@ def test_get_skaled_monitor_reload_group(
         skaled_am = SkaledActionManager(
             schain=schain_structure,
             rule_controller=rule_controller,
-            node_config=node_config,
             checks=skaled_checks,
             ncli_status=ncli_status,
             dutils=dutils,
@@ -265,7 +260,6 @@ def test_get_skaled_monitor_reload_group(
         skaled_am = SkaledActionManager(
             schain=schain_structure,
             rule_controller=rule_controller,
-            node_config=node_config,
             checks=skaled_checks,
             ncli_status=ncli_status,
             dutils=dutils,
@@ -280,7 +274,6 @@ def test_get_skaled_monitor_reload_ip(
     skaled_checks_new_config: SkaledChecks,
     schain_structure: SchainStructure,
     skaled_status: SkaledStatus,
-    node_config: NodeConfig,
     rule_controller: IRuleController,
     rotation_data,
     secret_keys,
@@ -300,7 +293,6 @@ def test_get_skaled_monitor_reload_ip(
     skaled_am = SkaledActionManager(
         schain=schain_structure,
         rule_controller=rule_controller,
-        node_config=node_config,
         checks=skaled_checks,
         ncli_status=ncli_status,
         dutils=dutils,
@@ -319,7 +311,6 @@ def test_get_skaled_monitor_reload_ip(
 @freezegun.freeze_time(CURRENT_DATETIME)
 def test_get_skaled_monitor_new_node(
     schain_structure: SchainStructure,
-    node_config: NodeConfig,
     rule_controller: IRuleController,
     rotation_data,
     secret_key,
@@ -340,7 +331,6 @@ def test_get_skaled_monitor_new_node(
         skaled_am = SkaledActionManager(
             schain=schain_structure,
             rule_controller=rule_controller,
-            node_config=node_config,
             ncli_status=ncli_status,
             checks=skaled_checks,
             dutils=dutils,

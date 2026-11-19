@@ -145,8 +145,7 @@ def test_skaled_task(
         return result
 
     with mock.patch('core.monitor.schain.monitor_skaled.get_skaled_monitor', get_monitor_mock):
-        with mock.patch('core.monitor.schain.main.notify_checks'):
-            skaled_task.run()
+        skaled_task.run()
 
 
 def test_execute_tasks(tmp_dir, _schain_name):

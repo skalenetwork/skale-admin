@@ -39,7 +39,6 @@ from core.monitor.action_base import (
     BaseActionManager,
     BaseSkaledActionManager,
 )
-from core.node_config import NodeConfig
 from core.types.chain import FairChainName
 from core.utils.fair import update_local_skaled_endpoint
 from tools.constants.containers import SKALED_RESTART_DELAY_SECONDS
@@ -59,7 +58,6 @@ class FairSkaledActionManager(BaseSkaledActionManager):
         chain_name: FairChainName,
         rule_controller: FairCommitteeScopeRuleController,
         checks: SkaledChecks,
-        node_config: NodeConfig,
         scheduler: BackgroundScheduler,
         dutils: DockerUtils | None = None,
         node_options: NodeOptions | None = None,
@@ -70,7 +68,6 @@ class FairSkaledActionManager(BaseSkaledActionManager):
             chain_name=chain_name,
             rule_controller=rule_controller,
             checks=checks,
-            node_config=node_config,
             dutils=dutils,
             node_options=node_options,
             post_run_delay=post_run_delay,

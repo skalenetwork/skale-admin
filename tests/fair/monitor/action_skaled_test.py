@@ -17,7 +17,6 @@ from core.monitor.fair.monitor_skaled import (
     UpdateConfigSkaledMonitor,
     get_skaled_monitor,
 )
-from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.redis.node_config_fair import NodeConfigFair
 from core.utils.fair import get_local_skaled_endpoint_fair, update_local_skaled_endpoint
@@ -45,13 +44,6 @@ def scheduler():
 
 
 @pytest.fixture
-def node_config_fair():
-    node_config = NodeConfig()
-    node_config.id = 1
-    return node_config
-
-
-@pytest.fixture
 def skaled_checks(chain_name, chain_record, rule_controller, dutils):
     return SkaledChecks(
         chain_name=chain_name,
@@ -65,7 +57,6 @@ def skaled_checks(chain_name, chain_record, rule_controller, dutils):
 @pytest.fixture
 def skaled_am(
     chain_name,
-    node_config_fair,
     rule_controller,
     dutils,
     skaled_checks,
@@ -75,7 +66,6 @@ def skaled_am(
         chain_name=chain_name,
         rule_controller=rule_controller,
         checks=skaled_checks,
-        node_config=node_config_fair,
         scheduler=scheduler,
         dutils=dutils,
         post_run_delay=TEST_TASK_SLEEP,

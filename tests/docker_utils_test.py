@@ -231,21 +231,21 @@ def test_remove_volume_error(dutils):
 
 
 def test_images(dutils):
-    if dutils.pulled(f'{TEST_IMAGE}:3.17'):
-        dutils.rmi(f'{TEST_IMAGE}:3.17')
-    if dutils.pulled(f'{TEST_IMAGE}:3.18'):
-        dutils.rmi(f'{TEST_IMAGE}:3.18')
+    if dutils.pulled(f'{TEST_IMAGE}:3.23'):
+        dutils.rmi(f'{TEST_IMAGE}:3.23')
+    if dutils.pulled(f'{TEST_IMAGE}:3.24'):
+        dutils.rmi(f'{TEST_IMAGE}:3.24')
     try:
-        assert not dutils.pulled(f'{TEST_IMAGE}:3.17')
-        assert not dutils.pulled(f'{TEST_IMAGE}:3.18')
-        dutils.pull(f'{TEST_IMAGE}:3.17')
-        assert dutils.pulled(f'{TEST_IMAGE}:3.17')
-        assert not dutils.pulled(f'{TEST_IMAGE}:3.18')
-        dutils.pull(f'{TEST_IMAGE}:3.18')
-        assert dutils.pulled(f'{TEST_IMAGE}:3.18')
+        assert not dutils.pulled(f'{TEST_IMAGE}:3.23')
+        assert not dutils.pulled(f'{TEST_IMAGE}:3.24')
+        dutils.pull(f'{TEST_IMAGE}:3.23')
+        assert dutils.pulled(f'{TEST_IMAGE}:3.23')
+        assert not dutils.pulled(f'{TEST_IMAGE}:3.24')
+        dutils.pull(f'{TEST_IMAGE}:3.24')
+        assert dutils.pulled(f'{TEST_IMAGE}:3.24')
     finally:
-        dutils.client.images.remove(f'{TEST_IMAGE}:3.18')
-        dutils.client.images.remove(f'{TEST_IMAGE}:3.17')
+        dutils.client.images.remove(f'{TEST_IMAGE}:3.24')
+        dutils.client.images.remove(f'{TEST_IMAGE}:3.23')
 
 
 @mock.patch('core.chain.runner.get_image_name', return_value='skaled-mock')
