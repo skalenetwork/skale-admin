@@ -27,7 +27,6 @@ from skale.types.schain import SchainStructure
 from core.manager_cache import ManagerCache
 from core.monitor.schain.main import start_tasks
 from core.node_config import NodeConfig
-from core.schains.notifications import notify_if_not_enough_balance
 from core.schains.process import (
     FORK_CONTEXT,
     get_schain_process_info,
@@ -44,8 +43,6 @@ def run_process_manager(
     skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig, manager_cache: ManagerCache
 ) -> None:
     logger.info('Process manager started')
-    node_info = node_config.all()
-    notify_if_not_enough_balance(skale, node_info)
     for schain in manager_cache.schains:
         run_pm_schain(skale, skale_ima, node_config, schain, manager_cache)
     logger.info('Process manager procedure finished')

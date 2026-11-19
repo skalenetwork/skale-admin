@@ -194,7 +194,6 @@ def node_skales(endpoint, manager_contracts, node_wallets):
 
 
 @pytest.fixture
-@pytest.mark.parametrize('number_of_nodes', [1])
 def new_node_wallet(node_wallets) -> Web3Wallet:
     return node_wallets[0]
 

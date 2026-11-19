@@ -27,7 +27,6 @@ from flask import Blueprint, abort, g, request
 from core.node import Node, NodeStatus, check_validator_nodes
 from core.updates import update_unsafe_for_schains
 from tools.custom_thread import CustomThread
-from tools.notifications.messages import send_message, tg_notifications_enabled
 from web.auth import cli_only
 from web.helper import construct_err_response, construct_ok_response, g_skale, get_api_url
 
@@ -109,23 +108,6 @@ def set_node_maintenance_off():
     if res['status'] != 'ok':
         return construct_err_response(msg=res['errors'])
     return construct_ok_response()
-
-
-@node_bp.route(get_api_url(BLUEPRINT_NAME, 'send-tg-notification'), methods=['POST'])
-@cli_only
-def send_tg_notification():
-    logger.debug(request)
-    message = request.json.get('message')
-    if not message:
-        return construct_err_response('Message is empty')
-    if not tg_notifications_enabled():
-        return construct_err_response('TG_API_KEY or TG_CHAT_ID not found')
-    try:
-        send_message(message)
-    except Exception:
-        logger.exception('Message was not send due to error')
-        construct_err_response(['Message sending failed'])
-    return construct_ok_response('Message was sent successfully')
 
 
 @node_bp.route(get_api_url(BLUEPRINT_NAME, 'exit/start'), methods=['POST'])

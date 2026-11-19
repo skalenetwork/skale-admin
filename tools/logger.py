@@ -22,7 +22,7 @@ import re
 import sys
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlparse
 
 from flask import has_request_context, request
 from skale_core.settings import BaseNodeSettings, FairSettings, SkaleSettings, get_settings
@@ -41,21 +41,44 @@ from tools.helper import is_fair, is_passive
 
 LOCAL_IPS = ['127.0.0.1', 'localhost']
 
+# URL path segments and query values shorter than this are considered too generic
+# to be secrets (masking short words like 'mainnet' would garble unrelated log text)
+SECRET_PATH_SEGMENT_MIN_LENGTH = 16
+SECRET_QUERY_VALUE_MIN_LENGTH = 12
+
+GENERIC_HIDING_PATTERNS = {
+    r'NEK\:\w+': '[SGX_KEY]',
+    r'(?i)([?&](?:auth|token|apikey|api_key)=)[^&\s,\'"]+': r'\1[HIDDEN]',
+}
+
+
+def compose_url_hiding_patterns(url: str, label: str) -> dict:
+    parsed = urlparse(url)
+    patterns = {}
+    if parsed.query:
+        patterns[re.escape(parsed.query)] = f'[{label}_QUERY]'
+        for _, value in parse_qsl(parsed.query, keep_blank_values=False):
+            if len(value) >= SECRET_QUERY_VALUE_MIN_LENGTH:
+                patterns[re.escape(value)] = f'[{label}_QUERY_VALUE]'
+    if parsed.password:
+        patterns[re.escape(parsed.password)] = f'[{label}_PASSWORD]'
+    for segment in (parsed.path or '').split('/'):
+        if len(segment) >= SECRET_PATH_SEGMENT_MIN_LENGTH:
+            patterns[re.escape(segment)] = f'[{label}_PATH_SEGMENT]'
+    if parsed.hostname and parsed.hostname not in LOCAL_IPS:
+        patterns[re.escape(parsed.hostname)] = f'[{label}_IP]'
+    return patterns
+
 
 def compose_hiding_patterns():
-    sgx_ip = None
+    patterns = {}
     if not is_passive():
         sgx_url = str(get_settings((SkaleSettings, FairSettings)).sgx_url)
-        sgx_ip = urlparse(sgx_url).hostname
-    eth_ip = None
+        patterns.update(compose_url_hiding_patterns(sgx_url, 'SGX'))
     if not is_fair():
         eth_url = str(get_settings((BaseNodeSettings, SkaleSettings)).endpoint)
-        eth_ip = urlparse(eth_url).hostname
-    patterns = {r'NEK\:\w+': '[SGX_KEY]'}
-    if sgx_ip not in LOCAL_IPS:
-        patterns.update({rf'{sgx_ip}': '[SGX_IP]'})
-    if eth_ip not in LOCAL_IPS:
-        patterns.update({rf'{eth_ip}': '[ETH_IP]'})
+        patterns.update(compose_url_hiding_patterns(eth_url, 'ETH'))
+    patterns.update(GENERIC_HIDING_PATTERNS)
     return patterns
 
 

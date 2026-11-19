@@ -13,12 +13,11 @@ Covers basic functionality of common parts:
 - SChains database
 - SChains checks
 - Basic dkg testing
-- Telegram notifications
 
 Requires:
 - *Ganache* with deployed *skale-manager* contracts
 - *Sgx simulator*
-- *Redis* container (for telegram notifcations tests)
+- *Redis* container
 
 ## Rotation tests
 Covers basic node roation logic.

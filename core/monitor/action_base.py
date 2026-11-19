@@ -30,7 +30,6 @@ from core.chain.status import init_skaled_status, rm_skaled_status
 from core.checks.base import BaseSkaledChecks
 from core.config.schain.file_manager import ConfigFileManager
 from core.firewall import IRuleController
-from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
 from core.schains.cleaner import remove_schain_volume, remove_skaled_container
 from core.schains.exit_scheduler import ExitScheduleFileManager
@@ -38,7 +37,6 @@ from core.types.chain import ChainName
 from tools.constants.containers import SKALED_CONTAINER
 from tools.docker_utils import DockerUtils
 from tools.node_options import NodeOptions
-from tools.notifications.messages import notify_repair_mode
 from tools.resources import get_statsd_client
 from tools.str_formatters import arguments_list_string
 from web.models.schain import SChainRecord
@@ -104,7 +102,6 @@ class BaseSkaledActionManager(BaseActionManager):
         chain_name: ChainName,
         rule_controller: IRuleController,
         checks: BaseSkaledChecks,
-        node_config: NodeConfig,
         dutils: DockerUtils | None = None,
         node_options: NodeOptions | None = None,
         post_run_delay: int = CONTAINER_POST_RUN_DELAY,
@@ -112,7 +109,6 @@ class BaseSkaledActionManager(BaseActionManager):
     ):
         self.chain_name = chain_name
         self.checks = checks
-        self.node_config = node_config
         self.rule_controller = rule_controller
         self.schain_cleanup_timeout = schain_cleanup_timeout
 
@@ -211,10 +207,6 @@ class BaseSkaledActionManager(BaseActionManager):
             self.dutils.display_container_logs(container_name)
         else:
             logger.warning(f"sChain {self.name}: container doesn't exists, could not show logs")
-
-    @BaseActionManager.monitor_block
-    def notify_repair_mode(self) -> None:
-        notify_repair_mode(self.node_config.all(), self.name)
 
     @BaseActionManager.monitor_block
     def update_repair_ts(self, new_ts: int) -> None:

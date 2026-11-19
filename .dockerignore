@@ -17,7 +17,6 @@ hardhat-node/
 scripts/
 context/
 codecov.yml
-.codacy.yml
 .coveragerc
 .gitignore
 .gitmodules

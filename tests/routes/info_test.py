@@ -1,4 +1,5 @@
 from time import sleep
+from unittest import mock
 
 import pytest
 from flask import Flask, appcontext_pushed, g
@@ -106,11 +107,17 @@ def test_meta_info(skale_bp, meta_file):
     assert data == {'status': 'ok', 'payload': meta_info}
 
 
-def test_btrfs_info(skale_bp, skale):
-    data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'btrfs-info'))
-    assert data['status'] == 'ok'
-    payload = data['payload']
-    assert payload['kernel_module'] is False
+@pytest.mark.parametrize(
+    'modules, loaded',
+    [
+        ('ext4 999424 1 - Live 0x0\n', False),
+        ('btrfs 1859584 0 - Live 0x0\next4 999424 1 - Live 0x0\n', True),
+    ],
+)
+def test_btrfs_info(skale_bp, skale, modules, loaded):
+    with mock.patch('core.node.open', mock.mock_open(read_data=modules), create=True):
+        data = get_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'btrfs-info'))
+    assert data == {'status': 'ok', 'payload': {'kernel_module': loaded}}
 
 
 def test_containers(skale_bp, dutils):

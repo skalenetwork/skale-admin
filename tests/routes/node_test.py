@@ -1,11 +1,9 @@
-import datetime
 import glob
 import shutil
 import socket
 from unittest import mock
 from unittest.mock import patch
 
-import freezegun
 import pytest
 from flask import Flask, appcontext_pushed, g
 from skale.utils.contracts_provision import DEFAULT_DOMAIN_NAME
@@ -17,14 +15,10 @@ from web3 import Web3
 from core.config.schain.file_manager import ConfigFileManager
 from core.node import Node, NodeStatus
 from core.node_config import NodeConfig
-from tests.fixtures.settings import TestingSettings
 from tests.utils import get_bp_data, post_bp_data
 from tools.constants.schains import SCHAINS_DIR_PATH
 from web.helper import get_api_url
 from web.routes.node import node_bp
-
-CURRENT_TIMESTAMP = 1594903080
-CURRENT_DATETIME = datetime.datetime.utcfromtimestamp(CURRENT_TIMESTAMP)
 
 BLUEPRINT_NAME = 'node'
 
@@ -157,25 +151,6 @@ def test_set_domain_name(skale_bp, skale):
     json_data = {'domain_name': 'skale.test'}
     data = post_bp_data(skale_bp, get_api_url(BLUEPRINT_NAME, 'set-domain-name'), json_data)
     assert data == {'payload': {}, 'status': 'ok'}
-
-
-@freezegun.freeze_time(CURRENT_DATETIME)
-def test_send_tg_notification(skale_bp, st: TestingSettings):
-    with mock.patch(
-        'tools.notifications.messages.send_message_to_telegram',
-        mock.Mock(return_value={'message': 'test'}),
-    ) as send_message_to_telegram_mock:
-        data = post_bp_data(
-            skale_bp, get_api_url(BLUEPRINT_NAME, 'send-tg-notification'), {'message': ['test']}
-        )
-        send_message_to_telegram_mock.delay.assert_called_once_with(
-            st.tg_api_key,
-            st.tg_chat_id,
-            'test\n\nTimestamp: 1594903080\nDatetime: Thu Jul 16 12:38:00 2020',
-        )
-
-    expected = {'status': 'ok', 'payload': 'Message was sent successfully'}
-    assert data == expected
 
 
 def test_public_ip_info(skale_bp):

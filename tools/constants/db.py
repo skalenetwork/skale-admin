@@ -23,12 +23,5 @@ from tools.constants import NODE_DATA_PATH
 
 DB_FILENAME = 'skale.db'
 DB_FILE: Path = NODE_DATA_PATH / DB_FILENAME
-DB_PRAGMAS = {
-    'journal_mode': 'wal',
-    'cache_size': -1 * 64000,  # 64MB
-    'foreign_keys': 1,
-    'ignore_check_constraints': 0,
-    'synchronous': 0,
-}
 
 REDIS_URI: str = 'redis://@127.0.0.1:6379'

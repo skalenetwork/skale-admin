@@ -20,16 +20,13 @@
 import logging
 import os
 import time
-from importlib import reload
 from typing import Optional
 
 from skale import SkaleIma
 from skale.types.schain import SchainStructure
 from skale_core.settings import SkaleSettings, get_settings
-from web3._utils import http_session_manager
 
 from core.chain.status import get_node_cli_status, get_skaled_status
-from core.checks.base import TG_ALLOWED_CHECKS, get_api_checks_status
 from core.checks.schain import SkaledChecks
 from core.config.schain.file_manager import ConfigFileManager
 from core.config.schain.static_params import get_automatic_repair_option
@@ -46,7 +43,6 @@ from core.schains.process import ProcessReport
 from tools.constants.schains import DKG_TIMEOUT_COEFFICIENT
 from tools.docker_utils import DockerUtils
 from tools.helper import init_skale, is_node_part_of_chain, is_passive, no_hyphens
-from tools.notifications.messages import notify_checks
 from tools.resources import get_statsd_client, rs
 from tools.wallet_utils import init_wallet
 from web.models.schain import SChainRecord, upsert_schain_record
@@ -54,9 +50,7 @@ from web.models.schain import SChainRecord, upsert_schain_record
 logger = logging.getLogger(__name__)
 
 
-def run_skaled_pipeline(
-    schain: SchainStructure, node_config: NodeConfig, dutils: DockerUtils
-) -> None:
+def run_skaled_pipeline(schain: SchainStructure, dutils: DockerUtils) -> None:
     logger.info('Running skaled pipeline')
     logger.debug('Initializing schain record')
     schain_record = SChainRecord.get_by_name(schain.name)
@@ -85,7 +79,6 @@ def run_skaled_pipeline(
         schain=schain,
         rule_controller=rc,
         checks=skaled_checks,
-        node_config=node_config,
         ncli_status=ncli_status,
         econfig=ExternalConfig(schain.name),
         dutils=dutils,
@@ -95,9 +88,6 @@ def run_skaled_pipeline(
     logger.debug('Get automatic repair option')
     st = get_settings()
     automatic_repair = get_automatic_repair_option(st.env_type)
-    logger.debug('Creating api only check results')
-    api_status = get_api_checks_status(status=check_status, allowed=TG_ALLOWED_CHECKS)
-    notify_checks(schain.name, node_config.all(), api_status)
 
     logger.info('Skaled check status: %s', check_status)
     logger.info('Upstream config %s', skaled_am.upstream_config_path)
@@ -153,7 +143,6 @@ class SkaledTask(BaseTask):
         try:
             run_skaled_pipeline(
                 schain=self.schain,
-                node_config=self.node_config,
                 dutils=self.dutils,
             )
             logger.info('Sleeping %d seconds after monitor task', self.post_monitor_sleep_seconds)
@@ -224,8 +213,6 @@ def start_tasks(
     skale_ima: SkaleIma,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
-    reload(http_session_manager)
-
     name = schain.name
     init_ts, pid = int(time.time()), os.getpid()
     logger.info('Initializing process report %d %d', pid, init_ts)

@@ -21,9 +21,9 @@ import json
 import logging
 import os
 
-from dateutil import parser
+from cryptography import x509
+from cryptography.x509.oid import NameOID
 from flask import Blueprint, request
-from OpenSSL import crypto
 
 from core.chain.ssl import is_ssl_folder_empty
 from core.nginx import reload_nginx
@@ -47,7 +47,7 @@ BLUEPRINT_NAME = 'ssl'
 def cert_from_file(cert_filepath):
     if not os.path.isfile(cert_filepath):
         return None
-    with open(cert_filepath) as cert_file:
+    with open(cert_filepath, 'rb') as cert_file:
         return cert_file.read()
 
 
@@ -62,15 +62,14 @@ def save_cert_key_pair(cert, key):
 
 def get_cert_info(cert):
     try:
-        crypto_cert = crypto.load_certificate(crypto.FILETYPE_PEM, cert)
-        subject = crypto_cert.get_subject()
-        issued_to = subject.CN
-        expiration_date_raw = crypto_cert.get_notAfter()
-        expiration_date = parser.parse(expiration_date_raw).strftime('%Y-%m-%dT%H:%M:%S')
+        crypto_cert = x509.load_pem_x509_certificate(cert)
+        common_names = crypto_cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+        issued_to = common_names[0].value if common_names else None
+        expiration_date = crypto_cert.not_valid_after_utc.strftime('%Y-%m-%dT%H:%M:%S')
     except Exception as err:
         logger.exception('Error during parsing certs')
         return 'error', {'msg': err}
-    return 'ok', {'subject': subject, 'issued_to': issued_to, 'expiration_date': expiration_date}
+    return 'ok', {'issued_to': issued_to, 'expiration_date': expiration_date}
 
 
 ssl_bp = Blueprint(BLUEPRINT_NAME, __name__)
