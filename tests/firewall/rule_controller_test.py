@@ -1,11 +1,22 @@
+from unittest import mock
+
 import pytest
 
 from core.firewall import LOOPBACK_INTERFACE, Action, IpRange, SChainRule, SkaledPorts
 from core.firewall.schain.rule_controller import NotInitializedError
 from tests.utils import SChainTestRuleController
+from tools.constants import SSL_CERT_PATH, SSL_KEY_PATH
+
+SSL_ON = 'core.firewall.schain.rule_controller.is_ssl_on'
 
 
-def test_schain_rule_controller():
+@pytest.fixture
+def ssl_on():
+    with mock.patch(SSL_ON, return_value=True):
+        yield
+
+
+def test_schain_rule_controller(ssl_on):
     own_ip = '3.3.3.3'
     node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4']
     base_port = 10064
@@ -43,7 +54,6 @@ def test_schain_rule_controller():
         SChainRule(first_port=10069, first_ip='15.15.15.15', last_ip='18.18.18.18'),
         SChainRule(first_port=10071, first_ip=None, last_ip=None),
         SChainRule(first_port=10072, first_ip=None, last_ip=None),
-        SChainRule(first_port=10073, first_ip=None, last_ip=None),
         SChainRule(first_port=10074, first_ip='1.1.1.1', last_ip=None),
         SChainRule(first_port=10074, first_ip='2.2.2.2', last_ip=None),
         SChainRule(first_port=10074, first_ip='4.4.4.4', last_ip=None),
@@ -94,7 +104,6 @@ def test_schain_rule_controller():
         SChainRule(first_port=10069, first_ip='20.20.20.20', last_ip='21.21.21.21'),
         SChainRule(first_port=10071, first_ip=None, last_ip=None),
         SChainRule(first_port=10072, first_ip=None, last_ip=None),
-        SChainRule(first_port=10073, first_ip=None, last_ip=None),
         SChainRule(first_port=10074, first_ip='1.1.1.1', last_ip=None),
         SChainRule(first_port=10074, first_ip='4.4.4.4', last_ip=None),
         SChainRule(first_port=10074, first_ip='5.5.5.5', last_ip=None),
@@ -107,7 +116,7 @@ def test_schain_rule_controller():
     assert list(src.actual_rules()) == []
 
 
-def test_schain_rule_controller_no_sync_rules():
+def test_schain_rule_controller_no_sync_rules(ssl_on):
     own_ip = '1.1.1.1'
     node_ips = ['1.1.1.1', '2.2.2.2', '3.3.3.3', '4.4.4.4']
     base_port = 10000
@@ -136,7 +145,6 @@ def test_schain_rule_controller_no_sync_rules():
         SChainRule(first_port=10005, first_ip='4.4.4.4', last_ip=None),
         SChainRule(first_port=10007, first_ip=None, last_ip=None),
         SChainRule(first_port=10008, first_ip=None, last_ip=None),
-        SChainRule(first_port=10009, first_ip=None, last_ip=None),
         SChainRule(first_port=10010, first_ip='2.2.2.2', last_ip=None),
         SChainRule(first_port=10010, first_ip='3.3.3.3', last_ip=None),
         SChainRule(first_port=10010, first_ip='4.4.4.4', last_ip=None),
@@ -153,7 +161,7 @@ def test_schain_rule_controller_no_sync_rules():
     assert list(src.actual_rules()) == []
 
 
-def test_schain_rule_controller_configure():
+def test_schain_rule_controller_configure(ssl_on):
     src = SChainTestRuleController('test')
 
     with pytest.raises(NotInitializedError):
@@ -168,7 +176,7 @@ def test_schain_rule_controller_configure():
         src.public_ports()
 
     src.configure(base_port=base_port, node_ips=node_ips)
-    assert list(src.public_ports) == [10003, 10008, 10002, 10007, 10009]
+    assert list(src.public_ports) == [10003, 10002, 10008, 10007]
     drop_rule = SChainRule(
         first_port=base_port,
         last_port=base_port + 63,
@@ -197,7 +205,6 @@ def test_schain_rule_controller_configure():
         SChainRule(first_port=10005, first_ip='4.4.4.4', last_ip=None),
         SChainRule(first_port=10007, first_ip=None, last_ip=None),
         SChainRule(first_port=10008, first_ip=None, last_ip=None),
-        SChainRule(first_port=10009, first_ip=None, last_ip=None),
         SChainRule(first_port=10010, first_ip='1.1.1.1', last_ip=None),
         SChainRule(first_port=10010, first_ip='2.2.2.2', last_ip=None),
         SChainRule(first_port=10010, first_ip='3.3.3.3', last_ip=None),
@@ -230,7 +237,6 @@ def test_schain_rule_controller_configure():
         SChainRule(first_port=10005, first_ip='4.4.4.4', last_ip=None),
         SChainRule(first_port=10007, first_ip=None, last_ip=None),
         SChainRule(first_port=10008, first_ip=None, last_ip=None),
-        SChainRule(first_port=10009, first_ip=None, last_ip=None),
         SChainRule(first_port=10010, first_ip='2.2.2.2', last_ip=None),
         SChainRule(first_port=10010, first_ip='3.3.3.3', last_ip=None),
         SChainRule(first_port=10010, first_ip='4.4.4.4', last_ip=None),
@@ -267,7 +273,6 @@ def test_schain_rule_controller_configure():
         SChainRule(first_port=10005, first_ip='5.5.5.5', last_ip=None),
         SChainRule(first_port=10007, first_ip=None, last_ip=None),
         SChainRule(first_port=10008, first_ip=None, last_ip=None),
-        SChainRule(first_port=10009, first_ip=None, last_ip=None),
         SChainRule(first_port=10010, first_ip='1.1.1.1', last_ip=None),
         SChainRule(first_port=10010, first_ip='3.3.3.3', last_ip=None),
         SChainRule(first_port=10010, first_ip='5.5.5.5', last_ip=None),
@@ -277,3 +282,43 @@ def test_schain_rule_controller_configure():
 
     src.cleanup()
     assert list(src.actual_rules()) == []
+
+
+def test_schain_rule_controller_tls_ports_follow_certificates():
+    base_port = 10000
+    tls_rules = {SChainRule(first_port=10007), SChainRule(first_port=10008)}
+    src = SChainTestRuleController('test', base_port, '1.1.1.1', ['1.1.1.1', '2.2.2.2'])
+
+    with mock.patch(SSL_ON, return_value=False):
+        assert list(src.public_ports) == [10003, 10002]
+        src.sync()
+        assert src.is_rules_synced()
+        assert not tls_rules & set(src.actual_rules())
+
+    with mock.patch(SSL_ON, return_value=True):
+        assert not src.is_rules_synced()
+        src.sync()
+        assert src.is_rules_synced()
+        assert tls_rules <= set(src.actual_rules())
+
+    with mock.patch(SSL_ON, return_value=False):
+        assert not src.is_rules_synced()
+        src.sync()
+        assert src.is_rules_synced()
+        assert not tls_rules & set(src.actual_rules())
+
+    src.cleanup()
+
+
+def test_schain_rule_controller_reads_certificates_from_ssl_folder(ssl_folder):
+    src = SChainTestRuleController('test', 10000, '1.1.1.1', ['1.1.1.1', '2.2.2.2'])
+    try:
+        assert list(src.public_ports) == [10003, 10002]
+        SSL_CERT_PATH.touch()
+        # half a pair is not a TLS setup yet
+        assert list(src.public_ports) == [10003, 10002]
+        SSL_KEY_PATH.touch()
+        assert list(src.public_ports) == [10003, 10002, 10008, 10007]
+    finally:
+        SSL_CERT_PATH.unlink(missing_ok=True)
+        SSL_KEY_PATH.unlink(missing_ok=True)

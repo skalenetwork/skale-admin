@@ -33,9 +33,8 @@ from core.firewall import get_fair_network_scope_rule_controller, get_network_sc
 from core.monitor.action_base import BaseActionManager
 from core.node_config import NodeConfig
 from core.redis.chain_record import ChainRecord
-from core.redis.node_config_fair import NodeConfigFair
 from core.types.chain import FairChainName
-from core.utils.fair import get_local_skaled_endpoint_fair
+from core.utils.fair import update_local_skaled_endpoint
 from tools.helper import no_hyphens
 from tools.node_options import NodeOptions
 from tools.resources import get_statsd_client
@@ -137,17 +136,9 @@ class FairConfigActionManager(BaseActionManager):
             else:
                 logger.info('Generated config is the same as latest upstream')
 
-            self.update_local_skaled_endpoint()
+            update_local_skaled_endpoint()
             update_chain_config_version(self.name, self.chain_record)
             return result
-
-    def update_local_skaled_endpoint(self) -> None:
-        local_endpoint = get_local_skaled_endpoint_fair()
-        if local_endpoint:
-            node_config_fair = NodeConfigFair()
-            node_config_fair.set_local_endpoint(local_endpoint)
-        else:
-            logger.info('Local skaled endpoint is not set, skipping node_config_fair update')
 
     @BaseActionManager.monitor_block
     def reset_config_record(self) -> bool:

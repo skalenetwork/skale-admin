@@ -54,6 +54,34 @@ def test_get_default_rule_controller(nft_chain_folder):
     assert not rc.is_persistent()
 
 
+def test_default_rule_controller_tls_ports_follow_certificates(nft_chain_folder):
+    rc = get_default_rule_controller('test', 10064, '3.3.3.3', ['1.1.1.1', '3.3.3.3'])
+    tls_ports = {10064 + SkaledPorts.HTTPS_JSON.value, 10064 + SkaledPorts.WSS_JSON.value}
+    ssl_on = 'core.firewall.schain.rule_controller.is_ssl_on'
+
+    def open_ports():
+        return {r.first_port for r in rc.actual_rules() if r.action == Action.ACCEPT}
+
+    with mock.patch(ssl_on, return_value=False):
+        rc.sync()
+        assert rc.is_rules_synced()
+        assert not tls_ports & open_ports()
+
+    with mock.patch(ssl_on, return_value=True):
+        assert not rc.is_rules_synced()
+        rc.sync()
+        assert tls_ports <= open_ports()
+        assert rc.is_persistent()
+
+    with mock.patch(ssl_on, return_value=False):
+        assert not rc.is_rules_synced()
+        rc.sync()
+        assert not tls_ports & open_ports()
+        assert rc.is_persistent()
+
+    rc.cleanup()
+
+
 def sync_rules(*args):
     rc = get_default_rule_controller(*args)
     if not rc.is_rules_synced():
@@ -89,13 +117,12 @@ def run_concurrent_rc_syncing(
     zmq_ports = [base_port + SkaledPorts.ZMQ_BROADCAST.value for base_port in base_ports]
     public_ports = [
         base_port + offset
-        for offset in (
-            SkaledPorts.HTTP_JSON.value,
-            SkaledPorts.HTTPS_JSON.value,
-            SkaledPorts.WS_JSON.value,
-            SkaledPorts.WSS_JSON.value,
-            SkaledPorts.INFO_HTTP_JSON.value,
-        )
+        for offset in (SkaledPorts.HTTP_JSON.value, SkaledPorts.WS_JSON.value)
+        for base_port in base_ports
+    ]
+    tls_ports = [
+        base_port + offset
+        for offset in (SkaledPorts.HTTPS_JSON.value, SkaledPorts.WSS_JSON.value)
         for base_port in base_ports
     ]
 
@@ -150,6 +177,10 @@ def run_concurrent_rc_syncing(
 
     for port in public_ports:
         assert sum(map(lambda x: x.first_port == port, rules)) == 1, port
+
+    # the test node has no certificates, so no TLS port is open
+    for port in tls_ports:
+        assert sum(map(lambda x: x.first_port == port, rules)) == 0, port
 
 
 @pytest.mark.parametrize('attempt', range(5))

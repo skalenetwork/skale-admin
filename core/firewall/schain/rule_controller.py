@@ -23,6 +23,8 @@ from abc import abstractmethod
 from functools import wraps
 from typing import Any, Callable, Dict, Iterable, List, Optional, TypeVar, cast
 
+from core.chain.ssl import is_ssl_on
+
 from ..base.types import (
     LOOPBACK_INTERFACE,
     PORTS_PER_SCHAIN,
@@ -139,16 +141,11 @@ class SChainRuleController(IRuleController):
     @property  # type: ignore
     @configured_only
     def public_ports(self) -> Iterable[int]:
-        return (
-            self.base_port + offset.value
-            for offset in (
-                self.port_allocation.HTTP_JSON,
-                self.port_allocation.HTTPS_JSON,
-                self.port_allocation.WS_JSON,
-                self.port_allocation.WSS_JSON,
-                self.port_allocation.INFO_HTTP_JSON,
-            )
-        )
+        offsets = [self.port_allocation.HTTP_JSON, self.port_allocation.WS_JSON]
+        if is_ssl_on():
+            # without certificates nothing serves the TLS ports, the block-wide drop keeps them shut
+            offsets += [self.port_allocation.HTTPS_JSON, self.port_allocation.WSS_JSON]
+        return (self.base_port + offset.value for offset in offsets)
 
     @property
     def public_rules(self) -> Iterable[SChainRule]:

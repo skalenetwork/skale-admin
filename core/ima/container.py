@@ -29,7 +29,10 @@ from skale_core.settings import SkaleSettings, get_settings
 from skale_core.types import EnvType
 from websocket import create_connection
 
-from core.config.endpoint import get_chain_ports_from_config
+from core.config.endpoint import (
+    get_chain_ports_from_config,
+    get_local_chain_http_endpoint_from_config,
+)
 from core.config.schain.directory import schain_config_dir
 from core.config.schain.file_manager import ConfigFileManager, SkaledConfigNotFoundError
 from core.config.schain.helper import get_chain_id, get_static_params
@@ -51,6 +54,7 @@ from tools.constants.ima import (
 )
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.helper import read_json, safe_load_yml
+from web.models.schain import upsert_schain_record
 
 logger = logging.getLogger(__name__)
 
@@ -132,9 +136,10 @@ def get_current_node_from_nodes(node_id, schain_nodes):
 
 
 def get_localhost_http_endpoint(schain_name):
+    """skaled's own http port, which moves behind nginx when the chain runs with the proxy"""
     config = ConfigFileManager(schain_name).skaled_config
-    ports = get_chain_ports_from_config(config)
-    return f'http://127.0.0.1:{ports["http"]}'
+    rpc_proxy_mode = upsert_schain_record(schain_name).rpc_proxy_mode
+    return get_local_chain_http_endpoint_from_config(config, rpc_proxy_mode)
 
 
 def get_public_http_endpoint(public_node_info, schain_name):

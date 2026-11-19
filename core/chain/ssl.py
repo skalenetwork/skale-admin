@@ -22,7 +22,7 @@ import os
 from datetime import datetime
 
 from core.redis.chain_record import ChainRecord
-from tools.constants import SSL_CERT_PATH, SSL_CERTIFICATES_FILEPATH
+from tools.constants import SSL_CERT_PATH, SSL_CERTIFICATES_FILEPATH, SSL_KEY_PATH
 from web.models.schain import SChainRecord
 
 logger = logging.getLogger(__name__)
@@ -32,8 +32,13 @@ def is_ssl_folder_empty(ssl_path=SSL_CERTIFICATES_FILEPATH):
     return len(os.listdir(ssl_path)) == 0
 
 
+def is_ssl_on() -> bool:
+    """TLS is configured once the certificate and its key are in place, uploaded or copied"""
+    return SSL_CERT_PATH.is_file() and SSL_KEY_PATH.is_file()
+
+
 def get_ssl_filepath():
-    if is_ssl_folder_empty():
+    if not is_ssl_on():
         return 'NULL', 'NULL'
     else:
         return os.path.join(SSL_CERTIFICATES_FILEPATH, 'ssl_key'), os.path.join(
@@ -42,7 +47,7 @@ def get_ssl_filepath():
 
 
 def get_ssl_files_change_date() -> datetime | None:
-    if is_ssl_folder_empty():
+    if not is_ssl_on():
         return
     ssl_changed_ts = os.path.getmtime(SSL_CERT_PATH)
     return datetime.utcfromtimestamp(ssl_changed_ts)
@@ -60,6 +65,9 @@ def update_ssl_change_date(chain_record: SChainRecord | ChainRecord) -> bool:
 
 
 def ssl_reload_needed(chain_record: SChainRecord | ChainRecord) -> bool:
+    if chain_record.rpc_proxy_mode:
+        # nginx serves TLS for the chain, its skaled has no certificates
+        return False
     ssl_files_change_date = get_ssl_files_change_date()
     if not ssl_files_change_date:
         logger.warning(

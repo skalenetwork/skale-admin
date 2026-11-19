@@ -69,3 +69,35 @@ def test_monitor_skaled_container_ec(
         monitor_skaled_container(schain.name, schain_record, skaled_status, dutils=dutils)
         assert schain_record.restart_count == 1
         assert schain_record.failed_rpc_count == 0
+
+
+def test_monitor_skaled_container_rpc_proxy_needs_nginx(schain_db, skaled_status, dutils):
+    schain_record = upsert_schain_record(schain_db)
+    with (
+        mock.patch('core.chain.containers.is_volume_exists', return_value=True),
+        mock.patch('core.chain.containers.is_container_exists', return_value=False),
+        mock.patch('core.chain.containers.run_skaled_container') as run_skaled,
+        mock.patch('core.chain.containers.update_ssl_change_date'),
+        mock.patch('core.nginx.mode.is_rpc_proxy_enabled', return_value=True),
+    ):
+        # without nginx the chain would have no public RPC, so skaled keeps the public ports
+        with mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=False):
+            assert monitor_skaled_container(schain_db, schain_record, skaled_status, dutils=dutils)
+        assert run_skaled.call_args.kwargs['rpc_proxy'] is False
+        assert schain_record.rpc_proxy_mode is False
+
+        with mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=True):
+            assert monitor_skaled_container(schain_db, schain_record, skaled_status, dutils=dutils)
+        assert run_skaled.call_args.kwargs['rpc_proxy'] is True
+        assert schain_record.rpc_proxy_mode is True
+
+        # a public skaled cannot bind the ports nginx keeps
+        with (
+            mock.patch('core.nginx.mode.NginxContainer.is_running', return_value=False),
+            mock.patch('core.chain.containers.ChainProxyManager.remove', return_value=False),
+        ):
+            assert not monitor_skaled_container(
+                schain_db, schain_record, skaled_status, dutils=dutils
+            )
+        assert run_skaled.call_count == 2
+        assert schain_record.rpc_proxy_mode is True
