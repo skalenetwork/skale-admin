@@ -50,7 +50,6 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-# Flask's own handler would write records to stderr once more, bypassing the configured formatter
 app.logger.removeHandler(default_handler)
 init_cli_auth(app)
 app.register_blueprint(node_bp)
