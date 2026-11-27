@@ -1,6 +1,9 @@
+import importlib.util
 import logging
 from unittest import mock
 
+import pytest
+from flask.logging import default_handler
 from skale_core.settings import SkaleSettings
 
 from tools.logger import ADMIN_LOG_FORMAT, HidingFormatter, compose_hiding_patterns
@@ -76,3 +79,18 @@ def test_url_secrets_hidden(st: SkaleSettings):
         'short path https://[ETH_IP]/eth/mainnet'
         in formatted_text
     )
+
+
+@pytest.mark.parametrize('api_name', ['skale_api', 'fair_api'])
+def test_flask_default_log_handler_removed(api_name):
+    origin = importlib.util.find_spec(api_name).origin
+    spec = importlib.util.spec_from_file_location(f'fresh_{api_name}', origin)
+    api = importlib.util.module_from_spec(spec)
+    with (
+        mock.patch.object(logging.getLogger(), 'handlers', []),
+        mock.patch('tools.logger.init_api_logger'),
+        mock.patch('tools.helper.is_passive', return_value=False),
+        mock.patch('skale_core.settings.get_internal_settings'),
+    ):
+        spec.loader.exec_module(api)
+        assert default_handler not in api.app.logger.handlers
