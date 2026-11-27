@@ -24,6 +24,7 @@ import time
 from http import HTTPStatus
 
 from flask import Flask, g
+from flask.logging import default_handler
 from skale_core.settings import get_internal_settings, get_settings
 from werkzeug import exceptions as wz_exceptions
 
@@ -49,6 +50,7 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.logger.removeHandler(default_handler)
 init_cli_auth(app)
 node_settings = get_internal_settings()
 
@@ -94,5 +96,5 @@ def recursion_error_handler(e):
 @app.errorhandler(wz_exceptions.InternalServerError)
 def any_error_handler(e):
     original = getattr(e, 'original_exception', None)
-    logger.exception('Request failed with error %s', original)
+    logger.error('Request failed with error %s', original)
     return construct_err_response(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, msg=str(e))

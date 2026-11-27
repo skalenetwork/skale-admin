@@ -25,6 +25,7 @@ from http import HTTPStatus
 
 import werkzeug
 from flask import Flask, g
+from flask.logging import default_handler
 from skale_core.settings import get_settings
 
 import tools.settings  # noqa: F401
@@ -49,6 +50,7 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.logger.removeHandler(default_handler)
 init_cli_auth(app)
 app.register_blueprint(node_bp)
 app.register_blueprint(schains_bp)
@@ -92,5 +94,5 @@ def recursion_error_handler(e):
 @app.errorhandler(werkzeug.exceptions.InternalServerError)
 def any_error_handler(e):
     original = getattr(e, 'original_exception', None)
-    logger.exception('Request failed with error %s', original)
+    logger.error('Request failed with error %s', original)
     return construct_err_response(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, msg=str(e))

@@ -1,9 +1,17 @@
+import importlib.util
 import logging
+import sys
 from unittest import mock
 
+import pytest
 from skale_core.settings import SkaleSettings
 
-from tools.logger import ADMIN_LOG_FORMAT, HidingFormatter, compose_hiding_patterns
+from tools.logger import (
+    ADMIN_LOG_FORMAT,
+    API_LOG_FORMAT,
+    HidingFormatter,
+    compose_hiding_patterns,
+)
 
 
 def test_custom_formatter(st: SkaleSettings):
@@ -76,3 +84,31 @@ def test_url_secrets_hidden(st: SkaleSettings):
         'short path https://[ETH_IP]/eth/mainnet'
         in formatted_text
     )
+
+
+@pytest.mark.parametrize('api_name', ['skale_api', 'fair_api'])
+def test_api_error_logged_once(api_name, caplog, capsys):
+    # the levels match init_logger
+    caplog.set_level(logging.DEBUG)
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(HidingFormatter(API_LOG_FORMAT, {'secretvalue': '[HIDDEN]'}))
+    origin = importlib.util.find_spec(api_name).origin
+    spec = importlib.util.spec_from_file_location(f'fresh_{api_name}', origin)
+    api = importlib.util.module_from_spec(spec)
+    with (
+        mock.patch.object(logging.getLogger(), 'handlers', [handler]),
+        mock.patch('tools.logger.init_api_logger'),
+        mock.patch('tools.helper.is_passive', return_value=False),
+        mock.patch('skale_core.settings.get_internal_settings'),
+    ):
+        spec.loader.exec_module(api)
+        error = ValueError('secretvalue')
+        with mock.patch.object(api, 'wait_until_admin_inited', side_effect=error):
+            response = api.app.test_client().get('/api/v1/info/hardware')
+
+    output = capsys.readouterr().err
+    assert response.status_code == 500
+    assert 'secretvalue' not in output
+    assert output.count('Exception on /api/v1/info/hardware [GET]') == 1
+    assert output.count('Traceback (most recent call last)') == 1
