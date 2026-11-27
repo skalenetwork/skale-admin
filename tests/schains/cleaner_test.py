@@ -24,6 +24,7 @@ from core.schains.cleaner import (
     remove_schain,
     remove_schain_volume,
     remove_skaled_container,
+    run_cleaner,
 )
 from tests.utils import get_schain_struct, run_simple_ima_container, run_simple_skaled_container
 from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
@@ -263,3 +264,10 @@ def test_cleanup_schain(
     assert not os.path.isdir(schain_dir_path)
     record = SChainRecord.get_by_name(schain_name)
     assert record.is_deleted is True
+
+
+def test_run_cleaner_passes_only_node_config_to_the_process(node_config: NodeConfig):
+    with mock.patch('core.schains.cleaner.FORK_CONTEXT') as fork_context:
+        run_cleaner(node_config)
+    fork_context.Process.assert_called_once()
+    assert fork_context.Process.call_args.kwargs['args'] == (node_config,)

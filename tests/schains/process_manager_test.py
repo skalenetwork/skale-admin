@@ -7,7 +7,7 @@ from unittest import mock
 
 import psutil
 import pytest
-from skale import SkaleIma, SkaleManager
+from skale import SkaleManager
 from skale.types.schain import SchainName
 
 from core.manager_cache import ManagerCache
@@ -76,7 +76,7 @@ def test_run_pm_schain(
     with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
         with mock.patch('core.schains.process_manager.is_node_part_of_chain', return_value=True):
             run_pm_schain(
-                skale, None, node_config, schain, manager_cache=clear_manager_cache, timeout=timeout
+                skale, node_config, schain, manager_cache=clear_manager_cache, timeout=timeout
             )
 
     process_report = ProcessReport(schain.name)
@@ -100,7 +100,7 @@ def test_run_pm_schain(
     with mock.patch('core.schains.process_manager.start_tasks', target_stuck_mock):
         with mock.patch('core.schains.process_manager.is_node_part_of_chain', return_value=True):
             run_pm_schain(
-                skale, None, node_config, schain, manager_cache=clear_manager_cache, timeout=timeout
+                skale, node_config, schain, manager_cache=clear_manager_cache, timeout=timeout
             )
 
     wait_it = 0
@@ -128,7 +128,6 @@ def test_run_pm_schain(
 def test_cleanup_schains_pids(
     tmp_dir,
     skale: SkaleManager,
-    skale_ima: SkaleIma,
     schain_on_contracts: SchainName,
     node_config: NodeConfig,
     manager_cache: ManagerCache,
@@ -140,9 +139,23 @@ def test_cleanup_schains_pids(
 
     with mock.patch('core.schains.process_manager.start_tasks', target_regular_mock):
         with mock.patch('core.schains.process_manager.is_node_part_of_chain', return_value=True):
-            run_pm_schain(skale, None, node_config, schain=schain, manager_cache=manager_cache)
+            run_pm_schain(skale, node_config, schain=schain, manager_cache=manager_cache)
 
     wait_for_process_report(process_report)
     assert process_report.exists()
     cleanup_schains_pids()
     assert not process_report.exists()
+
+
+def test_run_pm_schain_passes_no_web3_objects_to_the_process(node_config: NodeConfig):
+    schain = get_schain_struct(_test_schain_name='fork-safety')
+    skale = mock.MagicMock()
+    skale.node_rotation.is_rotation_active.return_value = False
+    with (
+        mock.patch('core.schains.process_manager.is_node_part_of_chain', return_value=True),
+        mock.patch('core.schains.process_manager.get_schain_process_info', return_value=(None, 0)),
+        mock.patch('core.schains.process_manager.FORK_CONTEXT') as fork_context,
+    ):
+        run_pm_schain(skale, node_config, schain, manager_cache=mock.MagicMock(), timeout=1)
+    fork_context.Process.assert_called_once()
+    assert fork_context.Process.call_args.kwargs['args'] == (schain, node_config)
