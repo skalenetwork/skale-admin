@@ -7,7 +7,7 @@ from concurrent.futures import Future
 from unittest import mock
 
 import pytest
-from skale import SkaleIma, SkaleManager
+from skale import SkaleManager
 from skale.types.schain import SchainHash, SchainName, SchainStructure
 from skale.wallets import SgxWallet
 
@@ -76,7 +76,6 @@ def test_is_node_part_of_chain(skale, schain_on_contracts, node_config):
 
 def test_config_task(
     skale: SkaleManager,
-    skale_ima: SkaleIma,
     schain_db: SchainName,
     schain_hash_on_contracts: SchainHash,
     node_config: NodeConfig,
@@ -98,13 +97,12 @@ def test_config_task(
 
         config_task = ConfigTask(
             schain=schain,
-            skale_ima=skale_ima,
             node_config=node_config,
             stream_version=stream_version,
             post_monitor_sleep_seconds=TEST_TASK_SLEEP,
         )
         assert config_task.needed
-        skale_ima.linker.has_schain = mock.Mock(return_value=True)
+        config_task.skale_ima.linker.has_schain = mock.Mock(return_value=True)
 
         def get_monitor_mock(*args, **kwargs):
             result = mock.MagicMock()

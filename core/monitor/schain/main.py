@@ -22,7 +22,6 @@ import os
 import time
 from typing import Optional
 
-from skale import SkaleIma
 from skale.types.schain import SchainStructure
 from skale_core.settings import SkaleSettings, get_settings
 
@@ -42,7 +41,7 @@ from core.schains.external_config import ExternalConfig
 from core.schains.process import ProcessReport
 from tools.constants.schains import DKG_TIMEOUT_COEFFICIENT
 from tools.docker_utils import DockerUtils
-from tools.helper import init_skale, is_node_part_of_chain, is_passive, no_hyphens
+from tools.helper import init_skale, init_skale_ima, is_node_part_of_chain, is_passive, no_hyphens
 from tools.resources import get_statsd_client, rs
 from tools.wallet_utils import init_wallet
 from web.models.schain import SChainRecord, upsert_schain_record
@@ -158,7 +157,6 @@ class ConfigTask(BaseTask):
     def __init__(
         self,
         schain: SchainStructure,
-        skale_ima: SkaleIma,
         node_config: NodeConfig,
         stream_version: str,
         post_monitor_sleep_seconds: int = 420,
@@ -170,7 +168,7 @@ class ConfigTask(BaseTask):
                 node_config=node_config, endpoint=str(st.endpoint), sgx_server_url=str(st.sgx_url)
             )
         self.skale = init_skale(wallet)
-        self.skale_ima = skale_ima
+        self.skale_ima = init_skale_ima(wallet)
         self.schain = schain
         self.post_monitor_sleep_seconds = post_monitor_sleep_seconds
         self.manager_cache = ManagerCache(rs, self.skale, node_config.id)
@@ -210,7 +208,6 @@ class ConfigTask(BaseTask):
 def start_tasks(
     schain: SchainStructure,
     node_config: NodeConfig,
-    skale_ima: SkaleIma,
     dutils: Optional[DockerUtils] = None,
 ) -> bool:
     name = schain.name
@@ -243,7 +240,6 @@ def start_tasks(
     tasks = [
         ConfigTask(
             schain=schain,
-            skale_ima=skale_ima,
             node_config=node_config,
             stream_version=stream_version,
         ),

@@ -21,7 +21,7 @@ import logging
 import time
 from typing import Optional
 
-from skale import SkaleIma, SkaleManager
+from skale import SkaleManager
 from skale.types.schain import SchainStructure
 
 from core.manager_cache import ManagerCache
@@ -40,17 +40,16 @@ logger = logging.getLogger(__name__)
 
 
 def run_process_manager(
-    skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig, manager_cache: ManagerCache
+    skale: SkaleManager, node_config: NodeConfig, manager_cache: ManagerCache
 ) -> None:
     logger.info('Process manager started')
     for schain in manager_cache.schains:
-        run_pm_schain(skale, skale_ima, node_config, schain, manager_cache)
+        run_pm_schain(skale, node_config, schain, manager_cache)
     logger.info('Process manager procedure finished')
 
 
 def run_pm_schain(
     skale: SkaleManager,
-    skale_ima: SkaleIma,
     node_config: NodeConfig,
     schain: SchainStructure,
     manager_cache: ManagerCache,
@@ -81,7 +80,7 @@ def run_pm_schain(
             logger.info('%s Process is running: PID = %d', log_prefix, pid)
     else:
         process = FORK_CONTEXT.Process(
-            name=schain.name, target=start_tasks, args=(schain, node_config, skale_ima)
+            name=schain.name, target=start_tasks, args=(schain, node_config)
         )
         process.start()
         logger.info('Process started for %s', schain.name)

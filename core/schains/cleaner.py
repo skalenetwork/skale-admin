@@ -45,7 +45,8 @@ from tools.constants import NFT_CHAIN_CONFIG_WILDCARD, SGX_CERTIFICATES_FOLDER
 from tools.constants.containers import IMA_CONTAINER, SKALED_CONTAINER
 from tools.constants.schains import SCHAINS_DIR_PATH
 from tools.docker_utils import DockerUtils
-from tools.helper import is_node_part_of_chain, is_passive, merged_unique, read_json
+from tools.helper import init_skale, is_node_part_of_chain, is_passive, merged_unique, read_json
+from tools.resources import rs
 from tools.str_formatters import arguments_list_string
 from web.models.schain import get_schains_names, mark_schain_deleted, upsert_schain_record
 
@@ -56,10 +57,8 @@ JOIN_TIMEOUT = 1800
 FAIR_NFT_CHAIN_NAMES = ['fair-network', 'fair-committee']
 
 
-def run_cleaner(skale: SkaleManager, node_config: NodeConfig, manager_cache: ManagerCache) -> None:
-    process = FORK_CONTEXT.Process(
-        name='cleaner', target=monitor, args=(skale, node_config, manager_cache)
-    )
+def run_cleaner(node_config: NodeConfig) -> None:
+    process = FORK_CONTEXT.Process(name='cleaner', target=run_monitor, args=(node_config,))
     process.start()
     logger.info('Cleaner process started')
     process.join(JOIN_TIMEOUT)
@@ -67,6 +66,11 @@ def run_cleaner(skale: SkaleManager, node_config: NodeConfig, manager_cache: Man
     logger.info('Terminating the process')
     process.terminate()
     process.join()
+
+
+def run_monitor(node_config: NodeConfig) -> None:
+    skale = init_skale(wallet=None)
+    monitor(skale, node_config, ManagerCache(rs, skale, node_config.id))
 
 
 def log_remove(component_name, schain_name):
