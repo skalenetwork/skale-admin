@@ -24,6 +24,7 @@ import time
 from http import HTTPStatus
 
 from flask import Flask, g
+from flask.logging import default_handler
 from skale_core.settings import get_internal_settings, get_settings
 from werkzeug import exceptions as wz_exceptions
 
@@ -49,6 +50,8 @@ init_api_logger()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+# Flask's own handler would write records to stderr once more, bypassing the configured formatter
+app.logger.removeHandler(default_handler)
 init_cli_auth(app)
 node_settings = get_internal_settings()
 
