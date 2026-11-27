@@ -1,4 +1,5 @@
 import importlib.util
+import logging
 import tempfile
 import unittest
 from contextlib import ExitStack
@@ -6,6 +7,8 @@ from dataclasses import make_dataclass
 from enum import Enum
 from pathlib import Path
 from unittest.mock import Mock, patch
+
+from flask.logging import default_handler
 
 TOKEN = 'ab' * 32
 
@@ -157,6 +160,26 @@ class APIAuthApplicationsTest(unittest.TestCase):
                 self.assertEqual(response.status_code, 200)
                 wait.assert_called_once()
                 handler.assert_called_once()
+
+    def test_flask_default_log_handler_is_removed(self):
+        # Flask adds its own stderr handler when no configured handler accepts the app logger's
+        # level, which is the API setup: DEBUG root logger with INFO handlers
+        root = logging.getLogger()
+        handler = logging.NullHandler()
+        handler.setLevel(logging.INFO)
+        self.addCleanup(root.setLevel, root.level)
+        root.setLevel(logging.DEBUG)
+        with (
+            patch.object(root, 'handlers', [handler]),
+            patch('tools.helper.is_passive', return_value=False),
+        ):
+            for api in self.apis[:2]:
+                with self.subTest(api=api.__name__):
+                    name = f'logging_{api.__name__}'
+                    spec = importlib.util.spec_from_file_location(name, api.__file__)
+                    fresh_api = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(fresh_api)
+                    self.assertNotIn(default_handler, fresh_api.app.logger.handlers)
 
 
 if __name__ == '__main__':
