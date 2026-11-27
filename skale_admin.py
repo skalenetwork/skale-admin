@@ -67,28 +67,26 @@ def init_db() -> None:
     migrate()
 
 
-def monitor_active(skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig) -> None:
+def monitor_active(skale: SkaleManager, node_config: NodeConfig) -> None:
     manager_cache: ManagerCache = ManagerCache(rs, skale, node_config.id)
     manager_cache.clear_all_fields()
     while True:
         try:
-            run_process_manager(skale, skale_ima, node_config, manager_cache)
+            run_process_manager(skale, node_config, manager_cache)
         except Exception:
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {ACTIVE_SLEEP_INTERVAL}s after run_process_manager')
         time.sleep(ACTIVE_SLEEP_INTERVAL)
-        run_cleaner(skale, node_config, manager_cache)
+        run_cleaner(node_config)
         logger.info(f'Sleeping for {ACTIVE_SLEEP_INTERVAL}s after run_cleaner')
         time.sleep(ACTIVE_SLEEP_INTERVAL)
 
 
-def monitor_passive(
-    skale: SkaleManager, skale_ima: SkaleIma, node_config: NodeConfig, schain: SchainStructure
-) -> None:
+def monitor_passive(skale: SkaleManager, node_config: NodeConfig, schain: SchainStructure) -> None:
     manager_cache = ManagerCache(rs, skale, node_config.id)
     while True:
         try:
-            run_pm_schain(skale, skale_ima, node_config, schain, manager_cache)
+            run_pm_schain(skale, node_config, schain, manager_cache)
         except Exception:
             logger.exception('Process manager procedure failed!')
         logger.info(f'Sleeping for {PASSIVE_SLEEP_INTERVAL}s after run_process_manager')
@@ -106,17 +104,15 @@ def worker_active() -> None:
         node_config=node_config, endpoint=str(st.endpoint), sgx_server_url=str(st.sgx_url)
     )
     skale = SkaleManager(str(st.endpoint), st.manager_contracts, wallet)
-    skale_ima = SkaleIma(str(st.endpoint), st.ima_contracts, wallet)
     if internal_st.backup_run:
         logger.info('Running sChains in snapshot download mode')
     update_monitoring_services(node_config.ip, node_config.id, skale.manager.address)
-    monitor_active(skale, skale_ima, node_config)
+    monitor_active(skale, node_config)
 
 
 def worker_passive(schain_name: SchainName) -> None:
     st = get_settings(SkalePassiveSettings)
     skale = SkaleManager(str(st.endpoint), st.manager_contracts)
-    skale_ima = SkaleIma(str(st.endpoint), st.ima_contracts)
 
     if not skale.schains_internal.is_schain_exist(schain_name):
         logger.error(f'Provided SKALE Chain does not exist: {schain_name}')
@@ -138,7 +134,7 @@ def worker_passive(schain_name: SchainName) -> None:
         )
 
     logger.info(f'Node {node_config.id} will be used as a current node')
-    monitor_passive(skale, skale_ima, node_config, schain)
+    monitor_passive(skale, node_config, schain)
 
 
 def init_active() -> None:

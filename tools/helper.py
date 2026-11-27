@@ -33,7 +33,7 @@ import requests
 import yaml
 from filelock import FileLock
 from jinja2 import Environment
-from skale import SkaleManager
+from skale import SkaleIma, SkaleManager
 from skale.types.node import NodeId
 from skale.utils.cache import RedisCacheConfig
 from skale.wallets import BaseWallet
@@ -113,6 +113,20 @@ def init_skale(wallet: BaseWallet | None) -> SkaleManager:
     return SkaleManager(
         str(st.endpoint),
         st.manager_contracts,
+        wallet,
+        enable_stats=True,
+        redis_cache_config=RedisCacheConfig(
+            REDIS_URI,
+            method_ttl_policy=CACHE_TTL_POLICY,
+        ),
+    )
+
+
+def init_skale_ima(wallet: BaseWallet | None) -> SkaleIma:
+    st = get_settings((SkaleSettings, BaseNodeSettings))
+    return SkaleIma(
+        str(st.endpoint),
+        st.ima_contracts,
         wallet,
         enable_stats=True,
         redis_cache_config=RedisCacheConfig(
